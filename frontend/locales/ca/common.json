@@ -1,0 +1,49 @@
+{
+  "app": {
+    "name": "Memship",
+    "tagline": "Gestió de socis per a tothom"
+  },
+  "nav": {
+    "dashboard": "Tauler",
+    "members": "Socis",
+    "membershipTypes": "Tipus de membresía",
+    "profile": "El meu perfil",
+    "settings": "Configuració",
+    "login": "Iniciar sessió",
+    "register": "Registrar-se",
+    "logout": "Tancar sessió"
+  },
+  "common": {
+    "save": "Desar",
+    "cancel": "Cancel·lar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "create": "Crear",
+    "search": "Cercar",
+    "filter": "Filtrar",
+    "loading": "Carregant...",
+    "noResults": "Sense resultats",
+    "confirm": "Confirmar",
+    "back": "Tornar",
+    "actions": "Accions",
+    "status": "Estat",
+    "yes": "Sí",
+    "no": "No"
+  },
+  "status": {
+    "active": "Actiu",
+    "pending": "Pendent",
+    "suspended": "Suspès",
+    "cancelled": "Cancel·lat",
+    "expired": "Expirat"
+  },
+  "home": {
+    "welcome": "Benvingut a Memship",
+    "description": "Sistema de gestió de socis"
+  },
+  "locale": {
+    "es": "Español",
+    "ca": "Català",
+    "en": "English"
+  }
+}

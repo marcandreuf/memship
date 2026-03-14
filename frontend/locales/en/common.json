@@ -1,0 +1,49 @@
+{
+  "app": {
+    "name": "Memship",
+    "tagline": "Membership management for everyone"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "members": "Members",
+    "membershipTypes": "Membership Types",
+    "profile": "My Profile",
+    "settings": "Settings",
+    "login": "Sign In",
+    "register": "Sign Up",
+    "logout": "Sign Out"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "filter": "Filter",
+    "loading": "Loading...",
+    "noResults": "No results",
+    "confirm": "Confirm",
+    "back": "Back",
+    "actions": "Actions",
+    "status": "Status",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "status": {
+    "active": "Active",
+    "pending": "Pending",
+    "suspended": "Suspended",
+    "cancelled": "Cancelled",
+    "expired": "Expired"
+  },
+  "home": {
+    "welcome": "Welcome to Memship",
+    "description": "Membership management system"
+  },
+  "locale": {
+    "es": "Español",
+    "ca": "Català",
+    "en": "English"
+  }
+}

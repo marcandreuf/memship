@@ -14,7 +14,7 @@ Most membership tools are either expensive SaaS platforms or outdated legacy sof
 
 - **Self-hosted** — runs on any server with Docker
 - **Single-tenant** — one database per organization, complete data isolation
-- **Multi-language** — Spanish, Catalan, and English from day one
+- **Multi-language** — Spanish, Catalan, and English from day one. Extensible to any language via community contributions
 - **GDPR-ready** — built-in legal terms templates and consent management
 
 ## Planned Features
@@ -23,7 +23,7 @@ Most membership tools are either expensive SaaS platforms or outdated legacy sof
 - Full member lifecycle: registration, onboarding, status changes, cancellation
 - Membership types, groups, and custom fields
 - Guardian/minor support
-- Member cards with QR codes
+- Digital member card with QR code (mobile-friendly)
 
 **Activities & Events**
 - Activity creation with modalities, pricing, and capacity control
@@ -55,26 +55,27 @@ Most membership tools are either expensive SaaS platforms or outdated legacy sof
 
 | Layer | Technology |
 |-------|-----------|
-| Backend | Python 3.12+ / FastAPI / SQLAlchemy / Celery |
+| Backend | Python 3.12+ / FastAPI / SQLAlchemy / Alembic |
 | Frontend | Next.js / React / Tailwind CSS / Shadcn/ui |
 | Database | PostgreSQL 15 |
-| Cache | Redis 7 |
-| Proxy | Caddy 2 (auto-SSL) |
 | Containers | Docker + Docker Compose |
+| CI | GitHub Actions |
+| Registry | GitHub Container Registry (ghcr.io) |
 
 ## Roadmap
 
-| Phase | Milestone | Version | Status |
-|-------|-----------|---------|--------|
-| Phase 0 | Infrastructure setup | v0.0.x | Not started |
-| Phase 1 | Member Management MVP | v0.1.0 | Not started |
-| Phase 2 | Activity Management | v0.2.0 | — |
-| Phase 3 | Basic Payments | v0.3.0 | — |
-| Phase 4 | Payment Processing (SEPA + Stripe) | v0.4.0 | — |
-| Phase 5 | Communication System | v0.5.0 | — |
-| Phase 6 | Bookings & Documents | v0.6.0 | — |
-| Phase 7 | Reports & Analytics | v0.7.0 | — |
-| Phase 8 | Stabilization & Release | v1.0.0 | — |
+| Version | Milestone | Status |
+|---------|-----------|--------|
+| v0.1.0 | Member Management MVP — auth, RBAC, member CRUD, membership types, i18n, Docker, CI | In progress |
+| v0.1.x | Polish — email sending, restricted user role, groups, portal branding, self-hosted scripts, E2E tests | — |
+| v0.2.0 | Activity Management | — |
+| v0.3.0 | Basic Payments & Invoicing | — |
+| v0.4.0 | Payment Processing (SEPA + Stripe) | — |
+| v0.5.0 | Communication System | — |
+| v0.6.0 | Bookings & Documents | — |
+| v0.7.0 | Reports & Analytics | — |
+| v0.8.0 | Digital Member Card & QR Check-in | — |
+| v1.0.0 | Stabilization & Release | — |
 
 ## Contributing
 

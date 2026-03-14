@@ -1,0 +1,74 @@
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: memship-api
+    ports:
+      - "8003:8000"
+    environment:
+      - DATABASE_URL=postgresql://memship:memship@db:5432/memship_db
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
+      - APP_ENV=${APP_ENV:-development}
+      - DEFAULT_LOCALE=${DEFAULT_LOCALE:-es}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
+      - RUN_MIGRATIONS=1
+    volumes:
+      - ../app:/app/app
+      - ../alembic:/app/alembic
+      - ../start.py:/app/start.py
+      - ../alembic.ini:/app/alembic.ini
+      - ../../VERSION:/app/VERSION
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:15-alpine
+    container_name: memship-db
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_USER=memship
+      - POSTGRES_PASSWORD=memship
+      - POSTGRES_DB=memship_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "memship", "-d", "memship_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  db-test:
+    image: postgres:15-alpine
+    container_name: memship-db-test
+    ports:
+      - "5434:5432"
+    environment:
+      - POSTGRES_USER=memship
+      - POSTGRES_PASSWORD=memship
+      - POSTGRES_DB=memship_test_db
+    tmpfs:
+      - /var/lib/postgresql/data
+    profiles:
+      - test
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "memship", "-d", "memship_test_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  adminer:
+    image: adminer
+    container_name: memship-adminer
+    ports:
+      - "8181:8080"
+    profiles:
+      - tools
+    restart: unless-stopped
+
+volumes:
+  pgdata:

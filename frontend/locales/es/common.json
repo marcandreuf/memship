@@ -1,0 +1,49 @@
+{
+  "app": {
+    "name": "Memship",
+    "tagline": "Gestión de socios para todos"
+  },
+  "nav": {
+    "dashboard": "Panel",
+    "members": "Socios",
+    "membershipTypes": "Tipos de membresía",
+    "profile": "Mi perfil",
+    "settings": "Configuración",
+    "login": "Iniciar sesión",
+    "register": "Registrarse",
+    "logout": "Cerrar sesión"
+  },
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "create": "Crear",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "loading": "Cargando...",
+    "noResults": "Sin resultados",
+    "confirm": "Confirmar",
+    "back": "Volver",
+    "actions": "Acciones",
+    "status": "Estado",
+    "yes": "Sí",
+    "no": "No"
+  },
+  "status": {
+    "active": "Activo",
+    "pending": "Pendiente",
+    "suspended": "Suspendido",
+    "cancelled": "Cancelado",
+    "expired": "Expirado"
+  },
+  "home": {
+    "welcome": "Bienvenido a Memship",
+    "description": "Sistema de gestión de socios"
+  },
+  "locale": {
+    "es": "Español",
+    "ca": "Català",
+    "en": "English"
+  }
+}
