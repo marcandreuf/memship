@@ -239,3 +239,131 @@ class TestMemberSelfService:
         )
         assert response.status_code == 200
         assert response.json()["person"]["first_name"] == "MySelf"
+
+
+class TestGuardianMinor:
+    def test_create_minor_with_guardian(self, client, db):
+        admin = _create_admin(db)
+        mt = _ensure_membership_type(db)
+        client.cookies.update(_auth_cookie(admin))
+
+        # Create guardian person
+        guardian = Person(first_name="Parent", last_name="García", email="parent@test.com")
+        db.add(guardian)
+        db.flush()
+
+        response = client.post(
+            "/api/v1/members/",
+            json={
+                "first_name": "Child",
+                "last_name": "García",
+                "date_of_birth": "2018-06-15",
+                "membership_type_id": mt.id,
+                "guardian_person_id": guardian.id,
+            },
+        )
+        assert response.status_code == 201
+        data = response.json()
+        assert data["is_minor"] is True
+        assert data["guardian"] is not None
+        assert data["guardian"]["first_name"] == "Parent"
+        assert data["guardian"]["last_name"] == "García"
+
+    def test_create_adult_not_minor(self, client, db):
+        admin = _create_admin(db)
+        mt = _ensure_membership_type(db)
+        client.cookies.update(_auth_cookie(admin))
+
+        response = client.post(
+            "/api/v1/members/",
+            json={
+                "first_name": "Adult",
+                "last_name": "User",
+                "date_of_birth": "1990-01-01",
+                "membership_type_id": mt.id,
+            },
+        )
+        assert response.status_code == 201
+        data = response.json()
+        assert data["is_minor"] is False
+        assert data["guardian"] is None
+
+    def test_create_without_dob_not_minor(self, client, db):
+        admin = _create_admin(db)
+        mt = _ensure_membership_type(db)
+        client.cookies.update(_auth_cookie(admin))
+
+        response = client.post(
+            "/api/v1/members/",
+            json={
+                "first_name": "NoDob",
+                "last_name": "User",
+                "membership_type_id": mt.id,
+            },
+        )
+        assert response.status_code == 201
+        assert response.json()["is_minor"] is False
+
+    def test_update_dob_recalculates_minor(self, client, db):
+        admin = _create_admin(db)
+        mt = _ensure_membership_type(db)
+        client.cookies.update(_auth_cookie(admin))
+
+        # Create adult member
+        create_resp = client.post(
+            "/api/v1/members/",
+            json={
+                "first_name": "Was",
+                "last_name": "Adult",
+                "date_of_birth": "1990-01-01",
+                "membership_type_id": mt.id,
+            },
+        )
+        member_id = create_resp.json()["id"]
+        assert create_resp.json()["is_minor"] is False
+
+        # Update DOB to make them a minor
+        response = client.put(
+            f"/api/v1/members/{member_id}",
+            json={"date_of_birth": "2020-01-01"},
+        )
+        assert response.status_code == 200
+        assert response.json()["is_minor"] is True
+
+    def test_guardian_can_have_multiple_minors(self, client, db):
+        admin = _create_admin(db)
+        mt = _ensure_membership_type(db)
+        client.cookies.update(_auth_cookie(admin))
+
+        guardian = Person(first_name="Multi", last_name="Parent", email="multi-parent@test.com")
+        db.add(guardian)
+        db.flush()
+
+        # Create first minor
+        resp1 = client.post(
+            "/api/v1/members/",
+            json={
+                "first_name": "Child1",
+                "last_name": "Parent",
+                "date_of_birth": "2016-03-01",
+                "guardian_person_id": guardian.id,
+                "membership_type_id": mt.id,
+            },
+        )
+        assert resp1.status_code == 201
+        assert resp1.json()["guardian"]["id"] == guardian.id
+
+        # Create second minor with same guardian
+        resp2 = client.post(
+            "/api/v1/members/",
+            json={
+                "first_name": "Child2",
+                "last_name": "Parent",
+                "date_of_birth": "2019-07-15",
+                "guardian_person_id": guardian.id,
+                "membership_type_id": mt.id,
+            },
+        )
+        assert resp2.status_code == 201
+        assert resp2.json()["guardian"]["id"] == guardian.id
+        assert resp1.json()["id"] != resp2.json()["id"]

@@ -1,6 +1,6 @@
 """Member service — business logic for member operations."""
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from sqlalchemy.orm import Session
 
@@ -14,6 +14,18 @@ VALID_STATUS_TRANSITIONS = {
     "cancelled": [],
     "expired": ["active"],
 }
+
+MINOR_AGE_THRESHOLD = 18
+
+
+def is_minor_by_dob(date_of_birth: date | None) -> bool:
+    if not date_of_birth:
+        return False
+    today = date.today()
+    age = today.year - date_of_birth.year - (
+        (today.month, today.day) < (date_of_birth.month, date_of_birth.day)
+    )
+    return age < MINOR_AGE_THRESHOLD
 
 
 def generate_member_number(db: Session) -> str:
@@ -41,6 +53,7 @@ def create_member(
     gender: str | None = None,
     national_id: str | None = None,
     membership_type_id: int | None = None,
+    guardian_person_id: int | None = None,
     internal_notes: str | None = None,
 ) -> Member:
     person = Person(
@@ -55,12 +68,15 @@ def create_member(
     db.flush()
 
     member_number = generate_member_number(db)
+    minor = is_minor_by_dob(date_of_birth)
 
     member = Member(
         person_id=person.id,
         membership_type_id=membership_type_id,
         member_number=member_number,
         status="pending",
+        is_minor=minor,
+        guardian_person_id=guardian_person_id,
         internal_notes=internal_notes,
     )
     db.add(member)

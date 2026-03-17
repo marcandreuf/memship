@@ -8,8 +8,9 @@ from app.core.security.dependencies import get_current_user
 from app.domains.auth.models import User
 
 ROLE_HIERARCHY = {
-    "super_admin": 3,
-    "admin": 2,
+    "super_admin": 4,
+    "admin": 3,
+    "restricted": 2,
     "member": 1,
 }
 

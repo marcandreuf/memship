@@ -11,19 +11,24 @@ from app.db.session import get_db
 from app.domains.auth.models import User
 from app.domains.members.models import Member
 from app.domains.members.schemas import (
+    GuardianResponse,
     MemberCreate,
     MemberResponse,
     MemberStatusChange,
     MemberUpdate,
     PersonResponse,
 )
-from app.domains.members.service import change_member_status, create_member
+from app.domains.members.service import change_member_status, create_member, is_minor_by_dob
 from app.domains.persons.models import Person
 
 router = APIRouter(prefix="/members", tags=["members"])
 
 
 def _to_response(member: Member) -> MemberResponse:
+    guardian = None
+    if member.guardian:
+        guardian = GuardianResponse.model_validate(member.guardian)
+
     return MemberResponse(
         id=member.id,
         person_id=member.person_id,
@@ -36,6 +41,8 @@ def _to_response(member: Member) -> MemberResponse:
         status=member.status,
         status_reason=member.status_reason,
         joined_at=member.joined_at,
+        is_minor=member.is_minor or False,
+        guardian=guardian,
         internal_notes=member.internal_notes,
         is_active=member.is_active,
         created_at=member.created_at,
@@ -53,7 +60,7 @@ def list_members(
 ):
     query = (
         db.query(Member)
-        .options(joinedload(Member.person), joinedload(Member.membership_type))
+        .options(joinedload(Member.person), joinedload(Member.membership_type), joinedload(Member.guardian))
     )
 
     if search:
@@ -85,7 +92,7 @@ def get_member(
 ):
     member = (
         db.query(Member)
-        .options(joinedload(Member.person), joinedload(Member.membership_type))
+        .options(joinedload(Member.person), joinedload(Member.membership_type), joinedload(Member.guardian))
         .filter(Member.id == member_id)
         .first()
     )
@@ -118,6 +125,7 @@ def create_member_endpoint(
         gender=data.gender,
         national_id=data.national_id,
         membership_type_id=data.membership_type_id,
+        guardian_person_id=data.guardian_person_id,
         internal_notes=data.internal_notes,
     )
     db.commit()
@@ -125,7 +133,7 @@ def create_member_endpoint(
     # Reload with relationships
     member = (
         db.query(Member)
-        .options(joinedload(Member.person), joinedload(Member.membership_type))
+        .options(joinedload(Member.person), joinedload(Member.membership_type), joinedload(Member.guardian))
         .filter(Member.id == member.id)
         .first()
     )
@@ -141,7 +149,7 @@ def update_member(
 ):
     member = (
         db.query(Member)
-        .options(joinedload(Member.person), joinedload(Member.membership_type))
+        .options(joinedload(Member.person), joinedload(Member.membership_type), joinedload(Member.guardian))
         .filter(Member.id == member_id)
         .first()
     )
@@ -165,6 +173,10 @@ def update_member(
     for field in person_fields:
         if field in update_data:
             setattr(member.person, field, update_data.pop(field))
+
+    # Recalculate is_minor if date_of_birth changed
+    if "date_of_birth" in data.model_fields_set:
+        member.is_minor = is_minor_by_dob(member.person.date_of_birth)
 
     # Member fields
     for key, value in update_data.items():
@@ -195,7 +207,7 @@ def change_status(
 ):
     member = (
         db.query(Member)
-        .options(joinedload(Member.person), joinedload(Member.membership_type))
+        .options(joinedload(Member.person), joinedload(Member.membership_type), joinedload(Member.guardian))
         .filter(Member.id == member_id)
         .first()
     )

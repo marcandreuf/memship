@@ -1,7 +1,7 @@
 """Membership type endpoints."""
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.core.authorization import require_admin
 from app.core.db_utils import get_or_404
@@ -18,12 +18,33 @@ from app.domains.members.schemas import (
 router = APIRouter(prefix="/membership-types", tags=["membership-types"])
 
 
+def _to_response(mt: MembershipType) -> MembershipTypeResponse:
+    return MembershipTypeResponse(
+        id=mt.id,
+        name=mt.name,
+        slug=mt.slug,
+        description=mt.description,
+        group_id=mt.group_id,
+        group_name=mt.group.name if mt.group else None,
+        base_price=mt.base_price,
+        billing_frequency=mt.billing_frequency,
+        is_active=mt.is_active,
+        created_at=mt.created_at,
+    )
+
+
 @router.get("/", response_model=list[MembershipTypeResponse])
 def list_membership_types(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return db.query(MembershipType).order_by(MembershipType.display_order).all()
+    types = (
+        db.query(MembershipType)
+        .options(joinedload(MembershipType.group))
+        .order_by(MembershipType.display_order)
+        .all()
+    )
+    return [_to_response(mt) for mt in types]
 
 
 @router.get("/{type_id}", response_model=MembershipTypeResponse)
@@ -32,7 +53,15 @@ def get_membership_type(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return get_or_404(db, MembershipType, type_id)
+    mt = (
+        db.query(MembershipType)
+        .options(joinedload(MembershipType.group))
+        .filter(MembershipType.id == type_id)
+        .first()
+    )
+    if not mt:
+        raise HTTPException(status_code=404, detail="MembershipType not found")
+    return _to_response(mt)
 
 
 @router.post("/", response_model=MembershipTypeResponse, status_code=status.HTTP_201_CREATED)
@@ -52,7 +81,7 @@ def create_membership_type(
     db.add(mt)
     db.commit()
     db.refresh(mt)
-    return mt
+    return _to_response(mt)
 
 
 @router.put("/{type_id}", response_model=MembershipTypeResponse)
@@ -68,7 +97,7 @@ def update_membership_type(
         setattr(mt, key, value)
     db.commit()
     db.refresh(mt)
-    return mt
+    return _to_response(mt)
 
 
 @router.delete("/{type_id}", status_code=status.HTTP_204_NO_CONTENT)

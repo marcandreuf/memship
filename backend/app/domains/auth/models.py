@@ -22,7 +22,7 @@ class User(Base):
     __tablename__ = "users"
     __table_args__ = (
         CheckConstraint(
-            "role IN ('super_admin', 'admin', 'member')",
+            "role IN ('super_admin', 'admin', 'restricted', 'member')",
             name="valid_role",
         ),
         Index("idx_users_person_id", "person_id"),

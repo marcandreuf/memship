@@ -20,6 +20,32 @@ from sqlalchemy.orm import relationship
 from app.db.base import Base
 
 
+class Group(Base):
+    __tablename__ = "groups"
+    __table_args__ = (
+        CheckConstraint("slug ~ '^[a-z0-9-]+$'", name="group_slug_format"),
+        Index("idx_groups_slug", "slug"),
+        Index("idx_groups_display_order", "display_order"),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(255), nullable=False, unique=True)
+    slug = Column(String(100), unique=True, nullable=False)
+    description = Column(Text)
+    is_billable = Column(Boolean, default=True)
+    display_order = Column(Integer, default=0)
+    color = Column(String(7))
+    icon = Column(String(50))
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    # Relationships
+    membership_types = relationship("MembershipType", back_populates="group")
+
+
 class MembershipType(Base):
     __tablename__ = "membership_types"
     __table_args__ = (
@@ -37,6 +63,7 @@ class MembershipType(Base):
     name = Column(String(255), nullable=False, unique=True)
     description = Column(Text)
     slug = Column(String(100), unique=True, nullable=False)
+    group_id = Column(Integer, ForeignKey("groups.id", ondelete="SET NULL"))
     min_age = Column(Integer)
     max_age = Column(Integer)
     max_members = Column(Integer)
@@ -56,6 +83,7 @@ class MembershipType(Base):
     )
 
     # Relationships
+    group = relationship("Group", back_populates="membership_types")
     members = relationship("Member", back_populates="membership_type")
 
 
@@ -104,3 +132,4 @@ class Member(Base):
     person = relationship("Person", back_populates="member", foreign_keys=[person_id])
     user = relationship("User", foreign_keys=[user_id])
     membership_type = relationship("MembershipType", back_populates="members")
+    guardian = relationship("Person", foreign_keys=[guardian_person_id])

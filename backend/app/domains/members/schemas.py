@@ -11,6 +11,7 @@ class MembershipTypeCreate(BaseModel):
     name: str = Field(min_length=1, max_length=255)
     slug: str = Field(min_length=1, max_length=100, pattern=r"^[a-z0-9-]+$")
     description: str | None = None
+    group_id: int | None = None
     base_price: float = 0
     billing_frequency: str = "annual"
     is_active: bool = True
@@ -19,6 +20,7 @@ class MembershipTypeCreate(BaseModel):
 class MembershipTypeUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=255)
     description: str | None = None
+    group_id: int | None = None
     base_price: float | None = None
     billing_frequency: str | None = None
     is_active: bool | None = None
@@ -29,6 +31,8 @@ class MembershipTypeResponse(BaseModel):
     name: str
     slug: str
     description: str | None = None
+    group_id: int | None = None
+    group_name: str | None = None
     base_price: float
     billing_frequency: str
     is_active: bool
@@ -47,6 +51,7 @@ class MemberCreate(BaseModel):
     gender: str | None = None
     national_id: str | None = None
     membership_type_id: int | None = None
+    guardian_person_id: int | None = None
     internal_notes: str | None = None
 
 
@@ -58,6 +63,7 @@ class MemberUpdate(BaseModel):
     gender: str | None = None
     national_id: str | None = None
     membership_type_id: int | None = None
+    guardian_person_id: int | None = None
     internal_notes: str | None = None
 
 
@@ -79,6 +85,15 @@ class PersonResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class GuardianResponse(BaseModel):
+    id: int
+    first_name: str
+    last_name: str
+    email: str | None = None
+
+    model_config = {"from_attributes": True}
+
+
 class MemberResponse(BaseModel):
     id: int
     person_id: int
@@ -89,7 +104,44 @@ class MemberResponse(BaseModel):
     status: str
     status_reason: str | None = None
     joined_at: date
+    is_minor: bool = False
+    guardian: GuardianResponse | None = None
     internal_notes: str | None = None
+    is_active: bool
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+# --- Group ---
+
+class GroupCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=255)
+    slug: str = Field(min_length=1, max_length=100, pattern=r"^[a-z0-9-]+$")
+    description: str | None = None
+    is_billable: bool = True
+    color: str | None = None
+    icon: str | None = None
+
+
+class GroupUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    description: str | None = None
+    is_billable: bool | None = None
+    color: str | None = None
+    icon: str | None = None
+    is_active: bool | None = None
+
+
+class GroupResponse(BaseModel):
+    id: int
+    name: str
+    slug: str
+    description: str | None = None
+    is_billable: bool
+    display_order: int
+    color: str | None = None
+    icon: str | None = None
     is_active: bool
     created_at: datetime
 
