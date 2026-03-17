@@ -1,0 +1,16 @@
+# Memship Caddy configuration
+# For localhost development, Caddy serves on :80 without HTTPS.
+# For production with a domain, replace :80 with your domain (e.g., memship.example.com)
+# and Caddy will auto-provision HTTPS via Let's Encrypt.
+
+:80 {
+	# API requests → backend
+	handle /api/* {
+		reverse_proxy api:8000
+	}
+
+	# Everything else → frontend
+	handle {
+		reverse_proxy frontend:3000
+	}
+}

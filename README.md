@@ -121,12 +121,82 @@ After starting the services, run the seed command to create initial data:
 
 This will interactively prompt you for super admin and org admin credentials.
 
+## Installation (Docker)
+
+### Prerequisites
+
+- Docker and Docker Compose installed
+- Git (to clone the repo)
+
+### Option A: Pre-built images (recommended)
+
+Uses published images from [GitHub Container Registry](https://github.com/marcandreuf/memship/pkgs/container/memship-backend).
+
+```bash
+git clone https://github.com/marcandreuf/memship.git
+cd memship
+
+# Configure
+cp .env.example .env
+# Edit .env — at minimum change SECRET_KEY and DB_PASSWORD
+# Set the image version:
+#   IMAGE_TAG=0.1.3
+
+# Pull and start all services (Caddy + API + Frontend + PostgreSQL)
+docker compose pull
+docker compose up -d
+
+# Run initial setup (creates admin accounts)
+docker compose exec -it api uv run python -m app.cli.seed
+
+# Open http://localhost
+```
+
+### Option B: Build from source
+
+Builds the Docker images locally from the repo source code.
+
+```bash
+git clone https://github.com/marcandreuf/memship.git
+cd memship
+cp .env.example .env
+docker compose up -d --build
+docker compose exec -it api uv run python -m app.cli.seed
+```
+
+### Services
+
+| Service | URL | Description |
+|---------|-----|-------------|
+| Frontend | http://localhost | Member portal (via Caddy) |
+| API | http://localhost/api/v1/health | Backend API (via Caddy) |
+| API Direct | http://localhost:8003 | Backend API (direct) |
+| API Docs | http://localhost:8003/api/docs | Swagger UI (dev mode only) |
+
+### Backups
+
+```bash
+# Create a backup
+./scripts/db-backup.sh
+
+# List and restore from a backup (dry-run by default)
+./scripts/db-restore.sh
+
+# Restore with confirmation
+./scripts/db-restore.sh --confirm
+```
+
+Backups are stored in the `backups/` directory. Old backups are cleaned up after 10 days.
+
 ## Roadmap
 
 | Version | Milestone | Status |
 |---------|-----------|--------|
-| v0.1.0 | Member Management MVP — auth, RBAC, member CRUD, membership types, i18n, Docker, CI | In progress |
-| v0.1.x | Polish — email sending, restricted user role, groups, portal branding, self-hosted scripts, E2E tests | — |
+| v0.1.0 | Member Management MVP — auth, RBAC, member CRUD, membership types, i18n, Docker, CI | Done |
+| v0.1.1 | Email sending (SMTP) — welcome emails, password reset emails | Done |
+| v0.1.2 | Groups, guardian/minor support, restricted role (schema) | Done |
+| v0.1.3 | Caddy reverse proxy, backup/restore scripts, self-hosted polish | Done |
+| v0.1.4 | E2E test foundation (Cypress) | — |
 | v0.2.0 | Activity Management | — |
 | v0.3.0 | Basic Payments & Invoicing | — |
 | v0.4.0 | Payment Processing (SEPA + Stripe) | — |
