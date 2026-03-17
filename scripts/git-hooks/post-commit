@@ -1,0 +1,24 @@
+#!/bin/bash
+# Memship Post-Commit Hook
+# Creates git tag if requested during pre-commit
+
+PROJECT_ROOT="$(git rev-parse --show-toplevel)"
+PENDING_TAG_FILE="$PROJECT_ROOT/.pending-tag"
+PENDING_TAG_PUSH_FILE="$PROJECT_ROOT/.pending-tag-push"
+
+# Colors
+GREEN='\033[0;32m'
+NC='\033[0m'
+
+if [[ -f "$PENDING_TAG_FILE" ]]; then
+    VERSION=$(cat "$PENDING_TAG_FILE" | tr -d '[:space:]')
+    rm -f "$PENDING_TAG_FILE"
+
+    if [[ -n "$VERSION" ]]; then
+        git tag "v$VERSION"
+        echo ""
+        echo -e "${GREEN}Created git tag: v$VERSION (will be pushed with your next push)${NC}"
+        echo ""
+        echo "$VERSION" > "$PENDING_TAG_PUSH_FILE"
+    fi
+fi

@@ -37,9 +37,22 @@ class Settings(BaseSettings):
     DEFAULT_LOCALE: str = "es"
     CORS_ORIGINS: str = "http://localhost:3000"
 
+    # SMTP (optional — emails disabled if SMTP_HOST is empty)
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM: str = "noreply@memship.local"
+    SMTP_TLS: bool = True
+    FRONTEND_URL: str = "http://localhost:3000"
+
     # Server
     HOST: str = "0.0.0.0"
     PORT: int = 8000
+
+    @property
+    def smtp_enabled(self) -> bool:
+        return bool(self.SMTP_HOST)
 
     @property
     def cors_origins_list(self) -> list[str]:

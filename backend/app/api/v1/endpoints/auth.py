@@ -3,6 +3,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
+from app.core.email import send_password_reset_email, send_welcome_email
 from app.core.security.dependencies import get_current_user
 from app.core.security.jwt import create_access_token
 from app.db.session import get_db
@@ -85,6 +87,9 @@ def register(data: RegisterRequest, response: Response, db: Session = Depends(ge
     db.commit()
 
     member = user.person.member
+    if member:
+        send_welcome_email(user.email, user.person.first_name, member.member_number or "")
+
     return UserResponse(
         id=user.id,
         email=user.email,
@@ -103,15 +108,25 @@ def password_reset_request(data: PasswordResetRequest, db: Session = Depends(get
     token = request_password_reset(db, data.email)
     db.commit()
 
-    # In v0.1.0 (no email), return the token directly for dev/testing
     if token:
-        return MessageResponse(
-            message="Password reset token generated (dev mode — no email sent)",
-            reset_token=token,
-        )
+        if settings.smtp_enabled:
+            # Send reset email
+            user = db.query(User).filter(User.email == data.email).first()
+            reset_url = f"{settings.FRONTEND_URL}/es/reset-password?token={token}"
+            if user:
+                send_password_reset_email(user.email, user.person.first_name, reset_url)
+            return MessageResponse(
+                message="If the email exists, a password reset link has been sent"
+            )
+        else:
+            # Dev mode — return token directly
+            return MessageResponse(
+                message="Password reset token generated (dev mode — no email sent)",
+                reset_token=token,
+            )
 
     # Don't reveal whether email exists
-    return MessageResponse(message="If the email exists, a reset token has been generated")
+    return MessageResponse(message="If the email exists, a password reset link has been sent")
 
 
 @router.post("/password-reset", response_model=MessageResponse)
