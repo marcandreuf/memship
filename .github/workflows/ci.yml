@@ -1,0 +1,76 @@
+# Continuous Integration
+# Runs backend tests on push to main and PRs
+#
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - 'VERSION'
+      - '.github/workflows/ci.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: memship
+          POSTGRES_PASSWORD: memship
+          POSTGRES_DB: memship_test_db
+        ports:
+          - 5434:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        working-directory: backend
+        run: uv sync --extra dev
+
+      - name: Run tests
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://memship:memship@localhost:5434/memship_test_db
+          DATABASE_TEST_URL: postgresql://memship:memship@localhost:5434/memship_test_db
+          SECRET_KEY: test-secret-key-for-ci-minimum-32-chars
+        run: uv run pytest -v --tb=short
+
+      - name: Test Summary
+        if: always()
+        run: |
+          echo "### Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "All tests passed." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Tests failed." >> $GITHUB_STEP_SUMMARY
+          fi

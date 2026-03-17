@@ -1,0 +1,146 @@
+# Build and Push Docker Images to GitHub Container Registry
+# Triggers after CI passes on main, or manually
+#
+name: Build Images
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
+    branches:
+      - main
+
+  workflow_dispatch:
+    inputs:
+      force_rebuild:
+        description: 'Force rebuild even if version exists'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Determine version
+        id: version
+        run: |
+          if [[ -f "VERSION" ]]; then
+            VERSION=$(cat VERSION | tr -d '[:space:]')
+          else
+            echo "ERROR: VERSION file not found"
+            exit 1
+          fi
+
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "ERROR: Invalid version format: $VERSION"
+            exit 1
+          fi
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+  build-backend:
+    needs: version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Backend
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+          IMAGE: ${{ env.REGISTRY }}/${{ github.repository_owner }}/memship-backend
+        run: |
+          cd backend
+          docker build -f docker/Dockerfile \
+            --build-arg APP_VERSION=$VERSION \
+            -t $IMAGE:$VERSION \
+            -t $IMAGE:latest \
+            .
+          docker push $IMAGE:$VERSION
+          docker push $IMAGE:latest
+
+  build-frontend:
+    needs: version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Frontend
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+          IMAGE: ${{ env.REGISTRY }}/${{ github.repository_owner }}/memship-frontend
+        run: |
+          cd frontend
+          docker build -f docker/Dockerfile \
+            -t $IMAGE:$VERSION \
+            -t $IMAGE:latest \
+            .
+          docker push $IMAGE:$VERSION
+          docker push $IMAGE:latest
+
+  finalize:
+    needs: [version, build-backend, build-frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build Summary
+        run: |
+          echo "### Docker Images Built" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Service | Image |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend | \`ghcr.io/${{ github.repository_owner }}/memship-backend:${{ needs.version.outputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend | \`ghcr.io/${{ github.repository_owner }}/memship-frontend:${{ needs.version.outputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
+
+  ci-failed:
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion == 'failure'
+    steps:
+      - name: CI Failed
+        run: |
+          echo "### Build Skipped - CI Failed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Fix the tests before images can be built." >> $GITHUB_STEP_SUMMARY
+          exit 1
