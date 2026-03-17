@@ -1,0 +1,29 @@
+{
+  "members": {
+    "createMember": "Nou soci",
+    "editMember": "Editar soci",
+    "memberNumber": "Nº soci",
+    "name": "Nom",
+    "membershipType": "Tipus de membresía",
+    "dateOfBirth": "Data de naixement",
+    "nationalId": "DNI/NIE",
+    "internalNotes": "Notes internes",
+    "selectType": "Seleccionar tipus",
+    "allStatuses": "Tots els estats",
+    "showing": "Mostrant {from}-{to} de {total}",
+    "previous": "Anterior",
+    "next": "Següent",
+    "memberInfo": "Informació de soci",
+    "joinedAt": "Data d'alta",
+    "confirmDelete": "Estàs segur que vols eliminar aquest soci?",
+    "action_active": "Activar",
+    "action_suspended": "Suspendre",
+    "action_cancelled": "Cancel·lar",
+    "inactive": "Inactiu",
+    "createType": "Nou tipus de membresía",
+    "typeName": "Nom",
+    "typeSlug": "Slug",
+    "typeDescription": "Descripció",
+    "typePrice": "Preu base (EUR)"
+  }
+}

@@ -1,0 +1,59 @@
+# Full-stack local development: API + Frontend + PostgreSQL
+# Usage: docker compose up -d
+# Then: docker compose exec api uv run python -m app.cli.seed
+
+services:
+  api:
+    build:
+      context: backend
+      dockerfile: docker/Dockerfile
+    container_name: memship-api
+    ports:
+      - "8003:8000"
+    environment:
+      - DATABASE_URL=postgresql://memship:memship@db:5432/memship_db
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
+      - APP_ENV=${APP_ENV:-development}
+      - DEFAULT_LOCALE=${DEFAULT_LOCALE:-es}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
+      - RUN_MIGRATIONS=1
+    volumes:
+      - ./VERSION:/app/VERSION
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: frontend
+      dockerfile: docker/Dockerfile
+    container_name: memship-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - API_BASE_URL=http://api:8000
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  db:
+    image: postgres:15-alpine
+    container_name: memship-db
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_USER=memship
+      - POSTGRES_PASSWORD=memship
+      - POSTGRES_DB=memship_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "memship", "-d", "memship_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  pgdata:

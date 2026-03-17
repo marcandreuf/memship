@@ -62,6 +62,65 @@ Most membership tools are either expensive SaaS platforms or outdated legacy sof
 | CI | GitHub Actions |
 | Registry | GitHub Container Registry (ghcr.io) |
 
+## Development
+
+### Quick Start
+
+Start backend services (Docker) and frontend dev server (local):
+
+```bash
+./scripts/dev.sh start all
+```
+
+Check status:
+
+```bash
+./scripts/dev.sh status
+```
+
+Stop everything:
+
+```bash
+./scripts/dev.sh stop all
+```
+
+### Dev Commands
+
+| Command | Description |
+|---------|-------------|
+| `./scripts/dev.sh start all` | Start backend (Docker) + frontend (local) |
+| `./scripts/dev.sh start backend` | Start only backend (API + DB in Docker) |
+| `./scripts/dev.sh start frontend` | Start only frontend (Next.js local) |
+| `./scripts/dev.sh stop all` | Stop all services |
+| `./scripts/dev.sh restart all` | Restart all services |
+| `./scripts/dev.sh status` | Show status of all services |
+| `./scripts/dev.sh logs backend` | View API logs |
+| `./scripts/dev.sh logs frontend` | View frontend logs (tail -f) |
+| `./scripts/dev.sh seed` | Run initial database setup (interactive) |
+| `./scripts/dev.sh test` | Run backend tests |
+
+### Service URLs
+
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:8003
+- **API Docs (Swagger)**: http://localhost:8003/api/docs
+- **Database**: localhost:5433
+
+### Log Files
+
+- Frontend: `frontend/logs/dev-server.log`
+- Backend: `docker compose -f backend/docker/docker-compose.yml logs -f api`
+
+### First Time Setup
+
+After starting the services, run the seed command to create initial data:
+
+```bash
+./scripts/dev.sh seed
+```
+
+This will interactively prompt you for super admin and org admin credentials.
+
 ## Roadmap
 
 | Version | Milestone | Status |

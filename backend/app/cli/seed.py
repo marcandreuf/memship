@@ -132,8 +132,24 @@ def seed_default_membership_type(db) -> MembershipType:
     return mt
 
 
+def next_member_number(db) -> str:
+    last = (
+        db.query(Member)
+        .filter(Member.member_number.isnot(None))
+        .order_by(Member.id.desc())
+        .first()
+    )
+    if last and last.member_number:
+        try:
+            num = int(last.member_number.replace("M-", ""))
+            return f"M-{num + 1:04d}"
+        except ValueError:
+            pass
+    return "M-0001"
+
+
 def create_user_with_member(
-    db, details: dict, role: str, membership_type: MembershipType, member_number: str
+    db, details: dict, role: str, membership_type: MembershipType
 ) -> None:
     existing = db.query(User).filter_by(email=details["email"]).first()
     if existing:
@@ -159,6 +175,7 @@ def create_user_with_member(
     db.add(user)
     db.flush()
 
+    member_number = next_member_number(db)
     member = Member(
         person_id=person.id,
         user_id=user.id,
@@ -195,10 +212,10 @@ def main() -> None:
 
         # Interactive user creation
         super_admin = prompt_user_details("Super Admin")
-        create_user_with_member(db, super_admin, "super_admin", membership_type, "M-0001")
+        create_user_with_member(db, super_admin, "super_admin", membership_type)
 
         org_admin = prompt_user_details("Organization Admin")
-        create_user_with_member(db, org_admin, "admin", membership_type, "M-0002")
+        create_user_with_member(db, org_admin, "admin", membership_type)
 
         db.commit()
         print("\n=== Seed complete ===\n")

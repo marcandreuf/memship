@@ -1,0 +1,29 @@
+{
+  "members": {
+    "createMember": "Nuevo socio",
+    "editMember": "Editar socio",
+    "memberNumber": "Nº socio",
+    "name": "Nombre",
+    "membershipType": "Tipo de membresía",
+    "dateOfBirth": "Fecha de nacimiento",
+    "nationalId": "DNI/NIE",
+    "internalNotes": "Notas internas",
+    "selectType": "Seleccionar tipo",
+    "allStatuses": "Todos los estados",
+    "showing": "Mostrando {from}-{to} de {total}",
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "memberInfo": "Información de socio",
+    "joinedAt": "Fecha de alta",
+    "confirmDelete": "¿Estás seguro de que quieres eliminar este socio?",
+    "action_active": "Activar",
+    "action_suspended": "Suspender",
+    "action_cancelled": "Cancelar",
+    "inactive": "Inactivo",
+    "createType": "Nuevo tipo de membresía",
+    "typeName": "Nombre",
+    "typeSlug": "Slug",
+    "typeDescription": "Descripción",
+    "typePrice": "Precio base (EUR)"
+  }
+}

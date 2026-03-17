@@ -17,7 +17,20 @@ Memship is a self-hosted membership management system for professional associati
 
 ## Commands
 
-### Backend
+### Dev Environment (recommended)
+```bash
+./scripts/dev.sh start all       # Start backend (Docker) + frontend (local)
+./scripts/dev.sh stop all        # Stop everything
+./scripts/dev.sh status          # Show status of all services
+./scripts/dev.sh logs backend    # View API logs
+./scripts/dev.sh logs frontend   # View frontend logs
+./scripts/dev.sh seed            # Run initial setup (interactive)
+./scripts/dev.sh test            # Run backend tests
+./scripts/dev.sh start backend   # Start only backend (Docker)
+./scripts/dev.sh start frontend  # Start only frontend (local)
+```
+
+### Backend (manual)
 ```bash
 cd backend
 uv sync                          # Install dependencies
@@ -29,16 +42,19 @@ alembic upgrade head             # Run migrations
 alembic revision --autogenerate -m "description"  # Create migration
 ```
 
-### Frontend
+### Frontend (manual)
 ```bash
 cd frontend
 pnpm install                     # Install dependencies
-pnpm dev                         # Start dev server (localhost:3000)
+./dev.sh start                   # Start dev server (background, with logs)
+./dev.sh stop                    # Stop dev server
+./dev.sh status                  # Check if running
+./dev.sh logs                    # Tail logs
 pnpm build                       # Production build
 pnpm lint                        # Run linter
 ```
 
-### Docker (development)
+### Docker (backend services)
 ```bash
 cd backend/docker
 docker compose up -d             # Start backend + db

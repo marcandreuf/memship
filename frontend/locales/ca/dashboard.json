@@ -1,0 +1,9 @@
+{
+  "dashboard": {
+    "welcome": "Benvingut, {name}",
+    "activeMembers": "Socis actius",
+    "pendingMembers": "Socis pendents",
+    "memberWelcome": "Benvingut al teu portal de soci.",
+    "yourNumber": "El teu número de soci"
+  }
+}

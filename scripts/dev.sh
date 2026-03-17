@@ -1,55 +1,165 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/bin/bash
+# Memship Dev Environment Manager
+# Backend runs in Docker (API + DB), Frontend runs locally with pnpm
+# Usage: ./scripts/dev.sh {start|stop|restart|status|logs|seed|test} [backend|frontend|all]
 
-# Start or stop the frontend dev server.
-# Usage: ./scripts/dev.sh [start|stop]
+set -e
 
-FRONTEND_DIR="$(cd "$(dirname "$0")/../frontend" && pwd)"
-PID_FILE="/tmp/memship-frontend-dev.pid"
+# Colors
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+BOLD='\033[1m'
+NC='\033[0m'
 
-case "${1:-start}" in
-  start)
-    if [[ -f "$PID_FILE" ]] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
-      echo "Frontend dev server already running (PID $(cat "$PID_FILE"))"
-      exit 0
-    fi
+# Paths (relative to repo root)
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+BACKEND_COMPOSE="$REPO_ROOT/backend/docker/docker-compose.yml"
+FRONTEND_DIR="$REPO_ROOT/frontend"
 
-    if [[ ! -d "$FRONTEND_DIR" ]]; then
-      echo "ERROR: frontend/ directory not found" >&2
-      exit 1
-    fi
+# --- Backend (Docker) ---
 
-    cd "$FRONTEND_DIR"
+backend_start() {
+    echo -e "${GREEN}+${NC} Starting backend services (Docker)..."
+    docker compose -f "$BACKEND_COMPOSE" up -d
+    echo -e "${GREEN}+${NC} Backend services started"
+    echo -e "${BLUE}->${NC} API:     http://localhost:8003"
+    echo -e "${BLUE}->${NC} Docs:    http://localhost:8003/api/docs"
+    echo -e "${BLUE}->${NC} DB:      localhost:5433"
+}
 
-    if [[ ! -d "node_modules" ]]; then
-      echo "Installing dependencies..."
-      pnpm install
-    fi
+backend_stop() {
+    echo -e "${YELLOW}x${NC} Stopping backend services..."
+    docker compose -f "$BACKEND_COMPOSE" down
+    echo -e "${GREEN}+${NC} Backend services stopped"
+}
 
-    echo "Starting frontend dev server..."
-    pnpm dev &
-    echo $! > "$PID_FILE"
-    echo "Frontend dev server started (PID $!)"
-    echo "Open http://localhost:3000"
-    ;;
-
-  stop)
-    if [[ -f "$PID_FILE" ]]; then
-      PID=$(cat "$PID_FILE")
-      if kill -0 "$PID" 2>/dev/null; then
-        kill "$PID"
-        echo "Frontend dev server stopped (PID $PID)"
-      else
-        echo "Process $PID not running"
-      fi
-      rm -f "$PID_FILE"
+backend_status() {
+    echo -e "${BOLD}Backend (Docker):${NC}"
+    if docker compose -f "$BACKEND_COMPOSE" ps --status running 2>/dev/null | grep -q "memship"; then
+        docker compose -f "$BACKEND_COMPOSE" ps --format "table {{.Name}}\t{{.Status}}\t{{.Ports}}" 2>/dev/null
     else
-      echo "No PID file found. Server may not be running."
+        echo -e "  ${RED}x${NC} Not running"
     fi
-    ;;
+}
 
-  *)
-    echo "Usage: $0 [start|stop]" >&2
-    exit 1
-    ;;
+backend_logs() {
+    docker compose -f "$BACKEND_COMPOSE" logs -f api
+}
+
+# --- Frontend (local pnpm) ---
+
+frontend_cmd() {
+    (cd "$FRONTEND_DIR" && ./dev.sh "$1")
+}
+
+# --- Orchestrator ---
+
+run_backend() {
+    local cmd="$1"
+    case "$cmd" in
+        start)   backend_start ;;
+        stop)    backend_stop ;;
+        restart) backend_stop; sleep 1; backend_start ;;
+        status)  backend_status ;;
+        logs)    backend_logs ;;
+    esac
+}
+
+run_frontend() {
+    local cmd="$1"
+    echo -e "${BOLD}Frontend:${NC}"
+    frontend_cmd "$cmd"
+}
+
+run_all() {
+    local cmd="$1"
+    if [ "$cmd" = "logs" ]; then
+        echo -e "${RED}x${NC} Cannot tail logs from multiple services simultaneously"
+        echo "Use: $0 logs backend  OR  $0 logs frontend"
+        exit 1
+    fi
+    echo -e "${BOLD}=== Running '$cmd' on all services ===${NC}"
+    echo ""
+    run_backend "$cmd"
+    echo ""
+    run_frontend "$cmd"
+}
+
+show_overall_status() {
+    echo -e "${BOLD}=== Memship Dev Environment ===${NC}"
+    echo ""
+    backend_status
+    echo ""
+    run_frontend "status"
+    echo ""
+    echo -e "${BOLD}Quick Commands:${NC}"
+    echo "  ./scripts/dev.sh start all      - Start everything"
+    echo "  ./scripts/dev.sh stop all       - Stop everything"
+    echo "  ./scripts/dev.sh status         - Show this status"
+    echo "  ./scripts/dev.sh logs backend   - View API logs"
+    echo "  ./scripts/dev.sh logs frontend  - View frontend logs"
+}
+
+# --- Main ---
+
+ACTION="${1:-status}"
+TARGET="${2:-all}"
+
+case "$ACTION" in
+    start|stop|restart|logs)
+        case "$TARGET" in
+            backend)  run_backend "$ACTION" ;;
+            frontend) run_frontend "$ACTION" ;;
+            all)      run_all "$ACTION" ;;
+            *)
+                echo -e "${RED}x${NC} Invalid target: $TARGET"
+                echo "Valid targets: backend, frontend, all"
+                exit 1
+                ;;
+        esac
+        ;;
+    status)
+        show_overall_status
+        ;;
+    seed)
+        echo -e "${BLUE}i${NC} Running seed command..."
+        docker compose -f "$BACKEND_COMPOSE" exec -it api uv run python -m app.cli.seed
+        ;;
+    test)
+        echo -e "${BLUE}i${NC} Running backend tests..."
+        docker compose -f "$BACKEND_COMPOSE" --profile test up -d db-test
+        sleep 2
+        (cd "$REPO_ROOT/backend" && uv run pytest tests/ -v)
+        ;;
+    *)
+        echo -e "${BOLD}Memship Dev Environment Manager${NC}"
+        echo ""
+        echo "Usage: $0 {start|stop|restart|status|logs|seed|test} [backend|frontend|all]"
+        echo ""
+        echo -e "${BOLD}Commands:${NC}"
+        echo "  start [target]    - Start services"
+        echo "  stop [target]     - Stop services"
+        echo "  restart [target]  - Restart services"
+        echo "  status            - Show status of all services"
+        echo "  logs [target]     - View logs (requires specific target)"
+        echo "  seed              - Run database seed command"
+        echo "  test              - Run backend tests"
+        echo ""
+        echo -e "${BOLD}Targets:${NC}"
+        echo "  backend    - API + DB (Docker, port 8003)"
+        echo "  frontend   - Next.js dev server (local, port 3000)"
+        echo "  all        - Both services (default)"
+        echo ""
+        echo -e "${BOLD}Examples:${NC}"
+        echo "  $0 start all          # Start everything"
+        echo "  $0 stop frontend      # Stop only frontend"
+        echo "  $0 logs backend       # View API logs"
+        echo "  $0 seed               # Run initial setup"
+        echo "  $0 test               # Run backend tests"
+        echo ""
+        exit 1
+        ;;
 esac
