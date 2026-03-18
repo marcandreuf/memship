@@ -196,8 +196,8 @@ Backups are stored in the `backups/` directory. Old backups are cleaned up after
 | v0.1.1 | Email sending (SMTP) — welcome emails, password reset emails | Done |
 | v0.1.2 | Groups, guardian/minor support, restricted role (schema) | Done |
 | v0.1.3 | Caddy reverse proxy, backup/restore scripts, self-hosted polish | Done |
-| v0.1.4 | E2E test foundation (Cypress) | — |
 | v0.2.0 | Activity Management | — |
+| v0.2.1 | E2E test foundation (Cypress), activity polish | — |
 | v0.3.0 | Basic Payments & Invoicing | — |
 | v0.4.0 | Payment Processing (SEPA + Stripe) | — |
 | v0.5.0 | Communication System | — |
