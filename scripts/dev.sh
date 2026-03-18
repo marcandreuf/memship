@@ -125,8 +125,13 @@ case "$ACTION" in
         show_overall_status
         ;;
     seed)
-        echo -e "${BLUE}i${NC} Running seed command..."
-        docker compose -f "$BACKEND_COMPOSE" exec -it api uv run python -m app.cli.seed
+        if [ "$TARGET" = "test" ]; then
+            echo -e "${BLUE}i${NC} Running seed command with test accounts..."
+            docker compose -f "$BACKEND_COMPOSE" exec -it api uv run python -m app.cli.seed --test
+        else
+            echo -e "${BLUE}i${NC} Running seed command (interactive)..."
+            docker compose -f "$BACKEND_COMPOSE" exec -it api uv run python -m app.cli.seed
+        fi
         ;;
     test)
         echo -e "${BLUE}i${NC} Running backend tests..."
@@ -145,7 +150,8 @@ case "$ACTION" in
         echo "  restart [target]  - Restart services"
         echo "  status            - Show status of all services"
         echo "  logs [target]     - View logs (requires specific target)"
-        echo "  seed              - Run database seed command"
+        echo "  seed              - Run database seed command (interactive)"
+        echo "  seed test         - Seed with test accounts (no prompts)"
         echo "  test              - Run backend tests"
         echo ""
         echo -e "${BOLD}Targets:${NC}"
@@ -157,7 +163,8 @@ case "$ACTION" in
         echo "  $0 start all          # Start everything"
         echo "  $0 stop frontend      # Stop only frontend"
         echo "  $0 logs backend       # View API logs"
-        echo "  $0 seed               # Run initial setup"
+        echo "  $0 seed               # Run initial setup (interactive)"
+        echo "  $0 seed test          # Seed with test accounts"
         echo "  $0 test               # Run backend tests"
         echo ""
         exit 1

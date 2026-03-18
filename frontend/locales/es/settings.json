@@ -1,7 +1,23 @@
 {
   "settings": {
+    "title": "Configuración de la organización",
     "organization": "Organización",
-    "comingSoon": "Configuración de la organización disponible próximamente.",
-    "noAccess": "No tienes acceso a esta página."
+    "noAccess": "No tienes acceso a esta página",
+    "saved": "Configuración guardada correctamente",
+    "orgInfo": "Datos de la organización",
+    "localization": "Localización",
+    "branding": "Imagen de marca",
+    "name": "Nombre de la organización",
+    "legalName": "Razón social",
+    "email": "Correo electrónico",
+    "phone": "Teléfono",
+    "website": "Sitio web",
+    "taxId": "CIF/NIF",
+    "locale": "Idioma",
+    "timezone": "Zona horaria",
+    "currency": "Moneda",
+    "dateFormat": "Formato de fecha",
+    "brandColor": "Color de marca",
+    "logoUrl": "URL del logotipo"
   }
 }

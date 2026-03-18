@@ -7,6 +7,7 @@
     "dashboard": "Tauler",
     "members": "Socis",
     "membershipTypes": "Tipus de membresía",
+    "groups": "Grups",
     "profile": "El meu perfil",
     "settings": "Configuració",
     "login": "Iniciar sessió",
@@ -45,5 +46,33 @@
     "es": "Español",
     "ca": "Català",
     "en": "English"
+  },
+  "profile": {
+    "personalInfo": "Informació personal",
+    "membership": "Membresía",
+    "firstName": "Nom",
+    "lastName": "Cognoms",
+    "email": "Correu electrònic",
+    "dateOfBirth": "Data de naixement",
+    "gender": "Gènere",
+    "nationalId": "DNI/NIE",
+    "memberNumber": "Número de soci",
+    "membershipType": "Tipus de membresía",
+    "status": "Estat",
+    "joinedAt": "Soci des de"
+  },
+  "groups": {
+    "title": "Grups",
+    "name": "Nom",
+    "slug": "Slug",
+    "description": "Descripció",
+    "billable": "Facturable",
+    "color": "Color",
+    "icon": "Icona",
+    "createGroup": "Crear grup",
+    "editGroup": "Editar grup",
+    "deleteConfirm": "Estàs segur que vols eliminar aquest grup?",
+    "noGroups": "Encara no hi ha grups",
+    "info": "Els grups permeten organitzar els tipus de membresía en categories (p. ex. Programes Juvenils, Socis Adults, Honoraris). Ajuden a mantenir l'ordre quan hi ha molts tipus de membresía."
   }
 }

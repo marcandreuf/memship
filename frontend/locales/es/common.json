@@ -7,6 +7,7 @@
     "dashboard": "Panel",
     "members": "Socios",
     "membershipTypes": "Tipos de membresía",
+    "groups": "Grupos",
     "profile": "Mi perfil",
     "settings": "Configuración",
     "login": "Iniciar sesión",
@@ -45,5 +46,33 @@
     "es": "Español",
     "ca": "Català",
     "en": "English"
+  },
+  "profile": {
+    "personalInfo": "Información personal",
+    "membership": "Membresía",
+    "firstName": "Nombre",
+    "lastName": "Apellidos",
+    "email": "Correo electrónico",
+    "dateOfBirth": "Fecha de nacimiento",
+    "gender": "Género",
+    "nationalId": "DNI/NIE",
+    "memberNumber": "Número de socio",
+    "membershipType": "Tipo de membresía",
+    "status": "Estado",
+    "joinedAt": "Socio desde"
+  },
+  "groups": {
+    "title": "Grupos",
+    "name": "Nombre",
+    "slug": "Slug",
+    "description": "Descripción",
+    "billable": "Facturable",
+    "color": "Color",
+    "icon": "Icono",
+    "createGroup": "Crear grupo",
+    "editGroup": "Editar grupo",
+    "deleteConfirm": "¿Estás seguro de que deseas eliminar este grupo?",
+    "noGroups": "No hay grupos todavía",
+    "info": "Los grupos permiten organizar los tipos de membresía en categorías (p. ej. Programas Juveniles, Socios Adultos, Honorarios). Ayudan a mantener el orden cuando hay muchos tipos de membresía."
   }
 }

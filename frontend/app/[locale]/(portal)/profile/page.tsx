@@ -4,14 +4,22 @@ import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/features/auth/hooks/use-auth";
-import { useMember, useUpdateMember } from "@/features/members/hooks/use-members";
-import { MemberForm } from "@/features/members/components/member-form";
+import { useMember } from "@/features/members/hooks/use-members";
+
+function Field({ label, value }: { label: string; value: string | null | undefined }) {
+  if (!value) return null;
+  return (
+    <div className="flex flex-col gap-0.5">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="text-sm">{value}</dd>
+    </div>
+  );
+}
 
 export default function ProfilePage() {
   const t = useTranslations();
   const { user } = useAuth();
   const { data: member, isLoading } = useMember(user?.member_id || 0);
-  const { mutateAsync: update, isPending } = useUpdateMember();
 
   if (isLoading || !member) {
     return (
@@ -21,6 +29,8 @@ export default function ProfilePage() {
     );
   }
 
+  const person = member.person;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
@@ -28,44 +38,37 @@ export default function ProfilePage() {
         <Badge>{t(`status.${member.status}`)}</Badge>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm text-muted-foreground">
-            {t("members.memberInfo")}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-1 text-sm">
-          <p>
-            {t("members.memberNumber")}: <span className="font-mono">{member.member_number}</span>
-          </p>
-          {member.membership_type_name && (
-            <p>
-              {t("members.membershipType")}: {member.membership_type_name}
-            </p>
-          )}
-          <p>
-            {t("members.joinedAt")}: {new Date(member.joined_at).toLocaleDateString()}
-          </p>
-        </CardContent>
-      </Card>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">{t("profile.personalInfo")}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <dl className="grid gap-3 sm:grid-cols-2">
+              <Field label={t("profile.firstName")} value={person.first_name} />
+              <Field label={t("profile.lastName")} value={person.last_name} />
+              <Field label={t("profile.email")} value={person.email} />
+              <Field label={t("profile.dateOfBirth")} value={person.date_of_birth ? new Date(person.date_of_birth).toLocaleDateString() : null} />
+              <Field label={t("profile.gender")} value={person.gender} />
+              <Field label={t("profile.nationalId")} value={person.national_id} />
+            </dl>
+          </CardContent>
+        </Card>
 
-      <MemberForm
-        member={member}
-        onSubmit={async (data) => {
-          await update({
-            id: member.id,
-            data: {
-              first_name: data.first_name,
-              last_name: data.last_name,
-              email: data.email || undefined,
-              date_of_birth: data.date_of_birth || undefined,
-              gender: data.gender || undefined,
-              national_id: data.national_id || undefined,
-            },
-          });
-        }}
-        isSubmitting={isPending}
-      />
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">{t("profile.membership")}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <dl className="grid gap-3 sm:grid-cols-2">
+              <Field label={t("profile.memberNumber")} value={member.member_number} />
+              <Field label={t("profile.membershipType")} value={member.membership_type_name} />
+              <Field label={t("profile.status")} value={t(`status.${member.status}`)} />
+              <Field label={t("profile.joinedAt")} value={new Date(member.joined_at).toLocaleDateString()} />
+            </dl>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

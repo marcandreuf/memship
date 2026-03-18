@@ -11,8 +11,6 @@ import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import {
   Dialog,
@@ -30,6 +28,13 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -37,8 +42,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useMembershipTypes } from "@/features/members/hooks/use-members";
+import { useMembershipTypes, useUpdateMembershipType, useDeleteMembershipType } from "@/features/members/hooks/use-members";
 import { createMembershipType } from "@/features/members/services/members-api";
+import type { MembershipTypeData } from "@/features/members/services/members-api";
+import { PageInfo } from "@/components/page-info";
+import { useGroups } from "@/features/groups/hooks/use-groups";
 import { useQueryClient } from "@tanstack/react-query";
 
 const createSchema = z.object({
@@ -46,6 +54,7 @@ const createSchema = z.object({
   slug: z.string().min(1).max(100).regex(/^[a-z0-9-]+$/),
   description: z.string().optional(),
   base_price: z.coerce.number().min(0),
+  group_id: z.coerce.number().optional(),
 });
 
 type CreateFormValues = z.infer<typeof createSchema>;
@@ -53,8 +62,12 @@ type CreateFormValues = z.infer<typeof createSchema>;
 export default function MembershipTypesPage() {
   const t = useTranslations();
   const { data: types, isLoading } = useMembershipTypes();
+  const { data: groups } = useGroups();
+  const updateMutation = useUpdateMembershipType();
+  const deleteMutation = useDeleteMembershipType();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<MembershipTypeData | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<CreateFormValues>({
@@ -62,29 +75,67 @@ export default function MembershipTypesPage() {
     defaultValues: { name: "", slug: "", description: "", base_price: 0 },
   });
 
+  function openCreate() {
+    setEditing(null);
+    form.reset({ name: "", slug: "", description: "", base_price: 0 });
+    setOpen(true);
+  }
+
+  function openEdit(type: MembershipTypeData) {
+    setEditing(type);
+    form.reset({
+      name: type.name,
+      slug: type.slug,
+      description: type.description || "",
+      base_price: type.base_price,
+      group_id: type.group_id || undefined,
+    });
+    setOpen(true);
+  }
+
   async function onSubmit(data: CreateFormValues) {
     setIsSubmitting(true);
     try {
-      await createMembershipType(data);
-      queryClient.invalidateQueries({ queryKey: ["membership-types"] });
+      const payload = {
+        ...data,
+        group_id: data.group_id || undefined,
+      };
+      if (editing) {
+        await updateMutation.mutateAsync({ id: editing.id, data: payload });
+      } else {
+        await createMembershipType(payload);
+        queryClient.invalidateQueries({ queryKey: ["membership-types"] });
+      }
       setOpen(false);
       form.reset();
+      setEditing(null);
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function handleDelete(id: number) {
+    if (window.confirm(t("members.confirmDelete"))) {
+      await deleteMutation.mutateAsync(id);
     }
   }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{t("nav.membershipTypes")}</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold">{t("nav.membershipTypes")}</h1>
+          <PageInfo text={t("members.typesInfo")} />
+        </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button>{t("common.create")}</Button>
+            <Button onClick={openCreate}>{t("common.create")}</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{t("members.createType")}</DialogTitle>
+              <DialogTitle>
+                {editing ? t("common.edit") : t("members.createType")}
+              </DialogTitle>
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -99,17 +150,19 @@ export default function MembershipTypesPage() {
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="slug"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("members.typeSlug")}</FormLabel>
-                      <FormControl><Input {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {!editing && (
+                  <FormField
+                    control={form.control}
+                    name="slug"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("members.typeSlug")}</FormLabel>
+                        <FormControl><Input {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
                 <FormField
                   control={form.control}
                   name="description"
@@ -132,8 +185,35 @@ export default function MembershipTypesPage() {
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="group_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("members.group")}</FormLabel>
+                      <Select
+                        onValueChange={(value) => field.onChange(value ? Number(value) : undefined)}
+                        value={field.value ? String(field.value) : ""}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={t("members.noGroup")} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {groups?.map((group) => (
+                            <SelectItem key={group.id} value={String(group.id)}>
+                              {group.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <Button type="submit" disabled={isSubmitting} className="w-full">
-                  {isSubmitting ? t("common.loading") : t("common.create")}
+                  {isSubmitting ? t("common.loading") : editing ? t("common.save") : t("common.create")}
                 </Button>
               </form>
             </Form>
@@ -154,7 +234,9 @@ export default function MembershipTypesPage() {
                   <TableHead>{t("members.typeName")}</TableHead>
                   <TableHead>{t("members.typeSlug")}</TableHead>
                   <TableHead>{t("members.typePrice")}</TableHead>
+                  <TableHead>{t("members.group")}</TableHead>
                   <TableHead>{t("common.status")}</TableHead>
+                  <TableHead>{t("common.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -163,10 +245,26 @@ export default function MembershipTypesPage() {
                     <TableCell className="font-medium">{type.name}</TableCell>
                     <TableCell className="font-mono text-sm">{type.slug}</TableCell>
                     <TableCell>{type.base_price.toFixed(2)} EUR</TableCell>
+                    <TableCell>{type.group_name || t("members.noGroup")}</TableCell>
                     <TableCell>
                       <Badge variant={type.is_active ? "default" : "outline"}>
                         {type.is_active ? t("status.active") : t("members.inactive")}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={() => openEdit(type)}>
+                          {t("common.edit")}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDelete(type.id)}
+                          disabled={deleteMutation.isPending}
+                        >
+                          {t("common.delete")}
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

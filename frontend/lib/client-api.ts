@@ -21,6 +21,7 @@ export async function apiClient<T>(
     throw new ClientApiError(res.status, error.detail || res.statusText);
   }
 
+  if (res.status === 204) return undefined as T;
   return res.json();
 }
 

@@ -20,6 +20,7 @@ export function Sidebar({ user }: SidebarProps) {
       ? [
           { href: "/members", label: t("nav.members"), roles: ["super_admin", "admin"] },
           { href: "/membership-types", label: t("nav.membershipTypes"), roles: ["super_admin", "admin"] },
+          { href: "/groups", label: t("nav.groups"), roles: ["super_admin", "admin"] },
         ]
       : []),
     { href: "/profile", label: t("nav.profile"), roles: ["super_admin", "admin", "member"] },

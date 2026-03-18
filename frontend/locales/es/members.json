@@ -24,6 +24,10 @@
     "typeName": "Nombre",
     "typeSlug": "Slug",
     "typeDescription": "Descripción",
-    "typePrice": "Precio base (EUR)"
+    "typePrice": "Precio base (EUR)",
+    "group": "Grupo",
+    "noGroup": "Sin grupo",
+    "typeBilling": "Facturación",
+    "typesInfo": "Los tipos de membresía definen las distintas categorías de socios de tu organización (p. ej. Socio Pleno, Estudiante, Senior). Cada tipo puede tener su propio precio, frecuencia de cobro y restricciones de edad."
   }
 }

@@ -45,6 +45,8 @@ export interface MembershipTypeData {
   description: string | null;
   base_price: number;
   billing_frequency: string;
+  group_id: number | null;
+  group_name: string | null;
   is_active: boolean;
   created_at: string;
 }
@@ -118,12 +120,27 @@ export async function listMembershipTypes(): Promise<MembershipTypeData[]> {
   return apiClient("/membership-types");
 }
 
+export async function updateMembershipType(
+  id: number,
+  data: Record<string, unknown>
+): Promise<MembershipTypeData> {
+  return apiClient(`/membership-types/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteMembershipType(id: number): Promise<void> {
+  await apiClient(`/membership-types/${id}`, { method: "DELETE" });
+}
+
 export async function createMembershipType(data: {
   name: string;
   slug: string;
   description?: string;
   base_price?: number;
   billing_frequency?: string;
+  group_id?: number;
 }): Promise<MembershipTypeData> {
   return apiClient("/membership-types", {
     method: "POST",

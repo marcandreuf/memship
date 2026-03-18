@@ -17,36 +17,38 @@ Most membership tools are either expensive SaaS platforms or outdated legacy sof
 - **Multi-language** — Spanish, Catalan, and English from day one. Extensible to any language via community contributions
 - **GDPR-ready** — built-in legal terms templates and consent management
 
-## Planned Features
+## Features
 
-**Member Management**
+**Member Management** (available now)
 - Full member lifecycle: registration, onboarding, status changes, cancellation
-- Membership types, groups, and custom fields
+- Membership types with groups, pricing, and age restrictions
 - Guardian/minor support
-- Digital member card with QR code (mobile-friendly)
+- Role-based access: super admin, org admin, member
+- Organization settings with branding (color, logo)
+- Multi-language interface (ES, CA, EN) with locale switcher
 
-**Activities & Events**
+**Activities & Events** (in development)
 - Activity creation with modalities, pricing, and capacity control
 - Online registration with eligibility filters and waitlists
 - Attendance tracking with QR check-in
 
-**Payments & Invoicing**
+**Payments & Invoicing** (planned)
 - Membership fee generation and invoicing
 - SEPA direct debit batch processing
 - Stripe online payments
 - Payment tracking and reminders
 
-**Communications**
+**Communications** (planned)
 - Email campaigns with templates and audience targeting
 - Direct messaging between admins and members
 - Multi-language email templates
 
-**Bookings & Spaces**
+**Bookings & Spaces** (planned)
 - Space and resource reservation system
 - Calendar views with availability
 - Booking rules and conflict prevention
 
-**Reports & Dashboards**
+**Reports & Dashboards** (planned)
 - Membership statistics and trends
 - Financial summaries
 - Data exports (CSV, PDF)
@@ -97,6 +99,7 @@ Stop everything:
 | `./scripts/dev.sh logs backend` | View API logs |
 | `./scripts/dev.sh logs frontend` | View frontend logs (tail -f) |
 | `./scripts/dev.sh seed` | Run initial database setup (interactive) |
+| `./scripts/dev.sh seed test` | Seed with test accounts (no prompts) |
 | `./scripts/dev.sh test` | Run backend tests |
 
 ### Service URLs
@@ -105,6 +108,7 @@ Stop everything:
 - **Backend API**: http://localhost:8003
 - **API Docs (Swagger)**: http://localhost:8003/api/docs
 - **Database**: localhost:5433
+- **Adminer** (DB UI): http://localhost:8181 (start with `--profile tools`)
 
 ### Log Files
 
@@ -116,10 +120,19 @@ Stop everything:
 After starting the services, run the seed command to create initial data:
 
 ```bash
-./scripts/dev.sh seed
+./scripts/dev.sh seed          # Interactive — prompts for admin credentials
+./scripts/dev.sh seed test     # Quick — creates test accounts (no prompts)
 ```
 
-This will interactively prompt you for super admin and org admin credentials.
+The `seed test` option creates three accounts for development:
+
+| Role | Email | Password |
+|------|-------|----------|
+| Super Admin | super@test.com | TestSuper1! |
+| Org Admin | admin@test.com | TestAdmin1! |
+| Member | member@test.com | TestMember1! |
+
+> **Warning:** Do not use test accounts in production. Use `./scripts/dev.sh seed` (interactive) for real deployments.
 
 ## Installation (Docker)
 
@@ -196,7 +209,7 @@ Backups are stored in the `backups/` directory. Old backups are cleaned up after
 | v0.1.1 | Email sending (SMTP) — welcome emails, password reset emails | Done |
 | v0.1.2 | Groups, guardian/minor support, restricted role (schema) | Done |
 | v0.1.3 | Caddy reverse proxy, backup/restore scripts, self-hosted polish | Done |
-| v0.2.0 | Activity Management | — |
+| v0.2.0 | Activity Management | In progress |
 | v0.2.1 | E2E test foundation (Cypress), activity polish | — |
 | v0.3.0 | Basic Payments & Invoicing | — |
 | v0.4.0 | Payment Processing (SEPA + Stripe) | — |

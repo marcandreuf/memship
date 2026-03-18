@@ -9,6 +9,8 @@ import {
   listMembers,
   listMembershipTypes,
   updateMember,
+  updateMembershipType,
+  deleteMembershipType,
   type ListMembersParams,
 } from "../services/members-api";
 
@@ -34,6 +36,27 @@ export function useMembershipTypes() {
   return useQuery({
     queryKey: MEMBERSHIP_TYPES_KEY,
     queryFn: listMembershipTypes,
+  });
+}
+
+export function useUpdateMembershipType() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: Record<string, unknown> }) =>
+      updateMembershipType(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: MEMBERSHIP_TYPES_KEY });
+    },
+  });
+}
+
+export function useDeleteMembershipType() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteMembershipType,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: MEMBERSHIP_TYPES_KEY });
+    },
   });
 }
 

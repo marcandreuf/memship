@@ -37,11 +37,14 @@ def create_group(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
-    existing = db.query(Group).filter(Group.slug == data.slug).first()
+    existing = db.query(Group).filter(
+        (Group.slug == data.slug) | (Group.name == data.name)
+    ).first()
     if existing:
+        field = "slug" if existing.slug == data.slug else "name"
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Group with slug '{data.slug}' already exists",
+            detail=f"Group with {field} '{getattr(data, field)}' already exists",
         )
 
     group = Group(**data.model_dump())
@@ -74,5 +77,5 @@ def delete_group(
     current_user: User = Depends(require_admin),
 ):
     group = get_or_404(db, Group, group_id)
-    group.is_active = False
+    db.delete(group)
     db.commit()

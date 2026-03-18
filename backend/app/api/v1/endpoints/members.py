@@ -60,6 +60,7 @@ def list_members(
 ):
     query = (
         db.query(Member)
+        .filter(Member.is_active.is_(True))
         .options(joinedload(Member.person), joinedload(Member.membership_type), joinedload(Member.guardian))
     )
 
