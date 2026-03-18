@@ -125,10 +125,18 @@ stop_server() {
     echo -e "${GREEN}+${NC} $SERVER_NAME stopped"
 }
 
+# Function to clean Next.js cache
+clean_cache() {
+    echo -e "${BLUE}i${NC} Cleaning Next.js cache..."
+    rm -rf .next
+    echo -e "${GREEN}+${NC} Cache cleaned"
+}
+
 # Function to restart server
 restart_server() {
     echo -e "${BLUE}~${NC} Restarting $SERVER_NAME..."
     stop_server
+    clean_cache
     sleep 1
     start_server
 }
@@ -178,17 +186,21 @@ case "${1:-}" in
     logs)
         show_logs
         ;;
+    clean)
+        clean_cache
+        ;;
     *)
         echo "Frontend Dev Server Manager"
         echo ""
-        echo "Usage: $0 {start|stop|restart|status|logs}"
+        echo "Usage: $0 {start|stop|restart|status|logs|clean}"
         echo ""
         echo "Commands:"
         echo "  start    - Start the dev server"
         echo "  stop     - Stop the dev server"
-        echo "  restart  - Restart the dev server"
+        echo "  restart  - Restart the dev server (clears cache)"
         echo "  status   - Check if server is running"
         echo "  logs     - View server logs (tail -f)"
+        echo "  clean    - Clear Next.js cache (.next directory)"
         echo ""
         exit 1
         ;;

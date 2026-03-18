@@ -4,12 +4,14 @@ Creates:
 - Organization settings (defaults)
 - Address types (home, work, billing, legal, venue)
 - Contact types (phone_home, phone_mobile, phone_work, phone_emergency, email_work, email_other)
-- Default membership type
-- First super admin account (interactive prompts)
-- First org admin account (interactive prompts)
+- Groups (Adult Members, Youth Programs, Senior Members, Honorary Members)
+- Membership types (Full Member, Student, Family, Youth, Senior, Honorary)
+- Admin accounts (interactive prompts or --test for test accounts)
+- Sample activities with modalities and prices (--test only)
 
 Usage:
-    python -m app.cli.seed
+    python -m app.cli.seed          # Interactive
+    python -m app.cli.seed --test   # Test accounts + sample data
 """
 
 import argparse
@@ -23,6 +25,7 @@ from app.db.session import SessionLocal
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import AddressType, ContactType, Person
 from app.domains.auth.models import User
+from app.domains.activities.models import Activity, ActivityModality, ActivityPrice
 from app.domains.members.models import Group, Member, MembershipType
 
 ph = PasswordHasher()
@@ -267,6 +270,142 @@ def create_user_with_member(
     print(f"  {role} user: created ({details['email']}, member #{member_number})")
 
 
+def seed_activities(db, user_id: int) -> None:
+    existing = db.query(Activity).count()
+    if existing > 0:
+        print(f"  Activities: already seeded ({existing} records)")
+        return
+
+    from datetime import datetime, timezone, timedelta
+
+    now = datetime.now(timezone.utc)
+
+    activities_data = [
+        {
+            "name": "Summer Soccer Camp",
+            "slug": "summer-soccer-camp",
+            "description": "Week-long intensive soccer training for youth members. Professional coaches, daily matches, and skill workshops.",
+            "short_description": "Intensive soccer training for youth",
+            "starts_at": now + timedelta(days=90),
+            "ends_at": now + timedelta(days=95),
+            "registration_starts_at": now - timedelta(days=5),
+            "registration_ends_at": now + timedelta(days=80),
+            "location": "Main Stadium",
+            "location_details": "Fields A and B, changing rooms available",
+            "min_participants": 10,
+            "max_participants": 30,
+            "min_age": 6,
+            "max_age": 17,
+            "status": "published",
+            "tax_rate": 21.00,
+            "features": {"waiting_list": True},
+            "allow_self_cancellation": True,
+            "self_cancellation_deadline_hours": 48,
+            "modalities": [
+                {"name": "Morning Only", "description": "9:00 - 13:00", "max_participants": 15, "display_order": 1},
+                {"name": "Full Day", "description": "9:00 - 17:00 (lunch included)", "max_participants": 15, "display_order": 2},
+            ],
+            "prices": [
+                {"name": "Early Bird", "amount": 100.00, "is_default": False, "valid_from": now - timedelta(days=5), "valid_until": now + timedelta(days=30), "display_order": 1},
+                {"name": "General", "amount": 150.00, "is_default": True, "valid_from": now + timedelta(days=30), "valid_until": now + timedelta(days=80), "display_order": 2},
+            ],
+        },
+        {
+            "name": "Yoga Workshop",
+            "slug": "yoga-workshop",
+            "description": "A relaxing weekend yoga workshop for all skill levels. Mats and equipment provided.",
+            "short_description": "Weekend yoga for all levels",
+            "starts_at": now + timedelta(days=45),
+            "ends_at": now + timedelta(days=46),
+            "registration_starts_at": now - timedelta(days=3),
+            "registration_ends_at": now + timedelta(days=40),
+            "location": "Wellness Center",
+            "location_details": "Room 3, ground floor",
+            "min_participants": 5,
+            "max_participants": 20,
+            "status": "published",
+            "tax_rate": 10.00,
+            "features": {"waiting_list": False},
+            "allow_self_cancellation": True,
+            "self_cancellation_deadline_hours": 24,
+            "modalities": [],
+            "prices": [
+                {"name": "Member Price", "amount": 25.00, "is_default": True, "display_order": 1},
+                {"name": "Non-Member", "amount": 40.00, "is_default": False, "is_optional": True, "display_order": 2},
+            ],
+        },
+        {
+            "name": "Annual Gala Dinner",
+            "slug": "annual-gala-dinner",
+            "description": "Join us for the annual gala dinner celebrating our community. Live music, awards ceremony, and three-course dinner.",
+            "short_description": "Annual celebration with dinner and awards",
+            "starts_at": now + timedelta(days=120),
+            "ends_at": now + timedelta(days=120, hours=5),
+            "registration_starts_at": now + timedelta(days=30),
+            "registration_ends_at": now + timedelta(days=110),
+            "location": "Grand Ballroom Hotel",
+            "min_participants": 50,
+            "max_participants": 200,
+            "status": "draft",
+            "tax_rate": 10.00,
+            "features": {},
+            "allow_self_cancellation": False,
+            "modalities": [],
+            "prices": [
+                {"name": "Standard Ticket", "amount": 75.00, "is_default": True, "display_order": 1},
+                {"name": "VIP Table (10 seats)", "amount": 650.00, "is_default": False, "display_order": 2},
+            ],
+        },
+        {
+            "name": "Photography Course",
+            "slug": "photography-course",
+            "description": "8-week photography course covering composition, lighting, and post-processing. Bring your own camera.",
+            "short_description": "8-week course for beginners and intermediate",
+            "starts_at": now + timedelta(days=60),
+            "ends_at": now + timedelta(days=116),
+            "registration_starts_at": now - timedelta(days=10),
+            "registration_ends_at": now + timedelta(days=55),
+            "location": "Art Studio",
+            "location_details": "2nd floor, bring your own camera",
+            "min_participants": 8,
+            "max_participants": 15,
+            "status": "published",
+            "tax_rate": 21.00,
+            "features": {"waiting_list": True},
+            "allow_self_cancellation": True,
+            "self_cancellation_deadline_hours": 72,
+            "modalities": [
+                {"name": "Weekday Evening", "description": "Tuesdays 18:00 - 20:00", "max_participants": 15, "display_order": 1},
+                {"name": "Weekend Morning", "description": "Saturdays 10:00 - 12:00", "max_participants": 15, "display_order": 2},
+            ],
+            "prices": [
+                {"name": "Full Course", "amount": 180.00, "is_default": True, "display_order": 1},
+            ],
+        },
+    ]
+
+    count = 0
+    for act_data in activities_data:
+        modalities_data = act_data.pop("modalities")
+        prices_data = act_data.pop("prices")
+
+        activity = Activity(**act_data, created_by=user_id)
+        db.add(activity)
+        db.flush()
+
+        for mod_data in modalities_data:
+            db.add(ActivityModality(activity_id=activity.id, **mod_data))
+        db.flush()
+
+        for price_data in prices_data:
+            db.add(ActivityPrice(activity_id=activity.id, **price_data))
+        db.flush()
+
+        count += 1
+
+    print(f"  Activities: created {count} activities with modalities and prices")
+
+
 TEST_ACCOUNTS = [
     {
         "first_name": "Super",
@@ -333,6 +472,12 @@ def main() -> None:
                     account["role"],
                     membership_type,
                 )
+            # Seed activities (need a user_id for created_by)
+            admin_user = db.query(User).filter_by(email="admin@test.com").first()
+            if admin_user:
+                print("\nSeeding activities...")
+                seed_activities(db, admin_user.id)
+
             print("\n  ⚠  TEST ACCOUNTS — do NOT use in production:")
             for account in TEST_ACCOUNTS:
                 print(f"     {account['role']:15s} {account['email']:25s} / {account['password']}")
