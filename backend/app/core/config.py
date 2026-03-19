@@ -46,6 +46,10 @@ class Settings(BaseSettings):
     SMTP_TLS: bool = True
     FRONTEND_URL: str = "http://localhost:3000"
 
+    # File storage
+    STORAGE_LOCAL_PATH: str = "storage"
+    MAX_UPLOAD_SIZE_MB: int = 10
+
     # Server
     HOST: str = "0.0.0.0"
     PORT: int = 8000

@@ -32,6 +32,9 @@
     "contactInfo": "Contacte",
     "activities": "Activitats",
     "auditLog": "Auditoria",
-    "gender": "Gènere"
+    "gender": "Gènere",
+    "noActivities": "Aquest soci no té inscripcions en activitats",
+    "registeredOn": "Inscrit",
+    "amount": "Import"
   }
 }

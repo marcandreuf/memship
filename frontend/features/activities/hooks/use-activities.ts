@@ -6,6 +6,9 @@ import {
   publishActivity, archiveActivity, cancelActivity,
   createModality, updateModality, deleteModality,
   createPrice, updatePrice, deletePrice,
+  listDiscountCodes, createDiscountCode, updateDiscountCode, deleteDiscountCode,
+  listConsents, createConsent, updateConsent, deleteConsent,
+  listAttachmentTypes, createAttachmentType, updateAttachmentType, deleteAttachmentType,
   type ListActivitiesParams,
 } from "../services/activities-api";
 
@@ -131,5 +134,104 @@ export function useDeletePrice(activityId: number) {
   return useMutation({
     mutationFn: (priceId: number) => deletePrice(activityId, priceId),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["activities", activityId] }),
+  });
+}
+
+// Discount Codes
+export function useDiscountCodes(activityId: number) {
+  return useQuery({
+    queryKey: ["discount-codes", activityId],
+    queryFn: () => listDiscountCodes(activityId),
+    enabled: activityId > 0,
+  });
+}
+
+export function useCreateDiscountCode(activityId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Record<string, unknown>) => createDiscountCode(activityId, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["discount-codes", activityId] }),
+  });
+}
+
+export function useUpdateDiscountCode(activityId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ codeId, data }: { codeId: number; data: Record<string, unknown> }) => updateDiscountCode(activityId, codeId, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["discount-codes", activityId] }),
+  });
+}
+
+export function useDeleteDiscountCode(activityId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (codeId: number) => deleteDiscountCode(activityId, codeId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["discount-codes", activityId] }),
+  });
+}
+
+// Consents
+export function useConsents(activityId: number) {
+  return useQuery({
+    queryKey: ["activity-consents", activityId],
+    queryFn: () => listConsents(activityId),
+    enabled: activityId > 0,
+  });
+}
+
+export function useCreateConsent(activityId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Record<string, unknown>) => createConsent(activityId, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["activity-consents", activityId] }),
+  });
+}
+
+export function useUpdateConsent(activityId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ consentId, data }: { consentId: number; data: Record<string, unknown> }) => updateConsent(activityId, consentId, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["activity-consents", activityId] }),
+  });
+}
+
+export function useDeleteConsent(activityId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (consentId: number) => deleteConsent(activityId, consentId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["activity-consents", activityId] }),
+  });
+}
+
+// Attachment Types
+export function useAttachmentTypes(activityId: number) {
+  return useQuery({
+    queryKey: ["attachment-types", activityId],
+    queryFn: () => listAttachmentTypes(activityId),
+    enabled: activityId > 0,
+  });
+}
+
+export function useCreateAttachmentType(activityId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Record<string, unknown>) => createAttachmentType(activityId, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["attachment-types", activityId] }),
+  });
+}
+
+export function useUpdateAttachmentType(activityId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ typeId, data }: { typeId: number; data: Record<string, unknown> }) => updateAttachmentType(activityId, typeId, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["attachment-types", activityId] }),
+  });
+}
+
+export function useDeleteAttachmentType(activityId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (typeId: number) => deleteAttachmentType(activityId, typeId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["attachment-types", activityId] }),
   });
 }

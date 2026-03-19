@@ -14,7 +14,10 @@ export interface RegistrationData {
   member_id: number;
   modality_id: number | null;
   price_id: number | null;
+  discount_code_id: number | null;
   status: string;
+  original_amount: number | null;
+  discounted_amount: number | null;
   registration_data: Record<string, unknown>;
   member_notes: string | null;
   admin_notes: string | null;
@@ -42,10 +45,17 @@ export interface EligibilityData {
   reasons: string[];
 }
 
+export interface ConsentAcceptanceParam {
+  activity_consent_id: number;
+  accepted: boolean;
+}
+
 export interface RegisterParams {
   activityId: number;
   price_id: number;
   modality_id?: number;
+  discount_code?: string;
+  consents?: ConsentAcceptanceParam[];
   registration_data?: Record<string, unknown>;
   member_notes?: string;
 }
@@ -98,6 +108,40 @@ export async function listActivityRegistrations(
   if (params.status) sp.set("status", params.status);
   const qs = sp.toString();
   return apiClient(`/activities/${params.activityId}/registrations${qs ? `?${qs}` : ""}`);
+}
+
+export interface RegistrationAttachmentData {
+  id: number;
+  registration_id: number;
+  attachment_type_id: number | null;
+  file_name: string;
+  file_size: number | null;
+  mime_type: string | null;
+  uploaded_at: string | null;
+}
+
+export async function listRegistrationAttachments(registrationId: number): Promise<RegistrationAttachmentData[]> {
+  return apiClient(`/registrations/${registrationId}/attachments`);
+}
+
+export async function uploadRegistrationAttachment(
+  registrationId: number,
+  file: File,
+  attachmentTypeId?: number,
+): Promise<RegistrationAttachmentData> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const qs = attachmentTypeId ? `?attachment_type_id=${attachmentTypeId}` : "";
+  const res = await fetch(`/api/registrations/${registrationId}/attachments${qs}`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(error.detail || "Upload failed");
+  }
+  return res.json();
 }
 
 export async function listMyRegistrations(params: {

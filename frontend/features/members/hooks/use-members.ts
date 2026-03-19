@@ -7,6 +7,7 @@ import {
   deleteMember,
   getMember,
   listMembers,
+  listMemberRegistrations,
   listMembershipTypes,
   updateMember,
   updateMembershipType,
@@ -88,6 +89,14 @@ export function useDeleteMember() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: MEMBERS_KEY });
     },
+  });
+}
+
+export function useMemberRegistrations(memberId: number, params: { page?: number; status?: string } = {}) {
+  return useQuery({
+    queryKey: ["member-registrations", memberId, params],
+    queryFn: () => listMemberRegistrations(memberId, params),
+    enabled: memberId > 0,
   });
 }
 

@@ -1,4 +1,4 @@
-"""Activity, ActivityModality, ActivityPrice, and Registration models."""
+"""Activity domain models."""
 
 from sqlalchemy import (
     Boolean,
@@ -79,6 +79,9 @@ class Activity(Base):
     )
     prices = relationship("ActivityPrice", back_populates="activity", lazy="selectin")
     registrations = relationship("Registration", back_populates="activity")
+    discount_codes = relationship("DiscountCode", back_populates="activity")
+    consents = relationship("ActivityConsent", back_populates="activity")
+    attachment_types = relationship("ActivityAttachmentType", back_populates="activity")
 
 
 class ActivityModality(Base):
@@ -148,6 +151,95 @@ class ActivityPrice(Base):
     modality = relationship("ActivityModality", back_populates="prices")
 
 
+class DiscountCode(Base):
+    __tablename__ = "discount_codes"
+    __table_args__ = (
+        CheckConstraint(
+            "discount_type IN ('percentage', 'fixed')",
+            name="valid_discount_type",
+        ),
+        CheckConstraint("discount_value > 0", name="discount_value_positive"),
+        CheckConstraint(
+            "discount_type != 'percentage' OR discount_value <= 100",
+            name="percentage_max_100",
+        ),
+        UniqueConstraint("activity_id", "code", name="uq_discount_code_per_activity"),
+        Index("idx_discount_codes_activity_id", "activity_id"),
+        Index("idx_discount_codes_code", "code"),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    activity_id = Column(
+        Integer, ForeignKey("activities.id", ondelete="CASCADE"), nullable=False
+    )
+    code = Column(String(50), nullable=False)
+    description = Column(Text)
+    discount_type = Column(String(20), nullable=False)  # 'percentage' or 'fixed'
+    discount_value = Column(Numeric(10, 2), nullable=False)
+    max_uses = Column(Integer)  # NULL = unlimited
+    current_uses = Column(Integer, default=0)
+    valid_from = Column(DateTime(timezone=True))
+    valid_until = Column(DateTime(timezone=True))
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    # Relationships
+    activity = relationship("Activity", back_populates="discount_codes")
+
+
+class ActivityConsent(Base):
+    __tablename__ = "activity_consents"
+    __table_args__ = (
+        Index("idx_activity_consents_activity_id", "activity_id"),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    activity_id = Column(
+        Integer, ForeignKey("activities.id", ondelete="CASCADE"), nullable=False
+    )
+    title = Column(String(255), nullable=False)
+    content = Column(Text, nullable=False)
+    is_mandatory = Column(Boolean, default=True)
+    display_order = Column(Integer, default=1)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    # Relationships
+    activity = relationship("Activity", back_populates="consents")
+
+
+class ActivityAttachmentType(Base):
+    __tablename__ = "activity_attachment_types"
+    __table_args__ = (
+        Index("idx_activity_attachment_types_activity_id", "activity_id"),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    activity_id = Column(
+        Integer, ForeignKey("activities.id", ondelete="CASCADE"), nullable=False
+    )
+    name = Column(String(255), nullable=False)
+    description = Column(Text)
+    allowed_extensions = Column(ARRAY(String), default=list)  # e.g. ['pdf', 'jpg', 'png']
+    max_file_size_mb = Column(Integer, default=5)
+    is_mandatory = Column(Boolean, default=True)
+    display_order = Column(Integer, default=1)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    # Relationships
+    activity = relationship("Activity", back_populates="attachment_types")
+
+
 class Registration(Base):
     __tablename__ = "registrations"
     __table_args__ = (
@@ -180,7 +272,12 @@ class Registration(Base):
     price_id = Column(
         Integer, ForeignKey("activity_prices.id", ondelete="SET NULL")
     )
+    discount_code_id = Column(
+        Integer, ForeignKey("discount_codes.id", ondelete="SET NULL")
+    )
     status = Column(String(20), default="confirmed", nullable=False)
+    original_amount = Column(Numeric(10, 2))
+    discounted_amount = Column(Numeric(10, 2))
     registration_data = Column(JSONB, default=dict)
     member_notes = Column(Text)
     admin_notes = Column(Text)
@@ -197,6 +294,9 @@ class Registration(Base):
     member = relationship("Member", foreign_keys=[member_id])
     modality = relationship("ActivityModality")
     price = relationship("ActivityPrice")
+    discount_code = relationship("DiscountCode")
+    consents = relationship("RegistrationConsent", back_populates="registration")
+    attachments = relationship("RegistrationAttachment", back_populates="registration")
     cancelled_by_user = relationship("User", foreign_keys=[cancelled_by], lazy="joined")
 
     @property
@@ -207,3 +307,52 @@ class Registration(Base):
         if person:
             return f"{person.first_name} {person.last_name}"
         return self.cancelled_by_user.email
+
+
+class RegistrationConsent(Base):
+    __tablename__ = "registration_consents"
+    __table_args__ = (
+        UniqueConstraint(
+            "registration_id", "activity_consent_id",
+            name="uq_registration_consent",
+        ),
+        Index("idx_registration_consents_registration_id", "registration_id"),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    registration_id = Column(
+        Integer, ForeignKey("registrations.id", ondelete="CASCADE"), nullable=False
+    )
+    activity_consent_id = Column(
+        Integer, ForeignKey("activity_consents.id", ondelete="CASCADE"), nullable=False
+    )
+    accepted = Column(Boolean, nullable=False, default=True)
+    accepted_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    registration = relationship("Registration", back_populates="consents")
+    activity_consent = relationship("ActivityConsent")
+
+
+class RegistrationAttachment(Base):
+    __tablename__ = "registration_attachments"
+    __table_args__ = (
+        Index("idx_registration_attachments_registration_id", "registration_id"),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    registration_id = Column(
+        Integer, ForeignKey("registrations.id", ondelete="CASCADE"), nullable=False
+    )
+    attachment_type_id = Column(
+        Integer, ForeignKey("activity_attachment_types.id", ondelete="SET NULL")
+    )
+    file_name = Column(String(255), nullable=False)
+    file_path = Column(String(500), nullable=False)
+    file_size = Column(Integer)  # in bytes
+    mime_type = Column(String(100))
+    uploaded_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    registration = relationship("Registration", back_populates="attachments")
+    attachment_type = relationship("ActivityAttachmentType")

@@ -8,6 +8,7 @@ import { DetailHeader } from "@/components/entity/detail-header";
 import { InlineEditWrapper } from "@/components/entity/inline-edit-wrapper";
 import { EntityTabs } from "@/components/entity/entity-tabs";
 import { PlaceholderTab } from "@/components/entity/placeholder-tab";
+import { MemberActivitiesTab } from "@/features/members/components/member-activities-tab";
 import { MemberDetailSection } from "@/features/members/components/member-detail-section";
 import { MemberForm } from "@/features/members/components/member-form";
 import { MemberStatusActions } from "@/features/members/components/member-status-actions";
@@ -129,7 +130,7 @@ export default function MemberDetailPage({
           {
             id: "activities",
             label: t("members.activities"),
-            content: <PlaceholderTab message={t("common.comingSoon")} />,
+            content: <MemberActivitiesTab memberId={memberId} />,
           },
           {
             id: "audit",

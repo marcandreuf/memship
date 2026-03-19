@@ -136,6 +136,51 @@ export async function deleteMembershipType(id: number): Promise<void> {
   await apiClient(`/membership-types/${id}`, { method: "DELETE" });
 }
 
+// Member registrations (admin view)
+export interface MemberRegistrationData {
+  id: number;
+  activity_id: number;
+  member_id: number;
+  modality_id: number | null;
+  price_id: number | null;
+  discount_code_id: number | null;
+  status: string;
+  original_amount: number | null;
+  discounted_amount: number | null;
+  registration_data: Record<string, unknown>;
+  member_notes: string | null;
+  admin_notes: string | null;
+  cancelled_at: string | null;
+  cancelled_reason: string | null;
+  cancelled_by_name: string | null;
+  created_at: string;
+  activity?: {
+    id: number;
+    name: string;
+    slug: string;
+    starts_at: string;
+    ends_at: string;
+    location: string | null;
+  };
+}
+
+export interface PaginatedMemberRegistrations {
+  items: MemberRegistrationData[];
+  meta: PageMeta;
+}
+
+export async function listMemberRegistrations(
+  memberId: number,
+  params: { page?: number; per_page?: number; status?: string } = {}
+): Promise<PaginatedMemberRegistrations> {
+  const sp = new URLSearchParams();
+  if (params.page) sp.set("page", String(params.page));
+  if (params.per_page) sp.set("per_page", String(params.per_page));
+  if (params.status) sp.set("status", params.status);
+  const qs = sp.toString();
+  return apiClient(`/members/${memberId}/registrations${qs ? `?${qs}` : ""}`);
+}
+
 export async function createMembershipType(data: {
   name: string;
   slug: string;

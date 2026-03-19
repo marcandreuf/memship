@@ -32,6 +32,9 @@
     "contactInfo": "Contact Info",
     "activities": "Activities",
     "auditLog": "Audit Log",
-    "gender": "Gender"
+    "gender": "Gender",
+    "noActivities": "No activity registrations for this member",
+    "registeredOn": "Registered",
+    "amount": "Amount"
   }
 }

@@ -3,15 +3,13 @@
 import { use, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/lib/i18n/routing";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DetailHeader } from "@/components/entity/detail-header";
 import { InlineEditWrapper } from "@/components/entity/inline-edit-wrapper";
 import { EntityTabs } from "@/components/entity/entity-tabs";
 import { Link } from "@/lib/i18n/routing";
 import { RegistrationsTab } from "@/features/activities/components/registrations-tab";
-import { Card, CardContent } from "@/components/ui/card";
-import { ACTIVITY_STATUS_VARIANTS, REGISTRATION_STATUS_VARIANTS } from "@/lib/status-variants";
+import { ACTIVITY_STATUS_VARIANTS } from "@/lib/status-variants";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import {
   useActivity,
@@ -26,6 +24,10 @@ import { ActivityDetailSection } from "@/features/activities/components/activity
 import { ActivityEditForm } from "@/features/activities/components/activity-edit-form";
 import { ModalitiesTab } from "@/features/activities/components/modalities-tab";
 import { PricesTab } from "@/features/activities/components/prices-tab";
+import { DiscountCodesTab } from "@/features/activities/components/discount-codes-tab";
+import { ConsentsTab } from "@/features/activities/components/consents-tab";
+import { AttachmentTypesTab } from "@/features/activities/components/attachment-types-tab";
+import { MemberRegistrationCard } from "@/features/activities/components/member-registration-card";
 
 export default function ActivityDetailPage({
   params,
@@ -198,6 +200,21 @@ export default function ActivityDetailPage({
                   label: t("activities.registrations"),
                   content: <RegistrationsTab activityId={activityId} />,
                 },
+                {
+                  id: "discounts",
+                  label: t("activities.discounts.title"),
+                  content: <DiscountCodesTab activityId={activityId} />,
+                },
+                {
+                  id: "consents",
+                  label: t("activities.consents.title"),
+                  content: <ConsentsTab activityId={activityId} />,
+                },
+                {
+                  id: "attachments",
+                  label: t("activities.attachments.title"),
+                  content: <AttachmentTypesTab activityId={activityId} />,
+                },
               ]
             : []),
           ...(!isAdmin && activity.status === "published"
@@ -208,69 +225,10 @@ export default function ActivityDetailPage({
                     ? t("activities.registration.registered")
                     : t("activities.registration.register"),
                   content: myRegistration ? (
-                    <Card className="mt-2">
-                      <CardContent className="py-3 px-4 space-y-3">
-                        <div className="flex items-center gap-3">
-                          <Badge variant={REGISTRATION_STATUS_VARIANTS[myRegistration.status] || "outline"}>
-                            {t(`activities.registration.status.${myRegistration.status}`)}
-                          </Badge>
-                          {isActiveRegistration && (
-                            <span className="text-sm text-muted-foreground">
-                              {t("activities.registration.alreadyRegistered")}
-                            </span>
-                          )}
-                        </div>
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                          <span className="text-muted-foreground">{t("activities.registration.date")}</span>
-                          <span>{new Date(myRegistration.created_at).toLocaleString()}</span>
-                          {myRegistration.modality_id && (
-                            <>
-                              <span className="text-muted-foreground">{t("activities.modalities.title")}</span>
-                              <span>
-                                {activity.modalities.find((m) => m.id === myRegistration.modality_id)?.name || "-"}
-                              </span>
-                            </>
-                          )}
-                          {myRegistration.price_id && (
-                            <>
-                              <span className="text-muted-foreground">{t("activities.prices.title")}</span>
-                              <span>
-                                {activity.prices.find((p) => p.id === myRegistration.price_id)?.name || "-"}
-                              </span>
-                            </>
-                          )}
-                          {myRegistration.member_notes && (
-                            <>
-                              <span className="text-muted-foreground">{t("activities.registration.notes")}</span>
-                              <span>{myRegistration.member_notes}</span>
-                            </>
-                          )}
-                          {isCancelledRegistration && myRegistration.cancelled_at && (
-                            <>
-                              <span className="text-muted-foreground">{t("activities.registration.cancelledOn")}</span>
-                              <span>{new Date(myRegistration.cancelled_at).toLocaleString()}</span>
-                            </>
-                          )}
-                          {isCancelledRegistration && myRegistration.cancelled_by_name && (
-                            <>
-                              <span className="text-muted-foreground">{t("activities.registration.cancelledBy")}</span>
-                              <span>{myRegistration.cancelled_by_name}</span>
-                            </>
-                          )}
-                          {isCancelledRegistration && myRegistration.cancelled_reason && (
-                            <>
-                              <span className="text-muted-foreground">{t("activities.registration.cancelRegistration")}</span>
-                              <span>{myRegistration.cancelled_reason}</span>
-                            </>
-                          )}
-                        </div>
-                        <Link href="/my-activities">
-                          <Button variant="outline" size="sm">
-                            {t("activities.registration.viewMyActivities")}
-                          </Button>
-                        </Link>
-                      </CardContent>
-                    </Card>
+                    <MemberRegistrationCard
+                      registration={myRegistration}
+                      activity={activity}
+                    />
                   ) : (
                     <div className="py-4">
                       <Link href={`/activities/${activityId}/register`}>

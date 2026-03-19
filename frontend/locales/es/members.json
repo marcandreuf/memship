@@ -32,6 +32,9 @@
     "contactInfo": "Contacto",
     "activities": "Actividades",
     "auditLog": "Auditoría",
-    "gender": "Género"
+    "gender": "Género",
+    "noActivities": "Este socio no tiene inscripciones en actividades",
+    "registeredOn": "Inscrito",
+    "amount": "Importe"
   }
 }

@@ -1,15 +1,24 @@
 """Registration service — business logic for activity registrations."""
 
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
+from app.domains.activities.discount_service import (
+    DiscountError,
+    apply_discount,
+    increment_usage,
+    validate_discount_code,
+)
 from app.domains.activities.eligibility import check_eligibility
 from app.domains.activities.models import (
     Activity,
+    ActivityConsent,
     ActivityModality,
     ActivityPrice,
     Registration,
+    RegistrationConsent,
 )
 from app.domains.members.models import Member
 
@@ -25,6 +34,8 @@ def register_member(
     member: Member,
     price_id: int,
     modality_id: int | None = None,
+    discount_code: str | None = None,
+    consents: list | None = None,
     registration_data: dict | None = None,
     member_notes: str | None = None,
 ) -> Registration:
@@ -67,24 +78,54 @@ def register_member(
         if modality.registration_deadline and now > modality.registration_deadline:
             raise RegistrationError("Registration deadline for this modality has passed")
 
-    # 4. Check capacity
+    # 4. Validate and apply discount code if provided
+    discount = None
+    original_amount = Decimal(str(price.amount))
+    discounted_amount = original_amount
+    if discount_code:
+        try:
+            discount = validate_discount_code(db, activity.id, discount_code)
+            discounted_amount = apply_discount(original_amount, discount)
+        except DiscountError as e:
+            raise RegistrationError(str(e))
+
+    # 5. Validate consents
+    _validate_consents(db, activity.id, consents or [])
+
+    # 6. Check capacity
     waiting_list_enabled = activity.features.get("waiting_list", False) if activity.features else False
     status = _determine_registration_status(activity, modality, waiting_list_enabled)
 
-    # 5. Create registration
+    # 7. Create registration
     registration = Registration(
         activity_id=activity.id,
         member_id=member.id,
         modality_id=modality_id,
         price_id=price_id,
+        discount_code_id=discount.id if discount else None,
         status=status,
+        original_amount=original_amount,
+        discounted_amount=discounted_amount,
         registration_data=registration_data or {},
         member_notes=member_notes,
     )
     db.add(registration)
     db.flush()
 
-    # 6. Update cached counters
+    # 8. Store consent acceptances
+    for consent_input in (consents or []):
+        rc = RegistrationConsent(
+            registration_id=registration.id,
+            activity_consent_id=consent_input.activity_consent_id,
+            accepted=consent_input.accepted,
+        )
+        db.add(rc)
+
+    # 9. Increment discount usage
+    if discount:
+        increment_usage(db, discount)
+
+    # 10. Update cached counters
     if status == "confirmed":
         activity.current_participants = (activity.current_participants or 0) + 1
         if modality:
@@ -205,6 +246,31 @@ def admin_change_status(
         _promote_from_waitlist(db, activity, registration.modality_id)
 
     return registration
+
+
+def _validate_consents(db: Session, activity_id: int, consents: list) -> None:
+    """Validate that all mandatory consents are accepted."""
+    mandatory_consents = (
+        db.query(ActivityConsent)
+        .filter(
+            ActivityConsent.activity_id == activity_id,
+            ActivityConsent.is_mandatory.is_(True),
+            ActivityConsent.is_active.is_(True),
+        )
+        .all()
+    )
+    if not mandatory_consents:
+        return
+
+    # Build a map of accepted consent IDs
+    accepted_ids = {
+        c.activity_consent_id for c in consents if c.accepted
+    }
+
+    missing = [c for c in mandatory_consents if c.id not in accepted_ids]
+    if missing:
+        names = ", ".join(c.title for c in missing)
+        raise RegistrationError(f"Mandatory consents not accepted: {names}")
 
 
 def _determine_registration_status(

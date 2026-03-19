@@ -10,6 +10,7 @@ Creates:
 - Sample activities with modalities and prices (--test only)
 - Extra member accounts for realistic data (--test only)
 - Sample registrations: confirmed, waitlisted, cancelled (--test only)
+- Discount codes, consents, and attachment types per activity (--test only)
 
 Usage:
     python -m app.cli.seed          # Interactive
@@ -27,7 +28,10 @@ from app.db.session import SessionLocal
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import AddressType, ContactType, Person
 from app.domains.auth.models import User
-from app.domains.activities.models import Activity, ActivityModality, ActivityPrice, Registration
+from app.domains.activities.models import (
+    Activity, ActivityAttachmentType, ActivityConsent, ActivityModality,
+    ActivityPrice, DiscountCode, Registration, RegistrationConsent,
+)
 from app.domains.members.models import Group, Member, MembershipType
 
 ph = PasswordHasher()
@@ -583,6 +587,215 @@ def seed_registrations(db) -> None:
     print(f"  Registrations: created {count} registrations (confirmed, waitlisted, cancelled)")
 
 
+def seed_discount_codes(db) -> None:
+    """Create sample discount codes for published activities."""
+    existing = db.query(DiscountCode).count()
+    if existing > 0:
+        print(f"  Discount codes: already seeded ({existing} records)")
+        return
+
+    from datetime import datetime, timezone, timedelta
+    now = datetime.now(timezone.utc)
+
+    activities = db.query(Activity).filter(Activity.status == "published").all()
+    count = 0
+
+    for activity in activities:
+        # Percentage code for every published activity
+        db.add(DiscountCode(
+            activity_id=activity.id,
+            code="WELCOME10",
+            description="Welcome discount — 10% off",
+            discount_type="percentage",
+            discount_value=10,
+            max_uses=50,
+            current_uses=0,
+            valid_from=now - timedelta(days=5),
+            valid_until=now + timedelta(days=180),
+            is_active=True,
+        ))
+        count += 1
+
+        # Fixed amount code for the first activity only
+        if count == 1:
+            db.add(DiscountCode(
+                activity_id=activity.id,
+                code="SUMMER25",
+                description="Summer special — 25 EUR off",
+                discount_type="fixed",
+                discount_value=25,
+                max_uses=10,
+                current_uses=0,
+                valid_from=now - timedelta(days=5),
+                valid_until=now + timedelta(days=90),
+                is_active=True,
+            ))
+            count += 1
+
+            # Expired code for testing
+            db.add(DiscountCode(
+                activity_id=activity.id,
+                code="EXPIRED5",
+                description="Expired promo",
+                discount_type="percentage",
+                discount_value=5,
+                max_uses=100,
+                current_uses=3,
+                valid_from=now - timedelta(days=60),
+                valid_until=now - timedelta(days=1),
+                is_active=True,
+            ))
+            count += 1
+
+    db.flush()
+    print(f"  Discount codes: created {count} codes across {len(activities)} activities")
+
+
+def seed_consents(db) -> None:
+    """Create sample activity consents for published activities."""
+    existing = db.query(ActivityConsent).count()
+    if existing > 0:
+        print(f"  Activity consents: already seeded ({existing} records)")
+        return
+
+    activities = db.query(Activity).filter(Activity.status == "published").all()
+    count = 0
+
+    for activity in activities:
+        # Mandatory liability waiver for every published activity
+        db.add(ActivityConsent(
+            activity_id=activity.id,
+            title="Liability Waiver",
+            content="I acknowledge that participation in this activity involves inherent risks. "
+                    "I accept full responsibility for any injury or damage that may occur during the activity. "
+                    "I release the organization and its staff from any liability.",
+            is_mandatory=True,
+            display_order=1,
+            is_active=True,
+        ))
+        count += 1
+
+        # Optional image rights consent
+        db.add(ActivityConsent(
+            activity_id=activity.id,
+            title="Image Rights",
+            content="I consent to the use of photographs and videos taken during this activity "
+                    "for promotional purposes on the organization's website and social media channels.",
+            is_mandatory=False,
+            display_order=2,
+            is_active=True,
+        ))
+        count += 1
+
+    # Add a GDPR-style mandatory consent to the first activity
+    if activities:
+        db.add(ActivityConsent(
+            activity_id=activities[0].id,
+            title="Data Processing Consent",
+            content="I consent to the processing of my personal data (name, contact information, "
+                    "health-related data if applicable) for the purpose of managing my registration "
+                    "and participation in this activity, in accordance with GDPR regulations.",
+            is_mandatory=True,
+            display_order=3,
+            is_active=True,
+        ))
+        count += 1
+
+    db.flush()
+    print(f"  Activity consents: created {count} consents across {len(activities)} activities")
+
+
+def seed_attachment_types(db) -> None:
+    """Create sample attachment type requirements for published activities."""
+    existing = db.query(ActivityAttachmentType).count()
+    if existing > 0:
+        print(f"  Attachment types: already seeded ({existing} records)")
+        return
+
+    activities = db.query(Activity).filter(Activity.status == "published").all()
+    count = 0
+
+    # Add medical certificate requirement to sport-related activities (first one)
+    if activities:
+        db.add(ActivityAttachmentType(
+            activity_id=activities[0].id,
+            name="Medical Certificate",
+            description="A medical certificate confirming fitness to participate in physical activities. Must be issued within the last 12 months.",
+            allowed_extensions=["pdf", "jpg", "jpeg", "png"],
+            max_file_size_mb=5,
+            is_mandatory=True,
+            display_order=1,
+            is_active=True,
+        ))
+        count += 1
+
+        # Optional ID photo
+        db.add(ActivityAttachmentType(
+            activity_id=activities[0].id,
+            name="ID Photo",
+            description="A passport-style photo for the participant badge.",
+            allowed_extensions=["jpg", "jpeg", "png"],
+            max_file_size_mb=2,
+            is_mandatory=False,
+            display_order=2,
+            is_active=True,
+        ))
+        count += 1
+
+    # Add insurance document for any activity with modalities (likely sports)
+    activities_with_modalities = [a for a in activities if db.query(ActivityModality).filter(
+        ActivityModality.activity_id == a.id
+    ).count() > 0]
+
+    for activity in activities_with_modalities[1:2]:  # second modality-based activity if exists
+        db.add(ActivityAttachmentType(
+            activity_id=activity.id,
+            name="Insurance Document",
+            description="Proof of personal liability insurance or sports insurance.",
+            allowed_extensions=["pdf"],
+            max_file_size_mb=5,
+            is_mandatory=True,
+            display_order=1,
+            is_active=True,
+        ))
+        count += 1
+
+    db.flush()
+    print(f"  Attachment types: created {count} types across published activities")
+
+
+def seed_registration_consents(db) -> None:
+    """Create consent acceptances for existing registrations."""
+    existing = db.query(RegistrationConsent).count()
+    if existing > 0:
+        print(f"  Registration consents: already seeded ({existing} records)")
+        return
+
+    registrations = db.query(Registration).filter(
+        Registration.status.in_(["confirmed", "waitlist"])
+    ).all()
+
+    count = 0
+    for reg in registrations:
+        consents = db.query(ActivityConsent).filter(
+            ActivityConsent.activity_id == reg.activity_id,
+            ActivityConsent.is_active.is_(True),
+        ).all()
+
+        for consent in consents:
+            # Accept all mandatory consents; accept optional ones ~50% of the time
+            accept = consent.is_mandatory or (reg.id % 2 == 0)
+            db.add(RegistrationConsent(
+                registration_id=reg.id,
+                activity_consent_id=consent.id,
+                accepted=accept,
+            ))
+            count += 1
+
+    db.flush()
+    print(f"  Registration consents: created {count} consent records for existing registrations")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Memship seed command")
     parser.add_argument(
@@ -635,6 +848,18 @@ def main() -> None:
 
             print("\nSeeding registrations...")
             seed_registrations(db)
+
+            print("\nSeeding discount codes...")
+            seed_discount_codes(db)
+
+            print("\nSeeding activity consents...")
+            seed_consents(db)
+
+            print("\nSeeding attachment types...")
+            seed_attachment_types(db)
+
+            print("\nSeeding registration consents...")
+            seed_registration_consents(db)
 
             print("\n  ⚠  TEST ACCOUNTS — do NOT use in production:")
             for account in TEST_ACCOUNTS:

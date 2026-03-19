@@ -179,3 +179,117 @@ export async function updatePrice(activityId: number, priceId: number, data: Rec
 export async function deletePrice(activityId: number, priceId: number): Promise<void> {
   await apiClient(`/activities/${activityId}/prices/${priceId}`, { method: "DELETE" });
 }
+
+// Discount Codes
+export interface DiscountCodeData {
+  id: number;
+  activity_id: number;
+  code: string;
+  description: string | null;
+  discount_type: string;
+  discount_value: number;
+  max_uses: number | null;
+  current_uses: number;
+  valid_from: string | null;
+  valid_until: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface ValidateDiscountResult {
+  valid: boolean;
+  discount_type: string | null;
+  discount_value: number | null;
+  original_amount: number | null;
+  discounted_amount: number | null;
+  error: string | null;
+}
+
+export async function listDiscountCodes(activityId: number): Promise<DiscountCodeData[]> {
+  return apiClient(`/activities/${activityId}/discount-codes`);
+}
+
+export async function createDiscountCode(activityId: number, data: Record<string, unknown>): Promise<DiscountCodeData> {
+  return apiClient(`/activities/${activityId}/discount-codes`, { method: "POST", body: JSON.stringify(data) });
+}
+
+export async function updateDiscountCode(activityId: number, codeId: number, data: Record<string, unknown>): Promise<DiscountCodeData> {
+  return apiClient(`/activities/${activityId}/discount-codes/${codeId}`, { method: "PUT", body: JSON.stringify(data) });
+}
+
+export async function deleteDiscountCode(activityId: number, codeId: number): Promise<void> {
+  await apiClient(`/activities/${activityId}/discount-codes/${codeId}`, { method: "DELETE" });
+}
+
+export async function validateDiscount(activityId: number, code: string, priceId?: number): Promise<ValidateDiscountResult> {
+  const qs = priceId ? `?price_id=${priceId}` : "";
+  return apiClient(`/activities/${activityId}/validate-discount${qs}`, { method: "POST", body: JSON.stringify({ code }) });
+}
+
+// Activity Consents
+export interface ActivityConsentData {
+  id: number;
+  activity_id: number;
+  title: string;
+  content: string;
+  is_mandatory: boolean;
+  display_order: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+export async function listConsents(activityId: number): Promise<ActivityConsentData[]> {
+  return apiClient(`/activities/${activityId}/consents`);
+}
+
+export async function createConsent(activityId: number, data: Record<string, unknown>): Promise<ActivityConsentData> {
+  return apiClient(`/activities/${activityId}/consents`, { method: "POST", body: JSON.stringify(data) });
+}
+
+export async function updateConsent(activityId: number, consentId: number, data: Record<string, unknown>): Promise<ActivityConsentData> {
+  return apiClient(`/activities/${activityId}/consents/${consentId}`, { method: "PUT", body: JSON.stringify(data) });
+}
+
+export async function deleteConsent(activityId: number, consentId: number): Promise<void> {
+  await apiClient(`/activities/${activityId}/consents/${consentId}`, { method: "DELETE" });
+}
+
+// Activity Attachment Types
+export interface ActivityAttachmentTypeData {
+  id: number;
+  activity_id: number;
+  name: string;
+  description: string | null;
+  allowed_extensions: string[];
+  max_file_size_mb: number;
+  is_mandatory: boolean;
+  display_order: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface RegistrationAttachmentData {
+  id: number;
+  registration_id: number;
+  attachment_type_id: number | null;
+  file_name: string;
+  file_size: number | null;
+  mime_type: string | null;
+  uploaded_at: string | null;
+}
+
+export async function listAttachmentTypes(activityId: number): Promise<ActivityAttachmentTypeData[]> {
+  return apiClient(`/activities/${activityId}/attachment-types`);
+}
+
+export async function createAttachmentType(activityId: number, data: Record<string, unknown>): Promise<ActivityAttachmentTypeData> {
+  return apiClient(`/activities/${activityId}/attachment-types`, { method: "POST", body: JSON.stringify(data) });
+}
+
+export async function updateAttachmentType(activityId: number, typeId: number, data: Record<string, unknown>): Promise<ActivityAttachmentTypeData> {
+  return apiClient(`/activities/${activityId}/attachment-types/${typeId}`, { method: "PUT", body: JSON.stringify(data) });
+}
+
+export async function deleteAttachmentType(activityId: number, typeId: number): Promise<void> {
+  await apiClient(`/activities/${activityId}/attachment-types/${typeId}`, { method: "DELETE" });
+}

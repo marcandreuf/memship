@@ -8,6 +8,8 @@ import {
   changeRegistrationStatus,
   listActivityRegistrations,
   listMyRegistrations,
+  listRegistrationAttachments,
+  uploadRegistrationAttachment,
   type ListRegistrationsParams,
   type RegisterParams,
 } from "../services/registrations-api";
@@ -79,5 +81,31 @@ export function useMyRegistrations(params: { page?: number; per_page?: number } 
   return useQuery({
     queryKey: ["my-registrations", params],
     queryFn: () => listMyRegistrations(params),
+  });
+}
+
+export function useRegistrationAttachments(registrationId: number) {
+  return useQuery({
+    queryKey: ["registration-attachments", registrationId],
+    queryFn: () => listRegistrationAttachments(registrationId),
+    enabled: registrationId > 0,
+  });
+}
+
+export function useUploadAttachment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      registrationId,
+      file,
+      attachmentTypeId,
+    }: {
+      registrationId: number;
+      file: File;
+      attachmentTypeId?: number;
+    }) => uploadRegistrationAttachment(registrationId, file, attachmentTypeId),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["registration-attachments", vars.registrationId] });
+    },
   });
 }

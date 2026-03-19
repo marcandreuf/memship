@@ -14,6 +14,7 @@ from app.domains.activities.registration_schemas import (
     CancelRegistrationRequest,
     EligibilityResponse,
     RegisterRequest,
+    RegistrationActivityInfo,
     RegistrationDetailResponse,
     RegistrationMemberInfo,
     RegistrationResponse,
@@ -130,6 +131,8 @@ def register_for_activity(
             member=member,
             price_id=data.price_id,
             modality_id=data.modality_id,
+            discount_code=data.discount_code,
+            consents=data.consents,
             registration_data=data.registration_data,
             member_notes=data.member_notes,
         )
@@ -242,7 +245,7 @@ def change_registration_status(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-# --- Member self-service ---
+# --- Member self-service (must be before /members/{member_id} to avoid path conflict) ---
 
 
 @router.get("/members/me/registrations")
@@ -267,4 +270,71 @@ def list_my_registrations(
     return {
         "meta": meta.model_dump(),
         "items": [RegistrationResponse.model_validate(r) for r in items],
+    }
+
+
+# --- Admin: specific member's registrations ---
+
+
+def _to_registration_with_activity(registration: Registration) -> RegistrationDetailResponse:
+    activity_info = None
+    if registration.activity:
+        activity_info = RegistrationActivityInfo(
+            id=registration.activity.id,
+            name=registration.activity.name,
+            slug=registration.activity.slug,
+            starts_at=registration.activity.starts_at,
+            ends_at=registration.activity.ends_at,
+            location=registration.activity.location,
+        )
+
+    return RegistrationDetailResponse(
+        id=registration.id,
+        activity_id=registration.activity_id,
+        member_id=registration.member_id,
+        modality_id=registration.modality_id,
+        price_id=registration.price_id,
+        discount_code_id=registration.discount_code_id,
+        status=registration.status,
+        original_amount=float(registration.original_amount) if registration.original_amount is not None else None,
+        discounted_amount=float(registration.discounted_amount) if registration.discounted_amount is not None else None,
+        registration_data=registration.registration_data or {},
+        member_notes=registration.member_notes,
+        admin_notes=registration.admin_notes,
+        cancelled_at=registration.cancelled_at,
+        cancelled_reason=registration.cancelled_reason,
+        cancelled_by_name=registration.cancelled_by_name,
+        created_at=registration.created_at,
+        activity=activity_info,
+    )
+
+
+@router.get("/members/{member_id}/registrations")
+def list_member_registrations(
+    member_id: int,
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
+    status_filter: str | None = Query(None, alias="status"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """List all registrations for a specific member (admin only)."""
+    member = db.query(Member).filter(Member.id == member_id).first()
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+
+    query = (
+        db.query(Registration)
+        .filter(Registration.member_id == member_id)
+        .options(joinedload(Registration.activity))
+        .order_by(Registration.created_at.desc())
+    )
+    if status_filter:
+        query = query.filter(Registration.status == status_filter)
+
+    items, meta = paginate(query, page, per_page)
+
+    return {
+        "meta": meta.model_dump(),
+        "items": [_to_registration_with_activity(r) for r in items],
     }

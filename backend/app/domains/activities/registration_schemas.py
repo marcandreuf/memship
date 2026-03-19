@@ -5,9 +5,16 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 
 
+class ConsentAcceptanceInput(BaseModel):
+    activity_consent_id: int
+    accepted: bool = True
+
+
 class RegisterRequest(BaseModel):
     price_id: int
     modality_id: int | None = None
+    discount_code: str | None = None
+    consents: list[ConsentAcceptanceInput] = []
     registration_data: dict = {}
     member_notes: str | None = None
 
@@ -53,7 +60,10 @@ class RegistrationResponse(BaseModel):
     member_id: int
     modality_id: int | None = None
     price_id: int | None = None
+    discount_code_id: int | None = None
     status: str
+    original_amount: float | None = None
+    discounted_amount: float | None = None
     registration_data: dict = {}
     member_notes: str | None = None
     admin_notes: str | None = None
