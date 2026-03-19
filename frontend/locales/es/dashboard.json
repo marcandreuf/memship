@@ -3,6 +3,11 @@
     "welcome": "Bienvenido, {name}",
     "activeMembers": "Socios activos",
     "pendingMembers": "Socios pendientes",
+    "totalMembers": "Total socios",
+    "publishedActivities": "Actividades publicadas",
+    "draftActivities": "Actividades en borrador",
+    "totalActivities": "Total actividades",
+    "totalGroups": "Grupos",
     "memberWelcome": "Bienvenido a tu portal de socio.",
     "yourNumber": "Tu número de socio"
   }

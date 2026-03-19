@@ -28,6 +28,10 @@
     "group": "Grupo",
     "noGroup": "Sin grupo",
     "typeBilling": "Facturación",
-    "typesInfo": "Los tipos de membresía definen las distintas categorías de socios de tu organización (p. ej. Socio Pleno, Estudiante, Senior). Cada tipo puede tener su propio precio, frecuencia de cobro y restricciones de edad."
+    "typesInfo": "Los tipos de membresía definen las distintas categorías de socios de tu organización (p. ej. Socio Pleno, Estudiante, Senior). Cada tipo puede tener su propio precio, frecuencia de cobro y restricciones de edad.",
+    "contactInfo": "Contacto",
+    "activities": "Actividades",
+    "auditLog": "Auditoría",
+    "gender": "Género"
   }
 }

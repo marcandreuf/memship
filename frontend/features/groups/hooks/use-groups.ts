@@ -1,12 +1,20 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { listGroups, createGroup, updateGroup, deleteGroup } from "../services/groups-api";
+import { listGroups, getGroup, createGroup, updateGroup, deleteGroup } from "../services/groups-api";
 
 export function useGroups() {
   return useQuery({
     queryKey: ["groups"],
     queryFn: listGroups,
+  });
+}
+
+export function useGroup(id: number) {
+  return useQuery({
+    queryKey: ["groups", id],
+    queryFn: () => getGroup(id),
+    enabled: id > 0,
   });
 }
 

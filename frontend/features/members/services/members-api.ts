@@ -56,6 +56,7 @@ export interface ListMembersParams {
   per_page?: number;
   search?: string;
   status?: string;
+  group_id?: number;
 }
 
 export async function listMembers(
@@ -66,6 +67,7 @@ export async function listMembers(
   if (params.per_page) searchParams.set("per_page", String(params.per_page));
   if (params.search) searchParams.set("search", params.search);
   if (params.status) searchParams.set("status", params.status);
+  if (params.group_id) searchParams.set("group_id", String(params.group_id));
 
   const qs = searchParams.toString();
   return apiClient(`/members${qs ? `?${qs}` : ""}`);

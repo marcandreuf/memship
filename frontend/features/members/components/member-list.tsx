@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Link } from "@/lib/i18n/routing";
+import { Link, useRouter } from "@/lib/i18n/routing";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -21,18 +20,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SearchInput } from "@/components/entity/search-input";
+import { Pagination } from "@/components/entity/pagination";
+import { MEMBER_STATUS_VARIANTS } from "@/lib/status-variants";
 import { useMembers } from "../hooks/use-members";
-
-const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  active: "default",
-  pending: "secondary",
-  suspended: "destructive",
-  cancelled: "outline",
-  expired: "outline",
-};
 
 export function MemberList() {
   const t = useTranslations();
+  const router = useRouter();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
@@ -54,13 +49,13 @@ export function MemberList() {
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row">
-        <Input
-          placeholder={t("common.search")}
+        <SearchInput
           value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
+          onChange={(v) => {
+            setSearch(v);
             setPage(1);
           }}
+          placeholder={t("common.search")}
           className="sm:max-w-xs"
         />
         <Select
@@ -104,12 +99,15 @@ export function MemberList() {
                   <TableHead>{t("auth.email")}</TableHead>
                   <TableHead>{t("members.membershipType")}</TableHead>
                   <TableHead>{t("common.status")}</TableHead>
-                  <TableHead>{t("common.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {data.items.map((member) => (
-                  <TableRow key={member.id}>
+                  <TableRow
+                    key={member.id}
+                    className="cursor-pointer"
+                    onClick={() => router.push(`/members/${member.id}`)}
+                  >
                     <TableCell className="font-mono text-sm">
                       {member.member_number}
                     </TableCell>
@@ -119,16 +117,9 @@ export function MemberList() {
                     <TableCell>{member.person.email || "—"}</TableCell>
                     <TableCell>{member.membership_type_name || "—"}</TableCell>
                     <TableCell>
-                      <Badge variant={STATUS_VARIANTS[member.status] || "outline"}>
+                      <Badge variant={MEMBER_STATUS_VARIANTS[member.status] || "outline"}>
                         {t(`status.${member.status}`)}
                       </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Link href={`/members/${member.id}`}>
-                        <Button variant="outline" size="sm">
-                          {t("common.edit")}
-                        </Button>
-                      </Link>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -153,7 +144,7 @@ export function MemberList() {
                       {member.member_number}
                     </p>
                   </div>
-                  <Badge variant={STATUS_VARIANTS[member.status] || "outline"}>
+                  <Badge variant={MEMBER_STATUS_VARIANTS[member.status] || "outline"}>
                     {t(`status.${member.status}`)}
                   </Badge>
                 </div>
@@ -167,35 +158,13 @@ export function MemberList() {
           </div>
 
           {/* Pagination */}
-          {data.meta.total_pages > 1 && (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                {t("members.showing", {
-                  from: (data.meta.page - 1) * data.meta.per_page + 1,
-                  to: Math.min(data.meta.page * data.meta.per_page, data.meta.total),
-                  total: data.meta.total,
-                })}
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page <= 1}
-                  onClick={() => setPage(page - 1)}
-                >
-                  {t("members.previous")}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page >= data.meta.total_pages}
-                  onClick={() => setPage(page + 1)}
-                >
-                  {t("members.next")}
-                </Button>
-              </div>
-            </div>
-          )}
+          <Pagination
+            page={page}
+            totalPages={data.meta.total_pages}
+            total={data.meta.total}
+            perPage={data.meta.per_page}
+            onPageChange={setPage}
+          />
         </>
       )}
     </div>

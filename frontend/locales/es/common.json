@@ -30,7 +30,14 @@
     "actions": "Acciones",
     "status": "Estado",
     "yes": "Sí",
-    "no": "No"
+    "no": "No",
+    "showing": "Mostrando {from}-{to} de {total}",
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "details": "Detalles",
+    "comingSoon": "Próximamente",
+    "notFound": "No encontrado",
+    "view": "Ver"
   },
   "status": {
     "active": "Activo",
@@ -60,7 +67,9 @@
     "memberNumber": "Número de socio",
     "membershipType": "Tipo de membresía",
     "status": "Estado",
-    "joinedAt": "Socio desde"
+    "joinedAt": "Socio desde",
+    "language": "Idioma",
+    "preferences": "Preferencias"
   },
   "groups": {
     "title": "Grupos",
@@ -74,6 +83,10 @@
     "editGroup": "Editar grupo",
     "deleteConfirm": "¿Estás seguro de que deseas eliminar este grupo?",
     "noGroups": "No hay grupos todavía",
-    "info": "Los grupos permiten organizar los tipos de membresía en categorías (p. ej. Programas Juveniles, Socios Adultos, Honorarios). Ayudan a mantener el orden cuando hay muchos tipos de membresía."
+    "info": "Los grupos permiten organizar los tipos de membresía en categorías (p. ej. Programas Juveniles, Socios Adultos, Honorarios). Ayudan a mantener el orden cuando hay muchos tipos de membresía.",
+    "membershipTypes": "Tipos de membresía",
+    "members": "Socios",
+    "noMembershipTypes": "No hay tipos de membresía en este grupo",
+    "noMembers": "No hay socios en este grupo"
   }
 }

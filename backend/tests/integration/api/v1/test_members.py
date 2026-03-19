@@ -3,7 +3,7 @@
 from app.core.security.jwt import create_access_token
 from app.core.security.password import hash_password
 from app.domains.auth.models import User
-from app.domains.members.models import Member, MembershipType
+from app.domains.members.models import Group, Member, MembershipType
 from app.domains.persons.models import Person
 
 
@@ -111,6 +111,67 @@ class TestMemberCRUD:
         assert response.status_code == 200
         items = response.json()["items"]
         assert len(items) >= 1
+
+    def test_filter_by_group_id(self, client, db):
+        admin = _create_admin(db)
+        client.cookies.update(_auth_cookie(admin))
+
+        # Create a group and a membership type in that group
+        group = Group(name="Youth", slug="youth", is_active=True)
+        db.add(group)
+        db.flush()
+
+        mt_in_group = MembershipType(
+            name="Youth Member",
+            slug="youth-member",
+            group_id=group.id,
+            is_active=True,
+        )
+        db.add(mt_in_group)
+        db.flush()
+
+        # Create a membership type NOT in the group
+        mt_no_group = MembershipType(
+            name="General2",
+            slug="general2",
+            is_active=True,
+        )
+        db.add(mt_no_group)
+        db.flush()
+
+        # Create member in group
+        person1 = Person(first_name="InGroup", last_name="User", email="ingroup@test.com")
+        db.add(person1)
+        db.flush()
+        member1 = Member(
+            person_id=person1.id,
+            membership_type_id=mt_in_group.id,
+            member_number="M-GRP-001",
+            status="active",
+        )
+        db.add(member1)
+
+        # Create member NOT in group
+        person2 = Person(first_name="NoGroup", last_name="User", email="nogroup@test.com")
+        db.add(person2)
+        db.flush()
+        member2 = Member(
+            person_id=person2.id,
+            membership_type_id=mt_no_group.id,
+            member_number="M-GRP-002",
+            status="active",
+        )
+        db.add(member2)
+        db.flush()
+
+        # Filter by group_id
+        response = client.get(f"/api/v1/members/?group_id={group.id}")
+        assert response.status_code == 200
+        items = response.json()["items"]
+        assert len(items) >= 1
+        # All returned members should have the membership type in the group
+        for item in items:
+            assert item["membership_type_id"] == mt_in_group.id
 
     def test_filter_by_status(self, client, db):
         admin = _create_admin(db)

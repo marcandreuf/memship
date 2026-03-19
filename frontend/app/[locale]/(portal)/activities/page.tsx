@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Link } from "@/lib/i18n/routing";
+import { Link, useRouter } from "@/lib/i18n/routing";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -22,16 +21,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PageInfo } from "@/components/page-info";
+import { SearchInput } from "@/components/entity/search-input";
+import { Pagination } from "@/components/entity/pagination";
+import { ACTIVITY_STATUS_VARIANTS } from "@/lib/status-variants";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { useActivities } from "@/features/activities/hooks/use-activities";
-
-const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  draft: "outline",
-  published: "default",
-  archived: "secondary",
-  cancelled: "destructive",
-  completed: "secondary",
-};
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString(undefined, {
@@ -43,6 +37,7 @@ function formatDate(iso: string) {
 
 export default function ActivitiesPage() {
   const t = useTranslations();
+  const router = useRouter();
   const { user } = useAuth();
   const isAdmin = user?.role === "admin" || user?.role === "super_admin";
 
@@ -72,13 +67,13 @@ export default function ActivitiesPage() {
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row">
-        <Input
-          placeholder={t("common.search")}
+        <SearchInput
           value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
+          onChange={(v) => {
+            setSearch(v);
             setPage(1);
           }}
+          placeholder={t("common.search")}
           className="sm:max-w-xs"
         />
         {isAdmin && (
@@ -123,12 +118,15 @@ export default function ActivitiesPage() {
                   <TableHead>{t("activities.location")}</TableHead>
                   <TableHead>{t("activities.capacity")}</TableHead>
                   <TableHead>{t("common.status")}</TableHead>
-                  <TableHead>{t("common.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {data.items.map((activity) => (
-                  <TableRow key={activity.id}>
+                  <TableRow
+                    key={activity.id}
+                    className="cursor-pointer"
+                    onClick={() => router.push(`/activities/${activity.id}`)}
+                  >
                     <TableCell className="font-medium">{activity.name}</TableCell>
                     <TableCell>{formatDate(activity.starts_at)}</TableCell>
                     <TableCell>{activity.location || "—"}</TableCell>
@@ -136,16 +134,9 @@ export default function ActivitiesPage() {
                       {activity.current_participants}/{activity.max_participants}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={STATUS_VARIANTS[activity.status] || "outline"}>
+                      <Badge variant={ACTIVITY_STATUS_VARIANTS[activity.status] || "outline"}>
                         {t(`activities.status.${activity.status}`)}
                       </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Link href={`/activities/${activity.id}`}>
-                        <Button variant="outline" size="sm">
-                          {t("common.edit")}
-                        </Button>
-                      </Link>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -168,7 +159,7 @@ export default function ActivitiesPage() {
                       {formatDate(activity.starts_at)}
                     </p>
                   </div>
-                  <Badge variant={STATUS_VARIANTS[activity.status] || "outline"}>
+                  <Badge variant={ACTIVITY_STATUS_VARIANTS[activity.status] || "outline"}>
                     {t(`activities.status.${activity.status}`)}
                   </Badge>
                 </div>
@@ -219,28 +210,14 @@ export default function ActivitiesPage() {
       )}
 
       {/* Pagination */}
-      {data && data.meta.total_pages > 1 && (
-        <div className="flex items-center justify-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page <= 1}
-            onClick={() => setPage(page - 1)}
-          >
-            {t("common.back")}
-          </Button>
-          <span className="text-sm text-muted-foreground">
-            {page} / {data.meta.total_pages}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page >= data.meta.total_pages}
-            onClick={() => setPage(page + 1)}
-          >
-            &rarr;
-          </Button>
-        </div>
+      {data && (
+        <Pagination
+          page={page}
+          totalPages={data.meta.total_pages}
+          total={data.meta.total}
+          perPage={data.meta.per_page}
+          onPageChange={setPage}
+        />
       )}
     </div>
   );

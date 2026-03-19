@@ -20,13 +20,12 @@ export function Sidebar({ user }: SidebarProps) {
     ...(isAdmin
       ? [
           { href: "/members", label: t("nav.members"), roles: ["super_admin", "admin"] },
-          { href: "/membership-types", label: t("nav.membershipTypes"), roles: ["super_admin", "admin"] },
           { href: "/groups", label: t("nav.groups"), roles: ["super_admin", "admin"] },
         ]
       : []),
     { href: "/profile", label: t("nav.profile"), roles: ["super_admin", "admin", "member"] },
-    ...(user.role === "super_admin"
-      ? [{ href: "/settings", label: t("nav.settings"), roles: ["super_admin"] }]
+    ...(isAdmin
+      ? [{ href: "/settings", label: t("nav.settings"), roles: ["super_admin", "admin"] }]
       : []),
   ];
 

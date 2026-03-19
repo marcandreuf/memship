@@ -9,10 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
-import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -45,7 +41,6 @@ import {
 import { useMembershipTypes, useUpdateMembershipType, useDeleteMembershipType } from "@/features/members/hooks/use-members";
 import { createMembershipType } from "@/features/members/services/members-api";
 import type { MembershipTypeData } from "@/features/members/services/members-api";
-import { PageInfo } from "@/components/page-info";
 import { useGroups } from "@/features/groups/hooks/use-groups";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -59,7 +54,7 @@ const createSchema = z.object({
 
 type CreateFormValues = z.infer<typeof createSchema>;
 
-export default function MembershipTypesPage() {
+export function MembershipTypesSettings() {
   const t = useTranslations();
   const { data: types, isLoading } = useMembershipTypes();
   const { data: groups } = useGroups();
@@ -120,16 +115,17 @@ export default function MembershipTypesPage() {
     }
   }
 
+  if (isLoading) {
+    return <div className="py-4 text-center text-muted-foreground">{t("common.loading")}</div>;
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold">{t("nav.membershipTypes")}</h1>
-          <PageInfo text={t("members.typesInfo")} />
-        </div>
+        <p className="text-sm text-muted-foreground">{t("members.typesInfo")}</p>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button onClick={openCreate}>{t("common.create")}</Button>
+            <Button size="sm" onClick={openCreate}>{t("members.createType")}</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
@@ -221,57 +217,51 @@ export default function MembershipTypesPage() {
         </Dialog>
       </div>
 
-      {isLoading ? (
-        <div className="py-8 text-center text-muted-foreground">{t("common.loading")}</div>
-      ) : !types?.length ? (
-        <div className="py-8 text-center text-muted-foreground">{t("common.noResults")}</div>
+      {!types?.length ? (
+        <div className="py-4 text-center text-muted-foreground">{t("common.noResults")}</div>
       ) : (
-        <Card>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("members.typeName")}</TableHead>
-                  <TableHead>{t("members.typeSlug")}</TableHead>
-                  <TableHead>{t("members.typePrice")}</TableHead>
-                  <TableHead>{t("members.group")}</TableHead>
-                  <TableHead>{t("common.status")}</TableHead>
-                  <TableHead>{t("common.actions")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {types.map((type) => (
-                  <TableRow key={type.id}>
-                    <TableCell className="font-medium">{type.name}</TableCell>
-                    <TableCell className="font-mono text-sm">{type.slug}</TableCell>
-                    <TableCell>{type.base_price.toFixed(2)} EUR</TableCell>
-                    <TableCell>{type.group_name || t("members.noGroup")}</TableCell>
-                    <TableCell>
-                      <Badge variant={type.is_active ? "default" : "outline"}>
-                        {type.is_active ? t("status.active") : t("members.inactive")}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => openEdit(type)}>
-                          {t("common.edit")}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(type.id)}
-                          disabled={deleteMutation.isPending}
-                        >
-                          {t("common.delete")}
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t("members.typeName")}</TableHead>
+              <TableHead>{t("members.typeSlug")}</TableHead>
+              <TableHead>{t("members.typePrice")}</TableHead>
+              <TableHead>{t("members.group")}</TableHead>
+              <TableHead>{t("common.status")}</TableHead>
+              <TableHead>{t("common.actions")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {types.map((type) => (
+              <TableRow key={type.id}>
+                <TableCell className="font-medium">{type.name}</TableCell>
+                <TableCell className="font-mono text-sm">{type.slug}</TableCell>
+                <TableCell>{type.base_price.toFixed(2)} EUR</TableCell>
+                <TableCell>{type.group_name || t("members.noGroup")}</TableCell>
+                <TableCell>
+                  <Badge variant={type.is_active ? "default" : "outline"}>
+                    {type.is_active ? t("status.active") : t("members.inactive")}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => openEdit(type)}>
+                      {t("common.edit")}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDelete(type.id)}
+                      disabled={deleteMutation.isPending}
+                    >
+                      {t("common.delete")}
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
     </div>
   );

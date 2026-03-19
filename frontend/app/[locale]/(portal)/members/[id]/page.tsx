@@ -1,11 +1,14 @@
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/lib/i18n/routing";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DetailHeader } from "@/components/entity/detail-header";
+import { InlineEditWrapper } from "@/components/entity/inline-edit-wrapper";
+import { EntityTabs } from "@/components/entity/entity-tabs";
+import { PlaceholderTab } from "@/components/entity/placeholder-tab";
+import { MemberDetailSection } from "@/features/members/components/member-detail-section";
 import { MemberForm } from "@/features/members/components/member-form";
 import { MemberStatusActions } from "@/features/members/components/member-status-actions";
 import {
@@ -14,6 +17,7 @@ import {
   useDeleteMember,
 } from "@/features/members/hooks/use-members";
 import { useAuth } from "@/features/auth/hooks/use-auth";
+import { MEMBER_STATUS_VARIANTS } from "@/lib/status-variants";
 
 export default function MemberDetailPage({
   params,
@@ -28,6 +32,7 @@ export default function MemberDetailPage({
   const { data: member, isLoading } = useMember(memberId);
   const { mutateAsync: update, isPending: isUpdating } = useUpdateMember();
   const { mutateAsync: remove } = useDeleteMember();
+  const [isEditing, setIsEditing] = useState(false);
 
   const isAdmin = user?.role === "admin" || user?.role === "super_admin";
 
@@ -42,67 +47,97 @@ export default function MemberDetailPage({
   if (!member) {
     return (
       <div className="py-8 text-center text-muted-foreground">
-        {t("common.noResults")}
+        {t("common.notFound")}
       </div>
     );
   }
 
+  const memberName = `${member.person.first_name} ${member.person.last_name}`;
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <Button variant="outline" onClick={() => router.push("/members")}>
-          {t("common.back")}
-        </Button>
-        <h1 className="text-xl font-bold">
-          {member.person.first_name} {member.person.last_name}
-        </h1>
-        <Badge>{t(`status.${member.status}`)}</Badge>
-      </div>
-
-      {isAdmin && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">{t("common.status")}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <MemberStatusActions member={member} />
-          </CardContent>
-        </Card>
-      )}
-
-      <MemberForm
-        member={member}
-        onSubmit={async (data) => {
-          await update({
-            id: memberId,
-            data: {
-              ...data,
-              email: data.email || undefined,
-              date_of_birth: data.date_of_birth || undefined,
-              gender: data.gender || undefined,
-              national_id: data.national_id || undefined,
-              internal_notes: data.internal_notes || undefined,
-            },
-          });
+      <DetailHeader
+        breadcrumbs={[
+          { label: t("nav.members"), href: "/members" },
+          { label: memberName },
+        ]}
+        title={memberName}
+        badge={{
+          label: t(`status.${member.status}`),
+          variant: MEMBER_STATUS_VARIANTS[member.status] || "outline",
         }}
-        isSubmitting={isUpdating}
+        actions={
+          isAdmin ? (
+            <>
+              <MemberStatusActions member={member} />
+              {!isEditing && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={async () => {
+                    if (confirm(t("members.confirmDelete"))) {
+                      await remove(memberId);
+                      router.push("/members");
+                    }
+                  }}
+                >
+                  {t("common.delete")}
+                </Button>
+              )}
+            </>
+          ) : undefined
+        }
       />
 
-      {isAdmin && (
-        <div className="pt-4">
-          <Button
-            variant="destructive"
-            onClick={async () => {
-              if (confirm(t("members.confirmDelete"))) {
-                await remove(memberId);
-                router.push("/members");
-              }
+      <InlineEditWrapper
+        title={t("members.memberInfo")}
+        isEditing={isEditing}
+        onEdit={() => setIsEditing(true)}
+        onCancel={() => setIsEditing(false)}
+        canEdit={isAdmin}
+        readContent={<MemberDetailSection member={member} />}
+        editContent={
+          <MemberForm
+            member={member}
+            onSubmit={async (data) => {
+              await update({
+                id: memberId,
+                data: {
+                  ...data,
+                  email: data.email || undefined,
+                  date_of_birth: data.date_of_birth || undefined,
+                  gender: data.gender || undefined,
+                  national_id: data.national_id || undefined,
+                  internal_notes: data.internal_notes || undefined,
+                },
+              });
+              setIsEditing(false);
             }}
-          >
-            {t("common.delete")}
-          </Button>
-        </div>
-      )}
+            isSubmitting={isUpdating}
+            onCancel={() => setIsEditing(false)}
+          />
+        }
+      />
+
+      <EntityTabs
+        tabs={[
+          {
+            id: "contact",
+            label: t("members.contactInfo"),
+            content: <PlaceholderTab message={t("common.comingSoon")} />,
+          },
+          {
+            id: "activities",
+            label: t("members.activities"),
+            content: <PlaceholderTab message={t("common.comingSoon")} />,
+          },
+          {
+            id: "audit",
+            label: t("members.auditLog"),
+            content: <PlaceholderTab message={t("common.comingSoon")} />,
+          },
+        ]}
+      />
     </div>
   );
 }

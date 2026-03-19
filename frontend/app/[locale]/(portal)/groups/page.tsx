@@ -2,16 +2,13 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { useRouter } from "@/lib/i18n/routing";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -36,8 +33,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PageInfo } from "@/components/page-info";
-import { useGroups, useCreateGroup, useUpdateGroup, useDeleteGroup } from "@/features/groups/hooks/use-groups";
-import type { GroupData } from "@/features/groups/services/groups-api";
+import { SearchInput } from "@/components/entity/search-input";
+import { useGroups, useCreateGroup } from "@/features/groups/hooks/use-groups";
 
 const groupSchema = z.object({
   name: z.string().min(1).max(255),
@@ -51,57 +48,37 @@ type GroupFormValues = z.infer<typeof groupSchema>;
 
 export default function GroupsPage() {
   const t = useTranslations();
+  const router = useRouter();
   const { data: groups, isLoading } = useGroups();
   const createMutation = useCreateGroup();
-  const updateMutation = useUpdateGroup();
-  const deleteMutation = useDeleteGroup();
   const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState<GroupData | null>(null);
+  const [search, setSearch] = useState("");
 
   const form = useForm<GroupFormValues>({
     resolver: zodResolver(groupSchema),
     defaultValues: { name: "", slug: "", description: "", is_billable: true, color: "" },
   });
 
-  function openCreate() {
-    setEditing(null);
-    form.reset({ name: "", slug: "", description: "", is_billable: true, color: "" });
-    setOpen(true);
-  }
-
-  function openEdit(group: GroupData) {
-    setEditing(group);
-    form.reset({
-      name: group.name,
-      slug: group.slug,
-      description: group.description || "",
-      is_billable: group.is_billable,
-      color: group.color || "",
-    });
-    setOpen(true);
-  }
-
   async function onSubmit(data: GroupFormValues) {
     const payload = {
       ...data,
       color: data.color || undefined,
     };
-    if (editing) {
-      await updateMutation.mutateAsync({ id: editing.id, data: payload });
-    } else {
-      await createMutation.mutateAsync(payload);
-    }
+    await createMutation.mutateAsync(payload);
     setOpen(false);
     form.reset();
   }
 
-  async function handleDelete(id: number) {
-    if (window.confirm(t("groups.deleteConfirm"))) {
-      await deleteMutation.mutateAsync(id);
-    }
-  }
-
-  const isSubmitting = createMutation.isPending || updateMutation.isPending;
+  // Client-side search filter
+  const filteredGroups = groups?.filter((g) => {
+    if (!search) return true;
+    const term = search.toLowerCase();
+    return (
+      g.name.toLowerCase().includes(term) ||
+      g.slug.toLowerCase().includes(term) ||
+      (g.description && g.description.toLowerCase().includes(term))
+    );
+  });
 
   return (
     <div className="space-y-4">
@@ -112,13 +89,11 @@ export default function GroupsPage() {
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button onClick={openCreate}>{t("groups.createGroup")}</Button>
+            <Button>{t("groups.createGroup")}</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>
-                {editing ? t("groups.editGroup") : t("groups.createGroup")}
-              </DialogTitle>
+              <DialogTitle>{t("groups.createGroup")}</DialogTitle>
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -133,19 +108,17 @@ export default function GroupsPage() {
                     </FormItem>
                   )}
                 />
-                {!editing && (
-                  <FormField
-                    control={form.control}
-                    name="slug"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t("groups.slug")}</FormLabel>
-                        <FormControl><Input {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
+                <FormField
+                  control={form.control}
+                  name="slug"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("groups.slug")}</FormLabel>
+                      <FormControl><Input {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <FormField
                   control={form.control}
                   name="description"
@@ -173,8 +146,8 @@ export default function GroupsPage() {
                     </FormItem>
                   )}
                 />
-                <Button type="submit" disabled={isSubmitting} className="w-full">
-                  {isSubmitting ? t("common.loading") : editing ? t("common.save") : t("common.create")}
+                <Button type="submit" disabled={createMutation.isPending} className="w-full">
+                  {createMutation.isPending ? t("common.loading") : t("common.create")}
                 </Button>
               </form>
             </Form>
@@ -182,13 +155,22 @@ export default function GroupsPage() {
         </Dialog>
       </div>
 
+      <SearchInput
+        value={search}
+        onChange={setSearch}
+        placeholder={t("common.search")}
+        className="sm:max-w-xs"
+        minChars={1}
+      />
+
       {isLoading ? (
         <div className="py-8 text-center text-muted-foreground">{t("common.loading")}</div>
-      ) : !groups?.length ? (
+      ) : !filteredGroups?.length ? (
         <div className="py-8 text-center text-muted-foreground">{t("groups.noGroups")}</div>
       ) : (
-        <Card>
-          <CardContent className="p-0">
+        <>
+          {/* Desktop table */}
+          <div className="hidden md:block rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -196,12 +178,15 @@ export default function GroupsPage() {
                   <TableHead>{t("groups.slug")}</TableHead>
                   <TableHead>{t("groups.billable")}</TableHead>
                   <TableHead>{t("groups.color")}</TableHead>
-                  <TableHead>{t("common.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {groups.map((group) => (
-                  <TableRow key={group.id}>
+                {filteredGroups.map((group) => (
+                  <TableRow
+                    key={group.id}
+                    className="cursor-pointer"
+                    onClick={() => router.push(`/groups/${group.id}`)}
+                  >
                     <TableCell className="font-medium">{group.name}</TableCell>
                     <TableCell className="font-mono text-sm">{group.slug}</TableCell>
                     <TableCell>
@@ -220,27 +205,38 @@ export default function GroupsPage() {
                         </div>
                       )}
                     </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => openEdit(group)}>
-                          {t("common.edit")}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(group.id)}
-                          disabled={deleteMutation.isPending}
-                        >
-                          {t("common.delete")}
-                        </Button>
-                      </div>
-                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
-          </CardContent>
-        </Card>
+          </div>
+
+          {/* Mobile card view */}
+          <div className="space-y-3 md:hidden">
+            {filteredGroups.map((group) => (
+              <div
+                key={group.id}
+                className="rounded-lg border p-4 hover:bg-accent transition-colors cursor-pointer"
+                onClick={() => router.push(`/groups/${group.id}`)}
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="font-medium">{group.name}</p>
+                    <p className="text-sm text-muted-foreground font-mono">{group.slug}</p>
+                  </div>
+                  <Badge variant={group.is_billable ? "default" : "outline"}>
+                    {group.is_billable ? t("common.yes") : t("common.no")}
+                  </Badge>
+                </div>
+                {group.description && (
+                  <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
+                    {group.description}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

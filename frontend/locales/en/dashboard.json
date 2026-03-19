@@ -1,8 +1,13 @@
 {
   "dashboard": {
     "welcome": "Welcome, {name}",
-    "activeMembers": "Active members",
-    "pendingMembers": "Pending members",
+    "activeMembers": "Active Members",
+    "pendingMembers": "Pending Members",
+    "totalMembers": "Total Members",
+    "publishedActivities": "Published Activities",
+    "draftActivities": "Draft Activities",
+    "totalActivities": "Total Activities",
+    "totalGroups": "Groups",
     "memberWelcome": "Welcome to your member portal.",
     "yourNumber": "Your member number"
   }

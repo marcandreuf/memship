@@ -1,10 +1,19 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { useMember } from "@/features/members/hooks/use-members";
+import { usePathname, useRouter } from "@/lib/i18n/routing";
+import { locales, type Locale } from "@/lib/i18n/config";
 
 function Field({ label, value }: { label: string; value: string | null | undefined }) {
   if (!value) return null;
@@ -18,6 +27,9 @@ function Field({ label, value }: { label: string; value: string | null | undefin
 
 export default function ProfilePage() {
   const t = useTranslations();
+  const currentLocale = useLocale();
+  const pathname = usePathname();
+  const router = useRouter();
   const { user } = useAuth();
   const { data: member, isLoading } = useMember(user?.member_id || 0);
 
@@ -31,6 +43,10 @@ export default function ProfilePage() {
 
   const person = member.person;
 
+  function handleLocaleChange(locale: string) {
+    router.replace(pathname, { locale: locale as Locale });
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
@@ -40,11 +56,11 @@ export default function ProfilePage() {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">{t("profile.personalInfo")}</CardTitle>
+          <CardHeader className="py-3 px-4">
+            <CardTitle className="text-base">{t("profile.personalInfo")}</CardTitle>
           </CardHeader>
-          <CardContent>
-            <dl className="grid gap-3 sm:grid-cols-2">
+          <CardContent className="px-4 pb-4 pt-0">
+            <dl className="grid gap-2 sm:grid-cols-2">
               <Field label={t("profile.firstName")} value={person.first_name} />
               <Field label={t("profile.lastName")} value={person.last_name} />
               <Field label={t("profile.email")} value={person.email} />
@@ -56,11 +72,11 @@ export default function ProfilePage() {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">{t("profile.membership")}</CardTitle>
+          <CardHeader className="py-3 px-4">
+            <CardTitle className="text-base">{t("profile.membership")}</CardTitle>
           </CardHeader>
-          <CardContent>
-            <dl className="grid gap-3 sm:grid-cols-2">
+          <CardContent className="px-4 pb-4 pt-0">
+            <dl className="grid gap-2 sm:grid-cols-2">
               <Field label={t("profile.memberNumber")} value={member.member_number} />
               <Field label={t("profile.membershipType")} value={member.membership_type_name} />
               <Field label={t("profile.status")} value={t(`status.${member.status}`)} />
@@ -69,6 +85,29 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader className="py-3 px-4">
+          <CardTitle className="text-base">{t("profile.preferences")}</CardTitle>
+        </CardHeader>
+        <CardContent className="px-4 pb-4 pt-0">
+          <div className="max-w-xs">
+            <p className="text-xs text-muted-foreground mb-1.5">{t("profile.language")}</p>
+            <Select value={currentLocale} onValueChange={handleLocaleChange}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {locales.map((loc) => (
+                  <SelectItem key={loc} value={loc}>
+                    {t(`locale.${loc}`)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

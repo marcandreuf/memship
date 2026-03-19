@@ -9,7 +9,7 @@ from app.core.pagination import PageMeta, paginate
 from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
 from app.domains.auth.models import User
-from app.domains.members.models import Member
+from app.domains.members.models import Member, MembershipType
 from app.domains.members.schemas import (
     GuardianResponse,
     MemberCreate,
@@ -55,6 +55,7 @@ def list_members(
     per_page: int = Query(20, ge=1, le=100),
     search: str | None = None,
     status_filter: str | None = Query(None, alias="status"),
+    group_id: int | None = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
@@ -63,6 +64,11 @@ def list_members(
         .filter(Member.is_active.is_(True))
         .options(joinedload(Member.person), joinedload(Member.membership_type), joinedload(Member.guardian))
     )
+
+    if group_id is not None:
+        query = query.join(
+            MembershipType, Member.membership_type_id == MembershipType.id
+        ).filter(MembershipType.group_id == group_id)
 
     if search:
         search_term = f"%{search}%"

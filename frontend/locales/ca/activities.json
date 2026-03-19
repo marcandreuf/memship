@@ -77,6 +77,7 @@
       "free": "Gratis"
     },
     "allStatuses": "Tots els estats",
-    "filterByStatus": "Filtrar per estat"
+    "filterByStatus": "Filtrar per estat",
+    "registrations": "Inscripcions"
   }
 }

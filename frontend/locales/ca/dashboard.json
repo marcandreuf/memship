@@ -3,6 +3,11 @@
     "welcome": "Benvingut, {name}",
     "activeMembers": "Socis actius",
     "pendingMembers": "Socis pendents",
+    "totalMembers": "Total socis",
+    "publishedActivities": "Activitats publicades",
+    "draftActivities": "Activitats en esborrany",
+    "totalActivities": "Total activitats",
+    "totalGroups": "Grups",
     "memberWelcome": "Benvingut al teu portal de soci.",
     "yourNumber": "El teu número de soci"
   }

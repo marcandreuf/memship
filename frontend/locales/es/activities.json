@@ -77,6 +77,7 @@
       "free": "Gratis"
     },
     "allStatuses": "Todos los estados",
-    "filterByStatus": "Filtrar por estado"
+    "filterByStatus": "Filtrar por estado",
+    "registrations": "Inscripciones"
   }
 }

@@ -42,9 +42,10 @@ interface MemberFormProps {
   member?: MemberData;
   onSubmit: (data: MemberFormValues) => Promise<void>;
   isSubmitting: boolean;
+  onCancel?: () => void;
 }
 
-export function MemberForm({ member, onSubmit, isSubmitting }: MemberFormProps) {
+export function MemberForm({ member, onSubmit, isSubmitting, onCancel }: MemberFormProps) {
   const t = useTranslations();
   const { data: membershipTypes } = useMembershipTypes();
 
@@ -62,20 +63,13 @@ export function MemberForm({ member, onSubmit, isSubmitting }: MemberFormProps) 
     },
   });
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          {member ? t("members.editMember") : t("members.createMember")}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-4"
-          >
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+  const formContent = (
+    <Form {...form}>
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="space-y-3"
+      >
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="first_name"
@@ -119,7 +113,7 @@ export function MemberForm({ member, onSubmit, isSubmitting }: MemberFormProps) 
               )}
             />
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="date_of_birth"
@@ -199,10 +193,27 @@ export function MemberForm({ member, onSubmit, isSubmitting }: MemberFormProps) 
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? t("common.loading") : t("common.save")}
               </Button>
+              {onCancel && (
+                <Button type="button" variant="outline" onClick={onCancel}>
+                  {t("common.cancel")}
+                </Button>
+              )}
             </div>
-          </form>
-        </Form>
-      </CardContent>
+      </form>
+    </Form>
+  );
+
+  // When used inline (has onCancel), render without Card wrapper
+  if (onCancel) return formContent;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>
+          {member ? t("members.editMember") : t("members.createMember")}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>{formContent}</CardContent>
     </Card>
   );
 }
