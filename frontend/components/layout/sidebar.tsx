@@ -17,6 +17,9 @@ export function Sidebar({ user }: SidebarProps) {
   const navItems = [
     { href: "/dashboard", label: t("nav.dashboard"), roles: ["super_admin", "admin", "member"] },
     { href: "/activities", label: t("nav.activities"), roles: ["super_admin", "admin", "member"] },
+    ...(!isAdmin
+      ? [{ href: "/my-activities", label: t("activities.registration.myActivities"), roles: ["member"] }]
+      : []),
     ...(isAdmin
       ? [
           { href: "/members", label: t("nav.members"), roles: ["super_admin", "admin"] },

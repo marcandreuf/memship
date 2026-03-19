@@ -1,4 +1,4 @@
-"""Activity, ActivityModality, and ActivityPrice models."""
+"""Activity, ActivityModality, ActivityPrice, and Registration models."""
 
 from sqlalchemy import (
     Boolean,
@@ -78,6 +78,7 @@ class Activity(Base):
         "ActivityModality", back_populates="activity", lazy="selectin"
     )
     prices = relationship("ActivityPrice", back_populates="activity", lazy="selectin")
+    registrations = relationship("Registration", back_populates="activity")
 
 
 class ActivityModality(Base):
@@ -145,3 +146,64 @@ class ActivityPrice(Base):
     # Relationships
     activity = relationship("Activity", back_populates="prices")
     modality = relationship("ActivityModality", back_populates="prices")
+
+
+class Registration(Base):
+    __tablename__ = "registrations"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('confirmed', 'waitlist', 'cancelled', 'pending')",
+            name="valid_registration_status",
+        ),
+        Index(
+            "uq_registration_active_member",
+            "activity_id",
+            "member_id",
+            unique=True,
+            postgresql_where=Column("status") != "cancelled",
+        ),
+        Index("idx_registrations_activity_id", "activity_id"),
+        Index("idx_registrations_member_id", "member_id"),
+        Index("idx_registrations_status", "status"),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    activity_id = Column(
+        Integer, ForeignKey("activities.id", ondelete="CASCADE"), nullable=False
+    )
+    member_id = Column(
+        Integer, ForeignKey("members.id", ondelete="CASCADE"), nullable=False
+    )
+    modality_id = Column(
+        Integer, ForeignKey("activity_modalities.id", ondelete="SET NULL")
+    )
+    price_id = Column(
+        Integer, ForeignKey("activity_prices.id", ondelete="SET NULL")
+    )
+    status = Column(String(20), default="confirmed", nullable=False)
+    registration_data = Column(JSONB, default=dict)
+    member_notes = Column(Text)
+    admin_notes = Column(Text)
+    cancelled_at = Column(DateTime(timezone=True))
+    cancelled_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+    cancelled_reason = Column(Text)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    # Relationships
+    activity = relationship("Activity", back_populates="registrations")
+    member = relationship("Member", foreign_keys=[member_id])
+    modality = relationship("ActivityModality")
+    price = relationship("ActivityPrice")
+    cancelled_by_user = relationship("User", foreign_keys=[cancelled_by], lazy="joined")
+
+    @property
+    def cancelled_by_name(self) -> str | None:
+        if self.cancelled_by_user is None:
+            return None
+        person = getattr(self.cancelled_by_user, "person", None)
+        if person:
+            return f"{person.first_name} {person.last_name}"
+        return self.cancelled_by_user.email

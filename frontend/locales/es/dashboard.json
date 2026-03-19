@@ -8,7 +8,10 @@
     "draftActivities": "Actividades en borrador",
     "totalActivities": "Total actividades",
     "totalGroups": "Grupos",
+    "totalRegistrations": "Inscripciones",
     "memberWelcome": "Bienvenido a tu portal de socio.",
-    "yourNumber": "Tu número de socio"
+    "yourNumber": "Tu número de socio",
+    "upcomingActivities": "Tus próximas actividades",
+    "noUpcoming": "No hay actividades próximas"
   }
 }

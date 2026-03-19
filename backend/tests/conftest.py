@@ -23,7 +23,7 @@ from app.domains.persons.models import (  # noqa: F401
 from app.domains.auth.models import User  # noqa: F401
 from app.domains.members.models import Group, Member, MembershipType  # noqa: F401
 from app.domains.audit.models import AuditLog  # noqa: F401
-from app.domains.activities.models import Activity, ActivityModality, ActivityPrice  # noqa: F401
+from app.domains.activities.models import Activity, ActivityModality, ActivityPrice, Registration  # noqa: F401
 
 # Use test database
 TEST_DATABASE_URL = os.getenv("DATABASE_TEST_URL", settings.DATABASE_TEST_URL)

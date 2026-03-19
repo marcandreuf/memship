@@ -78,6 +78,35 @@
     },
     "allStatuses": "Tots els estats",
     "filterByStatus": "Filtrar per estat",
-    "registrations": "Inscripcions"
+    "registrations": "Inscripcions",
+    "registration": {
+      "register": "Inscriure's",
+      "cancelRegistration": "Cancel·lar inscripció",
+      "confirmCancel": "Cancel·lar aquesta inscripció?",
+      "registered": "Inscrit",
+      "myActivities": "Les meves activitats",
+      "noRegistrations": "Encara no hi ha inscripcions",
+      "eligible": "Pots inscriure't",
+      "notEligible": "No pots inscriure't",
+      "alreadyRegistered": "Ja estàs inscrit en aquesta activitat",
+      "viewMyActivities": "Veure les meves activitats",
+      "registerAgain": "Inscriure's de nou",
+      "cancelledOn": "Cancel·lada el",
+      "cancelledBy": "Cancel·lada per",
+      "selectPrice": "Selecciona un preu",
+      "selectModality": "Selecciona una modalitat",
+      "notes": "Notes (opcional)",
+      "registeredOn": "Inscrit",
+      "status": {
+        "confirmed": "Confirmat",
+        "waitlist": "En espera",
+        "cancelled": "Cancel·lat",
+        "pending": "Pendent"
+      },
+      "member": "Soci",
+      "date": "Data",
+      "changeStatus": "Canviar estat",
+      "noMyActivities": "Encara no t'has inscrit en cap activitat"
+    }
   }
 }

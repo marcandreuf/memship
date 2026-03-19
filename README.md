@@ -25,12 +25,19 @@ Most membership tools are either expensive SaaS platforms or outdated legacy sof
 - Guardian/minor support
 - Role-based access: super admin, org admin, member
 - Organization settings with branding (color, logo)
-- Multi-language interface (ES, CA, EN) with locale switcher
+- Multi-language interface (ES, CA, EN) with locale selector in profile
+- Admin dashboard with status charts (recharts)
+- Unified entity pattern: list → detail → tabs for all entities
 
 **Activities & Events** (in development)
-- Activity creation with modalities, pricing, and capacity control
-- Online registration with eligibility filters and waitlists
-- Attendance tracking with QR check-in
+- Activity creation with lifecycle management (draft → published → archived)
+- Modalities (variants with independent capacity, pricing, and deadlines)
+- Pricing tiers with time-based validity (early bird pricing)
+- Online registration with eligibility checks (membership type, age, status)
+- Capacity management with automatic waiting list and promotion
+- Self-cancellation with configurable deadlines
+- Member portal: activity browsing, registration, "My Activities" dashboard
+- Admin portal: registration management with status changes
 
 **Payments & Invoicing** (planned)
 - Membership fee generation and invoicing
@@ -124,13 +131,15 @@ After starting the services, run the seed command to create initial data:
 ./scripts/dev.sh seed test     # Quick — creates test accounts (no prompts)
 ```
 
-The `seed test` option creates three accounts for development:
+The `seed test` option creates test accounts and sample data for development:
 
 | Role | Email | Password |
 |------|-------|----------|
 | Super Admin | super@test.com | TestSuper1! |
 | Org Admin | admin@test.com | TestAdmin1! |
 | Member | member@test.com | TestMember1! |
+
+Plus 5 extra member accounts (maria@test.com, joan@test.com, etc. / TestMember1!), 4 sample activities with modalities and prices, and sample registrations.
 
 > **Warning:** Do not use test accounts in production. Use `./scripts/dev.sh seed` (interactive) for real deployments.
 
@@ -209,7 +218,7 @@ Backups are stored in the `backups/` directory. Old backups are cleaned up after
 | v0.1.1 | Email sending (SMTP) — welcome emails, password reset emails | Done |
 | v0.1.2 | Groups, guardian/minor support, restricted role (schema) | Done |
 | v0.1.3 | Caddy reverse proxy, backup/restore scripts, self-hosted polish | Done |
-| v0.2.0 | Activity Management | In progress |
+| v0.2.0 | Activity Management — CRUD, modalities, pricing, registration, eligibility, waitlist, dashboard | In progress |
 | v0.2.1 | E2E test foundation (Cypress), activity polish | — |
 | v0.3.0 | Basic Payments & Invoicing | — |
 | v0.4.0 | Payment Processing (SEPA + Stripe) | — |

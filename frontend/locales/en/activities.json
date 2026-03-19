@@ -78,6 +78,35 @@
     },
     "allStatuses": "All statuses",
     "filterByStatus": "Filter by status",
-    "registrations": "Registrations"
+    "registrations": "Registrations",
+    "registration": {
+      "register": "Register",
+      "cancelRegistration": "Cancel Registration",
+      "confirmCancel": "Cancel this registration?",
+      "registered": "Registered",
+      "myActivities": "My Activities",
+      "noRegistrations": "No registrations yet",
+      "eligible": "You are eligible to register",
+      "notEligible": "You are not eligible",
+      "alreadyRegistered": "You are already registered for this activity",
+      "viewMyActivities": "View my activities",
+      "registerAgain": "Register again",
+      "cancelledOn": "Cancelled on",
+      "cancelledBy": "Cancelled by",
+      "selectPrice": "Select a price",
+      "selectModality": "Select a modality",
+      "notes": "Notes (optional)",
+      "registeredOn": "Registered",
+      "status": {
+        "confirmed": "Confirmed",
+        "waitlist": "Waitlisted",
+        "cancelled": "Cancelled",
+        "pending": "Pending"
+      },
+      "member": "Member",
+      "date": "Date",
+      "changeStatus": "Change Status",
+      "noMyActivities": "You haven't registered for any activities yet"
+    }
   }
 }

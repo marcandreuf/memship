@@ -8,7 +8,10 @@
     "draftActivities": "Draft Activities",
     "totalActivities": "Total Activities",
     "totalGroups": "Groups",
+    "totalRegistrations": "Registrations",
     "memberWelcome": "Welcome to your member portal.",
-    "yourNumber": "Your member number"
+    "yourNumber": "Your member number",
+    "upcomingActivities": "Your upcoming activities",
+    "noUpcoming": "No upcoming activities"
   }
 }

@@ -78,6 +78,35 @@
     },
     "allStatuses": "Todos los estados",
     "filterByStatus": "Filtrar por estado",
-    "registrations": "Inscripciones"
+    "registrations": "Inscripciones",
+    "registration": {
+      "register": "Inscribirse",
+      "cancelRegistration": "Cancelar inscripción",
+      "confirmCancel": "¿Cancelar esta inscripción?",
+      "registered": "Inscrito",
+      "myActivities": "Mis actividades",
+      "noRegistrations": "No hay inscripciones todavía",
+      "eligible": "Puedes inscribirte",
+      "notEligible": "No puedes inscribirte",
+      "alreadyRegistered": "Ya estás inscrito en esta actividad",
+      "viewMyActivities": "Ver mis actividades",
+      "registerAgain": "Inscribirse de nuevo",
+      "cancelledOn": "Cancelada el",
+      "cancelledBy": "Cancelada por",
+      "selectPrice": "Selecciona un precio",
+      "selectModality": "Selecciona una modalidad",
+      "notes": "Notas (opcional)",
+      "registeredOn": "Inscrito",
+      "status": {
+        "confirmed": "Confirmado",
+        "waitlist": "En espera",
+        "cancelled": "Cancelado",
+        "pending": "Pendiente"
+      },
+      "member": "Socio",
+      "date": "Fecha",
+      "changeStatus": "Cambiar estado",
+      "noMyActivities": "Aún no te has inscrito en ninguna actividad"
+    }
   }
 }

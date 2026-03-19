@@ -9,6 +9,16 @@ export const MEMBER_STATUS_VARIANTS: Record<
   expired: "outline",
 };
 
+export const REGISTRATION_STATUS_VARIANTS: Record<
+  string,
+  "default" | "secondary" | "destructive" | "outline"
+> = {
+  confirmed: "default",
+  waitlist: "secondary",
+  pending: "outline",
+  cancelled: "destructive",
+};
+
 export const ACTIVITY_STATUS_VARIANTS: Record<
   string,
   "default" | "secondary" | "destructive" | "outline"

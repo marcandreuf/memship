@@ -199,11 +199,9 @@ export default function ActivitiesPage() {
                     : t("activities.full")}
                 </p>
               </div>
-              {activity.is_registration_open && (
-                <Badge className="mt-2" variant="default">
-                  {t("activities.status.published")}
-                </Badge>
-              )}
+              <Badge className="mt-2" variant={ACTIVITY_STATUS_VARIANTS[activity.status] || "outline"}>
+                {t(`activities.status.${activity.status}`)}
+              </Badge>
             </Link>
           ))}
         </div>

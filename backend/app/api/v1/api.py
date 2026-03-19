@@ -12,6 +12,7 @@ from app.api.v1.endpoints import (
     members,
     membership_types,
     persons,
+    registrations,
     settings,
 )
 
@@ -25,4 +26,5 @@ api_router.include_router(groups.router)
 api_router.include_router(members.router)
 api_router.include_router(membership_types.router)
 api_router.include_router(persons.router)
+api_router.include_router(registrations.router)
 api_router.include_router(settings.router)

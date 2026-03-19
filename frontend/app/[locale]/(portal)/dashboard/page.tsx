@@ -13,11 +13,15 @@ import {
   Tooltip,
   LabelList,
 } from "recharts";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { useMembers } from "@/features/members/hooks/use-members";
 import { useActivities } from "@/features/activities/hooks/use-activities";
 import { useGroups } from "@/features/groups/hooks/use-groups";
+import { useMyRegistrations } from "@/features/activities/hooks/use-registrations";
+import { useActivity } from "@/features/activities/hooks/use-activities";
+import type { RegistrationData } from "@/features/activities/services/registrations-api";
 
 const MEMBER_COLORS: Record<string, string> = {
   active: "hsl(142, 71%, 45%)",
@@ -130,6 +134,44 @@ function StatCard({
   return content;
 }
 
+const REG_STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+  confirmed: "default",
+  waitlist: "secondary",
+  cancelled: "destructive",
+  pending: "outline",
+};
+
+function UpcomingActivityCard({ registration }: { registration: RegistrationData }) {
+  const t = useTranslations();
+  const { data: activity } = useActivity(registration.activity_id);
+
+  return (
+    <Link
+      href={`/activities/${registration.activity_id}`}
+      className="block rounded-lg border p-3 hover:bg-accent transition-colors"
+    >
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <p className="font-medium text-sm truncate">
+            {activity?.name || `Activity #${registration.activity_id}`}
+          </p>
+          {activity && (
+            <p className="text-xs text-muted-foreground">
+              {new Date(activity.starts_at).toLocaleDateString(undefined, {
+                month: "short", day: "numeric", year: "numeric",
+              })}
+              {activity.location && ` · ${activity.location}`}
+            </p>
+          )}
+        </div>
+        <Badge variant={REG_STATUS_VARIANTS[registration.status] || "outline"} className="shrink-0">
+          {t(`activities.registration.status.${registration.status}`)}
+        </Badge>
+      </div>
+    </Link>
+  );
+}
+
 export default function DashboardPage() {
   const t = useTranslations();
   const { user } = useAuth();
@@ -150,6 +192,11 @@ export default function DashboardPage() {
 
   const { data: groups } = useGroups();
 
+  // Member: my registrations
+  const { data: myRegistrations } = useMyRegistrations(
+    !isAdmin ? { per_page: 5 } : {}
+  );
+
   const memberChartData = useMemo<ChartItem[]>(() => [
     { name: t("status.active"), value: activeMembers?.meta.total ?? 0, color: MEMBER_COLORS.active },
     { name: t("status.pending"), value: pendingMembers?.meta.total ?? 0, color: MEMBER_COLORS.pending },
@@ -164,6 +211,10 @@ export default function DashboardPage() {
     { name: t("activities.status.archived"), value: archivedActivities?.meta.total ?? 0, color: ACTIVITY_COLORS.archived },
     { name: t("activities.status.cancelled"), value: cancelledActivities?.meta.total ?? 0, color: ACTIVITY_COLORS.cancelled },
   ], [draftActivities, publishedActivities, archivedActivities, cancelledActivities, t]);
+
+  const activeRegistrations = myRegistrations?.items.filter(
+    (r) => r.status === "confirmed" || r.status === "waitlist"
+  ) || [];
 
   return (
     <div className="space-y-4">
@@ -187,8 +238,8 @@ export default function DashboardPage() {
             />
           </div>
 
-          {/* Groups card */}
-          <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+          {/* Summary cards */}
+          <div className="grid gap-3 grid-cols-2 lg:grid-cols-3">
             <StatCard
               label={t("dashboard.totalGroups")}
               value={groups?.length ?? "—"}
@@ -199,18 +250,46 @@ export default function DashboardPage() {
       )}
 
       {!isAdmin && (
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-muted-foreground">
-              {t("dashboard.memberWelcome")}
-            </p>
-            {user?.member_number && (
-              <p className="mt-2 font-mono text-sm">
-                {t("dashboard.yourNumber")}: {user.member_number}
+        <div className="space-y-4">
+          <Card>
+            <CardContent className="py-3 px-4">
+              <p className="text-muted-foreground">
+                {t("dashboard.memberWelcome")}
               </p>
-            )}
-          </CardContent>
-        </Card>
+              {user?.member_number && (
+                <p className="mt-1 font-mono text-sm">
+                  {t("dashboard.yourNumber")}: {user.member_number}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Upcoming activities */}
+          <Card>
+            <CardHeader className="py-3 px-4">
+              <CardTitle className="text-base">{t("dashboard.upcomingActivities")}</CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pb-4 pt-0">
+              {activeRegistrations.length === 0 ? (
+                <p className="text-sm text-muted-foreground">{t("dashboard.noUpcoming")}</p>
+              ) : (
+                <div className="space-y-2">
+                  {activeRegistrations.map((reg) => (
+                    <UpcomingActivityCard key={reg.id} registration={reg} />
+                  ))}
+                  {myRegistrations && myRegistrations.meta.total > 5 && (
+                    <Link
+                      href="/my-activities"
+                      className="block text-sm text-primary hover:underline pt-1"
+                    >
+                      {t("common.view")} {t("activities.registration.myActivities").toLowerCase()} →
+                    </Link>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       )}
     </div>
   );

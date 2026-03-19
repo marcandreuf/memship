@@ -133,6 +133,24 @@ case "$ACTION" in
             docker compose -f "$BACKEND_COMPOSE" exec -it api uv run python -m app.cli.seed
         fi
         ;;
+    reset)
+        echo -e "${YELLOW}x${NC} Stopping frontend..."
+        (cd "$FRONTEND_DIR" && ./dev.sh stop) 2>/dev/null || true
+        echo -e "${YELLOW}x${NC} Stopping all backend services (including test db)..."
+        docker compose -f "$BACKEND_COMPOSE" --profile test --profile tools down -v
+        echo -e "${GREEN}+${NC} Starting backend services..."
+        docker compose -f "$BACKEND_COMPOSE" up -d
+        echo -e "${BLUE}i${NC} Waiting for API to be ready (migrations + startup)..."
+        sleep 3
+        until curl -sf http://localhost:8003/api/v1/health > /dev/null 2>&1; do
+            sleep 2
+        done
+        echo -e "${BLUE}i${NC} Running seed with test accounts..."
+        docker compose -f "$BACKEND_COMPOSE" exec -T api uv run python -m app.cli.seed --test
+        echo -e "${GREEN}+${NC} Restarting frontend (clearing cache)..."
+        (cd "$FRONTEND_DIR" && ./dev.sh restart)
+        echo -e "${GREEN}+${NC} Reset complete"
+        ;;
     test)
         echo -e "${BLUE}i${NC} Running backend tests..."
         docker compose -f "$BACKEND_COMPOSE" --profile test up -d db-test
@@ -152,6 +170,7 @@ case "$ACTION" in
         echo "  logs [target]     - View logs (requires specific target)"
         echo "  seed              - Run database seed command (interactive)"
         echo "  seed test         - Seed with test accounts (no prompts)"
+        echo "  reset             - Wipe DB, restart backend, and re-seed with test data"
         echo "  test              - Run backend tests"
         echo ""
         echo -e "${BOLD}Targets:${NC}"
@@ -165,6 +184,7 @@ case "$ACTION" in
         echo "  $0 logs backend       # View API logs"
         echo "  $0 seed               # Run initial setup (interactive)"
         echo "  $0 seed test          # Seed with test accounts"
+        echo "  $0 reset              # Wipe DB and re-seed with test data"
         echo "  $0 test               # Run backend tests"
         echo ""
         exit 1

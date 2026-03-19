@@ -8,7 +8,10 @@
     "draftActivities": "Activitats en esborrany",
     "totalActivities": "Total activitats",
     "totalGroups": "Grups",
+    "totalRegistrations": "Inscripcions",
     "memberWelcome": "Benvingut al teu portal de soci.",
-    "yourNumber": "El teu número de soci"
+    "yourNumber": "El teu número de soci",
+    "upcomingActivities": "Les teves properes activitats",
+    "noUpcoming": "No hi ha activitats properes"
   }
 }

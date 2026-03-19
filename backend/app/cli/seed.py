@@ -8,6 +8,8 @@ Creates:
 - Membership types (Full Member, Student, Family, Youth, Senior, Honorary)
 - Admin accounts (interactive prompts or --test for test accounts)
 - Sample activities with modalities and prices (--test only)
+- Extra member accounts for realistic data (--test only)
+- Sample registrations: confirmed, waitlisted, cancelled (--test only)
 
 Usage:
     python -m app.cli.seed          # Interactive
@@ -25,7 +27,7 @@ from app.db.session import SessionLocal
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import AddressType, ContactType, Person
 from app.domains.auth.models import User
-from app.domains.activities.models import Activity, ActivityModality, ActivityPrice
+from app.domains.activities.models import Activity, ActivityModality, ActivityPrice, Registration
 from app.domains.members.models import Group, Member, MembershipType
 
 ph = PasswordHasher()
@@ -430,6 +432,156 @@ TEST_ACCOUNTS = [
     },
 ]
 
+# Extra members for realistic registration data (--test only)
+EXTRA_MEMBERS = [
+    {"first_name": "María", "last_name": "García", "email": "maria@test.com", "date_of_birth": "1990-05-12"},
+    {"first_name": "Joan", "last_name": "Puig", "email": "joan@test.com", "date_of_birth": "1985-11-03"},
+    {"first_name": "Laura", "last_name": "Martínez", "email": "laura@test.com", "date_of_birth": "2000-08-22"},
+    {"first_name": "Carlos", "last_name": "López", "email": "carlos@test.com", "date_of_birth": "1978-02-14"},
+    {"first_name": "Anna", "last_name": "Ferrer", "email": "anna@test.com", "date_of_birth": "1995-07-30"},
+]
+
+
+def seed_extra_members(db, membership_type: MembershipType) -> list[Member]:
+    """Create extra member accounts for realistic test data."""
+    members = []
+    for data in EXTRA_MEMBERS:
+        existing = db.query(User).filter_by(email=data["email"]).first()
+        if existing:
+            member = db.query(Member).filter(Member.user_id == existing.id).first()
+            if member:
+                members.append(member)
+            continue
+
+        person = Person(
+            first_name=data["first_name"],
+            last_name=data["last_name"],
+            email=data["email"],
+            date_of_birth=data.get("date_of_birth"),
+        )
+        db.add(person)
+        db.flush()
+
+        user = User(
+            person_id=person.id,
+            email=data["email"],
+            password_hash=ph.hash("TestMember1!"),
+            role="member",
+            is_active=True,
+            email_verified=True,
+        )
+        db.add(user)
+        db.flush()
+
+        member_number = next_member_number(db)
+        member = Member(
+            person_id=person.id,
+            user_id=user.id,
+            membership_type_id=membership_type.id,
+            member_number=member_number,
+            status="active",
+        )
+        db.add(member)
+        db.flush()
+        members.append(member)
+
+    if members:
+        print(f"  Extra members: {len(members)} members ready")
+    return members
+
+
+def seed_registrations(db) -> None:
+    """Create sample registrations across activities."""
+    existing = db.query(Registration).count()
+    if existing > 0:
+        print(f"  Registrations: already seeded ({existing} records)")
+        return
+
+    from datetime import datetime, timezone
+
+    # Get published activities and members
+    activities = db.query(Activity).filter(Activity.status == "published").all()
+    members = db.query(Member).filter(Member.status == "active").all()
+
+    if len(activities) < 2 or len(members) < 3:
+        print("  Registrations: not enough activities/members to seed")
+        return
+
+    count = 0
+    cancelled_one = False
+
+    for activity in activities:
+        prices = db.query(ActivityPrice).filter(
+            ActivityPrice.activity_id == activity.id,
+            ActivityPrice.is_active.is_(True),
+        ).all()
+        if not prices:
+            continue
+
+        default_price = next((p for p in prices if p.is_default), prices[0])
+
+        modalities = db.query(ActivityModality).filter(
+            ActivityModality.activity_id == activity.id,
+            ActivityModality.is_active.is_(True),
+        ).all()
+
+        # Register a subset of members for each activity
+        members_to_register = members[:min(4, len(members))]
+
+        for i, member in enumerate(members_to_register):
+            # Check not already registered
+            exists = db.query(Registration).filter(
+                Registration.activity_id == activity.id,
+                Registration.member_id == member.id,
+            ).first()
+            if exists:
+                continue
+
+            # Alternate modalities if available
+            modality_id = modalities[i % len(modalities)].id if modalities else None
+
+            # Determine status: most confirmed, last one waitlisted, one cancelled across all activities
+            if i == len(members_to_register) - 1 and activity.features and activity.features.get("waiting_list"):
+                status = "waitlist"
+            elif not cancelled_one and i == len(members_to_register) - 2 and len(members_to_register) >= 3:
+                status = "cancelled"
+                cancelled_one = True
+            else:
+                status = "confirmed"
+
+            reg = Registration(
+                activity_id=activity.id,
+                member_id=member.id,
+                modality_id=modality_id,
+                price_id=default_price.id,
+                status=status,
+                member_notes=f"Seeded registration #{count + 1}" if i == 0 else None,
+            )
+            if status == "cancelled":
+                admin_user = db.query(User).filter_by(role="admin").first()
+                reg.cancelled_at = datetime.now(timezone.utc)
+                reg.cancelled_by = admin_user.id if admin_user else None
+                reg.cancelled_reason = "Schedule conflict"
+
+            db.add(reg)
+            db.flush()
+
+            # Update counters
+            if status == "confirmed":
+                activity.current_participants = (activity.current_participants or 0) + 1
+                if modality_id:
+                    mod = db.query(ActivityModality).filter(ActivityModality.id == modality_id).first()
+                    if mod:
+                        mod.current_participants = (mod.current_participants or 0) + 1
+                default_price.current_registrations = (default_price.current_registrations or 0) + 1
+            elif status == "waitlist":
+                activity.waitlist_count = (activity.waitlist_count or 0) + 1
+
+            count += 1
+
+    db.flush()
+    print(f"  Registrations: created {count} registrations (confirmed, waitlisted, cancelled)")
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Memship seed command")
@@ -478,9 +630,16 @@ def main() -> None:
                 print("\nSeeding activities...")
                 seed_activities(db, admin_user.id)
 
+            print("\nSeeding extra members...")
+            seed_extra_members(db, membership_type)
+
+            print("\nSeeding registrations...")
+            seed_registrations(db)
+
             print("\n  ⚠  TEST ACCOUNTS — do NOT use in production:")
             for account in TEST_ACCOUNTS:
                 print(f"     {account['role']:15s} {account['email']:25s} / {account['password']}")
+            print(f"     {'member':15s} {'(+5 extra members)':25s} / TestMember1!")
         else:
             # Interactive user creation
             super_admin = prompt_user_details("Super Admin")
