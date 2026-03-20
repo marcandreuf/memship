@@ -1,0 +1,30 @@
+{
+  "name": "memship-e2e",
+  "version": "0.2.2",
+  "private": true,
+  "scripts": {
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run",
+    "cypress:run:headed": "cypress run --headed",
+    "test": "cypress run",
+    "test:auth": "cypress run --spec 'cypress/e2e/auth/**'",
+    "test:members": "cypress run --spec 'cypress/e2e/members/**'",
+    "test:activities": "cypress run --spec 'cypress/e2e/activities/**'",
+    "test:registrations": "cypress run --spec 'cypress/e2e/registrations/**'",
+    "test:groups": "cypress run --spec 'cypress/e2e/groups/**'",
+    "test:settings": "cypress run --spec 'cypress/e2e/settings/**'",
+    "test:dashboard": "cypress run --spec 'cypress/e2e/dashboard/**'",
+    "test:smoke": "cypress run --env grepTags=@smoke",
+    "test:tag": "cypress run --env grepTags=",
+    "test:parallel": "./scripts/run-parallel.sh 4",
+    "test:parallel:all": "cypress-parallel -s cypress:run -t 4 -d cypress/e2e"
+  },
+  "devDependencies": {
+    "cypress": "^15.12.0",
+    "@cypress/grep": "^4.1.1",
+    "cypress-parallel": "^0.14.0",
+    "cypress-multi-reporters": "^2.0.5",
+    "mocha-junit-reporter": "^2.2.1",
+    "typescript": "^5.8.0"
+  }
+}

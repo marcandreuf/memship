@@ -1,0 +1,10 @@
+{
+  "suites": 2,
+  "tests": 10,
+  "passes": 10,
+  "pending": 0,
+  "failures": 0,
+  "start": "2026-03-20T10:50:59.952Z",
+  "duration": 296040,
+  "file": "cypress/e2e/activities/activity-list.cy.ts"
+}

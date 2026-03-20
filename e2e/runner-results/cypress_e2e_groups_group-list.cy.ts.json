@@ -1,0 +1,10 @@
+{
+  "suites": 2,
+  "tests": 7,
+  "passes": 7,
+  "pending": 0,
+  "failures": 0,
+  "start": "2026-03-20T10:52:55.719Z",
+  "duration": 189795,
+  "file": "cypress/e2e/groups/group-list.cy.ts"
+}

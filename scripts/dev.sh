@@ -157,6 +157,18 @@ case "$ACTION" in
         sleep 2
         (cd "$REPO_ROOT/backend" && uv run pytest tests/ -v)
         ;;
+    e2e)
+        echo -e "${BLUE}i${NC} Running Cypress E2E tests..."
+        (cd "$REPO_ROOT/e2e" && pnpm test)
+        ;;
+    e2e:open)
+        echo -e "${BLUE}i${NC} Opening Cypress GUI..."
+        (cd "$REPO_ROOT/e2e" && pnpm cypress:open)
+        ;;
+    e2e:parallel)
+        echo -e "${BLUE}i${NC} Running Cypress E2E tests in parallel..."
+        (cd "$REPO_ROOT/e2e" && pnpm test:parallel)
+        ;;
     *)
         echo -e "${BOLD}Memship Dev Environment Manager${NC}"
         echo ""
@@ -172,6 +184,8 @@ case "$ACTION" in
         echo "  seed test         - Seed with test accounts (no prompts)"
         echo "  reset             - Wipe DB, restart backend, and re-seed with test data"
         echo "  test              - Run backend tests"
+        echo "  e2e               - Run Cypress E2E tests (headless)"
+        echo "  e2e:open          - Open Cypress GUI (interactive)"
         echo ""
         echo -e "${BOLD}Targets:${NC}"
         echo "  backend    - API + DB (Docker, port 8003)"

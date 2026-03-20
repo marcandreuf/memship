@@ -64,3 +64,9 @@ backups/
 
 # File uploads (local storage)
 backend/storage/
+
+# Cypress
+e2e/cypress/screenshots/
+e2e/cypress/videos/
+e2e/cypress/downloads/
+e2e/cypress/reports/

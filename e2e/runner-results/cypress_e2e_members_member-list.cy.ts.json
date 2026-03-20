@@ -1,0 +1,10 @@
+{
+  "suites": 2,
+  "tests": 8,
+  "passes": 8,
+  "pending": 0,
+  "failures": 0,
+  "start": "2026-03-20T10:55:58.552Z",
+  "duration": 78184,
+  "file": "cypress/e2e/members/member-list.cy.ts"
+}

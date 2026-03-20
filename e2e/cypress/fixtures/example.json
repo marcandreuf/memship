@@ -1,0 +1,3 @@
+{
+  "note": "Memship E2E tests run against a real seeded backend. Fixtures are not used for API mocking."
+}
