@@ -27,11 +27,29 @@ curl -fsSL https://raw.githubusercontent.com/marcandreuf/memship/main/docker-com
 
 Then run the initial setup:
 
+**Option A: Quick demo with test accounts (no prompts)**
+
+```bash
+docker compose exec demo-memship-api uv run python -m app.cli.seed --test
+```
+
+This creates pre-configured test accounts, sample members, activities, and registrations:
+
+| Role | Email | Password |
+|------|-------|----------|
+| Super Admin | super@test.com | TestSuper1! |
+| Org Admin | admin@test.com | TestAdmin1! |
+| Member | member@test.com | TestMember1! |
+
+**Option B: Custom setup (interactive)**
+
 ```bash
 docker compose exec demo-memship-api uv run python -m app.cli.seed
 ```
 
-Open http://localhost:8081 and log in with the credentials shown by the seed command. Change `PORT=8081` to any port you prefer (default is 80).
+Prompts you to create your own super admin and org admin accounts. No sample data is generated.
+
+Open http://localhost:8081 and log in with your credentials. Change `PORT=8081` to any port you prefer (default is 80).
 
 ## Roadmap
 
