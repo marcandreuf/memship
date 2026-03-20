@@ -8,7 +8,7 @@ Memship is a self-hosted membership management system for professional associati
 
 **Tech stack:**
 - Backend: Python 3.12+ / FastAPI / SQLAlchemy 2.0 / Alembic
-- Frontend: Next.js 16 / React 19 / Tailwind 4 / Shadcn/ui / next-intl
+- Frontend: Next.js 16 / React 19 / Tailwind 4 / Shadcn/ui / next-intl / next-themes
 - Database: PostgreSQL 15 (single-tenant, `CHECK (id = 1)` on organization_settings)
 - Package managers: uv (Python), pnpm (frontend)
 - Containerization: Docker + Docker Compose
@@ -118,9 +118,10 @@ memship/
 │   │   ├── members/             # Member CRUD
 │   │   └── settings/            # Organization settings, membership types
 │   ├── components/
-│   │   ├── ui/                  # Shadcn components
+│   │   ├── ui/                  # Shadcn components (sidebar, sheet, dropdown-menu, avatar, skeleton, breadcrumb, etc.)
 │   │   ├── entity/              # Shared entity pattern (search, pagination, detail, tabs)
-│   │   └── layout/              # Header, sidebar, nav
+│   │   └── layout/              # Sidebar (Shadcn collapsible), header (SidebarTrigger + theme toggle), theme-toggle
+│   ├── hooks/                   # Shared hooks (use-mobile)
 │   ├── lib/                     # API clients, providers, status variants
 │   └── locales/                 # Translation files (es, ca, en)
 └── .github/
@@ -150,7 +151,10 @@ memship/
 - Forms: React Hook Form + Zod validation
 - API: server-side fetch via `lib/api-client.ts`, client-side via `lib/client-api.ts`
 - Components: Shadcn/ui copied into `components/ui/`, fully customizable
-- Styling: Tailwind CSS with Shadcn CSS variables for theming
+- Layout: Shadcn Sidebar (collapsible, mobile sheet) + SidebarProvider + SidebarInset
+- Dark mode: next-themes (ThemeProvider, attribute="class", system default)
+- Styling: Tailwind CSS 4 with OKLCH CSS variables (teal brand palette)
+- Tables: use `table-compact` CSS class for tab/supporting data tables
 
 ### Code Style
 - Python: follow existing patterns, type hints on function signatures

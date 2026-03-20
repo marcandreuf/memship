@@ -1,8 +1,10 @@
 "use client";
 
 import { useAuth } from "@/features/auth/hooks/use-auth";
-import { Sidebar } from "@/components/layout/sidebar";
+import { AppSidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
+import { BrandTheme } from "@/components/layout/brand-theme";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { useRouter } from "@/lib/i18n/routing";
 import { useEffect } from "react";
 
@@ -33,12 +35,13 @@ export default function PortalLayout({
   }
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar user={user} />
-      <div className="flex flex-1 flex-col">
-        <Header user={user} />
-        <main className="flex-1 p-4 pb-20 md:p-6 md:pb-6">{children}</main>
-      </div>
-    </div>
+    <SidebarProvider>
+      <BrandTheme />
+      <AppSidebar user={user} />
+      <SidebarInset>
+        <Header />
+        <main className="flex-1 p-4 md:p-6">{children}</main>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

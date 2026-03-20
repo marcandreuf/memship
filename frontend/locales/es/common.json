@@ -13,7 +13,8 @@
     "settings": "Configuración",
     "login": "Iniciar sesión",
     "register": "Registrarse",
-    "logout": "Cerrar sesión"
+    "logout": "Cerrar sesión",
+    "menu": "Menú"
   },
   "common": {
     "save": "Guardar",

@@ -13,7 +13,8 @@
     "settings": "Settings",
     "login": "Sign In",
     "register": "Sign Up",
-    "logout": "Sign Out"
+    "logout": "Sign Out",
+    "menu": "Menu"
   },
   "common": {
     "save": "Save",

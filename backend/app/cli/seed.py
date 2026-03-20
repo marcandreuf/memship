@@ -114,6 +114,7 @@ def seed_org_settings(db) -> None:
         timezone="Europe/Madrid",
         currency="EUR",
         date_format="DD/MM/YYYY",
+        brand_color="#0083ad",
         features={},
         custom_settings={},
     )
@@ -287,107 +288,78 @@ def seed_activities(db, user_id: int) -> None:
     now = datetime.now(timezone.utc)
 
     activities_data = [
-        {
-            "name": "Summer Soccer Camp",
-            "slug": "summer-soccer-camp",
-            "description": "Week-long intensive soccer training for youth members. Professional coaches, daily matches, and skill workshops.",
-            "short_description": "Intensive soccer training for youth",
-            "starts_at": now + timedelta(days=90),
-            "ends_at": now + timedelta(days=95),
-            "registration_starts_at": now - timedelta(days=5),
-            "registration_ends_at": now + timedelta(days=80),
-            "location": "Main Stadium",
-            "location_details": "Fields A and B, changing rooms available",
-            "min_participants": 10,
-            "max_participants": 30,
-            "min_age": 6,
-            "max_age": 17,
-            "status": "published",
-            "tax_rate": 21.00,
-            "features": {"waiting_list": True},
-            "allow_self_cancellation": True,
-            "self_cancellation_deadline_hours": 48,
-            "modalities": [
-                {"name": "Morning Only", "description": "9:00 - 13:00", "max_participants": 15, "display_order": 1},
-                {"name": "Full Day", "description": "9:00 - 17:00 (lunch included)", "max_participants": 15, "display_order": 2},
-            ],
-            "prices": [
-                {"name": "Early Bird", "amount": 100.00, "is_default": False, "valid_from": now - timedelta(days=5), "valid_until": now + timedelta(days=30), "display_order": 1},
-                {"name": "General", "amount": 150.00, "is_default": True, "valid_from": now + timedelta(days=30), "valid_until": now + timedelta(days=80), "display_order": 2},
-            ],
-        },
-        {
-            "name": "Yoga Workshop",
-            "slug": "yoga-workshop",
-            "description": "A relaxing weekend yoga workshop for all skill levels. Mats and equipment provided.",
-            "short_description": "Weekend yoga for all levels",
-            "starts_at": now + timedelta(days=45),
-            "ends_at": now + timedelta(days=46),
-            "registration_starts_at": now - timedelta(days=3),
-            "registration_ends_at": now + timedelta(days=40),
-            "location": "Wellness Center",
-            "location_details": "Room 3, ground floor",
-            "min_participants": 5,
-            "max_participants": 20,
-            "status": "published",
-            "tax_rate": 10.00,
-            "features": {"waiting_list": False},
-            "allow_self_cancellation": True,
-            "self_cancellation_deadline_hours": 24,
+        # --- Published activities with open registration ---
+        {"name": "Summer Soccer Camp", "slug": "summer-soccer-camp", "short_description": "Intensive soccer training for youth", "description": "Week-long intensive soccer training for youth members. Professional coaches, daily matches, and skill workshops.", "starts_at": now + timedelta(days=90), "ends_at": now + timedelta(days=95), "registration_starts_at": now - timedelta(days=5), "registration_ends_at": now + timedelta(days=80), "location": "Main Stadium", "location_details": "Fields A and B", "min_participants": 10, "max_participants": 30, "min_age": 6, "max_age": 17, "status": "published", "tax_rate": 21.00, "features": {"waiting_list": True}, "allow_self_cancellation": True, "self_cancellation_deadline_hours": 48,
+            "modalities": [{"name": "Morning Only", "description": "9:00 - 13:00", "max_participants": 15, "display_order": 1}, {"name": "Full Day", "description": "9:00 - 17:00", "max_participants": 15, "display_order": 2}],
+            "prices": [{"name": "Early Bird", "amount": 100.00, "is_default": False, "valid_from": now - timedelta(days=5), "valid_until": now + timedelta(days=30), "display_order": 1}, {"name": "General", "amount": 150.00, "is_default": True, "valid_from": now + timedelta(days=30), "valid_until": now + timedelta(days=80), "display_order": 2}]},
+        {"name": "Yoga Workshop", "slug": "yoga-workshop", "short_description": "Weekend yoga for all levels", "description": "A relaxing weekend yoga workshop for all skill levels. Mats and equipment provided.", "starts_at": now + timedelta(days=45), "ends_at": now + timedelta(days=46), "registration_starts_at": now - timedelta(days=3), "registration_ends_at": now + timedelta(days=40), "location": "Wellness Center", "min_participants": 5, "max_participants": 20, "status": "published", "tax_rate": 10.00, "features": {"waiting_list": False}, "allow_self_cancellation": True, "self_cancellation_deadline_hours": 24,
             "modalities": [],
-            "prices": [
-                {"name": "Member Price", "amount": 25.00, "is_default": True, "display_order": 1},
-                {"name": "Non-Member", "amount": 40.00, "is_default": False, "is_optional": True, "display_order": 2},
-            ],
-        },
-        {
-            "name": "Annual Gala Dinner",
-            "slug": "annual-gala-dinner",
-            "description": "Join us for the annual gala dinner celebrating our community. Live music, awards ceremony, and three-course dinner.",
-            "short_description": "Annual celebration with dinner and awards",
-            "starts_at": now + timedelta(days=120),
-            "ends_at": now + timedelta(days=120, hours=5),
-            "registration_starts_at": now + timedelta(days=30),
-            "registration_ends_at": now + timedelta(days=110),
-            "location": "Grand Ballroom Hotel",
-            "min_participants": 50,
-            "max_participants": 200,
-            "status": "draft",
-            "tax_rate": 10.00,
-            "features": {},
-            "allow_self_cancellation": False,
+            "prices": [{"name": "Member Price", "amount": 25.00, "is_default": True, "display_order": 1}]},
+        {"name": "Photography Course", "slug": "photography-course", "short_description": "8-week course for beginners", "description": "Photography course covering composition, lighting, and post-processing.", "starts_at": now + timedelta(days=60), "ends_at": now + timedelta(days=116), "registration_starts_at": now - timedelta(days=10), "registration_ends_at": now + timedelta(days=55), "location": "Art Studio", "min_participants": 8, "max_participants": 15, "status": "published", "tax_rate": 21.00, "features": {"waiting_list": True}, "allow_self_cancellation": True, "self_cancellation_deadline_hours": 72,
+            "modalities": [{"name": "Weekday Evening", "description": "Tuesdays 18:00 - 20:00", "max_participants": 15, "display_order": 1}, {"name": "Weekend Morning", "description": "Saturdays 10:00 - 12:00", "max_participants": 15, "display_order": 2}],
+            "prices": [{"name": "Full Course", "amount": 180.00, "is_default": True, "display_order": 1}]},
+        {"name": "Swimming Lessons", "slug": "swimming-lessons", "short_description": "Learn to swim — all ages", "description": "Swimming lessons for beginners and intermediate swimmers. Certified instructors.", "starts_at": now + timedelta(days=30), "ends_at": now + timedelta(days=90), "registration_starts_at": now - timedelta(days=7), "registration_ends_at": now + timedelta(days=25), "location": "Municipal Pool", "min_participants": 6, "max_participants": 12, "status": "published", "tax_rate": 10.00, "features": {"waiting_list": True}, "allow_self_cancellation": True, "self_cancellation_deadline_hours": 24,
+            "modalities": [{"name": "Children (6-12)", "description": "Sat 10:00 - 11:00", "max_participants": 6, "display_order": 1}, {"name": "Adults", "description": "Sat 11:00 - 12:00", "max_participants": 6, "display_order": 2}],
+            "prices": [{"name": "Monthly", "amount": 35.00, "is_default": True, "display_order": 1}]},
+        {"name": "Cooking Class: Mediterranean", "slug": "cooking-mediterranean", "short_description": "Traditional Mediterranean cuisine", "description": "Hands-on cooking class featuring traditional Mediterranean recipes. Ingredients included.", "starts_at": now + timedelta(days=21), "ends_at": now + timedelta(days=21, hours=4), "registration_starts_at": now - timedelta(days=14), "registration_ends_at": now + timedelta(days=18), "location": "Community Kitchen", "min_participants": 8, "max_participants": 16, "status": "published", "tax_rate": 10.00, "features": {}, "allow_self_cancellation": True, "self_cancellation_deadline_hours": 48,
             "modalities": [],
-            "prices": [
-                {"name": "Standard Ticket", "amount": 75.00, "is_default": True, "display_order": 1},
-                {"name": "VIP Table (10 seats)", "amount": 650.00, "is_default": False, "display_order": 2},
-            ],
-        },
-        {
-            "name": "Photography Course",
-            "slug": "photography-course",
-            "description": "8-week photography course covering composition, lighting, and post-processing. Bring your own camera.",
-            "short_description": "8-week course for beginners and intermediate",
-            "starts_at": now + timedelta(days=60),
-            "ends_at": now + timedelta(days=116),
-            "registration_starts_at": now - timedelta(days=10),
-            "registration_ends_at": now + timedelta(days=55),
-            "location": "Art Studio",
-            "location_details": "2nd floor, bring your own camera",
-            "min_participants": 8,
-            "max_participants": 15,
-            "status": "published",
-            "tax_rate": 21.00,
-            "features": {"waiting_list": True},
-            "allow_self_cancellation": True,
-            "self_cancellation_deadline_hours": 72,
-            "modalities": [
-                {"name": "Weekday Evening", "description": "Tuesdays 18:00 - 20:00", "max_participants": 15, "display_order": 1},
-                {"name": "Weekend Morning", "description": "Saturdays 10:00 - 12:00", "max_participants": 15, "display_order": 2},
-            ],
-            "prices": [
-                {"name": "Full Course", "amount": 180.00, "is_default": True, "display_order": 1},
-            ],
-        },
+            "prices": [{"name": "Per Person", "amount": 45.00, "is_default": True, "display_order": 1}]},
+        {"name": "Tennis Tournament", "slug": "tennis-tournament", "short_description": "Singles and doubles brackets", "description": "Annual club tennis tournament. Singles and doubles categories. Trophies and prizes.", "starts_at": now + timedelta(days=75), "ends_at": now + timedelta(days=77), "registration_starts_at": now - timedelta(days=2), "registration_ends_at": now + timedelta(days=65), "location": "Tennis Courts", "min_participants": 16, "max_participants": 32, "min_age": 14, "status": "published", "tax_rate": 21.00, "features": {"waiting_list": True}, "allow_self_cancellation": True, "self_cancellation_deadline_hours": 72,
+            "modalities": [{"name": "Singles", "max_participants": 16, "display_order": 1}, {"name": "Doubles", "max_participants": 16, "display_order": 2}],
+            "prices": [{"name": "Entry Fee", "amount": 20.00, "is_default": True, "display_order": 1}]},
+        {"name": "Art Exhibition Opening", "slug": "art-exhibition-opening", "short_description": "Members art showcase", "description": "Opening night of the annual members art exhibition. Wine reception and guided tour.", "starts_at": now + timedelta(days=40), "ends_at": now + timedelta(days=40, hours=3), "registration_starts_at": now - timedelta(days=7), "registration_ends_at": now + timedelta(days=38), "location": "Gallery Hall", "min_participants": 20, "max_participants": 80, "status": "published", "tax_rate": 0, "features": {}, "allow_self_cancellation": True, "self_cancellation_deadline_hours": 24,
+            "modalities": [],
+            "prices": [{"name": "Free Entry", "amount": 0, "is_default": True, "display_order": 1}]},
+        {"name": "First Aid Certification", "slug": "first-aid-certification", "short_description": "Official first aid course", "description": "Two-day certified first aid course. Certificate valid for 2 years.", "starts_at": now + timedelta(days=50), "ends_at": now + timedelta(days=51), "registration_starts_at": now - timedelta(days=5), "registration_ends_at": now + timedelta(days=45), "location": "Training Room B", "min_participants": 10, "max_participants": 20, "min_age": 16, "status": "published", "tax_rate": 0, "features": {"waiting_list": True}, "allow_self_cancellation": True, "self_cancellation_deadline_hours": 48,
+            "modalities": [],
+            "prices": [{"name": "Course Fee", "amount": 60.00, "is_default": True, "display_order": 1}]},
+        {"name": "Kids Dance Party", "slug": "kids-dance-party", "short_description": "Fun dance event for children", "description": "Afternoon dance party with DJ, games, and snacks for kids.", "starts_at": now + timedelta(days=14), "ends_at": now + timedelta(days=14, hours=3), "registration_starts_at": now - timedelta(days=10), "registration_ends_at": now + timedelta(days=12), "location": "Main Hall", "min_participants": 15, "max_participants": 50, "max_age": 12, "status": "published", "tax_rate": 0, "features": {}, "allow_self_cancellation": True, "self_cancellation_deadline_hours": 24,
+            "modalities": [],
+            "prices": [{"name": "Entry", "amount": 5.00, "is_default": True, "display_order": 1}]},
+        {"name": "Book Club: Spring Edition", "slug": "book-club-spring", "short_description": "Monthly book discussions", "description": "Join our book club for monthly discussions. April-June reading list.", "starts_at": now + timedelta(days=35), "ends_at": now + timedelta(days=95), "registration_starts_at": now - timedelta(days=5), "registration_ends_at": now + timedelta(days=30), "location": "Library Room", "min_participants": 5, "max_participants": 15, "status": "published", "tax_rate": 0, "features": {}, "allow_self_cancellation": True, "self_cancellation_deadline_hours": 24,
+            "modalities": [],
+            "prices": [{"name": "Free", "amount": 0, "is_default": True, "display_order": 1}]},
+        {"name": "Mountain Hiking Trip", "slug": "mountain-hiking-trip", "short_description": "Guided hike to Montserrat", "description": "Full-day guided hiking trip to Montserrat. Transport and picnic lunch included.", "starts_at": now + timedelta(days=55), "ends_at": now + timedelta(days=55, hours=10), "registration_starts_at": now - timedelta(days=3), "registration_ends_at": now + timedelta(days=50), "location": "Montserrat Natural Park", "min_participants": 10, "max_participants": 25, "min_age": 12, "status": "published", "tax_rate": 10.00, "features": {"waiting_list": True}, "allow_self_cancellation": True, "self_cancellation_deadline_hours": 48,
+            "modalities": [{"name": "Easy Route", "description": "5km, 300m elevation", "max_participants": 15, "display_order": 1}, {"name": "Advanced Route", "description": "12km, 800m elevation", "max_participants": 10, "display_order": 2}],
+            "prices": [{"name": "Per Person", "amount": 30.00, "is_default": True, "display_order": 1}]},
+        {"name": "Chess Club Tournament", "slug": "chess-club-tournament", "short_description": "Monthly rated tournament", "description": "Monthly chess tournament with Swiss pairing. All levels welcome.", "starts_at": now + timedelta(days=28), "ends_at": now + timedelta(days=28, hours=5), "registration_starts_at": now - timedelta(days=10), "registration_ends_at": now + timedelta(days=25), "location": "Games Room", "min_participants": 8, "max_participants": 24, "status": "published", "tax_rate": 0, "features": {"waiting_list": False}, "allow_self_cancellation": True, "self_cancellation_deadline_hours": 24,
+            "modalities": [],
+            "prices": [{"name": "Entry Fee", "amount": 5.00, "is_default": True, "display_order": 1}]},
+        {"name": "Spanish Guitar Workshop", "slug": "spanish-guitar-workshop", "short_description": "Classical guitar for beginners", "description": "Learn the basics of classical Spanish guitar. Guitars available for loan.", "starts_at": now + timedelta(days=42), "ends_at": now + timedelta(days=84), "registration_starts_at": now - timedelta(days=5), "registration_ends_at": now + timedelta(days=38), "location": "Music Room", "min_participants": 4, "max_participants": 10, "status": "published", "tax_rate": 21.00, "features": {}, "allow_self_cancellation": True, "self_cancellation_deadline_hours": 48,
+            "modalities": [],
+            "prices": [{"name": "6-Week Course", "amount": 120.00, "is_default": True, "display_order": 1}]},
+        {"name": "Beach Volleyball League", "slug": "beach-volleyball-league", "short_description": "Summer beach volleyball", "description": "Weekly beach volleyball league. Teams of 4. June through August.", "starts_at": now + timedelta(days=80), "ends_at": now + timedelta(days=170), "registration_starts_at": now - timedelta(days=5), "registration_ends_at": now + timedelta(days=70), "location": "Beach Courts", "min_participants": 16, "max_participants": 40, "min_age": 16, "status": "published", "tax_rate": 10.00, "features": {"waiting_list": True}, "allow_self_cancellation": True, "self_cancellation_deadline_hours": 72,
+            "modalities": [{"name": "Competitive", "max_participants": 20, "display_order": 1}, {"name": "Recreational", "max_participants": 20, "display_order": 2}],
+            "prices": [{"name": "Season Pass", "amount": 50.00, "is_default": True, "display_order": 1}]},
+        {"name": "Pottery Workshop", "slug": "pottery-workshop", "short_description": "Hands-on ceramics class", "description": "Learn wheel throwing and hand building techniques. All materials included.", "starts_at": now + timedelta(days=35), "ends_at": now + timedelta(days=63), "registration_starts_at": now - timedelta(days=7), "registration_ends_at": now + timedelta(days=30), "location": "Craft Studio", "min_participants": 4, "max_participants": 8, "status": "published", "tax_rate": 21.00, "features": {}, "allow_self_cancellation": True, "self_cancellation_deadline_hours": 48,
+            "modalities": [],
+            "prices": [{"name": "4-Week Course", "amount": 95.00, "is_default": True, "display_order": 1}]},
+        # --- Draft activities ---
+        {"name": "Annual Gala Dinner", "slug": "annual-gala-dinner", "short_description": "Annual celebration with dinner and awards", "description": "Join us for the annual gala dinner. Live music, awards ceremony, and three-course dinner.", "starts_at": now + timedelta(days=120), "ends_at": now + timedelta(days=120, hours=5), "registration_starts_at": now + timedelta(days=30), "registration_ends_at": now + timedelta(days=110), "location": "Grand Ballroom Hotel", "min_participants": 50, "max_participants": 200, "status": "draft", "tax_rate": 10.00, "features": {}, "allow_self_cancellation": False,
+            "modalities": [],
+            "prices": [{"name": "Standard Ticket", "amount": 75.00, "is_default": True, "display_order": 1}, {"name": "VIP Table (10 seats)", "amount": 650.00, "is_default": False, "display_order": 2}]},
+        {"name": "Halloween Party", "slug": "halloween-party", "short_description": "Costume party for all ages", "description": "Annual Halloween costume party with prizes, music, and themed food.", "starts_at": now + timedelta(days=200), "ends_at": now + timedelta(days=200, hours=5), "registration_starts_at": now + timedelta(days=150), "registration_ends_at": now + timedelta(days=195), "location": "Main Hall", "min_participants": 30, "max_participants": 100, "status": "draft", "tax_rate": 10.00, "features": {}, "allow_self_cancellation": True, "self_cancellation_deadline_hours": 24,
+            "modalities": [],
+            "prices": [{"name": "Entry", "amount": 10.00, "is_default": True, "display_order": 1}]},
+        {"name": "Winter Skiing Trip", "slug": "winter-skiing-trip", "short_description": "Weekend ski trip to Pyrenees", "description": "Two-day skiing trip with transport, accommodation, and ski pass.", "starts_at": now + timedelta(days=250), "ends_at": now + timedelta(days=252), "registration_starts_at": now + timedelta(days=180), "registration_ends_at": now + timedelta(days=240), "location": "La Molina Ski Resort", "min_participants": 20, "max_participants": 45, "min_age": 10, "status": "draft", "tax_rate": 10.00, "features": {"waiting_list": True}, "allow_self_cancellation": True, "self_cancellation_deadline_hours": 72,
+            "modalities": [{"name": "Beginner Package", "description": "Includes equipment rental and lessons", "max_participants": 20, "display_order": 1}, {"name": "Experienced", "description": "Ski pass only", "max_participants": 25, "display_order": 2}],
+            "prices": [{"name": "Full Package", "amount": 250.00, "is_default": True, "display_order": 1}, {"name": "Transport Only", "amount": 80.00, "is_default": False, "display_order": 2}]},
+        {"name": "Summer Camp 2027", "slug": "summer-camp-2027", "short_description": "Two-week youth summer camp", "description": "Full summer camp program with sports, arts, and outdoor activities.", "starts_at": now + timedelta(days=300), "ends_at": now + timedelta(days=314), "registration_starts_at": now + timedelta(days=200), "registration_ends_at": now + timedelta(days=285), "location": "Camp Grounds", "min_participants": 30, "max_participants": 60, "min_age": 8, "max_age": 16, "status": "draft", "tax_rate": 10.00, "features": {"waiting_list": True}, "allow_self_cancellation": True, "self_cancellation_deadline_hours": 168,
+            "modalities": [{"name": "Week 1 Only", "max_participants": 60, "display_order": 1}, {"name": "Week 2 Only", "max_participants": 60, "display_order": 2}, {"name": "Both Weeks", "max_participants": 40, "display_order": 3}],
+            "prices": [{"name": "One Week", "amount": 350.00, "is_default": True, "display_order": 1}, {"name": "Two Weeks", "amount": 600.00, "is_default": False, "display_order": 2}]},
+        # --- Archived/cancelled activities ---
+        {"name": "Spring 5K Run", "slug": "spring-5k-run", "short_description": "Community fun run", "description": "Annual spring 5K run through the park. Medals for all finishers.", "starts_at": now - timedelta(days=30), "ends_at": now - timedelta(days=30, hours=-3), "registration_starts_at": now - timedelta(days=90), "registration_ends_at": now - timedelta(days=35), "location": "City Park", "min_participants": 20, "max_participants": 100, "status": "archived", "tax_rate": 0, "features": {}, "allow_self_cancellation": False,
+            "modalities": [],
+            "prices": [{"name": "Registration", "amount": 15.00, "is_default": True, "display_order": 1}]},
+        {"name": "Winter Concert", "slug": "winter-concert", "short_description": "Holiday music concert", "description": "End-of-year concert featuring the club choir and guest musicians.", "starts_at": now - timedelta(days=90), "ends_at": now - timedelta(days=90, hours=-3), "registration_starts_at": now - timedelta(days=150), "registration_ends_at": now - timedelta(days=95), "location": "Auditorium", "min_participants": 30, "max_participants": 150, "status": "archived", "tax_rate": 0, "features": {}, "allow_self_cancellation": True, "self_cancellation_deadline_hours": 24,
+            "modalities": [],
+            "prices": [{"name": "Free Entry", "amount": 0, "is_default": True, "display_order": 1}]},
+        {"name": "Indoor Basketball League", "slug": "indoor-basketball-cancelled", "short_description": "Weekly basketball league", "description": "Indoor basketball league cancelled due to facility renovation.", "starts_at": now + timedelta(days=60), "ends_at": now + timedelta(days=150), "registration_starts_at": now - timedelta(days=30), "registration_ends_at": now + timedelta(days=50), "location": "Sports Hall", "min_participants": 20, "max_participants": 40, "status": "cancelled", "tax_rate": 10.00, "features": {"waiting_list": True}, "allow_self_cancellation": True, "self_cancellation_deadline_hours": 48,
+            "modalities": [],
+            "prices": [{"name": "Season Pass", "amount": 40.00, "is_default": True, "display_order": 1}]},
+        {"name": "Painting Workshop: Watercolors", "slug": "painting-watercolors-cancelled", "short_description": "Watercolor techniques", "description": "Cancelled — instructor unavailable. Will be rescheduled.", "starts_at": now + timedelta(days=20), "ends_at": now + timedelta(days=48), "registration_starts_at": now - timedelta(days=20), "registration_ends_at": now + timedelta(days=15), "location": "Art Studio", "min_participants": 6, "max_participants": 12, "status": "cancelled", "tax_rate": 21.00, "features": {}, "allow_self_cancellation": True, "self_cancellation_deadline_hours": 24,
+            "modalities": [],
+            "prices": [{"name": "Course Fee", "amount": 85.00, "is_default": True, "display_order": 1}]},
     ]
 
     count = 0
@@ -443,13 +415,37 @@ EXTRA_MEMBERS = [
     {"first_name": "Laura", "last_name": "Martínez", "email": "laura@test.com", "date_of_birth": "2000-08-22"},
     {"first_name": "Carlos", "last_name": "López", "email": "carlos@test.com", "date_of_birth": "1978-02-14"},
     {"first_name": "Anna", "last_name": "Ferrer", "email": "anna@test.com", "date_of_birth": "1995-07-30"},
+    {"first_name": "Marta", "last_name": "Soler", "email": "marta@test.com", "date_of_birth": "1992-01-18"},
+    {"first_name": "Jordi", "last_name": "Vidal", "email": "jordi@test.com", "date_of_birth": "1988-09-25"},
+    {"first_name": "Elena", "last_name": "Ruiz", "email": "elena@test.com", "date_of_birth": "1997-03-07"},
+    {"first_name": "Àlex", "last_name": "Serra", "email": "alex@test.com", "date_of_birth": "2001-06-14"},
+    {"first_name": "Nuria", "last_name": "Blanch", "email": "nuria@test.com", "date_of_birth": "1983-12-02"},
+    {"first_name": "Marc", "last_name": "Roca", "email": "marc@test.com", "date_of_birth": "1975-04-19"},
+    {"first_name": "Carla", "last_name": "Pons", "email": "carla@test.com", "date_of_birth": "1999-10-08"},
+    {"first_name": "Pau", "last_name": "Mas", "email": "pau@test.com", "date_of_birth": "1991-07-21"},
+    {"first_name": "Laia", "last_name": "Font", "email": "laia@test.com", "date_of_birth": "1986-02-28"},
+    {"first_name": "Oriol", "last_name": "Casals", "email": "oriol@test.com", "date_of_birth": "1994-11-15"},
+    {"first_name": "Gemma", "last_name": "Rovira", "email": "gemma@test.com", "date_of_birth": "1980-08-04"},
+    {"first_name": "Arnau", "last_name": "Bosch", "email": "arnau@test.com", "date_of_birth": "2002-01-30"},
+    {"first_name": "Sílvia", "last_name": "Esteve", "email": "silvia@test.com", "date_of_birth": "1993-05-22"},
+    {"first_name": "David", "last_name": "Navarro", "email": "david@test.com", "date_of_birth": "1976-09-11"},
+    {"first_name": "Montse", "last_name": "Costa", "email": "montse@test.com", "date_of_birth": "1989-04-03"},
+    {"first_name": "Ferran", "last_name": "Aguilar", "email": "ferran@test.com", "date_of_birth": "1998-12-17"},
+    {"first_name": "Aina", "last_name": "Torrent", "email": "aina@test.com", "date_of_birth": "1984-06-09"},
 ]
 
 
-def seed_extra_members(db, membership_type: MembershipType) -> list[Member]:
+def seed_extra_members(db, default_membership_type: MembershipType) -> list[Member]:
     """Create extra member accounts for realistic test data."""
+    # Get all membership types for variety
+    all_types = db.query(MembershipType).filter(MembershipType.is_active.is_(True)).all()
+    type_ids = [mt.id for mt in all_types] if all_types else [default_membership_type.id]
+
+    # Assign varied statuses for realism
+    statuses = ["active"] * 16 + ["pending"] * 3 + ["suspended"] * 1 + ["expired"] * 2
+
     members = []
-    for data in EXTRA_MEMBERS:
+    for i, data in enumerate(EXTRA_MEMBERS):
         existing = db.query(User).filter_by(email=data["email"]).first()
         if existing:
             member = db.query(Member).filter(Member.user_id == existing.id).first()
@@ -478,12 +474,13 @@ def seed_extra_members(db, membership_type: MembershipType) -> list[Member]:
         db.flush()
 
         member_number = next_member_number(db)
+        status = statuses[i % len(statuses)]
         member = Member(
             person_id=person.id,
             user_id=user.id,
-            membership_type_id=membership_type.id,
+            membership_type_id=type_ids[i % len(type_ids)],
             member_number=member_number,
-            status="active",
+            status=status,
         )
         db.add(member)
         db.flush()
@@ -529,8 +526,9 @@ def seed_registrations(db) -> None:
             ActivityModality.is_active.is_(True),
         ).all()
 
-        # Register a subset of members for each activity
-        members_to_register = members[:min(4, len(members))]
+        # Register a varying number of members per activity
+        max_to_register = min(len(members), activity.max_participants, 10)
+        members_to_register = members[:max_to_register]
 
         for i, member in enumerate(members_to_register):
             # Check not already registered
@@ -864,7 +862,7 @@ def main() -> None:
             print("\n  ⚠  TEST ACCOUNTS — do NOT use in production:")
             for account in TEST_ACCOUNTS:
                 print(f"     {account['role']:15s} {account['email']:25s} / {account['password']}")
-            print(f"     {'member':15s} {'(+5 extra members)':25s} / TestMember1!")
+            print(f"     {'member':15s} {'(+22 extra members)':25s} / TestMember1!")
         else:
             # Interactive user creation
             super_admin = prompt_user_details("Super Admin")

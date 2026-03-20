@@ -86,13 +86,19 @@ function StatusBarChart({
                 type="category"
                 dataKey="name"
                 width={100}
-                tick={{ fontSize: 12 }}
+                tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
                 axisLine={false}
                 tickLine={false}
               />
               <Tooltip
-                contentStyle={{ fontSize: "0.75rem", borderRadius: "0.375rem" }}
-                cursor={{ fill: "hsl(0, 0%, 95%)" }}
+                contentStyle={{
+                  fontSize: "0.75rem",
+                  borderRadius: "0.375rem",
+                  backgroundColor: "var(--popover)",
+                  color: "var(--popover-foreground)",
+                  border: "1px solid var(--border)",
+                }}
+                cursor={{ fill: "var(--accent)" }}
               />
               <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={20}>
                 {data.map((entry, i) => (
@@ -101,7 +107,7 @@ function StatusBarChart({
                 <LabelList
                   dataKey="value"
                   position="right"
-                  style={{ fontSize: 12, fontWeight: 600, fill: "hsl(0, 0%, 40%)" }}
+                  style={{ fontSize: 12, fontWeight: 600, fill: "var(--muted-foreground)" }}
                 />
               </Bar>
             </BarChart>

@@ -44,7 +44,7 @@ export function MemberList() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold">{t("nav.members")}</h1>
         <Link href="/members/new">
-          <Button>{t("members.createMember")}</Button>
+          <Button size="sm">{t("members.createMember")}</Button>
         </Link>
       </div>
 

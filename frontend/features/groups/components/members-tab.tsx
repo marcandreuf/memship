@@ -34,6 +34,7 @@ export function MembersTab({ groupId }: MembersTabProps) {
   }
 
   return (
+    <div className="table-compact">
     <Table>
       <TableHeader>
         <TableRow>
@@ -66,5 +67,6 @@ export function MembersTab({ groupId }: MembersTabProps) {
         ))}
       </TableBody>
     </Table>
+    </div>
   );
 }

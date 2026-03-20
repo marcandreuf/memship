@@ -61,7 +61,7 @@ export default function ActivitiesPage() {
         </div>
         {isAdmin && (
           <Link href="/activities/new">
-            <Button>{t("activities.createActivity")}</Button>
+            <Button size="sm">{t("activities.createActivity")}</Button>
           </Link>
         )}
       </div>

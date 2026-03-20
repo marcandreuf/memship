@@ -3,64 +3,64 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --background: oklch(0.985 0.002 247);
+  --foreground: oklch(0.145 0.005 247);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.145 0.005 247);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.145 0.005 247);
+  --primary: oklch(0.55 0.15 220);
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.96 0.01 247);
+  --secondary-foreground: oklch(0.25 0.02 247);
+  --muted: oklch(0.96 0.005 247);
+  --muted-foreground: oklch(0.50 0.01 247);
+  --accent: oklch(0.94 0.02 220);
+  --accent-foreground: oklch(0.25 0.05 220);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --border: oklch(0.90 0.005 247);
+  --input: oklch(0.90 0.005 247);
+  --ring: oklch(0.55 0.15 220);
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar: oklch(0.97 0.008 220);
+  --sidebar-foreground: oklch(0.25 0.02 247);
+  --sidebar-primary: oklch(0.55 0.15 220);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar-accent: oklch(0.92 0.03 220);
+  --sidebar-accent-foreground: oklch(0.20 0.05 220);
+  --sidebar-border: oklch(0.90 0.01 220);
+  --sidebar-ring: oklch(0.55 0.15 220);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.145 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.145 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  --background: oklch(0.16 0.01 247);
+  --foreground: oklch(0.93 0.005 247);
+  --card: oklch(0.19 0.01 247);
+  --card-foreground: oklch(0.93 0.005 247);
+  --popover: oklch(0.19 0.01 247);
+  --popover-foreground: oklch(0.93 0.005 247);
+  --primary: oklch(0.65 0.15 220);
+  --primary-foreground: oklch(0.13 0.02 220);
+  --secondary: oklch(0.25 0.015 247);
+  --secondary-foreground: oklch(0.90 0.005 247);
+  --muted: oklch(0.25 0.01 247);
+  --muted-foreground: oklch(0.65 0.01 247);
+  --accent: oklch(0.28 0.03 220);
+  --accent-foreground: oklch(0.90 0.02 220);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.577 0.245 27.325);
-  --border: oklch(0.269 0 0);
-  --input: oklch(0.269 0 0);
-  --ring: oklch(0.439 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.985 0 0);
-  --sidebar-primary-foreground: oklch(0.205 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.269 0 0);
-  --sidebar-ring: oklch(0.439 0 0);
+  --border: oklch(0.28 0.01 247);
+  --input: oklch(0.28 0.01 247);
+  --ring: oklch(0.65 0.15 220);
+  --sidebar: oklch(0.17 0.015 220);
+  --sidebar-foreground: oklch(0.90 0.005 247);
+  --sidebar-primary: oklch(0.65 0.15 220);
+  --sidebar-primary-foreground: oklch(0.13 0.02 220);
+  --sidebar-accent: oklch(0.25 0.03 220);
+  --sidebar-accent-foreground: oklch(0.90 0.02 220);
+  --sidebar-border: oklch(0.28 0.015 220);
+  --sidebar-ring: oklch(0.65 0.15 220);
 }
 
 @theme inline {
@@ -104,4 +104,17 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Compact table variant for tab content and supporting data lists */
+.table-compact [data-slot="table"] {
+  font-size: 0.8125rem; /* 13px */
+}
+.table-compact [data-slot="table-head"] {
+  height: 1.75rem;
+  font-size: 0.6875rem; /* 11px */
+}
+.table-compact [data-slot="table-cell"] {
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
 }

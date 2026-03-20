@@ -46,7 +46,7 @@ export function AttachmentTypesTab({ activityId }: AttachmentTypesTabProps) {
   if (isLoading) return <p className="text-sm text-muted-foreground">{t("common.loading")}</p>;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 table-compact">
       <div className="flex justify-end">
         <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setEditing(null); }}>
           <DialogTrigger asChild>

@@ -89,7 +89,7 @@ export default function GroupsPage() {
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button>{t("groups.createGroup")}</Button>
+            <Button size="sm">{t("groups.createGroup")}</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>

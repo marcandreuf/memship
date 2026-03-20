@@ -63,7 +63,7 @@ export function RegistrationsTab({ activityId }: RegistrationsTabProps) {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 table-compact">
       <div className="flex items-center gap-3">
         <Select
           value={statusFilter}
