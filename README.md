@@ -28,7 +28,7 @@ curl -fsSL https://raw.githubusercontent.com/marcandreuf/memship/main/docker-com
 Then run the initial setup:
 
 ```bash
-docker compose exec memship-api uv run python -m app.cli.seed
+docker compose exec demo-memship-api uv run python -m app.cli.seed
 ```
 
 Open http://localhost:8081 and log in with the credentials shown by the seed command. Change `PORT=8081` to any port you prefer (default is 80).
