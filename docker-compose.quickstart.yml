@@ -1,0 +1,68 @@
+# Memship Quick Start — single-file deployment using pre-built images
+#
+# Usage:
+#   curl -fsSL https://raw.githubusercontent.com/marcandreuf/memship/main/docker-compose.quickstart.yml -o docker-compose.yml
+#   docker compose up -d
+#   docker compose exec api uv run python -m app.cli.seed
+#   Open http://localhost
+#
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: memship-caddy
+    ports:
+      - "${PORT:-80}:80"
+    command: sh -c "echo ':80 { handle /api/* { reverse_proxy api:8000 } handle { reverse_proxy frontend:3000 } }' > /etc/caddy/Caddyfile && caddy run --config /etc/caddy/Caddyfile"
+    depends_on:
+      - frontend
+      - api
+    restart: unless-stopped
+
+  api:
+    image: ghcr.io/marcandreuf/memship-backend:latest
+    container_name: memship-api
+    expose:
+      - "8000"
+    environment:
+      - DATABASE_URL=postgresql://memship:memship@db:5432/memship_db
+      - SECRET_KEY=change-me-in-production-use-a-random-64-char-string
+      - APP_ENV=production
+      - DEFAULT_LOCALE=es
+      - CORS_ORIGINS=http://localhost
+      - FRONTEND_URL=http://localhost
+      - RUN_MIGRATIONS=1
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    image: ghcr.io/marcandreuf/memship-frontend:latest
+    container_name: memship-frontend
+    expose:
+      - "3000"
+    environment:
+      - API_BASE_URL=http://api:8000
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  db:
+    image: postgres:15-alpine
+    container_name: memship-db
+    environment:
+      - POSTGRES_USER=memship
+      - POSTGRES_PASSWORD=memship
+      - POSTGRES_DB=memship_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "memship", "-d", "memship_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  pgdata:
