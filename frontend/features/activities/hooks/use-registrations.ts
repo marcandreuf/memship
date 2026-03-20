@@ -10,6 +10,7 @@ import {
   listMyRegistrations,
   listRegistrationAttachments,
   uploadRegistrationAttachment,
+  getRegistrationStats,
   type ListRegistrationsParams,
   type RegisterParams,
 } from "../services/registrations-api";
@@ -74,6 +75,13 @@ export function useActivityRegistrations(params: ListRegistrationsParams) {
     queryKey: ["activity-registrations", params.activityId, params],
     queryFn: () => listActivityRegistrations(params),
     enabled: params.activityId > 0,
+  });
+}
+
+export function useRegistrationStats() {
+  return useQuery({
+    queryKey: ["registration-stats"],
+    queryFn: () => getRegistrationStats(),
   });
 }
 

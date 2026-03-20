@@ -144,6 +144,18 @@ export async function uploadRegistrationAttachment(
   return res.json();
 }
 
+export interface RegistrationStats {
+  confirmed: number;
+  waitlist: number;
+  cancelled: number;
+  pending: number;
+  total: number;
+}
+
+export async function getRegistrationStats(): Promise<RegistrationStats> {
+  return apiClient("/registrations/stats");
+}
+
 export async function listMyRegistrations(params: {
   page?: number;
   per_page?: number;

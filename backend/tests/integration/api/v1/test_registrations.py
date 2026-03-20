@@ -98,6 +98,36 @@ def _create_published_activity(db, admin_id=None, max_participants=50, features=
     return activity, price
 
 
+class TestRegistrationStats:
+    def test_stats_returns_counts(self, client, db):
+        admin = _create_user(db, "admin", suffix="-stats")
+        user, member = _create_member_with_user(db, suffix="-stats")
+        activity, price = _create_published_activity(db, admin.id)
+        db.add(Registration(
+            activity_id=activity.id, member_id=member.id,
+            price_id=price.id, status="confirmed",
+        ))
+        db.flush()
+
+        client.cookies.update(_auth_cookie(admin))
+        response = client.get("/api/v1/registrations/stats")
+        assert response.status_code == 200
+        data = response.json()
+        assert "confirmed" in data
+        assert "waitlist" in data
+        assert "cancelled" in data
+        assert "pending" in data
+        assert "total" in data
+        assert data["confirmed"] >= 1
+        assert data["total"] >= 1
+
+    def test_stats_requires_admin(self, client, db):
+        user, _ = _create_member_with_user(db, suffix="-stats-member")
+        client.cookies.update(_auth_cookie(user))
+        response = client.get("/api/v1/registrations/stats")
+        assert response.status_code == 403
+
+
 class TestRegistration:
     def test_register_for_activity(self, client, db):
         admin = _create_user(db, "admin", suffix="-reg1")

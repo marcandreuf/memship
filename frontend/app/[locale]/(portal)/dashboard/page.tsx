@@ -19,7 +19,7 @@ import { useAuth } from "@/features/auth/hooks/use-auth";
 import { useMembers } from "@/features/members/hooks/use-members";
 import { useActivities } from "@/features/activities/hooks/use-activities";
 import { useGroups } from "@/features/groups/hooks/use-groups";
-import { useMyRegistrations } from "@/features/activities/hooks/use-registrations";
+import { useMyRegistrations, useRegistrationStats } from "@/features/activities/hooks/use-registrations";
 import { useActivity } from "@/features/activities/hooks/use-activities";
 import type { RegistrationData } from "@/features/activities/services/registrations-api";
 
@@ -36,6 +36,13 @@ const ACTIVITY_COLORS: Record<string, string> = {
   published: "hsl(142, 71%, 45%)",
   archived: "hsl(48, 96%, 53%)",
   cancelled: "hsl(0, 84%, 60%)",
+};
+
+const REGISTRATION_COLORS: Record<string, string> = {
+  confirmed: "hsl(142, 71%, 45%)",
+  waitlist: "hsl(48, 96%, 53%)",
+  cancelled: "hsl(0, 0%, 64%)",
+  pending: "hsl(220, 9%, 64%)",
 };
 
 interface ChartItem {
@@ -191,6 +198,7 @@ export default function DashboardPage() {
   const { data: cancelledActivities } = useActivities(isAdmin ? { status: "cancelled", per_page: 1 } : {});
 
   const { data: groups } = useGroups();
+  const { data: regStats } = useRegistrationStats();
 
   // Member: my registrations
   const { data: myRegistrations } = useMyRegistrations(
@@ -211,6 +219,13 @@ export default function DashboardPage() {
     { name: t("activities.status.archived"), value: archivedActivities?.meta.total ?? 0, color: ACTIVITY_COLORS.archived },
     { name: t("activities.status.cancelled"), value: cancelledActivities?.meta.total ?? 0, color: ACTIVITY_COLORS.cancelled },
   ], [draftActivities, publishedActivities, archivedActivities, cancelledActivities, t]);
+
+  const registrationChartData = useMemo<ChartItem[]>(() => [
+    { name: t("dashboard.confirmedRegistrations"), value: regStats?.confirmed ?? 0, color: REGISTRATION_COLORS.confirmed },
+    { name: t("dashboard.waitlistRegistrations"), value: regStats?.waitlist ?? 0, color: REGISTRATION_COLORS.waitlist },
+    { name: t("dashboard.pendingRegistrations"), value: regStats?.pending ?? 0, color: REGISTRATION_COLORS.pending },
+    { name: t("dashboard.cancelledRegistrations"), value: regStats?.cancelled ?? 0, color: REGISTRATION_COLORS.cancelled },
+  ], [regStats, t]);
 
   const activeRegistrations = myRegistrations?.items.filter(
     (r) => r.status === "confirmed" || r.status === "waitlist"
@@ -238,13 +253,19 @@ export default function DashboardPage() {
             />
           </div>
 
-          {/* Summary cards */}
-          <div className="grid gap-3 grid-cols-2 lg:grid-cols-3">
-            <StatCard
-              label={t("dashboard.totalGroups")}
-              value={groups?.length ?? "—"}
-              href="/groups"
+          {/* Registrations chart + summary cards */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <StatusBarChart
+              title={t("dashboard.totalRegistrations")}
+              data={registrationChartData}
             />
+            <div className="grid gap-3 grid-cols-1">
+              <StatCard
+                label={t("dashboard.totalGroups")}
+                value={groups?.length ?? "—"}
+                href="/groups"
+              />
+            </div>
           </div>
         </div>
       )}

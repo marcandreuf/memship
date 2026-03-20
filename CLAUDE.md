@@ -4,9 +4,9 @@
 
 Memship is a self-hosted membership management system for professional associations, sports clubs, and similar organizations. Licensed under Elastic License 2.0 (ELv2).
 
-**Current version:** See `VERSION` file (pre-alpha)
+**Current version:** See `VERSION` file
 
-**Tech stack (v0.1.0):**
+**Tech stack:**
 - Backend: Python 3.12+ / FastAPI / SQLAlchemy 2.0 / Alembic
 - Frontend: Next.js 16 / React 19 / Tailwind 4 / Shadcn/ui / next-intl
 - Database: PostgreSQL 15 (single-tenant, `CHECK (id = 1)` on organization_settings)
@@ -93,6 +93,12 @@ memship/
 │   │   ├── db/                  # SQLAlchemy base, session
 │   │   ├── api/v1/              # API routes
 │   │   ├── domains/             # Domain modules (models, schemas, services)
+│   │   │   ├── activities/      # Activities, modalities, prices, registrations, discounts, consents, attachments
+│   │   │   ├── auth/            # Users, authentication
+│   │   │   ├── audit/           # Audit logging
+│   │   │   ├── members/         # Members, membership types, groups
+│   │   │   ├── organizations/   # Organization settings
+│   │   │   └── persons/         # Persons, addresses, contacts
 │   │   └── cli/                 # CLI commands (seed)
 │   ├── tests/
 │   │   ├── unit/
@@ -105,11 +111,17 @@ memship/
 │   ├── package.json             # pnpm
 │   ├── app/                     # Next.js app router
 │   │   └── [locale]/            # i18n routes
-│   ├── features/                # Feature modules (auth, members)
+│   ├── features/                # Feature modules
+│   │   ├── activities/          # Activities, registrations, discounts, consents, attachments
+│   │   ├── auth/                # Login, register, password reset
+│   │   ├── groups/              # Group management
+│   │   ├── members/             # Member CRUD
+│   │   └── settings/            # Organization settings, membership types
 │   ├── components/
 │   │   ├── ui/                  # Shadcn components
+│   │   ├── entity/              # Shared entity pattern (search, pagination, detail, tabs)
 │   │   └── layout/              # Header, sidebar, nav
-│   ├── lib/                     # API clients, providers
+│   ├── lib/                     # API clients, providers, status variants
 │   └── locales/                 # Translation files (es, ca, en)
 └── .github/
     └── workflows/

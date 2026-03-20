@@ -29,13 +29,16 @@ Most membership tools are either expensive SaaS platforms or outdated legacy sof
 - Admin dashboard with status charts (recharts)
 - Unified entity pattern: list → detail → tabs for all entities
 
-**Activities & Events** (in development)
+**Activities & Events** (available now)
 - Activity creation with lifecycle management (draft → published → archived)
 - Modalities (variants with independent capacity, pricing, and deadlines)
 - Pricing tiers with time-based validity (early bird pricing)
 - Online registration with eligibility checks (membership type, age, status)
 - Capacity management with automatic waiting list and promotion
 - Self-cancellation with configurable deadlines
+- Discount codes (percentage/fixed, max uses, validity dates)
+- Per-activity legal consents (mandatory/optional)
+- Per-activity required attachments with file upload
 - Member portal: activity browsing, registration, "My Activities" dashboard
 - Admin portal: registration management with status changes
 
@@ -218,7 +221,10 @@ Backups are stored in the `backups/` directory. Old backups are cleaned up after
 | v0.1.1 | Email sending (SMTP) — welcome emails, password reset emails | Done |
 | v0.1.2 | Groups, guardian/minor support, restricted role (schema) | Done |
 | v0.1.3 | Caddy reverse proxy, backup/restore scripts, self-hosted polish | Done |
-| v0.2.0 | Activity Management — CRUD, modalities, pricing, registration, eligibility, waitlist, dashboard | In progress |
+| v0.1.4 | Organization settings management (API + frontend) | Done |
+| v0.1.5 | Activity CRUD — models, modalities, pricing, admin frontend | Done |
+| v0.1.6 | Strong entity pattern — unified list/detail/tabs across all entities | Done |
+| v0.2.0 | Activity Management — registration, eligibility, waitlist, discounts, consents, attachments | In progress |
 | v0.2.1 | E2E test foundation (Cypress), activity polish | — |
 | v0.3.0 | Basic Payments & Invoicing | — |
 | v0.4.0 | Payment Processing (SEPA + Stripe) | — |

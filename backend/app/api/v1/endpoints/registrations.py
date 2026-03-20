@@ -1,6 +1,7 @@
 """Registration endpoints."""
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.authorization import require_admin
@@ -72,6 +73,30 @@ def _to_detail_response(registration: Registration) -> RegistrationDetailRespons
         created_at=registration.created_at,
         member=member_info,
     )
+
+
+# --- Stats endpoint ---
+
+
+@router.get("/registrations/stats")
+def registration_stats(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """Get registration counts by status (admin only)."""
+    rows = (
+        db.query(Registration.status, func.count(Registration.id))
+        .group_by(Registration.status)
+        .all()
+    )
+    counts = {status: count for status, count in rows}
+    return {
+        "confirmed": counts.get("confirmed", 0),
+        "waitlist": counts.get("waitlist", 0),
+        "cancelled": counts.get("cancelled", 0),
+        "pending": counts.get("pending", 0),
+        "total": sum(counts.values()),
+    }
 
 
 # --- Activity-scoped endpoints ---
