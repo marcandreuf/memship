@@ -2,30 +2,30 @@
 #
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/marcandreuf/memship/main/docker-compose.quickstart.yml -o docker-compose.yml
-#   docker compose up -d
-#   docker compose exec api uv run python -m app.cli.seed
-#   Open http://localhost
+#   PORT=8081 docker compose up -d
+#   docker compose exec memship-api uv run python -m app.cli.seed
+#   Open http://localhost:8081
 #
 
 services:
-  caddy:
+  memship-caddy:
     image: caddy:2-alpine
     container_name: memship-caddy
     ports:
       - "${PORT:-80}:80"
-    command: sh -c "echo ':80 { handle /api/* { reverse_proxy api:8000 } handle { reverse_proxy frontend:3000 } }' > /etc/caddy/Caddyfile && caddy run --config /etc/caddy/Caddyfile"
+    command: sh -c "echo ':80 { handle /api/* { reverse_proxy memship-api:8000 } handle { reverse_proxy memship-frontend:3000 } }' > /etc/caddy/Caddyfile && caddy run --config /etc/caddy/Caddyfile"
     depends_on:
-      - frontend
-      - api
+      - memship-frontend
+      - memship-api
     restart: unless-stopped
 
-  api:
+  memship-api:
     image: ghcr.io/marcandreuf/memship-backend:latest
     container_name: memship-api
     expose:
       - "8000"
     environment:
-      - DATABASE_URL=postgresql://memship:memship@db:5432/memship_db
+      - DATABASE_URL=postgresql://memship:memship@memship-db:5432/memship_db
       - SECRET_KEY=change-me-in-production-use-a-random-64-char-string
       - APP_ENV=production
       - DEFAULT_LOCALE=es
@@ -33,22 +33,22 @@ services:
       - FRONTEND_URL=http://localhost
       - RUN_MIGRATIONS=1
     depends_on:
-      db:
+      memship-db:
         condition: service_healthy
     restart: unless-stopped
 
-  frontend:
+  memship-frontend:
     image: ghcr.io/marcandreuf/memship-frontend:latest
     container_name: memship-frontend
     expose:
       - "3000"
     environment:
-      - API_BASE_URL=http://api:8000
+      - API_BASE_URL=http://memship-api:8000
     depends_on:
-      - api
+      - memship-api
     restart: unless-stopped
 
-  db:
+  memship-db:
     image: postgres:15-alpine
     container_name: memship-db
     environment:
@@ -56,7 +56,7 @@ services:
       - POSTGRES_PASSWORD=memship
       - POSTGRES_DB=memship_db
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - memship-pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "memship", "-d", "memship_db"]
       interval: 5s
@@ -65,4 +65,4 @@ services:
     restart: unless-stopped
 
 volumes:
-  pgdata:
+  memship-pgdata:
