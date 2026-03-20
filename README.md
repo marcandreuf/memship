@@ -46,7 +46,8 @@ Open http://localhost:8081 and log in with the credentials shown by the seed com
 | v0.1.6 | Strong entity pattern — unified list/detail/tabs across all entities | Done |
 | v0.2.0 | Activity Management — registration, eligibility, waitlist, discounts, consents, attachments | Done |
 | v0.2.1 | UX refactor — Shadcn sidebar, dark mode, brand colors, compact tables, quick start | Done |
-| v0.2.2 | E2E test foundation (Cypress), activity polish, nuqs URL state | — |
+| v0.2.2 | E2E test foundation (Cypress) — auth, members, activities, registrations | — |
+| v0.2.3 | Activity polish — images, email notifications, loading skeletons, nuqs URL state | — |
 | v0.3.0 | Basic Payments & Invoicing | — |
 | v0.4.0 | Payment Processing (SEPA + Stripe) | — |
 | v0.5.0 | Communication System | — |
