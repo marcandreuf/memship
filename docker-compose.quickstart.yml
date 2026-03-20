@@ -20,7 +20,7 @@ services:
       - |
         cat > /etc/caddy/Caddyfile <<'CADDYEOF'
         :80 {
-          handle /api/* {
+          handle /api/v1/* {
             reverse_proxy demo-memship-api:8000
           }
           handle {
