@@ -44,7 +44,7 @@ Open http://localhost:8081 and log in with the credentials shown by the seed com
 | v0.1.4 | Organization settings management (API + frontend) | Done |
 | v0.1.5 | Activity CRUD — models, modalities, pricing, admin frontend | Done |
 | v0.1.6 | Strong entity pattern — unified list/detail/tabs across all entities | Done |
-| v0.2.0 | Activity Management — registration, eligibility, waitlist, discounts, consents, attachments | In progress |
+| v0.2.0 | Activity Management — registration, eligibility, waitlist, discounts, consents, attachments | Done |
 | v0.2.1 | E2E test foundation (Cypress), activity polish | — |
 | v0.3.0 | Basic Payments & Invoicing | — |
 | v0.4.0 | Payment Processing (SEPA + Stripe) | — |
