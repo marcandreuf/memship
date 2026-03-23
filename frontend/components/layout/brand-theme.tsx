@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useTheme } from "next-themes";
 import { useSettings } from "@/features/settings/hooks/use-settings";
 
 /**
@@ -70,7 +71,7 @@ function hexToOklchTint(hex: string, lightnessBoost: number, chromaFactor = 0.3)
   let H = (Math.atan2(bVal, a) * 180) / Math.PI;
   if (H < 0) H += 360;
 
-  const newL = Math.min(1, L + lightnessBoost);
+  const newL = Math.max(0, Math.min(1, L + lightnessBoost));
   const newC = C * chromaFactor; // reduce chroma for tints
 
   return `oklch(${newL.toFixed(3)} ${newC.toFixed(3)} ${H.toFixed(1)})`;
@@ -78,34 +79,49 @@ function hexToOklchTint(hex: string, lightnessBoost: number, chromaFactor = 0.3)
 
 /**
  * Applies the organization's brand color to the CSS theme variables.
+ * Generates light tints for light mode and dark tints for dark mode.
  * Runs inside the portal layout where the user is authenticated.
  */
 export function BrandTheme() {
   const { data: settings } = useSettings();
+  const { resolvedTheme } = useTheme();
 
   useEffect(() => {
     const color = settings?.brand_color;
     if (!color || !/^#[0-9a-fA-F]{6}$/.test(color)) return;
 
     const root = document.documentElement;
+    const isDark = resolvedTheme === "dark";
     const primary = hexToOklch(color);
-    const sidebarBg = hexToOklchTint(color, 0.45, 0.15);
-    const sidebarAccent = hexToOklchTint(color, 0.40, 0.20);
-    const accent = hexToOklchTint(color, 0.44, 0.15);
 
     // Primary color (buttons, active states, links)
     root.style.setProperty("--primary", primary);
     root.style.setProperty("--ring", primary);
 
-    // Sidebar theming
-    root.style.setProperty("--sidebar", sidebarBg);
-    root.style.setProperty("--sidebar-primary", primary);
-    root.style.setProperty("--sidebar-accent", sidebarAccent);
-    root.style.setProperty("--sidebar-ring", primary);
+    if (isDark) {
+      // Dark mode: low lightness, subtle chroma
+      const sidebarBg = hexToOklchTint(color, -0.35, 0.10);
+      const sidebarAccent = hexToOklchTint(color, -0.25, 0.15);
+      const accent = hexToOklchTint(color, -0.30, 0.10);
 
-    // Accent (hover backgrounds)
-    root.style.setProperty("--accent", accent);
-  }, [settings?.brand_color]);
+      root.style.setProperty("--sidebar", sidebarBg);
+      root.style.setProperty("--sidebar-primary", primary);
+      root.style.setProperty("--sidebar-accent", sidebarAccent);
+      root.style.setProperty("--sidebar-ring", primary);
+      root.style.setProperty("--accent", accent);
+    } else {
+      // Light mode: high lightness, subtle chroma
+      const sidebarBg = hexToOklchTint(color, 0.45, 0.15);
+      const sidebarAccent = hexToOklchTint(color, 0.40, 0.20);
+      const accent = hexToOklchTint(color, 0.44, 0.15);
+
+      root.style.setProperty("--sidebar", sidebarBg);
+      root.style.setProperty("--sidebar-primary", primary);
+      root.style.setProperty("--sidebar-accent", sidebarAccent);
+      root.style.setProperty("--sidebar-ring", primary);
+      root.style.setProperty("--accent", accent);
+    }
+  }, [settings?.brand_color, resolvedTheme]);
 
   return null;
 }

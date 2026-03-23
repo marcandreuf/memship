@@ -66,7 +66,11 @@ Open http://localhost:8081 and log in with your credentials. Change `PORT=8081` 
 | v0.2.1 | UX refactor — Shadcn sidebar, dark mode, brand colors, compact tables, quick start | Done |
 | v0.2.2 | E2E test foundation (Cypress) — auth, members, activities, registrations | Done |
 | v0.2.3 | Error handling & validation hardening — toast notifications, global error handler, backend schema validation, StrEnum, 76 validation tests, 16 E2E tests | Done |
-| v0.2.4 | Activity polish — images, email notifications, loading skeletons, nuqs URL state | — |
+| v0.2.4 | Bug fixes — dark mode sidebar, form error display, route guards, member list cancelled visibility, member delete removed | In Progress |
+| v0.2.5 | Bug fixes & polish | — |
+| v0.2.6 | Bug fixes & polish | — |
+| v0.2.7 | Bug fixes & polish | — |
+| v0.2.8 | Activity polish — images, email notifications, loading skeletons, nuqs URL state | — |
 | v0.3.0 | Basic Payments & Invoicing | — |
 | v0.4.0 | Payment Processing (SEPA + Stripe) | — |
 | v0.5.0 | Communication System | — |
