@@ -12,6 +12,7 @@ export function Toaster() {
       position="bottom-right"
       richColors
       closeButton
+      duration={5000}
     />
   );
 }

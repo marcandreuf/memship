@@ -165,9 +165,11 @@ export default function ActivityDetailPage({
           <ActivityEditForm
             activity={activity}
             onSubmit={async (data) => {
-              await updateMutation.mutateAsync({ id: activityId, data });
-              toast.success(t("toast.success.saved"));
-              setIsEditing(false);
+              try {
+                await updateMutation.mutateAsync({ id: activityId, data });
+                toast.success(t("toast.success.saved"));
+                setIsEditing(false);
+              } catch { /* global handler shows error toast */ }
             }}
             isPending={updateMutation.isPending}
             onCancel={() => setIsEditing(false)}

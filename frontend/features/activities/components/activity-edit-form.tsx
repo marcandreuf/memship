@@ -14,8 +14,8 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
 } from "@/components/ui/form";
+import { FormErrorSummary } from "@/components/ui/form-error-summary";
 import type { ActivityData } from "../services/activities-api";
 
 const editActivitySchema = z.object({
@@ -36,6 +36,21 @@ const editActivitySchema = z.object({
   tax_rate: z.coerce.number().min(0).max(100),
   allow_self_cancellation: z.boolean(),
   self_cancellation_deadline_hours: z.coerce.number().int().min(0).optional().or(z.literal("")),
+}).refine((data) => new Date(data.ends_at) > new Date(data.starts_at), {
+  message: "End date must be after start date",
+  path: ["ends_at"],
+}).refine((data) => new Date(data.registration_ends_at) > new Date(data.registration_starts_at), {
+  message: "Registration close must be after registration open",
+  path: ["registration_ends_at"],
+}).refine((data) => new Date(data.registration_ends_at) <= new Date(data.starts_at), {
+  message: "Registration must close before the activity starts",
+  path: ["registration_ends_at"],
+}).refine((data) => !data.min_age || !data.max_age || Number(data.max_age) >= Number(data.min_age), {
+  message: "Max age must be greater than or equal to min age",
+  path: ["max_age"],
+}).refine((data) => data.max_participants >= data.min_participants, {
+  message: "Max participants must be greater than or equal to min participants",
+  path: ["max_participants"],
 });
 
 type EditActivityFormValues = z.infer<typeof editActivitySchema>;
@@ -113,67 +128,68 @@ export function ActivityEditForm({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-3">
         <FormField control={form.control} name="name" render={({ field }) => (
-          <FormItem><FormLabel>{t("activities.name")}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+          <FormItem><FormLabel>{t("activities.name")}</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
         )} />
         <FormField control={form.control} name="short_description" render={({ field }) => (
-          <FormItem><FormLabel>{t("activities.shortDescription")}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+          <FormItem><FormLabel>{t("activities.shortDescription")}</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
         )} />
         <FormField control={form.control} name="description" render={({ field }) => (
-          <FormItem><FormLabel>{t("activities.description")}</FormLabel><FormControl><Textarea rows={3} {...field} /></FormControl><FormMessage /></FormItem>
+          <FormItem><FormLabel>{t("activities.description")}</FormLabel><FormControl><Textarea rows={3} {...field} /></FormControl></FormItem>
         )} />
         <div className="grid gap-3 sm:grid-cols-2">
           <FormField control={form.control} name="starts_at" render={({ field }) => (
-            <FormItem><FormLabel>{t("activities.startsAt")}</FormLabel><FormControl><Input type="datetime-local" {...field} /></FormControl><FormMessage /></FormItem>
+            <FormItem><FormLabel>{t("activities.startsAt")}</FormLabel><FormControl><Input type="datetime-local" {...field} /></FormControl></FormItem>
           )} />
           <FormField control={form.control} name="ends_at" render={({ field }) => (
-            <FormItem><FormLabel>{t("activities.endsAt")}</FormLabel><FormControl><Input type="datetime-local" {...field} /></FormControl><FormMessage /></FormItem>
+            <FormItem><FormLabel>{t("activities.endsAt")}</FormLabel><FormControl><Input type="datetime-local" {...field} /></FormControl></FormItem>
           )} />
           <FormField control={form.control} name="registration_starts_at" render={({ field }) => (
-            <FormItem><FormLabel>{t("activities.registrationStartsAt")}</FormLabel><FormControl><Input type="datetime-local" {...field} /></FormControl><FormMessage /></FormItem>
+            <FormItem><FormLabel>{t("activities.registrationStartsAt")}</FormLabel><FormControl><Input type="datetime-local" {...field} /></FormControl></FormItem>
           )} />
           <FormField control={form.control} name="registration_ends_at" render={({ field }) => (
-            <FormItem><FormLabel>{t("activities.registrationEndsAt")}</FormLabel><FormControl><Input type="datetime-local" {...field} /></FormControl><FormMessage /></FormItem>
+            <FormItem><FormLabel>{t("activities.registrationEndsAt")}</FormLabel><FormControl><Input type="datetime-local" {...field} /></FormControl></FormItem>
           )} />
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <FormField control={form.control} name="location" render={({ field }) => (
-            <FormItem><FormLabel>{t("activities.location")}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+            <FormItem><FormLabel>{t("activities.location")}</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
           )} />
           <FormField control={form.control} name="location_details" render={({ field }) => (
-            <FormItem><FormLabel>{t("activities.locationDetails")}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+            <FormItem><FormLabel>{t("activities.locationDetails")}</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
           )} />
           <FormField control={form.control} name="location_url" render={({ field }) => (
-            <FormItem className="sm:col-span-2"><FormLabel>{t("activities.locationUrl")}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+            <FormItem className="sm:col-span-2"><FormLabel>{t("activities.locationUrl")}</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
           )} />
         </div>
         <div className="grid gap-3 sm:grid-cols-3">
           <FormField control={form.control} name="min_participants" render={({ field }) => (
-            <FormItem><FormLabel>{t("activities.minParticipants")}</FormLabel><FormControl><Input type="number" min={0} {...field} /></FormControl><FormMessage /></FormItem>
+            <FormItem><FormLabel>{t("activities.minParticipants")}</FormLabel><FormControl><Input type="number" min={0} {...field} /></FormControl></FormItem>
           )} />
           <FormField control={form.control} name="max_participants" render={({ field }) => (
-            <FormItem><FormLabel>{t("activities.maxParticipants")}</FormLabel><FormControl><Input type="number" min={1} {...field} /></FormControl><FormMessage /></FormItem>
+            <FormItem><FormLabel>{t("activities.maxParticipants")}</FormLabel><FormControl><Input type="number" min={1} {...field} /></FormControl></FormItem>
           )} />
           <FormField control={form.control} name="tax_rate" render={({ field }) => (
-            <FormItem><FormLabel>{t("activities.taxRate")}</FormLabel><FormControl><Input type="number" min={0} max={100} step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+            <FormItem><FormLabel>{t("activities.taxRate")}</FormLabel><FormControl><Input type="number" min={0} max={100} step="0.01" {...field} /></FormControl></FormItem>
           )} />
           <FormField control={form.control} name="min_age" render={({ field }) => (
-            <FormItem><FormLabel>{t("activities.minAge")}</FormLabel><FormControl><Input type="number" min={0} {...field} /></FormControl><FormMessage /></FormItem>
+            <FormItem><FormLabel>{t("activities.minAge")}</FormLabel><FormControl><Input type="number" min={0} {...field} /></FormControl></FormItem>
           )} />
           <FormField control={form.control} name="max_age" render={({ field }) => (
-            <FormItem><FormLabel>{t("activities.maxAge")}</FormLabel><FormControl><Input type="number" min={0} {...field} /></FormControl><FormMessage /></FormItem>
+            <FormItem><FormLabel>{t("activities.maxAge")}</FormLabel><FormControl><Input type="number" min={0} {...field} /></FormControl></FormItem>
           )} />
         </div>
         <FormField control={form.control} name="allow_self_cancellation" render={({ field }) => (
           <FormItem className="flex items-center gap-2">
             <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-            <FormLabel className="!mt-0">{t("activities.allowSelfCancellation")}</FormLabel><FormMessage />
+            <FormLabel className="!mt-0">{t("activities.allowSelfCancellation")}</FormLabel>
           </FormItem>
         )} />
         {allowSelfCancellation && (
           <FormField control={form.control} name="self_cancellation_deadline_hours" render={({ field }) => (
-            <FormItem><FormLabel>{t("activities.selfCancellationHours")}</FormLabel><FormControl><Input type="number" min={0} {...field} /></FormControl><FormMessage /></FormItem>
+            <FormItem><FormLabel>{t("activities.selfCancellationHours")}</FormLabel><FormControl><Input type="number" min={0} {...field} /></FormControl></FormItem>
           )} />
         )}
+        <FormErrorSummary errors={form.formState.errors} />
         <div className="flex gap-3">
           <Button type="submit" disabled={isPending}>
             {isPending ? t("common.loading") : t("common.save")}
