@@ -103,10 +103,6 @@ export async function updateMember(
   });
 }
 
-export async function deleteMember(id: number): Promise<void> {
-  await apiClient(`/members/${id}`, { method: "DELETE" });
-}
-
 export async function changeMemberStatus(
   id: number,
   status: string,

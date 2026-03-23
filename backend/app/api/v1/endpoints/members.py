@@ -61,7 +61,6 @@ def list_members(
 ):
     query = (
         db.query(Member)
-        .filter(Member.is_active.is_(True))
         .options(joinedload(Member.person), joinedload(Member.membership_type), joinedload(Member.guardian))
     )
 
@@ -192,17 +191,6 @@ def update_member(
     db.commit()
     db.refresh(member)
     return _to_response(member)
-
-
-@router.delete("/{member_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_member(
-    member_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
-):
-    member = get_or_404(db, Member, member_id)
-    member.is_active = False
-    db.commit()
 
 
 @router.put("/{member_id}/status", response_model=MemberResponse)

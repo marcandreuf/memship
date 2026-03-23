@@ -205,14 +205,6 @@ class TestMemberCRUD:
         assert response.status_code == 200
         assert response.json()["person"]["first_name"] == "Updated"
 
-    def test_delete_member(self, client, db):
-        admin = _create_admin(db)
-        _, member = _create_member_user(db, "delete-member@test.com")
-        client.cookies.update(_auth_cookie(admin))
-
-        response = client.delete(f"/api/v1/members/{member.id}")
-        assert response.status_code == 204
-
     def test_member_cannot_list(self, client, db):
         _, member = _create_member_user(db, "no-list@test.com")
         user = db.query(User).filter(User.id == member.user_id).first()

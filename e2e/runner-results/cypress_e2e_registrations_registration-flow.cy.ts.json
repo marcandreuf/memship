@@ -4,7 +4,7 @@
   "passes": 6,
   "pending": 0,
   "failures": 0,
-  "start": "2026-03-23T06:06:27.838Z",
-  "duration": 109798,
+  "start": "2026-03-23T10:08:22.994Z",
+  "duration": 173144,
   "file": "cypress/e2e/registrations/registration-flow.cy.ts"
 }

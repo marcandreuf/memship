@@ -2,8 +2,6 @@
 
 import { use, useState } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "@/lib/i18n/routing";
-import { Button } from "@/components/ui/button";
 import { DetailHeader } from "@/components/entity/detail-header";
 import { InlineEditWrapper } from "@/components/entity/inline-edit-wrapper";
 import { EntityTabs } from "@/components/entity/entity-tabs";
@@ -15,7 +13,6 @@ import { MemberStatusActions } from "@/features/members/components/member-status
 import {
   useMember,
   useUpdateMember,
-  useDeleteMember,
 } from "@/features/members/hooks/use-members";
 import { toast } from "sonner";
 import { useAuth } from "@/features/auth/hooks/use-auth";
@@ -29,11 +26,9 @@ export default function MemberDetailPage({
   const { id } = use(params);
   const memberId = Number(id);
   const t = useTranslations();
-  const router = useRouter();
   const { user } = useAuth();
   const { data: member, isLoading } = useMember(memberId);
   const { mutateAsync: update, isPending: isUpdating } = useUpdateMember();
-  const { mutateAsync: remove } = useDeleteMember();
   const [isEditing, setIsEditing] = useState(false);
 
   const isAdmin = user?.role === "admin" || user?.role === "super_admin";
@@ -69,28 +64,7 @@ export default function MemberDetailPage({
           variant: MEMBER_STATUS_VARIANTS[member.status] || "outline",
         }}
         actions={
-          isAdmin ? (
-            <>
-              <MemberStatusActions member={member} />
-              {!isEditing && (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={async () => {
-                    if (confirm(t("members.confirmDelete"))) {
-                      try {
-                        await remove(memberId);
-                        toast.success(t("toast.success.deleted"));
-                        router.push("/members");
-                      } catch { /* global handler shows error toast */ }
-                    }
-                  }}
-                >
-                  {t("common.delete")}
-                </Button>
-              )}
-            </>
-          ) : undefined
+          isAdmin ? <MemberStatusActions member={member} /> : undefined
         }
       />
 

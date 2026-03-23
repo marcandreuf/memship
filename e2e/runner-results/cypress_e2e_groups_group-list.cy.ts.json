@@ -4,7 +4,7 @@
   "passes": 7,
   "pending": 0,
   "failures": 0,
-  "start": "2026-03-23T06:02:09.910Z",
-  "duration": 188056,
+  "start": "2026-03-23T10:04:41.321Z",
+  "duration": 177143,
   "file": "cypress/e2e/groups/group-list.cy.ts"
 }

@@ -4,7 +4,7 @@
   "passes": 16,
   "pending": 0,
   "failures": 0,
-  "start": "2026-03-23T06:07:40.723Z",
-  "duration": 135410,
+  "start": "2026-03-23T10:07:35.049Z",
+  "duration": 285649,
   "file": "cypress/e2e/validation/error-handling.cy.ts"
 }

@@ -4,7 +4,7 @@
   "passes": 10,
   "pending": 0,
   "failures": 0,
-  "start": "2026-03-23T06:02:17.654Z",
-  "duration": 216344,
+  "start": "2026-03-23T10:04:53.338Z",
+  "duration": 206179,
   "file": "cypress/e2e/activities/activity-list.cy.ts"
 }

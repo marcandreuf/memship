@@ -4,7 +4,7 @@
   "passes": 6,
   "pending": 0,
   "failures": 0,
-  "start": "2026-03-23T06:02:06.395Z",
-  "duration": 168121,
+  "start": "2026-03-23T10:04:45.030Z",
+  "duration": 166663,
   "file": "cypress/e2e/members/member-detail.cy.ts"
 }

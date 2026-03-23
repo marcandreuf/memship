@@ -5,8 +5,10 @@ import { AppSidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 import { BrandTheme } from "@/components/layout/brand-theme";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { useRouter } from "@/lib/i18n/routing";
+import { useRouter, usePathname } from "@/lib/i18n/routing";
 import { useEffect } from "react";
+
+const ADMIN_ROUTES = ["/members", "/groups", "/settings"];
 
 export default function PortalLayout({
   children,
@@ -15,12 +17,22 @@ export default function PortalLayout({
 }) {
   const { user, isLoading, isAuthenticated } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.push("/login");
     }
   }, [isLoading, isAuthenticated, router]);
+
+  useEffect(() => {
+    if (!isLoading && user) {
+      const isAdmin = user.role === "admin" || user.role === "super_admin";
+      if (!isAdmin && ADMIN_ROUTES.some((r) => pathname === r || pathname.startsWith(r + "/"))) {
+        router.push("/dashboard");
+      }
+    }
+  }, [isLoading, user, pathname, router]);
 
   if (isLoading) {
     return (
