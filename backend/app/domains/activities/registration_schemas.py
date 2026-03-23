@@ -4,6 +4,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
+from app.domains.shared.enums import RegistrationStatus
+
 
 class ConsentAcceptanceInput(BaseModel):
     activity_consent_id: int
@@ -13,19 +15,19 @@ class ConsentAcceptanceInput(BaseModel):
 class RegisterRequest(BaseModel):
     price_id: int
     modality_id: int | None = None
-    discount_code: str | None = None
+    discount_code: str | None = Field(default=None, max_length=50)
     consents: list[ConsentAcceptanceInput] = []
     registration_data: dict = {}
-    member_notes: str | None = None
+    member_notes: str | None = Field(default=None, max_length=2000)
 
 
 class CancelRegistrationRequest(BaseModel):
-    reason: str | None = None
+    reason: str | None = Field(default=None, max_length=2000)
 
 
 class AdminStatusChangeRequest(BaseModel):
-    status: str = Field(pattern="^(confirmed|waitlist|cancelled|pending)$")
-    admin_notes: str | None = None
+    status: RegistrationStatus
+    admin_notes: str | None = Field(default=None, max_length=2000)
 
 
 class EligibilityResponse(BaseModel):

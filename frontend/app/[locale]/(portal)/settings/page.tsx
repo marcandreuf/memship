@@ -29,6 +29,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
+import { mapApiErrorsToForm } from "@/lib/errors";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { useSettings, useUpdateSettings } from "@/features/settings/hooks/use-settings";
 import { MembershipTypesSettings } from "@/features/settings/components/membership-types-settings";
@@ -106,7 +108,12 @@ export default function SettingsPage() {
         payload[key] = value;
       }
     }
-    await updateMutation.mutateAsync(payload);
+    try {
+      await updateMutation.mutateAsync(payload);
+      toast.success(t("toast.success.saved"));
+    } catch (error) {
+      mapApiErrorsToForm(error, form);
+    }
   }
 
   return (
@@ -271,9 +278,6 @@ export default function SettingsPage() {
               <Button type="submit" disabled={updateMutation.isPending}>
                 {updateMutation.isPending ? t("common.loading") : t("common.save")}
               </Button>
-              {updateMutation.isSuccess && (
-                <p className="text-sm text-green-600">{t("settings.saved")}</p>
-              )}
             </form>
           </Form>
         </TabsContent>}

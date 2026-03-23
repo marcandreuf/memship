@@ -38,6 +38,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { toast } from "sonner";
+import { mapApiErrorsToForm } from "@/lib/errors";
 import { useMembershipTypes, useUpdateMembershipType, useDeleteMembershipType } from "@/features/members/hooks/use-members";
 import { createMembershipType } from "@/features/members/services/members-api";
 import type { MembershipTypeData } from "@/features/members/services/members-api";
@@ -47,7 +49,7 @@ import { useQueryClient } from "@tanstack/react-query";
 const createSchema = z.object({
   name: z.string().min(1).max(255),
   slug: z.string().min(1).max(100).regex(/^[a-z0-9-]+$/),
-  description: z.string().optional(),
+  description: z.string().max(2000).optional(),
   base_price: z.coerce.number().min(0),
   group_id: z.coerce.number().optional(),
 });
@@ -101,9 +103,12 @@ export function MembershipTypesSettings() {
         await createMembershipType(payload);
         queryClient.invalidateQueries({ queryKey: ["membership-types"] });
       }
+      toast.success(t("toast.success.saved"));
       setOpen(false);
       form.reset();
       setEditing(null);
+    } catch (error) {
+      mapApiErrorsToForm(error, form);
     } finally {
       setIsSubmitting(false);
     }
@@ -111,7 +116,10 @@ export function MembershipTypesSettings() {
 
   async function handleDelete(id: number) {
     if (window.confirm(t("members.confirmDelete"))) {
-      await deleteMutation.mutateAsync(id);
+      try {
+        await deleteMutation.mutateAsync(id);
+        toast.success(t("toast.success.deleted"));
+      } catch { /* global handler shows error toast */ }
     }
   }
 

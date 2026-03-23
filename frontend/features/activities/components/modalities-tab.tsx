@@ -30,6 +30,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { toast } from "sonner";
+import { mapApiErrorsToForm } from "@/lib/errors";
 import {
   useCreateModality,
   useUpdateModality,
@@ -39,7 +41,7 @@ import type { ActivityData, ActivityModalityData } from "../services/activities-
 
 const modalitySchema = z.object({
   name: z.string().min(1).max(255),
-  description: z.string().optional().or(z.literal("")),
+  description: z.string().max(2000).optional().or(z.literal("")),
   max_participants: z.coerce.number().int().min(0).optional().or(z.literal("")),
   registration_deadline: z.string().optional().or(z.literal("")),
   display_order: z.coerce.number().int().min(0),
@@ -159,12 +161,17 @@ function ModalityForm({
     if (data.max_participants !== "" && data.max_participants !== undefined) payload.max_participants = Number(data.max_participants);
     if (data.registration_deadline) payload.registration_deadline = new Date(data.registration_deadline).toISOString();
 
-    if (modality) {
-      await updateMutation.mutateAsync({ modalityId: modality.id, data: payload });
-    } else {
-      await createMutation.mutateAsync(payload);
+    try {
+      if (modality) {
+        await updateMutation.mutateAsync({ modalityId: modality.id, data: payload });
+      } else {
+        await createMutation.mutateAsync(payload);
+      }
+      toast.success(t("toast.success.saved"));
+      onSuccess();
+    } catch (error) {
+      mapApiErrorsToForm(error, form);
     }
-    onSuccess();
   }
 
   const isPending = createMutation.isPending || updateMutation.isPending;
@@ -218,7 +225,10 @@ function ModalityRow({
             size="sm"
             onClick={async () => {
               if (confirm(t("activities.actions.confirmDelete"))) {
-                await deleteMutation.mutateAsync(modality.id);
+                try {
+                  await deleteMutation.mutateAsync(modality.id);
+                  toast.success(t("toast.success.deleted"));
+                } catch { /* global handler shows error toast */ }
               }
             }}
             disabled={deleteMutation.isPending}

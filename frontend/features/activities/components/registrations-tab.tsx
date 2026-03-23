@@ -19,6 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { toast } from "sonner";
 import { Pagination } from "@/components/entity/pagination";
 import {
   useActivityRegistrations,
@@ -125,8 +126,11 @@ function RegistrationRow({ registration }: { registration: RegistrationData }) {
     ? `${registration.member.first_name} ${registration.member.last_name}`
     : `Member #${registration.member_id}`;
 
-  function handleStatusChange(newStatus: string) {
-    changeMutation.mutate({ id: registration.id, status: newStatus });
+  async function handleStatusChange(newStatus: string) {
+    try {
+      await changeMutation.mutateAsync({ id: registration.id, status: newStatus });
+      toast.success(t("toast.success.updated"));
+    } catch { /* global handler shows error toast */ }
   }
 
   return (

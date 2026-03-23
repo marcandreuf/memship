@@ -17,6 +17,8 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { mapApiErrorsToForm } from "@/lib/errors";
 import {
   useDiscountCodes, useCreateDiscountCode, useUpdateDiscountCode, useDeleteDiscountCode,
 } from "../hooks/use-activities";
@@ -24,7 +26,7 @@ import type { DiscountCodeData } from "../services/activities-api";
 
 const discountSchema = z.object({
   code: z.string().min(1).max(50),
-  description: z.string().optional().or(z.literal("")),
+  description: z.string().max(2000).optional().or(z.literal("")),
   discount_type: z.enum(["percentage", "fixed"]),
   discount_value: z.coerce.number().gt(0),
   max_uses: z.coerce.number().int().min(1).optional().or(z.literal("")),
@@ -147,12 +149,17 @@ function DiscountForm({
     if (data.valid_from) payload.valid_from = new Date(data.valid_from).toISOString();
     if (data.valid_until) payload.valid_until = new Date(data.valid_until).toISOString();
 
-    if (discount) {
-      await updateMutation.mutateAsync({ codeId: discount.id, data: payload });
-    } else {
-      await createMutation.mutateAsync(payload);
+    try {
+      if (discount) {
+        await updateMutation.mutateAsync({ codeId: discount.id, data: payload });
+      } else {
+        await createMutation.mutateAsync(payload);
+      }
+      toast.success(t("toast.success.saved"));
+      onSuccess();
+    } catch (error) {
+      mapApiErrorsToForm(error, form);
     }
-    onSuccess();
   }
 
   const isPending = createMutation.isPending || updateMutation.isPending;
@@ -227,7 +234,10 @@ function DiscountRow({
             variant="outline" size="sm"
             onClick={async () => {
               if (confirm(t("activities.actions.confirmDelete"))) {
-                await deleteMutation.mutateAsync(discount.id);
+                try {
+                  await deleteMutation.mutateAsync(discount.id);
+                  toast.success(t("toast.success.deleted"));
+                } catch { /* global handler shows error toast */ }
               }
             }}
             disabled={deleteMutation.isPending}

@@ -32,6 +32,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { toast } from "sonner";
 import { PageInfo } from "@/components/page-info";
 import { SearchInput } from "@/components/entity/search-input";
 import { useGroups, useCreateGroup } from "@/features/groups/hooks/use-groups";
@@ -39,7 +40,7 @@ import { useGroups, useCreateGroup } from "@/features/groups/hooks/use-groups";
 const groupSchema = z.object({
   name: z.string().min(1).max(255),
   slug: z.string().min(1).max(100).regex(/^[a-z0-9-]+$/),
-  description: z.string().optional(),
+  description: z.string().max(2000).optional(),
   is_billable: z.boolean().optional(),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional().or(z.literal("")),
 });
@@ -64,9 +65,12 @@ export default function GroupsPage() {
       ...data,
       color: data.color || undefined,
     };
-    await createMutation.mutateAsync(payload);
-    setOpen(false);
-    form.reset();
+    try {
+      await createMutation.mutateAsync(payload);
+      toast.success(t("toast.success.created"));
+      setOpen(false);
+      form.reset();
+    } catch { /* global handler shows error toast */ }
   }
 
   // Client-side search filter

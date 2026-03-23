@@ -72,6 +72,37 @@
     "language": "Idioma",
     "preferences": "Preferencias"
   },
+  "validation": {
+    "required": "Este campo es obligatorio",
+    "tooLong": "Debe tener como máximo {max} caracteres",
+    "tooShort": "Debe tener al menos {min} caracteres",
+    "invalidEmail": "Dirección de correo no válida",
+    "invalidUrl": "URL no válida",
+    "invalidDate": "Fecha no válida",
+    "endBeforeStart": "La fecha de fin debe ser posterior a la de inicio",
+    "regCloseBeforeStart": "La inscripción debe cerrar antes del inicio de la actividad",
+    "regCloseBeforeOpen": "El cierre de inscripción debe ser posterior a la apertura",
+    "maxLessThanMin": "El máximo debe ser mayor o igual al mínimo",
+    "passwordMismatch": "Las contraseñas no coinciden",
+    "percentageMax": "El descuento porcentual no puede superar el 100",
+    "futureDateOfBirth": "La fecha de nacimiento no puede ser futura"
+  },
+  "toast": {
+    "success": {
+      "created": "Creado correctamente",
+      "updated": "Actualizado correctamente",
+      "deleted": "Eliminado correctamente",
+      "saved": "Guardado correctamente"
+    },
+    "error": {
+      "generic": "Algo salió mal",
+      "validation": "Por favor revisa los datos",
+      "notFound": "El recurso solicitado no fue encontrado",
+      "forbidden": "No tienes permiso para hacer esto",
+      "conflict": "Esto entra en conflicto con datos existentes",
+      "unauthorized": "Inicia sesión para continuar"
+    }
+  },
   "groups": {
     "title": "Grupos",
     "name": "Nombre",

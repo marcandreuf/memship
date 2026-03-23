@@ -19,6 +19,8 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { mapApiErrorsToForm } from "@/lib/errors";
 import {
   useConsents, useCreateConsent, useUpdateConsent, useDeleteConsent,
 } from "../hooks/use-activities";
@@ -26,7 +28,7 @@ import type { ActivityConsentData } from "../services/activities-api";
 
 const consentSchema = z.object({
   title: z.string().min(1).max(255),
-  content: z.string().min(1),
+  content: z.string().min(1).max(10000),
   is_mandatory: z.boolean(),
   display_order: z.coerce.number().int().min(0),
 });
@@ -118,12 +120,17 @@ function ConsentForm({
   });
 
   async function onSubmit(data: ConsentFormValues) {
-    if (consent) {
-      await updateMutation.mutateAsync({ consentId: consent.id, data });
-    } else {
-      await createMutation.mutateAsync(data);
+    try {
+      if (consent) {
+        await updateMutation.mutateAsync({ consentId: consent.id, data });
+      } else {
+        await createMutation.mutateAsync(data);
+      }
+      toast.success(t("toast.success.saved"));
+      onSuccess();
+    } catch (error) {
+      mapApiErrorsToForm(error, form);
     }
-    onSuccess();
   }
 
   const isPending = createMutation.isPending || updateMutation.isPending;
@@ -177,7 +184,10 @@ function ConsentRow({
             variant="outline" size="sm"
             onClick={async () => {
               if (confirm(t("activities.actions.confirmDelete"))) {
-                await deleteMutation.mutateAsync(consent.id);
+                try {
+                  await deleteMutation.mutateAsync(consent.id);
+                  toast.success(t("toast.success.deleted"));
+                } catch { /* global handler shows error toast */ }
               }
             }}
             disabled={deleteMutation.isPending}

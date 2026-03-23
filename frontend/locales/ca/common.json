@@ -72,6 +72,37 @@
     "language": "Idioma",
     "preferences": "Preferències"
   },
+  "validation": {
+    "required": "Aquest camp és obligatori",
+    "tooLong": "Ha de tenir com a màxim {max} caràcters",
+    "tooShort": "Ha de tenir almenys {min} caràcters",
+    "invalidEmail": "Adreça de correu no vàlida",
+    "invalidUrl": "URL no vàlida",
+    "invalidDate": "Data no vàlida",
+    "endBeforeStart": "La data de fi ha de ser posterior a la d'inici",
+    "regCloseBeforeStart": "La inscripció ha de tancar abans de l'inici de l'activitat",
+    "regCloseBeforeOpen": "El tancament d'inscripció ha de ser posterior a l'obertura",
+    "maxLessThanMin": "El màxim ha de ser major o igual al mínim",
+    "passwordMismatch": "Les contrasenyes no coincideixen",
+    "percentageMax": "El descompte percentual no pot superar el 100",
+    "futureDateOfBirth": "La data de naixement no pot ser futura"
+  },
+  "toast": {
+    "success": {
+      "created": "Creat correctament",
+      "updated": "Actualitzat correctament",
+      "deleted": "Eliminat correctament",
+      "saved": "Desat correctament"
+    },
+    "error": {
+      "generic": "Alguna cosa ha anat malament",
+      "validation": "Si us plau, revisa les dades",
+      "notFound": "El recurs sol·licitat no s'ha trobat",
+      "forbidden": "No tens permís per fer això",
+      "conflict": "Això entra en conflicte amb dades existents",
+      "unauthorized": "Inicia sessió per continuar"
+    }
+  },
   "groups": {
     "title": "Grups",
     "name": "Nom",

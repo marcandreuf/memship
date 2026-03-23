@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Pagination } from "@/components/entity/pagination";
+import { toast } from "sonner";
 import {
   useMyRegistrations,
   useCancelRegistration,
@@ -65,9 +66,12 @@ function RegistrationCard({ registration }: { registration: RegistrationData }) 
               <Button
                 variant="outline"
                 size="xs"
-                onClick={() => {
+                onClick={async () => {
                   if (confirm(t("activities.registration.confirmCancel"))) {
-                    cancelMutation.mutate({ id: registration.id });
+                    try {
+                      await cancelMutation.mutateAsync({ id: registration.id });
+                      toast.success(t("toast.success.updated"));
+                    } catch { /* global handler shows error toast */ }
                   }
                 }}
                 disabled={cancelMutation.isPending}

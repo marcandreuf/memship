@@ -33,7 +33,7 @@ const memberSchema = z.object({
   gender: z.string().optional().or(z.literal("")),
   national_id: z.string().optional().or(z.literal("")),
   membership_type_id: z.number().optional(),
-  internal_notes: z.string().optional().or(z.literal("")),
+  internal_notes: z.string().max(2000).optional().or(z.literal("")),
 });
 
 type MemberFormValues = z.infer<typeof memberSchema>;

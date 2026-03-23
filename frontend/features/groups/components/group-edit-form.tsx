@@ -14,12 +14,14 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { toast } from "sonner";
+import { mapApiErrorsToForm } from "@/lib/errors";
 import { useUpdateGroup } from "../hooks/use-groups";
 import type { GroupData } from "../services/groups-api";
 
 const groupSchema = z.object({
   name: z.string().min(1).max(255),
-  description: z.string().optional(),
+  description: z.string().max(2000).optional(),
   is_billable: z.boolean().optional(),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional().or(z.literal("")),
 });
@@ -51,8 +53,13 @@ export function GroupEditForm({ group, onSuccess, onCancel }: GroupEditFormProps
       ...data,
       color: data.color || undefined,
     };
-    await updateMutation.mutateAsync({ id: group.id, data: payload });
-    onSuccess();
+    try {
+      await updateMutation.mutateAsync({ id: group.id, data: payload });
+      toast.success(t("toast.success.saved"));
+      onSuccess();
+    } catch (error) {
+      mapApiErrorsToForm(error, form);
+    }
   }
 
   return (

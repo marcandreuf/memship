@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 
 class ActivityAttachmentTypeCreate(BaseModel):
     name: str = Field(min_length=1, max_length=255)
-    description: str | None = None
+    description: str | None = Field(default=None, max_length=2000)
     allowed_extensions: list[str] = []
     max_file_size_mb: int = Field(default=5, ge=1, le=50)
     is_mandatory: bool = True
@@ -18,7 +18,7 @@ class ActivityAttachmentTypeCreate(BaseModel):
 
 class ActivityAttachmentTypeUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=255)
-    description: str | None = None
+    description: str | None = Field(default=None, max_length=2000)
     allowed_extensions: list[str] | None = None
     max_file_size_mb: int | None = Field(default=None, ge=1, le=50)
     is_mandatory: bool | None = None

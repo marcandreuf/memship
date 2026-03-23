@@ -31,6 +31,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { toast } from "sonner";
+import { mapApiErrorsToForm } from "@/lib/errors";
 import {
   useCreatePrice,
   useUpdatePrice,
@@ -40,7 +42,7 @@ import type { ActivityData, ActivityModalityData, ActivityPriceData } from "../s
 
 const priceSchema = z.object({
   name: z.string().min(1).max(255),
-  description: z.string().optional().or(z.literal("")),
+  description: z.string().max(2000).optional().or(z.literal("")),
   amount: z.coerce.number().min(0),
   modality_id: z.coerce.number().int().optional().or(z.literal("")),
   display_order: z.coerce.number().int().min(0),
@@ -201,12 +203,17 @@ function PriceForm({
     if (data.valid_from) payload.valid_from = new Date(data.valid_from).toISOString();
     if (data.valid_until) payload.valid_until = new Date(data.valid_until).toISOString();
 
-    if (price) {
-      await updateMutation.mutateAsync({ priceId: price.id, data: payload });
-    } else {
-      await createMutation.mutateAsync(payload);
+    try {
+      if (price) {
+        await updateMutation.mutateAsync({ priceId: price.id, data: payload });
+      } else {
+        await createMutation.mutateAsync(payload);
+      }
+      toast.success(t("toast.success.saved"));
+      onSuccess();
+    } catch (error) {
+      mapApiErrorsToForm(error, form);
     }
-    onSuccess();
   }
 
   const isPending = createMutation.isPending || updateMutation.isPending;
@@ -305,7 +312,10 @@ function PriceRow({
             size="sm"
             onClick={async () => {
               if (confirm(t("activities.actions.confirmDelete"))) {
-                await deleteMutation.mutateAsync(price.id);
+                try {
+                  await deleteMutation.mutateAsync(price.id);
+                  toast.success(t("toast.success.deleted"));
+                } catch { /* global handler shows error toast */ }
               }
             }}
             disabled={deleteMutation.isPending}

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { DetailHeader } from "@/components/entity/detail-header";
 import { InlineEditWrapper } from "@/components/entity/inline-edit-wrapper";
 import { EntityTabs } from "@/components/entity/entity-tabs";
+import { toast } from "sonner";
 import { useGroup, useDeleteGroup } from "@/features/groups/hooks/use-groups";
 import { GroupDetailSection } from "@/features/groups/components/group-detail-section";
 import { GroupEditForm } from "@/features/groups/components/group-edit-form";
@@ -49,8 +50,11 @@ export default function GroupDetailPage({
               size="sm"
               onClick={async () => {
                 if (confirm(t("groups.deleteConfirm"))) {
-                  await remove(group.id);
-                  router.push("/groups");
+                  try {
+                    await remove(group.id);
+                    toast.success(t("toast.success.deleted"));
+                    router.push("/groups");
+                  } catch { /* global handler shows error toast */ }
                 }
               }}
             >

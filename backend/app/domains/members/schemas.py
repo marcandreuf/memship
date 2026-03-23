@@ -1,8 +1,13 @@
 """Member and MembershipType schemas."""
 
 from datetime import date, datetime
+from typing import Annotated
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StringConstraints, field_validator
+
+from app.domains.shared.enums import MemberStatus
+
+Email = Annotated[str, StringConstraints(pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$", max_length=255)]
 
 
 # --- MembershipType ---
@@ -10,18 +15,18 @@ from pydantic import BaseModel, Field
 class MembershipTypeCreate(BaseModel):
     name: str = Field(min_length=1, max_length=255)
     slug: str = Field(min_length=1, max_length=100, pattern=r"^[a-z0-9-]+$")
-    description: str | None = None
+    description: str | None = Field(default=None, max_length=2000)
     group_id: int | None = None
-    base_price: float = 0
+    base_price: float = Field(default=0, ge=0)
     billing_frequency: str = "annual"
     is_active: bool = True
 
 
 class MembershipTypeUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=255)
-    description: str | None = None
+    description: str | None = Field(default=None, max_length=2000)
     group_id: int | None = None
-    base_price: float | None = None
+    base_price: float | None = Field(default=None, ge=0)
     billing_frequency: str | None = None
     is_active: bool | None = None
 
@@ -46,30 +51,44 @@ class MembershipTypeResponse(BaseModel):
 class MemberCreate(BaseModel):
     first_name: str = Field(min_length=1, max_length=100)
     last_name: str = Field(min_length=1, max_length=100)
-    email: str | None = None
+    email: Email | None = None
     date_of_birth: date | None = None
-    gender: str | None = None
-    national_id: str | None = None
+    gender: str | None = Field(default=None, max_length=20)
+    national_id: str | None = Field(default=None, max_length=20)
     membership_type_id: int | None = None
     guardian_person_id: int | None = None
-    internal_notes: str | None = None
+    internal_notes: str | None = Field(default=None, max_length=2000)
+
+    @field_validator("date_of_birth")
+    @classmethod
+    def validate_date_of_birth(cls, v: date | None) -> date | None:
+        if v is not None and v > date.today():
+            raise ValueError("Date of birth cannot be in the future")
+        return v
 
 
 class MemberUpdate(BaseModel):
     first_name: str | None = Field(default=None, min_length=1, max_length=100)
     last_name: str | None = Field(default=None, min_length=1, max_length=100)
-    email: str | None = None
+    email: Email | None = None
     date_of_birth: date | None = None
-    gender: str | None = None
-    national_id: str | None = None
+    gender: str | None = Field(default=None, max_length=20)
+    national_id: str | None = Field(default=None, max_length=20)
     membership_type_id: int | None = None
     guardian_person_id: int | None = None
-    internal_notes: str | None = None
+    internal_notes: str | None = Field(default=None, max_length=2000)
+
+    @field_validator("date_of_birth")
+    @classmethod
+    def validate_date_of_birth(cls, v: date | None) -> date | None:
+        if v is not None and v > date.today():
+            raise ValueError("Date of birth cannot be in the future")
+        return v
 
 
 class MemberStatusChange(BaseModel):
-    status: str = Field(pattern=r"^(pending|active|suspended|cancelled|expired)$")
-    reason: str | None = None
+    status: MemberStatus
+    reason: str | None = Field(default=None, max_length=2000)
 
 
 class PersonResponse(BaseModel):
@@ -118,18 +137,18 @@ class MemberResponse(BaseModel):
 class GroupCreate(BaseModel):
     name: str = Field(min_length=1, max_length=255)
     slug: str = Field(min_length=1, max_length=100, pattern=r"^[a-z0-9-]+$")
-    description: str | None = None
+    description: str | None = Field(default=None, max_length=2000)
     is_billable: bool = True
-    color: str | None = None
-    icon: str | None = None
+    color: str | None = Field(default=None, pattern=r"^#[0-9a-fA-F]{6}$")
+    icon: str | None = Field(default=None, max_length=50)
 
 
 class GroupUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=255)
-    description: str | None = None
+    description: str | None = Field(default=None, max_length=2000)
     is_billable: bool | None = None
-    color: str | None = None
-    icon: str | None = None
+    color: str | None = Field(default=None, pattern=r"^#[0-9a-fA-F]{6}$")
+    icon: str | None = Field(default=None, max_length=50)
     is_active: bool | None = None
 
 

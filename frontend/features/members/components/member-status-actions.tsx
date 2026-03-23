@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useChangeMemberStatus } from "../hooks/use-members";
 import type { MemberData } from "../services/members-api";
@@ -39,7 +40,12 @@ export function MemberStatusActions({ member }: MemberStatusActionsProps) {
           variant={ACTION_VARIANTS[status] || "outline"}
           size="sm"
           disabled={isPending}
-          onClick={() => changeStatus({ id: member.id, status })}
+          onClick={async () => {
+            try {
+              await changeStatus({ id: member.id, status });
+              toast.success(t("toast.success.updated"));
+            } catch { /* global handler shows error toast */ }
+          }}
         >
           {t(`members.action_${status}`)}
         </Button>

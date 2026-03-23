@@ -5,6 +5,7 @@ import { ThemeProvider } from "next-themes";
 import { routing } from "@/lib/i18n/routing";
 import { ReactQueryProvider } from "@/lib/react-query-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/components/ui/sonner";
 import "@/app/globals.css";
 
 export default async function LocaleLayout({
@@ -36,6 +37,7 @@ export default async function LocaleLayout({
               <ReactQueryProvider>{children}</ReactQueryProvider>
             </TooltipProvider>
           </NextIntlClientProvider>
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>

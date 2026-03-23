@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { toast } from "sonner";
 import { DetailHeader } from "@/components/entity/detail-header";
 import { Link } from "@/lib/i18n/routing";
 import { useActivity, useConsents } from "@/features/activities/hooks/use-activities";
@@ -82,15 +83,18 @@ export default function RegisterPage({
       activity_consent_id: c.id,
       accepted: !!acceptedConsents[c.id],
     }));
-    await registerMutation.mutateAsync({
-      activityId,
-      price_id: selectedPriceId,
-      modality_id: selectedModalityId || undefined,
-      discount_code: discountResult?.valid ? discountCode.trim() : undefined,
-      consents: consentsPayload.length > 0 ? consentsPayload : undefined,
-      member_notes: notes || undefined,
-    });
-    router.push(`/activities/${activityId}`);
+    try {
+      await registerMutation.mutateAsync({
+        activityId,
+        price_id: selectedPriceId,
+        modality_id: selectedModalityId || undefined,
+        discount_code: discountResult?.valid ? discountCode.trim() : undefined,
+        consents: consentsPayload.length > 0 ? consentsPayload : undefined,
+        member_notes: notes || undefined,
+      });
+      toast.success(t("toast.success.created"));
+      router.push(`/activities/${activityId}`);
+    } catch { /* global handler shows error toast */ }
   }
 
   return (
@@ -281,11 +285,6 @@ export default function RegisterPage({
               </Button>
             </div>
 
-            {registerMutation.isError && (
-              <p className="text-sm text-destructive">
-                {(registerMutation.error as Error)?.message || "Registration failed"}
-              </p>
-            )}
           </CardContent>
         </Card>
       )}

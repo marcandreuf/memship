@@ -9,14 +9,14 @@ from pydantic import BaseModel, Field
 
 class ActivityConsentCreate(BaseModel):
     title: str = Field(min_length=1, max_length=255)
-    content: str = Field(min_length=1)
+    content: str = Field(min_length=1, max_length=10000)
     is_mandatory: bool = True
-    display_order: int = 1
+    display_order: int = Field(default=1, ge=0)
 
 
 class ActivityConsentUpdate(BaseModel):
     title: str | None = Field(default=None, min_length=1, max_length=255)
-    content: str | None = Field(default=None, min_length=1)
+    content: str | None = Field(default=None, min_length=1, max_length=10000)
     is_mandatory: bool | None = None
     display_order: int | None = None
     is_active: bool | None = None

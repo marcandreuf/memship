@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/lib/i18n/routing";
 import { useForm } from "react-hook-form";
@@ -24,18 +23,20 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { toast } from "sonner";
+import { mapApiErrorsToForm } from "@/lib/errors";
 import { useCreateActivity } from "@/features/activities/hooks/use-activities";
 
 const activitySchema = z.object({
   name: z.string().min(1).max(255),
   short_description: z.string().max(500).optional().or(z.literal("")),
-  description: z.string().optional().or(z.literal("")),
+  description: z.string().max(5000).optional().or(z.literal("")),
   starts_at: z.string().min(1),
   ends_at: z.string().min(1),
   registration_starts_at: z.string().min(1),
   registration_ends_at: z.string().min(1),
   location: z.string().max(255).optional().or(z.literal("")),
-  location_details: z.string().optional().or(z.literal("")),
+  location_details: z.string().max(2000).optional().or(z.literal("")),
   location_url: z.string().max(500).optional().or(z.literal("")),
   min_participants: z.coerce.number().int().min(0),
   max_participants: z.coerce.number().int().min(1),
@@ -66,7 +67,6 @@ export default function NewActivityPage() {
   const t = useTranslations();
   const router = useRouter();
   const { mutateAsync: create, isPending } = useCreateActivity();
-  const [apiError, setApiError] = useState<string | null>(null);
 
   const form = useForm<ActivityFormValues>({
     resolver: zodResolver(activitySchema),
@@ -115,12 +115,11 @@ export default function NewActivityPage() {
     }
 
     try {
-      setApiError(null);
       const result = await create(payload);
+      toast.success(t("toast.success.created"));
       router.push(`/activities/${result.id}`);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "An error occurred";
-      setApiError(message);
+    } catch (error) {
+      mapApiErrorsToForm(error, form);
     }
   }
 
@@ -366,9 +365,6 @@ export default function NewActivityPage() {
             </CardContent>
           </Card>
 
-          {apiError && (
-            <p className="text-sm text-destructive">{apiError}</p>
-          )}
           <Button type="submit" disabled={isPending}>
             {isPending ? t("common.loading") : t("common.create")}
           </Button>

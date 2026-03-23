@@ -18,19 +18,24 @@ export async function apiClient<T>(
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new ClientApiError(res.status, error.detail || res.statusText);
+    throw new ClientApiError(res.status, error.detail ?? res.statusText);
   }
 
   if (res.status === 204) return undefined as T;
   return res.json();
 }
 
+export type ValidationErrorDetail = {
+  loc: (string | number)[];
+  msg: string;
+  type: string;
+};
+
 export class ClientApiError extends Error {
-  constructor(
-    public status: number,
-    message: string
-  ) {
-    super(message);
+  public detail: string | ValidationErrorDetail[];
+  constructor(public status: number, detail: string | ValidationErrorDetail[]) {
+    super(typeof detail === "string" ? detail : "Validation error");
     this.name = "ClientApiError";
+    this.detail = detail;
   }
 }

@@ -18,6 +18,8 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { mapApiErrorsToForm } from "@/lib/errors";
 import {
   useAttachmentTypes, useCreateAttachmentType, useUpdateAttachmentType, useDeleteAttachmentType,
 } from "../hooks/use-activities";
@@ -25,7 +27,7 @@ import type { ActivityAttachmentTypeData } from "../services/activities-api";
 
 const attachmentTypeSchema = z.object({
   name: z.string().min(1).max(255),
-  description: z.string().optional().or(z.literal("")),
+  description: z.string().max(2000).optional().or(z.literal("")),
   allowed_extensions: z.string().optional().or(z.literal("")),
   max_file_size_mb: z.coerce.number().int().min(1).max(50),
   is_mandatory: z.boolean(),
@@ -135,12 +137,17 @@ function AttachmentTypeForm({
       payload.allowed_extensions = [];
     }
 
-    if (attachmentType) {
-      await updateMutation.mutateAsync({ typeId: attachmentType.id, data: payload });
-    } else {
-      await createMutation.mutateAsync(payload);
+    try {
+      if (attachmentType) {
+        await updateMutation.mutateAsync({ typeId: attachmentType.id, data: payload });
+      } else {
+        await createMutation.mutateAsync(payload);
+      }
+      toast.success(t("toast.success.saved"));
+      onSuccess();
+    } catch (error) {
+      mapApiErrorsToForm(error, form);
     }
-    onSuccess();
   }
 
   const isPending = createMutation.isPending || updateMutation.isPending;
@@ -201,7 +208,10 @@ function AttachmentTypeRow({
             variant="outline" size="sm"
             onClick={async () => {
               if (confirm(t("activities.actions.confirmDelete"))) {
-                await deleteMutation.mutateAsync(attachmentType.id);
+                try {
+                  await deleteMutation.mutateAsync(attachmentType.id);
+                  toast.success(t("toast.success.deleted"));
+                } catch { /* global handler shows error toast */ }
               }
             }}
             disabled={deleteMutation.isPending}

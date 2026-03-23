@@ -72,6 +72,37 @@
     "language": "Language",
     "preferences": "Preferences"
   },
+  "validation": {
+    "required": "This field is required",
+    "tooLong": "Must be at most {max} characters",
+    "tooShort": "Must be at least {min} characters",
+    "invalidEmail": "Invalid email address",
+    "invalidUrl": "Invalid URL",
+    "invalidDate": "Invalid date",
+    "endBeforeStart": "End date must be after start date",
+    "regCloseBeforeStart": "Registration must close before the activity starts",
+    "regCloseBeforeOpen": "Registration close must be after registration open",
+    "maxLessThanMin": "Maximum must be greater than or equal to minimum",
+    "passwordMismatch": "Passwords don't match",
+    "percentageMax": "Percentage discount cannot exceed 100",
+    "futureDateOfBirth": "Date of birth cannot be in the future"
+  },
+  "toast": {
+    "success": {
+      "created": "Created successfully",
+      "updated": "Updated successfully",
+      "deleted": "Deleted successfully",
+      "saved": "Saved successfully"
+    },
+    "error": {
+      "generic": "Something went wrong",
+      "validation": "Please check your input",
+      "notFound": "The requested resource was not found",
+      "forbidden": "You don't have permission to do this",
+      "conflict": "This conflicts with existing data",
+      "unauthorized": "Please sign in to continue"
+    }
+  },
   "groups": {
     "title": "Groups",
     "name": "Name",

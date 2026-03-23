@@ -17,6 +17,7 @@ import {
   useUpdateMember,
   useDeleteMember,
 } from "@/features/members/hooks/use-members";
+import { toast } from "sonner";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { MEMBER_STATUS_VARIANTS } from "@/lib/status-variants";
 
@@ -77,8 +78,11 @@ export default function MemberDetailPage({
                   size="sm"
                   onClick={async () => {
                     if (confirm(t("members.confirmDelete"))) {
-                      await remove(memberId);
-                      router.push("/members");
+                      try {
+                        await remove(memberId);
+                        toast.success(t("toast.success.deleted"));
+                        router.push("/members");
+                      } catch { /* global handler shows error toast */ }
                     }
                   }}
                 >
@@ -112,6 +116,7 @@ export default function MemberDetailPage({
                   internal_notes: data.internal_notes || undefined,
                 },
               });
+              toast.success(t("toast.success.saved"));
               setIsEditing(false);
             }}
             isSubmitting={isUpdating}

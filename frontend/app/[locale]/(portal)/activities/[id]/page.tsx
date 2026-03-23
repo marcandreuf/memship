@@ -10,6 +10,7 @@ import { EntityTabs } from "@/components/entity/entity-tabs";
 import { Link } from "@/lib/i18n/routing";
 import { RegistrationsTab } from "@/features/activities/components/registrations-tab";
 import { ACTIVITY_STATUS_VARIANTS } from "@/lib/status-variants";
+import { toast } from "sonner";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import {
   useActivity,
@@ -85,7 +86,10 @@ export default function ActivityDetailPage({
                   size="sm"
                   onClick={async () => {
                     if (confirm(t("activities.actions.confirmPublish"))) {
-                      await publishMutation.mutateAsync(activityId);
+                      try {
+                        await publishMutation.mutateAsync(activityId);
+                        toast.success(t("toast.success.updated"));
+                      } catch { /* global handler shows error toast */ }
                     }
                   }}
                   disabled={publishMutation.isPending}
@@ -99,7 +103,10 @@ export default function ActivityDetailPage({
                   size="sm"
                   onClick={async () => {
                     if (confirm(t("activities.actions.confirmArchive"))) {
-                      await archiveMutation.mutateAsync(activityId);
+                      try {
+                        await archiveMutation.mutateAsync(activityId);
+                        toast.success(t("toast.success.updated"));
+                      } catch { /* global handler shows error toast */ }
                     }
                   }}
                   disabled={archiveMutation.isPending}
@@ -113,7 +120,10 @@ export default function ActivityDetailPage({
                   size="sm"
                   onClick={async () => {
                     if (confirm(t("activities.actions.confirmCancel"))) {
-                      await cancelMutation.mutateAsync(activityId);
+                      try {
+                        await cancelMutation.mutateAsync(activityId);
+                        toast.success(t("toast.success.updated"));
+                      } catch { /* global handler shows error toast */ }
                     }
                   }}
                   disabled={cancelMutation.isPending}
@@ -127,8 +137,11 @@ export default function ActivityDetailPage({
                   size="sm"
                   onClick={async () => {
                     if (confirm(t("activities.actions.confirmDelete"))) {
-                      await deleteMutation.mutateAsync(activityId);
-                      router.push("/activities");
+                      try {
+                        await deleteMutation.mutateAsync(activityId);
+                        toast.success(t("toast.success.deleted"));
+                        router.push("/activities");
+                      } catch { /* global handler shows error toast */ }
                     }
                   }}
                   disabled={deleteMutation.isPending}
@@ -153,6 +166,7 @@ export default function ActivityDetailPage({
             activity={activity}
             onSubmit={async (data) => {
               await updateMutation.mutateAsync({ id: activityId, data });
+              toast.success(t("toast.success.saved"));
               setIsEditing(false);
             }}
             isPending={updateMutation.isPending}
