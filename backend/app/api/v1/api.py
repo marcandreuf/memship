@@ -6,6 +6,7 @@ from app.api.v1.endpoints import (
     activities,
     activity_attachments,
     activity_consents,
+    activity_cover_image,
     activity_modalities,
     activity_prices,
     auth,
@@ -25,6 +26,7 @@ api_router.include_router(auth.router)
 api_router.include_router(activities.router)
 api_router.include_router(activity_attachments.router)
 api_router.include_router(activity_attachments.upload_router)
+api_router.include_router(activity_cover_image.router)
 api_router.include_router(activity_consents.router)
 api_router.include_router(activity_modalities.router)
 api_router.include_router(activity_prices.router)

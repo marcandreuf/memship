@@ -66,8 +66,8 @@ Open http://localhost:8081 and log in with your credentials. Change `PORT=8081` 
 | v0.2.1 | UX refactor — Shadcn sidebar, dark mode, brand colors, compact tables, quick start | Done |
 | v0.2.2 | E2E test foundation (Cypress) — auth, members, activities, registrations | Done |
 | v0.2.3 | Error handling & validation hardening — toast notifications, global error handler, backend schema validation, StrEnum, 76 validation tests, 16 E2E tests | Done |
-| v0.2.4 | Bug fixes — dark mode sidebar, form error display, route guards, member list cancelled visibility, member delete removed | In Progress |
-| v0.2.5 | Bug fixes & polish | — |
+| v0.2.4 | Bug fixes — dark mode sidebar, form error display, route guards, member list cancelled visibility, member delete removed | Done |
+| v0.2.5 | Activity UX — member activity card redesign, cover image upload, registration status badges, activity list thumbnails, My Activities grid, Docker storage volume | Done |
 | v0.2.6 | Bug fixes & polish | — |
 | v0.2.7 | Bug fixes & polish | — |
 | v0.2.8 | Activity polish — images, email notifications, loading skeletons, nuqs URL state | — |
@@ -95,6 +95,7 @@ Open http://localhost:8081 and log in with your credentials. Change `PORT=8081` 
 
 **Activities & Events** (available now)
 - Activity creation with lifecycle management (draft → published → archived)
+- Cover image upload per activity (admin upload, member-visible thumbnails)
 - Modalities (variants with independent capacity, pricing, and deadlines)
 - Pricing tiers with time-based validity (early bird pricing)
 - Online registration with eligibility checks (membership type, age, status)
@@ -103,7 +104,7 @@ Open http://localhost:8081 and log in with your credentials. Change `PORT=8081` 
 - Discount codes (percentage/fixed, max uses, validity dates)
 - Per-activity legal consents (mandatory/optional)
 - Per-activity required attachments with file upload
-- Member portal: activity browsing, registration, "My Activities" dashboard
+- Member portal: activity browsing with thumbnails, registration status badges, "My Activities" grid
 - Admin portal: registration management with status changes
 
 **Payments & Invoicing** (planned)

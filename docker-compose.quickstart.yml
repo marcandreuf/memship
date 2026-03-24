@@ -23,6 +23,9 @@ services:
           handle /api/v1/* {
             reverse_proxy demo-memship-api:8000
           }
+          handle /uploads/* {
+            reverse_proxy demo-memship-api:8000
+          }
           handle {
             reverse_proxy demo-memship-frontend:3000
           }
@@ -47,6 +50,8 @@ services:
       - CORS_ORIGINS=http://localhost
       - FRONTEND_URL=http://localhost
       - RUN_MIGRATIONS=1
+    volumes:
+      - demo-memship-storage:/app/storage
     depends_on:
       demo-memship-db:
         condition: service_healthy
@@ -81,3 +86,4 @@ services:
 
 volumes:
   demo-memship-pgdata:
+  demo-memship-storage:

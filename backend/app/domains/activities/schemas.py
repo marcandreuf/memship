@@ -239,9 +239,12 @@ class ActivityListResponse(BaseModel):
     location: str | None = None
     max_participants: int
     current_participants: int
+    registration_starts_at: datetime
+    registration_ends_at: datetime
     available_spots: int = 0
     is_registration_open: bool = False
     status: str
+    image_url: str | None = None
     is_featured: bool
     created_at: datetime
 

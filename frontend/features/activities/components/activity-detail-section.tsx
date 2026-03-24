@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { DetailSection } from "@/components/entity/detail-section";
+import { ActivityCoverImage } from "./activity-cover-image";
 import type { ActivityData } from "../services/activities-api";
 
 function formatDate(iso: string) {
@@ -16,9 +17,10 @@ function formatDate(iso: string) {
 
 interface ActivityDetailSectionProps {
   activity: ActivityData;
+  showCoverImage?: boolean;
 }
 
-export function ActivityDetailSection({ activity }: ActivityDetailSectionProps) {
+export function ActivityDetailSection({ activity, showCoverImage }: ActivityDetailSectionProps) {
   const t = useTranslations();
 
   const fields = [
@@ -41,12 +43,19 @@ export function ActivityDetailSection({ activity }: ActivityDetailSectionProps) 
   ];
 
   return (
-    <div>
-      <DetailSection fields={fields} columns={3} />
-      {activity.description && (
-        <div className="mt-2">
-          <dt className="text-xs text-muted-foreground">{t("activities.description")}</dt>
-          <dd className="mt-0.5 text-sm whitespace-pre-wrap">{activity.description}</dd>
+    <div className="flex gap-4">
+      <div className="flex-1 min-w-0">
+        <DetailSection fields={fields} columns={3} />
+        {activity.description && (
+          <div className="mt-2">
+            <dt className="text-xs text-muted-foreground">{t("activities.description")}</dt>
+            <dd className="mt-0.5 text-sm whitespace-pre-wrap">{activity.description}</dd>
+          </div>
+        )}
+      </div>
+      {showCoverImage && (
+        <div className="hidden lg:block w-64 shrink-0">
+          <ActivityCoverImage activity={activity} isAdmin />
         </div>
       )}
     </div>

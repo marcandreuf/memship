@@ -20,6 +20,7 @@ Usage:
 import argparse
 import getpass
 import sys
+from pathlib import Path
 
 from argon2 import PasswordHasher
 from sqlalchemy import text
@@ -334,6 +335,24 @@ def seed_activities(db, user_id: int) -> None:
         {"name": "Pottery Workshop", "slug": "pottery-workshop", "short_description": "Hands-on ceramics class", "description": "Learn wheel throwing and hand building techniques. All materials included.", "starts_at": now + timedelta(days=35), "ends_at": now + timedelta(days=63), "registration_starts_at": now - timedelta(days=7), "registration_ends_at": now + timedelta(days=30), "location": "Craft Studio", "min_participants": 4, "max_participants": 8, "status": "published", "tax_rate": 21.00, "features": {}, "allow_self_cancellation": True, "self_cancellation_deadline_hours": 48,
             "modalities": [],
             "prices": [{"name": "4-Week Course", "amount": 95.00, "is_default": True, "display_order": 1}]},
+        # --- Published: registration NOT YET OPEN ---
+        {"name": "New Year's Gala 2027", "slug": "new-years-gala-2027", "short_description": "Ring in 2027 with style", "description": "Exclusive New Year's Eve gala with live music, dinner, and champagne toast at midnight.", "starts_at": now + timedelta(days=280), "ends_at": now + timedelta(days=280, hours=6), "registration_starts_at": now + timedelta(days=200), "registration_ends_at": now + timedelta(days=270), "location": "Grand Ballroom", "min_participants": 50, "max_participants": 200, "status": "published", "tax_rate": 10.00, "features": {}, "allow_self_cancellation": True, "self_cancellation_deadline_hours": 72,
+            "modalities": [],
+            "prices": [{"name": "Standard Ticket", "amount": 85.00, "is_default": True, "display_order": 1}, {"name": "VIP Table (8 seats)", "amount": 600.00, "is_default": False, "display_order": 2}]},
+        {"name": "Autumn Photography Retreat", "slug": "autumn-photography-retreat", "short_description": "Weekend retreat in the countryside", "description": "Three-day photography retreat focusing on autumn landscapes. Accommodation and meals included.", "starts_at": now + timedelta(days=210), "ends_at": now + timedelta(days=213), "registration_starts_at": now + timedelta(days=120), "registration_ends_at": now + timedelta(days=200), "location": "Rural Retreat Center", "min_participants": 8, "max_participants": 16, "status": "published", "tax_rate": 10.00, "features": {"waiting_list": True}, "allow_self_cancellation": True, "self_cancellation_deadline_hours": 168,
+            "modalities": [],
+            "prices": [{"name": "Full Package", "amount": 320.00, "is_default": True, "display_order": 1}]},
+        # --- Published: registration open but FULL (tiny capacity, filled by seed registrations) ---
+        {"name": "Private Wine Tasting", "slug": "private-wine-tasting", "short_description": "Exclusive wine tasting evening", "description": "Intimate wine tasting session with sommelier. Very limited capacity.", "starts_at": now + timedelta(days=25), "ends_at": now + timedelta(days=25, hours=3), "registration_starts_at": now - timedelta(days=10), "registration_ends_at": now + timedelta(days=20), "location": "Wine Cellar", "min_participants": 1, "max_participants": 2, "status": "published", "tax_rate": 10.00, "features": {"waiting_list": True}, "allow_self_cancellation": True, "self_cancellation_deadline_hours": 48,
+            "modalities": [],
+            "prices": [{"name": "Per Person", "amount": 55.00, "is_default": True, "display_order": 1}]},
+        # --- Published: registration CLOSED ---
+        {"name": "Spring Marathon 2026", "slug": "spring-marathon-2026", "short_description": "10K and half-marathon", "description": "Annual spring marathon through the city center. 10K and half-marathon distances available.", "starts_at": now + timedelta(days=10), "ends_at": now + timedelta(days=10, hours=6), "registration_starts_at": now - timedelta(days=60), "registration_ends_at": now - timedelta(days=5), "location": "City Center", "min_participants": 50, "max_participants": 500, "status": "published", "tax_rate": 0, "features": {}, "allow_self_cancellation": False,
+            "modalities": [{"name": "10K", "max_participants": 300, "display_order": 1}, {"name": "Half Marathon", "max_participants": 200, "display_order": 2}],
+            "prices": [{"name": "Entry Fee", "amount": 25.00, "is_default": True, "display_order": 1}]},
+        {"name": "Easter Egg Hunt", "slug": "easter-egg-hunt-2026", "short_description": "Family fun egg hunt", "description": "Annual Easter egg hunt in the park. Prizes for all age categories.", "starts_at": now + timedelta(days=5), "ends_at": now + timedelta(days=5, hours=3), "registration_starts_at": now - timedelta(days=30), "registration_ends_at": now - timedelta(days=2), "location": "Central Park", "max_age": 14, "min_participants": 20, "max_participants": 80, "status": "published", "tax_rate": 0, "features": {}, "allow_self_cancellation": True, "self_cancellation_deadline_hours": 24,
+            "modalities": [],
+            "prices": [{"name": "Free", "amount": 0, "is_default": True, "display_order": 1}]},
         # --- Draft activities ---
         {"name": "Annual Gala Dinner", "slug": "annual-gala-dinner", "short_description": "Annual celebration with dinner and awards", "description": "Join us for the annual gala dinner. Live music, awards ceremony, and three-course dinner.", "starts_at": now + timedelta(days=120), "ends_at": now + timedelta(days=120, hours=5), "registration_starts_at": now + timedelta(days=30), "registration_ends_at": now + timedelta(days=110), "location": "Grand Ballroom Hotel", "min_participants": 50, "max_participants": 200, "status": "draft", "tax_rate": 10.00, "features": {}, "allow_self_cancellation": False,
             "modalities": [],
@@ -381,7 +400,35 @@ def seed_activities(db, user_id: int) -> None:
 
         count += 1
 
+    # Set sample cover image for Summer Soccer Camp
+    _seed_sample_cover_image(db)
+
     print(f"  Activities: created {count} activities with modalities and prices")
+
+
+def _seed_sample_cover_image(db) -> None:
+    """Copy sample cover image to storage for Summer Soccer Camp."""
+    import shutil
+
+    fixtures_dir = Path(__file__).parent / "fixtures"
+    sample_image = fixtures_dir / "summer camp.jpeg"
+    if not sample_image.exists():
+        return
+
+    soccer_camp = db.query(Activity).filter(Activity.slug == "summer-soccer-camp").first()
+    if not soccer_camp or soccer_camp.image_url:
+        return
+
+    from app.core.config import settings
+
+    storage_dir = Path(settings.STORAGE_LOCAL_PATH) / "activities" / str(soccer_camp.id)
+    storage_dir.mkdir(parents=True, exist_ok=True)
+    dest = storage_dir / "cover.jpeg"
+    shutil.copy2(str(sample_image), str(dest))
+
+    soccer_camp.image_url = f"/uploads/activities/{soccer_camp.id}/cover.jpeg"
+    db.flush()
+    print(f"  Cover image: set for '{soccer_camp.name}'")
 
 
 TEST_ACCOUNTS = [
@@ -511,6 +558,12 @@ def seed_registrations(db) -> None:
     count = 0
     cancelled_one = False
 
+    # Find test member (member@test.com) — limit to 3 registrations so some activities remain unregistered for testing
+    test_member_user = db.query(User).filter(User.email == "member@test.com").first()
+    test_member = db.query(Member).filter(Member.user_id == test_member_user.id).first() if test_member_user else None
+    test_member_reg_count = 0
+    test_member_max_regs = 3
+
     for activity in activities:
         prices = db.query(ActivityPrice).filter(
             ActivityPrice.activity_id == activity.id,
@@ -531,6 +584,9 @@ def seed_registrations(db) -> None:
         members_to_register = members[:max_to_register]
 
         for i, member in enumerate(members_to_register):
+            # Skip test member after they've reached their registration limit
+            if test_member and member.id == test_member.id and test_member_reg_count >= test_member_max_regs:
+                continue
             # Check not already registered
             exists = db.query(Registration).filter(
                 Registration.activity_id == activity.id,
@@ -578,6 +634,10 @@ def seed_registrations(db) -> None:
                 default_price.current_registrations = (default_price.current_registrations or 0) + 1
             elif status == "waitlist":
                 activity.waitlist_count = (activity.waitlist_count or 0) + 1
+
+            # Track test member registrations
+            if test_member and member.id == test_member.id and status != "cancelled":
+                test_member_reg_count += 1
 
             count += 1
 
@@ -663,10 +723,10 @@ def seed_consents(db) -> None:
         # Mandatory liability waiver for every published activity
         db.add(ActivityConsent(
             activity_id=activity.id,
-            title="Liability Waiver",
-            content="I acknowledge that participation in this activity involves inherent risks. "
-                    "I accept full responsibility for any injury or damage that may occur during the activity. "
-                    "I release the organization and its staff from any liability.",
+            title="Exoneració de responsabilitat",
+            content="Reconec que la participació en aquesta activitat comporta riscos inherents. "
+                    "Accepto la plena responsabilitat de qualsevol lesió o dany que pugui ocórrer durant l'activitat. "
+                    "Eximeixo l'organització i el seu personal de qualsevol responsabilitat.",
             is_mandatory=True,
             display_order=1,
             is_active=True,
@@ -676,9 +736,9 @@ def seed_consents(db) -> None:
         # Optional image rights consent
         db.add(ActivityConsent(
             activity_id=activity.id,
-            title="Image Rights",
-            content="I consent to the use of photographs and videos taken during this activity "
-                    "for promotional purposes on the organization's website and social media channels.",
+            title="Drets d'imatge",
+            content="Consento l'ús de fotografies i vídeos presos durant aquesta activitat "
+                    "amb finalitats promocionals al lloc web i xarxes socials de l'organització.",
             is_mandatory=False,
             display_order=2,
             is_active=True,
@@ -689,10 +749,10 @@ def seed_consents(db) -> None:
     if activities:
         db.add(ActivityConsent(
             activity_id=activities[0].id,
-            title="Data Processing Consent",
-            content="I consent to the processing of my personal data (name, contact information, "
-                    "health-related data if applicable) for the purpose of managing my registration "
-                    "and participation in this activity, in accordance with GDPR regulations.",
+            title="Consentiment de tractament de dades",
+            content="Consento el tractament de les meves dades personals (nom, informació de contacte, "
+                    "dades relacionades amb la salut si escau) amb la finalitat de gestionar la meva inscripció "
+                    "i participació en aquesta activitat, d'acord amb el RGPD.",
             is_mandatory=True,
             display_order=3,
             is_active=True,
@@ -717,8 +777,8 @@ def seed_attachment_types(db) -> None:
     if activities:
         db.add(ActivityAttachmentType(
             activity_id=activities[0].id,
-            name="Medical Certificate",
-            description="A medical certificate confirming fitness to participate in physical activities. Must be issued within the last 12 months.",
+            name="Certificat mèdic",
+            description="Un certificat mèdic que confirmi l'aptitud per participar en activitats físiques. Ha d'haver estat emès en els últims 12 mesos.",
             allowed_extensions=["pdf", "jpg", "jpeg", "png"],
             max_file_size_mb=5,
             is_mandatory=True,
@@ -730,8 +790,8 @@ def seed_attachment_types(db) -> None:
         # Optional ID photo
         db.add(ActivityAttachmentType(
             activity_id=activities[0].id,
-            name="ID Photo",
-            description="A passport-style photo for the participant badge.",
+            name="Foto d'identitat",
+            description="Una foto tipus carnet per a l'acreditació del participant.",
             allowed_extensions=["jpg", "jpeg", "png"],
             max_file_size_mb=2,
             is_mandatory=False,
@@ -748,8 +808,8 @@ def seed_attachment_types(db) -> None:
     for activity in activities_with_modalities[1:2]:  # second modality-based activity if exists
         db.add(ActivityAttachmentType(
             activity_id=activity.id,
-            name="Insurance Document",
-            description="Proof of personal liability insurance or sports insurance.",
+            name="Document d'assegurança",
+            description="Justificant d'assegurança de responsabilitat civil o assegurança esportiva.",
             allowed_extensions=["pdf"],
             max_file_size_mb=5,
             is_mandatory=True,

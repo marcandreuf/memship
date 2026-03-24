@@ -29,6 +29,8 @@ import { DiscountCodesTab } from "@/features/activities/components/discount-code
 import { ConsentsTab } from "@/features/activities/components/consents-tab";
 import { AttachmentTypesTab } from "@/features/activities/components/attachment-types-tab";
 import { MemberRegistrationCard } from "@/features/activities/components/member-registration-card";
+import { MemberActivitySummary } from "@/features/activities/components/member-activity-summary";
+import { MemberActivityDetailsTab } from "@/features/activities/components/member-activity-details-tab";
 
 export default function ActivityDetailPage({
   params,
@@ -154,28 +156,32 @@ export default function ActivityDetailPage({
         }
       />
 
-      <InlineEditWrapper
-        title={t("activities.basicInfo")}
-        isEditing={isEditing}
-        onEdit={() => setIsEditing(true)}
-        onCancel={() => setIsEditing(false)}
-        canEdit={isAdmin}
-        readContent={<ActivityDetailSection activity={activity} />}
-        editContent={
-          <ActivityEditForm
-            activity={activity}
-            onSubmit={async (data) => {
-              try {
-                await updateMutation.mutateAsync({ id: activityId, data });
-                toast.success(t("toast.success.saved"));
-                setIsEditing(false);
-              } catch { /* global handler shows error toast */ }
-            }}
-            isPending={updateMutation.isPending}
-            onCancel={() => setIsEditing(false)}
-          />
-        }
-      />
+      {isAdmin ? (
+        <InlineEditWrapper
+          title={t("activities.basicInfo")}
+          isEditing={isEditing}
+          onEdit={() => setIsEditing(true)}
+          onCancel={() => setIsEditing(false)}
+          canEdit={isAdmin}
+          readContent={<ActivityDetailSection activity={activity} showCoverImage />}
+          editContent={
+            <ActivityEditForm
+              activity={activity}
+              onSubmit={async (data) => {
+                try {
+                  await updateMutation.mutateAsync({ id: activityId, data });
+                  toast.success(t("toast.success.saved"));
+                  setIsEditing(false);
+                } catch { /* global handler shows error toast */ }
+              }}
+              isPending={updateMutation.isPending}
+              onCancel={() => setIsEditing(false)}
+            />
+          }
+        />
+      ) : (
+        <MemberActivitySummary activity={activity} />
+      )}
 
       <EntityTabs
         tabs={[
@@ -232,7 +238,13 @@ export default function ActivityDetailPage({
                   content: <AttachmentTypesTab activityId={activityId} />,
                 },
               ]
-            : []),
+            : [
+                {
+                  id: "details",
+                  label: t("activities.details"),
+                  content: <MemberActivityDetailsTab activity={activity} />,
+                },
+              ]),
           ...(!isAdmin && activity.status === "published"
             ? [
                 {
@@ -247,9 +259,15 @@ export default function ActivityDetailPage({
                     />
                   ) : (
                     <div className="py-4">
-                      <Link href={`/activities/${activityId}/register`}>
-                        <Button>{t("activities.registration.register")}</Button>
-                      </Link>
+                      {activity.is_registration_open ? (
+                        <Link href={`/activities/${activityId}/register`}>
+                          <Button>{t("activities.registration.register")}</Button>
+                        </Link>
+                      ) : (
+                        <Button disabled>
+                          {t("activities.registration.register")}
+                        </Button>
+                      )}
                     </div>
                   ),
                 },

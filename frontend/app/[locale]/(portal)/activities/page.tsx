@@ -23,9 +23,11 @@ import {
 import { PageInfo } from "@/components/page-info";
 import { SearchInput } from "@/components/entity/search-input";
 import { Pagination } from "@/components/entity/pagination";
-import { ACTIVITY_STATUS_VARIANTS } from "@/lib/status-variants";
+import { ACTIVITY_STATUS_VARIANTS, REGISTRATION_STATUS_VARIANTS } from "@/lib/status-variants";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { useActivities } from "@/features/activities/hooks/use-activities";
+import { useMyRegistrations } from "@/features/activities/hooks/use-registrations";
+import type { ActivityListData } from "@/features/activities/services/activities-api";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString(undefined, {
@@ -33,6 +35,24 @@ function formatDate(iso: string) {
     month: "short",
     day: "numeric",
   });
+}
+
+function getRegistrationStatus(
+  activity: ActivityListData,
+  t: ReturnType<typeof useTranslations>,
+): { label: string; variant: "default" | "secondary" | "outline" | "destructive" } {
+  if (activity.is_registration_open && activity.available_spots > 0) {
+    return { label: t("activities.registrationOpen"), variant: "default" };
+  }
+  if (activity.is_registration_open && activity.available_spots <= 0) {
+    return { label: t("activities.full"), variant: "secondary" };
+  }
+  const now = new Date();
+  const regStart = new Date(activity.registration_starts_at);
+  if (now < regStart) {
+    return { label: t("activities.registrationNotYetOpen"), variant: "outline" };
+  }
+  return { label: t("activities.registrationClosed"), variant: "destructive" };
 }
 
 export default function ActivitiesPage() {
@@ -51,6 +71,7 @@ export default function ActivitiesPage() {
     search: search || undefined,
     status: isAdmin ? statusFilter || undefined : "published",
   });
+  const { data: myRegs } = useMyRegistrations();
 
   return (
     <div className="space-y-4">
@@ -118,6 +139,7 @@ export default function ActivitiesPage() {
                   <TableHead>{t("activities.location")}</TableHead>
                   <TableHead>{t("activities.capacity")}</TableHead>
                   <TableHead>{t("common.status")}</TableHead>
+                  <TableHead>{t("activities.registrations")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -137,6 +159,12 @@ export default function ActivitiesPage() {
                       <Badge variant={ACTIVITY_STATUS_VARIANTS[activity.status] || "outline"}>
                         {t(`activities.status.${activity.status}`)}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {(() => {
+                        const reg = getRegistrationStatus(activity, t);
+                        return <Badge variant={reg.variant}>{reg.label}</Badge>;
+                      })()}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -168,9 +196,15 @@ export default function ActivitiesPage() {
                     {activity.location}
                   </p>
                 )}
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {activity.current_participants}/{activity.max_participants}
-                </p>
+                <div className="mt-1 flex items-center gap-2">
+                  <p className="text-sm text-muted-foreground">
+                    {activity.current_participants}/{activity.max_participants}
+                  </p>
+                  {(() => {
+                    const reg = getRegistrationStatus(activity, t);
+                    return <Badge variant={reg.variant}>{reg.label}</Badge>;
+                  })()}
+                </div>
               </Link>
             ))}
           </div>
@@ -182,26 +216,50 @@ export default function ActivitiesPage() {
             <Link
               key={activity.id}
               href={`/activities/${activity.id}`}
-              className="block rounded-lg border p-4 hover:bg-accent transition-colors"
+              className="flex rounded-lg border overflow-hidden hover:bg-accent transition-colors"
             >
-              <h3 className="font-medium">{activity.name}</h3>
-              {activity.short_description && (
-                <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
-                  {activity.short_description}
-                </p>
-              )}
-              <div className="mt-3 space-y-1 text-sm text-muted-foreground">
-                <p>{formatDate(activity.starts_at)} — {formatDate(activity.ends_at)}</p>
-                {activity.location && <p>{activity.location}</p>}
-                <p>
-                  {activity.available_spots > 0
-                    ? t("activities.availableSpots", { count: activity.available_spots })
-                    : t("activities.full")}
-                </p>
+              <div className="flex-1 p-4">
+                <h3 className="font-medium">{activity.name}</h3>
+                {activity.short_description && (
+                  <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
+                    {activity.short_description}
+                  </p>
+                )}
+                <div className="mt-3 space-y-1 text-sm text-muted-foreground">
+                  <p>{formatDate(activity.starts_at)} — {formatDate(activity.ends_at)}</p>
+                  {activity.location && <p>{activity.location}</p>}
+                  <p>
+                    {activity.available_spots > 0
+                      ? t("activities.availableSpots", { count: activity.available_spots })
+                      : t("activities.full")}
+                  </p>
+                </div>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {(() => {
+                    const reg = getRegistrationStatus(activity, t);
+                    return <Badge variant={reg.variant}>{reg.label}</Badge>;
+                  })()}
+                  {(() => {
+                    const myReg = myRegs?.items?.find(
+                      (r) => r.activity_id === activity.id && r.status !== "cancelled"
+                    );
+                    if (!myReg) return null;
+                    return (
+                      <Badge variant={REGISTRATION_STATUS_VARIANTS[myReg.status] || "outline"}>
+                        {t(`activities.registration.status.${myReg.status}`)}
+                      </Badge>
+                    );
+                  })()}
+                </div>
               </div>
-              <Badge className="mt-2" variant={ACTIVITY_STATUS_VARIANTS[activity.status] || "outline"}>
-                {t(`activities.status.${activity.status}`)}
-              </Badge>
+              {activity.image_url && (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={`/api/uploads${activity.image_url.replace("/uploads", "")}`}
+                  alt={activity.name}
+                  className="w-28 object-cover shrink-0"
+                />
+              )}
             </Link>
           ))}
         </div>

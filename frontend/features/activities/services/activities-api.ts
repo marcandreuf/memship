@@ -54,6 +54,7 @@ export interface ActivityData {
   min_age: number | null;
   max_age: number | null;
   allowed_membership_types: number[] | null;
+  image_url: string | null;
   status: string;
   tax_rate: number;
   features: Record<string, unknown>;
@@ -81,9 +82,12 @@ export interface ActivityListData {
   location: string | null;
   max_participants: number;
   current_participants: number;
+  registration_starts_at: string;
+  registration_ends_at: string;
   available_spots: number;
   is_registration_open: boolean;
   status: string;
+  image_url: string | null;
   is_featured: boolean;
   created_at: string;
 }
@@ -292,4 +296,24 @@ export async function updateAttachmentType(activityId: number, typeId: number, d
 
 export async function deleteAttachmentType(activityId: number, typeId: number): Promise<void> {
   await apiClient(`/activities/${activityId}/attachment-types/${typeId}`, { method: "DELETE" });
+}
+
+// Cover Image
+export async function uploadCoverImage(activityId: number, file: File): Promise<{ image_url: string }> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await fetch(`/api/activities/${activityId}/cover-image`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Upload failed" }));
+    throw new Error(typeof err.detail === "string" ? err.detail : "Upload failed");
+  }
+  return res.json();
+}
+
+export async function deleteCoverImage(activityId: number): Promise<void> {
+  await apiClient(`/activities/${activityId}/cover-image`, { method: "DELETE" });
 }

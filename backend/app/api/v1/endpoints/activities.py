@@ -104,9 +104,12 @@ def _to_list_response(activity: Activity) -> ActivityListResponse:
         location=activity.location,
         max_participants=activity.max_participants,
         current_participants=activity.current_participants or 0,
+        registration_starts_at=activity.registration_starts_at,
+        registration_ends_at=activity.registration_ends_at,
         available_spots=available_spots,
         is_registration_open=is_registration_open,
         status=activity.status,
+        image_url=activity.image_url,
         is_featured=activity.is_featured or False,
         created_at=activity.created_at,
     )

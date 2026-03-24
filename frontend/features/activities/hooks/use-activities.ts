@@ -9,6 +9,7 @@ import {
   listDiscountCodes, createDiscountCode, updateDiscountCode, deleteDiscountCode,
   listConsents, createConsent, updateConsent, deleteConsent,
   listAttachmentTypes, createAttachmentType, updateAttachmentType, deleteAttachmentType,
+  uploadCoverImage, deleteCoverImage,
   type ListActivitiesParams,
 } from "../services/activities-api";
 
@@ -233,5 +234,28 @@ export function useDeleteAttachmentType(activityId: number) {
   return useMutation({
     mutationFn: (typeId: number) => deleteAttachmentType(activityId, typeId),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["attachment-types", activityId] }),
+  });
+}
+
+// Cover Image
+export function useUploadCoverImage(activityId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (file: File) => uploadCoverImage(activityId, file),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["activities", activityId] });
+      qc.invalidateQueries({ queryKey: ["activities"] });
+    },
+  });
+}
+
+export function useDeleteCoverImage(activityId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => deleteCoverImage(activityId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["activities", activityId] });
+      qc.invalidateQueries({ queryKey: ["activities"] });
+    },
   });
 }
