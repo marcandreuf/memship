@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -291,6 +292,7 @@ function PriceRow({
 }) {
   const t = useTranslations();
   const deleteMutation = useDeletePrice(activityId);
+  const [confirmDialog, confirmAction] = useConfirmDialog();
   const modalityName = price.modality_id
     ? modalities.find((m) => m.id === price.modality_id)?.name || "—"
     : t("activities.prices.activityLevel");
@@ -306,17 +308,23 @@ function PriceRow({
       <TableCell>{price.is_optional ? t("common.yes") : t("common.no")}</TableCell>
       <TableCell>
         <div className="flex gap-2">
+          {confirmDialog}
           <Button variant="outline" size="sm" onClick={onEdit}>{t("common.edit")}</Button>
           <Button
             variant="outline"
             size="sm"
-            onClick={async () => {
-              if (confirm(t("activities.actions.confirmDelete"))) {
-                try {
-                  await deleteMutation.mutateAsync(price.id);
-                  toast.success(t("toast.success.deleted"));
-                } catch { /* global handler shows error toast */ }
-              }
+            onClick={() => {
+              confirmAction({
+                title: t("activities.actions.confirmDelete"),
+                cancelLabel: t("common.cancel"),
+                confirmLabel: t("common.delete"),
+                onConfirm: async () => {
+                  try {
+                    await deleteMutation.mutateAsync(price.id);
+                    toast.success(t("toast.success.deleted"));
+                  } catch { /* global handler shows error toast */ }
+                },
+              });
             }}
             disabled={deleteMutation.isPending}
           >

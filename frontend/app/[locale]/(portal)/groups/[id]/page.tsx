@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { DetailHeader } from "@/components/entity/detail-header";
 import { InlineEditWrapper } from "@/components/entity/inline-edit-wrapper";
 import { EntityTabs } from "@/components/entity/entity-tabs";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "sonner";
 import { useGroup, useDeleteGroup } from "@/features/groups/hooks/use-groups";
 import { GroupDetailSection } from "@/features/groups/components/group-detail-section";
@@ -26,6 +27,7 @@ export default function GroupDetailPage({
   const { data: group, isLoading } = useGroup(groupId);
   const { mutateAsync: remove } = useDeleteGroup();
   const [isEditing, setIsEditing] = useState(false);
+  const [confirmDialog, confirmAction] = useConfirmDialog();
 
   if (isLoading) {
     return <div className="py-8 text-center text-muted-foreground">{t("common.loading")}</div>;
@@ -45,21 +47,29 @@ export default function GroupDetailPage({
         title={group.name}
         actions={
           !isEditing ? (
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={async () => {
-                if (confirm(t("groups.deleteConfirm"))) {
-                  try {
-                    await remove(group.id);
-                    toast.success(t("toast.success.deleted"));
-                    router.push("/groups");
-                  } catch { /* global handler shows error toast */ }
-                }
-              }}
-            >
-              {t("common.delete")}
-            </Button>
+            <>
+              {confirmDialog}
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => {
+                  confirmAction({
+                    title: t("groups.deleteConfirm"),
+                    cancelLabel: t("common.cancel"),
+                    confirmLabel: t("common.delete"),
+                    onConfirm: async () => {
+                      try {
+                        await remove(group.id);
+                        toast.success(t("toast.success.deleted"));
+                        router.push("/groups");
+                      } catch { /* global handler shows error toast */ }
+                    },
+                  });
+                }}
+              >
+                {t("common.delete")}
+              </Button>
+            </>
           ) : undefined
         }
       />

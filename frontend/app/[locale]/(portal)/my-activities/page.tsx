@@ -6,6 +6,7 @@ import { Link } from "@/lib/i18n/routing";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/entity/pagination";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "sonner";
 import {
   useMyRegistrations,
@@ -33,14 +34,32 @@ function RegistrationCard({ registration }: { registration: RegistrationData }) 
   const t = useTranslations();
   const { data: activity } = useActivity(registration.activity_id);
   const cancelMutation = useCancelRegistration();
+  const [confirmDialog, confirmAction] = useConfirmDialog();
 
-  const canCancel = registration.status === "confirmed" || registration.status === "waitlist";
+  const isActiveStatus = registration.status === "confirmed" || registration.status === "waitlist";
+
+  const isCancellationAllowed = (() => {
+    if (!activity) return false;
+    if (!activity.allow_self_cancellation) return false;
+    if (activity.self_cancellation_deadline_hours != null) {
+      const deadline = new Date(
+        new Date(activity.starts_at).getTime() -
+        activity.self_cancellation_deadline_hours * 60 * 60 * 1000
+      );
+      if (new Date() > deadline) return false;
+    }
+    return true;
+  })();
+
+  const canCancel = isActiveStatus && isCancellationAllowed;
 
   const imageUrl = activity?.image_url
     ? `/api/uploads${activity.image_url.replace("/uploads", "")}?t=${new Date(activity.updated_at).getTime()}`
     : null;
 
   return (
+    <>
+    {confirmDialog}
     <Link
       href={`/activities/${registration.activity_id}`}
       className="flex rounded-lg border overflow-hidden hover:bg-accent transition-colors"
@@ -66,19 +85,24 @@ function RegistrationCard({ registration }: { registration: RegistrationData }) 
             <Button
               variant="outline"
               size="xs"
-              onClick={async (e) => {
+              onClick={(e) => {
                 e.preventDefault();
-                if (confirm(t("activities.registration.confirmCancel"))) {
-                  try {
-                    await cancelMutation.mutateAsync({ id: registration.id });
-                    toast.success(t("toast.success.updated"));
-                  } catch { /* global handler shows error toast */ }
-                }
-              }}
-              disabled={cancelMutation.isPending}
-            >
-              {t("common.cancel")}
-            </Button>
+                confirmAction({
+                    title: t("activities.registration.confirmCancel"),
+                    cancelLabel: t("common.cancel"),
+                    confirmLabel: t("common.confirm"),
+                    onConfirm: async () => {
+                      try {
+                        await cancelMutation.mutateAsync({ id: registration.id });
+                        toast.success(t("toast.success.updated"));
+                      } catch { /* global handler shows error toast */ }
+                    },
+                  });
+                }}
+                disabled={cancelMutation.isPending}
+              >
+                {t("common.cancel")}
+              </Button>
           )}
         </div>
       </div>
@@ -91,6 +115,7 @@ function RegistrationCard({ registration }: { registration: RegistrationData }) 
         />
       )}
     </Link>
+    </>
   );
 }
 

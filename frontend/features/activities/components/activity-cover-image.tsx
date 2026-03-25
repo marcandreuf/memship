@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "sonner";
 import { useUploadCoverImage, useDeleteCoverImage } from "../hooks/use-activities";
 import type { ActivityData } from "../services/activities-api";
@@ -20,6 +21,7 @@ export function ActivityCoverImage({ activity, isAdmin }: ActivityCoverImageProp
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadMutation = useUploadCoverImage(activity.id);
   const deleteMutation = useDeleteCoverImage(activity.id);
+  const [confirmDialog, confirmAction] = useConfirmDialog();
 
   const imageUrl = activity.image_url
     ? `/api/uploads${activity.image_url.replace("/uploads", "")}?t=${new Date(activity.updated_at).getTime()}`
@@ -49,20 +51,27 @@ export function ActivityCoverImage({ activity, isAdmin }: ActivityCoverImageProp
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handleDelete = async () => {
-    if (!confirm(t("activities.coverImage.confirmRemove"))) return;
-    try {
-      await deleteMutation.mutateAsync();
-      toast.success(t("toast.success.deleted"));
-    } catch {
-      /* global handler shows error toast */
-    }
+  const handleDelete = () => {
+    confirmAction({
+      title: t("activities.coverImage.confirmRemove"),
+      cancelLabel: t("common.cancel"),
+      confirmLabel: t("activities.coverImage.remove"),
+      onConfirm: async () => {
+        try {
+          await deleteMutation.mutateAsync();
+          toast.success(t("toast.success.deleted"));
+        } catch {
+          /* global handler shows error toast */
+        }
+      },
+    });
   };
 
   if (!imageUrl && !isAdmin) return null;
 
   return (
     <div className="relative">
+      {confirmDialog}
       {imageUrl ? (
         <div className="relative overflow-hidden rounded-lg border">
           {/* eslint-disable-next-line @next/next/no-img-element */}

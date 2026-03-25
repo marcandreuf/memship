@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
@@ -218,6 +219,7 @@ function DiscountRow({
 }) {
   const t = useTranslations();
   const deleteMutation = useDeleteDiscountCode(activityId);
+  const [confirmDialog, confirmAction] = useConfirmDialog();
 
   return (
     <TableRow>
@@ -229,16 +231,22 @@ function DiscountRow({
       <TableCell>{discount.valid_until ? formatDate(discount.valid_until) : "—"}</TableCell>
       <TableCell>
         <div className="flex gap-2">
+          {confirmDialog}
           <Button variant="outline" size="sm" onClick={onEdit}>{t("common.edit")}</Button>
           <Button
             variant="outline" size="sm"
-            onClick={async () => {
-              if (confirm(t("activities.actions.confirmDelete"))) {
-                try {
-                  await deleteMutation.mutateAsync(discount.id);
-                  toast.success(t("toast.success.deleted"));
-                } catch { /* global handler shows error toast */ }
-              }
+            onClick={() => {
+              confirmAction({
+                title: t("activities.actions.confirmDelete"),
+                cancelLabel: t("common.cancel"),
+                confirmLabel: t("common.delete"),
+                onConfirm: async () => {
+                  try {
+                    await deleteMutation.mutateAsync(discount.id);
+                    toast.success(t("toast.success.deleted"));
+                  } catch { /* global handler shows error toast */ }
+                },
+              });
             }}
             disabled={deleteMutation.isPending}
           >

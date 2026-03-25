@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -63,6 +64,7 @@ export function MembershipTypesSettings() {
   const updateMutation = useUpdateMembershipType();
   const deleteMutation = useDeleteMembershipType();
   const queryClient = useQueryClient();
+  const [confirmDialog, confirmAction] = useConfirmDialog();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<MembershipTypeData | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -114,13 +116,18 @@ export function MembershipTypesSettings() {
     }
   }
 
-  async function handleDelete(id: number) {
-    if (window.confirm(t("members.confirmDelete"))) {
-      try {
-        await deleteMutation.mutateAsync(id);
-        toast.success(t("toast.success.deleted"));
-      } catch { /* global handler shows error toast */ }
-    }
+  function handleDelete(id: number) {
+    confirmAction({
+      title: t("members.confirmDelete"),
+      cancelLabel: t("common.cancel"),
+      confirmLabel: t("common.delete"),
+      onConfirm: async () => {
+        try {
+          await deleteMutation.mutateAsync(id);
+          toast.success(t("toast.success.deleted"));
+        } catch { /* global handler shows error toast */ }
+      },
+    });
   }
 
   if (isLoading) {
@@ -129,6 +136,7 @@ export function MembershipTypesSettings() {
 
   return (
     <div className="space-y-4">
+      {confirmDialog}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">{t("members.typesInfo")}</p>
         <Dialog open={open} onOpenChange={setOpen}>

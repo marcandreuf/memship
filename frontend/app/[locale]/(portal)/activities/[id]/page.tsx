@@ -10,6 +10,7 @@ import { EntityTabs } from "@/components/entity/entity-tabs";
 import { Link } from "@/lib/i18n/routing";
 import { RegistrationsTab } from "@/features/activities/components/registrations-tab";
 import { ACTIVITY_STATUS_VARIANTS } from "@/lib/status-variants";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "sonner";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import {
@@ -59,6 +60,7 @@ export default function ActivityDetailPage({
   const isCancelledRegistration = myRegistration && myRegistration.status === "cancelled";
 
   const [isEditing, setIsEditing] = useState(false);
+  const [confirmDialog, confirmAction] = useConfirmDialog();
 
   if (isLoading) {
     return <div className="py-8 text-center text-muted-foreground">{t("common.loading")}</div>;
@@ -83,16 +85,23 @@ export default function ActivityDetailPage({
         actions={
           isAdmin ? (
             <>
+              {confirmDialog}
               {activity.status === "draft" && (
                 <Button
                   size="sm"
-                  onClick={async () => {
-                    if (confirm(t("activities.actions.confirmPublish"))) {
-                      try {
-                        await publishMutation.mutateAsync(activityId);
-                        toast.success(t("toast.success.updated"));
-                      } catch { /* global handler shows error toast */ }
-                    }
+                  onClick={() => {
+                    confirmAction({
+                      title: t("activities.actions.confirmPublish"),
+                      cancelLabel: t("common.cancel"),
+                      confirmLabel: t("activities.actions.publish"),
+                      variant: "default",
+                      onConfirm: async () => {
+                        try {
+                          await publishMutation.mutateAsync(activityId);
+                          toast.success(t("toast.success.updated"));
+                        } catch { /* global handler shows error toast */ }
+                      },
+                    });
                   }}
                   disabled={publishMutation.isPending}
                 >
@@ -103,13 +112,18 @@ export default function ActivityDetailPage({
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={async () => {
-                    if (confirm(t("activities.actions.confirmArchive"))) {
-                      try {
-                        await archiveMutation.mutateAsync(activityId);
-                        toast.success(t("toast.success.updated"));
-                      } catch { /* global handler shows error toast */ }
-                    }
+                  onClick={() => {
+                    confirmAction({
+                      title: t("activities.actions.confirmArchive"),
+                      cancelLabel: t("common.cancel"),
+                      confirmLabel: t("activities.actions.archive"),
+                      onConfirm: async () => {
+                        try {
+                          await archiveMutation.mutateAsync(activityId);
+                          toast.success(t("toast.success.updated"));
+                        } catch { /* global handler shows error toast */ }
+                      },
+                    });
                   }}
                   disabled={archiveMutation.isPending}
                 >
@@ -120,13 +134,18 @@ export default function ActivityDetailPage({
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={async () => {
-                    if (confirm(t("activities.actions.confirmCancel"))) {
-                      try {
-                        await cancelMutation.mutateAsync(activityId);
-                        toast.success(t("toast.success.updated"));
-                      } catch { /* global handler shows error toast */ }
-                    }
+                  onClick={() => {
+                    confirmAction({
+                      title: t("activities.actions.confirmCancel"),
+                      cancelLabel: t("common.cancel"),
+                      confirmLabel: t("activities.actions.cancel"),
+                      onConfirm: async () => {
+                        try {
+                          await cancelMutation.mutateAsync(activityId);
+                          toast.success(t("toast.success.updated"));
+                        } catch { /* global handler shows error toast */ }
+                      },
+                    });
                   }}
                   disabled={cancelMutation.isPending}
                 >
@@ -137,14 +156,19 @@ export default function ActivityDetailPage({
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={async () => {
-                    if (confirm(t("activities.actions.confirmDelete"))) {
-                      try {
-                        await deleteMutation.mutateAsync(activityId);
-                        toast.success(t("toast.success.deleted"));
-                        router.push("/activities");
-                      } catch { /* global handler shows error toast */ }
-                    }
+                  onClick={() => {
+                    confirmAction({
+                      title: t("activities.actions.confirmDelete"),
+                      cancelLabel: t("common.cancel"),
+                      confirmLabel: t("common.delete"),
+                      onConfirm: async () => {
+                        try {
+                          await deleteMutation.mutateAsync(activityId);
+                          toast.success(t("toast.success.deleted"));
+                          router.push("/activities");
+                        } catch { /* global handler shows error toast */ }
+                      },
+                    });
                   }}
                   disabled={deleteMutation.isPending}
                 >
@@ -252,22 +276,30 @@ export default function ActivityDetailPage({
                   label: isActiveRegistration
                     ? t("activities.registration.registered")
                     : t("activities.registration.register"),
-                  content: myRegistration ? (
+                  content: isActiveRegistration ? (
                     <MemberRegistrationCard
-                      registration={myRegistration}
+                      registration={myRegistration!}
                       activity={activity}
                     />
                   ) : (
-                    <div className="py-4">
-                      {activity.is_registration_open ? (
-                        <Link href={`/activities/${activityId}/register`}>
-                          <Button>{t("activities.registration.register")}</Button>
-                        </Link>
-                      ) : (
-                        <Button disabled>
-                          {t("activities.registration.register")}
-                        </Button>
+                    <div className="space-y-4">
+                      {isCancelledRegistration && (
+                        <MemberRegistrationCard
+                          registration={myRegistration!}
+                          activity={activity}
+                        />
                       )}
+                      <div className="py-4">
+                        {activity.is_registration_open ? (
+                          <Link href={`/activities/${activityId}/register`}>
+                            <Button>{t("activities.registration.register")}</Button>
+                          </Link>
+                        ) : (
+                          <Button disabled>
+                            {t("activities.registration.register")}
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   ),
                 },

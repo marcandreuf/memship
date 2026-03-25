@@ -657,6 +657,7 @@ def seed_discount_codes(db) -> None:
 
     activities = db.query(Activity).filter(Activity.status == "published").all()
     count = 0
+    first_activity = True
 
     for activity in activities:
         # Percentage code for every published activity
@@ -674,8 +675,9 @@ def seed_discount_codes(db) -> None:
         ))
         count += 1
 
-        # Fixed amount code for the first activity only
-        if count == 1:
+        # Fixed amount code for the first activity (Summer Soccer Camp) only
+        if first_activity:
+            first_activity = False
             db.add(DiscountCode(
                 activity_id=activity.id,
                 code="SUMMER25",

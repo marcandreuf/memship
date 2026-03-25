@@ -68,7 +68,7 @@ Open http://localhost:8081 and log in with your credentials. Change `PORT=8081` 
 | v0.2.3 | Error handling & validation hardening — toast notifications, global error handler, backend schema validation, StrEnum, 76 validation tests, 16 E2E tests | Done |
 | v0.2.4 | Bug fixes — dark mode sidebar, form error display, route guards, member list cancelled visibility, member delete removed | Done |
 | v0.2.5 | Activity UX — member activity card redesign, cover image upload, registration status badges, activity list thumbnails, My Activities grid, Docker storage volume | Done |
-| v0.2.6 | Bug fixes & polish | — |
+| v0.2.6 | Bug fixes & testing — Shadcn confirm dialogs (replaced 13 browser alerts), seed discount code fix, self-cancellation deadline check, re-registration after cancel, 21 new API tests, 9 new E2E eligibility tests | Done |
 | v0.2.7 | Bug fixes & polish | — |
 | v0.2.8 | Activity polish — images, email notifications, loading skeletons, nuqs URL state | — |
 | v0.3.0 | Basic Payments & Invoicing | — |

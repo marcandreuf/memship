@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -167,6 +168,7 @@ function ConsentRow({
 }) {
   const t = useTranslations();
   const deleteMutation = useDeleteConsent(activityId);
+  const [confirmDialog, confirmAction] = useConfirmDialog();
 
   return (
     <TableRow>
@@ -179,16 +181,22 @@ function ConsentRow({
       <TableCell>{consent.display_order}</TableCell>
       <TableCell>
         <div className="flex gap-2">
+          {confirmDialog}
           <Button variant="outline" size="sm" onClick={onEdit}>{t("common.edit")}</Button>
           <Button
             variant="outline" size="sm"
-            onClick={async () => {
-              if (confirm(t("activities.actions.confirmDelete"))) {
-                try {
-                  await deleteMutation.mutateAsync(consent.id);
-                  toast.success(t("toast.success.deleted"));
-                } catch { /* global handler shows error toast */ }
-              }
+            onClick={() => {
+              confirmAction({
+                title: t("activities.actions.confirmDelete"),
+                cancelLabel: t("common.cancel"),
+                confirmLabel: t("common.delete"),
+                onConfirm: async () => {
+                  try {
+                    await deleteMutation.mutateAsync(consent.id);
+                    toast.success(t("toast.success.deleted"));
+                  } catch { /* global handler shows error toast */ }
+                },
+              });
             }}
             disabled={deleteMutation.isPending}
           >
