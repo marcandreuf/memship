@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TabContentSkeleton } from "@/components/ui/skeletons";
 import { useMembershipTypes } from "@/features/members/hooks/use-members";
 
 interface MembershipTypesTabProps {
@@ -25,7 +26,7 @@ export function MembershipTypesTab({ groupId }: MembershipTypesTabProps) {
   const types = allTypes?.filter((mt) => mt.group_id === groupId) || [];
 
   if (isLoading) {
-    return <div className="py-4 text-center text-muted-foreground">{t("common.loading")}</div>;
+    return <TabContentSkeleton />;
   }
 
   if (!types.length) {

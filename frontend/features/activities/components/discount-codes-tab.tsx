@@ -18,6 +18,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { TabContentSkeleton } from "@/components/ui/skeletons";
 import { toast } from "sonner";
 import { mapApiErrorsToForm } from "@/lib/errors";
 import {
@@ -58,7 +59,7 @@ export function DiscountCodesTab({ activityId }: DiscountCodesTabProps) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<DiscountCodeData | null>(null);
 
-  if (isLoading) return <p className="text-sm text-muted-foreground">{t("common.loading")}</p>;
+  if (isLoading) return <TabContentSkeleton />;
 
   return (
     <div className="space-y-4 table-compact">

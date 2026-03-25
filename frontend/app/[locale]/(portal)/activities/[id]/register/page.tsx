@@ -23,6 +23,7 @@ import { validateDiscount } from "@/features/activities/services/activities-api"
 import type { ValidateDiscountResult, ActivityConsentData } from "@/features/activities/services/activities-api";
 import { useEligibility, useRegister } from "@/features/activities/hooks/use-registrations";
 import { Checkbox } from "@/components/ui/checkbox";
+import { FormSkeleton } from "@/components/ui/skeletons";
 
 export default function RegisterPage({
   params,
@@ -49,7 +50,7 @@ export default function RegisterPage({
   const [acceptedConsents, setAcceptedConsents] = useState<Record<number, boolean>>({});
 
   if (actLoading || eligLoading) {
-    return <div className="py-8 text-center text-muted-foreground">{t("common.loading")}</div>;
+    return <FormSkeleton fields={3} />;
   }
 
   if (!activity) {

@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/lib/i18n/routing";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/entity/pagination";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
+import { CardGridSkeleton } from "@/components/ui/skeletons";
+import { usePageParam } from "@/hooks/use-url-state";
 import { toast } from "sonner";
 import {
   useMyRegistrations,
@@ -121,7 +122,7 @@ function RegistrationCard({ registration }: { registration: RegistrationData }) 
 
 export default function MyActivitiesPage() {
   const t = useTranslations();
-  const [page, setPage] = useState(1);
+  const [page, setPage] = usePageParam();
   const { data, isLoading } = useMyRegistrations({ page, per_page: 20 });
 
   return (
@@ -129,7 +130,7 @@ export default function MyActivitiesPage() {
       <h1 className="text-2xl font-bold">{t("activities.registration.myActivities")}</h1>
 
       {isLoading ? (
-        <div className="py-8 text-center text-muted-foreground">{t("common.loading")}</div>
+        <CardGridSkeleton />
       ) : !data?.items.length ? (
         <div className="py-8 text-center text-muted-foreground">
           {t("activities.registration.noMyActivities")}

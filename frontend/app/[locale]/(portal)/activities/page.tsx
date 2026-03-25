@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/lib/i18n/routing";
 import { Button } from "@/components/ui/button";
@@ -25,6 +24,8 @@ import { SearchInput } from "@/components/entity/search-input";
 import { Pagination } from "@/components/entity/pagination";
 import { ACTIVITY_STATUS_VARIANTS, REGISTRATION_STATUS_VARIANTS } from "@/lib/status-variants";
 import { useAuth } from "@/features/auth/hooks/use-auth";
+import { TableSkeleton, CardGridSkeleton } from "@/components/ui/skeletons";
+import { useSearchParam, usePageParam, useStatusParam } from "@/hooks/use-url-state";
 import { useActivities } from "@/features/activities/hooks/use-activities";
 import { useMyRegistrations } from "@/features/activities/hooks/use-registrations";
 import type { ActivityListData } from "@/features/activities/services/activities-api";
@@ -61,9 +62,9 @@ export default function ActivitiesPage() {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin" || user?.role === "super_admin";
 
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [page, setPage] = usePageParam();
+  const [search, setSearch] = useSearchParam();
+  const [statusFilter, setStatusFilter] = useStatusParam();
 
   const { data, isLoading } = useActivities({
     page,
@@ -120,9 +121,7 @@ export default function ActivitiesPage() {
       </div>
 
       {isLoading ? (
-        <div className="py-8 text-center text-muted-foreground">
-          {t("common.loading")}
-        </div>
+        isAdmin ? <TableSkeleton rows={6} columns={5} /> : <CardGridSkeleton />
       ) : !data?.items.length ? (
         <div className="py-8 text-center text-muted-foreground">
           {t("activities.noActivities")}

@@ -25,6 +25,7 @@ import {
   useActivityRegistrations,
   useChangeRegistrationStatus,
 } from "../hooks/use-registrations";
+import { TabContentSkeleton } from "@/components/ui/skeletons";
 import type { RegistrationData } from "../services/registrations-api";
 
 const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -60,7 +61,7 @@ export function RegistrationsTab({ activityId }: RegistrationsTabProps) {
   });
 
   if (isLoading) {
-    return <div className="py-4 text-center text-muted-foreground">{t("common.loading")}</div>;
+    return <TabContentSkeleton />;
   }
 
   return (

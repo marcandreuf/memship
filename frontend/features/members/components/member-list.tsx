@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/lib/i18n/routing";
 import { Button } from "@/components/ui/button";
@@ -23,14 +22,16 @@ import {
 import { SearchInput } from "@/components/entity/search-input";
 import { Pagination } from "@/components/entity/pagination";
 import { MEMBER_STATUS_VARIANTS } from "@/lib/status-variants";
+import { TableSkeleton } from "@/components/ui/skeletons";
+import { useSearchParam, usePageParam, useStatusParam } from "@/hooks/use-url-state";
 import { useMembers } from "../hooks/use-members";
 
 export function MemberList() {
   const t = useTranslations();
   const router = useRouter();
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [page, setPage] = usePageParam();
+  const [search, setSearch] = useSearchParam();
+  const [statusFilter, setStatusFilter] = useStatusParam();
 
   const { data, isLoading } = useMembers({
     page,
@@ -80,9 +81,7 @@ export function MemberList() {
       </div>
 
       {isLoading ? (
-        <div className="py-8 text-center text-muted-foreground">
-          {t("common.loading")}
-        </div>
+        <TableSkeleton rows={8} columns={5} />
       ) : !data?.items.length ? (
         <div className="py-8 text-center text-muted-foreground">
           {t("common.noResults")}

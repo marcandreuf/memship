@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
+import { TabContentSkeleton } from "@/components/ui/skeletons";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -131,7 +132,7 @@ export function MembershipTypesSettings() {
   }
 
   if (isLoading) {
-    return <div className="py-4 text-center text-muted-foreground">{t("common.loading")}</div>;
+    return <TabContentSkeleton />;
   }
 
   return (

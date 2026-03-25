@@ -8,6 +8,7 @@ import { DetailHeader } from "@/components/entity/detail-header";
 import { InlineEditWrapper } from "@/components/entity/inline-edit-wrapper";
 import { EntityTabs } from "@/components/entity/entity-tabs";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
+import { DetailSkeleton } from "@/components/ui/skeletons";
 import { toast } from "sonner";
 import { useGroup, useDeleteGroup } from "@/features/groups/hooks/use-groups";
 import { GroupDetailSection } from "@/features/groups/components/group-detail-section";
@@ -30,7 +31,7 @@ export default function GroupDetailPage({
   const [confirmDialog, confirmAction] = useConfirmDialog();
 
   if (isLoading) {
-    return <div className="py-8 text-center text-muted-foreground">{t("common.loading")}</div>;
+    return <DetailSkeleton />;
   }
 
   if (!group) {

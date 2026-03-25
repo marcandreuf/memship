@@ -34,6 +34,7 @@ import { mapApiErrorsToForm } from "@/lib/errors";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { useSettings, useUpdateSettings } from "@/features/settings/hooks/use-settings";
 import { MembershipTypesSettings } from "@/features/settings/components/membership-types-settings";
+import { FormSkeleton } from "@/components/ui/skeletons";
 
 const settingsSchema = z.object({
   name: z.string().min(1).max(255),
@@ -98,7 +99,7 @@ export default function SettingsPage() {
   }
 
   if (isLoading) {
-    return <div className="py-8 text-center text-muted-foreground">{t("common.loading")}</div>;
+    return <FormSkeleton fields={6} />;
   }
 
   async function onSubmit(data: SettingsFormValues) {

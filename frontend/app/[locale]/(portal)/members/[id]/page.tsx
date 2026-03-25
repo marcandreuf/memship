@@ -17,6 +17,7 @@ import {
 import { toast } from "sonner";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { MEMBER_STATUS_VARIANTS } from "@/lib/status-variants";
+import { DetailSkeleton } from "@/components/ui/skeletons";
 
 export default function MemberDetailPage({
   params,
@@ -34,11 +35,7 @@ export default function MemberDetailPage({
   const isAdmin = user?.role === "admin" || user?.role === "super_admin";
 
   if (isLoading) {
-    return (
-      <div className="py-8 text-center text-muted-foreground">
-        {t("common.loading")}
-      </div>
-    );
+    return <DetailSkeleton />;
   }
 
   if (!member) {

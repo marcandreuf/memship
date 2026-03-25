@@ -7,6 +7,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { REGISTRATION_STATUS_VARIANTS } from "@/lib/status-variants";
+import { TabContentSkeleton } from "@/components/ui/skeletons";
 import { useMemberRegistrations } from "../hooks/use-members";
 
 interface MemberActivitiesTabProps {
@@ -25,7 +26,7 @@ export function MemberActivitiesTab({ memberId }: MemberActivitiesTabProps) {
   const t = useTranslations();
   const { data, isLoading } = useMemberRegistrations(memberId);
 
-  if (isLoading) return <p className="text-sm text-muted-foreground">{t("common.loading")}</p>;
+  if (isLoading) return <TabContentSkeleton />;
 
   const registrations = data?.items || [];
 

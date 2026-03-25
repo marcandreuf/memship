@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/features/auth/hooks/use-auth";
+import { FormSkeleton } from "@/components/ui/skeletons";
 import { useMember } from "@/features/members/hooks/use-members";
 import { usePathname, useRouter } from "@/lib/i18n/routing";
 import { locales, type Locale } from "@/lib/i18n/config";
@@ -34,11 +35,7 @@ export default function ProfilePage() {
   const { data: member, isLoading } = useMember(user?.member_id || 0);
 
   if (isLoading || !member) {
-    return (
-      <div className="py-8 text-center text-muted-foreground">
-        {t("common.loading")}
-      </div>
-    );
+    return <FormSkeleton fields={5} />;
   }
 
   const person = member.person;

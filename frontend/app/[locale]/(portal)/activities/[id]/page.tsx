@@ -32,6 +32,7 @@ import { AttachmentTypesTab } from "@/features/activities/components/attachment-
 import { MemberRegistrationCard } from "@/features/activities/components/member-registration-card";
 import { MemberActivitySummary } from "@/features/activities/components/member-activity-summary";
 import { MemberActivityDetailsTab } from "@/features/activities/components/member-activity-details-tab";
+import { DetailSkeleton } from "@/components/ui/skeletons";
 
 export default function ActivityDetailPage({
   params,
@@ -63,7 +64,7 @@ export default function ActivityDetailPage({
   const [confirmDialog, confirmAction] = useConfirmDialog();
 
   if (isLoading) {
-    return <div className="py-8 text-center text-muted-foreground">{t("common.loading")}</div>;
+    return <DetailSkeleton />;
   }
 
   if (!activity) {

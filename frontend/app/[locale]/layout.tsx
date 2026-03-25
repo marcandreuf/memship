@@ -2,6 +2,7 @@ import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { getMessages } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { ThemeProvider } from "next-themes";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { routing } from "@/lib/i18n/routing";
 import { ReactQueryProvider } from "@/lib/react-query-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -34,7 +35,9 @@ export default async function LocaleLayout({
         >
           <NextIntlClientProvider messages={messages}>
             <TooltipProvider>
-              <ReactQueryProvider>{children}</ReactQueryProvider>
+              <ReactQueryProvider>
+                <NuqsAdapter>{children}</NuqsAdapter>
+              </ReactQueryProvider>
             </TooltipProvider>
           </NextIntlClientProvider>
           <Toaster />

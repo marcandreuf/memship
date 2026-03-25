@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { MEMBER_STATUS_VARIANTS } from "@/lib/status-variants";
+import { TabContentSkeleton } from "@/components/ui/skeletons";
 import { useMembers } from "@/features/members/hooks/use-members";
 
 interface MembersTabProps {
@@ -24,7 +25,7 @@ export function MembersTab({ groupId }: MembersTabProps) {
   const { data, isLoading } = useMembers({ group_id: groupId });
 
   if (isLoading) {
-    return <div className="py-4 text-center text-muted-foreground">{t("common.loading")}</div>;
+    return <TabContentSkeleton />;
   }
 
   const members = data?.items || [];

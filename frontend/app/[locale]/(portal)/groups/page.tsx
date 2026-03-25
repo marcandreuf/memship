@@ -35,6 +35,8 @@ import {
 import { toast } from "sonner";
 import { PageInfo } from "@/components/page-info";
 import { SearchInput } from "@/components/entity/search-input";
+import { TableSkeleton } from "@/components/ui/skeletons";
+import { useSearchParam } from "@/hooks/use-url-state";
 import { useGroups, useCreateGroup } from "@/features/groups/hooks/use-groups";
 
 const groupSchema = z.object({
@@ -53,7 +55,7 @@ export default function GroupsPage() {
   const { data: groups, isLoading } = useGroups();
   const createMutation = useCreateGroup();
   const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useSearchParam();
 
   const form = useForm<GroupFormValues>({
     resolver: zodResolver(groupSchema),
@@ -168,7 +170,7 @@ export default function GroupsPage() {
       />
 
       {isLoading ? (
-        <div className="py-8 text-center text-muted-foreground">{t("common.loading")}</div>
+        <TableSkeleton rows={4} columns={4} />
       ) : !filteredGroups?.length ? (
         <div className="py-8 text-center text-muted-foreground">{t("groups.noGroups")}</div>
       ) : (
