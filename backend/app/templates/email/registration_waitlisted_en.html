@@ -1,0 +1,6 @@
+<h2>You're on the Waiting List</h2>
+<p>Hi {{ member_name }},</p>
+<p>Your registration for <strong>{{ activity_name }}</strong> has been received, but the activity is currently full.</p>
+<p>You are on the <strong>waiting list</strong>. We'll notify you if a spot becomes available.</p>
+{% if activity_date %}<p><strong>Date:</strong> {{ activity_date }}</p>{% endif %}
+{% if location %}<p><strong>Location:</strong> {{ location }}</p>{% endif %}

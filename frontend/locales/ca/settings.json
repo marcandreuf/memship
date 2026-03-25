@@ -7,6 +7,8 @@
     "orgInfo": "Dades de l'organització",
     "localization": "Localització",
     "branding": "Imatge de marca",
+    "address": "Adreça",
+    "banking": "Banca i facturació",
     "name": "Nom de l'organització",
     "legalName": "Raó social",
     "email": "Correu electrònic",
@@ -18,6 +20,17 @@
     "currency": "Moneda",
     "dateFormat": "Format de data",
     "brandColor": "Color de marca",
-    "logoUrl": "URL del logotip"
+    "logoUrl": "URL del logotip",
+    "addressLine1": "Adreça",
+    "addressLine2": "Línia 2",
+    "city": "Ciutat",
+    "stateProvince": "Província",
+    "postalCode": "Codi postal",
+    "country": "País",
+    "bankName": "Nom del banc",
+    "bankIban": "IBAN",
+    "bankBic": "BIC / SWIFT",
+    "invoicePrefix": "Prefix de factura",
+    "invoiceNextNumber": "Número de factura següent"
   }
 }

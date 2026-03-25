@@ -1,0 +1,6 @@
+<h2>En llista d'espera</h2>
+<p>Hola {{ member_name }},</p>
+<p>La teva inscripció a <strong>{{ activity_name }}</strong> ha estat registrada, però actualment l'activitat està completa.</p>
+<p>Estàs a la <strong>llista d'espera</strong>. T'avisarem si es lliura una plaça.</p>
+{% if activity_date %}<p><strong>Data:</strong> {{ activity_date }}</p>{% endif %}
+{% if location %}<p><strong>Lloc:</strong> {{ location }}</p>{% endif %}

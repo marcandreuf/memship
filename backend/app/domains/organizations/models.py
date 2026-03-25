@@ -34,6 +34,12 @@ class OrganizationSettings(Base):
     currency = Column(String(3), default="EUR")
     date_format = Column(String(20), default="DD/MM/YYYY")
     brand_color = Column(String(7))
+    # Banking & invoicing
+    bank_name = Column(String(255))
+    bank_iban = Column(String(34))
+    bank_bic = Column(String(11))
+    invoice_prefix = Column(String(10), default="INV")
+    invoice_next_number = Column(Integer, default=1)
     features = Column(JSONB, default=dict)
     custom_settings = Column(JSONB, default=dict)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

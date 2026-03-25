@@ -49,6 +49,33 @@ backend_logs() {
     docker compose -f "$BACKEND_COMPOSE" logs -f api
 }
 
+# --- Celery Worker ---
+
+worker_start() {
+    echo -e "${GREEN}+${NC} Starting Celery worker..."
+    docker compose -f "$BACKEND_COMPOSE" up -d celery-worker
+    echo -e "${GREEN}+${NC} Celery worker started"
+}
+
+worker_stop() {
+    echo -e "${YELLOW}x${NC} Stopping Celery worker..."
+    docker compose -f "$BACKEND_COMPOSE" stop celery-worker
+    echo -e "${GREEN}+${NC} Celery worker stopped"
+}
+
+worker_status() {
+    echo -e "${BOLD}Celery Worker:${NC}"
+    if docker compose -f "$BACKEND_COMPOSE" ps --status running 2>/dev/null | grep -q "celery"; then
+        echo -e "  ${GREEN}+${NC} Running"
+    else
+        echo -e "  ${RED}x${NC} Not running"
+    fi
+}
+
+worker_logs() {
+    docker compose -f "$BACKEND_COMPOSE" logs -f celery-worker
+}
+
 # --- Frontend (local pnpm) ---
 
 frontend_cmd() {
@@ -93,6 +120,8 @@ show_overall_status() {
     echo ""
     backend_status
     echo ""
+    worker_status
+    echo ""
     run_frontend "status"
     echo ""
     echo -e "${BOLD}Quick Commands:${NC}"
@@ -113,10 +142,18 @@ case "$ACTION" in
         case "$TARGET" in
             backend)  run_backend "$ACTION" ;;
             frontend) run_frontend "$ACTION" ;;
+            worker)
+                case "$ACTION" in
+                    start)   worker_start ;;
+                    stop)    worker_stop ;;
+                    restart) worker_stop; sleep 1; worker_start ;;
+                    logs)    worker_logs ;;
+                esac
+                ;;
             all)      run_all "$ACTION" ;;
             *)
                 echo -e "${RED}x${NC} Invalid target: $TARGET"
-                echo "Valid targets: backend, frontend, all"
+                echo "Valid targets: backend, frontend, worker, all"
                 exit 1
                 ;;
         esac

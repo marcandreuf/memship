@@ -1,9 +1,12 @@
 """Registration service — business logic for activity registrations."""
 
+import logging
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from sqlalchemy.orm import Session
+
+logger = logging.getLogger(__name__)
 
 from app.domains.activities.discount_service import (
     DiscountError,
@@ -134,6 +137,9 @@ def register_member(
     elif status == "waitlist":
         activity.waitlist_count = (activity.waitlist_count or 0) + 1
 
+    # Dispatch email notification (async via Celery)
+    _dispatch_registration_email(registration, activity, member)
+
     return registration
 
 
@@ -175,6 +181,9 @@ def cancel_registration(
     # Promote from waitlist if a confirmed spot freed up
     if was_confirmed:
         _promote_from_waitlist(db, activity, registration.modality_id)
+
+    # Dispatch cancellation email (async via Celery)
+    _dispatch_cancellation_email(registration, activity)
 
     return registration
 
@@ -327,4 +336,81 @@ def _promote_from_waitlist(
             next_in_line.price.current_registrations or 0
         ) + 1
 
+    # Dispatch promotion email (async via Celery)
+    _dispatch_promotion_email(next_in_line, activity)
+
     return next_in_line
+
+
+# --- Email dispatch helpers ---
+
+def _get_member_email(registration: Registration) -> str | None:
+    """Get the member's email address from the registration."""
+    try:
+        return registration.member.person.email
+    except (AttributeError, TypeError):
+        return None
+
+
+def _get_member_name(registration: Registration) -> str:
+    """Get the member's first name from the registration."""
+    try:
+        return registration.member.person.first_name
+    except (AttributeError, TypeError):
+        return ""
+
+
+def _dispatch_registration_email(
+    registration: Registration, activity: Activity, member: "Member"
+) -> None:
+    """Dispatch registration confirmation email via Celery."""
+    try:
+        from app.tasks.email_tasks import send_registration_email_task
+        email = _get_member_email(registration) or (member.person.email if member.person else None)
+        if not email:
+            return
+        name = _get_member_name(registration) or (member.person.first_name if member.person else "")
+        send_registration_email_task.delay(
+            to=email,
+            member_name=name,
+            activity_name=activity.name,
+            status=registration.status,
+            activity_date=activity.starts_at.strftime("%d/%m/%Y") if activity.starts_at else None,
+            location=activity.location,
+        )
+    except Exception as e:
+        logger.error(f"Failed to dispatch registration email: {e}")
+
+
+def _dispatch_cancellation_email(registration: Registration, activity: Activity) -> None:
+    """Dispatch cancellation email via Celery."""
+    try:
+        from app.tasks.email_tasks import send_cancellation_email_task
+        email = _get_member_email(registration)
+        if not email:
+            return
+        send_cancellation_email_task.delay(
+            to=email,
+            member_name=_get_member_name(registration),
+            activity_name=activity.name,
+        )
+    except Exception as e:
+        logger.error(f"Failed to dispatch cancellation email: {e}")
+
+
+def _dispatch_promotion_email(registration: Registration, activity: Activity) -> None:
+    """Dispatch waitlist promotion email via Celery."""
+    try:
+        from app.tasks.email_tasks import send_promotion_email_task
+        email = _get_member_email(registration)
+        if not email:
+            return
+        send_promotion_email_task.delay(
+            to=email,
+            member_name=_get_member_name(registration),
+            activity_name=activity.name,
+            activity_date=activity.starts_at.strftime("%d/%m/%Y") if activity.starts_at else None,
+            location=activity.location,
+        )
+    except Exception as e:
+        logger.error(f"Failed to dispatch promotion email: {e}")

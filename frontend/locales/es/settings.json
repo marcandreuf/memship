@@ -7,6 +7,8 @@
     "orgInfo": "Datos de la organización",
     "localization": "Localización",
     "branding": "Imagen de marca",
+    "address": "Dirección",
+    "banking": "Banca y facturación",
     "name": "Nombre de la organización",
     "legalName": "Razón social",
     "email": "Correo electrónico",
@@ -18,6 +20,17 @@
     "currency": "Moneda",
     "dateFormat": "Formato de fecha",
     "brandColor": "Color de marca",
-    "logoUrl": "URL del logotipo"
+    "logoUrl": "URL del logotipo",
+    "addressLine1": "Dirección",
+    "addressLine2": "Línea 2",
+    "city": "Ciudad",
+    "stateProvince": "Provincia",
+    "postalCode": "Código postal",
+    "country": "País",
+    "bankName": "Nombre del banco",
+    "bankIban": "IBAN",
+    "bankBic": "BIC / SWIFT",
+    "invoicePrefix": "Prefijo de factura",
+    "invoiceNextNumber": "Siguiente número de factura"
   }
 }

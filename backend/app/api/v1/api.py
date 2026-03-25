@@ -10,9 +10,11 @@ from app.api.v1.endpoints import (
     activity_modalities,
     activity_prices,
     auth,
+    contacts,
     discount_codes,
     groups,
     health,
+    logo,
     members,
     membership_types,
     persons,
@@ -38,3 +40,6 @@ api_router.include_router(membership_types.router)
 api_router.include_router(persons.router)
 api_router.include_router(registrations.router)
 api_router.include_router(settings.router)
+api_router.include_router(logo.router)
+api_router.include_router(contacts.router)
+api_router.include_router(contacts.detail_router)

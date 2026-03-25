@@ -27,7 +27,7 @@ from sqlalchemy import text
 
 from app.db.session import SessionLocal
 from app.domains.organizations.models import OrganizationSettings
-from app.domains.persons.models import AddressType, ContactType, Person
+from app.domains.persons.models import Address, AddressType, Contact, ContactType, Person
 from app.domains.auth.models import User
 from app.domains.activities.models import (
     Activity, ActivityAttachmentType, ActivityConsent, ActivityModality,
@@ -116,12 +116,34 @@ def seed_org_settings(db) -> None:
         currency="EUR",
         date_format="DD/MM/YYYY",
         brand_color="#0083ad",
+        bank_name="CaixaBank",
+        bank_iban="ES9121000418450200051332",
+        bank_bic="CAIXESBBXXX",
+        invoice_prefix="INV",
+        invoice_next_number=1,
         features={},
         custom_settings={},
     )
     db.add(org)
     db.flush()
-    print("  Organization settings: created with defaults")
+
+    # Add organization address
+    legal_type = db.query(AddressType).filter(AddressType.code == "legal").first()
+    org_address = Address(
+        entity_type="organization",
+        entity_id=1,
+        address_type_id=legal_type.id if legal_type else None,
+        address_line1="Carrer Major 1",
+        city="Barcelona",
+        state_province="Barcelona",
+        postal_code="08001",
+        country="ES",
+        is_primary=True,
+    )
+    db.add(org_address)
+    db.flush()
+
+    print("  Organization settings: created with defaults (address + bank details)")
 
 
 def seed_groups(db) -> dict[str, Group]:
@@ -538,6 +560,59 @@ def seed_extra_members(db, default_membership_type: MembershipType) -> list[Memb
     return members
 
 
+def seed_member_contacts(db) -> None:
+    """Add sample contacts and bank IBANs for test members."""
+    mobile_type = db.query(ContactType).filter(ContactType.code == "phone_mobile").first()
+    work_email_type = db.query(ContactType).filter(ContactType.code == "email_work").first()
+
+    # Sample contacts for a few members
+    contact_data = [
+        ("maria@test.com", "+34 612 345 678", "phone_mobile", True),
+        ("maria@test.com", "maria.garcia@work.com", "email_work", False),
+        ("joan@test.com", "+34 623 456 789", "phone_mobile", True),
+        ("carlos@test.com", "+34 634 567 890", "phone_mobile", True),
+        ("laura@test.com", "+34 645 678 901", "phone_mobile", True),
+        ("david@test.com", "+34 656 789 012", "phone_mobile", True),
+    ]
+
+    count = 0
+    for email, value, type_code, is_primary in contact_data:
+        person = db.query(Person).filter(Person.email == email).first()
+        if not person:
+            continue
+        ct = db.query(ContactType).filter(ContactType.code == type_code).first()
+        existing = db.query(Contact).filter(
+            Contact.entity_type == "person",
+            Contact.entity_id == person.id,
+            Contact.value == value,
+        ).first()
+        if existing:
+            continue
+        db.add(Contact(
+            entity_type="person",
+            entity_id=person.id,
+            contact_type_id=ct.id if ct else None,
+            value=value,
+            is_primary=is_primary,
+        ))
+        count += 1
+
+    # Add bank IBANs for a few members
+    iban_data = [
+        ("maria@test.com", "ES6621000418401234567891", "CAIXESBBXXX"),
+        ("joan@test.com", "ES7920385778983000760236", "CAIXESBBXXX"),
+        ("carlos@test.com", "ES9121000418450200051332", "CAIXESBBXXX"),
+    ]
+    for email, iban, bic in iban_data:
+        person = db.query(Person).filter(Person.email == email).first()
+        if person and not person.bank_iban:
+            person.bank_iban = iban
+            person.bank_bic = bic
+
+    db.flush()
+    print(f"  Member contacts: {count} contacts + {len(iban_data)} bank IBANs")
+
+
 def seed_registrations(db) -> None:
     """Create sample registrations across activities."""
     existing = db.query(Registration).count()
@@ -905,6 +980,9 @@ def main() -> None:
 
             print("\nSeeding extra members...")
             seed_extra_members(db, membership_type)
+
+            print("\nSeeding member contacts...")
+            seed_member_contacts(db)
 
             print("\nSeeding registrations...")
             seed_registrations(db)

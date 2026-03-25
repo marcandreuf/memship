@@ -1,0 +1,4 @@
+<h2>Registration Cancelled</h2>
+<p>Hi {{ member_name }},</p>
+<p>Your registration for <strong>{{ activity_name }}</strong> has been cancelled.</p>
+{% if cancelled_by %}<p>Cancelled by: {{ cancelled_by }}</p>{% endif %}

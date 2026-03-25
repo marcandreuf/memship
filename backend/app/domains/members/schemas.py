@@ -55,6 +55,8 @@ class MemberCreate(BaseModel):
     date_of_birth: date | None = None
     gender: str | None = Field(default=None, max_length=20)
     national_id: str | None = Field(default=None, max_length=20)
+    bank_iban: str | None = Field(default=None, max_length=34)
+    bank_bic: str | None = Field(default=None, max_length=11)
     membership_type_id: int | None = None
     guardian_person_id: int | None = None
     internal_notes: str | None = Field(default=None, max_length=2000)
@@ -74,6 +76,8 @@ class MemberUpdate(BaseModel):
     date_of_birth: date | None = None
     gender: str | None = Field(default=None, max_length=20)
     national_id: str | None = Field(default=None, max_length=20)
+    bank_iban: str | None = Field(default=None, max_length=34)
+    bank_bic: str | None = Field(default=None, max_length=11)
     membership_type_id: int | None = None
     guardian_person_id: int | None = None
     internal_notes: str | None = Field(default=None, max_length=2000)
@@ -100,6 +104,8 @@ class PersonResponse(BaseModel):
     gender: str | None = None
     national_id: str | None = None
     photo_url: str | None = None
+    bank_iban: str | None = None
+    bank_bic: str | None = None
 
     model_config = {"from_attributes": True}
 

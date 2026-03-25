@@ -46,6 +46,13 @@ class Settings(BaseSettings):
     SMTP_TLS: bool = True
     FRONTEND_URL: str = "http://localhost:3000"
 
+    # Resend (optional — alternative to SMTP for managed email delivery)
+    RESEND_API_KEY: str = ""
+    RESEND_FROM_EMAIL: str = ""
+
+    # Celery / Redis
+    CELERY_BROKER_URL: str = "redis://localhost:6379/0"
+
     # File storage
     STORAGE_LOCAL_PATH: str = "storage"
     MAX_UPLOAD_SIZE_MB: int = 10
@@ -57,6 +64,10 @@ class Settings(BaseSettings):
     @property
     def smtp_enabled(self) -> bool:
         return bool(self.SMTP_HOST)
+
+    @property
+    def email_enabled(self) -> bool:
+        return bool(self.RESEND_API_KEY) or bool(self.SMTP_HOST)
 
     @property
     def cors_origins_list(self) -> list[str]:

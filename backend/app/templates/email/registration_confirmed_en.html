@@ -1,0 +1,6 @@
+<h2>Registration Confirmed!</h2>
+<p>Hi {{ member_name }},</p>
+<p>Your registration for <strong>{{ activity_name }}</strong> has been confirmed.</p>
+{% if activity_date %}<p><strong>Date:</strong> {{ activity_date }}</p>{% endif %}
+{% if location %}<p><strong>Location:</strong> {{ location }}</p>{% endif %}
+<p>See you there!</p>

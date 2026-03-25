@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import type { User } from "@/features/auth/services/auth-api";
 import { useAuth } from "@/features/auth/hooks/use-auth";
+import { useSettings } from "@/features/settings/hooks/use-settings";
 import {
   Sidebar,
   SidebarContent,
@@ -44,6 +45,11 @@ export function AppSidebar({ user }: AppSidebarProps) {
   const t = useTranslations();
   const pathname = usePathname();
   const { logout } = useAuth();
+  const { data: settings } = useSettings();
+
+  const logoUrl = settings?.logo_url
+    ? `/api/uploads${settings.logo_url.replace("/uploads", "")}?t=${new Date(settings.updated_at).getTime()}`
+    : null;
 
   const isAdmin = user.role === "admin" || user.role === "super_admin";
 
@@ -65,11 +71,20 @@ export function AppSidebar({ user }: AppSidebarProps) {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <Link href="/dashboard">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-bold">
-                  M
-                </div>
+                {logoUrl ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={logoUrl}
+                    alt={settings?.name || t("app.name")}
+                    className="size-8 rounded-lg object-contain"
+                  />
+                ) : (
+                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-bold">
+                    M
+                  </div>
+                )}
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">{t("app.name")}</span>
+                  <span className="truncate font-semibold">{settings?.name || t("app.name")}</span>
                 </div>
               </Link>
             </SidebarMenuButton>

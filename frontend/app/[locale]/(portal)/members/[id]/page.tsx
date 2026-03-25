@@ -7,6 +7,7 @@ import { InlineEditWrapper } from "@/components/entity/inline-edit-wrapper";
 import { EntityTabs } from "@/components/entity/entity-tabs";
 import { PlaceholderTab } from "@/components/entity/placeholder-tab";
 import { MemberActivitiesTab } from "@/features/members/components/member-activities-tab";
+import { ContactInfoTab } from "@/features/members/components/contact-info-tab";
 import { MemberDetailSection } from "@/features/members/components/member-detail-section";
 import { MemberForm } from "@/features/members/components/member-form";
 import { MemberStatusActions } from "@/features/members/components/member-status-actions";
@@ -101,7 +102,7 @@ export default function MemberDetailPage({
           {
             id: "contact",
             label: t("members.contactInfo"),
-            content: <PlaceholderTab message={t("common.comingSoon")} />,
+            content: <ContactInfoTab personId={member.person_id} />,
           },
           {
             id: "activities",

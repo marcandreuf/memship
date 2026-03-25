@@ -36,6 +36,8 @@ class Person(Base):
     gender = Column(String(20))
     national_id = Column(String(50))
     photo_url = Column(String(500))
+    bank_iban = Column(String(34))
+    bank_bic = Column(String(11))
     custom_fields = Column(JSONB, default=dict)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(

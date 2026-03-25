@@ -32,8 +32,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { mapApiErrorsToForm } from "@/lib/errors";
 import { useAuth } from "@/features/auth/hooks/use-auth";
-import { useSettings, useUpdateSettings } from "@/features/settings/hooks/use-settings";
+import {
+  useSettings,
+  useUpdateSettings,
+  useAddress,
+  useUpdateAddress,
+} from "@/features/settings/hooks/use-settings";
 import { MembershipTypesSettings } from "@/features/settings/components/membership-types-settings";
+import { LogoUpload } from "@/features/settings/components/logo-upload";
 import { FormSkeleton } from "@/components/ui/skeletons";
 
 const settingsSchema = z.object({
@@ -49,15 +55,33 @@ const settingsSchema = z.object({
   date_format: z.string(),
   brand_color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional().or(z.literal("")),
   logo_url: z.string().max(500).optional().or(z.literal("")),
+  bank_name: z.string().max(255).optional().or(z.literal("")),
+  bank_iban: z.string().max(34).optional().or(z.literal("")),
+  bank_bic: z.string().max(11).optional().or(z.literal("")),
+  invoice_prefix: z.string().max(10).optional().or(z.literal("")),
+  invoice_next_number: z.coerce.number().int().min(1).optional(),
 });
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
+
+const addressSchema = z.object({
+  address_line1: z.string().min(1).max(255),
+  address_line2: z.string().max(255).optional().or(z.literal("")),
+  city: z.string().min(1).max(100),
+  state_province: z.string().max(100).optional().or(z.literal("")),
+  postal_code: z.string().max(20).optional().or(z.literal("")),
+  country: z.string().min(1).max(3),
+});
+
+type AddressFormValues = z.infer<typeof addressSchema>;
 
 export default function SettingsPage() {
   const t = useTranslations();
   const { user } = useAuth();
   const { data: settings, isLoading } = useSettings();
   const updateMutation = useUpdateSettings();
+  const { data: address, isLoading: addressLoading } = useAddress();
+  const updateAddressMutation = useUpdateAddress();
 
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
@@ -65,6 +89,16 @@ export default function SettingsPage() {
       name: "", legal_name: "", email: "", phone: "", website: "",
       tax_id: "", locale: "es", timezone: "Europe/Madrid", currency: "EUR",
       date_format: "DD/MM/YYYY", brand_color: "", logo_url: "",
+      bank_name: "", bank_iban: "", bank_bic: "",
+      invoice_prefix: "INV", invoice_next_number: 1,
+    },
+  });
+
+  const addressForm = useForm<AddressFormValues>({
+    resolver: zodResolver(addressSchema),
+    defaultValues: {
+      address_line1: "", address_line2: "", city: "",
+      state_province: "", postal_code: "", country: "ES",
     },
   });
 
@@ -83,9 +117,27 @@ export default function SettingsPage() {
         date_format: settings.date_format || "DD/MM/YYYY",
         brand_color: settings.brand_color || "",
         logo_url: settings.logo_url || "",
+        bank_name: settings.bank_name || "",
+        bank_iban: settings.bank_iban || "",
+        bank_bic: settings.bank_bic || "",
+        invoice_prefix: settings.invoice_prefix || "INV",
+        invoice_next_number: settings.invoice_next_number || 1,
       });
     }
   }, [settings, form]);
+
+  useEffect(() => {
+    if (address) {
+      addressForm.reset({
+        address_line1: address.address_line1 || "",
+        address_line2: address.address_line2 || "",
+        city: address.city || "",
+        state_province: address.state_province || "",
+        postal_code: address.postal_code || "",
+        country: address.country || "ES",
+      });
+    }
+  }, [address, addressForm]);
 
   const isAdmin = user?.role === "admin" || user?.role === "super_admin";
   const isSuperAdmin = user?.role === "super_admin";
@@ -105,7 +157,7 @@ export default function SettingsPage() {
   async function onSubmit(data: SettingsFormValues) {
     const payload: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(data)) {
-      if (value !== "") {
+      if (value !== "" && value !== undefined) {
         payload[key] = value;
       }
     }
@@ -114,6 +166,25 @@ export default function SettingsPage() {
       toast.success(t("toast.success.saved"));
     } catch (error) {
       mapApiErrorsToForm(error, form);
+    }
+  }
+
+  async function onAddressSubmit(data: AddressFormValues) {
+    const payload: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(data)) {
+      if (value !== "") {
+        payload[key] = value;
+      }
+    }
+    // address_line1, city, country are required
+    payload.address_line1 = data.address_line1;
+    payload.city = data.city;
+    payload.country = data.country;
+    try {
+      await updateAddressMutation.mutateAsync(payload);
+      toast.success(t("toast.success.saved"));
+    } catch (error) {
+      mapApiErrorsToForm(error, addressForm);
     }
   }
 
@@ -130,157 +201,260 @@ export default function SettingsPage() {
         </TabsList>
 
         {isSuperAdmin && <TabsContent value="organization">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <Card>
-                <CardHeader className="py-3 px-4">
-                  <CardTitle className="text-base">{t("settings.orgInfo")}</CardTitle>
-                </CardHeader>
-                <CardContent className="grid gap-3 sm:grid-cols-2 px-4 pb-4 pt-0">
-                  <FormField control={form.control} name="name" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("settings.name")}</FormLabel>
-                      <FormControl><Input {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="legal_name" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("settings.legalName")}</FormLabel>
-                      <FormControl><Input {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="email" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("settings.email")}</FormLabel>
-                      <FormControl><Input type="email" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="phone" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("settings.phone")}</FormLabel>
-                      <FormControl><Input {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="website" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("settings.website")}</FormLabel>
-                      <FormControl><Input {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="tax_id" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("settings.taxId")}</FormLabel>
-                      <FormControl><Input {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                </CardContent>
-              </Card>
+          <div className="space-y-4">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <Card>
+                  <CardHeader className="py-3 px-4">
+                    <CardTitle className="text-base">{t("settings.orgInfo")}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid gap-3 sm:grid-cols-2 px-4 pb-4 pt-0">
+                    <FormField control={form.control} name="name" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("settings.name")}</FormLabel>
+                        <FormControl><Input {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="legal_name" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("settings.legalName")}</FormLabel>
+                        <FormControl><Input {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="email" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("settings.email")}</FormLabel>
+                        <FormControl><Input type="email" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="phone" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("settings.phone")}</FormLabel>
+                        <FormControl><Input {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="website" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("settings.website")}</FormLabel>
+                        <FormControl><Input {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="tax_id" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("settings.taxId")}</FormLabel>
+                        <FormControl><Input {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  </CardContent>
+                </Card>
 
-              <Card>
-                <CardHeader className="py-3 px-4">
-                  <CardTitle className="text-base">{t("settings.localization")}</CardTitle>
-                </CardHeader>
-                <CardContent className="grid gap-3 sm:grid-cols-2 px-4 pb-4 pt-0">
-                  <FormField control={form.control} name="locale" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("settings.locale")}</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                        <SelectContent>
-                          <SelectItem value="es">Espa&ntilde;ol</SelectItem>
-                          <SelectItem value="ca">Catal&agrave;</SelectItem>
-                          <SelectItem value="en">English</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="timezone" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("settings.timezone")}</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                        <SelectContent>
-                          <SelectItem value="Europe/Madrid">Europe/Madrid</SelectItem>
-                          <SelectItem value="Europe/London">Europe/London</SelectItem>
-                          <SelectItem value="Europe/Paris">Europe/Paris</SelectItem>
-                          <SelectItem value="Europe/Berlin">Europe/Berlin</SelectItem>
-                          <SelectItem value="America/New_York">America/New_York</SelectItem>
-                          <SelectItem value="America/Los_Angeles">America/Los_Angeles</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="currency" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("settings.currency")}</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                        <SelectContent>
-                          <SelectItem value="EUR">EUR</SelectItem>
-                          <SelectItem value="USD">USD</SelectItem>
-                          <SelectItem value="GBP">GBP</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="date_format" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("settings.dateFormat")}</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                        <SelectContent>
-                          <SelectItem value="DD/MM/YYYY">DD/MM/YYYY</SelectItem>
-                          <SelectItem value="MM/DD/YYYY">MM/DD/YYYY</SelectItem>
-                          <SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                </CardContent>
-              </Card>
+                <Card>
+                  <CardHeader className="py-3 px-4">
+                    <CardTitle className="text-base">{t("settings.localization")}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid gap-3 sm:grid-cols-2 px-4 pb-4 pt-0">
+                    <FormField control={form.control} name="locale" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("settings.locale")}</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                          <SelectContent>
+                            <SelectItem value="es">Espa&ntilde;ol</SelectItem>
+                            <SelectItem value="ca">Catal&agrave;</SelectItem>
+                            <SelectItem value="en">English</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="timezone" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("settings.timezone")}</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                          <SelectContent>
+                            <SelectItem value="Europe/Madrid">Europe/Madrid</SelectItem>
+                            <SelectItem value="Europe/London">Europe/London</SelectItem>
+                            <SelectItem value="Europe/Paris">Europe/Paris</SelectItem>
+                            <SelectItem value="Europe/Berlin">Europe/Berlin</SelectItem>
+                            <SelectItem value="America/New_York">America/New_York</SelectItem>
+                            <SelectItem value="America/Los_Angeles">America/Los_Angeles</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="currency" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("settings.currency")}</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                          <SelectContent>
+                            <SelectItem value="EUR">EUR</SelectItem>
+                            <SelectItem value="USD">USD</SelectItem>
+                            <SelectItem value="GBP">GBP</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="date_format" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("settings.dateFormat")}</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                          <SelectContent>
+                            <SelectItem value="DD/MM/YYYY">DD/MM/YYYY</SelectItem>
+                            <SelectItem value="MM/DD/YYYY">MM/DD/YYYY</SelectItem>
+                            <SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  </CardContent>
+                </Card>
 
-              <Card>
-                <CardHeader className="py-3 px-4">
-                  <CardTitle className="text-base">{t("settings.branding")}</CardTitle>
-                </CardHeader>
-                <CardContent className="grid gap-3 sm:grid-cols-2 px-4 pb-4 pt-0">
-                  <FormField control={form.control} name="brand_color" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("settings.brandColor")}</FormLabel>
-                      <FormControl>
-                        <div className="flex gap-2">
-                          <Input type="color" className="w-12 h-10 p-1" value={field.value || "#000000"} onChange={(e) => field.onChange(e.target.value)} />
-                          <Input {...field} placeholder="#3B82F6" className="flex-1" />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="logo_url" render={({ field }) => (
+                <Card>
+                  <CardHeader className="py-3 px-4">
+                    <CardTitle className="text-base">{t("settings.banking")}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid gap-3 sm:grid-cols-2 px-4 pb-4 pt-0">
+                    <FormField control={form.control} name="bank_name" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("settings.bankName")}</FormLabel>
+                        <FormControl><Input {...field} placeholder="CaixaBank" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="bank_iban" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("settings.bankIban")}</FormLabel>
+                        <FormControl><Input {...field} placeholder="ES9121000418450200051332" className="font-mono" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="bank_bic" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("settings.bankBic")}</FormLabel>
+                        <FormControl><Input {...field} placeholder="CAIXESBBXXX" className="font-mono" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <div className="grid gap-3 sm:grid-cols-2 sm:col-span-2">
+                      <FormField control={form.control} name="invoice_prefix" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t("settings.invoicePrefix")}</FormLabel>
+                          <FormControl><Input {...field} placeholder="INV" className="font-mono" /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                      <FormField control={form.control} name="invoice_next_number" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>{t("settings.invoiceNextNumber")}</FormLabel>
+                          <FormControl><Input type="number" min={1} {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="py-3 px-4">
+                    <CardTitle className="text-base">{t("settings.branding")}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid gap-3 sm:grid-cols-2 px-4 pb-4 pt-0">
+                    <FormField control={form.control} name="brand_color" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("settings.brandColor")}</FormLabel>
+                        <FormControl>
+                          <div className="flex gap-2">
+                            <Input type="color" className="w-12 h-10 p-1" value={field.value || "#000000"} onChange={(e) => field.onChange(e.target.value)} />
+                            <Input {...field} placeholder="#3B82F6" className="flex-1" />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
                     <FormItem>
                       <FormLabel>{t("settings.logoUrl")}</FormLabel>
-                      <FormControl><Input {...field} placeholder="https://..." /></FormControl>
-                      <FormMessage />
+                      <LogoUpload logoUrl={settings?.logo_url ?? null} />
                     </FormItem>
-                  )} />
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
 
-              <Button type="submit" disabled={updateMutation.isPending}>
-                {updateMutation.isPending ? t("common.loading") : t("common.save")}
-              </Button>
-            </form>
-          </Form>
+                <Button type="submit" disabled={updateMutation.isPending}>
+                  {updateMutation.isPending ? t("common.loading") : t("common.save")}
+                </Button>
+              </form>
+            </Form>
+
+            {/* Address — separate form */}
+            <Form {...addressForm}>
+              <form onSubmit={addressForm.handleSubmit(onAddressSubmit)} className="space-y-4">
+                <Card>
+                  <CardHeader className="py-3 px-4">
+                    <CardTitle className="text-base">{t("settings.address")}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid gap-3 sm:grid-cols-2 px-4 pb-4 pt-0">
+                    <FormField control={addressForm.control} name="address_line1" render={({ field }) => (
+                      <FormItem className="sm:col-span-2">
+                        <FormLabel>{t("settings.addressLine1")}</FormLabel>
+                        <FormControl><Input {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={addressForm.control} name="address_line2" render={({ field }) => (
+                      <FormItem className="sm:col-span-2">
+                        <FormLabel>{t("settings.addressLine2")}</FormLabel>
+                        <FormControl><Input {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={addressForm.control} name="city" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("settings.city")}</FormLabel>
+                        <FormControl><Input {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={addressForm.control} name="state_province" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("settings.stateProvince")}</FormLabel>
+                        <FormControl><Input {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={addressForm.control} name="postal_code" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("settings.postalCode")}</FormLabel>
+                        <FormControl><Input {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={addressForm.control} name="country" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("settings.country")}</FormLabel>
+                        <FormControl><Input {...field} placeholder="ES" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  </CardContent>
+                </Card>
+
+                <Button type="submit" disabled={updateAddressMutation.isPending}>
+                  {updateAddressMutation.isPending ? t("common.loading") : t("common.save")}
+                </Button>
+              </form>
+            </Form>
+          </div>
         </TabsContent>}
 
         <TabsContent value="membership-types">

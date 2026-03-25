@@ -22,6 +22,11 @@ class OrganizationSettingsResponse(BaseModel):
     currency: str
     date_format: str
     brand_color: str | None = None
+    bank_name: str | None = None
+    bank_iban: str | None = None
+    bank_bic: str | None = None
+    invoice_prefix: str = "INV"
+    invoice_next_number: int = 1
     features: dict = {}
     custom_settings: dict = {}
     created_at: datetime
@@ -43,5 +48,10 @@ class OrganizationSettingsUpdate(BaseModel):
     currency: str | None = Field(default=None, pattern=r"^[A-Z]{3}$")
     date_format: str | None = Field(default=None, max_length=20)
     brand_color: str | None = Field(default=None, pattern=r"^#[0-9a-fA-F]{6}$")
+    bank_name: str | None = Field(default=None, max_length=255)
+    bank_iban: str | None = Field(default=None, max_length=34, pattern=r"^[A-Z]{2}\d{2}[A-Z0-9]{4,30}$")
+    bank_bic: str | None = Field(default=None, max_length=11, pattern=r"^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$")
+    invoice_prefix: str | None = Field(default=None, max_length=10)
+    invoice_next_number: int | None = Field(default=None, ge=1)
     features: dict | None = None
     custom_settings: dict | None = None

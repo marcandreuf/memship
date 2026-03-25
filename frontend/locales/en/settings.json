@@ -7,6 +7,8 @@
     "orgInfo": "Organization Info",
     "localization": "Localization",
     "branding": "Branding",
+    "address": "Address",
+    "banking": "Banking & Invoicing",
     "name": "Organization Name",
     "legalName": "Legal Name",
     "email": "Email",
@@ -18,6 +20,17 @@
     "currency": "Currency",
     "dateFormat": "Date Format",
     "brandColor": "Brand Color",
-    "logoUrl": "Logo URL"
+    "logoUrl": "Logo URL",
+    "addressLine1": "Street Address",
+    "addressLine2": "Address Line 2",
+    "city": "City",
+    "stateProvince": "State / Province",
+    "postalCode": "Postal Code",
+    "country": "Country",
+    "bankName": "Bank Name",
+    "bankIban": "IBAN",
+    "bankBic": "BIC / SWIFT",
+    "invoicePrefix": "Invoice Prefix",
+    "invoiceNextNumber": "Next Invoice Number"
   }
 }

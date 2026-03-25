@@ -1,0 +1,6 @@
+<h2>En lista de espera</h2>
+<p>Hola {{ member_name }},</p>
+<p>Tu inscripción en <strong>{{ activity_name }}</strong> ha sido registrada, pero actualmente la actividad está completa.</p>
+<p>Estás en la <strong>lista de espera</strong>. Te avisaremos si se libera una plaza.</p>
+{% if activity_date %}<p><strong>Fecha:</strong> {{ activity_date }}</p>{% endif %}
+{% if location %}<p><strong>Lugar:</strong> {{ location }}</p>{% endif %}

@@ -12,6 +12,7 @@ services:
       - APP_ENV=${APP_ENV:-development}
       - DEFAULT_LOCALE=${DEFAULT_LOCALE:-es}
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
+      - CELERY_BROKER_URL=redis://redis:6379/0
       - RUN_MIGRATIONS=1
     volumes:
       - ../app:/app/app
@@ -21,6 +22,41 @@ services:
       - ../../VERSION:/app/VERSION
       - memship-storage:/app/storage
     depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: memship-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  celery-worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: memship-celery-worker
+    command: celery -A app.core.celery_app worker --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql://memship:memship@db:5432/memship_db
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    volumes:
+      - ../app:/app/app
+      - ../../VERSION:/app/VERSION
+      - memship-storage:/app/storage
+    depends_on:
+      redis:
+        condition: service_healthy
       db:
         condition: service_healthy
     restart: unless-stopped

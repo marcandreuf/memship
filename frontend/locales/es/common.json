@@ -38,7 +38,8 @@
     "details": "Detalles",
     "comingSoon": "Próximamente",
     "notFound": "No encontrado",
-    "view": "Ver"
+    "view": "Ver",
+    "change": "Cambiar"
   },
   "status": {
     "active": "Activo",

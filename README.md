@@ -70,7 +70,8 @@ Open http://localhost:8081 and log in with your credentials. Change `PORT=8081` 
 | v0.2.5 | Activity UX — member activity card redesign, cover image upload, registration status badges, activity list thumbnails, My Activities grid, Docker storage volume | Done |
 | v0.2.6 | Bug fixes & testing — Shadcn confirm dialogs (replaced 13 browser alerts), seed discount code fix, self-cancellation deadline check, re-registration after cancel, 21 new API tests, 9 new E2E eligibility tests | Done |
 | v0.2.7 | Activity polish — loading skeletons, nuqs URL state | Done |
-| v0.3.0 | Basic Payments & Invoicing | In progress |
+| v0.2.9 | Payment prerequisites — org address & banking, logo upload, contact info tab, member IBAN, Celery/Redis, email notifications (Jinja2 + SMTP/Resend) | Done |
+| v0.3.0 | Basic Payments & Invoicing | — |
 | v0.4.0 | Payment Processing (SEPA + Stripe) | — |
 | v0.5.0 | Communication System | — |
 | v0.6.0 | Bookings & Documents | — |
@@ -87,10 +88,15 @@ Open http://localhost:8081 and log in with your credentials. Change `PORT=8081` 
 - Membership types with groups, pricing, and age restrictions
 - Guardian/minor support
 - Role-based access: super admin, org admin, member
-- Organization settings with branding (color, logo)
+- Organization settings with branding (color, logo upload), address, banking (IBAN/BIC), invoice series
+- Member contact info management (phone, email, with contact types)
+- Member bank details (IBAN/BIC) for SEPA direct debit
 - Multi-language interface (ES, CA, EN) with locale selector in profile
 - Admin dashboard with status charts (recharts)
 - Unified entity pattern: list → detail → tabs for all entities
+- Email notifications (registration confirmation, cancellation, waitlist promotion) via Celery/Redis
+- Dual email transport: SMTP (self-hosted) or Resend API (managed)
+- Jinja2 email templates with locale support (ES/CA/EN)
 
 **Activities & Events** (available now)
 - Activity creation with lifecycle management (draft → published → archived)
