@@ -19,8 +19,39 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
-    name: Backend Tests
+  unit:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "latest"
+          enable-cache: true
+          cache-dependency-glob: "backend/uv.lock"
+
+      - name: Install dependencies
+        working-directory: backend
+        run: uv sync --extra dev
+
+      - name: Run unit tests
+        working-directory: backend
+        env:
+          DATABASE_URL: sqlite:///unused.db
+          DATABASE_TEST_URL: sqlite:///unused.db
+          SECRET_KEY: test-secret-key-for-ci-minimum-32-chars
+        run: uv run pytest tests/unit/ -v --tb=short
+
+  integration:
+    name: Integration Tests
     runs-on: ubuntu-latest
 
     services:
@@ -51,18 +82,20 @@ jobs:
         uses: astral-sh/setup-uv@v6
         with:
           version: "latest"
+          enable-cache: true
+          cache-dependency-glob: "backend/uv.lock"
 
       - name: Install dependencies
         working-directory: backend
         run: uv sync --extra dev
 
-      - name: Run tests
+      - name: Run integration tests
         working-directory: backend
         env:
           DATABASE_URL: postgresql://memship:memship@localhost:5434/memship_test_db
           DATABASE_TEST_URL: postgresql://memship:memship@localhost:5434/memship_test_db
           SECRET_KEY: test-secret-key-for-ci-minimum-32-chars
-        run: uv run pytest -v --tb=short
+        run: uv run pytest tests/integration/ -v --tb=short
 
       - name: Test Summary
         if: always()
