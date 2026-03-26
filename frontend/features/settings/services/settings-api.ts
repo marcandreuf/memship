@@ -19,6 +19,8 @@ export interface SettingsData {
   bank_bic: string | null;
   invoice_prefix: string;
   invoice_next_number: number;
+  invoice_annual_reset: boolean;
+  default_vat_rate: number;
   features: Record<string, unknown>;
   custom_settings: Record<string, unknown>;
   created_at: string;

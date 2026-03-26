@@ -168,7 +168,7 @@ function GenerateFeesButton({ t }: { t: (key: string) => string }) {
 
     try {
       const result = await mutation.mutateAsync(payload);
-      toast.success(t("receipts.generated", { count: result.generated }));
+      toast.success(t("receipts.generated").replace("{count}", String(result.generated)));
       setOpen(false);
     } catch {
       toast.error(t("toast.error.generic"));

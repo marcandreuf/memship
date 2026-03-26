@@ -138,7 +138,7 @@ function CreateMemberReceiptForm({
   onSuccess,
 }: {
   memberId: number;
-  t: (key: string, values?: Record<string, unknown>) => string;
+  t: (key: string, values?: Record<string, string | number | Date>) => string;
   onSuccess: () => void;
 }) {
   const createMutation = useCreateReceipt();
@@ -148,8 +148,8 @@ function CreateMemberReceiptForm({
     defaultValues: {
       origin: "manual",
       description: "",
-      base_amount: "",
-      vat_rate: "21",
+      base_amount: 0,
+      vat_rate: 21,
       emission_date: new Date().toISOString().split("T")[0],
       due_date: "",
       notes: "",

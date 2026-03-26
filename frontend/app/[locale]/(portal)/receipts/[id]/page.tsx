@@ -73,7 +73,7 @@ export default function ReceiptDetailPage() {
       cancelLabel: t("common.cancel"),
       confirmLabel: t("receipts.emit"),
       onConfirm: async () => {
-        await emitMutation.mutateAsync(receipt.id);
+        await emitMutation.mutateAsync(receipt!.id);
         toast.success(t("toast.success.saved"));
       },
     });
@@ -85,7 +85,7 @@ export default function ReceiptDetailPage() {
       cancelLabel: t("common.cancel"),
       confirmLabel: t("receipts.cancel"),
       onConfirm: async () => {
-        await cancelMutation.mutateAsync(receipt.id);
+        await cancelMutation.mutateAsync(receipt!.id);
         toast.success(t("toast.success.saved"));
       },
     });
@@ -97,7 +97,7 @@ export default function ReceiptDetailPage() {
       cancelLabel: t("common.cancel"),
       confirmLabel: t("receipts.reemit"),
       onConfirm: async () => {
-        await reemitMutation.mutateAsync(receipt.id);
+        await reemitMutation.mutateAsync(receipt!.id);
         toast.success(t("toast.success.saved"));
       },
     });
@@ -106,7 +106,7 @@ export default function ReceiptDetailPage() {
   async function handlePay() {
     if (!payMethod) return;
     try {
-      await payMutation.mutateAsync({ id: receipt.id, data: { payment_method: payMethod, payment_date: payDate || undefined } });
+      await payMutation.mutateAsync({ id: receipt!.id, data: { payment_method: payMethod, payment_date: payDate || undefined } });
       toast.success(t("toast.success.saved"));
       setPayOpen(false);
     } catch { /* global handler */ }
@@ -115,7 +115,7 @@ export default function ReceiptDetailPage() {
   async function handleReturn() {
     if (!returnReason.trim()) return;
     try {
-      await returnMutation.mutateAsync({ id: receipt.id, data: { return_reason: returnReason } });
+      await returnMutation.mutateAsync({ id: receipt!.id, data: { return_reason: returnReason } });
       toast.success(t("toast.success.saved"));
       setReturnOpen(false);
     } catch { /* global handler */ }
@@ -298,7 +298,7 @@ function EditReceiptForm({
     if (notes) data.notes = notes;
 
     try {
-      await updateMutation.mutateAsync({ id: receipt.id, data });
+      await updateMutation.mutateAsync({ id: receipt!.id, data });
       toast.success(t("toast.success.saved"));
       onSuccess();
     } catch { /* global handler */ }
