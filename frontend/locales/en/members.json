@@ -33,6 +33,7 @@
     "addContact": "Add Contact",
     "editContact": "Edit Contact",
     "contactType": "Type",
+    "selectContactType": "Select type...",
     "contactValue": "Value",
     "contactLabel": "Label",
     "contactLabelPlaceholder": "e.g. Personal, Work",

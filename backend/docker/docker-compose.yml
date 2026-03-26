@@ -45,7 +45,7 @@ services:
       context: ..
       dockerfile: docker/Dockerfile
     container_name: memship-celery-worker
-    command: celery -A app.core.celery_app worker --loglevel=info
+    command: uv run celery -A app.core.celery_app worker --loglevel=info
     environment:
       - DATABASE_URL=postgresql://memship:memship@db:5432/memship_db
       - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}

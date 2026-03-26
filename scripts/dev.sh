@@ -175,8 +175,8 @@ case "$ACTION" in
         (cd "$FRONTEND_DIR" && ./dev.sh stop) 2>/dev/null || true
         echo -e "${YELLOW}x${NC} Stopping all backend services (including test db)..."
         docker compose -f "$BACKEND_COMPOSE" --profile test --profile tools down -v
-        echo -e "${GREEN}+${NC} Starting backend services..."
-        docker compose -f "$BACKEND_COMPOSE" up -d
+        echo -e "${GREEN}+${NC} Rebuilding and starting backend services..."
+        docker compose -f "$BACKEND_COMPOSE" up -d --build
         echo -e "${BLUE}i${NC} Waiting for API to be ready (migrations + startup)..."
         sleep 3
         until curl -sf http://localhost:8003/api/v1/health > /dev/null 2>&1; do

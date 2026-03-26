@@ -144,6 +144,9 @@ export function LogoUpload({ logoUrl }: LogoUploadProps) {
         className="hidden"
         onChange={handleFileSelect}
       />
+      <p className="text-xs text-muted-foreground mt-1.5">
+        {t("settings.logoHint", { size: MAX_SIZE_MB })}
+      </p>
     </div>
   );
 }

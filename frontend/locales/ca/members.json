@@ -33,6 +33,7 @@
     "addContact": "Afegir contacte",
     "editContact": "Editar contacte",
     "contactType": "Tipus",
+    "selectContactType": "Seleccionar tipus...",
     "contactValue": "Valor",
     "contactLabel": "Etiqueta",
     "contactLabelPlaceholder": "ex. Personal, Feina",

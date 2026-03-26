@@ -49,6 +49,14 @@ const settingsSchema = z.object({
   phone: z.string().max(50).optional().or(z.literal("")),
   website: z.string().max(255).optional().or(z.literal("")),
   tax_id: z.string().max(50).optional().or(z.literal("")),
+  // Address
+  address_line1: z.string().max(255).optional().or(z.literal("")),
+  address_line2: z.string().max(255).optional().or(z.literal("")),
+  city: z.string().max(100).optional().or(z.literal("")),
+  state_province: z.string().max(100).optional().or(z.literal("")),
+  postal_code: z.string().max(20).optional().or(z.literal("")),
+  country: z.string().max(3).optional().or(z.literal("")),
+  // Localization
   locale: z.string(),
   timezone: z.string(),
   currency: z.string(),
@@ -64,47 +72,33 @@ const settingsSchema = z.object({
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
 
-const addressSchema = z.object({
-  address_line1: z.string().min(1).max(255),
-  address_line2: z.string().max(255).optional().or(z.literal("")),
-  city: z.string().min(1).max(100),
-  state_province: z.string().max(100).optional().or(z.literal("")),
-  postal_code: z.string().max(20).optional().or(z.literal("")),
-  country: z.string().min(1).max(3),
-});
-
-type AddressFormValues = z.infer<typeof addressSchema>;
+const ADDRESS_FIELDS = ["address_line1", "address_line2", "city", "state_province", "postal_code", "country"] as const;
 
 export default function SettingsPage() {
   const t = useTranslations();
   const { user } = useAuth();
   const { data: settings, isLoading } = useSettings();
   const updateMutation = useUpdateSettings();
-  const { data: address, isLoading: addressLoading } = useAddress();
+  const { data: address } = useAddress();
   const updateAddressMutation = useUpdateAddress();
 
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
     defaultValues: {
       name: "", legal_name: "", email: "", phone: "", website: "",
-      tax_id: "", locale: "es", timezone: "Europe/Madrid", currency: "EUR",
+      tax_id: "", address_line1: "", address_line2: "", city: "",
+      state_province: "", postal_code: "", country: "ES",
+      locale: "es", timezone: "Europe/Madrid", currency: "EUR",
       date_format: "DD/MM/YYYY", brand_color: "", logo_url: "",
       bank_name: "", bank_iban: "", bank_bic: "",
       invoice_prefix: "INV", invoice_next_number: 1,
     },
   });
 
-  const addressForm = useForm<AddressFormValues>({
-    resolver: zodResolver(addressSchema),
-    defaultValues: {
-      address_line1: "", address_line2: "", city: "",
-      state_province: "", postal_code: "", country: "ES",
-    },
-  });
-
   useEffect(() => {
     if (settings) {
-      form.reset({
+      form.reset((prev) => ({
+        ...prev,
         name: settings.name || "",
         legal_name: settings.legal_name || "",
         email: settings.email || "",
@@ -122,22 +116,23 @@ export default function SettingsPage() {
         bank_bic: settings.bank_bic || "",
         invoice_prefix: settings.invoice_prefix || "INV",
         invoice_next_number: settings.invoice_next_number || 1,
-      });
+      }));
     }
   }, [settings, form]);
 
   useEffect(() => {
     if (address) {
-      addressForm.reset({
+      form.reset((prev) => ({
+        ...prev,
         address_line1: address.address_line1 || "",
         address_line2: address.address_line2 || "",
         city: address.city || "",
         state_province: address.state_province || "",
         postal_code: address.postal_code || "",
         country: address.country || "ES",
-      });
+      }));
     }
-  }, [address, addressForm]);
+  }, [address, form]);
 
   const isAdmin = user?.role === "admin" || user?.role === "super_admin";
   const isSuperAdmin = user?.role === "super_admin";
@@ -155,36 +150,25 @@ export default function SettingsPage() {
   }
 
   async function onSubmit(data: SettingsFormValues) {
-    const payload: Record<string, unknown> = {};
+    // Split settings vs address fields
+    const settingsPayload: Record<string, unknown> = {};
+    const addressPayload: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(data)) {
-      if (value !== "" && value !== undefined) {
-        payload[key] = value;
+      if (ADDRESS_FIELDS.includes(key as typeof ADDRESS_FIELDS[number])) {
+        if (value !== "" && value !== undefined) addressPayload[key] = value;
+      } else {
+        if (value !== "" && value !== undefined) settingsPayload[key] = value;
       }
     }
     try {
-      await updateMutation.mutateAsync(payload);
+      await updateMutation.mutateAsync(settingsPayload);
+      // Save address if any address field is filled
+      if (Object.keys(addressPayload).length > 0) {
+        await updateAddressMutation.mutateAsync(addressPayload);
+      }
       toast.success(t("toast.success.saved"));
     } catch (error) {
       mapApiErrorsToForm(error, form);
-    }
-  }
-
-  async function onAddressSubmit(data: AddressFormValues) {
-    const payload: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(data)) {
-      if (value !== "") {
-        payload[key] = value;
-      }
-    }
-    // address_line1, city, country are required
-    payload.address_line1 = data.address_line1;
-    payload.city = data.city;
-    payload.country = data.country;
-    try {
-      await updateAddressMutation.mutateAsync(payload);
-      toast.success(t("toast.success.saved"));
-    } catch (error) {
-      mapApiErrorsToForm(error, addressForm);
     }
   }
 
@@ -202,8 +186,10 @@ export default function SettingsPage() {
 
         {isSuperAdmin && <TabsContent value="organization">
           <div className="space-y-4">
+            {/* Org Info + Address — two forms side by side conceptually */}
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                {/* Organization Info */}
                 <Card>
                   <CardHeader className="py-3 px-4">
                     <CardTitle className="text-base">{t("settings.orgInfo")}</CardTitle>
@@ -254,14 +240,66 @@ export default function SettingsPage() {
                   </CardContent>
                 </Card>
 
+                {/* Address */}
+                <Card>
+                  <CardHeader className="py-3 px-4">
+                    <CardTitle className="text-base">{t("settings.address")}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid gap-3 sm:grid-cols-3 px-4 pb-4 pt-0">
+                    <FormField control={form.control} name="address_line1" render={({ field }) => (
+                      <FormItem className="sm:col-span-2">
+                        <FormLabel>{t("settings.addressLine1")}</FormLabel>
+                        <FormControl><Input {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="address_line2" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("settings.addressLine2")}</FormLabel>
+                        <FormControl><Input {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="city" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("settings.city")}</FormLabel>
+                        <FormControl><Input {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="state_province" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("settings.stateProvince")}</FormLabel>
+                        <FormControl><Input {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="postal_code" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("settings.postalCode")}</FormLabel>
+                        <FormControl><Input {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="country" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("settings.country")}</FormLabel>
+                        <FormControl><Input {...field} placeholder="ES" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  </CardContent>
+                </Card>
+
+                {/* Localization — inline label + value */}
                 <Card>
                   <CardHeader className="py-3 px-4">
                     <CardTitle className="text-base">{t("settings.localization")}</CardTitle>
                   </CardHeader>
                   <CardContent className="grid gap-3 sm:grid-cols-2 px-4 pb-4 pt-0">
                     <FormField control={form.control} name="locale" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t("settings.locale")}</FormLabel>
+                      <FormItem className="flex items-center gap-3">
+                        <FormLabel className="min-w-28 shrink-0 mt-0">{t("settings.locale")}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                           <SelectContent>
@@ -274,8 +312,8 @@ export default function SettingsPage() {
                       </FormItem>
                     )} />
                     <FormField control={form.control} name="timezone" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t("settings.timezone")}</FormLabel>
+                      <FormItem className="flex items-center gap-3">
+                        <FormLabel className="min-w-28 shrink-0 mt-0">{t("settings.timezone")}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                           <SelectContent>
@@ -291,8 +329,8 @@ export default function SettingsPage() {
                       </FormItem>
                     )} />
                     <FormField control={form.control} name="currency" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t("settings.currency")}</FormLabel>
+                      <FormItem className="flex items-center gap-3">
+                        <FormLabel className="min-w-28 shrink-0 mt-0">{t("settings.currency")}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                           <SelectContent>
@@ -305,8 +343,8 @@ export default function SettingsPage() {
                       </FormItem>
                     )} />
                     <FormField control={form.control} name="date_format" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t("settings.dateFormat")}</FormLabel>
+                      <FormItem className="flex items-center gap-3">
+                        <FormLabel className="min-w-28 shrink-0 mt-0">{t("settings.dateFormat")}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                           <SelectContent>
@@ -321,6 +359,7 @@ export default function SettingsPage() {
                   </CardContent>
                 </Card>
 
+                {/* Banking & Invoicing */}
                 <Card>
                   <CardHeader className="py-3 px-4">
                     <CardTitle className="text-base">{t("settings.banking")}</CardTitle>
@@ -366,6 +405,7 @@ export default function SettingsPage() {
                   </CardContent>
                 </Card>
 
+                {/* Branding */}
                 <Card>
                   <CardHeader className="py-3 px-4">
                     <CardTitle className="text-base">{t("settings.branding")}</CardTitle>
@@ -390,70 +430,12 @@ export default function SettingsPage() {
                   </CardContent>
                 </Card>
 
-                <Button type="submit" disabled={updateMutation.isPending}>
-                  {updateMutation.isPending ? t("common.loading") : t("common.save")}
+                <Button type="submit" disabled={updateMutation.isPending || updateAddressMutation.isPending}>
+                  {(updateMutation.isPending || updateAddressMutation.isPending) ? t("common.loading") : t("common.save")}
                 </Button>
               </form>
             </Form>
 
-            {/* Address — separate form */}
-            <Form {...addressForm}>
-              <form onSubmit={addressForm.handleSubmit(onAddressSubmit)} className="space-y-4">
-                <Card>
-                  <CardHeader className="py-3 px-4">
-                    <CardTitle className="text-base">{t("settings.address")}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="grid gap-3 sm:grid-cols-2 px-4 pb-4 pt-0">
-                    <FormField control={addressForm.control} name="address_line1" render={({ field }) => (
-                      <FormItem className="sm:col-span-2">
-                        <FormLabel>{t("settings.addressLine1")}</FormLabel>
-                        <FormControl><Input {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                    <FormField control={addressForm.control} name="address_line2" render={({ field }) => (
-                      <FormItem className="sm:col-span-2">
-                        <FormLabel>{t("settings.addressLine2")}</FormLabel>
-                        <FormControl><Input {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                    <FormField control={addressForm.control} name="city" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t("settings.city")}</FormLabel>
-                        <FormControl><Input {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                    <FormField control={addressForm.control} name="state_province" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t("settings.stateProvince")}</FormLabel>
-                        <FormControl><Input {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                    <FormField control={addressForm.control} name="postal_code" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t("settings.postalCode")}</FormLabel>
-                        <FormControl><Input {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                    <FormField control={addressForm.control} name="country" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t("settings.country")}</FormLabel>
-                        <FormControl><Input {...field} placeholder="ES" /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                  </CardContent>
-                </Card>
-
-                <Button type="submit" disabled={updateAddressMutation.isPending}>
-                  {updateAddressMutation.isPending ? t("common.loading") : t("common.save")}
-                </Button>
-              </form>
-            </Form>
           </div>
         </TabsContent>}
 

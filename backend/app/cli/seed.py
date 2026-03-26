@@ -110,7 +110,12 @@ def seed_org_settings(db) -> None:
 
     org = OrganizationSettings(
         id=1,
-        name="My Organization",
+        name="Club Esportiu Mediterrani",
+        legal_name="Club Esportiu Mediterrani S.L.",
+        email="info@cemediterrani.cat",
+        phone="+34 933 001 234",
+        website="https://cemediterrani.cat",
+        tax_id="B12345678",
         locale="es",
         timezone="Europe/Madrid",
         currency="EUR",
@@ -119,7 +124,7 @@ def seed_org_settings(db) -> None:
         bank_name="CaixaBank",
         bank_iban="ES9121000418450200051332",
         bank_bic="CAIXESBBXXX",
-        invoice_prefix="INV",
+        invoice_prefix="FAC",
         invoice_next_number=1,
         features={},
         custom_settings={},
@@ -133,17 +138,18 @@ def seed_org_settings(db) -> None:
         entity_type="organization",
         entity_id=1,
         address_type_id=legal_type.id if legal_type else None,
-        address_line1="Carrer Major 1",
+        address_line1="Carrer de la Marina 22",
+        address_line2="Local 3",
         city="Barcelona",
         state_province="Barcelona",
-        postal_code="08001",
+        postal_code="08005",
         country="ES",
         is_primary=True,
     )
     db.add(org_address)
     db.flush()
 
-    print("  Organization settings: created with defaults (address + bank details)")
+    print("  Organization settings: created 'Club Esportiu Mediterrani' (address + bank details)")
 
 
 def seed_groups(db) -> dict[str, Group]:

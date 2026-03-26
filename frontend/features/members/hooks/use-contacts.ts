@@ -1,7 +1,15 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getContacts, createContact, updateContact, deleteContact } from "../services/contacts-api";
+import { getContacts, getContactTypes, createContact, updateContact, deleteContact } from "../services/contacts-api";
+
+export function useContactTypes() {
+  return useQuery({
+    queryKey: ["contact-types"],
+    queryFn: getContactTypes,
+    staleTime: 5 * 60 * 1000,
+  });
+}
 
 export function useContacts(personId: number) {
   return useQuery({

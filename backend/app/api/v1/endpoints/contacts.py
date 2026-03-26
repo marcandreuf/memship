@@ -16,6 +16,22 @@ from app.domains.persons.models import Contact, ContactType, Person
 
 router = APIRouter(prefix="/persons/{person_id}/contacts", tags=["contacts"])
 detail_router = APIRouter(prefix="/contacts", tags=["contacts"])
+types_router = APIRouter(prefix="/contact-types", tags=["contacts"])
+
+
+@types_router.get("/")
+def list_contact_types(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """List all active contact types."""
+    types = (
+        db.query(ContactType)
+        .filter(ContactType.is_active.is_(True))
+        .order_by(ContactType.display_order)
+        .all()
+    )
+    return [{"id": ct.id, "code": ct.code, "name": ct.name} for ct in types]
 
 
 def _contact_to_response(contact: Contact) -> dict:

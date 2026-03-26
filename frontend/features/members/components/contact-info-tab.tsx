@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,6 +16,9 @@ import {
   Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
 } from "@/components/ui/form";
 import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -24,6 +27,7 @@ import { toast } from "sonner";
 import { mapApiErrorsToForm } from "@/lib/errors";
 import {
   useContacts,
+  useContactTypes,
   useCreateContact,
   useUpdateContact,
   useDeleteContact,
@@ -31,6 +35,7 @@ import {
 import type { ContactData } from "../services/contacts-api";
 
 const contactSchema = z.object({
+  contact_type_id: z.string().optional(),
   value: z.string().min(1).max(255),
   label: z.string().max(100).optional().or(z.literal("")),
   is_primary: z.boolean(),
@@ -113,21 +118,32 @@ function ContactForm({
   const t = useTranslations();
   const createMutation = useCreateContact(personId);
   const updateMutation = useUpdateContact(personId);
+  const { data: contactTypes = [] } = useContactTypes();
 
   const form = useForm<ContactFormValues>({
     resolver: zodResolver(contactSchema),
     defaultValues: {
+      contact_type_id: contact?.contact_type_id?.toString() || "",
       value: contact?.value || "",
       label: contact?.label || "",
       is_primary: contact?.is_primary ?? false,
     },
   });
 
+  // Default to Mobile Phone when types load and no type is set
+  useEffect(() => {
+    if (contactTypes.length > 0 && !form.getValues("contact_type_id")) {
+      const mobile = contactTypes.find(ct => ct.code === "phone_mobile");
+      if (mobile) form.setValue("contact_type_id", mobile.id.toString());
+    }
+  }, [contactTypes, form]);
+
   async function onSubmit(data: ContactFormValues) {
     const payload: Record<string, unknown> = {
       value: data.value,
       is_primary: data.is_primary,
     };
+    if (data.contact_type_id) payload.contact_type_id = parseInt(data.contact_type_id);
     if (data.label) payload.label = data.label;
 
     try {
@@ -148,6 +164,20 @@ function ContactForm({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField control={form.control} name="contact_type_id" render={({ field }) => (
+          <FormItem>
+            <FormLabel>{t("members.contactType")}</FormLabel>
+            <Select onValueChange={field.onChange} value={field.value}>
+              <FormControl><SelectTrigger><SelectValue placeholder={t("members.selectContactType")} /></SelectTrigger></FormControl>
+              <SelectContent>
+                {contactTypes.map((ct) => (
+                  <SelectItem key={ct.id} value={ct.id.toString()}>{ct.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )} />
         <FormField control={form.control} name="value" render={({ field }) => (
           <FormItem>
             <FormLabel>{t("members.contactValue")}</FormLabel>

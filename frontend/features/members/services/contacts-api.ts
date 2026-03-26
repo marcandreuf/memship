@@ -1,5 +1,11 @@
 import { apiClient } from "@/lib/client-api";
 
+export interface ContactTypeData {
+  id: number;
+  code: string;
+  name: string;
+}
+
 export interface ContactData {
   id: number;
   contact_type_id: number | null;
@@ -7,6 +13,10 @@ export interface ContactData {
   value: string;
   label: string | null;
   is_primary: boolean;
+}
+
+export async function getContactTypes(): Promise<ContactTypeData[]> {
+  return apiClient("/contact-types");
 }
 
 export async function getContacts(personId: number): Promise<ContactData[]> {
