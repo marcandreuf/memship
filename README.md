@@ -1,3 +1,5 @@
+🌐 **English** | [Español](README.es.md) | [Català](README.ca.md)
+
 # Memship
 
 > **This project is under active development, not yet ready for production, and open to [feature requests](https://github.com/marcandreuf/memship/issues).**

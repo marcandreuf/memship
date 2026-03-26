@@ -516,7 +516,7 @@ class TestAutoReceipt:
         ).first()
         assert receipt is not None
         assert receipt.origin == "activity"
-        assert receipt.status == "pending"
+        assert receipt.status == "emitted"
         assert float(receipt.base_amount) == 50.00
         assert receipt.receipt_number.startswith("FAC-")
 
