@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="UTF-8">
+<style>
+  @page { size: A4; margin: 2cm; }
+  body { font-family: sans-serif; font-size: 11pt; color: #333; line-height: 1.4; }
+  .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; border-bottom: 2px solid #0083ad; padding-bottom: 15px; }
+  .org-info { flex: 1; }
+  .org-info h1 { font-size: 16pt; margin: 0 0 4px 0; color: #0083ad; }
+  .org-info p { margin: 0; font-size: 9pt; color: #666; }
+  .receipt-title { text-align: right; }
+  .receipt-title h2 { font-size: 14pt; margin: 0; color: #333; }
+  .receipt-title .number { font-size: 12pt; color: #0083ad; font-weight: bold; }
+  .receipt-title .date { font-size: 9pt; color: #666; margin-top: 4px; }
+  .parties { display: flex; justify-content: space-between; margin: 20px 0; }
+  .party { width: 48%; }
+  .party h3 { font-size: 10pt; text-transform: uppercase; color: #888; margin: 0 0 6px 0; letter-spacing: 0.5px; }
+  .party p { margin: 0; font-size: 10pt; }
+  table.items { width: 100%; border-collapse: collapse; margin: 20px 0; }
+  table.items th { background: #f5f5f5; text-align: left; padding: 8px 10px; font-size: 9pt; text-transform: uppercase; color: #666; border-bottom: 1px solid #ddd; }
+  table.items td { padding: 10px; border-bottom: 1px solid #eee; font-size: 10pt; }
+  table.items .amount { text-align: right; font-family: monospace; }
+  .totals { margin-left: auto; width: 280px; margin-top: 10px; }
+  .totals table { width: 100%; }
+  .totals td { padding: 4px 10px; font-size: 10pt; }
+  .totals .label { color: #666; }
+  .totals .value { text-align: right; font-family: monospace; }
+  .totals .total-row td { font-weight: bold; font-size: 12pt; border-top: 2px solid #0083ad; padding-top: 8px; color: #0083ad; }
+  .status-badge { display: inline-block; padding: 3px 10px; border-radius: 3px; font-size: 9pt; font-weight: bold; text-transform: uppercase; }
+  .status-paid { background: #d4edda; color: #155724; }
+  .status-pending, .status-emitted { background: #fff3cd; color: #856404; }
+  .status-returned { background: #f8d7da; color: #721c24; }
+  .status-cancelled { background: #e2e3e5; color: #383d41; }
+  .status-overdue { background: #f8d7da; color: #721c24; }
+  .banking { margin-top: 30px; padding: 12px; background: #f8f9fa; border-radius: 4px; font-size: 9pt; }
+  .banking h3 { margin: 0 0 6px 0; font-size: 10pt; color: #333; }
+  .banking p { margin: 0; }
+  .banking .iban { font-family: monospace; letter-spacing: 1px; }
+  .notes { margin-top: 15px; padding: 10px; background: #fffde7; border-left: 3px solid #ffc107; font-size: 9pt; }
+  .footer { margin-top: 30px; text-align: center; font-size: 8pt; color: #aaa; border-top: 1px solid #eee; padding-top: 10px; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <div class="org-info">
+      <h1>{{ org.name }}</h1>
+      {% if org.legal_name %}<p>{{ org.legal_name }}</p>{% endif %}
+      {% if org.tax_id %}<p>CIF/NIF: {{ org.tax_id }}</p>{% endif %}
+      {% if org.address %}<p>{{ org.address }}</p>{% endif %}
+      {% if org.email %}<p>{{ org.email }}{% if org.phone %} | {{ org.phone }}{% endif %}</p>{% endif %}
+    </div>
+    <div class="receipt-title">
+      <h2>REBUT</h2>
+      <div class="number">{{ receipt.receipt_number }}</div>
+      <div class="date">Data d'emissió: {{ receipt.emission_date }}</div>
+      {% if receipt.due_date %}<div class="date">Venciment: {{ receipt.due_date }}</div>{% endif %}
+      <div style="margin-top:6px;"><span class="status-badge status-{{ receipt.status }}">{{ status_label }}</span></div>
+    </div>
+  </div>
+
+  <div class="parties">
+    <div class="party">
+      <h3>Dades del soci</h3>
+      <p><strong>{{ member.name }}</strong></p>
+      {% if member.tax_id %}<p>NIF: {{ member.tax_id }}</p>{% endif %}
+      {% if member.address %}<p>{{ member.address }}</p>{% endif %}
+      {% if member.email %}<p>{{ member.email }}</p>{% endif %}
+      <p>N.º soci: {{ member.member_number }}</p>
+    </div>
+    {% if receipt.billing_period_start %}
+    <div class="party">
+      <h3>Període de facturació</h3>
+      <p>{{ receipt.billing_period_start }} — {{ receipt.billing_period_end }}</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <table class="items">
+    <thead>
+      <tr>
+        <th>Concepte</th>
+        <th class="amount">Base</th>
+        <th class="amount">IVA ({{ receipt.vat_rate }}%)</th>
+        <th class="amount">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>{{ receipt.description }}</td>
+        <td class="amount">{{ receipt.base_amount }} {{ org.currency }}</td>
+        <td class="amount">{{ receipt.vat_amount }} {{ org.currency }}</td>
+        <td class="amount">{{ receipt.total_amount }} {{ org.currency }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  {% if receipt.discount_amount and receipt.discount_amount > 0 %}
+  <p style="font-size:9pt;color:#666;">Descompte aplicat: {{ receipt.discount_amount }} {{ org.currency }}</p>
+  {% endif %}
+
+  <div class="totals">
+    <table>
+      <tr><td class="label">Base imposable</td><td class="value">{{ receipt.base_amount }} {{ org.currency }}</td></tr>
+      <tr><td class="label">IVA ({{ receipt.vat_rate }}%)</td><td class="value">{{ receipt.vat_amount }} {{ org.currency }}</td></tr>
+      <tr class="total-row"><td>TOTAL</td><td class="value">{{ receipt.total_amount }} {{ org.currency }}</td></tr>
+    </table>
+  </div>
+
+  {% if receipt.payment_method %}
+  <p style="font-size:10pt;margin-top:15px;">Mètode de pagament: <strong>{{ payment_method_label }}</strong>{% if receipt.payment_date %} — Cobrat el {{ receipt.payment_date }}{% endif %}</p>
+  {% endif %}
+
+  {% if receipt.return_reason %}
+  <p style="font-size:10pt;color:#c0392b;">Retornat: {{ receipt.return_reason }}{% if receipt.return_date %} ({{ receipt.return_date }}){% endif %}</p>
+  {% endif %}
+
+  {% if receipt.notes %}
+  <div class="notes">{{ receipt.notes }}</div>
+  {% endif %}
+
+  {% if org.bank_iban %}
+  <div class="banking">
+    <h3>Dades bancàries per a transferència</h3>
+    <p>{{ org.bank_name }}</p>
+    <p>IBAN: <span class="iban">{{ org.bank_iban }}</span></p>
+    {% if org.bank_bic %}<p>BIC/SWIFT: {{ org.bank_bic }}</p>{% endif %}
+  </div>
+  {% endif %}
+
+  <div class="footer">
+    {{ org.name }}{% if org.website %} | {{ org.website }}{% endif %}
+  </div>
+</body>
+</html>

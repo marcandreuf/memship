@@ -10,6 +10,7 @@ import {
   Settings,
   UserCircle,
   ClipboardList,
+  Receipt,
   LogOut,
   ChevronsUpDown,
 } from "lucide-react";
@@ -57,7 +58,9 @@ export function AppSidebar({ user }: AppSidebarProps) {
     { href: "/dashboard", label: t("nav.dashboard"), icon: LayoutDashboard, show: true },
     { href: "/activities", label: t("nav.activities"), icon: CalendarDays, show: true },
     { href: "/my-activities", label: t("activities.registration.myActivities"), icon: ClipboardList, show: !isAdmin },
+    { href: "/my-receipts", label: t("receipts.myReceipts"), icon: Receipt, show: !isAdmin },
     { href: "/members", label: t("nav.members"), icon: Users, show: isAdmin },
+    { href: "/receipts", label: t("nav.receipts"), icon: Receipt, show: isAdmin },
     { href: "/groups", label: t("nav.groups"), icon: FolderOpen, show: isAdmin },
     { href: "/settings", label: t("nav.settings"), icon: Settings, show: isAdmin },
   ].filter((item) => item.show);

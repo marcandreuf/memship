@@ -6,6 +6,7 @@ import { z } from "zod";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DecimalInput } from "@/components/ui/decimal-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -169,7 +170,7 @@ export function ActivityEditForm({
             <FormItem><FormLabel>{t("activities.maxParticipants")}</FormLabel><FormControl><Input type="number" min={1} {...field} /></FormControl></FormItem>
           )} />
           <FormField control={form.control} name="tax_rate" render={({ field }) => (
-            <FormItem><FormLabel>{t("activities.taxRate")}</FormLabel><FormControl><Input type="number" min={0} max={100} step="0.01" {...field} /></FormControl></FormItem>
+            <FormItem><FormLabel>{t("activities.taxRate")}</FormLabel><FormControl><DecimalInput {...field} /></FormControl></FormItem>
           )} />
           <FormField control={form.control} name="min_age" render={({ field }) => (
             <FormItem><FormLabel>{t("activities.minAge")}</FormLabel><FormControl><Input type="number" min={0} {...field} /></FormControl></FormItem>

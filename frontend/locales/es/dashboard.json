@@ -16,6 +16,9 @@
     "memberWelcome": "Bienvenido a tu portal de socio.",
     "yourNumber": "Tu número de socio",
     "upcomingActivities": "Tus próximas actividades",
-    "noUpcoming": "No hay actividades próximas"
+    "noUpcoming": "No hay actividades próximas",
+    "pendingAmount": "Importe pendiente",
+    "paidThisMonth": "Cobrado este mes",
+    "overdueAmount": "Vencido"
   }
 }

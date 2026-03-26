@@ -15,7 +15,8 @@
     "phone": "Phone",
     "website": "Website",
     "taxId": "Tax ID (CIF/NIF)",
-    "locale": "Language",
+    "locale": "Default Language",
+    "localeHint": "Used for receipts, emails, and number formatting",
     "timezone": "Timezone",
     "currency": "Currency",
     "dateFormat": "Date Format",
@@ -32,6 +33,11 @@
     "bankIban": "IBAN",
     "bankBic": "BIC / SWIFT",
     "invoicePrefix": "Invoice Prefix",
-    "invoiceNextNumber": "Next Invoice Number"
+    "invoiceNextNumber": "Next Invoice Number",
+    "payments": "Payments",
+    "invoicing": "Invoicing",
+    "defaultVatRate": "Default VAT Rate",
+    "invoiceAnnualReset": "Annual Numbering Reset",
+    "invoiceAnnualResetDesc": "Reset receipt numbering at the start of each year"
   }
 }

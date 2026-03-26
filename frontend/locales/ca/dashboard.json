@@ -16,6 +16,9 @@
     "memberWelcome": "Benvingut al teu portal de soci.",
     "yourNumber": "El teu número de soci",
     "upcomingActivities": "Les teves properes activitats",
-    "noUpcoming": "No hi ha activitats properes"
+    "noUpcoming": "No hi ha activitats properes",
+    "pendingAmount": "Import pendent",
+    "paidThisMonth": "Cobrat aquest mes",
+    "overdueAmount": "Vençut"
   }
 }

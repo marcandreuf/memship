@@ -32,6 +32,8 @@ export function useRegister() {
       qc.invalidateQueries({ queryKey: ["eligibility", vars.activityId] });
       qc.invalidateQueries({ queryKey: ["activity-registrations", vars.activityId] });
       qc.invalidateQueries({ queryKey: ["my-registrations"] });
+      qc.invalidateQueries({ queryKey: ["my-receipts"] });
+      qc.invalidateQueries({ queryKey: ["receipts"] });
     },
   });
 }
@@ -46,6 +48,8 @@ export function useCancelRegistration() {
       qc.invalidateQueries({ queryKey: ["activity-registrations"] });
       qc.invalidateQueries({ queryKey: ["my-registrations"] });
       qc.invalidateQueries({ queryKey: ["eligibility"] });
+      qc.invalidateQueries({ queryKey: ["my-receipts"] });
+      qc.invalidateQueries({ queryKey: ["receipts"] });
     },
   });
 }

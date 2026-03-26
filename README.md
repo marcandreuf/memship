@@ -71,7 +71,7 @@ Open http://localhost:8081 and log in with your credentials. Change `PORT=8081` 
 | v0.2.6 | Bug fixes & testing — Shadcn confirm dialogs (replaced 13 browser alerts), seed discount code fix, self-cancellation deadline check, re-registration after cancel, 21 new API tests, 9 new E2E eligibility tests | Done |
 | v0.2.7 | Activity polish — loading skeletons, nuqs URL state | Done |
 | v0.2.9 | Payment prerequisites — org address & banking, logo upload, contact info tab, member IBAN, Celery/Redis, email notifications (Jinja2 + SMTP/Resend) | Done |
-| v0.3.0 | Basic Payments & Invoicing | — |
+| v0.3.0 | Basic Payments & Invoicing — receipts, PDF generation, VAT, fee generation, member payment history | Done |
 | v0.4.0 | Payment Processing (SEPA + Stripe) | — |
 | v0.5.0 | Communication System | — |
 | v0.6.0 | Bookings & Documents | — |
@@ -112,11 +112,25 @@ Open http://localhost:8081 and log in with your credentials. Change `PORT=8081` 
 - Member portal: activity browsing with thumbnails, registration status badges, "My Activities" grid
 - Admin portal: registration management with status changes
 
-**Payments & Invoicing** (planned)
-- Membership fee generation and invoicing
+**Payments & Invoicing** (available now)
+- Receipt management with 7-status lifecycle (new → emitted → paid / returned / cancelled / overdue)
+- PDF receipt generation (WeasyPrint) with org header, member details, VAT breakdown — 3 locales (ES/CA/EN)
+- Bulk membership fee generation from membership types
+- Auto-receipt on activity registration (emitted on confirmation, cancelled on cancellation)
+- Manual receipt creation from member detail page
+- VAT/IVA calculation with configurable default rate per organization
+- Invoice numbering with configurable prefix and optional annual reset (e.g., FAC-2026-0001)
+- European currency formatting (1.234,56 €) based on org locale
+- Member self-service: "My Receipts" page with PDF download
+- Admin dashboard: receipt status chart + pending/paid/overdue amount cards
+- Receipt email notification with PDF attachment (via Celery + Resend or SMTP)
+- Settings → Payments tab for invoicing and banking configuration
+
+**Payment Processing** (planned — v0.4.0)
 - SEPA direct debit batch processing
 - Stripe online payments
-- Payment tracking and reminders
+- Refund workflow
+- Payment reminders
 
 **Communications** (planned)
 - Email campaigns with templates and audience targeting

@@ -27,6 +27,8 @@ class OrganizationSettingsResponse(BaseModel):
     bank_bic: str | None = None
     invoice_prefix: str = "INV"
     invoice_next_number: int = 1
+    invoice_annual_reset: bool | None = True
+    default_vat_rate: float | None = 21.00
     features: dict = {}
     custom_settings: dict = {}
     created_at: datetime
@@ -53,5 +55,7 @@ class OrganizationSettingsUpdate(BaseModel):
     bank_bic: str | None = Field(default=None, max_length=11, pattern=r"^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$")
     invoice_prefix: str | None = Field(default=None, max_length=10)
     invoice_next_number: int | None = Field(default=None, ge=1)
+    invoice_annual_reset: bool | None = None
+    default_vat_rate: float | None = Field(default=None, ge=0, le=100)
     features: dict | None = None
     custom_settings: dict | None = None

@@ -39,6 +39,7 @@ import {
   useUpdateAddress,
 } from "@/features/settings/hooks/use-settings";
 import { MembershipTypesSettings } from "@/features/settings/components/membership-types-settings";
+import { PaymentsSettings } from "@/features/settings/components/payments-settings";
 import { LogoUpload } from "@/features/settings/components/logo-upload";
 import { FormSkeleton } from "@/components/ui/skeletons";
 
@@ -63,11 +64,6 @@ const settingsSchema = z.object({
   date_format: z.string(),
   brand_color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional().or(z.literal("")),
   logo_url: z.string().max(500).optional().or(z.literal("")),
-  bank_name: z.string().max(255).optional().or(z.literal("")),
-  bank_iban: z.string().max(34).optional().or(z.literal("")),
-  bank_bic: z.string().max(11).optional().or(z.literal("")),
-  invoice_prefix: z.string().max(10).optional().or(z.literal("")),
-  invoice_next_number: z.coerce.number().int().min(1).optional(),
 });
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
@@ -90,49 +86,33 @@ export default function SettingsPage() {
       state_province: "", postal_code: "", country: "ES",
       locale: "es", timezone: "Europe/Madrid", currency: "EUR",
       date_format: "DD/MM/YYYY", brand_color: "", logo_url: "",
-      bank_name: "", bank_iban: "", bank_bic: "",
-      invoice_prefix: "INV", invoice_next_number: 1,
     },
   });
 
   useEffect(() => {
     if (settings) {
-      form.reset((prev) => ({
-        ...prev,
+      form.reset({
         name: settings.name || "",
         legal_name: settings.legal_name || "",
         email: settings.email || "",
         phone: settings.phone || "",
         website: settings.website || "",
         tax_id: settings.tax_id || "",
+        address_line1: address?.address_line1 || "",
+        address_line2: address?.address_line2 || "",
+        city: address?.city || "",
+        state_province: address?.state_province || "",
+        postal_code: address?.postal_code || "",
+        country: address?.country || "ES",
         locale: settings.locale || "es",
         timezone: settings.timezone || "Europe/Madrid",
         currency: settings.currency || "EUR",
         date_format: settings.date_format || "DD/MM/YYYY",
         brand_color: settings.brand_color || "",
         logo_url: settings.logo_url || "",
-        bank_name: settings.bank_name || "",
-        bank_iban: settings.bank_iban || "",
-        bank_bic: settings.bank_bic || "",
-        invoice_prefix: settings.invoice_prefix || "INV",
-        invoice_next_number: settings.invoice_next_number || 1,
-      }));
+      });
     }
-  }, [settings, form]);
-
-  useEffect(() => {
-    if (address) {
-      form.reset((prev) => ({
-        ...prev,
-        address_line1: address.address_line1 || "",
-        address_line2: address.address_line2 || "",
-        city: address.city || "",
-        state_province: address.state_province || "",
-        postal_code: address.postal_code || "",
-        country: address.country || "ES",
-      }));
-    }
-  }, [address, form]);
+  }, [settings, address, form]);
 
   const isAdmin = user?.role === "admin" || user?.role === "super_admin";
   const isSuperAdmin = user?.role === "super_admin";
@@ -180,6 +160,9 @@ export default function SettingsPage() {
         <TabsList>
           {isSuperAdmin && (
             <TabsTrigger value="organization">{t("settings.organization")}</TabsTrigger>
+          )}
+          {isSuperAdmin && (
+            <TabsTrigger value="payments">{t("settings.payments")}</TabsTrigger>
           )}
           <TabsTrigger value="membership-types">{t("nav.membershipTypes")}</TabsTrigger>
         </TabsList>
@@ -298,16 +281,19 @@ export default function SettingsPage() {
                   </CardHeader>
                   <CardContent className="grid gap-3 sm:grid-cols-2 px-4 pb-4 pt-0">
                     <FormField control={form.control} name="locale" render={({ field }) => (
-                      <FormItem className="flex items-center gap-3">
-                        <FormLabel className="min-w-28 shrink-0 mt-0">{t("settings.locale")}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                          <SelectContent>
-                            <SelectItem value="es">Espa&ntilde;ol</SelectItem>
-                            <SelectItem value="ca">Catal&agrave;</SelectItem>
-                            <SelectItem value="en">English</SelectItem>
-                          </SelectContent>
-                        </Select>
+                      <FormItem>
+                        <div className="flex items-center gap-3">
+                          <FormLabel className="min-w-28 shrink-0 mt-0">{t("settings.locale")}</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                            <SelectContent>
+                              <SelectItem value="es">Espa&ntilde;ol</SelectItem>
+                              <SelectItem value="ca">Catal&agrave;</SelectItem>
+                              <SelectItem value="en">English</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{t("settings.localeHint")}</p>
                         <FormMessage />
                       </FormItem>
                     )} />
@@ -359,52 +345,6 @@ export default function SettingsPage() {
                   </CardContent>
                 </Card>
 
-                {/* Banking & Invoicing */}
-                <Card>
-                  <CardHeader className="py-3 px-4">
-                    <CardTitle className="text-base">{t("settings.banking")}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="grid gap-3 sm:grid-cols-2 px-4 pb-4 pt-0">
-                    <FormField control={form.control} name="bank_name" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t("settings.bankName")}</FormLabel>
-                        <FormControl><Input {...field} placeholder="CaixaBank" /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                    <FormField control={form.control} name="bank_iban" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t("settings.bankIban")}</FormLabel>
-                        <FormControl><Input {...field} placeholder="ES9121000418450200051332" className="font-mono" /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                    <FormField control={form.control} name="bank_bic" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t("settings.bankBic")}</FormLabel>
-                        <FormControl><Input {...field} placeholder="CAIXESBBXXX" className="font-mono" /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                    <div className="grid gap-3 sm:grid-cols-2 sm:col-span-2">
-                      <FormField control={form.control} name="invoice_prefix" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t("settings.invoicePrefix")}</FormLabel>
-                          <FormControl><Input {...field} placeholder="INV" className="font-mono" /></FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )} />
-                      <FormField control={form.control} name="invoice_next_number" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t("settings.invoiceNextNumber")}</FormLabel>
-                          <FormControl><Input type="number" min={1} {...field} /></FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )} />
-                    </div>
-                  </CardContent>
-                </Card>
-
                 {/* Branding */}
                 <Card>
                   <CardHeader className="py-3 px-4">
@@ -437,6 +377,10 @@ export default function SettingsPage() {
             </Form>
 
           </div>
+        </TabsContent>}
+
+        {isSuperAdmin && <TabsContent value="payments">
+          <PaymentsSettings />
         </TabsContent>}
 
         <TabsContent value="membership-types">

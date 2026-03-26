@@ -477,6 +477,89 @@ class TestMyRegistrations:
         assert data["items"][0]["activity_id"] == activity.id
 
 
+class TestAutoReceipt:
+    """Test that confirmed registrations auto-generate a receipt."""
+
+    def test_registration_creates_receipt(self, client, db):
+        """Confirmed registration with amount > 0 creates a pending receipt."""
+        from app.domains.billing.models import Receipt
+        from app.domains.organizations.models import OrganizationSettings
+
+        # Ensure org settings exist for receipt number generation
+        org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
+        if not org:
+            db.add(OrganizationSettings(
+                id=1, name="Test Org", locale="es", timezone="Europe/Madrid",
+                currency="EUR", date_format="DD/MM/YYYY",
+                invoice_prefix="FAC", invoice_next_number=1,
+                invoice_annual_reset=True, default_vat_rate=21,
+            ))
+            db.flush()
+
+        admin = _create_user(db, "admin", suffix="-autorec")
+        user, member = _create_member_with_user(db, suffix="-autorec")
+        activity, price = _create_published_activity(db, admin.id)
+        # price.amount = 50.00 from _create_published_activity
+
+        client.cookies.update(_auth_cookie(user))
+        response = client.post(
+            f"/api/v1/activities/{activity.id}/register",
+            json={"price_id": price.id},
+        )
+        assert response.status_code == 201
+        assert response.json()["status"] == "confirmed"
+
+        # Check receipt was created
+        receipt = db.query(Receipt).filter(
+            Receipt.member_id == member.id,
+            Receipt.registration_id == response.json()["id"],
+        ).first()
+        assert receipt is not None
+        assert receipt.origin == "activity"
+        assert receipt.status == "pending"
+        assert float(receipt.base_amount) == 50.00
+        assert receipt.receipt_number.startswith("FAC-")
+
+    def test_waitlisted_registration_no_receipt(self, client, db):
+        """Waitlisted registration should NOT create a receipt."""
+        from app.domains.billing.models import Receipt
+        from app.domains.organizations.models import OrganizationSettings
+
+        org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
+        if not org:
+            db.add(OrganizationSettings(
+                id=1, name="Test Org", locale="es", timezone="Europe/Madrid",
+                currency="EUR", date_format="DD/MM/YYYY",
+                invoice_prefix="FAC", invoice_next_number=1,
+            ))
+            db.flush()
+
+        admin = _create_user(db, "admin", suffix="-nowlrec")
+        user1, member1 = _create_member_with_user(db, suffix="-nowlrec1")
+        user2, member2 = _create_member_with_user(db, suffix="-nowlrec2")
+        activity, price = _create_published_activity(
+            db, admin.id, max_participants=1,
+            features={"waiting_list": True},
+        )
+
+        # First member confirms
+        client.cookies.update(_auth_cookie(user1))
+        client.post(f"/api/v1/activities/{activity.id}/register", json={"price_id": price.id})
+
+        # Second member waitlisted
+        client.cookies.update(_auth_cookie(user2))
+        r = client.post(f"/api/v1/activities/{activity.id}/register", json={"price_id": price.id})
+        assert r.status_code == 201
+        assert r.json()["status"] == "waitlist"
+
+        # No receipt for waitlisted member
+        receipt = db.query(Receipt).filter(
+            Receipt.member_id == member2.id,
+            Receipt.registration_id == r.json()["id"],
+        ).first()
+        assert receipt is None
+
+
 class TestEligibility:
     def test_check_eligibility_eligible(self, client, db):
         admin = _create_user(db, "admin", suffix="-elig1")

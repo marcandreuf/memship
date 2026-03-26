@@ -21,6 +21,8 @@ import { useActivities } from "@/features/activities/hooks/use-activities";
 import { useGroups } from "@/features/groups/hooks/use-groups";
 import { useMyRegistrations, useRegistrationStats } from "@/features/activities/hooks/use-registrations";
 import { useActivity } from "@/features/activities/hooks/use-activities";
+import { useReceiptStats, useMyReceipts } from "@/features/receipts/hooks/use-receipts";
+import { useFormatters } from "@/hooks/use-formatters";
 import type { RegistrationData } from "@/features/activities/services/registrations-api";
 
 const MEMBER_COLORS: Record<string, string> = {
@@ -36,6 +38,16 @@ const ACTIVITY_COLORS: Record<string, string> = {
   published: "hsl(142, 71%, 45%)",
   archived: "hsl(48, 96%, 53%)",
   cancelled: "hsl(0, 84%, 60%)",
+};
+
+const RECEIPT_COLORS: Record<string, string> = {
+  paid: "hsl(142, 71%, 45%)",
+  emitted: "hsl(210, 70%, 55%)",
+  pending: "hsl(48, 96%, 53%)",
+  overdue: "hsl(0, 84%, 60%)",
+  returned: "hsl(340, 70%, 55%)",
+  cancelled: "hsl(0, 0%, 64%)",
+  new: "hsl(220, 9%, 78%)",
 };
 
 const REGISTRATION_COLORS: Record<string, string> = {
@@ -189,6 +201,7 @@ export default function DashboardPage() {
   const t = useTranslations();
   const { user } = useAuth();
   const isAdmin = user?.role === "admin" || user?.role === "super_admin";
+  const { formatCurrency, formatDate } = useFormatters();
 
   // Member counts by status
   const { data: activeMembers } = useMembers(isAdmin ? { status: "active", per_page: 1 } : {});
@@ -205,11 +218,18 @@ export default function DashboardPage() {
 
   const { data: groups } = useGroups();
   const { data: regStats } = useRegistrationStats();
+  const { data: receiptStats } = useReceiptStats();
 
-  // Member: my registrations
+  // Member: my registrations + receipts
   const { data: myRegistrations } = useMyRegistrations(
     !isAdmin ? { per_page: 5 } : {}
   );
+  const myReceiptsParams = useMemo(() => {
+    const p = new URLSearchParams();
+    p.set("per_page", "5");
+    return p;
+  }, []);
+  const { data: myReceipts } = useMyReceipts(!isAdmin ? myReceiptsParams : undefined);
 
   const memberChartData = useMemo<ChartItem[]>(() => [
     { name: t("status.active"), value: activeMembers?.meta.total ?? 0, color: MEMBER_COLORS.active },
@@ -232,6 +252,14 @@ export default function DashboardPage() {
     { name: t("dashboard.pendingRegistrations"), value: regStats?.pending ?? 0, color: REGISTRATION_COLORS.pending },
     { name: t("dashboard.cancelledRegistrations"), value: regStats?.cancelled ?? 0, color: REGISTRATION_COLORS.cancelled },
   ], [regStats, t]);
+
+  const receiptChartData = useMemo<ChartItem[]>(() => [
+    { name: t("receipts.statusPaid"), value: receiptStats?.paid ?? 0, color: RECEIPT_COLORS.paid },
+    { name: t("receipts.statusEmitted"), value: receiptStats?.emitted ?? 0, color: RECEIPT_COLORS.emitted },
+    { name: t("receipts.statusPending"), value: (receiptStats?.pending ?? 0) + (receiptStats?.new ?? 0), color: RECEIPT_COLORS.pending },
+    { name: t("receipts.statusOverdue"), value: receiptStats?.overdue ?? 0, color: RECEIPT_COLORS.overdue },
+    { name: t("receipts.statusReturned"), value: receiptStats?.returned ?? 0, color: RECEIPT_COLORS.returned },
+  ], [receiptStats, t]);
 
   const activeRegistrations = myRegistrations?.items.filter(
     (r) => r.status === "confirmed" || r.status === "waitlist"
@@ -259,19 +287,41 @@ export default function DashboardPage() {
             />
           </div>
 
-          {/* Registrations chart + summary cards */}
+          {/* Registrations + Receipts charts */}
           <div className="grid gap-4 sm:grid-cols-2">
             <StatusBarChart
               title={t("dashboard.totalRegistrations")}
               data={registrationChartData}
             />
-            <div className="grid gap-3 grid-cols-1">
-              <StatCard
-                label={t("dashboard.totalGroups")}
-                value={groups?.length ?? "—"}
-                href="/groups"
-              />
-            </div>
+            <StatusBarChart
+              title={t("receipts.title")}
+              data={receiptChartData}
+              href="/receipts"
+            />
+          </div>
+
+          {/* Summary stat cards */}
+          <div className="grid gap-4 grid-cols-2 sm:grid-cols-4">
+            <StatCard
+              label={t("dashboard.totalGroups")}
+              value={groups?.length ?? "—"}
+              href="/groups"
+            />
+            <StatCard
+              label={t("dashboard.pendingAmount")}
+              value={formatCurrency(receiptStats?.pending_amount ?? 0)}
+              href="/receipts?status=emitted"
+            />
+            <StatCard
+              label={t("dashboard.paidThisMonth")}
+              value={formatCurrency(receiptStats?.paid_this_month ?? 0)}
+              href="/receipts?status=paid"
+            />
+            <StatCard
+              label={t("dashboard.overdueAmount")}
+              value={formatCurrency(receiptStats?.overdue_amount ?? 0)}
+              href="/receipts?status=overdue"
+            />
           </div>
         </div>
       )}
@@ -310,6 +360,43 @@ export default function DashboardPage() {
                       className="block text-sm text-primary hover:underline pt-1"
                     >
                       {t("common.view")} {t("activities.registration.myActivities").toLowerCase()} →
+                    </Link>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* My recent receipts */}
+          <Card>
+            <CardHeader className="py-3 px-4">
+              <CardTitle className="text-base">{t("receipts.myReceipts")}</CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pb-4 pt-0">
+              {!myReceipts?.items.length ? (
+                <p className="text-sm text-muted-foreground">{t("receipts.noReceipts")}</p>
+              ) : (
+                <div className="space-y-2">
+                  {myReceipts.items.map((r) => (
+                    <div key={r.id} className="flex items-center justify-between rounded-lg border p-3">
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm truncate">{r.description}</p>
+                        <p className="text-xs text-muted-foreground">{formatDate(r.emission_date)}</p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="font-mono text-sm font-medium">{formatCurrency(r.total_amount)}</span>
+                        <Badge variant={
+                          r.status === "paid" ? "default" :
+                          r.status === "overdue" || r.status === "returned" ? "destructive" : "secondary"
+                        }>
+                          {t(`receipts.status${r.status.charAt(0).toUpperCase() + r.status.slice(1)}`)}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                  {myReceipts.meta.total > 5 && (
+                    <Link href="/my-receipts" className="block text-sm text-primary hover:underline pt-1">
+                      {t("common.view")} {t("receipts.myReceipts").toLowerCase()} →
                     </Link>
                   )}
                 </div>

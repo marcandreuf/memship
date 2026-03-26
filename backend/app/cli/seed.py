@@ -34,6 +34,7 @@ from app.domains.activities.models import (
     ActivityPrice, DiscountCode, Registration, RegistrationConsent,
 )
 from app.domains.members.models import Group, Member, MembershipType
+from app.domains.billing.models import Concept, Receipt
 
 ph = PasswordHasher()
 
@@ -126,6 +127,8 @@ def seed_org_settings(db) -> None:
         bank_bic="CAIXESBBXXX",
         invoice_prefix="FAC",
         invoice_next_number=1,
+        invoice_annual_reset=True,
+        default_vat_rate=21.00,
         features={},
         custom_settings={},
     )
@@ -937,6 +940,199 @@ def seed_registration_consents(db) -> None:
     print(f"  Registration consents: created {count} consent records for existing registrations")
 
 
+def seed_billing_data(db) -> None:
+    """Create sample concepts and receipts for billing testing."""
+    from datetime import date, timedelta
+    from decimal import Decimal
+
+    existing = db.query(Concept).count()
+    if existing > 0:
+        print(f"  Billing: already seeded ({existing} concepts)")
+        return
+
+    org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
+    admin = db.query(User).filter(User.role == "admin").first()
+    created_by = admin.id if admin else None
+
+    # --- Concepts ---
+    concepts = {
+        "full": Concept(name="Quota Full Member — Anual", code="membership-full-member", concept_type="membership", default_amount=600.00, vat_rate=21.00),
+        "student": Concept(name="Quota Student — Anual", code="membership-student", concept_type="membership", default_amount=300.00, vat_rate=21.00),
+        "youth": Concept(name="Quota Youth — Anual", code="membership-youth", concept_type="membership", default_amount=180.00, vat_rate=10.00),
+        "senior": Concept(name="Quota Senior — Anual", code="membership-senior", concept_type="membership", default_amount=360.00, vat_rate=21.00),
+        "activity": Concept(name="Inscripció Activitat", code="activity-registration", concept_type="activity", default_amount=0, vat_rate=21.00),
+        "manual": Concept(name="Altres Conceptes", code="manual-other", concept_type="manual", default_amount=0, vat_rate=21.00),
+    }
+    for c in concepts.values():
+        db.add(c)
+    db.flush()
+    print(f"  Concepts: created {len(concepts)}")
+
+    # --- Receipts ---
+    today = date.today()
+    year = today.year
+    prefix = org.invoice_prefix or "FAC"
+    period_start = date(year, 1, 1)
+    period_end = date(year, 12, 31)
+    seq = 1
+
+    def next_number():
+        nonlocal seq
+        num = f"{prefix}-{year}-{seq:04d}"
+        seq += 1
+        return num
+
+    # Get members with their types for realistic data
+    members_data = (
+        db.query(Member, MembershipType, Person)
+        .join(MembershipType, Member.membership_type_id == MembershipType.id)
+        .join(Person, Member.person_id == Person.id)
+        .filter(Member.is_active.is_(True))
+        .limit(20)
+        .all()
+    )
+
+    receipt_count = 0
+
+    # Map membership type slugs to concept keys
+    slug_to_concept = {
+        "full-member": "full",
+        "student": "student",
+        "youth": "youth",
+        "senior": "senior",
+    }
+
+    for member, mtype, person in members_data:
+        concept_key = slug_to_concept.get(mtype.slug)
+        if not concept_key or concept_key not in concepts:
+            concept_key = "full"
+        concept = concepts[concept_key]
+        base = Decimal(str(concept.default_amount))
+        if base <= 0:
+            base = Decimal(str(mtype.base_price)) if mtype.base_price else Decimal("50")
+        vat_rate = Decimal(str(concept.vat_rate))
+        vat = (base * vat_rate / Decimal("100")).quantize(Decimal("0.01"))
+        total = base + vat
+
+        desc = f"{mtype.name} — {person.first_name} {person.last_name}"
+
+        # Determine status: distribute across statuses for realistic data
+        idx = receipt_count % 12
+        if idx < 5:
+            status, pay_method, pay_date = "paid", "direct_debit", today - timedelta(days=30)
+        elif idx < 7:
+            status, pay_method, pay_date = "emitted", None, None
+        elif idx == 7:
+            status, pay_method, pay_date = "overdue", None, None
+        elif idx == 8:
+            status, pay_method, pay_date = "returned", None, None
+        elif idx == 9:
+            status, pay_method, pay_date = "cancelled", None, None
+        elif idx == 10:
+            status, pay_method, pay_date = "new", None, None
+        else:
+            status, pay_method, pay_date = "pending", None, None
+
+        receipt = Receipt(
+            receipt_number=next_number(),
+            member_id=member.id,
+            concept_id=concept.id,
+            origin="membership",
+            description=desc,
+            base_amount=base,
+            vat_rate=vat_rate,
+            vat_amount=vat,
+            total_amount=total,
+            status=status,
+            payment_method=pay_method,
+            emission_date=today - timedelta(days=60),
+            due_date=today - timedelta(days=30),
+            payment_date=pay_date,
+            return_date=(today - timedelta(days=15)) if status == "returned" else None,
+            return_reason="Fondos insuficientes" if status == "returned" else None,
+            billing_period_start=period_start,
+            billing_period_end=period_end,
+            is_batchable=True,
+            created_by=created_by,
+        )
+        db.add(receipt)
+        receipt_count += 1
+
+    # Activity receipts — from registrations with amounts
+    registrations = (
+        db.query(Registration)
+        .filter(Registration.discounted_amount > 0, Registration.status == "confirmed")
+        .limit(5)
+        .all()
+    )
+    activity_concept = concepts["activity"]
+    for reg in registrations:
+        activity = db.query(Activity).filter(Activity.id == reg.activity_id).first()
+        base = Decimal(str(reg.discounted_amount))
+        vat_rate = Decimal("21")
+        vat = (base * vat_rate / Decimal("100")).quantize(Decimal("0.01"))
+        total = base + vat
+
+        receipt = Receipt(
+            receipt_number=next_number(),
+            member_id=reg.member_id,
+            concept_id=activity_concept.id,
+            registration_id=reg.id,
+            origin="activity",
+            description=activity.name if activity else "Activity",
+            base_amount=base,
+            vat_rate=vat_rate,
+            vat_amount=vat,
+            total_amount=total,
+            status="paid",
+            payment_method="card",
+            emission_date=today - timedelta(days=20),
+            payment_date=today - timedelta(days=20),
+            is_batchable=True,
+            created_by=created_by,
+        )
+        db.add(receipt)
+        receipt_count += 1
+
+    # Manual receipts
+    manual_concept = concepts["manual"]
+    manual_items = [
+        ("Lloguer sala — Març 2026", Decimal("200"), "paid", "cash"),
+        ("Material esportiu", Decimal("85.50"), "paid", "bank_transfer"),
+        ("Quota extraordinària assemblea", Decimal("30"), "emitted", None),
+    ]
+    # Pick a random member for manual receipts
+    if members_data:
+        manual_member = members_data[0][0]
+        for desc, base, status, pay_method in manual_items:
+            vat_rate = Decimal("21")
+            vat = (base * vat_rate / Decimal("100")).quantize(Decimal("0.01"))
+            total = base + vat
+            receipt = Receipt(
+                receipt_number=next_number(),
+                member_id=manual_member.id,
+                concept_id=manual_concept.id,
+                origin="manual",
+                description=desc,
+                base_amount=base,
+                vat_rate=vat_rate,
+                vat_amount=vat,
+                total_amount=total,
+                status=status,
+                payment_method=pay_method,
+                emission_date=today - timedelta(days=10),
+                due_date=today + timedelta(days=20),
+                payment_date=(today - timedelta(days=5)) if status == "paid" else None,
+                is_batchable=pay_method != "cash",
+                created_by=created_by,
+            )
+            db.add(receipt)
+            receipt_count += 1
+
+    db.flush()
+    print(f"  Receipts: created {receipt_count} ({receipt_count - len(manual_items) - len(registrations)} membership, {len(registrations)} activity, {len(manual_items)} manual)")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Memship seed command")
     parser.add_argument(
@@ -1004,6 +1200,9 @@ def main() -> None:
 
             print("\nSeeding registration consents...")
             seed_registration_consents(db)
+
+            print("\nSeeding billing data...")
+            seed_billing_data(db)
 
             print("\n  ⚠  TEST ACCOUNTS — do NOT use in production:")
             for account in TEST_ACCOUNTS:

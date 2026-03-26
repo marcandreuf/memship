@@ -137,6 +137,21 @@ def register_member(
     elif status == "waitlist":
         activity.waitlist_count = (activity.waitlist_count or 0) + 1
 
+    # 11. Auto-generate activity receipt for confirmed registrations with amount
+    if status == "confirmed" and discounted_amount and discounted_amount > 0:
+        try:
+            from app.domains.billing.service import generate_activity_receipt
+            generate_activity_receipt(
+                db=db,
+                registration_id=registration.id,
+                member_id=member.id,
+                activity_name=activity.name,
+                amount=discounted_amount,
+                tax_rate=activity.tax_rate,
+            )
+        except Exception:
+            pass  # Don't fail registration if receipt generation fails
+
     # Dispatch email notification (async via Celery)
     _dispatch_registration_email(registration, activity, member)
 
@@ -181,6 +196,23 @@ def cancel_registration(
     # Promote from waitlist if a confirmed spot freed up
     if was_confirmed:
         _promote_from_waitlist(db, activity, registration.modality_id)
+
+    # Cancel unpaid receipts linked to this registration
+    try:
+        from app.domains.billing.models import Receipt
+        unpaid_receipts = (
+            db.query(Receipt)
+            .filter(
+                Receipt.registration_id == registration.id,
+                Receipt.is_active.is_(True),
+                Receipt.status.in_(["new", "pending", "emitted", "overdue"]),
+            )
+            .all()
+        )
+        for receipt in unpaid_receipts:
+            receipt.status = "cancelled"
+    except Exception:
+        pass  # Don't fail cancellation if receipt update fails
 
     # Dispatch cancellation email (async via Celery)
     _dispatch_cancellation_email(registration, activity)

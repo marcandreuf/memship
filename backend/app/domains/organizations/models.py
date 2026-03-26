@@ -6,6 +6,7 @@ from sqlalchemy import (
     Column,
     DateTime,
     Integer,
+    Numeric,
     String,
     Text,
     func,
@@ -40,6 +41,8 @@ class OrganizationSettings(Base):
     bank_bic = Column(String(11))
     invoice_prefix = Column(String(10), default="INV")
     invoice_next_number = Column(Integer, default=1)
+    invoice_annual_reset = Column(Boolean, default=True)
+    default_vat_rate = Column(Numeric(5, 2), default=21.00)
     features = Column(JSONB, default=dict)
     custom_settings = Column(JSONB, default=dict)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

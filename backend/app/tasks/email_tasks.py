@@ -5,6 +5,7 @@ import logging
 from app.core.celery_app import celery
 from app.core.email import (
     send_email,
+    send_email_with_attachment,
     send_registration_confirmation_email,
     send_registration_cancellation_email,
     send_waitlist_promotion_email,
@@ -80,4 +81,69 @@ def send_promotion_email_task(
         )
     except Exception as exc:
         logger.error(f"Promotion email task failed: to={to}, error={exc}")
+        raise self.retry(exc=exc)
+
+
+@celery.task(bind=True, max_retries=3, default_retry_delay=60)
+def send_receipt_email_task(self, receipt_id: int) -> bool:
+    """Generate receipt PDF and send it by email to the member."""
+    try:
+        from app.db.session import SessionLocal
+        from app.domains.billing.models import Receipt
+        from app.domains.billing.pdf import generate_receipt_pdf
+        from app.domains.members.models import Member
+        from app.domains.organizations.models import OrganizationSettings
+        from app.domains.persons.models import Person
+
+        db = SessionLocal()
+        try:
+            receipt = db.query(Receipt).filter(Receipt.id == receipt_id).first()
+            if not receipt:
+                logger.warning(f"Receipt {receipt_id} not found for email")
+                return False
+
+            member = db.query(Member).filter(Member.id == receipt.member_id).first()
+            if not member:
+                logger.warning(f"Member {receipt.member_id} not found for receipt email")
+                return False
+
+            person = db.query(Person).filter(Person.id == member.person_id).first()
+            if not person or not person.email:
+                logger.warning(f"No email for member {member.id}")
+                return False
+
+            org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
+            locale = org.locale or "es"
+
+            # Generate PDF
+            pdf_bytes = generate_receipt_pdf(db, receipt)
+
+            # Build subject
+            subjects = {
+                "es": f"Recibo {receipt.receipt_number} — {org.name}",
+                "ca": f"Rebut {receipt.receipt_number} — {org.name}",
+                "en": f"Receipt {receipt.receipt_number} — {org.name}",
+            }
+            subject = subjects.get(locale, subjects["es"])
+
+            # Build simple HTML body
+            bodies = {
+                "es": f"<p>Adjunto el recibo <strong>{receipt.receipt_number}</strong> por importe de <strong>{receipt.total_amount:.2f} {org.currency or 'EUR'}</strong>.</p>",
+                "ca": f"<p>Adjunt el rebut <strong>{receipt.receipt_number}</strong> per import de <strong>{receipt.total_amount:.2f} {org.currency or 'EUR'}</strong>.</p>",
+                "en": f"<p>Please find attached receipt <strong>{receipt.receipt_number}</strong> for <strong>{receipt.total_amount:.2f} {org.currency or 'EUR'}</strong>.</p>",
+            }
+            html_body = bodies.get(locale, bodies["es"])
+
+            return send_email_with_attachment(
+                to=person.email,
+                subject=subject,
+                html_body=html_body,
+                attachment=pdf_bytes,
+                attachment_filename=f"{receipt.receipt_number}.pdf",
+                attachment_mime="application/pdf",
+            )
+        finally:
+            db.close()
+    except Exception as exc:
+        logger.error(f"Receipt email task failed: receipt_id={receipt_id}, error={exc}")
         raise self.retry(exc=exc)

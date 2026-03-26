@@ -15,7 +15,8 @@
     "phone": "Telèfon",
     "website": "Lloc web",
     "taxId": "CIF/NIF",
-    "locale": "Idioma",
+    "locale": "Idioma per defecte",
+    "localeHint": "S'utilitza per a rebuts, correus i format de números",
     "timezone": "Zona horària",
     "currency": "Moneda",
     "dateFormat": "Format de data",
@@ -32,6 +33,11 @@
     "bankIban": "IBAN",
     "bankBic": "BIC / SWIFT",
     "invoicePrefix": "Prefix de factura",
-    "invoiceNextNumber": "Número de factura següent"
+    "invoiceNextNumber": "Número de factura següent",
+    "payments": "Pagaments",
+    "invoicing": "Facturació",
+    "defaultVatRate": "IVA per defecte",
+    "invoiceAnnualReset": "Numeració anual",
+    "invoiceAnnualResetDesc": "Reiniciar la numeració de rebuts a l'inici de cada any"
   }
 }

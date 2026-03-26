@@ -8,6 +8,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
+import { DecimalInput } from "@/components/ui/decimal-input";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
@@ -189,7 +190,7 @@ function DiscountForm({
             </FormItem>
           )} />
           <FormField control={form.control} name="discount_value" render={({ field }) => (
-            <FormItem><FormLabel>{t("activities.discounts.value")}</FormLabel><FormControl><Input type="number" min={0} step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+            <FormItem><FormLabel>{t("activities.discounts.value")}</FormLabel><FormControl><DecimalInput {...field} /></FormControl><FormMessage /></FormItem>
           )} />
         </div>
         <FormField control={form.control} name="max_uses" render={({ field }) => (

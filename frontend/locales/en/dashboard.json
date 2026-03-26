@@ -16,6 +16,9 @@
     "memberWelcome": "Welcome to your member portal.",
     "yourNumber": "Your member number",
     "upcomingActivities": "Your upcoming activities",
-    "noUpcoming": "No upcoming activities"
+    "noUpcoming": "No upcoming activities",
+    "pendingAmount": "Pending Amount",
+    "paidThisMonth": "Paid This Month",
+    "overdueAmount": "Overdue"
   }
 }

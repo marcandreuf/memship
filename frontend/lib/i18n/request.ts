@@ -14,9 +14,10 @@ export default getRequestConfig(async ({ requestLocale }) => {
   const dashboard = (await import(`@/locales/${locale}/dashboard.json`)).default;
   const settings = (await import(`@/locales/${locale}/settings.json`)).default;
   const activities = (await import(`@/locales/${locale}/activities.json`)).default;
+  const receipts = (await import(`@/locales/${locale}/receipts.json`)).default;
 
   return {
     locale,
-    messages: { ...common, ...auth, ...members, ...dashboard, ...settings, ...activities },
+    messages: { ...common, ...auth, ...members, ...dashboard, ...settings, ...activities, ...receipts },
   };
 });

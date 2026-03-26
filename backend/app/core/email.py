@@ -137,6 +137,77 @@ def send_email(to: str, subject: str, html_body: str) -> bool:
         return False
 
 
+def send_email_with_attachment(
+    to: str,
+    subject: str,
+    html_body: str,
+    attachment: bytes,
+    attachment_filename: str = "document.pdf",
+    attachment_mime: str = "application/pdf",
+) -> bool:
+    """Send an email with a file attachment. Tries Resend first, then SMTP."""
+    import base64
+
+    # Try Resend first
+    if settings.RESEND_API_KEY:
+        try:
+            import resend
+            resend.api_key = settings.RESEND_API_KEY
+            from_email = settings.RESEND_FROM_EMAIL or settings.SMTP_FROM
+            resend.Emails.send({
+                "from": from_email,
+                "to": [to],
+                "subject": subject,
+                "html": html_body,
+                "attachments": [{
+                    "filename": attachment_filename,
+                    "content": list(attachment),
+                    "content_type": attachment_mime,
+                }],
+            })
+            logger.info(f"Email with attachment sent via Resend: to={to}, file={attachment_filename}")
+            return True
+        except Exception as e:
+            logger.error(f"Resend email with attachment failed: to={to}, error={e}")
+            # Fall through to SMTP
+
+    # Try SMTP
+    if settings.smtp_enabled:
+        import smtplib
+        from email.mime.multipart import MIMEMultipart
+        from email.mime.text import MIMEText
+        from email.mime.base import MIMEBase
+        from email import encoders
+
+        try:
+            msg = MIMEMultipart()
+            msg["From"] = settings.SMTP_FROM
+            msg["To"] = to
+            msg["Subject"] = subject
+            msg.attach(MIMEText(html_body, "html"))
+
+            part = MIMEBase(*attachment_mime.split("/"))
+            part.set_payload(attachment)
+            encoders.encode_base64(part)
+            part.add_header("Content-Disposition", f'attachment; filename="{attachment_filename}"')
+            msg.attach(part)
+
+            with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
+                if settings.SMTP_TLS:
+                    server.starttls()
+                if settings.SMTP_USER:
+                    server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+                server.sendmail(settings.SMTP_FROM, to, msg.as_string())
+            logger.info(f"Email with attachment sent via SMTP: to={to}, file={attachment_filename}")
+            return True
+        except Exception as e:
+            logger.error(f"SMTP email with attachment failed: to={to}, error={e}")
+            return False
+
+    logger.info(f"Email with attachment skipped (no transport): to={to}, subject={subject}, file={attachment_filename}")
+    return False
+
+
 # --- High-level email functions ---
 
 def send_welcome_email(to: str, first_name: str, member_number: str, locale: str = "es") -> bool:

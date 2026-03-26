@@ -15,7 +15,8 @@
     "phone": "Teléfono",
     "website": "Sitio web",
     "taxId": "CIF/NIF",
-    "locale": "Idioma",
+    "locale": "Idioma por defecto",
+    "localeHint": "Se usa para recibos, correos y formato de números",
     "timezone": "Zona horaria",
     "currency": "Moneda",
     "dateFormat": "Formato de fecha",
@@ -32,6 +33,11 @@
     "bankIban": "IBAN",
     "bankBic": "BIC / SWIFT",
     "invoicePrefix": "Prefijo de factura",
-    "invoiceNextNumber": "Siguiente número de factura"
+    "invoiceNextNumber": "Siguiente número de factura",
+    "payments": "Pagos",
+    "invoicing": "Facturación",
+    "defaultVatRate": "IVA por defecto",
+    "invoiceAnnualReset": "Numeración anual",
+    "invoiceAnnualResetDesc": "Reiniciar la numeración de recibos al inicio de cada año"
   }
 }

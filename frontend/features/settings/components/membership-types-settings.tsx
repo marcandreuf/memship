@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { TabContentSkeleton } from "@/components/ui/skeletons";
 import { Input } from "@/components/ui/input";
+import { DecimalInput } from "@/components/ui/decimal-input";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -193,7 +194,7 @@ export function MembershipTypesSettings() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>{t("members.typePrice")}</FormLabel>
-                      <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                      <FormControl><DecimalInput {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}

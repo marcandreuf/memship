@@ -8,6 +8,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
+import { DecimalInput } from "@/components/ui/decimal-input";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
@@ -229,7 +230,7 @@ function PriceForm({
           <FormItem><FormLabel>{t("activities.description")}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
         )} />
         <FormField control={form.control} name="amount" render={({ field }) => (
-          <FormItem><FormLabel>{t("activities.prices.amount")}</FormLabel><FormControl><Input type="number" min={0} step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+          <FormItem><FormLabel>{t("activities.prices.amount")}</FormLabel><FormControl><DecimalInput {...field} /></FormControl><FormMessage /></FormItem>
         )} />
         {modalities.length > 0 && (
           <FormField control={form.control} name="modality_id" render={({ field }) => (
