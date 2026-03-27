@@ -74,6 +74,10 @@ Abre http://localhost:8081 e inicia sesión con tus credenciales. Cambia `PORT=8
 | v0.2.7 | Mejoras de actividades — skeletons de carga, estado de URL con nuqs | Hecho |
 | v0.2.9 | Prerrequisitos de pagos — dirección y datos bancarios de la org, subida de logotipo, pestaña de contactos, IBAN del socio, Celery/Redis, notificaciones por email (Jinja2 + SMTP/Resend) | Hecho |
 | v0.3.0 | Pagos y facturación básica — recibos, generación de PDF, IVA, generación de cuotas, historial de pagos del socio | Hecho |
+| v0.3.1 | Correcciones — tests fallidos y README traducidos | Hecho |
+| v0.3.2 | Correcciones — arreglo del pipeline de build del frontend | Hecho |
+| v0.3.3 | Mejoras de CI — ejecución de tests más rápida | Hecho |
+| v0.3.4 | Correcciones — limpieza de warnings y optimización de tests de integración | Hecho |
 | v0.4.0 | Procesamiento de pagos (SEPA + Stripe) | — |
 | v0.5.0 | Sistema de comunicaciones | — |
 | v0.6.0 | Reservas y documentos | — |

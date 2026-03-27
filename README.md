@@ -74,6 +74,10 @@ Open http://localhost:8081 and log in with your credentials. Change `PORT=8081` 
 | v0.2.7 | Activity polish — loading skeletons, nuqs URL state | Done |
 | v0.2.9 | Payment prerequisites — org address & banking, logo upload, contact info tab, member IBAN, Celery/Redis, email notifications (Jinja2 + SMTP/Resend) | Done |
 | v0.3.0 | Basic Payments & Invoicing — receipts, PDF generation, VAT, fee generation, member payment history | Done |
+| v0.3.1 | Bug fixes — failing tests and translated readme files | Done |
+| v0.3.2 | Bug fixes — frontend build pipeline fix | Done |
+| v0.3.3 | CI improvements — faster test execution | Done |
+| v0.3.4 | Bug fixes — warning cleanup and integration test optimizations | Done |
 | v0.4.0 | Payment Processing (SEPA + Stripe) | — |
 | v0.5.0 | Communication System | — |
 | v0.6.0 | Bookings & Documents | — |

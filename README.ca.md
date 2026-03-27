@@ -74,6 +74,10 @@ Obriu http://localhost:8081 i inicieu sessió amb les vostres credencials. Canvi
 | v0.2.7 | Millores d'activitats — esquelets de càrrega, estat d'URL amb nuqs | Fet |
 | v0.2.9 | Prerequisits de pagament — adreça i dades bancàries de l'organització, pujada de logotip, pestanya d'informació de contacte, IBAN del soci, Celery/Redis, notificacions per correu (Jinja2 + SMTP/Resend) | Fet |
 | v0.3.0 | Pagaments i facturació bàsics — rebuts, generació de PDF, IVA, generació de quotes, historial de pagaments del soci | Fet |
+| v0.3.1 | Correccions — proves fallides i README traduïts | Fet |
+| v0.3.2 | Correccions — arranjament del pipeline de build del frontend | Fet |
+| v0.3.3 | Millores de CI — execució de proves més ràpida | Fet |
+| v0.3.4 | Correccions — neteja de warnings i optimització de proves d'integració | Fet |
 | v0.4.0 | Processament de pagaments (SEPA + Stripe) | — |
 | v0.5.0 | Sistema de comunicació | — |
 | v0.6.0 | Reserves i documents | — |

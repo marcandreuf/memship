@@ -58,10 +58,19 @@ TestSessionLocal = sessionmaker(bind=test_engine, autocommit=False, autoflush=Fa
 def create_test_tables():
     """Create all tables once per test session.
 
-    Skips drop_all on teardown — the test DB is ephemeral (CI service container
-    or local docker), and dropping would race with other pytest-xdist workers.
+    With pytest-xdist, multiple workers may call this concurrently.
+    create_all uses IF NOT EXISTS for most DDL, but PostgreSQL type
+    creation can race. We catch and ignore that specific error.
+    Skips drop_all — the test DB is ephemeral (CI service or local docker).
     """
-    Base.metadata.create_all(bind=test_engine)
+    from sqlalchemy.exc import IntegrityError
+
+    try:
+        Base.metadata.create_all(bind=test_engine)
+    except IntegrityError:
+        # Another xdist worker already created the tables — safe to ignore
+        pass
+
     yield
 
 
