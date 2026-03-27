@@ -78,6 +78,8 @@ Abre http://localhost:8081 e inicia sesión con tus credenciales. Cambia `PORT=8
 | v0.3.2 | Correcciones — arreglo del pipeline de build del frontend | Hecho |
 | v0.3.3 | Mejoras de CI — ejecución de tests más rápida | Hecho |
 | v0.3.4 | Correcciones — limpieza de warnings y optimización de tests de integración | Hecho |
+| v0.3.5 | Correcciones — tests de integración fallidos | Hecho |
+| v0.3.6 | Optimización de CI — setup-uv v7, cache de hash de contraseñas, workers de test paralelos, hooks de versionado automático | Hecho |
 | v0.4.0 | Procesamiento de pagos (SEPA + Stripe) | — |
 | v0.5.0 | Sistema de comunicaciones | — |
 | v0.6.0 | Reservas y documentos | — |

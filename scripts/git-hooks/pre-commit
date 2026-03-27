@@ -1,6 +1,8 @@
 #!/bin/bash
 # Memship Pre-Commit Hook
-# Prompts for version bump before commits that affect deployable code
+# Prompts for version tag before commits.
+# Current version is read from the latest git tag (source of truth).
+# Updates VERSION file and creates git tag after commit.
 
 set -e
 
@@ -19,94 +21,92 @@ if [[ ! -e /dev/tty ]]; then
     exit 0
 fi
 
-# Check if VERSION file exists
-if [[ ! -f "$VERSION_FILE" ]]; then
-    echo -e "${YELLOW}Warning: VERSION file not found, skipping version check${NC}"
-    exit 0
+# Get current version from latest git tag (source of truth)
+CURRENT_VERSION=$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//')
+if [[ -z "$CURRENT_VERSION" ]]; then
+    CURRENT_VERSION="0.0.0"
 fi
+IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
 
-# Get list of staged files
+# Show staged files
 STAGED_FILES=$(git diff --cached --name-only)
 
-# Check if any deployable code is being committed
-DEPLOYABLE_PATTERNS="^backend/|^frontend/"
-DEPLOYABLE_CHANGES=$(echo "$STAGED_FILES" | grep -E "$DEPLOYABLE_PATTERNS" || true)
-
-if [[ -z "$DEPLOYABLE_CHANGES" ]]; then
-    exit 0
-fi
-
-# Check if VERSION file is already staged (already bumped)
-if echo "$STAGED_FILES" | grep -q "^VERSION$"; then
-    exit 0
-fi
-
-# Show current version and changes
-CURRENT_VERSION=$(cat "$VERSION_FILE" | tr -d '[:space:]')
 echo ""
 echo -e "${BLUE}═══════════════════════════════════════════════════════════${NC}"
 echo -e "${BLUE}                MEMSHIP VERSION CHECK                       ${NC}"
 echo -e "${BLUE}═══════════════════════════════════════════════════════════${NC}"
 echo ""
-echo -e "${YELLOW}Deployable code changes detected:${NC}"
-echo "$DEPLOYABLE_CHANGES" | head -10 | sed 's/^/  /'
-if [[ $(echo "$DEPLOYABLE_CHANGES" | wc -l) -gt 10 ]]; then
+echo -e "${YELLOW}Staged files:${NC}"
+echo "$STAGED_FILES" | head -10 | sed 's/^/  /'
+if [[ $(echo "$STAGED_FILES" | wc -l) -gt 10 ]]; then
     echo "  ... and more"
 fi
 echo ""
-echo -e "Current version: ${GREEN}$CURRENT_VERSION${NC}"
+echo -e "Current version (latest tag): ${GREEN}$CURRENT_VERSION${NC}"
 echo ""
 
-# Parse version
-IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+# Show suggested versions and ask for input
+PATCH_VERSION="$MAJOR.$MINOR.$((PATCH + 1))"
+MINOR_VERSION="$MAJOR.$((MINOR + 1)).0"
+MAJOR_VERSION="$((MAJOR + 1)).0.0"
 
-# Prompt for version bump
-echo "Do you want to bump the version for this commit?"
+echo "Version for this commit? Enter a semver or pick a suggestion:"
 echo ""
-echo "  1) patch  → $MAJOR.$MINOR.$((PATCH + 1))  (bug fixes, small changes)"
-echo "  2) minor  → $MAJOR.$((MINOR + 1)).0  (new features)"
-echo "  3) major  → $((MAJOR + 1)).0.0  (breaking changes)"
-echo "  4) skip   → Keep $CURRENT_VERSION (no version bump)"
+echo -e "  Suggestions:  ${GREEN}$PATCH_VERSION${NC}  |  ${GREEN}$MINOR_VERSION${NC}  |  ${GREEN}$MAJOR_VERSION${NC}"
 echo ""
-read -p "Enter choice [1-4] (default: 4): " choice < /dev/tty
+read -p "  Version (empty to skip): " NEW_VERSION < /dev/tty
 
-case ${choice:-4} in
-    1)
-        NEW_VERSION="$MAJOR.$MINOR.$((PATCH + 1))"
-        ;;
-    2)
-        NEW_VERSION="$MAJOR.$((MINOR + 1)).0"
-        ;;
-    3)
-        NEW_VERSION="$((MAJOR + 1)).0.0"
-        ;;
-    4)
-        echo -e "${YELLOW}Version bump skipped${NC}"
-        echo ""
-        exit 0
-        ;;
-    *)
-        echo -e "${RED}Invalid choice, version bump skipped${NC}"
-        exit 0
-        ;;
-esac
+# Skip if empty
+if [[ -z "$NEW_VERSION" ]]; then
+    echo -e "${YELLOW}Version update skipped${NC}"
+    echo ""
+    exit 0
+fi
 
-# Update VERSION file
+# Validate semver format
+if [[ ! "$NEW_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    echo -e "${RED}Invalid version format: $NEW_VERSION (expected X.Y.Z)${NC}"
+    echo -e "${YELLOW}Version update skipped${NC}"
+    exit 0
+fi
+
+# Check if tag already exists
+if git tag -l "v$NEW_VERSION" | grep -q "v$NEW_VERSION"; then
+    echo -e "${RED}Tag v$NEW_VERSION already exists${NC}"
+    echo -e "${YELLOW}Version update skipped${NC}"
+    exit 0
+fi
+
+# Update VERSION file and stage it
 echo "$NEW_VERSION" > "$VERSION_FILE"
-
-# Stage the VERSION file
 git add "$VERSION_FILE"
 
 echo ""
-echo -e "${GREEN}Version bumped: $CURRENT_VERSION → $NEW_VERSION${NC}"
-echo -e "${GREEN}VERSION file staged for commit${NC}"
+echo -e "${GREEN}Version: $CURRENT_VERSION → $NEW_VERSION${NC}"
 echo ""
 
-# Ask about creating git tag
-read -p "Create git tag v$NEW_VERSION after commit? [y/N]: " create_tag < /dev/tty
-if [[ "$create_tag" =~ ^[Yy]$ ]]; then
-    echo "$NEW_VERSION" > "$PROJECT_ROOT/.pending-tag"
-    echo -e "${BLUE}Tag v$NEW_VERSION will be created after commit${NC}"
+# --- Check README roadmap ---
+
+README_EN="$PROJECT_ROOT/README.md"
+if grep -q "| v$NEW_VERSION " "$README_EN" 2>/dev/null; then
+    echo -e "${GREEN}v$NEW_VERSION found in README roadmap${NC}"
+else
+    echo -e "${YELLOW}Warning: v$NEW_VERSION not found in README.md roadmap${NC}"
+    echo -e "${YELLOW}Consider updating the roadmaps before committing${NC}"
+    echo ""
+    read -p "Continue anyway? [y/N]: " continue_anyway < /dev/tty
+    if [[ ! "$continue_anyway" =~ ^[Yy]$ ]]; then
+        # Revert VERSION file to match current tag
+        echo "$CURRENT_VERSION" > "$VERSION_FILE"
+        git add "$VERSION_FILE"
+        echo -e "${RED}Commit aborted — update READMEs first${NC}"
+        exit 1
+    fi
 fi
 
+echo ""
+
+# Create tag after commit (via post-commit hook)
+echo "$NEW_VERSION" > "$PROJECT_ROOT/.pending-tag"
+echo -e "${GREEN}Tag v$NEW_VERSION will be created after commit${NC}"
 echo ""

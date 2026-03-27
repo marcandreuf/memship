@@ -78,6 +78,8 @@ Obriu http://localhost:8081 i inicieu sessió amb les vostres credencials. Canvi
 | v0.3.2 | Correccions — arranjament del pipeline de build del frontend | Fet |
 | v0.3.3 | Millores de CI — execució de proves més ràpida | Fet |
 | v0.3.4 | Correccions — neteja de warnings i optimització de proves d'integració | Fet |
+| v0.3.5 | Correccions — proves d'integració fallides | Fet |
+| v0.3.6 | Optimització de CI — setup-uv v7, cache de hash de contrasenyes, workers de proves paral·lels, hooks de versionat automàtic | Fet |
 | v0.4.0 | Processament de pagaments (SEPA + Stripe) | — |
 | v0.5.0 | Sistema de comunicació | — |
 | v0.6.0 | Reserves i documents | — |

@@ -1,7 +1,6 @@
 #!/bin/bash
 # Memship Post-Commit Hook
 # Creates git tag if requested during pre-commit
-# Checks README roadmap for version sync
 
 PROJECT_ROOT="$(git rev-parse --show-toplevel)"
 PENDING_TAG_FILE="$PROJECT_ROOT/.pending-tag"
@@ -9,7 +8,6 @@ PENDING_TAG_PUSH_FILE="$PROJECT_ROOT/.pending-tag-push"
 
 # Colors
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
 NC='\033[0m'
 
 if [[ -f "$PENDING_TAG_FILE" ]]; then
@@ -22,12 +20,5 @@ if [[ -f "$PENDING_TAG_FILE" ]]; then
         echo -e "${GREEN}Created git tag: v$VERSION (will be pushed with your next push)${NC}"
         echo ""
         echo "$VERSION" > "$PENDING_TAG_PUSH_FILE"
-
-        # Check if this version exists in README roadmap
-        README="$PROJECT_ROOT/README.md"
-        if [[ -f "$README" ]] && ! grep -q "| v$VERSION " "$README"; then
-            echo -e "${YELLOW}⚠  v$VERSION is not in README.md roadmap — consider adding it${NC}"
-            echo ""
-        fi
     fi
 fi

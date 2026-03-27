@@ -78,6 +78,8 @@ Open http://localhost:8081 and log in with your credentials. Change `PORT=8081` 
 | v0.3.2 | Bug fixes — frontend build pipeline fix | Done |
 | v0.3.3 | CI improvements — faster test execution | Done |
 | v0.3.4 | Bug fixes — warning cleanup and integration test optimizations | Done |
+| v0.3.5 | Bug fixes — failing integration tests | Done |
+| v0.3.6 | CI optimization — setup-uv v7, cached password hashing, pytest-xdist parallel workers, automated version hooks | Done |
 | v0.4.0 | Payment Processing (SEPA + Stripe) | — |
 | v0.5.0 | Communication System | — |
 | v0.6.0 | Bookings & Documents | — |
