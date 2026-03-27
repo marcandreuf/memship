@@ -18,6 +18,9 @@ on:
       - 'backend/**'
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   unit:
     name: Unit Tests
@@ -95,7 +98,7 @@ jobs:
           DATABASE_URL: postgresql://memship:memship@localhost:5434/memship_test_db
           DATABASE_TEST_URL: postgresql://memship:memship@localhost:5434/memship_test_db
           SECRET_KEY: test-secret-key-for-ci-minimum-32-chars
-        run: uv run pytest tests/integration/ -v --tb=short
+        run: uv run pytest tests/integration/ -v --tb=short -n 2
 
       - name: Test Summary
         if: always()
