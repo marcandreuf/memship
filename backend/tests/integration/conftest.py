@@ -47,6 +47,9 @@ from app.domains.activities.models import (  # noqa: F401
     ActivityPrice, DiscountCode, Registration, RegistrationAttachment,
     RegistrationConsent,
 )
+from app.domains.billing.models import (  # noqa: F401
+    Concept, PaymentProvider, Receipt, Remittance, SepaMandate,
+)
 
 # Use test database
 TEST_DATABASE_URL = os.getenv("DATABASE_TEST_URL", settings.DATABASE_TEST_URL)

@@ -1,4 +1,4 @@
-"""Billing domain models — concepts and receipts."""
+"""Billing domain models — concepts, receipts, mandates, remittances, providers."""
 
 from sqlalchemy import (
     Boolean,
@@ -14,6 +14,7 @@ from sqlalchemy import (
     Text,
     func,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base
@@ -94,8 +95,7 @@ class Receipt(Base):
     member_id = Column(Integer, ForeignKey("members.id"), nullable=False)
     concept_id = Column(Integer, ForeignKey("concepts.id"))
     registration_id = Column(Integer, ForeignKey("registrations.id"))
-    # remittance_id — column added now, FK constraint deferred to v0.4.0
-    remittance_id = Column(Integer)
+    remittance_id = Column(Integer, ForeignKey("remittances.id"))
     created_by = Column(Integer, ForeignKey("users.id"))
 
     # Origin & description
@@ -143,4 +143,117 @@ class Receipt(Base):
     member = relationship("Member", backref="receipts")
     concept = relationship("Concept", back_populates="receipts")
     registration = relationship("Registration", backref="receipts")
+    remittance = relationship("Remittance", back_populates="receipts")
     creator = relationship("User", foreign_keys=[created_by])
+
+
+class SepaMandate(Base):
+    """SEPA Direct Debit mandate — member authorization for bank account debiting."""
+
+    __tablename__ = "sepa_mandates"
+    __table_args__ = (
+        CheckConstraint(
+            "mandate_type IN ('recurrent', 'one_off')",
+            name="valid_mandate_type",
+        ),
+        CheckConstraint(
+            "signature_method IN ('paper', 'digital')",
+            name="valid_signature_method",
+        ),
+        CheckConstraint(
+            "status IN ('active', 'cancelled', 'expired')",
+            name="valid_mandate_status",
+        ),
+        Index("ix_sepa_mandates_member_id", "member_id"),
+        Index("ix_sepa_mandates_status", "status"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    member_id = Column(Integer, ForeignKey("members.id"), nullable=False)
+    mandate_reference = Column(String(35), unique=True, nullable=False)
+    creditor_id = Column(String(35), nullable=False)
+    debtor_name = Column(String(255), nullable=False)
+    debtor_iban = Column(String(34), nullable=False)
+    debtor_bic = Column(String(11))
+    mandate_type = Column(String(20), nullable=False, default="recurrent")
+    signature_method = Column(String(20), nullable=False, default="paper")
+    status = Column(String(20), nullable=False, default="active")
+    signed_at = Column(Date, nullable=False)
+    document_path = Column(String(500))
+    cancelled_at = Column(DateTime(timezone=True))
+    notes = Column(Text)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    # ORM relationships
+    member = relationship("Member", backref="sepa_mandates")
+
+
+class Remittance(Base):
+    """Payment batch — groups receipts for SEPA direct debit submission."""
+
+    __tablename__ = "remittances"
+    __table_args__ = (
+        CheckConstraint(
+            "remittance_type IN ('sepa')",
+            name="valid_remittance_type",
+        ),
+        CheckConstraint(
+            "status IN ('draft', 'ready', 'submitted', 'processed', 'closed', 'cancelled')",
+            name="valid_remittance_status",
+        ),
+        CheckConstraint("total_amount >= 0", name="remittance_total_non_negative"),
+        Index("ix_remittances_status", "status"),
+        Index("ix_remittances_emission_date", "emission_date"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    remittance_number = Column(String(50), unique=True, nullable=False)
+    remittance_type = Column(String(20), nullable=False, default="sepa")
+    status = Column(String(20), nullable=False, default="draft")
+    emission_date = Column(Date, nullable=False)
+    due_date = Column(Date, nullable=False)
+    total_amount = Column(Numeric(12, 2), nullable=False, default=0)
+    receipt_count = Column(Integer, nullable=False, default=0)
+    sepa_file_path = Column(String(500))
+    creditor_name = Column(String(255), nullable=False)
+    creditor_iban = Column(String(34), nullable=False)
+    creditor_bic = Column(String(11))
+    creditor_id = Column(String(35), nullable=False)
+    notes = Column(Text)
+    created_by = Column(Integer, ForeignKey("users.id"))
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    # ORM relationships
+    receipts = relationship("Receipt", back_populates="remittance")
+    creator = relationship("User", foreign_keys=[created_by])
+
+
+class PaymentProvider(Base):
+    """Payment provider configuration — stores credentials and settings per provider."""
+
+    __tablename__ = "payment_providers"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('active', 'test', 'disabled')",
+            name="valid_provider_status",
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    provider_type = Column(String(50), nullable=False)
+    display_name = Column(String(255), nullable=False)
+    status = Column(String(20), nullable=False, default="disabled")
+    config = Column(JSONB, default=dict)
+    is_default = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )

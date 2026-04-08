@@ -16,7 +16,9 @@ from app.api.v1.endpoints import (
     groups,
     health,
     logo,
+    mandates,
     members,
+    remittances,
     membership_types,
     persons,
     receipts,
@@ -46,6 +48,9 @@ api_router.include_router(logo.router)
 api_router.include_router(contacts.router)
 api_router.include_router(contacts.detail_router)
 api_router.include_router(contacts.types_router)
+api_router.include_router(mandates.member_router)
+api_router.include_router(mandates.router)
+api_router.include_router(remittances.router)
 api_router.include_router(receipts.member_router)
 api_router.include_router(receipts.router)
 api_router.include_router(concepts.router)

@@ -29,6 +29,8 @@ class OrganizationSettingsResponse(BaseModel):
     invoice_next_number: int = 1
     invoice_annual_reset: bool | None = True
     default_vat_rate: float | None = 21.00
+    creditor_id: str | None = None
+    sepa_format: str | None = None
     features: dict = {}
     custom_settings: dict = {}
     created_at: datetime
@@ -57,5 +59,7 @@ class OrganizationSettingsUpdate(BaseModel):
     invoice_next_number: int | None = Field(default=None, ge=1)
     invoice_annual_reset: bool | None = None
     default_vat_rate: float | None = Field(default=None, ge=0, le=100)
+    creditor_id: str | None = Field(default=None, max_length=35)
+    sepa_format: str | None = Field(default=None, pattern=r"^(pain\.008)$")
     features: dict | None = None
     custom_settings: dict | None = None

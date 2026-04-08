@@ -43,6 +43,9 @@ class OrganizationSettings(Base):
     invoice_next_number = Column(Integer, default=1)
     invoice_annual_reset = Column(Boolean, default=True)
     default_vat_rate = Column(Numeric(5, 2), default=21.00)
+    # SEPA direct debit
+    creditor_id = Column(String(35))
+    sepa_format = Column(String(20), default="pain.008")
     features = Column(JSONB, default=dict)
     custom_settings = Column(JSONB, default=dict)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
