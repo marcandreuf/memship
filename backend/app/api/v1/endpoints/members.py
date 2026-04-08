@@ -1,5 +1,6 @@
 """Member endpoints."""
 
+from pydantic import BaseModel, Field
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session, joinedload
 
@@ -19,7 +20,7 @@ from app.domains.members.schemas import (
     PersonResponse,
 )
 from app.domains.members.service import change_member_status, create_member, is_minor_by_dob
-from app.domains.persons.models import Person
+from app.domains.persons.models import Contact, ContactType, Person
 
 router = APIRouter(prefix="/members", tags=["members"])
 
@@ -217,3 +218,95 @@ def change_status(
     db.commit()
     db.refresh(member)
     return _to_response(member)
+
+
+# --- Member self-service profile ---
+
+
+class ProfileUpdate(BaseModel):
+    gender: str | None = Field(default=None, max_length=20)
+    phone: str | None = Field(default=None, max_length=50)
+
+
+class ProfileResponse(BaseModel):
+    gender: str | None = None
+    phone: str | None = None
+
+
+@router.get("/me/profile", response_model=ProfileResponse)
+def get_my_profile(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get the current member's editable profile fields."""
+    person = current_user.person
+    mobile_type = db.query(ContactType).filter(ContactType.code == "phone_mobile").first()
+    phone = None
+    if mobile_type:
+        contact = (
+            db.query(Contact)
+            .filter(
+                Contact.entity_type == "person",
+                Contact.entity_id == person.id,
+                Contact.contact_type_id == mobile_type.id,
+            )
+            .first()
+        )
+        if contact:
+            phone = contact.value
+    return ProfileResponse(gender=person.gender, phone=phone)
+
+
+@router.put("/me/profile", response_model=ProfileResponse)
+def update_my_profile(
+    data: ProfileUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Update the current member's profile (gender, phone)."""
+    person = current_user.person
+    update_data = data.model_dump(exclude_unset=True)
+
+    if "gender" in update_data:
+        person.gender = update_data["gender"]
+
+    if "phone" in update_data:
+        mobile_type = db.query(ContactType).filter(ContactType.code == "phone_mobile").first()
+        if mobile_type:
+            contact = (
+                db.query(Contact)
+                .filter(
+                    Contact.entity_type == "person",
+                    Contact.entity_id == person.id,
+                    Contact.contact_type_id == mobile_type.id,
+                )
+                .first()
+            )
+            if update_data["phone"]:
+                if contact:
+                    contact.value = update_data["phone"]
+                else:
+                    db.add(Contact(
+                        entity_type="person",
+                        entity_id=person.id,
+                        contact_type_id=mobile_type.id,
+                        value=update_data["phone"],
+                        is_primary=True,
+                    ))
+            elif contact:
+                db.delete(contact)
+
+    db.commit()
+
+    # Re-read for response
+    phone_val = None
+    mobile_type = db.query(ContactType).filter(ContactType.code == "phone_mobile").first()
+    if mobile_type:
+        c = db.query(Contact).filter(
+            Contact.entity_type == "person",
+            Contact.entity_id == person.id,
+            Contact.contact_type_id == mobile_type.id,
+        ).first()
+        if c:
+            phone_val = c.value
+    return ProfileResponse(gender=person.gender, phone=phone_val)

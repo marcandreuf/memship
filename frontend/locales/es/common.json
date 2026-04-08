@@ -9,6 +9,8 @@
     "membershipTypes": "Tipos de membresía",
     "groups": "Grupos",
     "receipts": "Recibos",
+    "mandates": "Mandatos",
+    "remittances": "Remesas",
     "activities": "Actividades",
     "profile": "Mi perfil",
     "settings": "Configuración",
@@ -38,6 +40,7 @@
     "previous": "Anterior",
     "next": "Siguiente",
     "details": "Detalles",
+    "close": "Cerrar",
     "comingSoon": "Próximamente",
     "notFound": "No encontrado",
     "view": "Ver",
@@ -73,7 +76,9 @@
     "status": "Estado",
     "joinedAt": "Socio desde",
     "language": "Idioma",
-    "preferences": "Preferencias"
+    "preferences": "Preferencias",
+    "editProfile": "Editar perfil",
+    "phone": "Teléfono"
   },
   "validation": {
     "required": "Este campo es obligatorio",

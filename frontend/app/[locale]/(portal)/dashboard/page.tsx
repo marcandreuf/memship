@@ -268,7 +268,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">
-        {t("dashboard.welcome", { name: user?.first_name ?? "" })}
+        {t("dashboard.welcome", { name: user?.first_name ?? "", gender: user?.gender ?? "other" })}
       </h1>
 
       {isAdmin && (
@@ -331,7 +331,7 @@ export default function DashboardPage() {
           <Card>
             <CardContent className="py-3 px-4">
               <p className="text-muted-foreground">
-                {t("dashboard.memberWelcome")}
+                {t("dashboard.memberWelcome", { gender: user?.gender ?? "other" })}
               </p>
               {user?.member_number && (
                 <p className="mt-1 font-mono text-sm">

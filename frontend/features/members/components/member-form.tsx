@@ -22,8 +22,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useLocale } from "next-intl";
 import { useMembershipTypes } from "../hooks/use-members";
+import { useSettings } from "@/features/settings/hooks/use-settings";
 import type { MemberData } from "../services/members-api";
+import type { GenderOption } from "@/features/settings/components/gender-options-settings";
 
 const memberSchema = z.object({
   first_name: z.string().min(1).max(100),
@@ -47,7 +50,10 @@ interface MemberFormProps {
 
 export function MemberForm({ member, onSubmit, isSubmitting, onCancel }: MemberFormProps) {
   const t = useTranslations();
+  const locale = useLocale();
   const { data: membershipTypes } = useMembershipTypes();
+  const { data: settings } = useSettings();
+  const genderOptions = (settings?.features?.gender_options as GenderOption[] | undefined) || [];
 
   const form = useForm<MemberFormValues>({
     resolver: zodResolver(memberSchema),
@@ -113,7 +119,7 @@ export function MemberForm({ member, onSubmit, isSubmitting, onCancel }: MemberF
               )}
             />
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <FormField
                 control={form.control}
                 name="date_of_birth"
@@ -127,6 +133,36 @@ export function MemberForm({ member, onSubmit, isSubmitting, onCancel }: MemberF
                   </FormItem>
                 )}
               />
+
+              {genderOptions.length > 0 && (
+                <FormField
+                  control={form.control}
+                  name="gender"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("members.gender")}</FormLabel>
+                      <Select
+                        value={field.value || ""}
+                        onValueChange={field.onChange}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="—" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {genderOptions.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt[`label_${locale}` as keyof GenderOption] || opt.label_en}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               <FormField
                 control={form.control}

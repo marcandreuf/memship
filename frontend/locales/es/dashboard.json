@@ -1,6 +1,6 @@
 {
   "dashboard": {
-    "welcome": "Bienvenido, {name}",
+    "welcome": "{gender, select, female {Bienvenida} other {Bienvenido}}, {name}",
     "activeMembers": "Socios activos",
     "pendingMembers": "Socios pendientes",
     "totalMembers": "Total socios",
@@ -13,7 +13,7 @@
     "waitlistRegistrations": "En lista de espera",
     "cancelledRegistrations": "Canceladas",
     "pendingRegistrations": "Pendientes",
-    "memberWelcome": "Bienvenido a tu portal de socio.",
+    "memberWelcome": "{gender, select, female {Bienvenida a tu portal de socia.} other {Bienvenido a tu portal de socio.}}",
     "yourNumber": "Tu número de socio",
     "upcomingActivities": "Tus próximas actividades",
     "noUpcoming": "No hay actividades próximas",

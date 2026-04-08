@@ -46,6 +46,11 @@
     "activities": "Actividades",
     "auditLog": "Auditoría",
     "gender": "Género",
+    "genderMale": "Hombre",
+    "genderFemale": "Mujer",
+    "genderNonBinary": "No binario",
+    "genderOther": "Otro",
+    "genderPreferNotToSay": "Prefiero no decirlo",
     "noActivities": "Este socio no tiene inscripciones en actividades",
     "registeredOn": "Inscrito",
     "amount": "Importe"

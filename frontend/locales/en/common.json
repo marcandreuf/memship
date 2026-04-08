@@ -9,6 +9,8 @@
     "membershipTypes": "Membership Types",
     "groups": "Groups",
     "receipts": "Receipts",
+    "mandates": "Mandates",
+    "remittances": "Remittances",
     "activities": "Activities",
     "profile": "My Profile",
     "settings": "Settings",
@@ -38,6 +40,7 @@
     "previous": "Previous",
     "next": "Next",
     "details": "Details",
+    "close": "Close",
     "comingSoon": "Coming soon",
     "notFound": "Not found",
     "view": "View",
@@ -73,7 +76,9 @@
     "status": "Status",
     "joinedAt": "Member Since",
     "language": "Language",
-    "preferences": "Preferences"
+    "preferences": "Preferences",
+    "editProfile": "Edit Profile",
+    "phone": "Phone"
   },
   "validation": {
     "required": "This field is required",

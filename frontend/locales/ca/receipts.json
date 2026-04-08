@@ -34,7 +34,7 @@
     "reemit": "Reemetre",
     "downloadPdf": "Descarregar PDF",
     "generateFees": "Generar quotes",
-    "generateFeesDesc": "Crear rebuts per a tots els socis actius segons el seu tipus de membresía",
+    "generateFeesDesc": "Crear rebuts per a tots els socis actius segons el seu tipus de afiliació",
     "generated": "{count} rebuts generats",
     "noReceipts": "No s'han trobat rebuts",
     "confirmEmit": "Emetre aquest rebut?",

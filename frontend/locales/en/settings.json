@@ -38,6 +38,15 @@
     "invoicing": "Invoicing",
     "defaultVatRate": "Default VAT Rate",
     "invoiceAnnualReset": "Annual Numbering Reset",
-    "invoiceAnnualResetDesc": "Reset receipt numbering at the start of each year"
+    "invoiceAnnualResetDesc": "Reset receipt numbering at the start of each year",
+    "sepa": "SEPA Direct Debit",
+    "creditorId": "Creditor ID",
+    "creditorIdDesc": "SEPA creditor identifier (e.g. ES12000B12345678)",
+    "sepaFormat": "SEPA Format",
+    "sepaFormatDesc": "ISO 20022 pain.008 — standard for all SEPA-zone banks",
+    "genderOptions": "Gender Options",
+    "genderOptionsDesc": "Configure the gender options available in member forms. Each option needs a value key and labels in all languages.",
+    "genderValue": "Value",
+    "addGenderOption": "Add option"
   }
 }

@@ -21,6 +21,8 @@ export interface SettingsData {
   invoice_next_number: number;
   invoice_annual_reset: boolean;
   default_vat_rate: number;
+  creditor_id: string | null;
+  sepa_format: string | null;
   features: Record<string, unknown>;
   custom_settings: Record<string, unknown>;
   created_at: string;

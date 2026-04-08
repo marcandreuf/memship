@@ -1,9 +1,8 @@
 """Remittance (SEPA batch) management endpoints."""
 
-import json
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
@@ -161,13 +160,13 @@ def mark_submitted_endpoint(
 @router.post("/{remittance_id}/import-returns")
 async def import_returns_endpoint(
     remittance_id: int,
-    file: UploadFile,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
-    """Import return/rejection file for a remittance.
+    """Import return/rejection data for a remittance.
 
-    Accepts a JSON file with format:
+    Accepts a JSON body with format:
     [{"receipt_number": "FAC-2026-0001", "reason": "Insufficient funds"}, ...]
     """
     remittance = db.query(Remittance).filter(
@@ -176,13 +175,12 @@ async def import_returns_endpoint(
     if not remittance:
         raise HTTPException(status_code=404, detail="Remittance not found")
 
-    content = await file.read()
     try:
-        return_data = json.loads(content)
-    except (json.JSONDecodeError, UnicodeDecodeError):
+        return_data = await request.json()
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Invalid JSON file",
+            detail="Invalid JSON body",
         )
 
     if not isinstance(return_data, list):

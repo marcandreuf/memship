@@ -11,6 +11,7 @@ Creates:
 - Extra member accounts for realistic data (--test only)
 - Sample registrations: confirmed, waitlisted, cancelled (--test only)
 - Discount codes, consents, and attachment types per activity (--test only)
+- SEPA mandates, payment provider, and batchable receipts (--test only)
 
 Usage:
     python -m app.cli.seed          # Interactive
@@ -34,7 +35,7 @@ from app.domains.activities.models import (
     ActivityPrice, DiscountCode, Registration, RegistrationConsent,
 )
 from app.domains.members.models import Group, Member, MembershipType
-from app.domains.billing.models import Concept, Receipt
+from app.domains.billing.models import Concept, PaymentProvider, Receipt, Remittance, SepaMandate
 
 ph = PasswordHasher()
 
@@ -129,7 +130,15 @@ def seed_org_settings(db) -> None:
         invoice_next_number=1,
         invoice_annual_reset=True,
         default_vat_rate=21.00,
-        features={},
+        features={
+            "gender_options": [
+                {"value": "male", "label_es": "Hombre", "label_ca": "Home", "label_en": "Male"},
+                {"value": "female", "label_es": "Mujer", "label_ca": "Dona", "label_en": "Female"},
+                {"value": "non_binary", "label_es": "No binario", "label_ca": "No binari", "label_en": "Non-binary"},
+                {"value": "other", "label_es": "Otro", "label_ca": "Altre", "label_en": "Other"},
+                {"value": "prefer_not_to_say", "label_es": "Prefiero no decirlo", "label_ca": "Prefereixo no dir-ho", "label_en": "Prefer not to say"},
+            ],
+        },
         custom_settings={},
     )
     db.add(org)
@@ -1133,6 +1142,164 @@ def seed_billing_data(db) -> None:
     print(f"  Receipts: created {receipt_count} ({receipt_count - len(manual_items) - len(registrations)} membership, {len(registrations)} activity, {len(manual_items)} manual)")
 
 
+def seed_sepa_data(db) -> None:
+    """Create SEPA mandates, a payment provider, and a sample remittance for testing."""
+    from datetime import date, timedelta
+    from decimal import Decimal
+
+    existing = db.query(SepaMandate).count()
+    if existing > 0:
+        print(f"  SEPA: already seeded ({existing} mandates)")
+        return
+
+    # --- Set creditor_id on org settings ---
+    org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
+    if org and not org.creditor_id:
+        org.creditor_id = "ES12000B12345678"
+        org.sepa_format = "pain.008"
+        db.flush()
+        print("  Org creditor_id: set to ES12000B12345678")
+
+    # --- Payment provider ---
+    provider = PaymentProvider(
+        provider_type="sepa_direct_debit",
+        display_name="SEPA Direct Debit",
+        status="active",
+        config={"format": "pain.008.001.02"},
+        is_default=True,
+    )
+    db.add(provider)
+    db.flush()
+    print("  Payment provider: created SEPA Direct Debit")
+
+    # --- Add bank IBANs to more members (for mandate variety) ---
+    extra_iban_data = [
+        ("anna@test.com", "ES8023100001180000012345", "CAIXESBBXXX"),
+        ("marta@test.com", "ES6000491500051234567892", "BSCHESMMXXX"),
+        ("jordi@test.com", "ES2100820532161234567890", "BSABESBBXXX"),
+        ("elena@test.com", "ES7100302053091234567895", "BARKESMMXXX"),
+        ("alex@test.com", "ES3801822200160201234567", "BBVAESMMXXX"),
+    ]
+    for email, iban, bic in extra_iban_data:
+        person = db.query(Person).filter(Person.email == email).first()
+        if person and not person.bank_iban:
+            person.bank_iban = iban
+            person.bank_bic = bic
+    db.flush()
+
+    # --- Create mandates ---
+    # Members who already have IBANs: maria, joan, carlos (from seed_member_contacts)
+    # + anna, marta, jordi, elena, alex (added above)
+    mandate_members = [
+        # (email, status) — 6 active, 1 cancelled, 1 without mandate (for testing exclusion)
+        ("maria@test.com", "active"),
+        ("joan@test.com", "active"),
+        ("carlos@test.com", "active"),
+        ("anna@test.com", "active"),
+        ("marta@test.com", "active"),
+        ("jordi@test.com", "cancelled"),
+        ("elena@test.com", "active"),
+        # alex@test.com intentionally left without a mandate (for exclusion testing)
+    ]
+
+    today = date.today()
+    mandate_count = 0
+    for email, mandate_status in mandate_members:
+        person = db.query(Person).filter(Person.email == email).first()
+        if not person or not person.bank_iban:
+            continue
+        member = db.query(Member).join(Person, Member.person_id == Person.id).filter(Person.email == email).first()
+        if not member:
+            continue
+
+        seq = mandate_count + 1
+        reference = f"FAC-{member.member_number}-{seq:03d}"
+        signed_date = today - timedelta(days=90 + mandate_count * 5)
+
+        mandate = SepaMandate(
+            member_id=member.id,
+            mandate_reference=reference,
+            creditor_id=org.creditor_id,
+            debtor_name=f"{person.first_name} {person.last_name}",
+            debtor_iban=person.bank_iban,
+            debtor_bic=person.bank_bic,
+            mandate_type="recurrent",
+            signature_method="paper",
+            status=mandate_status,
+            signed_at=signed_date,
+            cancelled_at=today - timedelta(days=10) if mandate_status == "cancelled" else None,
+        )
+        db.add(mandate)
+        mandate_count += 1
+
+    db.flush()
+    print(f"  SEPA mandates: created {mandate_count} (6 active, 1 cancelled)")
+
+    # --- Ensure some receipts are emitted + batchable for remittance testing ---
+    # Update a few receipts to be emitted/batchable for members with active mandates
+    active_mandate_member_ids = [
+        m.member_id
+        for m in db.query(SepaMandate).filter(SepaMandate.status == "active").all()
+    ]
+    batchable_receipts = (
+        db.query(Receipt)
+        .filter(
+            Receipt.member_id.in_(active_mandate_member_ids),
+            Receipt.status.in_(["emitted", "overdue"]),
+            Receipt.is_batchable.is_(True),
+            Receipt.remittance_id.is_(None),
+        )
+        .limit(6)
+        .all()
+    )
+    if len(batchable_receipts) >= 4:
+        print(f"  Batchable receipts: {len(batchable_receipts)} receipts ready for remittance testing")
+    else:
+        # Create extra batchable receipts to ensure enough for testing
+        concept = db.query(Concept).filter(Concept.concept_type == "membership").first()
+        if concept and active_mandate_member_ids:
+            receipt_prefix = org.invoice_prefix or "FAC"
+            year = today.year
+            # Find next receipt number
+            last_receipt = db.query(Receipt).order_by(Receipt.id.desc()).first()
+            seq_start = 100  # high number to avoid collisions
+            if last_receipt:
+                try:
+                    parts = last_receipt.receipt_number.split("-")
+                    seq_start = int(parts[-1]) + 1
+                except (ValueError, IndexError):
+                    pass
+
+            for i, member_id in enumerate(active_mandate_member_ids[:4]):
+                member = db.query(Member).filter(Member.id == member_id).first()
+                person = db.query(Person).filter(Person.id == member.person_id).first() if member else None
+                if not member or not person:
+                    continue
+                base = Decimal("50.00")
+                vat = Decimal("10.50")
+                total = Decimal("60.50")
+                receipt = Receipt(
+                    receipt_number=f"{receipt_prefix}-{year}-{seq_start + i:04d}",
+                    member_id=member_id,
+                    concept_id=concept.id,
+                    origin="membership",
+                    description=f"SEPA test — {person.first_name} {person.last_name}",
+                    base_amount=base,
+                    vat_rate=Decimal("21"),
+                    vat_amount=vat,
+                    total_amount=total,
+                    status="emitted",
+                    emission_date=today - timedelta(days=15),
+                    due_date=today + timedelta(days=15),
+                    is_batchable=True,
+                )
+                db.add(receipt)
+            db.flush()
+            print(f"  SEPA test receipts: created {min(4, len(active_mandate_member_ids))} emitted batchable receipts")
+
+    print("  SEPA seed: complete — ready for manual SEPA workflow testing")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Memship seed command")
     parser.add_argument(
@@ -1203,6 +1370,9 @@ def main() -> None:
 
             print("\nSeeding billing data...")
             seed_billing_data(db)
+
+            print("\nSeeding SEPA data...")
+            seed_sepa_data(db)
 
             print("\n  ⚠  TEST ACCOUNTS — do NOT use in production:")
             for account in TEST_ACCOUNTS:

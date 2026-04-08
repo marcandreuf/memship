@@ -46,6 +46,11 @@
     "activities": "Activities",
     "auditLog": "Audit Log",
     "gender": "Gender",
+    "genderMale": "Male",
+    "genderFemale": "Female",
+    "genderNonBinary": "Non-binary",
+    "genderOther": "Other",
+    "genderPreferNotToSay": "Prefer not to say",
     "noActivities": "No activity registrations for this member",
     "registeredOn": "Registered",
     "amount": "Amount"

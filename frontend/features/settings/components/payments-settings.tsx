@@ -38,6 +38,8 @@ const paymentsSchema = z.object({
   bank_name: z.string().max(255).optional().or(z.literal("")),
   bank_iban: z.string().max(34).optional().or(z.literal("")),
   bank_bic: z.string().max(11).optional().or(z.literal("")),
+  // SEPA
+  creditor_id: z.string().max(35).optional().or(z.literal("")),
 });
 
 type PaymentsFormValues = z.infer<typeof paymentsSchema>;
@@ -57,6 +59,7 @@ export function PaymentsSettings() {
       bank_name: "",
       bank_iban: "",
       bank_bic: "",
+      creditor_id: "",
     },
   });
 
@@ -70,6 +73,7 @@ export function PaymentsSettings() {
         bank_name: settings.bank_name || "",
         bank_iban: settings.bank_iban || "",
         bank_bic: settings.bank_bic || "",
+        creditor_id: settings.creditor_id || "",
       });
     }
   }, [settings, form]);
@@ -93,43 +97,43 @@ export function PaymentsSettings() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3 max-w-4xl">
         {/* Invoicing */}
         <Card>
           <CardHeader className="py-3 px-4">
             <CardTitle className="text-base">{t("settings.invoicing")}</CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-3 sm:grid-cols-2 px-4 pb-4 pt-0">
+          <CardContent className="grid gap-2 sm:grid-cols-2 px-4 pb-3 pt-0">
             <FormField control={form.control} name="invoice_prefix" render={({ field }) => (
               <FormItem>
-                <FormLabel>{t("settings.invoicePrefix")}</FormLabel>
-                <FormControl><Input {...field} placeholder="FAC" className="font-mono" /></FormControl>
+                <FormLabel className="text-xs">{t("settings.invoicePrefix")}</FormLabel>
+                <FormControl><Input className="h-8 font-mono" {...field} placeholder="FAC" /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
             <FormField control={form.control} name="invoice_next_number" render={({ field }) => (
               <FormItem>
-                <FormLabel>{t("settings.invoiceNextNumber")}</FormLabel>
-                <FormControl><Input type="number" min={1} {...field} /></FormControl>
+                <FormLabel className="text-xs">{t("settings.invoiceNextNumber")}</FormLabel>
+                <FormControl><Input className="h-8" type="number" min={1} {...field} /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
             <FormField control={form.control} name="default_vat_rate" render={({ field }) => (
               <FormItem>
-                <FormLabel>{t("settings.defaultVatRate")}</FormLabel>
+                <FormLabel className="text-xs">{t("settings.defaultVatRate")}</FormLabel>
                 <FormControl>
                   <div className="flex items-center gap-2">
-                    <Input type="number" min={0} max={100} step={0.01} {...field} className="flex-1" />
-                    <span className="text-sm text-muted-foreground">%</span>
+                    <Input type="number" min={0} max={100} step={0.01} {...field} className="h-8 flex-1" />
+                    <span className="text-xs text-muted-foreground">%</span>
                   </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )} />
             <FormField control={form.control} name="invoice_annual_reset" render={({ field }) => (
-              <FormItem className="flex items-center justify-between gap-3 rounded-lg border p-3">
+              <FormItem className="flex items-center justify-between gap-2 rounded-lg border p-2.5">
                 <div>
-                  <FormLabel className="mt-0">{t("settings.invoiceAnnualReset")}</FormLabel>
+                  <FormLabel className="mt-0 text-xs">{t("settings.invoiceAnnualReset")}</FormLabel>
                   <FormDescription className="text-xs">
                     {t("settings.invoiceAnnualResetDesc")}
                   </FormDescription>
@@ -147,28 +151,50 @@ export function PaymentsSettings() {
           <CardHeader className="py-3 px-4">
             <CardTitle className="text-base">{t("settings.banking")}</CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-3 sm:grid-cols-2 px-4 pb-4 pt-0">
+          <CardContent className="grid gap-2 sm:grid-cols-3 px-4 pb-3 pt-0">
             <FormField control={form.control} name="bank_name" render={({ field }) => (
               <FormItem>
-                <FormLabel>{t("settings.bankName")}</FormLabel>
-                <FormControl><Input {...field} placeholder="CaixaBank" /></FormControl>
+                <FormLabel className="text-xs">{t("settings.bankName")}</FormLabel>
+                <FormControl><Input className="h-8" {...field} placeholder="CaixaBank" /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
             <FormField control={form.control} name="bank_iban" render={({ field }) => (
               <FormItem>
-                <FormLabel>{t("settings.bankIban")}</FormLabel>
-                <FormControl><Input {...field} placeholder="ES9121000418450200051332" className="font-mono" /></FormControl>
+                <FormLabel className="text-xs">{t("settings.bankIban")}</FormLabel>
+                <FormControl><Input className="h-8 font-mono" {...field} placeholder="ES9121000418450200051332" /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
             <FormField control={form.control} name="bank_bic" render={({ field }) => (
               <FormItem>
-                <FormLabel>{t("settings.bankBic")}</FormLabel>
-                <FormControl><Input {...field} placeholder="CAIXESBBXXX" className="font-mono" /></FormControl>
+                <FormLabel className="text-xs">{t("settings.bankBic")}</FormLabel>
+                <FormControl><Input className="h-8 font-mono" {...field} placeholder="CAIXESBBXXX" /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
+          </CardContent>
+        </Card>
+
+        {/* SEPA Direct Debit */}
+        <Card>
+          <CardHeader className="py-3 px-4">
+            <CardTitle className="text-base">{t("settings.sepa")}</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-2 sm:grid-cols-2 px-4 pb-3 pt-0">
+            <FormField control={form.control} name="creditor_id" render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-xs">{t("settings.creditorId")}</FormLabel>
+                <FormControl><Input className="h-8 font-mono" {...field} placeholder="ES12000B12345678" /></FormControl>
+                <FormDescription className="text-xs">{t("settings.creditorIdDesc")}</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormItem>
+              <FormLabel className="text-xs">{t("settings.sepaFormat")}</FormLabel>
+              <Input value="pain.008.001.02" disabled className="h-8 font-mono" />
+              <FormDescription className="text-xs">{t("settings.sepaFormatDesc")}</FormDescription>
+            </FormItem>
           </CardContent>
         </Card>
 

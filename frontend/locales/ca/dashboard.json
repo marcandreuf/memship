@@ -1,6 +1,6 @@
 {
   "dashboard": {
-    "welcome": "Benvingut, {name}",
+    "welcome": "{gender, select, female {Benvinguda} other {Benvingut}}, {name}",
     "activeMembers": "Socis actius",
     "pendingMembers": "Socis pendents",
     "totalMembers": "Total socis",
@@ -13,7 +13,7 @@
     "waitlistRegistrations": "En llista d'espera",
     "cancelledRegistrations": "Cancel·lades",
     "pendingRegistrations": "Pendents",
-    "memberWelcome": "Benvingut al teu portal de soci.",
+    "memberWelcome": "{gender, select, female {Benvinguda al teu portal de sòcia.} other {Benvingut al teu portal de soci.}}",
     "yourNumber": "El teu número de soci",
     "upcomingActivities": "Les teves properes activitats",
     "noUpcoming": "No hi ha activitats properes",

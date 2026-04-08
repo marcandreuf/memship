@@ -10,6 +10,7 @@ export interface User {
   last_name: string;
   member_id: number | null;
   member_number: string | null;
+  gender: string | null;
 }
 
 export interface LoginData {

@@ -40,6 +40,7 @@ class UserResponse(BaseModel):
     last_name: str
     member_id: int | None = None
     member_number: str | None = None
+    gender: str | None = None
 
     model_config = {"from_attributes": True}
 

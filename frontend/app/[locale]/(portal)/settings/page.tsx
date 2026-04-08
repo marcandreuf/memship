@@ -41,6 +41,7 @@ import {
 import { MembershipTypesSettings } from "@/features/settings/components/membership-types-settings";
 import { PaymentsSettings } from "@/features/settings/components/payments-settings";
 import { LogoUpload } from "@/features/settings/components/logo-upload";
+import { GenderOptionsSettings } from "@/features/settings/components/gender-options-settings";
 import { FormSkeleton } from "@/components/ui/skeletons";
 
 const settingsSchema = z.object({
@@ -168,55 +169,55 @@ export default function SettingsPage() {
         </TabsList>
 
         {isSuperAdmin && <TabsContent value="organization">
-          <div className="space-y-4">
+          <div className="space-y-3 max-w-4xl">
             {/* Org Info + Address — two forms side by side conceptually */}
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
                 {/* Organization Info */}
                 <Card>
                   <CardHeader className="py-3 px-4">
                     <CardTitle className="text-base">{t("settings.orgInfo")}</CardTitle>
                   </CardHeader>
-                  <CardContent className="grid gap-3 sm:grid-cols-2 px-4 pb-4 pt-0">
+                  <CardContent className="grid gap-2 sm:grid-cols-3 px-4 pb-3 pt-0">
                     <FormField control={form.control} name="name" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t("settings.name")}</FormLabel>
-                        <FormControl><Input {...field} /></FormControl>
+                        <FormLabel className="text-xs">{t("settings.name")}</FormLabel>
+                        <FormControl><Input className="h-8" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
                     <FormField control={form.control} name="legal_name" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t("settings.legalName")}</FormLabel>
-                        <FormControl><Input {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                    <FormField control={form.control} name="email" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t("settings.email")}</FormLabel>
-                        <FormControl><Input type="email" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                    <FormField control={form.control} name="phone" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t("settings.phone")}</FormLabel>
-                        <FormControl><Input {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                    <FormField control={form.control} name="website" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t("settings.website")}</FormLabel>
-                        <FormControl><Input {...field} /></FormControl>
+                        <FormLabel className="text-xs">{t("settings.legalName")}</FormLabel>
+                        <FormControl><Input className="h-8" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
                     <FormField control={form.control} name="tax_id" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t("settings.taxId")}</FormLabel>
-                        <FormControl><Input {...field} /></FormControl>
+                        <FormLabel className="text-xs">{t("settings.taxId")}</FormLabel>
+                        <FormControl><Input className="h-8" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="email" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs">{t("settings.email")}</FormLabel>
+                        <FormControl><Input className="h-8" type="email" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="phone" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs">{t("settings.phone")}</FormLabel>
+                        <FormControl><Input className="h-8" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="website" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs">{t("settings.website")}</FormLabel>
+                        <FormControl><Input className="h-8" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
@@ -228,46 +229,46 @@ export default function SettingsPage() {
                   <CardHeader className="py-3 px-4">
                     <CardTitle className="text-base">{t("settings.address")}</CardTitle>
                   </CardHeader>
-                  <CardContent className="grid gap-3 sm:grid-cols-3 px-4 pb-4 pt-0">
+                  <CardContent className="grid gap-2 sm:grid-cols-3 px-4 pb-3 pt-0">
                     <FormField control={form.control} name="address_line1" render={({ field }) => (
                       <FormItem className="sm:col-span-2">
-                        <FormLabel>{t("settings.addressLine1")}</FormLabel>
-                        <FormControl><Input {...field} /></FormControl>
+                        <FormLabel className="text-xs">{t("settings.addressLine1")}</FormLabel>
+                        <FormControl><Input className="h-8" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
                     <FormField control={form.control} name="address_line2" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t("settings.addressLine2")}</FormLabel>
-                        <FormControl><Input {...field} /></FormControl>
+                        <FormLabel className="text-xs">{t("settings.addressLine2")}</FormLabel>
+                        <FormControl><Input className="h-8" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
                     <FormField control={form.control} name="city" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t("settings.city")}</FormLabel>
-                        <FormControl><Input {...field} /></FormControl>
+                        <FormLabel className="text-xs">{t("settings.city")}</FormLabel>
+                        <FormControl><Input className="h-8" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
                     <FormField control={form.control} name="state_province" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t("settings.stateProvince")}</FormLabel>
-                        <FormControl><Input {...field} /></FormControl>
+                        <FormLabel className="text-xs">{t("settings.stateProvince")}</FormLabel>
+                        <FormControl><Input className="h-8" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
                     <FormField control={form.control} name="postal_code" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t("settings.postalCode")}</FormLabel>
-                        <FormControl><Input {...field} /></FormControl>
+                        <FormLabel className="text-xs">{t("settings.postalCode")}</FormLabel>
+                        <FormControl><Input className="h-8" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
                     <FormField control={form.control} name="country" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t("settings.country")}</FormLabel>
-                        <FormControl><Input {...field} placeholder="ES" /></FormControl>
+                        <FormLabel className="text-xs">{t("settings.country")}</FormLabel>
+                        <FormControl><Input className="h-8" {...field} placeholder="ES" /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
@@ -279,11 +280,11 @@ export default function SettingsPage() {
                   <CardHeader className="py-3 px-4">
                     <CardTitle className="text-base">{t("settings.localization")}</CardTitle>
                   </CardHeader>
-                  <CardContent className="grid gap-3 sm:grid-cols-2 px-4 pb-4 pt-0">
+                  <CardContent className="grid gap-2 sm:grid-cols-2 px-4 pb-3 pt-0">
                     <FormField control={form.control} name="locale" render={({ field }) => (
                       <FormItem>
-                        <div className="flex items-center gap-3">
-                          <FormLabel className="min-w-28 shrink-0 mt-0">{t("settings.locale")}</FormLabel>
+                        <div className="flex items-center gap-2">
+                          <FormLabel className="min-w-24 shrink-0 mt-0 text-xs">{t("settings.locale")}</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                             <SelectContent>
@@ -298,8 +299,8 @@ export default function SettingsPage() {
                       </FormItem>
                     )} />
                     <FormField control={form.control} name="timezone" render={({ field }) => (
-                      <FormItem className="flex items-center gap-3">
-                        <FormLabel className="min-w-28 shrink-0 mt-0">{t("settings.timezone")}</FormLabel>
+                      <FormItem className="flex items-center gap-2">
+                        <FormLabel className="min-w-24 shrink-0 mt-0 text-xs">{t("settings.timezone")}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                           <SelectContent>
@@ -315,8 +316,8 @@ export default function SettingsPage() {
                       </FormItem>
                     )} />
                     <FormField control={form.control} name="currency" render={({ field }) => (
-                      <FormItem className="flex items-center gap-3">
-                        <FormLabel className="min-w-28 shrink-0 mt-0">{t("settings.currency")}</FormLabel>
+                      <FormItem className="flex items-center gap-2">
+                        <FormLabel className="min-w-24 shrink-0 mt-0 text-xs">{t("settings.currency")}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                           <SelectContent>
@@ -329,8 +330,8 @@ export default function SettingsPage() {
                       </FormItem>
                     )} />
                     <FormField control={form.control} name="date_format" render={({ field }) => (
-                      <FormItem className="flex items-center gap-3">
-                        <FormLabel className="min-w-28 shrink-0 mt-0">{t("settings.dateFormat")}</FormLabel>
+                      <FormItem className="flex items-center gap-2">
+                        <FormLabel className="min-w-24 shrink-0 mt-0 text-xs">{t("settings.dateFormat")}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                           <SelectContent>
@@ -350,21 +351,21 @@ export default function SettingsPage() {
                   <CardHeader className="py-3 px-4">
                     <CardTitle className="text-base">{t("settings.branding")}</CardTitle>
                   </CardHeader>
-                  <CardContent className="grid gap-3 sm:grid-cols-2 px-4 pb-4 pt-0">
+                  <CardContent className="grid gap-2 sm:grid-cols-2 px-4 pb-3 pt-0">
                     <FormField control={form.control} name="brand_color" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t("settings.brandColor")}</FormLabel>
+                        <FormLabel className="text-xs">{t("settings.brandColor")}</FormLabel>
                         <FormControl>
                           <div className="flex gap-2">
-                            <Input type="color" className="w-12 h-10 p-1" value={field.value || "#000000"} onChange={(e) => field.onChange(e.target.value)} />
-                            <Input {...field} placeholder="#3B82F6" className="flex-1" />
+                            <Input type="color" className="w-10 h-8 p-1" value={field.value || "#000000"} onChange={(e) => field.onChange(e.target.value)} />
+                            <Input {...field} placeholder="#3B82F6" className="flex-1 h-8" />
                           </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
                     <FormItem>
-                      <FormLabel>{t("settings.logoUrl")}</FormLabel>
+                      <FormLabel className="text-xs">{t("settings.logoUrl")}</FormLabel>
                       <LogoUpload logoUrl={settings?.logo_url ?? null} />
                     </FormItem>
                   </CardContent>
@@ -375,6 +376,8 @@ export default function SettingsPage() {
                 </Button>
               </form>
             </Form>
+
+            <GenderOptionsSettings />
 
           </div>
         </TabsContent>}

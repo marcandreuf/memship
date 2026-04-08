@@ -38,6 +38,15 @@
     "invoicing": "Facturació",
     "defaultVatRate": "IVA per defecte",
     "invoiceAnnualReset": "Numeració anual",
-    "invoiceAnnualResetDesc": "Reiniciar la numeració de rebuts a l'inici de cada any"
+    "invoiceAnnualResetDesc": "Reiniciar la numeració de rebuts a l'inici de cada any",
+    "sepa": "Domiciliació SEPA",
+    "creditorId": "Identificador del creditor",
+    "creditorIdDesc": "Identificador de creditor SEPA (p. ex. ES12000B12345678)",
+    "sepaFormat": "Format SEPA",
+    "sepaFormatDesc": "ISO 20022 pain.008 — estàndard per a tots els bancs de la zona SEPA",
+    "genderOptions": "Opcions de gènere",
+    "genderOptionsDesc": "Configura les opcions de gènere disponibles als formularis de socis. Cada opció necessita una clau i etiquetes en tots els idiomes.",
+    "genderValue": "Valor",
+    "addGenderOption": "Afegir opció"
   }
 }

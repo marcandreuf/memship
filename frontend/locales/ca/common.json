@@ -6,9 +6,11 @@
   "nav": {
     "dashboard": "Tauler",
     "members": "Socis",
-    "membershipTypes": "Tipus de membresía",
+    "membershipTypes": "Tipus de afiliació",
     "groups": "Grups",
     "receipts": "Rebuts",
+    "mandates": "Mandats",
+    "remittances": "Remeses",
     "activities": "Activitats",
     "profile": "El meu perfil",
     "settings": "Configuració",
@@ -38,6 +40,7 @@
     "previous": "Anterior",
     "next": "Següent",
     "details": "Detalls",
+    "close": "Tancar",
     "comingSoon": "Properament",
     "notFound": "No trobat",
     "view": "Veure",
@@ -61,7 +64,7 @@
   },
   "profile": {
     "personalInfo": "Informació personal",
-    "membership": "Membresía",
+    "membership": "Afiliació",
     "firstName": "Nom",
     "lastName": "Cognoms",
     "email": "Correu electrònic",
@@ -69,11 +72,13 @@
     "gender": "Gènere",
     "nationalId": "DNI/NIE",
     "memberNumber": "Número de soci",
-    "membershipType": "Tipus de membresía",
+    "membershipType": "Tipus de afiliació",
     "status": "Estat",
     "joinedAt": "Soci des de",
     "language": "Idioma",
-    "preferences": "Preferències"
+    "preferences": "Preferències",
+    "editProfile": "Editar perfil",
+    "phone": "Telèfon"
   },
   "validation": {
     "required": "Aquest camp és obligatori",
@@ -118,10 +123,10 @@
     "editGroup": "Editar grup",
     "deleteConfirm": "Estàs segur que vols eliminar aquest grup?",
     "noGroups": "Encara no hi ha grups",
-    "info": "Els grups permeten organitzar els tipus de membresía en categories (p. ex. Programes Juvenils, Socis Adults, Honoraris). Ajuden a mantenir l'ordre quan hi ha molts tipus de membresía.",
-    "membershipTypes": "Tipus de membresía",
+    "info": "Els grups permeten organitzar els tipus de afiliació en categories (p. ex. Programes Juvenils, Socis Adults, Honoraris). Ajuden a mantenir l'ordre quan hi ha molts tipus de afiliació.",
+    "membershipTypes": "Tipus de afiliació",
     "members": "Socis",
-    "noMembershipTypes": "No hi ha tipus de membresía en aquest grup",
+    "noMembershipTypes": "No hi ha tipus de afiliació en aquest grup",
     "noMembers": "No hi ha socis en aquest grup"
   }
 }
