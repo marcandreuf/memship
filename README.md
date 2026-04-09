@@ -81,6 +81,9 @@ Open http://localhost:8081 and log in with your credentials. Change `PORT=8081` 
 | v0.3.5 | Bug fixes — failing integration tests | Done |
 | v0.3.6 | CI optimization — setup-uv v7, cached password hashing, pytest-xdist parallel workers, automated version hooks | Done |
 | v0.4.0 | SEPA Direct Debit — mandate management, remittance batches, pain.008 XML, member payment method | Done |
+| v0.4.1 | Payment provider settings — super admin configurable payment gateway management | — |
+| v0.4.2 | Stripe integration — invoice-based payments, webhooks, customer sync | — |
+| v0.4.3 | GoCardless e-mandates — managed SEPA via hosted flow | — |
 | v0.5.0 | Communication System | — |
 | v0.6.0 | Bookings & Documents | — |
 | v0.7.0 | Reports & Analytics | — |
@@ -139,8 +142,12 @@ Open http://localhost:8081 and log in with your credentials. Change `PORT=8081` 
 - Remittance batch processing with SEPA XML (pain.008.001.02)
 - Bank return file import and receipt status tracking
 - Member self-service payment method page
-- Refund workflow
-- Payment reminders
+
+**Payment Providers** (planned — v0.4.x)
+- Configurable payment gateway management (super admin settings)
+- Stripe integration — invoice-based card payments with webhook support
+- GoCardless — managed SEPA e-mandates via hosted flow
+- Extensible adapter pattern for regional providers (MercadoPago, Razorpay, etc.)
 
 **Communications** (planned)
 - Email campaigns with templates and audience targeting

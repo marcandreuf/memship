@@ -80,7 +80,10 @@ Obriu http://localhost:8081 i inicieu sessió amb les vostres credencials. Canvi
 | v0.3.4 | Correccions — neteja de warnings i optimització de proves d'integració | Fet |
 | v0.3.5 | Correccions — proves d'integració fallides | Fet |
 | v0.3.6 | Optimització de CI — setup-uv v7, cache de hash de contrasenyes, workers de proves paral·lels, hooks de versionat automàtic | Fet |
-| v0.4.0 | Processament de pagaments (SEPA + Stripe) | — |
+| v0.4.0 | Domiciliació SEPA — gestió de mandats, remeses, XML pain.008, forma de pagament del soci | Fet |
+| v0.4.1 | Configuració de passarel·les de pagament — gestió configurable des del panell de super admin | — |
+| v0.4.2 | Integració Stripe — pagaments amb targeta, webhooks, sincronització de clients | — |
+| v0.4.3 | GoCardless e-mandats — SEPA gestionat amb flux allotjat | — |
 | v0.5.0 | Sistema de comunicació | — |
 | v0.6.0 | Reserves i documents | — |
 | v0.7.0 | Informes i analítiques | — |
@@ -134,11 +137,17 @@ Obriu http://localhost:8081 i inicieu sessió amb les vostres credencials. Canvi
 - Notificació per correu amb el rebut en PDF adjunt (via Celery + Resend o SMTP)
 - Configuració → pestanya Pagaments per a facturació i dades bancàries
 
-**Processament de pagaments** (previst — v0.4.0)
-- Processament per lots de domiciliació bancària SEPA
-- Pagaments en línia amb Stripe
-- Flux de devolucions
-- Recordatoris de pagament
+**Domiciliació SEPA** (disponible — v0.4.0)
+- Gestió de mandats SEPA (crear, PDF, pujar signat, cancel·lar)
+- Processament de remeses amb XML SEPA (pain.008.001.02)
+- Importació de devolucions bancàries i seguiment d'estat
+- Pàgina de forma de pagament per a socis
+
+**Passarel·les de pagament** (previst — v0.4.x)
+- Gestió configurable de passarel·les de pagament (configuració del super admin)
+- Integració Stripe — pagaments amb targeta basats en factura amb webhooks
+- GoCardless — e-mandats SEPA gestionats amb flux allotjat
+- Patró d'adaptador extensible per a proveïdors regionals (MercadoPago, Razorpay, etc.)
 
 **Comunicacions** (previst)
 - Campanyes de correu electrònic amb plantilles i segmentació d'audiència
