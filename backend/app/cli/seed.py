@@ -615,20 +615,39 @@ def seed_member_contacts(db) -> None:
         ))
         count += 1
 
-    # Add bank IBANs for a few members
+    # Add bank IBANs, payment method, holder name for a few members
     iban_data = [
-        ("maria@test.com", "ES6621000418401234567891", "CAIXESBBXXX"),
-        ("joan@test.com", "ES7920385778983000760236", "CAIXESBBXXX"),
-        ("carlos@test.com", "ES9121000418450200051332", "CAIXESBBXXX"),
+        ("maria@test.com", "ES6621000418401234567891", "CAIXESBBXXX", "María García"),
+        ("joan@test.com", "ES7920385778983000760236", "CAIXESBBXXX", "Joan Puig"),
+        ("carlos@test.com", "ES9121000418450200051332", "CAIXESBBXXX", "Carlos López"),
     ]
-    for email, iban, bic in iban_data:
+    for email, iban, bic, holder in iban_data:
         person = db.query(Person).filter(Person.email == email).first()
         if person and not person.bank_iban:
             person.bank_iban = iban
             person.bank_bic = bic
+            person.bank_holder_name = holder
+            person.payment_method = "direct_debit"
+
+    # Set gender for test members
+    gender_data = [
+        ("maria@test.com", "female"),
+        ("joan@test.com", "male"),
+        ("carlos@test.com", "male"),
+        ("laura@test.com", "female"),
+        ("anna@test.com", "female"),
+        ("marta@test.com", "female"),
+        ("jordi@test.com", "male"),
+        ("elena@test.com", "female"),
+        ("alex@test.com", "non_binary"),
+    ]
+    for email, gender in gender_data:
+        person = db.query(Person).filter(Person.email == email).first()
+        if person and not person.gender:
+            person.gender = gender
 
     db.flush()
-    print(f"  Member contacts: {count} contacts + {len(iban_data)} bank IBANs")
+    print(f"  Member contacts: {count} contacts + {len(iban_data)} bank details + {len(gender_data)} genders")
 
 
 def seed_registrations(db) -> None:
@@ -1174,17 +1193,19 @@ def seed_sepa_data(db) -> None:
 
     # --- Add bank IBANs to more members (for mandate variety) ---
     extra_iban_data = [
-        ("anna@test.com", "ES8023100001180000012345", "CAIXESBBXXX"),
-        ("marta@test.com", "ES6000491500051234567892", "BSCHESMMXXX"),
-        ("jordi@test.com", "ES2100820532161234567890", "BSABESBBXXX"),
-        ("elena@test.com", "ES7100302053091234567895", "BARKESMMXXX"),
-        ("alex@test.com", "ES3801822200160201234567", "BBVAESMMXXX"),
+        ("anna@test.com", "ES8023100001180000012345", "CAIXESBBXXX", "Anna Ferrer"),
+        ("marta@test.com", "ES6000491500051234567892", "BSCHESMMXXX", "Marta Soler"),
+        ("jordi@test.com", "ES2100820532161234567890", "BSABESBBXXX", "Jordi Vidal"),
+        ("elena@test.com", "ES7100302053091234567895", "BARKESMMXXX", "Elena Ruiz"),
+        ("alex@test.com", "ES3801822200160201234567", "BBVAESMMXXX", "Àlex Serra"),
     ]
-    for email, iban, bic in extra_iban_data:
+    for email, iban, bic, holder in extra_iban_data:
         person = db.query(Person).filter(Person.email == email).first()
         if person and not person.bank_iban:
             person.bank_iban = iban
             person.bank_bic = bic
+            person.bank_holder_name = holder
+            person.payment_method = "direct_debit"
     db.flush()
 
     # --- Create mandates ---

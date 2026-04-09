@@ -1,0 +1,33 @@
+{
+  "paymentMethod": {
+    "title": "Forma de pagament",
+    "currentMethod": "Forma de pagament",
+    "selectMethod": "Selecciona la teva forma de pagament preferida",
+    "directDebit": "Domiciliació bancària (SEPA)",
+    "directDebitDesc": "Càrrec automàtic al compte — requereix mandat SEPA actiu",
+    "bankTransfer": "Transferència bancària",
+    "bankTransferDesc": "Transferència manual al compte de l'organització",
+    "cash": "Efectiu",
+    "cashDesc": "Pagament presencial a l'organització",
+    "card": "Targeta",
+    "cardDesc": "Pagament amb targeta de crèdit o dèbit",
+    "bankDetails": "Dades bancàries",
+    "iban": "IBAN",
+    "bic": "BIC / SWIFT",
+    "bicHint": "Normalment es detecta automàticament a partir de l'IBAN",
+    "holderName": "Titular del compte",
+    "mandate": "Mandat SEPA",
+    "mandateReference": "Referència del mandat",
+    "mandateSignedAt": "Data de signatura",
+    "mandateStatus": "Estat del mandat",
+    "mandateActive": "Actiu",
+    "mandateCancelled": "Cancel·lat",
+    "mandateExpired": "Expirat",
+    "mandateNone": "Sense mandat",
+    "warningMissingIban": "Compte bancari (IBAN) no proporcionat",
+    "warningInvalidIban": "El format de l'IBAN no és vàlid",
+    "warningMissingBic": "Falta el BIC (recomanat)",
+    "warningNoMandate": "No hi ha mandat SEPA actiu — contacta amb l'organització",
+    "saved": "Forma de pagament actualitzada"
+  }
+}

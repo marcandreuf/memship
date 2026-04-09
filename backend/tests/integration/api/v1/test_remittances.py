@@ -1,6 +1,5 @@
 """Integration tests for remittance (SEPA batch) endpoints."""
 
-import json
 from datetime import date, timedelta
 from decimal import Decimal
 
@@ -336,13 +335,9 @@ class TestImportReturns:
         client.post(f"/api/v1/remittances/{rem_id}/generate-xml", cookies=_auth_cookie(admin))
         client.post(f"/api/v1/remittances/{rem_id}/mark-submitted", cookies=_auth_cookie(admin))
 
-        return_data = json.dumps([
-            {"receipt_number": receipt_number, "reason": "Insufficient funds"},
-        ]).encode()
-
         resp = client.post(
             f"/api/v1/remittances/{rem_id}/import-returns",
-            files={"file": ("returns.json", return_data, "application/json")},
+            json=[{"receipt_number": receipt_number, "reason": "Insufficient funds"}],
             cookies=_auth_cookie(admin),
         )
         assert resp.status_code == 200
@@ -366,13 +361,9 @@ class TestImportReturns:
         client.post(f"/api/v1/remittances/{rem_id}/generate-xml", cookies=_auth_cookie(admin))
         client.post(f"/api/v1/remittances/{rem_id}/mark-submitted", cookies=_auth_cookie(admin))
 
-        return_data = json.dumps([
-            {"receipt_number": "FAKE-0000", "reason": "Unknown"},
-        ]).encode()
-
         resp = client.post(
             f"/api/v1/remittances/{rem_id}/import-returns",
-            files={"file": ("returns.json", return_data, "application/json")},
+            json=[{"receipt_number": "FAKE-0000", "reason": "Unknown"}],
             cookies=_auth_cookie(admin),
         )
         assert resp.status_code == 200
@@ -405,10 +396,9 @@ class TestRemittanceLifecycle:
         assert resp.json()["status"] == "submitted"
 
         # Import returns (-> processed)
-        return_data = json.dumps([]).encode()
         resp = client.post(
             f"/api/v1/remittances/{rem_id}/import-returns",
-            files={"file": ("returns.json", return_data, "application/json")},
+            json=[],
             cookies=_auth_cookie(admin),
         )
         assert resp.status_code == 200

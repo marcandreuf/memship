@@ -1,0 +1,33 @@
+{
+  "paymentMethod": {
+    "title": "Payment Method",
+    "currentMethod": "Payment Method",
+    "selectMethod": "Select your preferred payment method",
+    "directDebit": "Direct Debit (SEPA)",
+    "directDebitDesc": "Automatic bank debit — requires an active SEPA mandate",
+    "bankTransfer": "Bank Transfer",
+    "bankTransferDesc": "Manual transfer to the organization's bank account",
+    "cash": "Cash",
+    "cashDesc": "Pay in person at the organization",
+    "card": "Card",
+    "cardDesc": "Credit or debit card payment",
+    "bankDetails": "Bank Details",
+    "iban": "IBAN",
+    "bic": "BIC / SWIFT",
+    "bicHint": "Usually auto-detected from IBAN",
+    "holderName": "Account Holder Name",
+    "mandate": "SEPA Mandate",
+    "mandateReference": "Mandate Reference",
+    "mandateSignedAt": "Signed Date",
+    "mandateStatus": "Mandate Status",
+    "mandateActive": "Active",
+    "mandateCancelled": "Cancelled",
+    "mandateExpired": "Expired",
+    "mandateNone": "No mandate",
+    "warningMissingIban": "Bank account (IBAN) not provided",
+    "warningInvalidIban": "IBAN format is invalid",
+    "warningMissingBic": "BIC is missing (recommended)",
+    "warningNoMandate": "No active SEPA mandate — contact the organization",
+    "saved": "Payment method updated"
+  }
+}

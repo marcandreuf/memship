@@ -38,6 +38,8 @@ class Person(Base):
     photo_url = Column(String(500))
     bank_iban = Column(String(34))
     bank_bic = Column(String(11))
+    bank_holder_name = Column(String(255))
+    payment_method = Column(String(20))
     custom_fields = Column(JSONB, default=dict)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(

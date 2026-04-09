@@ -1,0 +1,33 @@
+{
+  "paymentMethod": {
+    "title": "Forma de pago",
+    "currentMethod": "Forma de pago",
+    "selectMethod": "Selecciona tu forma de pago preferida",
+    "directDebit": "Domiciliación bancaria (SEPA)",
+    "directDebitDesc": "Cargo automático en cuenta — requiere mandato SEPA activo",
+    "bankTransfer": "Transferencia bancaria",
+    "bankTransferDesc": "Transferencia manual a la cuenta de la organización",
+    "cash": "Efectivo",
+    "cashDesc": "Pago presencial en la organización",
+    "card": "Tarjeta",
+    "cardDesc": "Pago con tarjeta de crédito o débito",
+    "bankDetails": "Datos bancarios",
+    "iban": "IBAN",
+    "bic": "BIC / SWIFT",
+    "bicHint": "Normalmente se detecta automáticamente a partir del IBAN",
+    "holderName": "Titular de la cuenta",
+    "mandate": "Mandato SEPA",
+    "mandateReference": "Referencia del mandato",
+    "mandateSignedAt": "Fecha de firma",
+    "mandateStatus": "Estado del mandato",
+    "mandateActive": "Activo",
+    "mandateCancelled": "Cancelado",
+    "mandateExpired": "Expirado",
+    "mandateNone": "Sin mandato",
+    "warningMissingIban": "Cuenta bancaria (IBAN) no proporcionada",
+    "warningInvalidIban": "El formato del IBAN no es válido",
+    "warningMissingBic": "Falta el BIC (recomendado)",
+    "warningNoMandate": "No hay mandato SEPA activo — contacta con la organización",
+    "saved": "Forma de pago actualizada"
+  }
+}

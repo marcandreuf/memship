@@ -28,6 +28,10 @@
     "notes": "Notes",
     "documentUploaded": "Document signat pujat",
     "noDocument": "Sense document signat",
+    "viewDocument": "Veure document",
+    "docFilename": "Fitxer",
+    "docSize": "Mida",
+    "docUploadedAt": "Pujat",
     "detail": "Detall del mandat",
     "creditorId": "ID del creditor",
     "cancelledAt": "Data de cancel\u00b7lacio"

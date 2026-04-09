@@ -179,6 +179,12 @@ class MandateUpdate(BaseModel):
     notes: str | None = None
 
 
+class DocumentInfo(BaseModel):
+    filename: str
+    size_bytes: int
+    uploaded_at: str
+
+
 class MandateResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -194,6 +200,7 @@ class MandateResponse(BaseModel):
     status: str
     signed_at: date
     document_path: str | None
+    document_info: DocumentInfo | None = None
     cancelled_at: datetime | None
     notes: str | None
     is_active: bool

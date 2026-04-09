@@ -28,6 +28,10 @@
     "notes": "Notes",
     "documentUploaded": "Signed document uploaded",
     "noDocument": "No signed document",
+    "viewDocument": "View Document",
+    "docFilename": "Filename",
+    "docSize": "Size",
+    "docUploadedAt": "Uploaded",
     "detail": "Mandate Detail",
     "creditorId": "Creditor ID",
     "cancelledAt": "Cancelled Date"

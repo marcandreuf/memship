@@ -310,3 +310,114 @@ def update_my_profile(
         if c:
             phone_val = c.value
     return ProfileResponse(gender=person.gender, phone=phone_val)
+
+
+# --- Member payment method ---
+
+
+class PaymentMethodUpdate(BaseModel):
+    payment_method: str | None = Field(default=None, pattern=r"^(direct_debit|bank_transfer|cash|card)$")
+    bank_iban: str | None = Field(default=None, max_length=34)
+    bank_bic: str | None = Field(default=None, max_length=11)
+    bank_holder_name: str | None = Field(default=None, max_length=255)
+
+
+class PaymentMethodResponse(BaseModel):
+    payment_method: str | None = None
+    bank_iban: str | None = None
+    bank_iban_masked: str | None = None
+    bank_bic: str | None = None
+    bank_holder_name: str | None = None
+    mandate_status: str | None = None
+    mandate_reference: str | None = None
+    mandate_signed_at: str | None = None
+    warnings: list[str] = []
+
+
+def _mask_iban(iban: str | None) -> str | None:
+    if not iban or len(iban) < 8:
+        return iban
+    return iban[:4] + " **** **** **** " + iban[-4:]
+
+
+def _build_payment_response(person: Person, db: Session) -> PaymentMethodResponse:
+    from app.domains.billing.models import SepaMandate
+
+    warnings: list[str] = []
+
+    # Mandate info
+    member = person.member
+    mandate_status = None
+    mandate_reference = None
+    mandate_signed_at = None
+    if member:
+        mandate = (
+            db.query(SepaMandate)
+            .filter(SepaMandate.member_id == member.id, SepaMandate.is_active.is_(True))
+            .order_by(SepaMandate.created_at.desc())
+            .first()
+        )
+        if mandate:
+            mandate_status = mandate.status
+            mandate_reference = mandate.mandate_reference
+            mandate_signed_at = str(mandate.signed_at) if mandate.signed_at else None
+        else:
+            mandate_status = "none"
+
+    # Warnings
+    if person.payment_method == "direct_debit":
+        if not person.bank_iban:
+            warnings.append("missing_iban")
+        elif not _is_valid_iban_format(person.bank_iban):
+            warnings.append("invalid_iban")
+        if not person.bank_bic:
+            warnings.append("missing_bic")
+        if mandate_status != "active":
+            warnings.append("no_active_mandate")
+
+    return PaymentMethodResponse(
+        payment_method=person.payment_method,
+        bank_iban=person.bank_iban,
+        bank_iban_masked=_mask_iban(person.bank_iban),
+        bank_bic=person.bank_bic,
+        bank_holder_name=person.bank_holder_name,
+        mandate_status=mandate_status,
+        mandate_reference=mandate_reference,
+        mandate_signed_at=mandate_signed_at,
+        warnings=warnings,
+    )
+
+
+def _is_valid_iban_format(iban: str) -> bool:
+    import re
+    return bool(re.match(r"^[A-Z]{2}\d{2}[A-Z0-9]{4,30}$", iban))
+
+
+@router.get("/me/payment-method", response_model=PaymentMethodResponse)
+def get_my_payment_method(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get the current member's payment method and mandate info."""
+    return _build_payment_response(current_user.person, db)
+
+
+@router.put("/me/payment-method", response_model=PaymentMethodResponse)
+def update_my_payment_method(
+    data: PaymentMethodUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Update the current member's payment method."""
+    person = current_user.person
+    update_data = data.model_dump(exclude_unset=True)
+
+    if "bank_iban" in update_data and update_data["bank_iban"]:
+        update_data["bank_iban"] = update_data["bank_iban"].upper().replace(" ", "")
+
+    for key, value in update_data.items():
+        setattr(person, key, value)
+
+    db.commit()
+    db.refresh(person)
+    return _build_payment_response(person, db)

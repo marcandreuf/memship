@@ -13,6 +13,7 @@ import {
   Receipt,
   FileText,
   Landmark,
+  CreditCard,
   LogOut,
   ChevronsUpDown,
 } from "lucide-react";
@@ -61,6 +62,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
     { href: "/activities", label: t("nav.activities"), icon: CalendarDays, show: true },
     { href: "/my-activities", label: t("activities.registration.myActivities"), icon: ClipboardList, show: !isAdmin },
     { href: "/my-receipts", label: t("receipts.myReceipts"), icon: Receipt, show: !isAdmin },
+    { href: "/payment-method", label: t("paymentMethod.title"), icon: CreditCard, show: !isAdmin },
     { href: "/members", label: t("nav.members"), icon: Users, show: isAdmin },
     { href: "/receipts", label: t("nav.receipts"), icon: Receipt, show: isAdmin },
     { href: "/mandates", label: t("nav.mandates"), icon: FileText, show: isAdmin },

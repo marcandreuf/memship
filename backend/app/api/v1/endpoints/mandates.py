@@ -63,6 +63,25 @@ def list_mandates(
     }
 
 
+def _enrich_document_info(mandate: SepaMandate) -> dict:
+    """Build response dict with document_info from filesystem."""
+    from datetime import datetime, timezone
+    from app.domains.billing.schemas import DocumentInfo
+
+    data = MandateResponse.model_validate(mandate).model_dump()
+    if mandate.document_path:
+        doc_path = Path(mandate.document_path)
+        if doc_path.exists():
+            stat = doc_path.stat()
+            uploaded = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat()
+            data["document_info"] = DocumentInfo(
+                filename=doc_path.name,
+                size_bytes=stat.st_size,
+                uploaded_at=uploaded,
+            ).model_dump()
+    return data
+
+
 @router.get("/{mandate_id}", response_model=MandateResponse)
 def get_mandate(
     mandate_id: int,
@@ -75,7 +94,7 @@ def get_mandate(
     ).first()
     if not mandate:
         raise HTTPException(status_code=404, detail="Mandate not found")
-    return mandate
+    return _enrich_document_info(mandate)
 
 
 @router.post("/", response_model=MandateResponse, status_code=status.HTTP_201_CREATED)

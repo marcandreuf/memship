@@ -28,6 +28,10 @@
     "notes": "Notas",
     "documentUploaded": "Documento firmado subido",
     "noDocument": "Sin documento firmado",
+    "viewDocument": "Ver documento",
+    "docFilename": "Archivo",
+    "docSize": "Tamaño",
+    "docUploadedAt": "Subido",
     "detail": "Detalle del mandato",
     "creditorId": "ID del acreedor",
     "cancelledAt": "Fecha de cancelacion"

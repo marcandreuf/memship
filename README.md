@@ -2,7 +2,7 @@
 
 # Memship
 
-> **This project is under active development, not yet ready for production, and open to [feature requests](https://github.com/marcandreuf/memship/issues).**
+> **This project is under active development and open to any feedback via gihub [issues or feature requests](https://github.com/marcandreuf/memship/issues).**
 
 **Membership management for everyone.**
 
@@ -80,7 +80,7 @@ Open http://localhost:8081 and log in with your credentials. Change `PORT=8081` 
 | v0.3.4 | Bug fixes — warning cleanup and integration test optimizations | Done |
 | v0.3.5 | Bug fixes — failing integration tests | Done |
 | v0.3.6 | CI optimization — setup-uv v7, cached password hashing, pytest-xdist parallel workers, automated version hooks | Done |
-| v0.4.0 | Payment Processing (SEPA + Stripe) | — |
+| v0.4.0 | SEPA Direct Debit — mandate management, remittance batches, pain.008 XML, member payment method | Done |
 | v0.5.0 | Communication System | — |
 | v0.6.0 | Bookings & Documents | — |
 | v0.7.0 | Reports & Analytics | — |
@@ -134,9 +134,11 @@ Open http://localhost:8081 and log in with your credentials. Change `PORT=8081` 
 - Receipt email notification with PDF attachment (via Celery + Resend or SMTP)
 - Settings → Payments tab for invoicing and banking configuration
 
-**Payment Processing** (planned — v0.4.0)
-- SEPA direct debit batch processing
-- Stripe online payments
+**SEPA Direct Debit** (available — v0.4.0)
+- SEPA mandate management (create, PDF, upload signed, cancel)
+- Remittance batch processing with SEPA XML (pain.008.001.02)
+- Bank return file import and receipt status tracking
+- Member self-service payment method page
 - Refund workflow
 - Payment reminders
 

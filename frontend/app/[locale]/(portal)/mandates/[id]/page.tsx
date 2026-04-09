@@ -20,6 +20,12 @@ import {
   useUploadSignedMandate,
 } from "@/features/mandates/hooks/use-mandates";
 
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   active: "default",
   cancelled: "destructive",
@@ -138,7 +144,36 @@ export default function MandateDetailPage() {
         </CardHeader>
         <CardContent className="px-4 pb-4 pt-0">
           {mandate.document_path ? (
-            <Badge variant="default">{t("mandates.documentUploaded")}</Badge>
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <Badge variant="default">{t("mandates.documentUploaded")}</Badge>
+                <Button size="sm" variant="outline" asChild>
+                  <a
+                    href={`/api/uploads/${mandate.document_path.replace(/^.*?storage\//, "")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {t("mandates.viewDocument")}
+                  </a>
+                </Button>
+              </div>
+              {mandate.document_info && (
+                <dl className="grid grid-cols-3 gap-2 text-sm">
+                  <div>
+                    <dt className="text-xs text-muted-foreground">{t("mandates.docFilename")}</dt>
+                    <dd className="font-mono text-xs">{mandate.document_info.filename}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-muted-foreground">{t("mandates.docSize")}</dt>
+                    <dd className="text-xs">{formatFileSize(mandate.document_info.size_bytes)}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-muted-foreground">{t("mandates.docUploadedAt")}</dt>
+                    <dd className="text-xs">{formatDate(mandate.document_info.uploaded_at)}</dd>
+                  </div>
+                </dl>
+              )}
+            </div>
           ) : (
             <p className="text-sm text-muted-foreground">{t("mandates.noDocument")}</p>
           )}

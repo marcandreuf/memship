@@ -1,5 +1,11 @@
 import { apiClient } from "@/lib/client-api";
 
+export interface DocumentInfo {
+  filename: string;
+  size_bytes: number;
+  uploaded_at: string;
+}
+
 export interface MandateData {
   id: number;
   member_id: number;
@@ -13,12 +19,12 @@ export interface MandateData {
   status: string;
   signed_at: string;
   document_path: string | null;
+  document_info: DocumentInfo | null;
   cancelled_at: string | null;
   notes: string | null;
   is_active: boolean;
   created_at: string | null;
   updated_at: string | null;
-  // Joined fields from backend
   member_name?: string;
   member_number?: string;
 }
