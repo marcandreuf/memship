@@ -47,6 +47,37 @@
     "genderOptions": "Opcions de gènere",
     "genderOptionsDesc": "Configura les opcions de gènere disponibles als formularis de socis. Cada opció necessita una clau i etiquetes en tots els idiomes.",
     "genderValue": "Valor",
-    "addGenderOption": "Afegir opció"
+    "addGenderOption": "Afegir opció",
+    "providers": {
+      "tab": "Proveïdors de pagament",
+      "title": "Proveïdors de pagament",
+      "description": "Configura les credencials i ajustos dels proveïdors de pagament",
+      "add": "Afegir proveïdor",
+      "addTitle": "Afegir proveïdor de pagament",
+      "editTitle": "Editar proveïdor de pagament",
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "test": "Provar connexió",
+      "testSuccess": "La configuració és vàlida",
+      "displayName": "Nom visible",
+      "empty": "No hi ha proveïdors de pagament configurats",
+      "configured": "Ja configurat",
+      "comingSoon": "Properament",
+      "default": "Per defecte",
+      "showValue": "Mostrar",
+      "hideValue": "Amagar",
+      "status": {
+        "active": "Actiu",
+        "test": "Proves",
+        "disabled": "Desactivat"
+      },
+      "types": {
+        "sepa_direct_debit": "Domiciliació SEPA",
+        "stripe": "Stripe",
+        "redsys": "Redsys",
+        "goCardless": "GoCardless",
+        "paypal": "PayPal"
+      }
+    }
   }
 }

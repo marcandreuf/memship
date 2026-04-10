@@ -47,6 +47,37 @@
     "genderOptions": "Gender Options",
     "genderOptionsDesc": "Configure the gender options available in member forms. Each option needs a value key and labels in all languages.",
     "genderValue": "Value",
-    "addGenderOption": "Add option"
+    "addGenderOption": "Add option",
+    "providers": {
+      "tab": "Payment Providers",
+      "title": "Payment Providers",
+      "description": "Configure payment provider credentials and settings",
+      "add": "Add Provider",
+      "addTitle": "Add Payment Provider",
+      "editTitle": "Edit Payment Provider",
+      "edit": "Edit",
+      "delete": "Delete",
+      "test": "Test Connection",
+      "testSuccess": "Configuration is valid",
+      "displayName": "Display Name",
+      "empty": "No payment providers configured",
+      "configured": "Already configured",
+      "comingSoon": "Coming soon",
+      "default": "Default",
+      "showValue": "Show",
+      "hideValue": "Hide",
+      "status": {
+        "active": "Active",
+        "test": "Test",
+        "disabled": "Disabled"
+      },
+      "types": {
+        "sepa_direct_debit": "SEPA Direct Debit",
+        "stripe": "Stripe",
+        "redsys": "Redsys",
+        "goCardless": "GoCardless",
+        "paypal": "PayPal"
+      }
+    }
   }
 }

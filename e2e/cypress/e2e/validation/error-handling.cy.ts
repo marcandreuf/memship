@@ -28,6 +28,10 @@ describe("Error Handling — Toast Notifications", () => {
   });
 
   describe("Group CRUD — success toasts", () => {
+    const uniqueSuffix = Date.now().toString().slice(-6);
+    const groupName = `E2E Toast ${uniqueSuffix}`;
+    const groupSlug = `e2e-toast-${uniqueSuffix}`;
+
     beforeEach(() => {
       cy.loginAsAdmin();
       cy.visit("/en/groups");
@@ -36,19 +40,22 @@ describe("Error Handling — Toast Notifications", () => {
     it("shows success toast when creating a group", () => {
       cy.contains("button", "Create Group").click();
       cy.get('[role="dialog"]').within(() => {
-        cy.get('input[name="name"]').type("E2E Toast Group");
-        cy.get('input[name="slug"]').type("e2e-toast-group");
+        cy.get('input[name="name"]').type(groupName);
+        cy.get('input[name="slug"]').type(groupSlug);
         cy.contains("button", "Create").click();
       });
-      cy.get(TOAST).should("contain.text", "Created successfully");
+      cy.get(TOAST, { timeout: 15000 }).should("contain.text", "Created successfully");
     });
 
     it("shows success toast when deleting a group", () => {
-      cy.contains("E2E Toast Group").click();
+      cy.contains(groupName).click();
       cy.url().should("match", /\/groups\/\d+/);
-      cy.on("window:confirm", () => true);
+      // Click the Delete button to open the confirm dialog
       cy.contains("button", "Delete").click();
-      cy.get(TOAST).should("contain.text", "Deleted successfully");
+      // Confirm in the AlertDialog
+      cy.get('[role="alertdialog"]').should("be.visible");
+      cy.get('[role="alertdialog"]').contains("button", "Delete").click();
+      cy.get(TOAST, { timeout: 15000 }).should("contain.text", "Deleted successfully");
     });
   });
 

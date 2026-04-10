@@ -47,6 +47,37 @@
     "genderOptions": "Opciones de género",
     "genderOptionsDesc": "Configura las opciones de género disponibles en los formularios de socios. Cada opción necesita una clave y etiquetas en todos los idiomas.",
     "genderValue": "Valor",
-    "addGenderOption": "Añadir opción"
+    "addGenderOption": "Añadir opción",
+    "providers": {
+      "tab": "Proveedores de pago",
+      "title": "Proveedores de pago",
+      "description": "Configura las credenciales y ajustes de los proveedores de pago",
+      "add": "Añadir proveedor",
+      "addTitle": "Añadir proveedor de pago",
+      "editTitle": "Editar proveedor de pago",
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "test": "Probar conexión",
+      "testSuccess": "La configuración es válida",
+      "displayName": "Nombre visible",
+      "empty": "No hay proveedores de pago configurados",
+      "configured": "Ya configurado",
+      "comingSoon": "Próximamente",
+      "default": "Por defecto",
+      "showValue": "Mostrar",
+      "hideValue": "Ocultar",
+      "status": {
+        "active": "Activo",
+        "test": "Pruebas",
+        "disabled": "Desactivado"
+      },
+      "types": {
+        "sepa_direct_debit": "Domiciliación SEPA",
+        "stripe": "Stripe",
+        "redsys": "Redsys",
+        "goCardless": "GoCardless",
+        "paypal": "PayPal"
+      }
+    }
   }
 }

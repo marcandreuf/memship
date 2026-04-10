@@ -1,0 +1,10 @@
+{
+  "suites": 3,
+  "tests": 10,
+  "passes": 10,
+  "pending": 0,
+  "failures": 0,
+  "start": "2026-04-10T10:35:41.476Z",
+  "duration": 170723,
+  "file": "cypress/e2e/mandates/mandate-crud.cy.ts"
+}

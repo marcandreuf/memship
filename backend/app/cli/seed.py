@@ -1191,6 +1191,42 @@ def seed_sepa_data(db) -> None:
     db.flush()
     print("  Payment provider: created SEPA Direct Debit")
 
+    # --- Disabled provider templates for other types ---
+    provider_templates = [
+        PaymentProvider(
+            provider_type="stripe",
+            display_name="Stripe",
+            status="disabled",
+            config={"secret_key": "", "publishable_key": "", "webhook_secret": "", "mode": "webhook"},
+            is_default=False,
+        ),
+        PaymentProvider(
+            provider_type="redsys",
+            display_name="Redsys",
+            status="disabled",
+            config={"merchant_code": "", "terminal_id": "", "secret_key": "", "environment": "test", "currency_code": "978"},
+            is_default=False,
+        ),
+        PaymentProvider(
+            provider_type="goCardless",
+            display_name="GoCardless",
+            status="disabled",
+            config={"access_token": "", "webhook_secret": "", "environment": "sandbox"},
+            is_default=False,
+        ),
+        PaymentProvider(
+            provider_type="paypal",
+            display_name="PayPal",
+            status="disabled",
+            config={"client_id": "", "client_secret": "", "environment": "sandbox"},
+            is_default=False,
+        ),
+    ]
+    for tmpl in provider_templates:
+        db.add(tmpl)
+    db.flush()
+    print("  Payment providers: created Stripe, Redsys, GoCardless, PayPal (disabled)")
+
     # --- Add bank IBANs to more members (for mandate variety) ---
     extra_iban_data = [
         ("anna@test.com", "ES8023100001180000012345", "CAIXESBBXXX", "Anna Ferrer"),

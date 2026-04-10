@@ -1,0 +1,10 @@
+{
+  "suites": 2,
+  "tests": 6,
+  "passes": 6,
+  "pending": 0,
+  "failures": 0,
+  "start": "2026-04-10T10:39:49.564Z",
+  "duration": 58594,
+  "file": "cypress/e2e/settings/payment-providers.cy.ts"
+}

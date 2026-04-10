@@ -4,7 +4,7 @@
   "passes": 5,
   "pending": 0,
   "failures": 0,
-  "start": "2026-03-23T10:12:22.189Z",
-  "duration": 31456,
+  "start": "2026-04-10T10:39:38.405Z",
+  "duration": 53757,
   "file": "cypress/e2e/settings/settings.cy.ts"
 }

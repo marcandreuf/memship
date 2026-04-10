@@ -42,6 +42,7 @@ import { MembershipTypesSettings } from "@/features/settings/components/membersh
 import { PaymentsSettings } from "@/features/settings/components/payments-settings";
 import { LogoUpload } from "@/features/settings/components/logo-upload";
 import { GenderOptionsSettings } from "@/features/settings/components/gender-options-settings";
+import { PaymentProvidersSettings } from "@/features/settings/components/payment-providers-settings";
 import { FormSkeleton } from "@/components/ui/skeletons";
 
 const settingsSchema = z.object({
@@ -164,6 +165,9 @@ export default function SettingsPage() {
           )}
           {isSuperAdmin && (
             <TabsTrigger value="payments">{t("settings.payments")}</TabsTrigger>
+          )}
+          {isSuperAdmin && (
+            <TabsTrigger value="payment-providers">{t("settings.providers.tab")}</TabsTrigger>
           )}
           <TabsTrigger value="membership-types">{t("nav.membershipTypes")}</TabsTrigger>
         </TabsList>
@@ -384,6 +388,10 @@ export default function SettingsPage() {
 
         {isSuperAdmin && <TabsContent value="payments">
           <PaymentsSettings />
+        </TabsContent>}
+
+        {isSuperAdmin && <TabsContent value="payment-providers">
+          <PaymentProvidersSettings />
         </TabsContent>}
 
         <TabsContent value="membership-types">

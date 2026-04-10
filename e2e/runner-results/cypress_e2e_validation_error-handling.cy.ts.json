@@ -1,10 +1,10 @@
 {
   "suites": 14,
   "tests": 16,
-  "passes": 16,
+  "passes": 14,
   "pending": 0,
-  "failures": 0,
-  "start": "2026-03-23T10:07:35.049Z",
-  "duration": 285649,
+  "failures": 2,
+  "start": "2026-04-10T10:28:13.014Z",
+  "duration": 555886,
   "file": "cypress/e2e/validation/error-handling.cy.ts"
 }

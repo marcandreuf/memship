@@ -4,7 +4,7 @@
   "passes": 9,
   "pending": 0,
   "failures": 0,
-  "start": "2026-03-23T10:09:08.120Z",
-  "duration": 123225,
+  "start": "2026-04-10T10:37:31.564Z",
+  "duration": 83899,
   "file": "cypress/e2e/dashboard/admin-dashboard.cy.ts"
 }
