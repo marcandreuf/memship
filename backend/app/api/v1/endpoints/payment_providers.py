@@ -39,7 +39,7 @@ def list_provider_types(
 ):
     """List available provider types with config schemas and availability status."""
     # Providers with real payment processing implemented
-    available_types = {"sepa_direct_debit"}
+    available_types = {"sepa_direct_debit", "stripe"}
 
     result = []
     for provider_type, schema in PROVIDER_CONFIG_SCHEMAS.items():
@@ -237,6 +237,12 @@ def test_provider(
     sensitive = get_sensitive_fields(provider.provider_type)
     decrypted = decrypt_config(provider.config or {}, sensitive)
 
-    adapter = LocalValidationAdapter(provider.provider_type, decrypted)
+    # Use real adapter if available, otherwise fall back to local validation
+    from app.api.v1.endpoints.webhooks import get_adapter
+
+    adapter = get_adapter(provider.provider_type, decrypted)
+    if not adapter:
+        adapter = LocalValidationAdapter(provider.provider_type, decrypted)
+
     result = adapter.test_connection()
     return result

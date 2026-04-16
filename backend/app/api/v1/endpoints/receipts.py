@@ -388,6 +388,144 @@ def list_my_receipts(
     }
 
 
+@router.post("/{receipt_id}/stripe/checkout")
+def create_stripe_checkout(
+    receipt_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Create a Stripe Checkout session for a receipt.
+
+    Available to the receipt's owner (member) or any admin.
+    Returns a redirect URL to the Stripe Checkout page.
+    """
+    from app.api.v1.endpoints.webhooks import get_adapter, _decrypt_provider_config
+    from app.domains.billing.models import PaymentProvider
+    from app.domains.billing.stripe_customer_service import ensure_customer
+    from app.domains.organizations.models import OrganizationSettings
+
+    receipt = (
+        db.query(Receipt)
+        .filter(Receipt.id == receipt_id, Receipt.is_active.is_(True))
+        .first()
+    )
+    if not receipt:
+        raise HTTPException(status_code=404, detail="Receipt not found")
+
+    # Auth: member can only pay own receipts
+    if current_user.role == "member":
+        member = (
+            db.query(Member)
+            .join(Person, Member.person_id == Person.id)
+            .filter(Person.email == current_user.email, Member.is_active.is_(True))
+            .first()
+        )
+        if not member or receipt.member_id != member.id:
+            raise HTTPException(status_code=403, detail="Access denied")
+
+    # Must be payable
+    if receipt.status not in ("emitted", "overdue"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Receipt status '{receipt.status}' is not payable",
+        )
+
+    # Find active Stripe provider
+    provider = (
+        db.query(PaymentProvider)
+        .filter(
+            PaymentProvider.provider_type == "stripe",
+            PaymentProvider.status.in_(["active", "test"]),
+        )
+        .first()
+    )
+    if not provider:
+        raise HTTPException(status_code=400, detail="No active Stripe provider configured")
+
+    config = _decrypt_provider_config(provider)
+    adapter = get_adapter("stripe", config)
+    if not adapter:
+        raise HTTPException(status_code=500, detail="Stripe adapter not available")
+
+    # Get org currency
+    org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
+    currency = org.currency if org and org.currency else "EUR"
+
+    # Get member's person for customer sync
+    member_obj = db.query(Member).filter(Member.id == receipt.member_id).first()
+    person = db.query(Person).filter(Person.id == member_obj.person_id).first()
+
+    # Lazy-create Stripe customer
+    stripe_customer_id = None
+    try:
+        stripe_customer_id = ensure_customer(db, person, config["secret_key"])
+    except Exception:
+        pass  # Fall back to customer_email
+
+    # Build return URLs
+    base_url = org.portal_url if org and hasattr(org, "portal_url") and org.portal_url else ""
+    success_url = f"{base_url}/payment/success?session_id={{CHECKOUT_SESSION_ID}}"
+    cancel_url = f"{base_url}/payment/cancel?session_id={{CHECKOUT_SESSION_ID}}"
+
+    result = adapter.create_payment(
+        receipt=receipt,
+        person=person,
+        currency=currency,
+        success_url=success_url,
+        cancel_url=cancel_url,
+        stripe_customer_id=stripe_customer_id,
+    )
+
+    # Store session ID on receipt
+    receipt.stripe_checkout_session_id = result["session_id"]
+    db.commit()
+
+    return {
+        "redirect_url": result["redirect_url"],
+        "session_id": result["session_id"],
+    }
+
+
+@router.get("/by-stripe-session/{session_id}")
+def get_receipt_by_stripe_session(
+    session_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Look up a receipt by Stripe Checkout session ID.
+
+    Used by the payment success page to display receipt status
+    without leaking receipt IDs in the URL.
+    """
+    receipt = (
+        db.query(Receipt)
+        .filter(
+            Receipt.stripe_checkout_session_id == session_id,
+            Receipt.is_active.is_(True),
+        )
+        .options(
+            joinedload(Receipt.member).joinedload(Member.person),
+            joinedload(Receipt.concept),
+        )
+        .first()
+    )
+    if not receipt:
+        raise HTTPException(status_code=404, detail="Receipt not found")
+
+    # Auth: member can only see own receipts
+    if current_user.role == "member":
+        member = (
+            db.query(Member)
+            .join(Person, Member.person_id == Person.id)
+            .filter(Person.email == current_user.email, Member.is_active.is_(True))
+            .first()
+        )
+        if not member or receipt.member_id != member.id:
+            raise HTTPException(status_code=403, detail="Access denied")
+
+    return _to_detail(receipt)
+
+
 @router.post("/generate-membership-fees")
 def generate_membership_fees_endpoint(
     data: GenerateMembershipFeesRequest,

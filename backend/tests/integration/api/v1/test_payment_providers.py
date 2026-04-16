@@ -109,8 +109,7 @@ class TestCreateProvider:
             "config": {
                 "secret_key": "sk_test_abc123",
                 "publishable_key": "pk_test_xyz456",
-                "webhook_secret": "",
-                "mode": "webhook",
+                "webhook_secret": "whsec_test789",
             },
         }
         resp = client.post("/api/v1/payment-providers/", json=payload, cookies=cookies)
@@ -131,7 +130,7 @@ class TestCreateProvider:
             "config": {
                 "secret_key": "sk_test_abc123",
                 "publishable_key": "pk_test_xyz456",
-                "mode": "webhook",
+                "webhook_secret": "whsec_test789",
             },
         }
         resp = client.post("/api/v1/payment-providers/", json=payload, cookies=cookies)
@@ -240,7 +239,7 @@ class TestUpdateProvider:
                 "config": {
                     "secret_key": "sk_test_original",
                     "publishable_key": "pk_test_xyz",
-                    "mode": "webhook",
+                    "webhook_secret": "whsec_test789",
                 },
             },
             cookies=cookies,
@@ -254,7 +253,7 @@ class TestUpdateProvider:
                 "config": {
                     "secret_key": "sk_test_updated",
                     "publishable_key": "pk_test_xyz",
-                    "mode": "webhook",
+                    "webhook_secret": "whsec_test789",
                 },
             },
             cookies=cookies,
@@ -395,6 +394,8 @@ class TestToggleProvider:
 
 class TestTestProvider:
     def test_valid_stripe_config(self, client, db):
+        from unittest.mock import patch, MagicMock
+
         user = _create_user(db, suffix="pp-test1")
         cookies = _auth_cookie(user)
         # Create with valid config via API
@@ -406,21 +407,31 @@ class TestTestProvider:
                 "config": {
                     "secret_key": "sk_test_abc123",
                     "publishable_key": "pk_test_xyz456",
-                    "mode": "webhook",
+                    "webhook_secret": "whsec_test789",
                 },
             },
             cookies=cookies,
         )
         provider_id = create_resp.json()["id"]
 
-        resp = client.post(
-            f"/api/v1/payment-providers/{provider_id}/test", cookies=cookies
-        )
+        with patch("app.domains.billing.providers.stripe_provider.StripeAdapter._client") as mock_client:
+            mock_account = MagicMock()
+            mock_account.id = "acct_test123"
+            mock_account.country = "ES"
+            mock_account.settings.dashboard.display_name = "Test Club"
+            mock_client.return_value.accounts.retrieve.return_value = mock_account
+
+            resp = client.post(
+                f"/api/v1/payment-providers/{provider_id}/test", cookies=cookies
+            )
         assert resp.status_code == 200
         data = resp.json()
         assert data["success"] is True
 
     def test_invalid_stripe_config(self, client, db):
+        from unittest.mock import patch
+        import stripe
+
         user = _create_user(db, suffix="pp-test2")
         cookies = _auth_cookie(user)
         create_resp = client.post(
@@ -429,22 +440,27 @@ class TestTestProvider:
                 "provider_type": "stripe",
                 "display_name": "Stripe",
                 "config": {
-                    "secret_key": "invalid_key",
+                    "secret_key": "sk_test_invalid",
                     "publishable_key": "pk_test_xyz",
-                    "mode": "webhook",
+                    "webhook_secret": "whsec_test",
                 },
             },
             cookies=cookies,
         )
         provider_id = create_resp.json()["id"]
 
-        resp = client.post(
-            f"/api/v1/payment-providers/{provider_id}/test", cookies=cookies
-        )
+        with patch("app.domains.billing.providers.stripe_provider.StripeAdapter._client") as mock_client:
+            mock_client.return_value.accounts.retrieve.side_effect = stripe.AuthenticationError(
+                "Invalid API Key provided"
+            )
+
+            resp = client.post(
+                f"/api/v1/payment-providers/{provider_id}/test", cookies=cookies
+            )
         assert resp.status_code == 200
         data = resp.json()
         assert data["success"] is False
-        assert "sk_" in data["message"]
+        assert "Authentication failed" in data["message"]
 
     def test_sepa_config_valid(self, client, db):
         user = _create_user(db, suffix="pp-test3")
@@ -497,13 +513,13 @@ class TestProviderTypes:
         sepa = next(t for t in data if t["provider_type"] == "sepa_direct_debit")
         assert sepa["available"] is True
 
-    def test_stripe_is_coming_soon(self, client, db):
+    def test_stripe_is_available(self, client, db):
         user = _create_user(db, suffix="pp-types3")
         cookies = _auth_cookie(user)
         resp = client.get("/api/v1/payment-providers/types", cookies=cookies)
         data = resp.json()
         stripe = next(t for t in data if t["provider_type"] == "stripe")
-        assert stripe["available"] is False
+        assert stripe["available"] is True
 
     def test_types_include_fields(self, client, db):
         user = _create_user(db, suffix="pp-types4")
@@ -511,5 +527,5 @@ class TestProviderTypes:
         resp = client.get("/api/v1/payment-providers/types", cookies=cookies)
         data = resp.json()
         stripe = next(t for t in data if t["provider_type"] == "stripe")
-        assert len(stripe["fields"]) == 4
+        assert len(stripe["fields"]) == 3
         assert stripe["sensitive_fields"] == ["secret_key", "webhook_secret"]

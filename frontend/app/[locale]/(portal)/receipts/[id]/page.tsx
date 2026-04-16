@@ -29,6 +29,7 @@ import {
   useCancelReceipt,
   useReturnReceipt,
   useReemitReceipt,
+  useStripeCheckout,
 } from "@/features/receipts/hooks/use-receipts";
 
 const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -61,6 +62,7 @@ export default function ReceiptDetailPage() {
   const cancelMutation = useCancelReceipt();
   const returnMutation = useReturnReceipt();
   const reemitMutation = useReemitReceipt();
+  const stripeCheckoutMutation = useStripeCheckout();
 
   if (isLoading) return <DetailSkeleton />;
   if (!receipt) return <p className="text-center py-8">Receipt not found</p>;
@@ -121,6 +123,13 @@ export default function ReceiptDetailPage() {
     } catch { /* global handler */ }
   }
 
+  async function handlePayOnline() {
+    try {
+      const result = await stripeCheckoutMutation.mutateAsync(receipt!.id);
+      window.location.href = result.redirect_url;
+    } catch { /* global handler */ }
+  }
+
   const canEdit = ["new", "pending"].includes(receipt.status);
   const canEmit = ["new", "pending"].includes(receipt.status);
   const canPay = ["emitted", "overdue"].includes(receipt.status);
@@ -174,7 +183,8 @@ export default function ReceiptDetailPage() {
           <div className="flex gap-2 flex-wrap">
             {canEdit && <Button size="sm" variant="outline" onClick={() => setEditOpen(true)}>{t("common.edit")}</Button>}
             {canEmit && <Button size="sm" onClick={handleEmit}>{t("receipts.emit")}</Button>}
-            {canPay && <Button size="sm" onClick={() => setPayOpen(true)}>{t("receipts.markPaid")}</Button>}
+            {canPay && <Button size="sm" onClick={handlePayOnline} disabled={stripeCheckoutMutation.isPending}>{stripeCheckoutMutation.isPending ? t("receipts.redirectingToPayment") : t("receipts.payOnline")}</Button>}
+            {canPay && <Button size="sm" variant="outline" onClick={() => setPayOpen(true)}>{t("receipts.markPaid")}</Button>}
             {canReturn && <Button size="sm" variant="outline" onClick={() => setReturnOpen(true)}>{t("receipts.markReturned")}</Button>}
             {canReemit && <Button size="sm" onClick={handleReemit}>{t("receipts.reemit")}</Button>}
             {canCancel && <Button size="sm" variant="destructive" onClick={handleCancel}>{t("receipts.cancel")}</Button>}

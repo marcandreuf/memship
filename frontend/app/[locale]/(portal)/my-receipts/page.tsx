@@ -10,7 +10,8 @@ import {
 import { Pagination } from "@/components/entity/pagination";
 import { TableSkeleton } from "@/components/ui/skeletons";
 import { useFormatters } from "@/hooks/use-formatters";
-import { useMyReceipts } from "@/features/receipts/hooks/use-receipts";
+import { useMyReceipts, useStripeCheckout } from "@/features/receipts/hooks/use-receipts";
+import { toast } from "sonner";
 import { usePageParam } from "@/hooks/use-url-state";
 
 const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -36,6 +37,14 @@ export default function MyReceiptsPage() {
 
   const { data, isLoading } = useMyReceipts(params);
   const { formatCurrency, formatDate } = useFormatters();
+  const stripeCheckoutMutation = useStripeCheckout();
+
+  async function handlePayNow(receiptId: number) {
+    try {
+      const result = await stripeCheckoutMutation.mutateAsync(receiptId);
+      window.location.href = result.redirect_url;
+    } catch { /* global handler */ }
+  }
 
   if (isLoading) return <TableSkeleton />;
 
@@ -75,11 +84,22 @@ export default function MyReceiptsPage() {
                   <TableCell className="text-sm">{formatDate(r.emission_date)}</TableCell>
                   <TableCell className="text-sm">{formatDate(r.payment_date)}</TableCell>
                   <TableCell>
-                    <Button variant="outline" size="sm" asChild>
-                      <a href={`/api/receipts/${r.id}/pdf`} target="_blank" rel="noopener noreferrer">
-                        {t("receipts.downloadPdf")}
-                      </a>
-                    </Button>
+                    <div className="flex gap-2">
+                      {["emitted", "overdue"].includes(r.status) && (
+                        <Button
+                          size="sm"
+                          onClick={() => handlePayNow(r.id)}
+                          disabled={stripeCheckoutMutation.isPending}
+                        >
+                          {t("receipts.payNow")}
+                        </Button>
+                      )}
+                      <Button variant="outline" size="sm" asChild>
+                        <a href={`/api/receipts/${r.id}/pdf`} target="_blank" rel="noopener noreferrer">
+                          {t("receipts.downloadPdf")}
+                        </a>
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               );

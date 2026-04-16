@@ -148,3 +148,20 @@ export async function createConcept(data: Record<string, unknown>): Promise<Conc
     body: JSON.stringify(data),
   });
 }
+
+// --- Stripe Checkout ---
+
+export interface StripeCheckoutResponse {
+  redirect_url: string;
+  session_id: string;
+}
+
+export async function createStripeCheckout(receiptId: number): Promise<StripeCheckoutResponse> {
+  return apiClient(`/receipts/${receiptId}/stripe/checkout`, {
+    method: "POST",
+  });
+}
+
+export async function getReceiptByStripeSession(sessionId: string): Promise<ReceiptData> {
+  return apiClient(`/receipts/by-stripe-session/${sessionId}`);
+}

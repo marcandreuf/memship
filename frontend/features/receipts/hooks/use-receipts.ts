@@ -16,6 +16,8 @@ import {
   generateMembershipFees,
   getConcepts,
   createConcept,
+  createStripeCheckout,
+  getReceiptByStripeSession,
 } from "../services/receipts-api";
 
 export function useReceipts(params?: URLSearchParams) {
@@ -127,5 +129,28 @@ export function useCreateConcept() {
   return useMutation({
     mutationFn: createConcept,
     onSuccess: () => qc.invalidateQueries({ queryKey: ["concepts"] }),
+  });
+}
+
+// --- Stripe Checkout ---
+
+export function useStripeCheckout() {
+  return useMutation({
+    mutationFn: createStripeCheckout,
+  });
+}
+
+export function useReceiptByStripeSession(sessionId: string | null) {
+  return useQuery({
+    queryKey: ["receipt-by-session", sessionId],
+    queryFn: () => getReceiptByStripeSession(sessionId!),
+    enabled: !!sessionId,
+    refetchInterval: (query) => {
+      // Poll every 2s until receipt is paid, max 5 retries
+      const data = query.state.data;
+      if (data && data.status === "paid") return false;
+      if ((query.state.dataUpdateCount ?? 0) >= 5) return false;
+      return 2000;
+    },
   });
 }

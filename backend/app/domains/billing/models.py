@@ -72,7 +72,7 @@ class Receipt(Base):
             name="valid_receipt_origin",
         ),
         CheckConstraint(
-            "payment_method IN ('cash', 'bank_transfer', 'card', 'direct_debit') OR payment_method IS NULL",
+            "payment_method IN ('cash', 'bank_transfer', 'card', 'direct_debit', 'stripe_checkout') OR payment_method IS NULL",
             name="valid_payment_method",
         ),
         CheckConstraint(
@@ -120,6 +120,15 @@ class Receipt(Base):
     # Return/rejection tracking
     return_date = Column(Date)
     return_reason = Column(String(255))
+
+    # Stripe payment tracking
+    stripe_checkout_session_id = Column(String(255))
+    stripe_payment_intent_id = Column(String(255))
+
+    # Refund metadata (manual tracking)
+    refund_amount = Column(Numeric(10, 2))
+    refund_date = Column(Date)
+    refund_reason = Column(String(255))
 
     # Batch & processor
     is_batchable = Column(Boolean, default=True, nullable=False)
@@ -257,3 +266,29 @@ class PaymentProvider(Base):
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+
+
+class WebhookEvent(Base):
+    """Incoming webhook event — audit log and idempotency dedup."""
+
+    __tablename__ = "webhook_events"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('received', 'processed', 'failed', 'ignored')",
+            name="valid_webhook_event_status",
+        ),
+        Index("ix_webhook_events_provider_status", "provider_type", "status"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    provider_type = Column(String(50), nullable=False)
+    external_event_id = Column(String(255), unique=True, nullable=False)
+    event_type = Column(String(100), nullable=False)
+    payload = Column(JSONB, nullable=False)
+    status = Column(String(20), nullable=False, default="received")
+    error_message = Column(Text)
+    receipt_id = Column(Integer, ForeignKey("receipts.id"))
+    processed_at = Column(DateTime(timezone=True))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    receipt = relationship("Receipt")

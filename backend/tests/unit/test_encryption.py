@@ -75,7 +75,6 @@ class TestEncryptDecrypt:
                 "secret_key": "sk_live_test123",
                 "publishable_key": "pk_live_test456",
                 "webhook_secret": "whsec_test789",
-                "mode": "webhook",
             },
             "redsys": {
                 "merchant_code": "123456789",
@@ -153,8 +152,7 @@ class TestProviderConfig:
         required = get_required_fields("stripe")
         assert "secret_key" in required
         assert "publishable_key" in required
-        assert "mode" in required
-        assert "webhook_secret" not in required  # optional
+        assert "webhook_secret" in required
 
     def test_get_required_fields_unknown(self):
         assert get_required_fields("unknown_type") == []
@@ -168,33 +166,32 @@ class TestConfigValidation:
         config = {
             "secret_key": "sk_live_abc123",
             "publishable_key": "pk_live_xyz456",
-            "mode": "webhook",
+            "webhook_secret": "whsec_test789",
         }
         errors = validate_provider_config("stripe", config)
         assert errors == []
 
     def test_stripe_missing_required(self):
-        config = {"secret_key": "sk_live_abc", "mode": "webhook"}
+        config = {"secret_key": "sk_live_abc", "webhook_secret": "whsec_test"}
         errors = validate_provider_config("stripe", config)
         assert any("Publishable Key" in e for e in errors)
+
+    def test_stripe_missing_webhook_secret(self):
+        config = {
+            "secret_key": "sk_live_abc",
+            "publishable_key": "pk_live_xyz",
+        }
+        errors = validate_provider_config("stripe", config)
+        assert any("Webhook Secret" in e for e in errors)
 
     def test_stripe_invalid_key_prefix(self):
         config = {
             "secret_key": "invalid_key",
             "publishable_key": "pk_live_xyz",
-            "mode": "webhook",
+            "webhook_secret": "whsec_test",
         }
         errors = validate_provider_config("stripe", config)
         assert any("sk_" in e for e in errors)
-
-    def test_stripe_invalid_select_value(self):
-        config = {
-            "secret_key": "sk_live_abc",
-            "publishable_key": "pk_live_xyz",
-            "mode": "invalid_mode",
-        }
-        errors = validate_provider_config("stripe", config)
-        assert any("must be one of" in e for e in errors)
 
     def test_valid_redsys_config(self):
         config = {

@@ -25,6 +25,7 @@ from app.api.v1.endpoints import (
     receipts,
     registrations,
     settings,
+    webhooks,
 )
 
 api_router = APIRouter()
@@ -56,3 +57,4 @@ api_router.include_router(remittances.router)
 api_router.include_router(receipts.member_router)
 api_router.include_router(receipts.router)
 api_router.include_router(concepts.router)
+api_router.include_router(webhooks.router)

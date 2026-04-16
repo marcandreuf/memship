@@ -48,7 +48,7 @@ from app.domains.activities.models import (  # noqa: F401
     RegistrationConsent,
 )
 from app.domains.billing.models import (  # noqa: F401
-    Concept, PaymentProvider, Receipt, Remittance, SepaMandate,
+    Concept, PaymentProvider, Receipt, Remittance, SepaMandate, WebhookEvent,
 )
 
 # Use test database

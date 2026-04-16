@@ -90,7 +90,7 @@ class ReceiptUpdate(BaseModel):
 
 
 class ReceiptPayRequest(BaseModel):
-    payment_method: str = Field(pattern=r"^(cash|bank_transfer|card|direct_debit)$")
+    payment_method: str = Field(pattern=r"^(cash|bank_transfer|card|direct_debit|stripe_checkout)$")
     payment_date: date | None = None
 
 
@@ -123,6 +123,11 @@ class ReceiptResponse(BaseModel):
     payment_date: date | None
     return_date: date | None
     return_reason: str | None
+    stripe_checkout_session_id: str | None = None
+    stripe_payment_intent_id: str | None = None
+    refund_amount: Decimal | None = None
+    refund_date: date | None = None
+    refund_reason: str | None = None
     is_batchable: bool
     transaction_id: str | None
     billing_period_start: date | None

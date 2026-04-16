@@ -38,13 +38,6 @@ PROVIDER_CONFIG_SCHEMAS: dict[str, dict] = {
                 "label": "Webhook Secret",
                 "type": "password",
                 "placeholder": "whsec_...",
-                "required": False,
-            },
-            {
-                "key": "mode",
-                "label": "Payment Mode",
-                "type": "select",
-                "options": ["webhook", "polling"],
                 "required": True,
             },
         ],
