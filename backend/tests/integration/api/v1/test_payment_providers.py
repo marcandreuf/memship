@@ -414,12 +414,12 @@ class TestTestProvider:
         )
         provider_id = create_resp.json()["id"]
 
-        with patch("app.domains.billing.providers.stripe_provider.StripeAdapter._client") as mock_client:
+        with patch("app.domains.billing.providers.stripe_provider.stripe.Account.retrieve") as mock_retrieve:
             mock_account = MagicMock()
             mock_account.id = "acct_test123"
             mock_account.country = "ES"
             mock_account.settings.dashboard.display_name = "Test Club"
-            mock_client.return_value.accounts.retrieve.return_value = mock_account
+            mock_retrieve.return_value = mock_account
 
             resp = client.post(
                 f"/api/v1/payment-providers/{provider_id}/test", cookies=cookies
@@ -449,8 +449,8 @@ class TestTestProvider:
         )
         provider_id = create_resp.json()["id"]
 
-        with patch("app.domains.billing.providers.stripe_provider.StripeAdapter._client") as mock_client:
-            mock_client.return_value.accounts.retrieve.side_effect = stripe.AuthenticationError(
+        with patch("app.domains.billing.providers.stripe_provider.stripe.Account.retrieve") as mock_retrieve:
+            mock_retrieve.side_effect = stripe.AuthenticationError(
                 "Invalid API Key provided"
             )
 

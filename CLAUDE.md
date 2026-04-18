@@ -92,10 +92,13 @@ memship/
 │   │   ├── core/                # Config, security, RBAC, pagination
 │   │   ├── db/                  # SQLAlchemy base, session
 │   │   ├── api/v1/              # API routes
+│   │   │   └── endpoints/       # Including webhooks.py (POST /webhooks/{provider})
 │   │   ├── domains/             # Domain modules (models, schemas, services)
 │   │   │   ├── activities/      # Activities, modalities, prices, registrations, discounts, consents, attachments
-│   │   │   ├── auth/            # Users, authentication
 │   │   │   ├── audit/           # Audit logging
+│   │   │   ├── auth/            # Users, authentication
+│   │   │   ├── billing/         # Receipts, concepts, mandates, remittances, payment providers, webhooks, Stripe
+│   │   │   │   └── providers/   # Payment provider adapters (Stripe, base)
 │   │   │   ├── members/         # Members, membership types, groups
 │   │   │   ├── organizations/   # Organization settings
 │   │   │   └── persons/         # Persons, addresses, contacts

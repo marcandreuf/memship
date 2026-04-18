@@ -81,8 +81,8 @@ Open http://localhost:8081 and log in with your credentials. Change `PORT=8081` 
 | v0.3.5 | Bug fixes — failing integration tests | Done |
 | v0.3.6 | CI optimization — setup-uv v7, cached password hashing, pytest-xdist parallel workers, automated version hooks | Done |
 | v0.4.0 | SEPA Direct Debit — mandate management, remittance batches, pain.008 XML, member payment method | Done |
-| v0.4.1 | Payment provider settings — super admin configurable payment gateway management | — |
-| v0.4.2 | Webhook infrastructure + Stripe integration | — |
+| v0.4.1 | Payment provider settings — super admin configurable payment gateway management | Done |
+| v0.4.2 | Webhook infrastructure + Stripe Checkout — provider webhooks, real-time payment status, member "Pay Now" flow | — |
 | v0.4.3 | Redsys integration — Spanish bank gateway with 3D Secure | — |
 | v0.4.4 | GoCardless e-mandates — managed SEPA via hosted flow | — |
 | v0.4.5 | Recurring billing automation — scheduled fee generation | — |
@@ -147,9 +147,10 @@ Open http://localhost:8081 and log in with your credentials. Change `PORT=8081` 
 - Bank return file import and receipt status tracking
 - Member self-service payment method page
 
-**Payment Providers** (planned — v0.4.x)
+**Payment Providers** (in progress — v0.4.x)
 - Configurable payment gateway management (super admin settings)
-- Stripe integration — invoice-based card payments with webhook support
+- Stripe Checkout — member self-service "Pay Now" for pending receipts
+- Webhook infrastructure for real-time payment status updates (POST /webhooks/{provider})
 - GoCardless — managed SEPA e-mandates via hosted flow
 - Extensible adapter pattern for regional providers (MercadoPago, Razorpay, etc.)
 

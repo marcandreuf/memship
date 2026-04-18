@@ -22,7 +22,7 @@ def ensure_customer(
         return person.stripe_customer_id
 
     client = stripe.StripeClient(stripe_secret_key)
-    customer = client.customers.create(
+    customer = client.v1.customers.create(
         params={
             "email": person.email,
             "name": f"{person.first_name} {person.last_name}",

@@ -4,6 +4,7 @@ Implements PaymentProviderAdapter for Stripe Checkout sessions.
 Invoice flow (Send via Stripe) deferred to v0.4.5.
 """
 
+import json
 import logging
 from datetime import date
 from decimal import Decimal
@@ -47,11 +48,14 @@ class StripeAdapter(PaymentProviderAdapter):
     def test_connection(self) -> dict:
         """Test Stripe credentials with a real API call."""
         try:
-            client = self._client()
-            account = client.accounts.retrieve("me")
+            stripe.api_key = self.secret_key
+            account = stripe.Account.retrieve()
+            display_name = None
+            if account.settings and account.settings.dashboard:
+                display_name = account.settings.dashboard.display_name
             return {
                 "success": True,
-                "message": f"Connected to Stripe account: {account.settings.dashboard.display_name or account.id}",
+                "message": f"Connected to Stripe account: {display_name or account.id}",
                 "account_id": account.id,
                 "country": account.country,
             }
@@ -102,7 +106,7 @@ class StripeAdapter(PaymentProviderAdapter):
         else:
             params["customer_email"] = person.email
 
-        session = client.checkout.sessions.create(params=params)
+        session = client.v1.checkout.sessions.create(params=params)
 
         return {
             "redirect_url": session.url,
@@ -116,14 +120,15 @@ class StripeAdapter(PaymentProviderAdapter):
             raise ValueError("Missing Stripe-Signature header")
 
         try:
-            event = stripe.Webhook.construct_event(
+            stripe.Webhook.construct_event(
                 payload=raw_body,
                 sig_header=sig_header,
                 secret=self.webhook_secret,
             )
-            return event
         except stripe.SignatureVerificationError as exc:
             raise ValueError(f"Invalid signature: {exc}") from exc
+
+        return json.loads(raw_body)
 
     def extract_event_id(self, event_data: dict) -> str:
         return event_data.get("id", "")
@@ -230,7 +235,7 @@ class StripeAdapter(PaymentProviderAdapter):
     def check_payment_status(self, session_id: str) -> dict:
         """Check status of a Checkout Session."""
         client = self._client()
-        session = client.checkout.sessions.retrieve(session_id)
+        session = client.v1.checkout.sessions.retrieve(session_id)
         return {
             "status": session.payment_status,  # paid, unpaid, no_payment_required
             "payment_intent": session.payment_intent,

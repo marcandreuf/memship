@@ -150,7 +150,7 @@ class TestStripeCheckout:
 
         # Mock Stripe customer creation
         mock_client = MagicMock()
-        mock_client.customers.create.return_value = MagicMock(id="cus_test123")
+        mock_client.v1.customers.create.return_value = MagicMock(id="cus_test123")
         mock_client_cls.return_value = mock_client
 
         mock_create.return_value = {
@@ -220,7 +220,7 @@ class TestStripeCheckout:
         with patch("app.domains.billing.providers.stripe_provider.StripeAdapter.create_payment") as mock_create, \
              patch("app.domains.billing.stripe_customer_service.stripe.StripeClient") as mock_client_cls:
             mock_client = MagicMock()
-            mock_client.customers.create.return_value = MagicMock(id="cus_member_001")
+            mock_client.v1.customers.create.return_value = MagicMock(id="cus_member_001")
             mock_client_cls.return_value = mock_client
             mock_create.return_value = {
                 "redirect_url": "https://checkout.stripe.com/cs_test",

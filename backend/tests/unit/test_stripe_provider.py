@@ -48,6 +48,29 @@ class TestVerifySignature:
         assert result["id"] == "evt_123"
         mock_construct.assert_called_once()
 
+    @patch("app.domains.billing.providers.stripe_provider.stripe.Webhook.construct_event")
+    def test_returns_plain_dict_even_when_sdk_returns_stripe_object(self, mock_construct):
+        # Regression: the real SDK returns a StripeObject whose __getattr__ routes
+        # `.get` as a key lookup, breaking downstream `event_data.get(...)` calls.
+        # The adapter must hand back a plain dict at the boundary.
+        import stripe
+
+        mock_construct.return_value = stripe.convert_to_stripe_object(
+            {
+                "id": "evt_regress",
+                "type": "checkout.session.completed",
+                "data": {"object": {"metadata": {"receipt_id": "42"}}},
+            }
+        )
+        adapter = StripeAdapter({"secret_key": "sk_test", "webhook_secret": "whsec_test"})
+        result = adapter.verify_signature(
+            {"stripe-signature": "t=123,v1=abc"},
+            b'{"id":"evt_regress","type":"checkout.session.completed","data":{"object":{"metadata":{"receipt_id":"42"}}}}',
+        )
+        assert type(result) is dict
+        assert result.get("id") == "evt_regress"
+        assert result["data"]["object"].get("metadata", {}).get("receipt_id") == "42"
+
 
 class TestExtractors:
     def test_extract_event_id(self):

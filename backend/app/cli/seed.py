@@ -1157,6 +1157,48 @@ def seed_billing_data(db) -> None:
             db.add(receipt)
             receipt_count += 1
 
+    # Ensure member@test.com has an emitted receipt for Stripe Checkout testing
+    test_member_user = db.query(User).filter_by(email="member@test.com").first()
+    if test_member_user:
+        test_member = (
+            db.query(Member)
+            .filter(Member.person_id == test_member_user.person_id)
+            .first()
+        )
+        if test_member:
+            has_emitted = (
+                db.query(Receipt)
+                .filter(
+                    Receipt.member_id == test_member.id,
+                    Receipt.status == "emitted",
+                )
+                .count()
+            )
+            if not has_emitted:
+                concept = concepts.get("full") or concepts.get("manual")
+                base = Decimal("50.00")
+                vat_rate = Decimal("21")
+                vat = Decimal("10.50")
+                total = Decimal("60.50")
+                receipt = Receipt(
+                    receipt_number=next_number(),
+                    member_id=test_member.id,
+                    concept_id=concept.id if concept else None,
+                    origin="membership",
+                    description=f"Annual membership — {test_member_user.person.first_name} {test_member_user.person.last_name}",
+                    base_amount=base,
+                    vat_rate=vat_rate,
+                    vat_amount=vat,
+                    total_amount=total,
+                    status="emitted",
+                    emission_date=today - timedelta(days=5),
+                    due_date=today + timedelta(days=25),
+                    is_batchable=False,
+                    created_by=created_by,
+                )
+                db.add(receipt)
+                receipt_count += 1
+
     db.flush()
     print(f"  Receipts: created {receipt_count} ({receipt_count - len(manual_items) - len(registrations)} membership, {len(registrations)} activity, {len(manual_items)} manual)")
 

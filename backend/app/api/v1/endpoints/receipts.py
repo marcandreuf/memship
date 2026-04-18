@@ -463,7 +463,8 @@ def create_stripe_checkout(
         pass  # Fall back to customer_email
 
     # Build return URLs
-    base_url = org.portal_url if org and hasattr(org, "portal_url") and org.portal_url else ""
+    from app.core.config import settings as app_settings
+    base_url = app_settings.FRONTEND_URL.rstrip("/")
     success_url = f"{base_url}/payment/success?session_id={{CHECKOUT_SESSION_ID}}"
     cancel_url = f"{base_url}/payment/cancel?session_id={{CHECKOUT_SESSION_ID}}"
 
