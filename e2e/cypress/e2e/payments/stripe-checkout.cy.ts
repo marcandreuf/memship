@@ -25,6 +25,7 @@ describe("Stripe Checkout — Happy Path @smoke", () => {
           base_amount: 50.0,
           vat_rate: 21,
           origin: "manual",
+          emission_date: new Date().toISOString().slice(0, 10),
         },
       }).then((createResp) => {
         expect(createResp.status).to.eq(201);

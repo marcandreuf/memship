@@ -25,6 +25,7 @@ describe("Stripe Checkout — Failure / Cancel Path", () => {
           base_amount: 30.0,
           vat_rate: 21,
           origin: "manual",
+          emission_date: new Date().toISOString().slice(0, 10),
         },
       }).then((createResp) => {
         expect(createResp.status).to.eq(201);
@@ -69,7 +70,7 @@ describe("Stripe Checkout — Failure / Cancel Path", () => {
       cy.contains(/cancel/i).should("be.visible");
 
       // Should show back to receipts button
-      cy.contains("button", /back to receipts/i).should("be.visible");
+      cy.contains("button", /back to (my )?receipts/i).should("be.visible");
     });
 
     it("navigates back to My Receipts from cancel page", () => {
@@ -87,7 +88,7 @@ describe("Stripe Checkout — Failure / Cancel Path", () => {
       }).as("sessionLookup");
 
       cy.visit(`/en/payment/cancel?session_id=${fakeSessionId}`);
-      cy.contains("button", /back to receipts/i).click();
+      cy.contains("button", /back to (my )?receipts/i).click();
       cy.url().should("include", "/my-receipts");
     });
   });
