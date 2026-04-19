@@ -81,8 +81,8 @@ Abre http://localhost:8081 e inicia sesión con tus credenciales. Cambia `PORT=8
 | v0.3.5 | Correcciones — tests de integración fallidos | Hecho |
 | v0.3.6 | Optimización de CI — setup-uv v7, cache de hash de contraseñas, workers de test paralelos, hooks de versionado automático | Hecho |
 | v0.4.0 | Domiciliación SEPA — gestión de mandatos, remesas, XML pain.008, forma de pago del socio | Hecho |
-| v0.4.1 | Configuración de pasarelas de pago — gestión configurable desde el panel de super admin | — |
-| v0.4.2 | Infraestructura de webhooks + integración Stripe | — |
+| v0.4.1 | Configuración de pasarelas de pago — gestión configurable desde el panel de super admin | Hecho |
+| v0.4.2 | Infraestructura de webhooks + Stripe Checkout — webhooks de pasarela, estado de pago en tiempo real, flujo "Pagar ahora" del socio | Hecho |
 | v0.4.3 | Integración Redsys — pasarela bancaria española con 3D Secure | — |
 | v0.4.4 | GoCardless e-mandatos — SEPA gestionado con flujo alojado | — |
 | v0.4.5 | Facturación recurrente — generación automática de cuotas | — |

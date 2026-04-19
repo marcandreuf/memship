@@ -81,8 +81,8 @@ Obriu http://localhost:8081 i inicieu sessió amb les vostres credencials. Canvi
 | v0.3.5 | Correccions — proves d'integració fallides | Fet |
 | v0.3.6 | Optimització de CI — setup-uv v7, cache de hash de contrasenyes, workers de proves paral·lels, hooks de versionat automàtic | Fet |
 | v0.4.0 | Domiciliació SEPA — gestió de mandats, remeses, XML pain.008, forma de pagament del soci | Fet |
-| v0.4.1 | Configuració de passarel·les de pagament — gestió configurable des del panell de super admin | — |
-| v0.4.2 | Infraestructura de webhooks + integració Stripe | — |
+| v0.4.1 | Configuració de passarel·les de pagament — gestió configurable des del panell de super admin | Fet |
+| v0.4.2 | Infraestructura de webhooks + Stripe Checkout — webhooks de passarel·la, estat de pagament en temps real, flux "Paga ara" del soci | Fet |
 | v0.4.3 | Integració Redsys — passarel·la bancària espanyola amb 3D Secure | — |
 | v0.4.4 | GoCardless e-mandats — SEPA gestionat amb flux allotjat | — |
 | v0.4.5 | Facturació recurrent — generació automàtica de quotes | — |
