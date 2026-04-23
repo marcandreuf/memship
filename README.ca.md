@@ -84,15 +84,16 @@ Obriu http://localhost:8081 i inicieu sessió amb les vostres credencials. Canvi
 | v0.4.1 | Configuració de passarel·les de pagament — gestió configurable des del panell de super admin | Fet |
 | v0.4.2 | Infraestructura de webhooks + Stripe Checkout — webhooks de passarel·la, estat de pagament en temps real, flux "Paga ara" del soci | Fet |
 | v0.4.3 | Integració Redsys — passarel·la bancària espanyola amb 3D Secure | — |
-| v0.4.4 | GoCardless e-mandats — SEPA gestionat amb flux allotjat | — |
 | v0.4.5 | Facturació recurrent — generació automàtica de quotes | — |
 | v0.4.6 | Recordatoris de pagament — notificacions per correu de rebuts vençuts | — |
-| v0.4.7 | Integració PayPal | — |
 | v0.5.0 | Sistema de comunicació | — |
 | v0.6.0 | Reserves i documents | — |
 | v0.7.0 | Informes i analítiques | — |
 | v0.8.0 | Carnet de soci digital i registre QR | — |
+| v0.9.0 | Governança i enquestes — convocatòries formals (assemblees, eleccions), enquestes, respostes de socis amb tokens | — |
 | v1.0.0 | Estabilització i llançament | — |
+
+Ajornat després de v1.0.0: GoCardless e-mandats, integració PayPal.
 
 ---
 
