@@ -487,6 +487,148 @@ def create_stripe_checkout(
     }
 
 
+@router.post("/{receipt_id}/redsys/initiate")
+def initiate_redsys_payment(
+    receipt_id: int,
+    payload: dict | None = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Build signed Redsys form params for a browser redirect.
+
+    The frontend receives `{redirect_url, form_params}` and auto-submits a
+    hidden HTML form to the TPV. Authoritative payment status arrives on the
+    async notification at `/webhooks/redsys`.
+
+    Available to the receipt's owner (member) or any admin. Optional payload:
+    `{"method": "card" | "bizum", "locale": "es" | "ca" | "en"}`.
+    """
+    from app.api.v1.endpoints.webhooks import _decrypt_provider_config, get_adapter
+    from app.core.config import settings as app_settings
+    from app.domains.billing.models import PaymentProvider
+
+    method = (payload or {}).get("method", "card")
+    locale = (payload or {}).get("locale", "es")
+    if method not in ("card", "bizum"):
+        raise HTTPException(status_code=400, detail="Invalid payment method")
+
+    receipt = (
+        db.query(Receipt)
+        .filter(Receipt.id == receipt_id, Receipt.is_active.is_(True))
+        .first()
+    )
+    if not receipt:
+        raise HTTPException(status_code=404, detail="Receipt not found")
+
+    if current_user.role == "member":
+        member = (
+            db.query(Member)
+            .join(Person, Member.person_id == Person.id)
+            .filter(Person.email == current_user.email, Member.is_active.is_(True))
+            .first()
+        )
+        if not member or receipt.member_id != member.id:
+            raise HTTPException(status_code=403, detail="Access denied")
+
+    if receipt.status not in ("emitted", "overdue"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Receipt status '{receipt.status}' is not payable",
+        )
+
+    provider = (
+        db.query(PaymentProvider)
+        .filter(
+            PaymentProvider.provider_type == "redsys",
+            PaymentProvider.status.in_(["active", "test"]),
+        )
+        .first()
+    )
+    if not provider:
+        raise HTTPException(status_code=400, detail="No active Redsys provider configured")
+
+    config = _decrypt_provider_config(provider)
+    adapter = get_adapter("redsys", config)
+    if not adapter:
+        raise HTTPException(status_code=500, detail="Redsys adapter not available")
+
+    member_obj = db.query(Member).filter(Member.id == receipt.member_id).first()
+    person = db.query(Person).filter(Person.id == member_obj.person_id).first()
+
+    frontend = app_settings.FRONTEND_URL.rstrip("/")
+    backend = app_settings.BACKEND_PUBLIC_URL.rstrip("/")
+    success_url = f"{frontend}/payment/redsys/return?receipt_id={receipt.id}&outcome=ok"
+    cancel_url = f"{frontend}/payment/redsys/return?receipt_id={receipt.id}&outcome=ko"
+    merchant_url = f"{backend}/api/v1/webhooks/redsys"
+
+    result = adapter.create_payment(
+        receipt=receipt,
+        person=person,
+        success_url=success_url,
+        cancel_url=cancel_url,
+        merchant_url=merchant_url,
+        method=method,
+        locale=locale,
+    )
+
+    receipt.redsys_ds_order = result["ds_order"]
+    if method == "bizum":
+        receipt.payment_method = "bizum"
+    db.commit()
+
+    return {
+        "redirect_url": result["redirect_url"],
+        "form_params": result["form_params"],
+        "ds_order": result["ds_order"],
+    }
+
+
+@router.get("/{receipt_id}/redsys/return")
+def get_redsys_return_status(
+    receipt_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Return the current receipt status for the Redsys return page to poll.
+
+    Note: the browser redirect from Redsys is advisory — the authoritative
+    status is set by the async notification handled at `/webhooks/redsys`.
+    The return page polls this endpoint until `status` becomes `paid` or the
+    polling window elapses.
+    """
+    receipt = (
+        db.query(Receipt)
+        .filter(Receipt.id == receipt_id, Receipt.is_active.is_(True))
+        .options(joinedload(Receipt.member).joinedload(Member.person))
+        .first()
+    )
+    if not receipt:
+        raise HTTPException(status_code=404, detail="Receipt not found")
+
+    if current_user.role == "member":
+        member = (
+            db.query(Member)
+            .join(Person, Member.person_id == Person.id)
+            .filter(Person.email == current_user.email, Member.is_active.is_(True))
+            .first()
+        )
+        if not member or receipt.member_id != member.id:
+            raise HTTPException(status_code=403, detail="Access denied")
+
+    return {
+        "receipt_id": receipt.id,
+        "receipt_number": receipt.receipt_number,
+        "status": receipt.status,
+        "payment_method": receipt.payment_method,
+        "payment_date": receipt.payment_date.isoformat() if receipt.payment_date else None,
+        "redsys_auth_code": receipt.redsys_auth_code,
+        "ds_order": receipt.redsys_ds_order,
+        "authoritative_note": (
+            "Final status confirmed by async notification from Redsys."
+        ),
+    }
+
+
 @router.get("/by-stripe-session/{session_id}")
 def get_receipt_by_stripe_session(
     session_id: str,

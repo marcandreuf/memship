@@ -45,6 +45,10 @@ class Settings(BaseSettings):
     SMTP_FROM: str = "noreply@memship.local"
     SMTP_TLS: bool = True
     FRONTEND_URL: str = "http://localhost:3000"
+    # Publicly reachable backend URL — used for provider callbacks (e.g. Redsys
+    # `Ds_Merchant_MerchantURL`). In dev this is the Docker API port; in prod
+    # it must be the external hostname that the payment gateway can POST to.
+    BACKEND_PUBLIC_URL: str = "http://localhost:8003"
 
     # Resend (optional — alternative to SMTP for managed email delivery)
     RESEND_API_KEY: str = ""

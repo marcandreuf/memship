@@ -72,7 +72,7 @@ class Receipt(Base):
             name="valid_receipt_origin",
         ),
         CheckConstraint(
-            "payment_method IN ('cash', 'bank_transfer', 'card', 'direct_debit', 'stripe_checkout') OR payment_method IS NULL",
+            "payment_method IN ('cash', 'bank_transfer', 'card', 'direct_debit', 'stripe_checkout', 'redsys', 'bizum') OR payment_method IS NULL",
             name="valid_payment_method",
         ),
         CheckConstraint(
@@ -124,6 +124,10 @@ class Receipt(Base):
     # Stripe payment tracking
     stripe_checkout_session_id = Column(String(255))
     stripe_payment_intent_id = Column(String(255))
+
+    # Redsys payment tracking
+    redsys_ds_order = Column(String(12), unique=True)
+    redsys_auth_code = Column(String(8))
 
     # Refund metadata (manual tracking)
     refund_amount = Column(Numeric(10, 2))

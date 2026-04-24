@@ -24,8 +24,10 @@ _ADAPTER_REGISTRY: dict[str, type] = {}
 
 # Auto-register built-in adapters
 from app.domains.billing.providers.stripe_provider import StripeAdapter  # noqa: E402
+from app.domains.billing.providers.redsys_provider import RedsysAdapter  # noqa: E402
 
 _ADAPTER_REGISTRY["stripe"] = StripeAdapter
+_ADAPTER_REGISTRY["redsys"] = RedsysAdapter
 
 
 def register_adapter(provider_type: str, adapter_class: type) -> None:
