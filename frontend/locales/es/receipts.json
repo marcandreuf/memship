@@ -67,6 +67,7 @@
     "payWithRedsys": "Tarjeta (Redsys)",
     "payWithBizum": "Pagar con Bizum",
     "authCode": "Código de autorización",
+    "authoritativeStatusNote": "La confirmación definitiva llega de la notificación asíncrona de Redsys.",
     "payOnline": "Pagar online",
     "paymentProcessing": "Procesando pago...",
     "paymentSuccessTitle": "Pago realizado",

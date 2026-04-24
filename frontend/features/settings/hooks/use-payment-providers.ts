@@ -9,6 +9,7 @@ import {
   togglePaymentProvider,
   testPaymentProvider,
   getProviderTypes,
+  getActivePaymentMethods,
 } from "../services/payment-providers-api";
 
 export function usePaymentProviders() {
@@ -22,6 +23,14 @@ export function useProviderTypes() {
   return useQuery({
     queryKey: ["payment-providers", "types"],
     queryFn: getProviderTypes,
+  });
+}
+
+export function useActivePaymentMethods() {
+  return useQuery({
+    queryKey: ["payment-providers", "active-methods"],
+    queryFn: getActivePaymentMethods,
+    staleTime: 60_000,
   });
 }
 

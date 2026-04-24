@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.core.authorization import require_super_admin
 from app.core.encryption import decrypt_config, encrypt_config, mask_config
 from app.core.pagination import paginate
+from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
 from app.domains.auth.models import User
 from app.domains.billing.models import PaymentProvider, Receipt
@@ -33,13 +34,31 @@ def _mask_provider(provider: PaymentProvider) -> dict:
     return data
 
 
+@router.get("/active-methods")
+def list_active_methods(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Return the set of active payment provider types for member self-service.
+
+    No config fields — just the types and whether each is active/test. Safe for
+    members to call so UI can conditionally render pay buttons.
+    """
+    rows = (
+        db.query(PaymentProvider.provider_type, PaymentProvider.status)
+        .filter(PaymentProvider.status.in_(["active", "test"]))
+        .all()
+    )
+    return [{"provider_type": pt, "status": s} for pt, s in rows]
+
+
 @router.get("/types")
 def list_provider_types(
     current_user: User = Depends(require_super_admin),
 ):
     """List available provider types with config schemas and availability status."""
     # Providers with real payment processing implemented
-    available_types = {"sepa_direct_debit", "stripe"}
+    available_types = {"sepa_direct_debit", "stripe", "redsys"}
 
     result = []
     for provider_type, schema in PROVIDER_CONFIG_SCHEMAS.items():

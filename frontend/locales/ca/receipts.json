@@ -67,6 +67,7 @@
     "payWithRedsys": "Targeta (Redsys)",
     "payWithBizum": "Pagar amb Bizum",
     "authCode": "Codi d'autorització",
+    "authoritativeStatusNote": "La confirmació definitiva arriba de la notificació asíncrona de Redsys.",
     "payOnline": "Pagar online",
     "paymentProcessing": "Processant pagament...",
     "paymentSuccessTitle": "Pagament realitzat",

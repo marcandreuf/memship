@@ -97,8 +97,8 @@ memship/
 │   │   │   ├── activities/      # Activities, modalities, prices, registrations, discounts, consents, attachments
 │   │   │   ├── audit/           # Audit logging
 │   │   │   ├── auth/            # Users, authentication
-│   │   │   ├── billing/         # Receipts, concepts, mandates, remittances, payment providers, webhooks, Stripe
-│   │   │   │   └── providers/   # Payment provider adapters (Stripe, base)
+│   │   │   ├── billing/         # Receipts, concepts, mandates, remittances, payment providers, webhooks, Stripe, Redsys
+│   │   │   │   └── providers/   # Payment provider adapters (Stripe, Redsys/Bizum, base)
 │   │   │   ├── members/         # Members, membership types, groups
 │   │   │   ├── organizations/   # Organization settings
 │   │   │   └── persons/         # Persons, addresses, contacts

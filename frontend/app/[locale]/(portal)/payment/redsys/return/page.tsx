@@ -48,9 +48,9 @@ export default function RedsysReturnPage() {
         <CardContent className="text-center space-y-4">
           <p className="text-muted-foreground">{message}</p>
 
-          {pending && data && (
+          {pending && (
             <p className="text-xs text-muted-foreground">
-              {data.authoritative_note}
+              {t("receipts.authoritativeStatusNote")}
             </p>
           )}
 

@@ -41,6 +41,15 @@ export async function getPaymentProviders(): Promise<PaymentProviderListResponse
   return apiClient("/payment-providers");
 }
 
+export interface ActivePaymentMethod {
+  provider_type: string;
+  status: string;
+}
+
+export async function getActivePaymentMethods(): Promise<ActivePaymentMethod[]> {
+  return apiClient("/payment-providers/active-methods");
+}
+
 export async function getPaymentProvider(id: number): Promise<PaymentProvider> {
   return apiClient(`/payment-providers/${id}`);
 }

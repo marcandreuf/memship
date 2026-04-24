@@ -83,7 +83,7 @@ Open http://localhost:8081 and log in with your credentials. Change `PORT=8081` 
 | v0.4.0 | SEPA Direct Debit — mandate management, remittance batches, pain.008 XML, member payment method | Done |
 | v0.4.1 | Payment provider settings — super admin configurable payment gateway management | Done |
 | v0.4.2 | Webhook infrastructure + Stripe Checkout — provider webhooks, real-time payment status, member "Pay Now" flow | Done |
-| v0.4.3 | Redsys integration — Spanish bank gateway with 3D Secure | — |
+| v0.4.3 | Redsys integration — Spanish bank gateway with 3D Secure + Bizum | In review |
 | v0.4.5 | Recurring billing automation — scheduled fee generation | — |
 | v0.4.6 | Payment reminders — overdue email notifications | — |
 | v0.5.0 | Communication System | — |
@@ -151,9 +151,9 @@ Deferred past v1.0.0: GoCardless e-mandates, PayPal integration.
 **Payment Providers** (in progress — v0.4.x)
 - Configurable payment gateway management (super admin settings)
 - Stripe Checkout — member self-service "Pay Now" for pending receipts
+- Redsys SIS (TPV Virtual) — Spanish bank gateway with hosted 3D Secure V2 and Bizum (v0.4.3)
 - Webhook infrastructure for real-time payment status updates (POST /webhooks/{provider})
-- GoCardless — managed SEPA e-mandates via hosted flow
-- Extensible adapter pattern for regional providers (MercadoPago, Razorpay, etc.)
+- Extensible adapter pattern for regional providers (GoCardless, MercadoPago, Razorpay, etc.)
 
 **Communications** (planned)
 - Email campaigns with templates and audience targeting

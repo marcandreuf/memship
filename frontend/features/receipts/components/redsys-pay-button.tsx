@@ -1,7 +1,13 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
+import { Landmark, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { useRedsysInitiate } from "@/features/receipts/hooks/use-receipts";
 import type {
@@ -14,7 +20,6 @@ interface RedsysPayButtonProps {
   receiptId: number;
   method?: RedsysMethod;
   variant?: "default" | "secondary" | "outline";
-  size?: "default" | "sm" | "lg";
   className?: string;
 }
 
@@ -42,8 +47,7 @@ function submitHiddenForm(response: RedsysInitiateResponse) {
 export function RedsysPayButton({
   receiptId,
   method = "card",
-  variant = "default",
-  size = "sm",
+  variant = "secondary",
   className,
 }: RedsysPayButtonProps) {
   const t = useTranslations();
@@ -68,17 +72,24 @@ export function RedsysPayButton({
     method === "bizum"
       ? t("receipts.payWithBizum")
       : t("receipts.payWithRedsys");
+  const Icon = method === "bizum" ? Smartphone : Landmark;
 
   return (
-    <Button
-      type="button"
-      variant={variant}
-      size={size}
-      className={className}
-      disabled={initiate.isPending}
-      onClick={handleClick}
-    >
-      {initiate.isPending ? t("common.loading") : label}
-    </Button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          type="button"
+          variant={variant}
+          size="icon"
+          className={className}
+          disabled={initiate.isPending}
+          onClick={handleClick}
+          aria-label={label}
+        >
+          <Icon className="h-4 w-4" />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
   );
 }

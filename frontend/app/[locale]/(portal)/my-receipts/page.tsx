@@ -2,16 +2,21 @@
 
 import { useMemo } from "react";
 import { useTranslations } from "next-intl";
+import { CreditCard, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import {
+  Tooltip, TooltipContent, TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Pagination } from "@/components/entity/pagination";
 import { TableSkeleton } from "@/components/ui/skeletons";
 import { useFormatters } from "@/hooks/use-formatters";
 import { useMyReceipts, useStripeCheckout } from "@/features/receipts/hooks/use-receipts";
 import { RedsysPayButton } from "@/features/receipts/components/redsys-pay-button";
+import { useActivePaymentMethods } from "@/features/settings/hooks/use-payment-providers";
 import { usePageParam } from "@/hooks/use-url-state";
 
 const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -38,6 +43,10 @@ export default function MyReceiptsPage() {
   const { data, isLoading } = useMyReceipts(params);
   const { formatCurrency, formatDate } = useFormatters();
   const stripeCheckoutMutation = useStripeCheckout();
+  const { data: activeMethods } = useActivePaymentMethods();
+  const activeTypes = new Set((activeMethods || []).map((m) => m.provider_type));
+  const stripeActive = activeTypes.has("stripe");
+  const redsysActive = activeTypes.has("redsys");
 
   async function handlePayNow(receiptId: number) {
     try {
@@ -87,22 +96,44 @@ export default function MyReceiptsPage() {
                     <div className="flex gap-2 flex-wrap">
                       {["emitted", "overdue"].includes(r.status) && (
                         <>
-                          <Button
-                            size="sm"
-                            onClick={() => handlePayNow(r.id)}
-                            disabled={stripeCheckoutMutation.isPending}
-                          >
-                            {t("receipts.payNow")}
-                          </Button>
-                          <RedsysPayButton receiptId={r.id} method="card" variant="secondary" />
-                          <RedsysPayButton receiptId={r.id} method="bizum" variant="outline" />
+                          {stripeActive && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="icon"
+                                  onClick={() => handlePayNow(r.id)}
+                                  disabled={stripeCheckoutMutation.isPending}
+                                  aria-label={t("receipts.payNow")}
+                                >
+                                  <CreditCard className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>{t("receipts.payNow")}</TooltipContent>
+                            </Tooltip>
+                          )}
+                          {redsysActive && (
+                            <>
+                              <RedsysPayButton receiptId={r.id} method="card" />
+                              <RedsysPayButton receiptId={r.id} method="bizum" variant="outline" />
+                            </>
+                          )}
                         </>
                       )}
-                      <Button variant="outline" size="sm" asChild>
-                        <a href={`/api/receipts/${r.id}/pdf`} target="_blank" rel="noopener noreferrer">
-                          {t("receipts.downloadPdf")}
-                        </a>
-                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="outline" size="icon" asChild>
+                            <a
+                              href={`/api/receipts/${r.id}/pdf`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              aria-label={t("receipts.downloadPdf")}
+                            >
+                              <Download className="h-4 w-4" />
+                            </a>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>{t("receipts.downloadPdf")}</TooltipContent>
+                      </Tooltip>
                     </div>
                   </TableCell>
                 </TableRow>

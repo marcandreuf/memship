@@ -72,6 +72,38 @@ class TestAuthorization:
         assert resp.status_code == 200
 
 
+# --- Active methods (member-accessible) ---
+
+
+class TestActiveMethods:
+    url = "/api/v1/payment-providers/active-methods"
+
+    def test_unauthenticated_rejected(self, client):
+        resp = client.get(self.url)
+        assert resp.status_code == 401
+
+    def test_member_can_list_active_types(self, client, db):
+        _create_provider(db, provider_type="stripe", status="active")
+        _create_provider(db, provider_type="redsys", status="test")
+        _create_provider(db, provider_type="sepa_direct_debit", status="disabled")
+        member = _create_user(db, role="member", suffix="pp-act1")
+
+        resp = client.get(self.url, cookies=_auth_cookie(member))
+        assert resp.status_code == 200
+        data = resp.json()
+        types = {row["provider_type"] for row in data}
+        assert types == {"stripe", "redsys"}
+        # Disabled providers omitted; no config leaked
+        assert all(set(row.keys()) == {"provider_type", "status"} for row in data)
+
+    def test_empty_when_no_active_providers(self, client, db):
+        _create_provider(db, provider_type="stripe", status="disabled")
+        member = _create_user(db, role="member", suffix="pp-act2")
+        resp = client.get(self.url, cookies=_auth_cookie(member))
+        assert resp.status_code == 200
+        assert resp.json() == []
+
+
 # --- List ---
 
 
