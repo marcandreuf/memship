@@ -165,3 +165,45 @@ export async function createStripeCheckout(receiptId: number): Promise<StripeChe
 export async function getReceiptByStripeSession(sessionId: string): Promise<ReceiptData> {
   return apiClient(`/receipts/by-stripe-session/${sessionId}`);
 }
+
+// --- Redsys ---
+
+export type RedsysMethod = "card" | "bizum";
+export type RedsysLocale = "es" | "ca" | "en";
+
+export interface RedsysInitiateResponse {
+  redirect_url: string;
+  form_params: {
+    Ds_SignatureVersion: string;
+    Ds_MerchantParameters: string;
+    Ds_Signature: string;
+  };
+  ds_order: string;
+}
+
+export interface RedsysReturnStatus {
+  receipt_id: number;
+  receipt_number: string;
+  status: string;
+  payment_method: string | null;
+  payment_date: string | null;
+  redsys_auth_code: string | null;
+  ds_order: string | null;
+  authoritative_note: string;
+}
+
+export async function initiateRedsysPayment(
+  receiptId: number,
+  payload: { method?: RedsysMethod; locale?: RedsysLocale } = {}
+): Promise<RedsysInitiateResponse> {
+  return apiClient(`/receipts/${receiptId}/redsys/initiate`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getRedsysReturnStatus(
+  receiptId: number
+): Promise<RedsysReturnStatus> {
+  return apiClient(`/receipts/${receiptId}/redsys/return`);
+}

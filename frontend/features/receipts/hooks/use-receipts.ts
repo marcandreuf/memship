@@ -18,7 +18,10 @@ import {
   createConcept,
   createStripeCheckout,
   getReceiptByStripeSession,
+  initiateRedsysPayment,
+  getRedsysReturnStatus,
 } from "../services/receipts-api";
+import type { RedsysMethod, RedsysLocale } from "../services/receipts-api";
 
 export function useReceipts(params?: URLSearchParams) {
   return useQuery({
@@ -150,6 +153,39 @@ export function useReceiptByStripeSession(sessionId: string | null) {
       const data = query.state.data;
       if (data && data.status === "paid") return false;
       if ((query.state.dataUpdateCount ?? 0) >= 5) return false;
+      return 2000;
+    },
+  });
+}
+
+// --- Redsys ---
+
+export function useRedsysInitiate() {
+  return useMutation({
+    mutationFn: ({
+      receiptId,
+      method,
+      locale,
+    }: {
+      receiptId: number;
+      method?: RedsysMethod;
+      locale?: RedsysLocale;
+    }) => initiateRedsysPayment(receiptId, { method, locale }),
+  });
+}
+
+export function useRedsysReturnStatus(receiptId: number | null) {
+  return useQuery({
+    queryKey: ["redsys-return", receiptId],
+    queryFn: () => getRedsysReturnStatus(receiptId!),
+    enabled: !!receiptId,
+    refetchInterval: (query) => {
+      // Authoritative status arrives via the async notification — poll until
+      // receipt is in a terminal state or the user has waited ~30s.
+      const data = query.state.data;
+      const terminal = new Set(["paid", "cancelled", "returned"]);
+      if (data && terminal.has(data.status)) return false;
+      if ((query.state.dataUpdateCount ?? 0) >= 15) return false;
       return 2000;
     },
   });

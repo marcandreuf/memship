@@ -11,7 +11,7 @@ import { Pagination } from "@/components/entity/pagination";
 import { TableSkeleton } from "@/components/ui/skeletons";
 import { useFormatters } from "@/hooks/use-formatters";
 import { useMyReceipts, useStripeCheckout } from "@/features/receipts/hooks/use-receipts";
-import { toast } from "sonner";
+import { RedsysPayButton } from "@/features/receipts/components/redsys-pay-button";
 import { usePageParam } from "@/hooks/use-url-state";
 
 const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -84,15 +84,19 @@ export default function MyReceiptsPage() {
                   <TableCell className="text-sm">{formatDate(r.emission_date)}</TableCell>
                   <TableCell className="text-sm">{formatDate(r.payment_date)}</TableCell>
                   <TableCell>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
                       {["emitted", "overdue"].includes(r.status) && (
-                        <Button
-                          size="sm"
-                          onClick={() => handlePayNow(r.id)}
-                          disabled={stripeCheckoutMutation.isPending}
-                        >
-                          {t("receipts.payNow")}
-                        </Button>
+                        <>
+                          <Button
+                            size="sm"
+                            onClick={() => handlePayNow(r.id)}
+                            disabled={stripeCheckoutMutation.isPending}
+                          >
+                            {t("receipts.payNow")}
+                          </Button>
+                          <RedsysPayButton receiptId={r.id} method="card" variant="secondary" />
+                          <RedsysPayButton receiptId={r.id} method="bizum" variant="outline" />
+                        </>
                       )}
                       <Button variant="outline" size="sm" asChild>
                         <a href={`/api/receipts/${r.id}/pdf`} target="_blank" rel="noopener noreferrer">
