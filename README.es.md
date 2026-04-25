@@ -83,17 +83,16 @@ Abre http://localhost:8081 e inicia sesión con tus credenciales. Cambia `PORT=8
 | v0.4.0 | Domiciliación SEPA — gestión de mandatos, remesas, XML pain.008, forma de pago del socio | Hecho |
 | v0.4.1 | Configuración de pasarelas de pago — gestión configurable desde el panel de super admin | Hecho |
 | v0.4.2 | Infraestructura de webhooks + Stripe Checkout — webhooks de pasarela, estado de pago en tiempo real, flujo "Pagar ahora" del socio | Hecho |
-| v0.4.3 | Integración Redsys — pasarela bancaria española con 3D Secure | — |
-| v0.4.5 | Facturación recurrente — generación automática de cuotas | — |
-| v0.4.6 | Recordatorios de pago — notificaciones por email de recibos vencidos | — |
-| v0.5.0 | Sistema de comunicaciones | — |
-| v0.6.0 | Reservas y documentos | — |
-| v0.7.0 | Informes y analítica | — |
-| v0.8.0 | Carnet digital de socio y registro QR | — |
-| v0.9.0 | Gobernanza y encuestas — convocatorias formales (asambleas, elecciones), encuestas, respuestas de socios con tokens | — |
-| v1.0.0 | Estabilización y lanzamiento | — |
+| v0.4.3 | Integración Redsys — pasarela bancaria española con 3D Secure + Bizum | Hecho |
+| v0.4.4 | Facturación recurrente — generación automática de cuotas | Próximo |
+| v0.4.5 | Recordatorios de pago — notificaciones por email de recibos vencidos | Planificado |
+| v0.5.0 | Comunicaciones simples — anuncios del admin a todos los socios / grupo / tipo de cuota | Planificado |
+| v0.6.0 | Reservas simples — espacios y reserva de franjas horarias | Planificado |
+| v0.7.0 | Carnet digital de socio + registro QR | Planificado |
+| v0.8.0 | Convocatorias — RSVP por token para asambleas (requisito legal en España) | Planificado |
+| v1.0.0 | Estabilización y lanzamiento — exportaciones CSV, datos demo, landing page, pulido de docs | Planificado |
 
-Aplazado tras v1.0.0: GoCardless e-mandatos, integración PayPal.
+Aplazado tras v1.0.0: GoCardless e-mandatos, integración PayPal, flujo de Stripe Invoice, acciones masivas en recibos, generador de informes personalizados, encuestas, biblioteca de documentos del club, facturación familiar y otras variaciones complejas de las anteriores. Lista completa de aplazados en `memship-definition/docs/public/ROADMAP-v1.0.0.md`.
 
 ---
 

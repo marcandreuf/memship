@@ -83,17 +83,16 @@ Open http://localhost:8081 and log in with your credentials. Change `PORT=8081` 
 | v0.4.0 | SEPA Direct Debit — mandate management, remittance batches, pain.008 XML, member payment method | Done |
 | v0.4.1 | Payment provider settings — super admin configurable payment gateway management | Done |
 | v0.4.2 | Webhook infrastructure + Stripe Checkout — provider webhooks, real-time payment status, member "Pay Now" flow | Done |
-| v0.4.3 | Redsys integration — Spanish bank gateway with 3D Secure + Bizum | In review |
-| v0.4.5 | Recurring billing automation — scheduled fee generation | — |
-| v0.4.6 | Payment reminders — overdue email notifications | — |
-| v0.5.0 | Communication System | — |
-| v0.6.0 | Bookings & Documents | — |
-| v0.7.0 | Reports & Analytics | — |
-| v0.8.0 | Digital Member Card & QR Check-in | — |
-| v0.9.0 | Governance & Surveys — formal convocations (assemblies, elections), surveys, token-based member responses | — |
-| v1.0.0 | Stabilization & Release | — |
+| v0.4.3 | Redsys integration — Spanish bank gateway with 3D Secure + Bizum | Done |
+| v0.4.4 | Recurring billing — scheduled fee generation | Next |
+| v0.4.5 | Payment reminders — overdue email notifications | Planned |
+| v0.5.0 | Simple Communications — admin announcements to all/group/membership type | Planned |
+| v0.6.0 | Simple Bookings — spaces and time-slot reservations | Planned |
+| v0.7.0 | Digital Member Card + QR Check-in | Planned |
+| v0.8.0 | Convocations — token-based RSVP for assemblies (Spanish legal requirement) | Planned |
+| v1.0.0 | Stabilization & Release — CSV exports, demo seed, landing page, docs polish | Planned |
 
-Deferred past v1.0.0: GoCardless e-mandates, PayPal integration.
+Deferred past v1.0.0: GoCardless e-mandates, PayPal integration, Stripe Invoice flow, bulk receipt actions, custom report builder, surveys, club document library, family group billing, and other complex variations of the above. See `memship-definition/docs/public/ROADMAP-v1.0.0.md` for the full deferred list.
 
 ---
 

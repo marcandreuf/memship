@@ -83,17 +83,16 @@ Obriu http://localhost:8081 i inicieu sessió amb les vostres credencials. Canvi
 | v0.4.0 | Domiciliació SEPA — gestió de mandats, remeses, XML pain.008, forma de pagament del soci | Fet |
 | v0.4.1 | Configuració de passarel·les de pagament — gestió configurable des del panell de super admin | Fet |
 | v0.4.2 | Infraestructura de webhooks + Stripe Checkout — webhooks de passarel·la, estat de pagament en temps real, flux "Paga ara" del soci | Fet |
-| v0.4.3 | Integració Redsys — passarel·la bancària espanyola amb 3D Secure | — |
-| v0.4.5 | Facturació recurrent — generació automàtica de quotes | — |
-| v0.4.6 | Recordatoris de pagament — notificacions per correu de rebuts vençuts | — |
-| v0.5.0 | Sistema de comunicació | — |
-| v0.6.0 | Reserves i documents | — |
-| v0.7.0 | Informes i analítiques | — |
-| v0.8.0 | Carnet de soci digital i registre QR | — |
-| v0.9.0 | Governança i enquestes — convocatòries formals (assemblees, eleccions), enquestes, respostes de socis amb tokens | — |
-| v1.0.0 | Estabilització i llançament | — |
+| v0.4.3 | Integració Redsys — passarel·la bancària espanyola amb 3D Secure + Bizum | Fet |
+| v0.4.4 | Facturació recurrent — generació automàtica de quotes | Següent |
+| v0.4.5 | Recordatoris de pagament — notificacions per correu de rebuts vençuts | Planificat |
+| v0.5.0 | Comunicacions simples — anuncis de l'administrador a tots els socis / grup / tipus de quota | Planificat |
+| v0.6.0 | Reserves simples — espais i reserva de franges horàries | Planificat |
+| v0.7.0 | Carnet digital de soci + registre QR | Planificat |
+| v0.8.0 | Convocatòries — RSVP per token per a assemblees (requisit legal a Espanya) | Planificat |
+| v1.0.0 | Estabilització i llançament — exportacions CSV, dades demo, landing page, polit de docs | Planificat |
 
-Ajornat després de v1.0.0: GoCardless e-mandats, integració PayPal.
+Ajornat després de v1.0.0: GoCardless e-mandats, integració PayPal, flux d'Stripe Invoice, accions massives en rebuts, generador d'informes personalitzats, enquestes, biblioteca de documents del club, facturació familiar i altres variacions complexes de les anteriors. Llista completa d'ajornats a `memship-definition/docs/public/ROADMAP-v1.0.0.md`.
 
 ---
 

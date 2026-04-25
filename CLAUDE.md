@@ -6,6 +6,18 @@ Memship is a self-hosted membership management system for professional associati
 
 **Current version:** See `VERSION` file
 
+## Product Strategy: MVP-first toward v1.0.0
+
+Pre-1.0 development ships the **initial functional version** — broad enough that a club can manage members, activities, and basic billing end-to-end — then launches publicly with a landing page and live demo. Complex / in-depth variations of features are deferred past v1.0.0 and built ad-hoc when a real customer asks by name.
+
+When scoping any feature before v1.0.0:
+- Default to the initial-step version. Deeper variations are mentioned only as "could be added if a customer asks."
+- Bundling three or more meaningful features in one version is a smell — split or trim.
+- Per-provider depth is sugar when another path already covers the same user need. Defer.
+- Don't add edge-case hardening that doesn't block normal flows.
+
+Full strategic context lives in `memship-definition/CLAUDE.md` and `docs/STATUS.md`.
+
 **Tech stack:**
 - Backend: Python 3.12+ / FastAPI / SQLAlchemy 2.0 / Alembic
 - Frontend: Next.js 16 / React 19 / Tailwind 4 / Shadcn/ui / next-intl / next-themes
