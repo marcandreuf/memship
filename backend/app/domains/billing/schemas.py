@@ -280,3 +280,32 @@ class PaymentProviderResponse(BaseModel):
     is_default: bool
     created_at: datetime | None = None
     updated_at: datetime | None = None
+
+
+# --- Billing Run schemas (recurring billing) ---
+
+
+class RunNowRequest(BaseModel):
+    """Admin manual trigger. Omit `frequency` to run every due frequency."""
+
+    frequency: str | None = Field(
+        default=None, pattern=r"^(monthly|quarterly|annual)$"
+    )
+
+
+class BillingRunResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    frequency: str
+    period_start: date
+    period_end: date
+    triggered_by: str
+    triggered_by_user_id: int | None = None
+    status: str
+    receipts_generated: int
+    errors: list[dict] = []
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None

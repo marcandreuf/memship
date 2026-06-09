@@ -61,6 +61,27 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  celery-beat:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: memship-celery-beat
+    command: uv run celery -A app.core.celery_app beat --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql://memship:memship@db:5432/memship_db
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    volumes:
+      - ../app:/app/app
+      - ../../VERSION:/app/VERSION
+      - memship-storage:/app/storage
+    depends_on:
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
   db:
     image: postgres:15-alpine
     container_name: memship-db

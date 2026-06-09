@@ -21,7 +21,12 @@ from app.domains.auth.models import User  # noqa: F401
 from app.domains.members.models import Member, MembershipType  # noqa: F401
 from app.domains.audit.models import AuditLog  # noqa: F401
 from app.domains.activities.models import Activity, ActivityModality, ActivityPrice  # noqa: F401
-from app.domains.billing.models import Concept, Receipt, WebhookEvent  # noqa: F401
+from app.domains.billing.models import (  # noqa: F401
+    BillingRun,
+    Concept,
+    Receipt,
+    WebhookEvent,
+)
 
 config = context.config
 

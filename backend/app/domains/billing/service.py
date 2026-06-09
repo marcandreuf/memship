@@ -241,18 +241,26 @@ def reemit_receipt(db: Session, receipt: Receipt) -> Receipt:
 
 
 def generate_membership_fees(
-    db: Session, data: GenerateMembershipFeesRequest, created_by_id: int
+    db: Session,
+    data: GenerateMembershipFeesRequest,
+    created_by_id: int | None,
+    billing_frequency: str | None = None,
 ) -> list[Receipt]:
-    """Bulk generate membership fee receipts for all active members.
+    """Bulk generate membership fee receipts for active members.
 
     Creates one receipt per active member based on their membership type's base_price.
     Skips members who already have a receipt for the same billing period.
+
+    When ``billing_frequency`` is given (e.g. ``"monthly"``), only members whose
+    membership type uses that frequency are billed — used by recurring billing to
+    bill each frequency for its own period. When ``None`` (the manual ad-hoc
+    endpoint), every active member is billed regardless of frequency.
     """
     org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
     default_vat = Decimal(str(org.default_vat_rate or 21))
 
     # Get all active members with their membership type
-    members = (
+    query = (
         db.query(Member, MembershipType, Person)
         .join(MembershipType, Member.membership_type_id == MembershipType.id)
         .join(Person, Member.person_id == Person.id)
@@ -261,8 +269,10 @@ def generate_membership_fees(
             Member.is_active.is_(True),
             MembershipType.base_price > 0,
         )
-        .all()
     )
+    if billing_frequency is not None:
+        query = query.filter(MembershipType.billing_frequency == billing_frequency)
+    members = query.all()
 
     # Find or create membership concepts per membership type
     concept_cache: dict[int, Concept] = {}

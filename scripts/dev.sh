@@ -76,6 +76,33 @@ worker_logs() {
     docker compose -f "$BACKEND_COMPOSE" logs -f celery-worker
 }
 
+# --- Celery Beat (scheduler) ---
+
+beat_start() {
+    echo -e "${GREEN}+${NC} Starting Celery beat..."
+    docker compose -f "$BACKEND_COMPOSE" up -d celery-beat
+    echo -e "${GREEN}+${NC} Celery beat started"
+}
+
+beat_stop() {
+    echo -e "${YELLOW}x${NC} Stopping Celery beat..."
+    docker compose -f "$BACKEND_COMPOSE" stop celery-beat
+    echo -e "${GREEN}+${NC} Celery beat stopped"
+}
+
+beat_status() {
+    echo -e "${BOLD}Celery Beat:${NC}"
+    if docker compose -f "$BACKEND_COMPOSE" ps --status running 2>/dev/null | grep -q "celery-beat"; then
+        echo -e "  ${GREEN}+${NC} Running"
+    else
+        echo -e "  ${RED}x${NC} Not running"
+    fi
+}
+
+beat_logs() {
+    docker compose -f "$BACKEND_COMPOSE" logs -f celery-beat
+}
+
 # --- Frontend (local pnpm) ---
 
 frontend_cmd() {
@@ -122,6 +149,8 @@ show_overall_status() {
     echo ""
     worker_status
     echo ""
+    beat_status
+    echo ""
     run_frontend "status"
     echo ""
     echo -e "${BOLD}Quick Commands:${NC}"
@@ -150,10 +179,18 @@ case "$ACTION" in
                     logs)    worker_logs ;;
                 esac
                 ;;
+            beat)
+                case "$ACTION" in
+                    start)   beat_start ;;
+                    stop)    beat_stop ;;
+                    restart) beat_stop; sleep 1; beat_start ;;
+                    logs)    beat_logs ;;
+                esac
+                ;;
             all)      run_all "$ACTION" ;;
             *)
                 echo -e "${RED}x${NC} Invalid target: $TARGET"
-                echo "Valid targets: backend, frontend, worker, all"
+                echo "Valid targets: backend, frontend, worker, beat, all"
                 exit 1
                 ;;
         esac

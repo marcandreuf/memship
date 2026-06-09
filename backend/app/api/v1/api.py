@@ -10,6 +10,7 @@ from app.api.v1.endpoints import (
     activity_modalities,
     activity_prices,
     auth,
+    billing_runs,
     concepts,
     contacts,
     discount_codes,
@@ -57,4 +58,5 @@ api_router.include_router(remittances.router)
 api_router.include_router(receipts.member_router)
 api_router.include_router(receipts.router)
 api_router.include_router(concepts.router)
+api_router.include_router(billing_runs.router)
 api_router.include_router(webhooks.router)

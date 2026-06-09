@@ -12,6 +12,7 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
+    UniqueConstraint,
     func,
 )
 from sqlalchemy.dialects.postgresql import JSONB
@@ -296,3 +297,51 @@ class WebhookEvent(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     receipt = relationship("Receipt")
+
+
+class BillingRun(Base):
+    """Recurring billing run — audit log and idempotency for automatic fee generation.
+
+    One row per (frequency, billing period). The UNIQUE constraint makes the daily
+    Celery Beat task idempotent: re-running the same period (duplicate Beat firings,
+    or a manual retry on the same day) is rejected at the DB level.
+    """
+
+    __tablename__ = "billing_runs"
+    __table_args__ = (
+        CheckConstraint(
+            "frequency IN ('monthly', 'quarterly', 'annual')",
+            name="valid_billing_run_frequency",
+        ),
+        CheckConstraint(
+            "triggered_by IN ('scheduled', 'manual')",
+            name="valid_billing_run_triggered_by",
+        ),
+        CheckConstraint(
+            "status IN ('success', 'failed', 'partial_failure')",
+            name="valid_billing_run_status",
+        ),
+        UniqueConstraint(
+            "frequency",
+            "period_start",
+            "period_end",
+            name="uq_billing_runs_frequency_period",
+        ),
+        Index("ix_billing_runs_triggered_started", "triggered_by", "started_at"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    frequency = Column(String(20), nullable=False)
+    period_start = Column(Date, nullable=False)
+    period_end = Column(Date, nullable=False)
+    triggered_by = Column(String(20), nullable=False)
+    triggered_by_user_id = Column(Integer, ForeignKey("users.id"))
+    status = Column(String(20), nullable=False)
+    receipts_generated = Column(Integer, default=0, nullable=False)
+    errors = Column(JSONB, default=list, nullable=False)
+    started_at = Column(DateTime(timezone=True), server_default=func.now())
+    finished_at = Column(DateTime(timezone=True))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
