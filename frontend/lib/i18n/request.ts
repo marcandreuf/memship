@@ -19,9 +19,10 @@ export default getRequestConfig(async ({ requestLocale }) => {
   const remittances = (await import(`@/locales/${locale}/remittances.json`)).default;
   const paymentMethod = (await import(`@/locales/${locale}/payment-method.json`)).default;
   const billingRuns = (await import(`@/locales/${locale}/billing-runs.json`)).default;
+  const reminders = (await import(`@/locales/${locale}/reminders.json`)).default;
 
   return {
     locale,
-    messages: { ...common, ...auth, ...members, ...dashboard, ...settings, ...activities, ...receipts, ...mandates, ...remittances, ...paymentMethod, ...billingRuns },
+    messages: { ...common, ...auth, ...members, ...dashboard, ...settings, ...activities, ...receipts, ...mandates, ...remittances, ...paymentMethod, ...billingRuns, ...reminders },
   };
 });

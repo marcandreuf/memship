@@ -88,6 +88,18 @@
       "dayDesc": "Day (1–28) the billing runs. Quarterly and annual fees are only billed in the first month of their period.",
       "notificationEmail": "Notification email",
       "notificationEmailDesc": "Optional address that receives a summary after each automatic run"
+    },
+    "paymentReminders": {
+      "tab": "Payment reminders",
+      "title": "Payment reminders",
+      "enabled": "Enable payment reminders",
+      "enabledDesc": "Automatically email members about overdue receipts on the configured schedule",
+      "daysAfterDue": "Days after due date",
+      "daysAfterDueDesc": "Days after the due date before the first reminder is sent",
+      "repeatDays": "Repeat every (days)",
+      "repeatDaysDesc": "Days between subsequent reminders",
+      "maxCount": "Maximum reminders",
+      "maxCountDesc": "Maximum number of reminders per receipt (1–10)"
     }
   }
 }

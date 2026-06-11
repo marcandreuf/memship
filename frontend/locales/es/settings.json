@@ -88,6 +88,18 @@
       "dayDesc": "Día (1–28) en que se ejecuta la facturación. Las cuotas trimestrales y anuales solo se facturan en el primer mes de su periodo.",
       "notificationEmail": "Correo de notificación",
       "notificationEmailDesc": "Correo opcional que recibe un resumen tras cada ejecución automática"
+    },
+    "paymentReminders": {
+      "tab": "Recordatorios de pago",
+      "title": "Recordatorios de pago",
+      "enabled": "Activar recordatorios de pago",
+      "enabledDesc": "Enviar automáticamente un correo a los socios sobre recibos vencidos según la programación configurada",
+      "daysAfterDue": "Días tras el vencimiento",
+      "daysAfterDueDesc": "Días tras la fecha de vencimiento antes de enviar el primer recordatorio",
+      "repeatDays": "Repetir cada (días)",
+      "repeatDaysDesc": "Días entre recordatorios sucesivos",
+      "maxCount": "Recordatorios máximos",
+      "maxCountDesc": "Número máximo de recordatorios por recibo (1–10)"
     }
   }
 }

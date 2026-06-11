@@ -1,0 +1,18 @@
+{
+  "reminders": {
+    "sendReminder": "Enviar recordatori",
+    "sentToast": "Recordatori enviat",
+    "maxReached": "Ja s'ha enviat el nombre màxim de recordatoris",
+    "historyTitle": "Recordatoris de pagament",
+    "number": "Núm.",
+    "sentAt": "Enviat",
+    "channel": "Canal",
+    "statusLabel": "Estat",
+    "none": "Encara no s'ha enviat cap recordatori",
+    "status": {
+      "sent": "Enviat",
+      "failed": "Fallit",
+      "skipped": "Omès"
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "reminders": {
+    "sendReminder": "Enviar recordatorio",
+    "sentToast": "Recordatorio enviado",
+    "maxReached": "Ya se ha enviado el número máximo de recordatorios",
+    "historyTitle": "Recordatorios de pago",
+    "number": "Nº",
+    "sentAt": "Enviado",
+    "channel": "Canal",
+    "statusLabel": "Estado",
+    "none": "Aún no se ha enviado ningún recordatorio",
+    "status": {
+      "sent": "Enviado",
+      "failed": "Fallido",
+      "skipped": "Omitido"
+    }
+  }
+}

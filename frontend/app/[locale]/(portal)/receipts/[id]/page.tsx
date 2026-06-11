@@ -30,6 +30,11 @@ import {
   useReturnReceipt,
   useReemitReceipt,
 } from "@/features/receipts/hooks/use-receipts";
+import {
+  useReceiptReminders,
+  useSendReceiptReminder,
+} from "@/features/receipts/hooks/use-receipt-reminders";
+import { useSettings } from "@/features/settings/hooks/use-settings";
 
 const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   new: "outline",
@@ -61,6 +66,9 @@ export default function ReceiptDetailPage() {
   const cancelMutation = useCancelReceipt();
   const returnMutation = useReturnReceipt();
   const reemitMutation = useReemitReceipt();
+  const { data: reminders } = useReceiptReminders(Number(id));
+  const { data: settings } = useSettings();
+  const sendReminderMutation = useSendReceiptReminder();
 
   if (isLoading) return <DetailSkeleton />;
   if (!receipt) return <p className="text-center py-8">Receipt not found</p>;
@@ -121,12 +129,23 @@ export default function ReceiptDetailPage() {
     } catch { /* global handler */ }
   }
 
+  async function handleSendReminder() {
+    try {
+      await sendReminderMutation.mutateAsync(receipt!.id);
+      toast.success(t("reminders.sentToast"));
+    } catch { /* global handler */ }
+  }
+
   const canEdit = ["new", "pending"].includes(receipt.status);
   const canEmit = ["new", "pending"].includes(receipt.status);
   const canPay = ["emitted", "overdue"].includes(receipt.status);
   const canReturn = ["emitted", "overdue"].includes(receipt.status);
   const canCancel = !["paid", "cancelled"].includes(receipt.status);
   const canReemit = receipt.status === "returned";
+  const canRemind = ["emitted", "overdue"].includes(receipt.status);
+  const sentReminderCount = (reminders ?? []).filter((r) => r.status === "sent").length;
+  const maxReminders = Number(settings?.features?.reminder_max_count ?? 3);
+  const remindersExhausted = sentReminderCount >= maxReminders;
 
   const fields = [
     { label: t("receipts.receiptNumber"), value: receipt.receipt_number },
@@ -176,6 +195,17 @@ export default function ReceiptDetailPage() {
             {canEmit && <Button size="sm" onClick={handleEmit}>{t("receipts.emit")}</Button>}
             {canPay && <Button size="sm" onClick={() => setPayOpen(true)}>{t("receipts.markPaid")}</Button>}
             {canReturn && <Button size="sm" variant="outline" onClick={() => setReturnOpen(true)}>{t("receipts.markReturned")}</Button>}
+            {canRemind && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleSendReminder}
+                disabled={remindersExhausted || sendReminderMutation.isPending}
+                title={remindersExhausted ? t("reminders.maxReached") : undefined}
+              >
+                {sendReminderMutation.isPending ? t("common.loading") : t("reminders.sendReminder")}
+              </Button>
+            )}
             {canReemit && <Button size="sm" onClick={handleReemit}>{t("receipts.reemit")}</Button>}
             {canCancel && <Button size="sm" variant="destructive" onClick={handleCancel}>{t("receipts.cancel")}</Button>}
             <Button size="sm" variant="outline" asChild>
@@ -195,6 +225,40 @@ export default function ReceiptDetailPage() {
           <DetailSection fields={fields} columns={2} />
         </CardContent>
       </Card>
+
+      {(canRemind || (reminders && reminders.length > 0)) && (
+        <Card data-cy="reminder-history">
+          <CardHeader className="py-3 px-4">
+            <CardTitle className="text-base">{t("reminders.historyTitle")}</CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4 pt-0">
+            {reminders && reminders.length > 0 ? (
+              <table className="table-compact w-full text-sm">
+                <thead>
+                  <tr className="text-left text-muted-foreground">
+                    <th className="font-medium">{t("reminders.number")}</th>
+                    <th className="font-medium">{t("reminders.sentAt")}</th>
+                    <th className="font-medium">{t("reminders.channel")}</th>
+                    <th className="font-medium">{t("reminders.statusLabel")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reminders.map((r) => (
+                    <tr key={r.id}>
+                      <td>#{r.reminder_number}</td>
+                      <td>{formatDate(r.sent_at)}</td>
+                      <td>{r.channel}</td>
+                      <td>{t(`reminders.status.${r.status}`)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p className="text-sm text-muted-foreground">{t("reminders.none")}</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Pay Dialog */}
       <Dialog open={payOpen} onOpenChange={setPayOpen}>

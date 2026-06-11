@@ -1,0 +1,18 @@
+{
+  "reminders": {
+    "sendReminder": "Send reminder",
+    "sentToast": "Reminder sent",
+    "maxReached": "Maximum number of reminders already sent",
+    "historyTitle": "Payment reminders",
+    "number": "#",
+    "sentAt": "Sent",
+    "channel": "Channel",
+    "statusLabel": "Status",
+    "none": "No reminders sent yet",
+    "status": {
+      "sent": "Sent",
+      "failed": "Failed",
+      "skipped": "Skipped"
+    }
+  }
+}

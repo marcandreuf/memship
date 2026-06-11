@@ -88,6 +88,18 @@
       "dayDesc": "Dia (1–28) en què s'executa la facturació. Les quotes trimestrals i anuals només es facturen el primer mes del seu període.",
       "notificationEmail": "Correu de notificació",
       "notificationEmailDesc": "Correu opcional que rep un resum després de cada execució automàtica"
+    },
+    "paymentReminders": {
+      "tab": "Recordatoris de pagament",
+      "title": "Recordatoris de pagament",
+      "enabled": "Activar recordatoris de pagament",
+      "enabledDesc": "Enviar automàticament un correu als socis sobre rebuts vençuts segons la programació configurada",
+      "daysAfterDue": "Dies després del venciment",
+      "daysAfterDueDesc": "Dies després de la data de venciment abans d'enviar el primer recordatori",
+      "repeatDays": "Repetir cada (dies)",
+      "repeatDaysDesc": "Dies entre recordatoris successius",
+      "maxCount": "Recordatoris màxims",
+      "maxCountDesc": "Nombre màxim de recordatoris per rebut (1–10)"
     }
   }
 }
