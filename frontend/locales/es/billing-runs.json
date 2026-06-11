@@ -1,0 +1,51 @@
+{
+  "billingRuns": {
+    "title": "Ejecuciones de facturación",
+    "subtitle": "Historial de la facturación recurrente, automática y manual",
+    "runNow": "Ejecutar ahora",
+    "runNowTitle": "Ejecutar facturación ahora",
+    "runNowDesc": "Genera los recibos de cuota para el periodo actual. Es idempotente: volver a ejecutar el mismo periodo no crea recibos duplicados.",
+    "frequencyPrompt": "¿Qué frecuencia quieres ejecutar?",
+    "run": "Ejecutar",
+    "runSuccess": "Facturación ejecutada: {count} recibos generados",
+    "empty": "Todavía no se ha ejecutado ninguna facturación",
+    "notFound": "Ejecución no encontrada",
+    "detailTitle": "Detalle de la ejecución",
+    "errorsTitle": "Errores",
+    "noErrors": "Sin errores",
+    "columns": {
+      "date": "Fecha",
+      "frequency": "Frecuencia",
+      "period": "Periodo",
+      "triggeredBy": "Origen",
+      "status": "Estado",
+      "receipts": "Recibos"
+    },
+    "fields": {
+      "id": "ID",
+      "frequency": "Frecuencia",
+      "period": "Periodo",
+      "triggeredBy": "Origen",
+      "status": "Estado",
+      "receiptsGenerated": "Recibos generados",
+      "startedAt": "Iniciada",
+      "finishedAt": "Finalizada"
+    },
+    "frequencyValue": {
+      "all": "Todas",
+      "monthly": "Mensual",
+      "quarterly": "Trimestral",
+      "annual": "Anual"
+    },
+    "triggeredByValue": {
+      "scheduled": "Programada",
+      "manual": "Manual"
+    },
+    "statusValue": {
+      "all": "Todos",
+      "success": "Correcta",
+      "failed": "Fallida",
+      "partial_failure": "Parcial"
+    }
+  }
+}

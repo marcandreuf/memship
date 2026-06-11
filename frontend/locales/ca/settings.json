@@ -78,6 +78,16 @@
         "goCardless": "GoCardless",
         "paypal": "PayPal"
       }
+    },
+    "recurringBilling": {
+      "tab": "Facturació recurrent",
+      "title": "Facturació recurrent",
+      "enabled": "Activar facturació recurrent",
+      "enabledDesc": "Genera automàticament els rebuts de quota de soci segons el calendari configurat",
+      "day": "Dia del mes",
+      "dayDesc": "Dia (1–28) en què s'executa la facturació. Les quotes trimestrals i anuals només es facturen el primer mes del seu període.",
+      "notificationEmail": "Correu de notificació",
+      "notificationEmailDesc": "Correu opcional que rep un resum després de cada execució automàtica"
     }
   }
 }

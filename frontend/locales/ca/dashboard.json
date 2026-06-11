@@ -19,6 +19,9 @@
     "noUpcoming": "No hi ha activitats properes",
     "pendingAmount": "Import pendent",
     "paidThisMonth": "Cobrat aquest mes",
-    "overdueAmount": "Vençut"
+    "overdueAmount": "Vençut",
+    "nextBillingRun": "Propera facturació recurrent",
+    "nextBillingRunDetail": "Dia {day} · {days, plural, =0 {avui} one {en # dia} other {en # dies}}",
+    "recurringBillingDisabled": "Facturació recurrent desactivada"
   }
 }

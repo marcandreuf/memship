@@ -1,0 +1,51 @@
+{
+  "billingRuns": {
+    "title": "Billing runs",
+    "subtitle": "History of recurring billing, both automatic and manual",
+    "runNow": "Run now",
+    "runNowTitle": "Run billing now",
+    "runNowDesc": "Generates membership-fee receipts for the current period. It is idempotent: re-running the same period creates no duplicate receipts.",
+    "frequencyPrompt": "Which frequency do you want to run?",
+    "run": "Run",
+    "runSuccess": "Billing run complete: {count} receipts generated",
+    "empty": "No billing has been run yet",
+    "notFound": "Billing run not found",
+    "detailTitle": "Run detail",
+    "errorsTitle": "Errors",
+    "noErrors": "No errors",
+    "columns": {
+      "date": "Date",
+      "frequency": "Frequency",
+      "period": "Period",
+      "triggeredBy": "Source",
+      "status": "Status",
+      "receipts": "Receipts"
+    },
+    "fields": {
+      "id": "ID",
+      "frequency": "Frequency",
+      "period": "Period",
+      "triggeredBy": "Source",
+      "status": "Status",
+      "receiptsGenerated": "Receipts generated",
+      "startedAt": "Started",
+      "finishedAt": "Finished"
+    },
+    "frequencyValue": {
+      "all": "All",
+      "monthly": "Monthly",
+      "quarterly": "Quarterly",
+      "annual": "Annual"
+    },
+    "triggeredByValue": {
+      "scheduled": "Scheduled",
+      "manual": "Manual"
+    },
+    "statusValue": {
+      "all": "All",
+      "success": "Success",
+      "failed": "Failed",
+      "partial_failure": "Partial"
+    }
+  }
+}

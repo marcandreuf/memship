@@ -1,0 +1,51 @@
+{
+  "billingRuns": {
+    "title": "Execucions de facturació",
+    "subtitle": "Historial de la facturació recurrent, automàtica i manual",
+    "runNow": "Executar ara",
+    "runNowTitle": "Executar facturació ara",
+    "runNowDesc": "Genera els rebuts de quota per al període actual. És idempotent: tornar a executar el mateix període no crea rebuts duplicats.",
+    "frequencyPrompt": "Quina freqüència vols executar?",
+    "run": "Executar",
+    "runSuccess": "Facturació executada: {count} rebuts generats",
+    "empty": "Encara no s'ha executat cap facturació",
+    "notFound": "Execució no trobada",
+    "detailTitle": "Detall de l'execució",
+    "errorsTitle": "Errors",
+    "noErrors": "Sense errors",
+    "columns": {
+      "date": "Data",
+      "frequency": "Freqüència",
+      "period": "Període",
+      "triggeredBy": "Origen",
+      "status": "Estat",
+      "receipts": "Rebuts"
+    },
+    "fields": {
+      "id": "ID",
+      "frequency": "Freqüència",
+      "period": "Període",
+      "triggeredBy": "Origen",
+      "status": "Estat",
+      "receiptsGenerated": "Rebuts generats",
+      "startedAt": "Iniciada",
+      "finishedAt": "Finalitzada"
+    },
+    "frequencyValue": {
+      "all": "Totes",
+      "monthly": "Mensual",
+      "quarterly": "Trimestral",
+      "annual": "Anual"
+    },
+    "triggeredByValue": {
+      "scheduled": "Programada",
+      "manual": "Manual"
+    },
+    "statusValue": {
+      "all": "Tots",
+      "success": "Correcta",
+      "failed": "Fallida",
+      "partial_failure": "Parcial"
+    }
+  }
+}

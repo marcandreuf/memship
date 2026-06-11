@@ -19,6 +19,9 @@
     "noUpcoming": "No hay actividades próximas",
     "pendingAmount": "Importe pendiente",
     "paidThisMonth": "Cobrado este mes",
-    "overdueAmount": "Vencido"
+    "overdueAmount": "Vencido",
+    "nextBillingRun": "Próxima facturación recurrente",
+    "nextBillingRunDetail": "Día {day} · {days, plural, =0 {hoy} one {en # día} other {en # días}}",
+    "recurringBillingDisabled": "Facturación recurrente desactivada"
   }
 }

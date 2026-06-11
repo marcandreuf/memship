@@ -13,6 +13,7 @@ import {
   Receipt,
   FileText,
   Landmark,
+  CalendarClock,
   CreditCard,
   LogOut,
   ChevronsUpDown,
@@ -67,6 +68,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
     { href: "/receipts", label: t("nav.receipts"), icon: Receipt, show: isAdmin },
     { href: "/mandates", label: t("nav.mandates"), icon: FileText, show: isAdmin },
     { href: "/remittances", label: t("nav.remittances"), icon: Landmark, show: isAdmin },
+    { href: "/billing-runs", label: t("nav.billingRuns"), icon: CalendarClock, show: isAdmin },
     { href: "/groups", label: t("nav.groups"), icon: FolderOpen, show: isAdmin },
     { href: "/settings", label: t("nav.settings"), icon: Settings, show: isAdmin },
   ].filter((item) => item.show);

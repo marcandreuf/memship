@@ -13,9 +13,11 @@ import {
   Tooltip,
   LabelList,
 } from "recharts";
+import { CalendarClock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/features/auth/hooks/use-auth";
+import { useSettings } from "@/features/settings/hooks/use-settings";
 import { useMembers } from "@/features/members/hooks/use-members";
 import { useActivities } from "@/features/activities/hooks/use-activities";
 import { useGroups } from "@/features/groups/hooks/use-groups";
@@ -197,6 +199,42 @@ function UpcomingActivityCard({ registration }: { registration: RegistrationData
   );
 }
 
+function NextBillingRunCard() {
+  const t = useTranslations();
+  const { data: settings } = useSettings();
+  const features = settings?.features ?? {};
+  const enabled = Boolean(features.recurring_billing_enabled);
+  const billingDay = Number(features.recurring_billing_day) || 1;
+
+  let detail: string;
+  if (!enabled) {
+    detail = t("dashboard.recurringBillingDisabled");
+  } else {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    let next = new Date(today.getFullYear(), today.getMonth(), billingDay);
+    if (next < today) {
+      next = new Date(today.getFullYear(), today.getMonth() + 1, billingDay);
+    }
+    const days = Math.round((next.getTime() - today.getTime()) / 86_400_000);
+    detail = t("dashboard.nextBillingRunDetail", { day: billingDay, days });
+  }
+
+  return (
+    <Link href="/billing-runs">
+      <Card className="hover:bg-accent/50 transition-colors">
+        <CardContent className="flex items-center gap-3 py-3 px-4">
+          <CalendarClock className="size-5 shrink-0 text-muted-foreground" />
+          <div className="min-w-0">
+            <p className="text-xs text-muted-foreground">{t("dashboard.nextBillingRun")}</p>
+            <p className="text-sm font-semibold">{detail}</p>
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}
+
 export default function DashboardPage() {
   const t = useTranslations();
   const { user } = useAuth();
@@ -273,6 +311,9 @@ export default function DashboardPage() {
 
       {isAdmin && (
         <div className="space-y-4">
+          {/* Recurring billing status */}
+          <NextBillingRunCard />
+
           {/* Bar charts side by side */}
           <div className="grid gap-4 sm:grid-cols-2">
             <StatusBarChart
