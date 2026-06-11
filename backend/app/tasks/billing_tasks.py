@@ -1,4 +1,4 @@
-"""Celery tasks for recurring (scheduled) membership billing."""
+"""Celery tasks for recurring (scheduled) membership billing and payment reminders."""
 
 import logging
 
@@ -78,6 +78,30 @@ def scheduled_billing_run() -> dict:
     except Exception as exc:
         db.rollback()
         logger.error(f"Scheduled billing run failed: {exc}")
+        raise
+    finally:
+        db.close()
+
+
+@celery.task
+def scheduled_payment_reminders() -> dict:
+    """Daily Beat entry point: mark overdue receipts, then send due reminders.
+
+    No-op (returns zero counts) unless payment reminders are enabled in org
+    settings. Returns a small summary dict for the Celery result backend / logs.
+    """
+    from app.db.session import SessionLocal
+    from app.domains.billing.reminder_service import run_scheduled_reminders
+
+    db = SessionLocal()
+    try:
+        summary = run_scheduled_reminders(db)
+        db.commit()
+        logger.info(f"Scheduled payment reminders complete: {summary}")
+        return summary
+    except Exception as exc:
+        db.rollback()
+        logger.error(f"Scheduled payment reminders failed: {exc}")
         raise
     finally:
         db.close()

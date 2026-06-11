@@ -1,0 +1,11 @@
+<h2>Payment reminder</h2>
+<p>Hi {{ member_name }},</p>
+<p>This is a reminder that receipt <strong>{{ receipt_number }}</strong> for <strong>{{ amount }} {{ currency }}</strong> was due on <strong>{{ due_date }}</strong> ({{ days_overdue }} {{ 'day' if days_overdue == 1 else 'days' }} overdue) and is still outstanding.</p>
+{% if pay_now_url %}
+<p><a href="{{ pay_now_url }}">Pay now</a></p>
+{% elif bank_details %}
+<p>You can pay by bank transfer:</p>
+<p>{{ bank_details }}</p>
+{% endif %}
+<p>If you have already paid, please disregard this message.</p>
+<p>{{ org_name }}</p>

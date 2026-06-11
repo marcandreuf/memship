@@ -1,0 +1,11 @@
+<h2>Recordatorio de pago</h2>
+<p>Hola {{ member_name }},</p>
+<p>Te recordamos que el recibo <strong>{{ receipt_number }}</strong> por importe de <strong>{{ amount }} {{ currency }}</strong> venció el <strong>{{ due_date }}</strong> ({{ days_overdue }} {{ 'día' if days_overdue == 1 else 'días' }} de retraso) y consta como pendiente de pago.</p>
+{% if pay_now_url %}
+<p><a href="{{ pay_now_url }}">Pagar ahora</a></p>
+{% elif bank_details %}
+<p>Puedes realizar el pago mediante transferencia bancaria:</p>
+<p>{{ bank_details }}</p>
+{% endif %}
+<p>Si ya has realizado el pago, puedes ignorar este mensaje.</p>
+<p>{{ org_name }}</p>

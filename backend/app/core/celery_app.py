@@ -22,12 +22,17 @@ celery.conf.update(
     worker_prefetch_multiplier=1,
 )
 
-# Beat schedule — daily recurring-billing check at 02:00 UTC. The task itself is a
-# no-op unless recurring billing is enabled and a frequency is due on the day.
+# Beat schedule. Each task is a no-op unless its feature is enabled in org settings.
+#  - recurring billing at 02:00 UTC (generates due membership fees)
+#  - payment reminders at 03:00 UTC (after billing: mark overdue, send dunning)
 celery.conf.beat_schedule = {
     "scheduled-billing-run": {
         "task": "app.tasks.billing_tasks.scheduled_billing_run",
         "schedule": crontab(hour=2, minute=0),
+    },
+    "scheduled-payment-reminders": {
+        "task": "app.tasks.billing_tasks.scheduled_payment_reminders",
+        "schedule": crontab(hour=3, minute=0),
     },
 }
 

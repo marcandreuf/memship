@@ -10,12 +10,14 @@ from app.core.pagination import paginate
 from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
 from app.domains.auth.models import User
-from app.domains.billing.models import Receipt
+from app.domains.billing.models import Receipt, ReceiptReminder
+from app.domains.billing.reminder_service import send_reminder
 from app.domains.billing.schemas import (
     GenerateMembershipFeesRequest,
     ReceiptCreate,
     ReceiptDetailResponse,
     ReceiptPayRequest,
+    ReceiptReminderResponse,
     ReceiptResponse,
     ReceiptReturnRequest,
     ReceiptUpdate,
@@ -31,6 +33,7 @@ from app.domains.billing.service import (
     update_receipt,
 )
 from app.domains.members.models import Member
+from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Person
 
 router = APIRouter(prefix="/receipts", tags=["receipts"])
@@ -297,6 +300,65 @@ def pay_receipt_endpoint(
     db.commit()
     db.refresh(receipt)
     return receipt
+
+
+@router.post("/{receipt_id}/send-reminder", response_model=ReceiptReminderResponse)
+def send_receipt_reminder(
+    receipt_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """Manually send a payment reminder for an unpaid (emitted/overdue) receipt."""
+    receipt = db.query(Receipt).filter(
+        Receipt.id == receipt_id, Receipt.is_active.is_(True)
+    ).first()
+    if not receipt:
+        raise HTTPException(status_code=404, detail="Receipt not found")
+    if receipt.status not in ("emitted", "overdue"):
+        raise HTTPException(
+            status_code=409, detail="Receipt is not awaiting payment"
+        )
+
+    org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
+    max_count = ((org.features if org else None) or {}).get("reminder_max_count", 3)
+    sent_count = (
+        db.query(ReceiptReminder)
+        .filter(
+            ReceiptReminder.receipt_id == receipt.id,
+            ReceiptReminder.status == "sent",
+        )
+        .count()
+    )
+    if sent_count >= max_count:
+        raise HTTPException(
+            status_code=409, detail="Maximum number of reminders already sent"
+        )
+
+    try:
+        reminder = send_reminder(db, receipt, "manual", user_id=current_user.id)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    db.commit()
+    db.refresh(reminder)
+    return reminder
+
+
+@router.get("/{receipt_id}/reminders", response_model=list[ReceiptReminderResponse])
+def list_receipt_reminders(
+    receipt_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """List the reminders sent for a receipt, newest first."""
+    receipt = db.query(Receipt).filter(Receipt.id == receipt_id).first()
+    if not receipt:
+        raise HTTPException(status_code=404, detail="Receipt not found")
+    return (
+        db.query(ReceiptReminder)
+        .filter(ReceiptReminder.receipt_id == receipt_id)
+        .order_by(ReceiptReminder.sent_at.desc(), ReceiptReminder.id.desc())
+        .all()
+    )
 
 
 @router.post("/{receipt_id}/cancel", response_model=ReceiptResponse)

@@ -345,3 +345,44 @@ class BillingRun(Base):
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+
+
+class ReceiptReminder(Base):
+    """Payment reminder sent for an overdue receipt — dunning audit log.
+
+    One row per reminder actually sent (or attempted). The reminder sequence,
+    repeat cadence, and max count are enforced by ``reminder_service`` rather than
+    a DB constraint, so manual and scheduled sends share a single history and
+    ``reminder_number`` is simply ``count(sent reminders) + 1``.
+    """
+
+    __tablename__ = "receipt_reminders"
+    __table_args__ = (
+        CheckConstraint(
+            "channel IN ('email')",
+            name="valid_receipt_reminder_channel",
+        ),
+        CheckConstraint(
+            "status IN ('sent', 'failed', 'skipped')",
+            name="valid_receipt_reminder_status",
+        ),
+        CheckConstraint(
+            "triggered_by IN ('scheduled', 'manual')",
+            name="valid_receipt_reminder_triggered_by",
+        ),
+        Index("ix_receipt_reminders_receipt", "receipt_id", "sent_at"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    receipt_id = Column(Integer, ForeignKey("receipts.id"), nullable=False)
+    reminder_number = Column(Integer, nullable=False)
+    channel = Column(String(20), nullable=False, default="email")
+    status = Column(String(20), nullable=False)
+    to_email = Column(String(255))
+    triggered_by = Column(String(20), nullable=False)
+    triggered_by_user_id = Column(Integer, ForeignKey("users.id"))
+    error = Column(Text)
+    sent_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    receipt = relationship("Receipt", backref="reminders")

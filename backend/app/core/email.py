@@ -57,6 +57,11 @@ _SUBJECTS = {
         "ca": "Restablir contrasenya",
         "en": "Reset your password",
     },
+    "payment_reminder": {
+        "es": "Recordatorio de pago: recibo {receipt_number}",
+        "ca": "Recordatori de pagament: rebut {receipt_number}",
+        "en": "Payment reminder: receipt {receipt_number}",
+    },
 }
 
 
@@ -278,5 +283,34 @@ def send_waitlist_promotion_email(
         "activity_name": activity_name,
         "activity_date": activity_date,
         "location": location,
+    })
+    return send_email(to, subject, html_body)
+
+
+def send_payment_reminder_email(
+    to: str,
+    member_name: str,
+    receipt_number: str,
+    amount: str,
+    currency: str,
+    due_date: str,
+    days_overdue: int,
+    org_name: str,
+    pay_now_url: str | None = None,
+    bank_details: str | None = None,
+    locale: str = "es",
+) -> bool:
+    """Send a payment reminder for an overdue receipt."""
+    subject = _get_subject("payment_reminder", locale, receipt_number=receipt_number)
+    html_body = render_template("payment_reminder", locale, {
+        "member_name": member_name,
+        "receipt_number": receipt_number,
+        "amount": amount,
+        "currency": currency,
+        "due_date": due_date,
+        "days_overdue": days_overdue,
+        "org_name": org_name,
+        "pay_now_url": pay_now_url,
+        "bank_details": bank_details,
     })
     return send_email(to, subject, html_body)

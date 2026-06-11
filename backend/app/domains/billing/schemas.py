@@ -309,3 +309,19 @@ class BillingRunResponse(BaseModel):
     finished_at: datetime | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
+
+
+class ReceiptReminderResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    receipt_id: int
+    reminder_number: int
+    channel: str
+    status: str
+    to_email: str | None = None
+    triggered_by: str
+    triggered_by_user_id: int | None = None
+    error: str | None = None
+    sent_at: datetime | None = None
+    created_at: datetime | None = None
