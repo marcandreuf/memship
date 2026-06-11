@@ -84,8 +84,8 @@ Obriu http://localhost:8081 i inicieu sessió amb les vostres credencials. Canvi
 | v0.4.1 | Configuració de passarel·les de pagament — gestió configurable des del panell de super admin | Fet |
 | v0.4.2 | Infraestructura de webhooks + Stripe Checkout — webhooks de passarel·la, estat de pagament en temps real, flux "Paga ara" del soci | Fet |
 | v0.4.3 | Integració Redsys — passarel·la bancària espanyola amb 3D Secure + Bizum | Fet |
-| v0.4.4 | Facturació recurrent — generació automàtica de quotes | Següent |
-| v0.4.5 | Recordatoris de pagament — notificacions per correu de rebuts vençuts | Planificat |
+| v0.4.4 | Facturació recurrent — generació automàtica de quotes | Fet |
+| v0.4.5 | Recordatoris de pagament — notificacions per correu de rebuts vençuts | Següent |
 | v0.5.0 | Comunicacions simples — anuncis de l'administrador a tots els socis / grup / tipus de quota | Planificat |
 | v0.6.0 | Reserves simples — espais i reserva de franges horàries | Planificat |
 | v0.7.0 | Carnet digital de soci + registre QR | Planificat |
