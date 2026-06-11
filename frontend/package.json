@@ -2,6 +2,18 @@
   "name": "memship-frontend",
   "version": "0.0.1",
   "private": true,
+  "packageManager": "pnpm@10.29.3",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "sharp",
+      "@swc/core"
+    ],
+    "ignoredBuiltDependencies": [
+      "@parcel/watcher",
+      "cypress",
+      "unrs-resolver"
+    ]
+  },
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
