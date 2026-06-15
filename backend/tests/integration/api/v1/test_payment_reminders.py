@@ -6,7 +6,7 @@ from decimal import Decimal
 from app.core.security.jwt import create_access_token
 from app.core.security.password import hash_password
 from app.domains.auth.models import User
-from app.domains.billing.models import Receipt, ReceiptReminder
+from app.domains.billing.models import PaymentProvider, Receipt, ReceiptReminder
 from app.domains.billing.reminder_service import (
     mark_overdue,
     reminders_due,
@@ -125,6 +125,23 @@ def _patch_email_sent(monkeypatch, ok=True):
     monkeypatch.setattr("app.core.email.send_email", lambda to, subject, html_body: ok)
 
 
+def _capture_reminder_email(monkeypatch):
+    """Capture the kwargs passed to ``send_payment_reminder_email`` (Pay-Now vs bank).
+
+    Returns a dict that ``send_reminder`` fills in on the next call.
+    """
+    captured = {}
+
+    def _fake(**kwargs):
+        captured.update(kwargs)
+        return True
+
+    monkeypatch.setattr(
+        "app.domains.billing.reminder_service.send_payment_reminder_email", _fake
+    )
+    return captured
+
+
 # --- Overdue transition ---
 
 
@@ -233,6 +250,39 @@ class TestSendReminder:
             assert False, "expected ValueError"
         except ValueError:
             pass
+
+
+# --- Pay-Now link vs bank-transfer fallback (T7) ---
+
+
+class TestPayNowLink:
+    def test_pay_now_link_when_online_provider_active(self, db, monkeypatch):
+        captured = _capture_reminder_email(monkeypatch)
+        _ensure_org_settings(db)
+        db.add(
+            PaymentProvider(
+                provider_type="stripe", display_name="Stripe", status="active"
+            )
+        )
+        db.flush()
+        member = _create_member(db, "pn1")
+        r = _create_receipt(db, member, "pn1", "overdue", due_date=TODAY - timedelta(days=5))
+        send_reminder(db, r, "manual", today=TODAY)
+        assert captured["pay_now_url"] is not None
+        assert captured["bank_details"] is None
+
+    def test_bank_fallback_when_no_provider(self, db, monkeypatch):
+        captured = _capture_reminder_email(monkeypatch)
+        org = _ensure_org_settings(db)
+        org.bank_name = "Caixa Test"
+        org.bank_iban = "ES9121000418450200051332"
+        db.flush()
+        member = _create_member(db, "pn2")
+        r = _create_receipt(db, member, "pn2", "overdue", due_date=TODAY - timedelta(days=5))
+        send_reminder(db, r, "manual", today=TODAY)
+        assert captured["pay_now_url"] is None
+        assert captured["bank_details"] is not None
+        assert "ES9121000418450200051332" in captured["bank_details"]
 
 
 # --- Scheduled orchestration ---
