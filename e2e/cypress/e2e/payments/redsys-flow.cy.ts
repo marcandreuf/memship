@@ -17,13 +17,25 @@ describe("Redsys — Happy Path @smoke", () => {
       );
       if (existing) {
         redsysProviderId = existing.id;
-        // Ensure it's active
-        if (existing.status === "disabled") {
-          cy.request({
-            method: "POST",
-            url: `${API_URL}/payment-providers/${existing.id}/toggle`,
-          });
-        }
+        // A fresh seed creates Redsys disabled with EMPTY config, so toggling
+        // alone leaves /initiate unable to sign (HTTP 500). Write valid test
+        // credentials and activate it in one update.
+        cy.request({
+          method: "PUT",
+          url: `${API_URL}/payment-providers/${existing.id}`,
+          body: {
+            status: "test",
+            config: {
+              merchant_code: "100000001",
+              terminal_id: "1",
+              secret_key: "sq7HjrUOBfKmC576ILgskD5srU870gJ7",
+              environment: "test",
+              currency_code: "978",
+            },
+          },
+        }).then((putResp) => {
+          expect(putResp.status).to.eq(200);
+        });
       } else {
         cy.request({
           method: "POST",
@@ -133,7 +145,8 @@ describe("Redsys — Happy Path @smoke", () => {
 
     cy.wait("@initiateBizum").then((interception) => {
       expect(interception.response?.statusCode).to.eq(200);
-      expect(JSON.parse(String(interception.request.body)).method).to.eq("bizum");
+      // Cypress already parses JSON request bodies into an object.
+      expect(interception.request.body.method).to.eq("bizum");
     });
 
     // Receipt should now have payment_method='bizum' even before webhook
@@ -154,7 +167,9 @@ describe("Redsys — Happy Path @smoke", () => {
       method: "POST",
       url: `${API_URL}/receipts/${emittedReceiptId}/pay`,
       body: {
-        payment_method: "redsys",
+        // The /pay schema accepts card|cash|bank_transfer|direct_debit|
+        // stripe_checkout — "card" represents the completed Redsys card payment.
+        payment_method: "card",
         payment_date: new Date().toISOString().split("T")[0],
       },
     }).then((payResp) => {

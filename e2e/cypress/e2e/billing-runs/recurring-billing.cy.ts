@@ -40,6 +40,22 @@ describe("Recurring Billing — Settings tab (super admin)", () => {
 });
 
 describe("Billing Runs — list and run-now (admin)", () => {
+  const API_URL = Cypress.env("API_URL") || "http://localhost:8003/api/v1";
+
+  before(() => {
+    // Ensure at least one billing run exists so the history table (and its
+    // column headers) renders — a fresh seed has zero runs, which shows the
+    // empty state instead of the table.
+    cy.apiLogin("admin@test.com", "TestAdmin1!");
+    cy.request({
+      method: "POST",
+      url: `${API_URL}/billing-runs/run-now`,
+      body: {},
+    }).then((resp) => {
+      expect(resp.status).to.eq(200);
+    });
+  });
+
   beforeEach(() => {
     cy.loginAsAdmin();
     cy.visit("/en/billing-runs");

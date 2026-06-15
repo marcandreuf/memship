@@ -3,6 +3,45 @@ describe("Stripe Checkout — Failure / Cancel Path", () => {
   let emittedReceiptId: number;
 
   before(() => {
+    // Ensure an active Stripe provider so the "Pay Now" button renders. The
+    // checkout call is stubbed via cy.intercept, so config values are irrelevant
+    // — only an active/test status is required.
+    cy.apiLogin("super@test.com", "TestSuper1!");
+    cy.request({
+      method: "GET",
+      url: `${API_URL}/payment-providers/`,
+    }).then((listResp) => {
+      expect(listResp.status).to.eq(200);
+      const stripe = listResp.body.items.find(
+        (p: { provider_type: string }) => p.provider_type === "stripe"
+      );
+      if (stripe) {
+        if (stripe.status === "disabled") {
+          cy.request({
+            method: "POST",
+            url: `${API_URL}/payment-providers/${stripe.id}/toggle`,
+          });
+        }
+      } else {
+        cy.request({
+          method: "POST",
+          url: `${API_URL}/payment-providers/`,
+          body: {
+            provider_type: "stripe",
+            display_name: "Stripe Test",
+            status: "test",
+            config: {
+              secret_key: "sk_test_e2e",
+              publishable_key: "pk_test_e2e",
+              webhook_secret: "",
+              mode: "webhook",
+            },
+            is_default: false,
+          },
+        });
+      }
+    });
+
     // Login as admin via API and create an emitted receipt for the member test account
     cy.apiLogin("admin@test.com", "TestAdmin1!");
 
@@ -118,7 +157,7 @@ describe("Stripe Checkout — Failure / Cancel Path", () => {
         .within(() => {
           cy.contains(/returned/i).should("be.visible");
           // Pay Now button should not be visible for returned receipts
-          cy.contains("button", /pay now/i).should("not.exist");
+          cy.get('button[aria-label="Pay Now"]').should("not.exist");
         });
     });
   });
@@ -188,8 +227,7 @@ describe("Stripe Checkout — Failure / Cancel Path", () => {
       cy.wait("@myReceipts");
       cy.contains("Error handling test")
         .closest("tr")
-        .find("button")
-        .contains(/pay now/i)
+        .find('button[aria-label="Pay Now"]')
         .click();
 
       cy.wait("@stripeCheckoutError");

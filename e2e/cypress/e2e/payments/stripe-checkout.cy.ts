@@ -3,6 +3,45 @@ describe("Stripe Checkout — Happy Path @smoke", () => {
   let emittedReceiptId: number;
 
   before(() => {
+    // Ensure an active Stripe provider so the "Pay Now" button renders. The
+    // checkout call itself is stubbed via cy.intercept below, so the config
+    // values are irrelevant — only an active/test status is required.
+    cy.apiLogin("super@test.com", "TestSuper1!");
+    cy.request({
+      method: "GET",
+      url: `${API_URL}/payment-providers/`,
+    }).then((listResp) => {
+      expect(listResp.status).to.eq(200);
+      const stripe = listResp.body.items.find(
+        (p: { provider_type: string }) => p.provider_type === "stripe"
+      );
+      if (stripe) {
+        if (stripe.status === "disabled") {
+          cy.request({
+            method: "POST",
+            url: `${API_URL}/payment-providers/${stripe.id}/toggle`,
+          });
+        }
+      } else {
+        cy.request({
+          method: "POST",
+          url: `${API_URL}/payment-providers/`,
+          body: {
+            provider_type: "stripe",
+            display_name: "Stripe Test",
+            status: "test",
+            config: {
+              secret_key: "sk_test_e2e",
+              publishable_key: "pk_test_e2e",
+              webhook_secret: "",
+              mode: "webhook",
+            },
+            is_default: false,
+          },
+        });
+      }
+    });
+
     // Login as admin via API and create an emitted receipt for the member test account
     cy.apiLogin("admin@test.com", "TestAdmin1!");
 
@@ -52,7 +91,8 @@ describe("Stripe Checkout — Happy Path @smoke", () => {
     cy.visit("/en/my-receipts");
     cy.contains("h1", /my receipts/i).should("be.visible");
     cy.contains("Stripe E2E test receipt").should("be.visible");
-    cy.contains("button", /pay now/i).should("be.visible");
+    // The Pay Now button is icon-only with an aria-label (no visible text).
+    cy.get('button[aria-label="Pay Now"]').should("be.visible");
   });
 
   it("calls Stripe checkout API when Pay Now is clicked", () => {
@@ -71,8 +111,7 @@ describe("Stripe Checkout — Happy Path @smoke", () => {
     cy.visit("/en/my-receipts");
     cy.contains("Stripe E2E test receipt")
       .closest("tr")
-      .find("button")
-      .contains(/pay now/i)
+      .find('button[aria-label="Pay Now"]')
       .click();
 
     // Verify the checkout API was called
@@ -133,7 +172,7 @@ describe("Stripe Checkout — Happy Path @smoke", () => {
       .within(() => {
         cy.contains(/paid/i).should("be.visible");
         // Pay Now button should not be visible for paid receipts
-        cy.contains("button", /pay now/i).should("not.exist");
+        cy.get('button[aria-label="Pay Now"]').should("not.exist");
       });
   });
 });
