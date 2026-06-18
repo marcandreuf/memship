@@ -85,8 +85,8 @@ Abre http://localhost:8081 e inicia sesión con tus credenciales. Cambia `PORT=8
 | v0.4.2 | Infraestructura de webhooks + Stripe Checkout — webhooks de pasarela, estado de pago en tiempo real, flujo "Pagar ahora" del socio | Hecho |
 | v0.4.3 | Integración Redsys — pasarela bancaria española con 3D Secure + Bizum | Hecho |
 | v0.4.4 | Facturación recurrente — generación automática de cuotas | Hecho |
-| v0.4.5 | Recordatorios de pago — notificaciones por email de recibos vencidos | Próximo |
-| v0.5.0 | Comunicaciones simples — anuncios del admin a todos los socios / grupo / tipo de cuota | Planificado |
+| v0.4.5 | Recordatorios de pago — notificaciones por email de recibos vencidos | Hecho |
+| v0.5.0 | Comunicaciones simples — anuncios del admin a todos los socios / grupo / tipo de cuota | Próximo |
 | v0.6.0 | Reservas simples — espacios y reserva de franjas horarias | Planificado |
 | v0.7.0 | Carnet digital de socio + registro QR | Planificado |
 | v0.8.0 | Convocatorias — RSVP por token para asambleas (requisito legal en España) | Planificado |
