@@ -18,7 +18,9 @@
     "login": "Iniciar sessió",
     "register": "Registrar-se",
     "logout": "Tancar sessió",
-    "menu": "Menú"
+    "menu": "Menú",
+    "communications": "Comunicacions",
+    "announcements": "Anuncis"
   },
   "common": {
     "save": "Desar",

@@ -100,6 +100,12 @@
       "repeatDaysDesc": "Days between subsequent reminders",
       "maxCount": "Maximum reminders",
       "maxCountDesc": "Maximum number of reminders per receipt (1–10)"
+    },
+    "communications": {
+      "tab": "Communications",
+      "title": "Communications",
+      "enabled": "Enable communications",
+      "enabledDesc": "Let admins send announcements to members by email and in-app."
     }
   }
 }

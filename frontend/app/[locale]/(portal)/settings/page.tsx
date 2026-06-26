@@ -45,6 +45,7 @@ import { GenderOptionsSettings } from "@/features/settings/components/gender-opt
 import { PaymentProvidersSettings } from "@/features/settings/components/payment-providers-settings";
 import { RecurringBillingSettings } from "@/features/settings/components/recurring-billing-settings";
 import { PaymentRemindersSettings } from "@/features/settings/components/payment-reminders-settings";
+import { CommunicationsSettings } from "@/features/settings/components/communications-settings";
 import { FormSkeleton } from "@/components/ui/skeletons";
 
 const settingsSchema = z.object({
@@ -176,6 +177,9 @@ export default function SettingsPage() {
           )}
           {isSuperAdmin && (
             <TabsTrigger value="payment-reminders">{t("settings.paymentReminders.tab")}</TabsTrigger>
+          )}
+          {isSuperAdmin && (
+            <TabsTrigger value="communications">{t("settings.communications.tab")}</TabsTrigger>
           )}
           <TabsTrigger value="membership-types">{t("nav.membershipTypes")}</TabsTrigger>
         </TabsList>
@@ -408,6 +412,10 @@ export default function SettingsPage() {
 
         {isSuperAdmin && <TabsContent value="payment-reminders">
           <PaymentRemindersSettings />
+        </TabsContent>}
+
+        {isSuperAdmin && <TabsContent value="communications">
+          <CommunicationsSettings />
         </TabsContent>}
 
         <TabsContent value="membership-types">

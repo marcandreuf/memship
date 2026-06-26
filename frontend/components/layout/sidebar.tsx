@@ -15,6 +15,7 @@ import {
   Landmark,
   CalendarClock,
   CreditCard,
+  Megaphone,
   LogOut,
   ChevronsUpDown,
 } from "lucide-react";
@@ -57,6 +58,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
     : null;
 
   const isAdmin = user.role === "admin" || user.role === "super_admin";
+  const commsEnabled = Boolean(settings?.features?.communications);
 
   const navItems = [
     { href: "/dashboard", label: t("nav.dashboard"), icon: LayoutDashboard, show: true },
@@ -69,6 +71,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
     { href: "/mandates", label: t("nav.mandates"), icon: FileText, show: isAdmin },
     { href: "/remittances", label: t("nav.remittances"), icon: Landmark, show: isAdmin },
     { href: "/billing-runs", label: t("nav.billingRuns"), icon: CalendarClock, show: isAdmin },
+    { href: "/communications", label: t("nav.communications"), icon: Megaphone, show: isAdmin && commsEnabled },
     { href: "/groups", label: t("nav.groups"), icon: FolderOpen, show: isAdmin },
     { href: "/settings", label: t("nav.settings"), icon: Settings, show: isAdmin },
   ].filter((item) => item.show);

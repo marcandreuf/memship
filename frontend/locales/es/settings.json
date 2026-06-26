@@ -100,6 +100,12 @@
       "repeatDaysDesc": "Días entre recordatorios sucesivos",
       "maxCount": "Recordatorios máximos",
       "maxCountDesc": "Número máximo de recordatorios por recibo (1–10)"
+    },
+    "communications": {
+      "tab": "Comunicaciones",
+      "title": "Comunicaciones",
+      "enabled": "Activar comunicaciones",
+      "enabledDesc": "Permite a los administradores enviar anuncios a los miembros por correo y en la app."
     }
   }
 }

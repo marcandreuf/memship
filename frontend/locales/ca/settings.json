@@ -100,6 +100,12 @@
       "repeatDaysDesc": "Dies entre recordatoris successius",
       "maxCount": "Recordatoris màxims",
       "maxCountDesc": "Nombre màxim de recordatoris per rebut (1–10)"
+    },
+    "communications": {
+      "tab": "Comunicacions",
+      "title": "Comunicacions",
+      "enabled": "Activa les comunicacions",
+      "enabledDesc": "Permet als administradors enviar anuncis als membres per correu i a l'app."
     }
   }
 }

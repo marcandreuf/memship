@@ -18,7 +18,9 @@
     "login": "Sign In",
     "register": "Sign Up",
     "logout": "Sign Out",
-    "menu": "Menu"
+    "menu": "Menu",
+    "communications": "Communications",
+    "announcements": "Announcements"
   },
   "common": {
     "save": "Save",
