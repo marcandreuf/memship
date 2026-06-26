@@ -50,6 +50,7 @@ from app.domains.activities.models import (  # noqa: F401
 from app.domains.billing.models import (  # noqa: F401
     BillingRun, Concept, PaymentProvider, Receipt, Remittance, SepaMandate, WebhookEvent,
 )
+from app.domains.communications.models import Announcement, Notification  # noqa: F401
 
 # Use test database
 TEST_DATABASE_URL = os.getenv("DATABASE_TEST_URL", settings.DATABASE_TEST_URL)

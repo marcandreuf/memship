@@ -1,0 +1,431 @@
+"""Integration tests for v0.5.0 Simple Communications.
+
+Covers the audience resolver, the draft→send workflow (snapshot, notification
+fan-out, immutability), RBAC, and the member notification surface.
+"""
+
+from app.core.security.jwt import create_access_token
+from app.core.security.password import hash_password
+from app.domains.auth.models import User
+from app.domains.communications import service
+from app.domains.communications.models import Announcement, Notification
+from app.domains.members.models import Group, Member, MembershipType
+from app.domains.organizations.models import OrganizationSettings
+from app.domains.persons.models import Person
+
+
+def _auth_cookie(user):
+    return {"access_token": create_access_token(user.id, user.role)}
+
+
+def _create_user(db, role="admin", suffix="u"):
+    person = Person(first_name="Test", last_name="User", email=f"{suffix}-{role}@test.com")
+    db.add(person)
+    db.flush()
+    user = User(
+        person_id=person.id,
+        email=person.email,
+        password_hash=hash_password("password123"),
+        role=role,
+        is_active=True,
+    )
+    db.add(user)
+    db.flush()
+    return user
+
+
+def _ensure_org(db, features=None):
+    org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
+    if not org:
+        org = OrganizationSettings(
+            id=1,
+            name="Test Organization",
+            locale="es",
+            timezone="Europe/Madrid",
+            currency="EUR",
+            date_format="DD/MM/YYYY",
+            invoice_prefix="FAC",
+            invoice_next_number=1,
+            invoice_annual_reset=True,
+            default_vat_rate=21.00,
+        )
+        db.add(org)
+        db.flush()
+    if features is not None:
+        org.features = features
+        db.flush()
+    return org
+
+
+def _group(db, suffix):
+    g = Group(name=f"Group {suffix}", slug=f"group-{suffix}")
+    db.add(g)
+    db.flush()
+    return g
+
+
+def _mtype(db, suffix, group_id=None):
+    mt = MembershipType(
+        name=f"Type {suffix}",
+        slug=f"type-{suffix}",
+        base_price=10,
+        billing_frequency="annual",
+        group_id=group_id,
+    )
+    db.add(mt)
+    db.flush()
+    return mt
+
+
+def _create_member(
+    db,
+    suffix,
+    status="active",
+    is_active=True,
+    with_user=False,
+    opted_out=False,
+    mtype=None,
+):
+    person = Person(first_name="Mem", last_name=suffix, email=f"mem-{suffix}@test.com")
+    db.add(person)
+    db.flush()
+    user_id = None
+    if with_user:
+        u = User(
+            person_id=person.id,
+            email=person.email,
+            password_hash=hash_password("password123"),
+            role="member",
+            is_active=True,
+        )
+        db.add(u)
+        db.flush()
+        user_id = u.id
+    if mtype is None:
+        mtype = _mtype(db, suffix)
+    member = Member(
+        person_id=person.id,
+        user_id=user_id,
+        membership_type_id=mtype.id,
+        member_number=f"M-{suffix}",
+        status=status,
+        is_active=is_active,
+        communication_preferences={"email": not opted_out, "sms": False, "push": False},
+    )
+    db.add(member)
+    db.flush()
+    return member
+
+
+def _draft(db, admin, target_type="all", target_id=None, subject="Hello", body="Body"):
+    ann = Announcement(
+        subject=subject,
+        body=body,
+        target_type=target_type,
+        target_id=target_id,
+        status="draft",
+        created_by_user_id=admin.id,
+    )
+    db.add(ann)
+    db.flush()
+    return ann
+
+
+# --- Audience resolver (service level) ---
+
+
+class TestAudienceResolver:
+    def test_all_active_only(self, db):
+        _create_member(db, "aa-active", status="active")
+        _create_member(db, "aa-pending", status="pending")
+        _create_member(db, "aa-inactive", status="active", is_active=False)
+        members = service.resolve_audience(db, "all", None)
+        assert {m.member_number for m in members} == {"M-aa-active"}
+
+    def test_group_target(self, db):
+        g = _group(db, "rg")
+        mt_in = _mtype(db, "rg-in", group_id=g.id)
+        mt_out = _mtype(db, "rg-out")
+        _create_member(db, "rg1", mtype=mt_in)
+        _create_member(db, "rg2", mtype=mt_in)
+        _create_member(db, "rg3", mtype=mt_out)
+        members = service.resolve_audience(db, "group", g.id)
+        assert {m.member_number for m in members} == {"M-rg1", "M-rg2"}
+
+    def test_membership_type_target(self, db):
+        mt = _mtype(db, "rmt")
+        _create_member(db, "rmt1", mtype=mt)
+        _create_member(db, "rmt2")  # different (auto) membership type
+        members = service.resolve_audience(db, "membership_type", mt.id)
+        assert {m.member_number for m in members} == {"M-rmt1"}
+
+    def test_email_recipients_skips_opt_out(self, db):
+        _create_member(db, "eo-in")
+        _create_member(db, "eo-out", opted_out=True)
+        members = service.resolve_audience(db, "all", None)
+        emails = {p.email for p in service.email_recipients(db, members)}
+        assert emails == {"mem-eo-in@test.com"}
+        # Opted-out member is still part of the resolved audience (gets in-app).
+        assert len(members) == 2
+
+
+# --- Draft → send workflow (endpoint level) ---
+
+
+class TestDraftSend:
+    def test_create_draft(self, client, db):
+        admin = _create_user(db, "admin", "cd")
+        _ensure_org(db)
+        resp = client.post(
+            "/api/v1/announcements",
+            json={"subject": "Hi", "body": "Body", "target_type": "all"},
+            cookies=_auth_cookie(admin),
+        )
+        assert resp.status_code == 201
+        body = resp.json()
+        assert body["status"] == "draft"
+        assert body["target_type"] == "all"
+        assert body["recipient_count"] is None
+
+    def test_create_all_with_target_id_422(self, client, db):
+        admin = _create_user(db, "admin", "ct")
+        _ensure_org(db)
+        resp = client.post(
+            "/api/v1/announcements",
+            json={"subject": "Hi", "body": "B", "target_type": "all", "target_id": 5},
+            cookies=_auth_cookie(admin),
+        )
+        assert resp.status_code == 422
+
+    def test_create_group_without_target_id_422(self, client, db):
+        admin = _create_user(db, "admin", "cg")
+        _ensure_org(db)
+        resp = client.post(
+            "/api/v1/announcements",
+            json={"subject": "Hi", "body": "B", "target_type": "group"},
+            cookies=_auth_cookie(admin),
+        )
+        assert resp.status_code == 422
+
+    def test_update_draft(self, client, db):
+        admin = _create_user(db, "admin", "ud")
+        _ensure_org(db)
+        ann = _draft(db, admin)
+        resp = client.put(
+            f"/api/v1/announcements/{ann.id}",
+            json={"subject": "Edited"},
+            cookies=_auth_cookie(admin),
+        )
+        assert resp.status_code == 200
+        assert resp.json()["subject"] == "Edited"
+
+    def test_send_flips_and_snapshots_and_notifies(self, client, db):
+        admin = _create_user(db, "admin", "sf")
+        _ensure_org(db)
+        m = _create_member(db, "sf1", with_user=True)
+        ann = _draft(db, admin, target_type="all")
+
+        resp = client.post(
+            f"/api/v1/announcements/{ann.id}/send", cookies=_auth_cookie(admin)
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["status"] == "sent"
+        assert body["recipient_count"] == 1
+        assert body["sent_at"] is not None
+
+        notes = (
+            db.query(Notification).filter(Notification.user_id == m.user_id).all()
+        )
+        assert len(notes) == 1
+        assert notes[0].source_type == "announcement"
+        assert notes[0].source_id == ann.id
+
+    def test_send_no_user_account_no_notification(self, client, db):
+        admin = _create_user(db, "admin", "snu")
+        _ensure_org(db)
+        _create_member(db, "snu1", with_user=False)
+        ann = _draft(db, admin, target_type="all")
+        resp = client.post(
+            f"/api/v1/announcements/{ann.id}/send", cookies=_auth_cookie(admin)
+        )
+        assert resp.status_code == 200
+        assert resp.json()["recipient_count"] == 1
+        assert db.query(Notification).count() == 0
+
+    def test_send_again_409(self, client, db):
+        admin = _create_user(db, "admin", "sa")
+        _ensure_org(db)
+        _create_member(db, "sa1", with_user=True)
+        ann = _draft(db, admin, target_type="all")
+        first = client.post(
+            f"/api/v1/announcements/{ann.id}/send", cookies=_auth_cookie(admin)
+        )
+        assert first.status_code == 200
+        again = client.post(
+            f"/api/v1/announcements/{ann.id}/send", cookies=_auth_cookie(admin)
+        )
+        assert again.status_code == 409
+
+    def test_send_empty_audience_409(self, client, db):
+        admin = _create_user(db, "admin", "se")
+        _ensure_org(db)
+        ann = _draft(db, admin, target_type="all")  # no members exist
+        resp = client.post(
+            f"/api/v1/announcements/{ann.id}/send", cookies=_auth_cookie(admin)
+        )
+        assert resp.status_code == 409
+
+    def test_update_sent_is_409(self, client, db):
+        admin = _create_user(db, "admin", "us")
+        _ensure_org(db)
+        _create_member(db, "us1", with_user=True)
+        ann = _draft(db, admin, target_type="all")
+        client.post(f"/api/v1/announcements/{ann.id}/send", cookies=_auth_cookie(admin))
+        resp = client.put(
+            f"/api/v1/announcements/{ann.id}",
+            json={"subject": "Nope"},
+            cookies=_auth_cookie(admin),
+        )
+        assert resp.status_code == 409
+
+    def test_send_404(self, client, db):
+        admin = _create_user(db, "admin", "s404")
+        _ensure_org(db)
+        resp = client.post(
+            "/api/v1/announcements/999999/send", cookies=_auth_cookie(admin)
+        )
+        assert resp.status_code == 404
+
+    def test_audience_preview_count(self, client, db):
+        admin = _create_user(db, "admin", "ap")
+        _ensure_org(db)
+        _create_member(db, "ap1")
+        _create_member(db, "ap2")
+        ann = _draft(db, admin, target_type="all")
+        resp = client.get(
+            f"/api/v1/announcements/{ann.id}/audience-preview",
+            cookies=_auth_cookie(admin),
+        )
+        assert resp.status_code == 200
+        assert resp.json()["count"] == 2
+
+
+# --- RBAC ---
+
+
+class TestRBAC:
+    def test_create_forbidden_for_member(self, client, db):
+        member_user = _create_user(db, "member", "rbc")
+        _ensure_org(db)
+        resp = client.post(
+            "/api/v1/announcements",
+            json={"subject": "Hi", "body": "B", "target_type": "all"},
+            cookies=_auth_cookie(member_user),
+        )
+        assert resp.status_code == 403
+
+    def test_send_forbidden_for_member(self, client, db):
+        admin = _create_user(db, "admin", "rbs-a")
+        member_user = _create_user(db, "member", "rbs-m")
+        _ensure_org(db)
+        ann = _draft(db, admin, target_type="all")
+        resp = client.post(
+            f"/api/v1/announcements/{ann.id}/send",
+            cookies=_auth_cookie(member_user),
+        )
+        assert resp.status_code == 403
+
+    def test_member_sees_only_own_notifications(self, client, db):
+        admin = _create_user(db, "admin", "own-a")
+        u1 = _create_user(db, "member", "own1")
+        u2 = _create_user(db, "member", "own2")
+        _ensure_org(db)
+        db.add(Notification(user_id=u1.id, source_type="announcement", source_id=1, title="A"))
+        db.add(Notification(user_id=u2.id, source_type="announcement", source_id=1, title="B"))
+        db.flush()
+
+        resp = client.get("/api/v1/me/notifications", cookies=_auth_cookie(u1))
+        assert resp.status_code == 200
+        items = resp.json()
+        assert len(items) == 1
+        assert items[0]["title"] == "A"
+
+
+# --- Notification surface ---
+
+
+class TestNotifications:
+    def test_unread_count(self, client, db):
+        u = _create_user(db, "member", "uc")
+        _ensure_org(db)
+        db.add(Notification(user_id=u.id, source_type="announcement", source_id=1, title="A"))
+        db.add(Notification(user_id=u.id, source_type="announcement", source_id=2, title="B"))
+        db.flush()
+        resp = client.get(
+            "/api/v1/me/notifications/unread-count", cookies=_auth_cookie(u)
+        )
+        assert resp.status_code == 200
+        assert resp.json()["count"] == 2
+
+    def test_mark_read_by_ids(self, client, db):
+        u = _create_user(db, "member", "mri")
+        _ensure_org(db)
+        n1 = Notification(user_id=u.id, source_type="announcement", source_id=1, title="A")
+        n2 = Notification(user_id=u.id, source_type="announcement", source_id=2, title="B")
+        db.add_all([n1, n2])
+        db.flush()
+
+        resp = client.post(
+            "/api/v1/me/notifications/mark-read",
+            json={"ids": [n1.id]},
+            cookies=_auth_cookie(u),
+        )
+        assert resp.status_code == 200
+        assert resp.json()["updated"] == 1
+        assert service.unread_count(db, u) == 1
+
+    def test_mark_read_all(self, client, db):
+        u = _create_user(db, "member", "mra")
+        _ensure_org(db)
+        db.add(Notification(user_id=u.id, source_type="announcement", source_id=1, title="A"))
+        db.add(Notification(user_id=u.id, source_type="announcement", source_id=2, title="B"))
+        db.flush()
+        resp = client.post(
+            "/api/v1/me/notifications/mark-read",
+            json={"all": True},
+            cookies=_auth_cookie(u),
+        )
+        assert resp.status_code == 200
+        assert resp.json()["updated"] == 2
+        assert service.unread_count(db, u) == 0
+
+    def test_mark_read_does_not_touch_others(self, client, db):
+        u1 = _create_user(db, "member", "mro1")
+        u2 = _create_user(db, "member", "mro2")
+        _ensure_org(db)
+        other = Notification(user_id=u2.id, source_type="announcement", source_id=1, title="B")
+        db.add(other)
+        db.flush()
+        client.post(
+            "/api/v1/me/notifications/mark-read",
+            json={"all": True},
+            cookies=_auth_cookie(u1),
+        )
+        assert service.unread_count(db, u2) == 1
+
+    def test_member_announcements_received(self, client, db):
+        admin = _create_user(db, "admin", "mar-a")
+        _ensure_org(db)
+        member = _create_member(db, "mar1", with_user=True)
+        ann = _draft(db, admin, target_type="all", subject="News")
+        client.post(f"/api/v1/announcements/{ann.id}/send", cookies=_auth_cookie(admin))
+
+        member_user = db.query(User).filter(User.id == member.user_id).first()
+        resp = client.get(
+            "/api/v1/me/announcements", cookies=_auth_cookie(member_user)
+        )
+        assert resp.status_code == 200
+        items = resp.json()
+        assert len(items) == 1
+        assert items[0]["subject"] == "News"
