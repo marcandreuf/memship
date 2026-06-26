@@ -23,6 +23,7 @@ import {
 } from "@/features/activities/hooks/use-activities";
 import { useEligibility, useMyRegistrations } from "@/features/activities/hooks/use-registrations";
 import { ActivityDetailSection } from "@/features/activities/components/activity-detail-section";
+import { ActivityCoverImage } from "@/features/activities/components/activity-cover-image";
 import { ActivityEditForm } from "@/features/activities/components/activity-edit-form";
 import { ModalitiesTab } from "@/features/activities/components/modalities-tab";
 import { PricesTab } from "@/features/activities/components/prices-tab";
@@ -188,7 +189,7 @@ export default function ActivityDetailPage({
           onEdit={() => setIsEditing(true)}
           onCancel={() => setIsEditing(false)}
           canEdit={isAdmin}
-          readContent={<ActivityDetailSection activity={activity} showCoverImage />}
+          readContent={<ActivityDetailSection activity={activity} />}
           editContent={
             <ActivityEditForm
               activity={activity}
@@ -261,6 +262,11 @@ export default function ActivityDetailPage({
                   id: "attachments",
                   label: t("activities.attachments.title"),
                   content: <AttachmentTypesTab activityId={activityId} />,
+                },
+                {
+                  id: "coverImage",
+                  label: t("activities.coverImage.tab"),
+                  content: <ActivityCoverImage activity={activity} isAdmin />,
                 },
               ]
             : [

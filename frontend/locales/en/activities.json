@@ -129,6 +129,7 @@
     },
     "coverImage": {
       "title": "Cover Image",
+      "tab": "Image",
       "upload": "Change Image",
       "remove": "Remove",
       "dragOrClick": "Click to upload a cover image",

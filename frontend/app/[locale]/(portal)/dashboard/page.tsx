@@ -65,6 +65,11 @@ interface ChartItem {
   color: string;
 }
 
+// Uniform chart height so paired charts in a grid row always match. A vertical
+// bar chart spreads its category bands evenly across this height, so sparse
+// charts (4 statuses) leave no trailing dead space.
+const CHART_HEIGHT = 5 * 32 + 8;
+
 function StatusBarChart({
   data,
   title,
@@ -89,7 +94,7 @@ function StatusBarChart({
             —
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height={5 * 32 + 8}>
+          <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
             <BarChart
               data={data}
               layout="vertical"
@@ -221,7 +226,7 @@ function NextBillingRunCard() {
   }
 
   return (
-    <Link href="/billing-runs">
+    <Link href="/billing-runs" className="block">
       <Card className="hover:bg-accent/50 transition-colors">
         <CardContent className="flex items-center gap-3 py-3 px-4">
           <CalendarClock className="size-5 shrink-0 text-muted-foreground" />
