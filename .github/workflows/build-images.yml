@@ -23,11 +23,48 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
-  version:
+  changes:
     runs-on: ubuntu-latest
     if: >
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 2
+
+      - name: Detect changed images
+        id: filter
+        run: |
+          # Manual dispatch rebuilds everything.
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "backend=true" >> "$GITHUB_OUTPUT"
+            echo "frontend=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          CHANGED="$(git diff --name-only HEAD~1 HEAD)"
+          echo "Changed files:"
+          echo "$CHANGED"
+
+          backend=false
+          frontend=false
+          # A VERSION bump (release) rebuilds both images.
+          if echo "$CHANGED" | grep -qE '^(backend/|VERSION$)'; then backend=true; fi
+          if echo "$CHANGED" | grep -qE '^(frontend/|VERSION$)'; then frontend=true; fi
+
+          echo "backend=$backend" >> "$GITHUB_OUTPUT"
+          echo "frontend=$frontend" >> "$GITHUB_OUTPUT"
+          echo "Build backend: $backend | Build frontend: $frontend"
+
+  version:
+    needs: changes
+    runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
@@ -55,7 +92,8 @@ jobs:
           echo "Version: $VERSION"
 
   build-backend:
-    needs: version
+    needs: [changes, version]
+    if: ${{ needs.changes.outputs.backend == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -88,7 +126,8 @@ jobs:
           docker push $IMAGE:latest
 
   build-frontend:
-    needs: version
+    needs: [changes, version]
+    if: ${{ needs.changes.outputs.frontend == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -121,6 +160,7 @@ jobs:
 
   finalize:
     needs: [version, build-backend, build-frontend]
+    if: ${{ always() && (needs.build-backend.result == 'success' || needs.build-frontend.result == 'success') }}
     runs-on: ubuntu-latest
     steps:
       - name: Build Summary
@@ -129,8 +169,12 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Service | Image |" >> $GITHUB_STEP_SUMMARY
           echo "|---------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Backend | \`ghcr.io/${{ github.repository_owner }}/memship-backend:${{ needs.version.outputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Frontend | \`ghcr.io/${{ github.repository_owner }}/memship-frontend:${{ needs.version.outputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ needs.build-backend.result }}" == "success" ]]; then
+            echo "| Backend | \`ghcr.io/${{ github.repository_owner }}/memship-backend:${{ needs.version.outputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [[ "${{ needs.build-frontend.result }}" == "success" ]]; then
+            echo "| Frontend | \`ghcr.io/${{ github.repository_owner }}/memship-frontend:${{ needs.version.outputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
+          fi
 
   ci-failed:
     runs-on: ubuntu-latest
