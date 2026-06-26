@@ -86,8 +86,8 @@ Obriu http://localhost:8081 i inicieu sessió amb les vostres credencials. Canvi
 | v0.4.3 | Integració Redsys — passarel·la bancària espanyola amb 3D Secure + Bizum | Fet |
 | v0.4.4 | Facturació recurrent — generació automàtica de quotes | Fet |
 | v0.4.5 | Recordatoris de pagament — notificacions per correu de rebuts vençuts | Fet |
-| v0.5.0 | Comunicacions simples — anuncis de l'administrador a tots els socis / grup / tipus de quota | Següent |
-| v0.6.0 | Reserves simples — espais i reserva de franges horàries | Planificat |
+| v0.5.0 | Comunicacions simples — anuncis de l'administrador a tots els socis / grup / tipus de quota | Fet |
+| v0.6.0 | Reserves simples — espais i reserva de franges horàries | Següent |
 | v0.7.0 | Carnet digital de soci + registre QR | Planificat |
 | v0.8.0 | Convocatòries — RSVP per token per a assemblees (requisit legal a Espanya) | Planificat |
 | v1.0.0 | Estabilització i llançament — exportacions CSV, dades demo, landing page, polit de docs | Planificat |
