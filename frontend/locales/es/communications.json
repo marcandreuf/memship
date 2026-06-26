@@ -1,0 +1,55 @@
+{
+  "communications": {
+    "title": "Comunicaciones",
+    "subtitle": "Envía anuncios a tus miembros",
+    "new": "Nuevo anuncio",
+    "empty": "Aún no hay anuncios.",
+    "columns": {
+      "subject": "Asunto",
+      "target": "Audiencia",
+      "status": "Estado",
+      "recipients": "Destinatarios",
+      "sentAt": "Enviado"
+    },
+    "target": {
+      "all": "Todos los miembros",
+      "group": "Grupo",
+      "membership_type": "Tipo de cuota"
+    },
+    "status": {
+      "draft": "Borrador",
+      "sent": "Enviado"
+    },
+    "list": {
+      "title": "Anuncios",
+      "subtitle": "Novedades de tu organización",
+      "empty": "Aún no hay anuncios.",
+      "new": "Nuevo"
+    },
+    "notifications": {
+      "title": "Notificaciones",
+      "empty": "Estás al día.",
+      "markAllRead": "Marcar todo como leído",
+      "viewAll": "Ver todos los anuncios"
+    },
+    "compose": {
+      "contentTitle": "Contenido",
+      "subject": "Asunto",
+      "body": "Mensaje",
+      "bodyPlaceholder": "Escribe tu anuncio…",
+      "markdownHint": "Markdown básico: **negrita**, *cursiva*, enlaces y listas.",
+      "preview": "Vista previa",
+      "audienceTitle": "Audiencia",
+      "target": "Enviar a",
+      "selectGroup": "Selecciona un grupo",
+      "selectMembershipType": "Selecciona un tipo de cuota",
+      "audienceCount": "{count} miembros recibirán este anuncio.",
+      "saveDraft": "Guardar borrador",
+      "send": "Enviar",
+      "confirmSendTitle": "¿Enviar anuncio?",
+      "confirmSendBody": "Se enviará por correo a {count} miembros y se les notificará en la app. Un anuncio enviado no se puede editar.",
+      "sentToast": "Anuncio enviado",
+      "sentRecipients": "Enviado a {count} miembros"
+    }
+  }
+}

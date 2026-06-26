@@ -18,7 +18,9 @@
     "login": "Iniciar sesión",
     "register": "Registrarse",
     "logout": "Cerrar sesión",
-    "menu": "Menú"
+    "menu": "Menú",
+    "communications": "Comunicaciones",
+    "announcements": "Anuncios"
   },
   "common": {
     "save": "Guardar",

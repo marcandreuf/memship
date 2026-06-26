@@ -1,0 +1,55 @@
+{
+  "communications": {
+    "title": "Communications",
+    "subtitle": "Send announcements to your members",
+    "new": "New announcement",
+    "empty": "No announcements yet.",
+    "columns": {
+      "subject": "Subject",
+      "target": "Audience",
+      "status": "Status",
+      "recipients": "Recipients",
+      "sentAt": "Sent"
+    },
+    "target": {
+      "all": "All members",
+      "group": "Group",
+      "membership_type": "Membership type"
+    },
+    "status": {
+      "draft": "Draft",
+      "sent": "Sent"
+    },
+    "list": {
+      "title": "Announcements",
+      "subtitle": "Updates from your organization",
+      "empty": "No announcements yet.",
+      "new": "New"
+    },
+    "notifications": {
+      "title": "Notifications",
+      "empty": "You're all caught up.",
+      "markAllRead": "Mark all read",
+      "viewAll": "View all announcements"
+    },
+    "compose": {
+      "contentTitle": "Content",
+      "subject": "Subject",
+      "body": "Message",
+      "bodyPlaceholder": "Write your announcement…",
+      "markdownHint": "Basic markdown supported: **bold**, *italics*, links and lists.",
+      "preview": "Preview",
+      "audienceTitle": "Audience",
+      "target": "Send to",
+      "selectGroup": "Select a group",
+      "selectMembershipType": "Select a membership type",
+      "audienceCount": "{count} members will receive this announcement.",
+      "saveDraft": "Save draft",
+      "send": "Send",
+      "confirmSendTitle": "Send announcement?",
+      "confirmSendBody": "This will email {count} members and notify them in the app. A sent announcement cannot be edited.",
+      "sentToast": "Announcement sent",
+      "sentRecipients": "Sent to {count} members"
+    }
+  }
+}

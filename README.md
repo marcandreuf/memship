@@ -86,8 +86,8 @@ Open http://localhost:8081 and log in with your credentials. Change `PORT=8081` 
 | v0.4.3 | Redsys integration — Spanish bank gateway with 3D Secure + Bizum | Done |
 | v0.4.4 | Recurring billing — scheduled fee generation | Done |
 | v0.4.5 | Payment reminders — overdue email notifications | Done |
-| v0.5.0 | Simple Communications — admin announcements to all/group/membership type | Next |
-| v0.6.0 | Simple Bookings — spaces and time-slot reservations | Planned |
+| v0.5.0 | Simple Communications — admin announcements to all/group/membership type | Done |
+| v0.6.0 | Simple Bookings — spaces and time-slot reservations | Next |
 | v0.7.0 | Digital Member Card + QR Check-in | Planned |
 | v0.8.0 | Convocations — token-based RSVP for assemblies (Spanish legal requirement) | Planned |
 | v1.0.0 | Stabilization & Release — CSV exports, demo seed, landing page, docs polish | Planned |

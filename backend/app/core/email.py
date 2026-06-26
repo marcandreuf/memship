@@ -314,3 +314,23 @@ def send_payment_reminder_email(
         "bank_details": bank_details,
     })
     return send_email(to, subject, html_body)
+
+
+def send_announcement_email(
+    to: str,
+    subject: str,
+    body_html: str,
+    org_name: str,
+    locale: str = "es",
+) -> bool:
+    """Send a broadcast announcement.
+
+    The email subject is the announcement's own subject. ``body_html`` is the
+    pre-rendered, sanitized markdown body (see ``communications.markdown``).
+    """
+    html_body = render_template("announcement", locale, {
+        "subject": subject,
+        "body_html": body_html,
+        "org_name": org_name,
+    })
+    return send_email(to, subject, html_body)

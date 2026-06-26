@@ -27,6 +27,7 @@ from app.domains.billing.models import (  # noqa: F401
     Receipt,
     WebhookEvent,
 )
+from app.domains.communications.models import Announcement, Notification  # noqa: F401
 
 config = context.config
 

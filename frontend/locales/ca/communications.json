@@ -1,0 +1,55 @@
+{
+  "communications": {
+    "title": "Comunicacions",
+    "subtitle": "Envia anuncis als teus membres",
+    "new": "Nou anunci",
+    "empty": "Encara no hi ha anuncis.",
+    "columns": {
+      "subject": "Assumpte",
+      "target": "Audiència",
+      "status": "Estat",
+      "recipients": "Destinataris",
+      "sentAt": "Enviat"
+    },
+    "target": {
+      "all": "Tots els membres",
+      "group": "Grup",
+      "membership_type": "Tipus de quota"
+    },
+    "status": {
+      "draft": "Esborrany",
+      "sent": "Enviat"
+    },
+    "list": {
+      "title": "Anuncis",
+      "subtitle": "Novetats de la teva organització",
+      "empty": "Encara no hi ha anuncis.",
+      "new": "Nou"
+    },
+    "notifications": {
+      "title": "Notificacions",
+      "empty": "Estàs al dia.",
+      "markAllRead": "Marca-ho tot com a llegit",
+      "viewAll": "Mostra tots els anuncis"
+    },
+    "compose": {
+      "contentTitle": "Contingut",
+      "subject": "Assumpte",
+      "body": "Missatge",
+      "bodyPlaceholder": "Escriu el teu anunci…",
+      "markdownHint": "Markdown bàsic: **negreta**, *cursiva*, enllaços i llistes.",
+      "preview": "Vista prèvia",
+      "audienceTitle": "Audiència",
+      "target": "Envia a",
+      "selectGroup": "Selecciona un grup",
+      "selectMembershipType": "Selecciona un tipus de quota",
+      "audienceCount": "{count} membres rebran aquest anunci.",
+      "saveDraft": "Desa l'esborrany",
+      "send": "Envia",
+      "confirmSendTitle": "Enviar l'anunci?",
+      "confirmSendBody": "S'enviarà per correu a {count} membres i se'ls notificarà a l'app. Un anunci enviat no es pot editar.",
+      "sentToast": "Anunci enviat",
+      "sentRecipients": "Enviat a {count} membres"
+    }
+  }
+}
