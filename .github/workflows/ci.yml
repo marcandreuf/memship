@@ -1,5 +1,6 @@
 # Continuous Integration
-# Runs backend tests on push to main and PRs
+# Runs backend tests and frontend checks on push to main and PRs.
+# Each suite only runs when its own paths changed (see the `changes` job).
 #
 name: CI
 
@@ -9,6 +10,7 @@ on:
       - main
     paths:
       - 'backend/**'
+      - 'frontend/**'
       - 'VERSION'
       - '.github/workflows/ci.yml'
   pull_request:
@@ -16,11 +18,37 @@ on:
       - main
     paths:
       - 'backend/**'
+      - 'frontend/**'
+      - 'VERSION'
   workflow_dispatch:
 
 jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Filter changed paths
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+              - 'VERSION'
+            frontend:
+              - 'frontend/**'
+              - 'VERSION'
+
   unit:
     name: Unit Tests
+    needs: changes
+    if: ${{ needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -52,6 +80,8 @@ jobs:
 
   integration:
     name: Integration Tests
+    needs: changes
+    if: ${{ needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
 
     services:
@@ -107,3 +137,32 @@ jobs:
           else
             echo "Tests failed." >> $GITHUB_STEP_SUMMARY
           fi
+
+  frontend:
+    name: Frontend Checks
+    needs: changes
+    if: ${{ needs.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Enable pnpm
+        run: corepack enable && corepack prepare pnpm@10.29.3 --activate
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        working-directory: frontend
+        run: pnpm lint
+
+      - name: Type check
+        working-directory: frontend
+        run: pnpm exec tsc --noEmit
