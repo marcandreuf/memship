@@ -98,6 +98,19 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+      # Celery broker. Several endpoints fire a fire-and-forget task.delay() in
+      # the request path; without a reachable broker each call blocks ~19s on a
+      # connection retry before the error is swallowed, inflating the suite from
+      # ~1min to ~9min. CELERY_BROKER_URL defaults to redis://localhost:6379/0.
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Checkout code
