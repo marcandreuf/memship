@@ -129,6 +129,7 @@
     },
     "coverImage": {
       "title": "Imagen de portada",
+      "tab": "Imagen",
       "upload": "Cambiar imagen",
       "remove": "Eliminar",
       "dragOrClick": "Haz clic para subir una imagen de portada",

@@ -129,6 +129,7 @@
     },
     "coverImage": {
       "title": "Imatge de portada",
+      "tab": "Imatge",
       "upload": "Canviar imatge",
       "remove": "Eliminar",
       "dragOrClick": "Fes clic per pujar una imatge de portada",
