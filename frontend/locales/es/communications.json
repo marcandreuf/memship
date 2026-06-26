@@ -20,6 +20,18 @@
       "draft": "Borrador",
       "sent": "Enviado"
     },
+    "list": {
+      "title": "Anuncios",
+      "subtitle": "Novedades de tu organización",
+      "empty": "Aún no hay anuncios.",
+      "new": "Nuevo"
+    },
+    "notifications": {
+      "title": "Notificaciones",
+      "empty": "Estás al día.",
+      "markAllRead": "Marcar todo como leído",
+      "viewAll": "Ver todos los anuncios"
+    },
     "compose": {
       "contentTitle": "Contenido",
       "subject": "Asunto",

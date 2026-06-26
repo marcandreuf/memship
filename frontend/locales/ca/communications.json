@@ -20,6 +20,18 @@
       "draft": "Esborrany",
       "sent": "Enviat"
     },
+    "list": {
+      "title": "Anuncis",
+      "subtitle": "Novetats de la teva organització",
+      "empty": "Encara no hi ha anuncis.",
+      "new": "Nou"
+    },
+    "notifications": {
+      "title": "Notificacions",
+      "empty": "Estàs al dia.",
+      "markAllRead": "Marca-ho tot com a llegit",
+      "viewAll": "Mostra tots els anuncis"
+    },
     "compose": {
       "contentTitle": "Contingut",
       "subject": "Assumpte",

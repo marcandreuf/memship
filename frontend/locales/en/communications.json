@@ -20,6 +20,18 @@
       "draft": "Draft",
       "sent": "Sent"
     },
+    "list": {
+      "title": "Announcements",
+      "subtitle": "Updates from your organization",
+      "empty": "No announcements yet.",
+      "new": "New"
+    },
+    "notifications": {
+      "title": "Notifications",
+      "empty": "You're all caught up.",
+      "markAllRead": "Mark all read",
+      "viewAll": "View all announcements"
+    },
     "compose": {
       "contentTitle": "Content",
       "subject": "Subject",

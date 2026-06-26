@@ -72,6 +72,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
     { href: "/remittances", label: t("nav.remittances"), icon: Landmark, show: isAdmin },
     { href: "/billing-runs", label: t("nav.billingRuns"), icon: CalendarClock, show: isAdmin },
     { href: "/communications", label: t("nav.communications"), icon: Megaphone, show: isAdmin && commsEnabled },
+    { href: "/announcements", label: t("nav.announcements"), icon: Megaphone, show: !isAdmin && commsEnabled },
     { href: "/groups", label: t("nav.groups"), icon: FolderOpen, show: isAdmin },
     { href: "/settings", label: t("nav.settings"), icon: Settings, show: isAdmin },
   ].filter((item) => item.show);
