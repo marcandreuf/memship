@@ -1,10 +1,12 @@
 // =============================================================================
-// Communications (v0.5.0) — admin compose/send, member notifications, RBAC
+// Communications (v0.5.0 + v0.5.1) — admin compose/send, member notifications,
+// RBAC, and the sent view (content header + details/recipients tabs).
 // =============================================================================
 
 const SUBJECT = "E2E Broadcast Announcement";
+const SUBJECT_DIRECT = "E2E Direct Send Announcement";
 
-describe("Communications (v0.5.0)", () => {
+describe("Communications (v0.5.0 + v0.5.1)", () => {
   before(() => {
     // Enable the module (persists in org settings) so nav, bell, and the
     // member announcements page are available for the rest of the suite.
@@ -46,9 +48,32 @@ describe("Communications (v0.5.0)", () => {
       cy.contains("button", "Send").click();
     });
 
-    // Back to history, listed as sent.
-    cy.url().should("match", /\/communications$/);
-    cy.contains("td", SUBJECT).should("be.visible");
+    // Lands on the sent view (content header + tabs), not the compose form.
+    cy.url().should("match", /\/communications\/\d+$/);
+    cy.contains(/recipients/i).should("be.visible");
+    cy.contains("button", "Save draft").should("not.exist");
+  });
+
+  it("composes and sends in one action from the new form (v0.5.1)", () => {
+    cy.loginAsAdmin();
+    cy.visit("/en/communications/new");
+
+    cy.get('input[maxlength="200"]').type(SUBJECT_DIRECT);
+    cy.get("textarea").type("Direct one-shot send — no intermediate draft step.");
+    // Send is available immediately on the new form (no prior Save draft).
+    cy.contains("button", "Send").click();
+    cy.get('[role="dialog"]').within(() => {
+      cy.contains(/send announcement\?/i).should("be.visible");
+      cy.contains("button", "Send").click();
+    });
+
+    // Created + sent in one go → sent view.
+    cy.url().should("match", /\/communications\/\d+$/);
+    cy.contains(/recipients/i).should("be.visible");
+
+    // And it shows up as sent in the history.
+    cy.visit("/en/communications");
+    cy.contains("td", SUBJECT_DIRECT).should("be.visible");
     cy.contains("Sent").should("be.visible");
   });
 
@@ -79,12 +104,23 @@ describe("Communications (v0.5.0)", () => {
     cy.url().should("include", "/dashboard");
   });
 
-  it("renders a sent announcement read-only (no Save draft / Send)", () => {
+  it("shows the sent view: content header, details, and a lazy recipients tab (v0.5.1)", () => {
     cy.loginAsAdmin();
     cy.visit("/en/communications");
     cy.contains("td", SUBJECT).click();
     cy.url().should("match", /\/communications\/\d+$/);
+
+    // Sent view, not the compose form.
     cy.contains("button", "Save draft").should("not.exist");
-    cy.contains("Sent").should("be.visible");
+    // Content header summary line.
+    cy.contains(/recipients/i).should("be.visible");
+    // Details tab is the default; shows delivery metadata.
+    cy.contains(/Sent by/i).should("be.visible");
+
+    // Recipients tab loads on demand and lists the audience in a paginated table
+    // with a Seen column (read state per recipient).
+    cy.contains('[role="tab"]', "Recipients").click();
+    cy.get("table tbody tr").should("have.length.greaterThan", 0);
+    cy.contains("th", "Seen").should("be.visible");
   });
 });

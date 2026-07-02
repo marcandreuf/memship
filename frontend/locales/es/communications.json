@@ -48,8 +48,30 @@
       "send": "Enviar",
       "confirmSendTitle": "¿Enviar anuncio?",
       "confirmSendBody": "Se enviará por correo a {count} miembros y se les notificará en la app. Un anuncio enviado no se puede editar.",
+      "confirmSendBodyNew": "Se guardará y enviará inmediatamente el anuncio a la audiencia seleccionada, por correo y con notificación en la app. Un anuncio enviado no se puede editar.",
       "sentToast": "Anuncio enviado",
       "sentRecipients": "Enviado a {count} miembros"
+    },
+    "view": {
+      "summary": "Enviado {date} · {recipients} destinatarios · {seen} vistos",
+      "detailsTab": "Detalles",
+      "recipientsTab": "Destinatarios",
+      "sentAt": "Enviado el",
+      "sentBy": "Enviado por",
+      "target": "Audiencia",
+      "recipientCount": "Destinatarios",
+      "emailedCount": "Por correo",
+      "seenCount": "Vistos",
+      "createdAt": "Creado el",
+      "noRecipients": "No hay destinatarios registrados para este anuncio.",
+      "recipientName": "Miembro",
+      "recipientEmail": "Correo",
+      "channel": "Canal",
+      "channelEmail": "Correo",
+      "channelInApp": "En la app",
+      "seen": "Visto",
+      "seenAt": "Visto {date}",
+      "notSeen": "No visto"
     }
   }
 }

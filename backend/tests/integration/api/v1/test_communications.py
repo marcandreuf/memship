@@ -8,7 +8,11 @@ from app.core.security.jwt import create_access_token
 from app.core.security.password import hash_password
 from app.domains.auth.models import User
 from app.domains.communications import service
-from app.domains.communications.models import Announcement, Notification
+from app.domains.communications.models import (
+    Announcement,
+    AnnouncementRecipient,
+    Notification,
+)
 from app.domains.members.models import Group, Member, MembershipType
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Person
@@ -429,3 +433,144 @@ class TestNotifications:
         items = resp.json()
         assert len(items) == 1
         assert items[0]["subject"] == "News"
+
+
+# --- Recipient snapshot + sent view (v0.5.1) ---
+
+
+class TestRecipients:
+    def test_send_creates_recipient_snapshot(self, client, db):
+        admin = _create_user(db, "admin", "rs-a")
+        _ensure_org(db)
+        with_acct = _create_member(db, "rs-acct", with_user=True)
+        email_only = _create_member(db, "rs-email", with_user=False)
+        opted_out = _create_member(db, "rs-optout", with_user=True, opted_out=True)
+        ann = _draft(db, admin, target_type="all")
+        client.post(f"/api/v1/announcements/{ann.id}/send", cookies=_auth_cookie(admin))
+
+        recips = {
+            r.member_id: r
+            for r in db.query(AnnouncementRecipient).filter(
+                AnnouncementRecipient.announcement_id == ann.id
+            )
+        }
+        assert set(recips) == {with_acct.id, email_only.id, opted_out.id}
+        # Member with account: emailed + in-app.
+        assert recips[with_acct.id].emailed is True
+        assert recips[with_acct.id].in_app is True
+        # Email-only member: emailed, not in-app, no user_id.
+        assert recips[email_only.id].emailed is True
+        assert recips[email_only.id].in_app is False
+        assert recips[email_only.id].user_id is None
+        # Opted-out member: not emailed, but still in-app (has account).
+        assert recips[opted_out.id].emailed is False
+        assert recips[opted_out.id].in_app is True
+
+    def test_recipients_endpoint_lists_and_paginates(self, client, db):
+        admin = _create_user(db, "admin", "rl-a")
+        _ensure_org(db)
+        for i in range(3):
+            _create_member(db, f"rl{i}", with_user=(i % 2 == 0))
+        ann = _draft(db, admin, target_type="all")
+        client.post(f"/api/v1/announcements/{ann.id}/send", cookies=_auth_cookie(admin))
+
+        resp = client.get(
+            f"/api/v1/announcements/{ann.id}/recipients?page=1&per_page=2",
+            cookies=_auth_cookie(admin),
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["meta"]["total"] == 3
+        assert body["meta"]["total_pages"] == 2
+        assert len(body["items"]) == 2
+        item = body["items"][0]
+        assert {"member_id", "name", "email", "emailed", "in_app", "seen_at"} <= item.keys()
+        # Not yet opened by anyone.
+        assert all(i["seen_at"] is None for i in body["items"])
+
+    def test_recipient_seen_reflects_read_at(self, client, db):
+        admin = _create_user(db, "admin", "rsn-a")
+        _ensure_org(db)
+        member = _create_member(db, "rsn1", with_user=True)
+        ann = _draft(db, admin, target_type="all")
+        client.post(f"/api/v1/announcements/{ann.id}/send", cookies=_auth_cookie(admin))
+
+        # Member opens it — marks the notification read.
+        member_user = db.query(User).filter(User.id == member.user_id).first()
+        client.post(
+            "/api/v1/me/notifications/mark-read",
+            json={"all": True},
+            cookies=_auth_cookie(member_user),
+        )
+
+        resp = client.get(
+            f"/api/v1/announcements/{ann.id}/recipients",
+            cookies=_auth_cookie(admin),
+        )
+        assert resp.status_code == 200
+        item = resp.json()["items"][0]
+        assert item["member_id"] == member.id
+        assert item["seen_at"] is not None
+
+    def test_email_only_recipient_never_seen(self, client, db):
+        admin = _create_user(db, "admin", "reo-a")
+        _ensure_org(db)
+        _create_member(db, "reo1", with_user=False)
+        ann = _draft(db, admin, target_type="all")
+        client.post(f"/api/v1/announcements/{ann.id}/send", cookies=_auth_cookie(admin))
+
+        resp = client.get(
+            f"/api/v1/announcements/{ann.id}/recipients",
+            cookies=_auth_cookie(admin),
+        )
+        item = resp.json()["items"][0]
+        assert item["in_app"] is False
+        assert item["seen_at"] is None
+
+    def test_stats_counts(self, client, db):
+        admin = _create_user(db, "admin", "st-a")
+        _ensure_org(db)
+        seen_member = _create_member(db, "st-seen", with_user=True)
+        _create_member(db, "st-unseen", with_user=True)
+        _create_member(db, "st-email", with_user=False)
+        _create_member(db, "st-optout", with_user=True, opted_out=True)
+        ann = _draft(db, admin, target_type="all")
+        client.post(f"/api/v1/announcements/{ann.id}/send", cookies=_auth_cookie(admin))
+
+        seen_user = db.query(User).filter(User.id == seen_member.user_id).first()
+        client.post(
+            "/api/v1/me/notifications/mark-read",
+            json={"all": True},
+            cookies=_auth_cookie(seen_user),
+        )
+
+        resp = client.get(
+            f"/api/v1/announcements/{ann.id}/stats", cookies=_auth_cookie(admin)
+        )
+        assert resp.status_code == 200
+        stats = resp.json()
+        assert stats["recipient_count"] == 4
+        assert stats["emailed_count"] == 3  # all but the opted-out member
+        assert stats["seen_count"] == 1
+        assert stats["sent_by"] == "Test User"  # from _create_user
+
+    def test_recipients_forbidden_for_member(self, client, db):
+        admin = _create_user(db, "admin", "rf-a")
+        member_user = _create_user(db, "member", "rf-m")
+        _ensure_org(db)
+        _create_member(db, "rf1", with_user=True)
+        ann = _draft(db, admin, target_type="all")
+        client.post(f"/api/v1/announcements/{ann.id}/send", cookies=_auth_cookie(admin))
+        resp = client.get(
+            f"/api/v1/announcements/{ann.id}/recipients",
+            cookies=_auth_cookie(member_user),
+        )
+        assert resp.status_code == 403
+
+    def test_recipients_404_for_missing(self, client, db):
+        admin = _create_user(db, "admin", "r404")
+        _ensure_org(db)
+        resp = client.get(
+            "/api/v1/announcements/999999/recipients", cookies=_auth_cookie(admin)
+        )
+        assert resp.status_code == 404

@@ -48,8 +48,30 @@
       "send": "Send",
       "confirmSendTitle": "Send announcement?",
       "confirmSendBody": "This will email {count} members and notify them in the app. A sent announcement cannot be edited.",
+      "confirmSendBodyNew": "This will save and immediately send the announcement to the selected audience — emailing them and notifying them in the app. A sent announcement cannot be edited.",
       "sentToast": "Announcement sent",
       "sentRecipients": "Sent to {count} members"
+    },
+    "view": {
+      "summary": "Sent {date} · {recipients} recipients · {seen} seen",
+      "detailsTab": "Details",
+      "recipientsTab": "Recipients",
+      "sentAt": "Sent at",
+      "sentBy": "Sent by",
+      "target": "Audience",
+      "recipientCount": "Recipients",
+      "emailedCount": "Emailed",
+      "seenCount": "Seen",
+      "createdAt": "Created at",
+      "noRecipients": "No recipients recorded for this announcement.",
+      "recipientName": "Member",
+      "recipientEmail": "Email",
+      "channel": "Channel",
+      "channelEmail": "Email",
+      "channelInApp": "In-app",
+      "seen": "Seen",
+      "seenAt": "Seen {date}",
+      "notSeen": "Not seen"
     }
   }
 }

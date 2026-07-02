@@ -8,11 +8,16 @@ caller (endpoint / task) owns the transaction.
 
 from datetime import datetime, timezone
 
+from sqlalchemy import and_
 from sqlalchemy.orm import Session
 
 from app.domains.auth.models import User
 from app.domains.communications.markdown import excerpt as build_excerpt
-from app.domains.communications.models import Announcement, Notification
+from app.domains.communications.models import (
+    Announcement,
+    AnnouncementRecipient,
+    Notification,
+)
 from app.domains.communications.schemas import (
     AnnouncementCreate,
     AnnouncementUpdate,
@@ -131,6 +136,33 @@ def send_announcement(
 
     ann.recipient_count = len(members)
     excerpt = build_excerpt(ann.body)
+
+    # Per-recipient delivery snapshot — the faithful audience record at send time.
+    # One query fetches persons to compute the email-reachability flag.
+    person_ids = [m.person_id for m in members]
+    persons = (
+        {p.id: p for p in db.query(Person).filter(Person.id.in_(person_ids)).all()}
+        if person_ids
+        else {}
+    )
+    for m in members:
+        prefs = m.communication_preferences or {}
+        person = persons.get(m.person_id)
+        emailed = (
+            prefs.get("email") is not False
+            and person is not None
+            and bool(person.email)
+        )
+        db.add(
+            AnnouncementRecipient(
+                announcement_id=ann.id,
+                member_id=m.id,
+                user_id=m.user_id,
+                emailed=emailed,
+                in_app=m.user_id is not None,
+            )
+        )
+
     # In-app notifications require a user account (email is the universal channel).
     user_ids = {m.user_id for m in members if m.user_id}
     for uid in user_ids:
@@ -164,6 +196,77 @@ def list_announcements(db: Session):
 
 def get_announcement(db: Session, announcement_id: int) -> Announcement | None:
     return _get_active(db, announcement_id)
+
+
+def _seen_join(announcement_id: int):
+    """Join condition linking a recipient's user to its announcement notification."""
+    return and_(
+        Notification.user_id == AnnouncementRecipient.user_id,
+        Notification.source_type == "announcement",
+        Notification.source_id == announcement_id,
+    )
+
+
+def list_recipients(db: Session, announcement_id: int):
+    """Recipient snapshot joined to member/person and the in-app read state.
+
+    Returns a query of rows (member_id, first_name, last_name, email, emailed,
+    in_app, read_at) ordered by name. ``read_at`` is the "Seen" timestamp and is
+    NULL for email-only recipients (no user account → no notification). Caller
+    paginates.
+    """
+    return (
+        db.query(
+            AnnouncementRecipient.member_id,
+            Person.first_name,
+            Person.last_name,
+            Person.email,
+            AnnouncementRecipient.emailed,
+            AnnouncementRecipient.in_app,
+            Notification.read_at,
+        )
+        .join(Member, Member.id == AnnouncementRecipient.member_id)
+        .join(Person, Person.id == Member.person_id)
+        .outerjoin(Notification, _seen_join(announcement_id))
+        .filter(AnnouncementRecipient.announcement_id == announcement_id)
+        .order_by(Person.last_name, Person.first_name, AnnouncementRecipient.member_id)
+    )
+
+
+def recipient_stats(db: Session, announcement_id: int) -> dict:
+    """Aggregate delivery stats for the sent view header/details tab."""
+    base = db.query(AnnouncementRecipient).filter(
+        AnnouncementRecipient.announcement_id == announcement_id
+    )
+    recipient_count = base.count()
+    emailed_count = base.filter(AnnouncementRecipient.emailed.is_(True)).count()
+    seen_count = (
+        db.query(AnnouncementRecipient)
+        .join(Notification, _seen_join(announcement_id))
+        .filter(
+            AnnouncementRecipient.announcement_id == announcement_id,
+            Notification.read_at.isnot(None),
+        )
+        .count()
+    )
+    return {
+        "recipient_count": recipient_count,
+        "emailed_count": emailed_count,
+        "seen_count": seen_count,
+        "sent_by": _announcement_author_name(db, announcement_id),
+    }
+
+
+def _announcement_author_name(db: Session, announcement_id: int) -> str | None:
+    """Display name of the admin who sent the announcement (via user→person)."""
+    row = (
+        db.query(Person.first_name, Person.last_name)
+        .join(User, User.person_id == Person.id)
+        .join(Announcement, Announcement.created_by_user_id == User.id)
+        .filter(Announcement.id == announcement_id)
+        .first()
+    )
+    return f"{row.first_name} {row.last_name}".strip() if row else None
 
 
 def member_announcements(db: Session, user: User) -> list[Announcement]:
