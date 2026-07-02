@@ -69,3 +69,19 @@ class NotificationResponse(BaseModel):
 class MarkReadRequest(BaseModel):
     ids: list[int] | None = None
     all: bool = False
+
+
+class RecipientResponse(BaseModel):
+    member_id: int
+    name: str
+    email: str | None = None
+    emailed: bool
+    in_app: bool
+    seen_at: datetime | None = None  # in-app read timestamp; None for email-only
+
+
+class RecipientStatsResponse(BaseModel):
+    recipient_count: int
+    emailed_count: int
+    seen_count: int
+    sent_by: str | None = None

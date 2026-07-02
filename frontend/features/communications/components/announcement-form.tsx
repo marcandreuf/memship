@@ -102,14 +102,26 @@ export function AnnouncementForm({
   }
 
   async function handleSend() {
-    if (!announcement) return;
+    // For a new announcement, create the draft first, then send it — one action
+    // that ends in "sent". For an existing draft, send it directly.
+    let id = announcement?.id ?? null;
     try {
-      await sendMutation.mutateAsync(announcement.id);
+      if (id === null) {
+        const created = await createMutation.mutateAsync(buildPayload());
+        id = created.id;
+      }
+      await sendMutation.mutateAsync(id);
       toast.success(t("communications.compose.sentToast"));
       setConfirmOpen(false);
-      router.push("/communications");
+      router.push(`/communications/${id}`);
     } catch (error) {
       toast.error(getErrorMessage(error));
+      setConfirmOpen(false);
+      // A just-created draft persisted even though the send failed (e.g. empty
+      // audience) — take the user to it so they can fix targeting and retry.
+      if (id !== null && !announcement) {
+        router.push(`/communications/${id}`);
+      }
     }
   }
 
@@ -267,6 +279,7 @@ export function AnnouncementForm({
       ) : (
         <div className="flex items-center gap-2">
           <Button
+            variant="outline"
             onClick={handleSave}
             disabled={!canSave || createMutation.isPending || updateMutation.isPending}
           >
@@ -274,15 +287,12 @@ export function AnnouncementForm({
               ? t("common.loading")
               : t("communications.compose.saveDraft")}
           </Button>
-          {announcement && (
-            <Button
-              variant="secondary"
-              disabled={!canSave}
-              onClick={() => setConfirmOpen(true)}
-            >
-              {t("communications.compose.send")}
-            </Button>
-          )}
+          <Button
+            disabled={!canSave || createMutation.isPending || sendMutation.isPending}
+            onClick={() => setConfirmOpen(true)}
+          >
+            {t("communications.compose.send")}
+          </Button>
         </div>
       )}
 
@@ -292,16 +302,21 @@ export function AnnouncementForm({
             <DialogTitle>{t("communications.compose.confirmSendTitle")}</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            {t("communications.compose.confirmSendBody", {
-              count: audience?.count ?? 0,
-            })}
+            {announcement
+              ? t("communications.compose.confirmSendBody", {
+                  count: audience?.count ?? 0,
+                })
+              : t("communications.compose.confirmSendBodyNew")}
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmOpen(false)}>
               {t("common.cancel")}
             </Button>
-            <Button onClick={handleSend} disabled={sendMutation.isPending}>
-              {sendMutation.isPending
+            <Button
+              onClick={handleSend}
+              disabled={createMutation.isPending || sendMutation.isPending}
+            >
+              {createMutation.isPending || sendMutation.isPending
                 ? t("common.loading")
                 : t("communications.compose.send")}
             </Button>

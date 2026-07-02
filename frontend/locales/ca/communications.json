@@ -48,8 +48,30 @@
       "send": "Envia",
       "confirmSendTitle": "Enviar l'anunci?",
       "confirmSendBody": "S'enviarà per correu a {count} membres i se'ls notificarà a l'app. Un anunci enviat no es pot editar.",
+      "confirmSendBodyNew": "Es desarà i s'enviarà immediatament l'anunci a l'audiència seleccionada, per correu i amb notificació a l'app. Un anunci enviat no es pot editar.",
       "sentToast": "Anunci enviat",
       "sentRecipients": "Enviat a {count} membres"
+    },
+    "view": {
+      "summary": "Enviat {date} · {recipients} destinataris · {seen} vistos",
+      "detailsTab": "Detalls",
+      "recipientsTab": "Destinataris",
+      "sentAt": "Enviat el",
+      "sentBy": "Enviat per",
+      "target": "Audiència",
+      "recipientCount": "Destinataris",
+      "emailedCount": "Per correu",
+      "seenCount": "Vistos",
+      "createdAt": "Creat el",
+      "noRecipients": "No hi ha destinataris registrats per a aquest anunci.",
+      "recipientName": "Membre",
+      "recipientEmail": "Correu",
+      "channel": "Canal",
+      "channelEmail": "Correu",
+      "channelInApp": "A l'app",
+      "seen": "Vist",
+      "seenAt": "Vist {date}",
+      "notSeen": "No vist"
     }
   }
 }

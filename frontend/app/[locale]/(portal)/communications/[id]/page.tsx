@@ -6,6 +6,7 @@ import { DetailHeader } from "@/components/entity/detail-header";
 import { DetailSkeleton } from "@/components/ui/skeletons";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { AnnouncementForm } from "@/features/communications/components/announcement-form";
+import { SentAnnouncementView } from "@/features/communications/components/sent-announcement-view";
 import { useAnnouncement } from "@/features/communications/hooks/use-announcements";
 
 export default function AnnouncementDetailPage({
@@ -46,7 +47,11 @@ export default function AnnouncementDetailPage({
         ]}
         title={announcement.subject}
       />
-      <AnnouncementForm announcement={announcement} />
+      {announcement.status === "sent" ? (
+        <SentAnnouncementView announcement={announcement} />
+      ) : (
+        <AnnouncementForm announcement={announcement} />
+      )}
     </div>
   );
 }

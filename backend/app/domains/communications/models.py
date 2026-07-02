@@ -73,3 +73,34 @@ class Notification(Base):
     excerpt = Column(String(280))  # short body preview for the list
     read_at = Column(DateTime(timezone=True))  # NULL = unread
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class AnnouncementRecipient(Base):
+    """Per-recipient delivery snapshot, written at send.
+
+    One row per member the announcement was sent to — the faithful record of the
+    audience at send time (membership changes afterwards must not alter it).
+    ``user_id`` is set only when the member has an account; it joins back to
+    ``notifications`` (source_type='announcement', source_id) for the read state
+    that drives the admin "Seen" badge. ``emailed`` mirrors the email opt-out.
+    """
+
+    __tablename__ = "announcement_recipients"
+    __table_args__ = (
+        Index("ix_announcement_recipients_announcement", "announcement_id"),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    announcement_id = Column(
+        Integer,
+        ForeignKey("announcements.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    member_id = Column(
+        Integer, ForeignKey("members.id", ondelete="CASCADE"), nullable=False
+    )
+    # NULL when the member has no user account (email-only recipient).
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+    emailed = Column(Boolean, nullable=False, default=False)  # email actually sent
+    in_app = Column(Boolean, nullable=False, default=False)  # notification row created
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

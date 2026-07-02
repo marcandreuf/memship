@@ -32,16 +32,14 @@ export function Pagination({
       </p>
       <div className="flex gap-2">
         <Button
-          variant="outline"
-          size="sm"
+          size="xs"
           disabled={page <= 1}
           onClick={() => onPageChange(page - 1)}
         >
           {t("common.previous")}
         </Button>
         <Button
-          variant="outline"
-          size="sm"
+          size="xs"
           disabled={page >= totalPages}
           onClick={() => onPageChange(page + 1)}
         >

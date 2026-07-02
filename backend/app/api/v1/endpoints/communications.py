@@ -17,6 +17,8 @@ from app.domains.communications.schemas import (
     AnnouncementUpdate,
     MarkReadRequest,
     NotificationResponse,
+    RecipientResponse,
+    RecipientStatsResponse,
 )
 from app.domains.communications.service import (
     AnnouncementNotDraft,
@@ -141,6 +143,46 @@ def audience_preview(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Announcement not found")
     members = service.resolve_audience(db, ann.target_type, ann.target_id)
     return {"count": len(members)}
+
+
+@router.get("/{announcement_id}/recipients")
+def list_recipients(
+    announcement_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
+):
+    """Paginated recipient list for a sent announcement (name, channel, seen)."""
+    ann = service.get_announcement(db, announcement_id)
+    if ann is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Announcement not found")
+    rows, meta = paginate(service.list_recipients(db, announcement_id), page, per_page)
+    items = [
+        RecipientResponse(
+            member_id=r.member_id,
+            name=f"{r.first_name} {r.last_name}".strip(),
+            email=r.email,
+            emailed=r.emailed,
+            in_app=r.in_app,
+            seen_at=r.read_at,
+        ).model_dump()
+        for r in rows
+    ]
+    return {"items": items, "meta": meta.model_dump()}
+
+
+@router.get("/{announcement_id}/stats")
+def recipient_stats(
+    announcement_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """Aggregate delivery stats (recipients / emailed / seen) for the sent view."""
+    ann = service.get_announcement(db, announcement_id)
+    if ann is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Announcement not found")
+    return RecipientStatsResponse(**service.recipient_stats(db, announcement_id)).model_dump()
 
 
 # --- Member: received announcements + in-app notifications ---

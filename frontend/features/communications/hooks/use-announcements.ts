@@ -6,6 +6,8 @@ import {
   getAnnouncement,
   getAnnouncements,
   getAudiencePreview,
+  getRecipients,
+  getRecipientStats,
   sendAnnouncement,
   updateAnnouncement,
   type AnnouncementFilters,
@@ -59,6 +61,27 @@ export function useAudiencePreview(id: number, enabled = true) {
   return useQuery({
     queryKey: ["announcements", id, "audience"],
     queryFn: () => getAudiencePreview(id),
+    enabled: enabled && Number.isFinite(id) && id > 0,
+  });
+}
+
+export function useAnnouncementRecipients(
+  id: number,
+  page: number,
+  perPage = 10,
+  enabled = true
+) {
+  return useQuery({
+    queryKey: ["announcements", id, "recipients", page, perPage],
+    queryFn: () => getRecipients(id, page, perPage),
+    enabled: enabled && Number.isFinite(id) && id > 0,
+  });
+}
+
+export function useAnnouncementStats(id: number, enabled = true) {
+  return useQuery({
+    queryKey: ["announcements", id, "stats"],
+    queryFn: () => getRecipientStats(id),
     enabled: enabled && Number.isFinite(id) && id > 0,
   });
 }
