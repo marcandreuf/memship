@@ -20,7 +20,6 @@ import { useAuth } from "@/features/auth/hooks/use-auth";
 import { useSettings } from "@/features/settings/hooks/use-settings";
 import { useMembers } from "@/features/members/hooks/use-members";
 import { useActivities } from "@/features/activities/hooks/use-activities";
-import { useGroups } from "@/features/groups/hooks/use-groups";
 import { useMyRegistrations, useRegistrationStats } from "@/features/activities/hooks/use-registrations";
 import { useActivity } from "@/features/activities/hooks/use-activities";
 import { useReceiptStats, useMyReceipts } from "@/features/receipts/hooks/use-receipts";
@@ -66,9 +65,9 @@ interface ChartItem {
 }
 
 // Uniform chart height so paired charts in a grid row always match. A vertical
-// bar chart spreads its category bands evenly across this height, so sparse
-// charts (4 statuses) leave no trailing dead space.
-const CHART_HEIGHT = 5 * 32 + 8;
+// bar chart spreads its category bands evenly across this height; kept compact
+// (~24px per band) so cards stay tight and don't leave airy dead space.
+const CHART_HEIGHT = 5 * 24;
 
 function StatusBarChart({
   data,
@@ -83,12 +82,12 @@ function StatusBarChart({
   const total = data.reduce((sum, d) => sum + d.value, 0);
 
   const content = (
-    <Card className={href ? "hover:bg-accent/50 transition-colors" : ""}>
-      <CardHeader className="pb-1 pt-3 px-4 flex flex-row items-baseline justify-between">
+    <Card className={`py-3 gap-2 ${href ? "hover:bg-accent/50 transition-colors" : ""}`}>
+      <CardHeader className="px-4 flex flex-row items-baseline justify-between">
         <CardTitle className="text-base">{title}</CardTitle>
         <span className="text-xl font-bold">{total}</span>
       </CardHeader>
-      <CardContent className="px-2 pb-3">
+      <CardContent className="px-2">
         {!hasData ? (
           <div className="flex items-center justify-center h-24 text-sm text-muted-foreground">
             —
@@ -150,13 +149,13 @@ function StatCard({
   href?: string;
 }) {
   const content = (
-    <Card className={href ? "hover:bg-accent/50 transition-colors" : ""}>
-      <CardHeader className="pb-1 pt-3 px-4">
+    <Card className={`py-3 gap-1 ${href ? "hover:bg-accent/50 transition-colors" : ""}`}>
+      <CardHeader className="px-4">
         <CardTitle className="text-xs font-medium text-muted-foreground">
           {label}
         </CardTitle>
       </CardHeader>
-      <CardContent className="px-4 pb-3">
+      <CardContent className="px-4">
         <p className="text-2xl font-bold">{value}</p>
       </CardContent>
     </Card>
@@ -226,9 +225,9 @@ function NextBillingRunCard() {
   }
 
   return (
-    <Link href="/billing-runs" className="block">
-      <Card className="hover:bg-accent/50 transition-colors">
-        <CardContent className="flex items-center gap-3 py-3 px-4">
+    <Link href="/billing-runs" className="block h-full">
+      <Card className="h-full py-0 hover:bg-accent/50 transition-colors">
+        <CardContent className="flex items-center gap-3 py-3 px-4 h-full">
           <CalendarClock className="size-5 shrink-0 text-muted-foreground" />
           <div className="min-w-0">
             <p className="text-xs text-muted-foreground">{t("dashboard.nextBillingRun")}</p>
@@ -259,7 +258,6 @@ export default function DashboardPage() {
   const { data: archivedActivities } = useActivities(isAdmin ? { status: "archived", per_page: 1 } : {});
   const { data: cancelledActivities } = useActivities(isAdmin ? { status: "cancelled", per_page: 1 } : {});
 
-  const { data: groups } = useGroups();
   const { data: regStats } = useRegistrationStats();
   const { data: receiptStats } = useReceiptStats();
 
@@ -309,18 +307,15 @@ export default function DashboardPage() {
   ) || [];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <h1 className="text-2xl font-bold">
         {t("dashboard.welcome", { name: user?.first_name ?? "", gender: user?.gender ?? "other" })}
       </h1>
 
       {isAdmin && (
-        <div className="space-y-4">
-          {/* Recurring billing status */}
-          <NextBillingRunCard />
-
+        <div className="space-y-3">
           {/* Bar charts side by side */}
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2">
             <StatusBarChart
               title={t("nav.members")}
               data={memberChartData}
@@ -334,7 +329,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Registrations + Receipts charts */}
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2">
             <StatusBarChart
               title={t("dashboard.totalRegistrations")}
               data={registrationChartData}
@@ -346,13 +341,9 @@ export default function DashboardPage() {
             />
           </div>
 
-          {/* Summary stat cards */}
-          <div className="grid gap-4 grid-cols-2 sm:grid-cols-4">
-            <StatCard
-              label={t("dashboard.totalGroups")}
-              value={groups?.length ?? "—"}
-              href="/groups"
-            />
+          {/* Summary stat cards — recurring billing first, then receipt totals */}
+          <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
+            <NextBillingRunCard />
             <StatCard
               label={t("dashboard.pendingAmount")}
               value={formatCurrency(receiptStats?.pending_amount ?? 0)}
