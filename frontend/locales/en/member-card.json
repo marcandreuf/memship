@@ -28,5 +28,12 @@
     "notFound": "Member not found",
     "resultNumber": "No.",
     "scanAnother": "Scan another"
+  },
+  "photo": {
+    "title": "Profile photo",
+    "dragOrClick": "Upload a photo",
+    "hint": "JPG, PNG or WebP, up to {size} MB",
+    "remove": "Remove",
+    "confirmRemove": "Remove your profile photo?"
   }
 }

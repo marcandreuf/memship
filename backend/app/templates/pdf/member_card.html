@@ -19,10 +19,19 @@
     background: {{ '#16a34a' if card.status == 'active' else '#dc2626' }};
   }
   .body { display: flex; justify-content: space-between; align-items: flex-end; }
+  .person { display: flex; align-items: center; gap: 3mm; }
+  .avatar {
+    width: 16mm; height: 16mm; border-radius: 50%; flex-shrink: 0;
+    object-fit: cover; background: #e5e7eb;
+  }
+  .avatar-initials {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13pt; font-weight: bold; color: #6b7280;
+  }
   .details .name { font-size: 13pt; font-weight: bold; margin: 0 0 1mm 0; }
   .details .number { font-size: 9pt; font-family: monospace; color: #555; letter-spacing: 1px; }
-  .qr { width: 24mm; height: 24mm; }
-  .qr svg { width: 24mm; height: 24mm; }
+  .qr { width: 22mm; height: 22mm; }
+  .qr svg { width: 22mm; height: 22mm; }
 </style>
 </head>
 <body>
@@ -32,9 +41,16 @@
       <div class="status">{{ card.status }}</div>
     </div>
     <div class="body">
-      <div class="details">
-        <p class="name">{{ card.full_name }}</p>
-        <div class="number">{{ card.member_number }}</div>
+      <div class="person">
+        {% if photo_data_uri %}
+          <img class="avatar" src="{{ photo_data_uri }}" alt="">
+        {% else %}
+          <div class="avatar avatar-initials">{{ initials }}</div>
+        {% endif %}
+        <div class="details">
+          <p class="name">{{ card.full_name }}</p>
+          <div class="number">{{ card.member_number }}</div>
+        </div>
       </div>
       <div class="qr">{{ qr_svg | safe }}</div>
     </div>

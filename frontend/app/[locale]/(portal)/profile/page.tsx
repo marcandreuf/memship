@@ -17,6 +17,7 @@ import { useAuth } from "@/features/auth/hooks/use-auth";
 import { FormSkeleton } from "@/components/ui/skeletons";
 import { useMember } from "@/features/members/hooks/use-members";
 import { useSettings } from "@/features/settings/hooks/use-settings";
+import { MemberPhotoUpload } from "@/features/member-card/components/member-photo-upload";
 import { usePathname, useRouter } from "@/lib/i18n/routing";
 import { locales, type Locale } from "@/lib/i18n/config";
 import { apiClient } from "@/lib/client-api";
@@ -158,6 +159,19 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Profile photo — shown on the member card */}
+      <Card>
+        <CardHeader className="py-3 px-4">
+          <CardTitle className="text-base">{t("photo.title")}</CardTitle>
+        </CardHeader>
+        <CardContent className="px-4 pb-4 pt-0">
+          <MemberPhotoUpload
+            photoUrl={person.photo_url ?? null}
+            fullName={`${person.first_name} ${person.last_name}`}
+          />
+        </CardContent>
+      </Card>
 
       {/* Editable profile fields */}
       <Card>

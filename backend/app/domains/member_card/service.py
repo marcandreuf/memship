@@ -3,12 +3,15 @@
 No models: everything derives from existing member/person/organization data.
 """
 
+import base64
 import io
+import mimetypes
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader
 from sqlalchemy.orm import Session, joinedload
 
+from app.core.config import settings
 from app.core.security.card_token import sign_card_token, verify_card_token
 from app.domains.members.models import Member
 from app.domains.organizations.models import OrganizationSettings
@@ -79,6 +82,30 @@ def card_qr_svg(member: Member, *, scale: int = 6, border: int = 2, inline: bool
     return buff.getvalue().decode("utf-8")
 
 
+def _initials(full_name: str) -> str:
+    parts = full_name.split()
+    first = parts[0][0] if parts else ""
+    last = parts[-1][0] if len(parts) > 1 else ""
+    return (first + last).upper()
+
+
+def _photo_data_uri(photo_url: str | None) -> str | None:
+    """Resolve a stored ``/uploads/...`` photo to a base64 data URI for the PDF.
+
+    WeasyPrint renders server-side, so the photo is embedded inline rather than
+    fetched over HTTP. Returns ``None`` if there is no photo or the file is gone.
+    """
+    if not photo_url:
+        return None
+    rel = photo_url.replace("/uploads/", "", 1)
+    path = Path(settings.STORAGE_LOCAL_PATH) / rel
+    if not path.is_file():
+        return None
+    mime = mimetypes.guess_type(str(path))[0] or "image/png"
+    encoded = base64.b64encode(path.read_bytes()).decode()
+    return f"data:{mime};base64,{encoded}"
+
+
 def card_pdf(db: Session, member: Member) -> bytes:
     """Render a print-ready PDF of the member card via WeasyPrint."""
     # Lazy import so tests without WeasyPrint system libs can import this module.
@@ -87,7 +114,12 @@ def card_pdf(db: Session, member: Member) -> bytes:
     card = build_card(db, member)
     qr_svg = card_qr_svg(member, inline=True)
     template = _env.get_template("member_card.html")
-    html_content = template.render(card=card, qr_svg=qr_svg)
+    html_content = template.render(
+        card=card,
+        qr_svg=qr_svg,
+        photo_data_uri=_photo_data_uri(card["photo_url"]),
+        initials=_initials(card["full_name"]),
+    )
     return HTML(string=html_content).write_pdf()
 
 

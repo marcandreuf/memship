@@ -28,5 +28,12 @@
     "notFound": "Soci no trobat",
     "resultNumber": "Núm.",
     "scanAnother": "Escaneja un altre"
+  },
+  "photo": {
+    "title": "Foto de perfil",
+    "dragOrClick": "Puja una foto",
+    "hint": "JPG, PNG o WebP, fins a {size} MB",
+    "remove": "Elimina",
+    "confirmRemove": "Vols eliminar la teva foto de perfil?"
   }
 }
