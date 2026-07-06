@@ -1,0 +1,39 @@
+{
+  "memberCard": {
+    "title": "Mi tarjeta",
+    "unavailable": "Tu tarjeta de socio no está disponible.",
+    "downloadPdf": "Descargar PDF",
+    "qrHint": "Muestra este código en el control de acceso",
+    "qrAlt": "Código QR de socio",
+    "status": {
+      "active": "Activo",
+      "pending": "Pendiente",
+      "suspended": "Suspendido",
+      "cancelled": "Cancelado",
+      "expired": "Caducado"
+    },
+    "tabLabel": "Carnet"
+  },
+  "scan": {
+    "title": "Escanear tarjeta de socio",
+    "hint": "Escanea el código QR de un socio con la cámara, o escribe el código, para verificar su estado.",
+    "noAccess": "No tienes acceso a esta página.",
+    "manualLabel": "Introducir código manualmente",
+    "manualPlaceholder": "Pega o escribe el código de la tarjeta",
+    "verify": "Verificar",
+    "startCamera": "Escanear con la cámara",
+    "stopCamera": "Detener cámara",
+    "cameraError": "No se pudo acceder a la cámara.",
+    "invalid": "Código de tarjeta no válido",
+    "notFound": "Socio no encontrado",
+    "resultNumber": "Nº",
+    "scanAnother": "Escanear otro"
+  },
+  "photo": {
+    "title": "Foto de perfil",
+    "dragOrClick": "Subir una foto",
+    "hint": "JPG, PNG o WebP, hasta {size} MB",
+    "remove": "Eliminar",
+    "confirmRemove": "¿Eliminar tu foto de perfil?"
+  }
+}

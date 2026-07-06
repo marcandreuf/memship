@@ -2,9 +2,11 @@
 
 from datetime import date, datetime, timezone
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.domains.members.models import Member, MembershipType
+from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Person
 
 VALID_STATUS_TRANSITIONS = {
@@ -28,20 +30,60 @@ def is_minor_by_dob(date_of_birth: date | None) -> bool:
     return age < MINOR_AGE_THRESHOLD
 
 
-def generate_member_number(db: Session) -> str:
-    last_member = (
-        db.query(Member)
-        .filter(Member.member_number.isnot(None))
-        .order_by(Member.id.desc())
+def allocate_member_number(db: Session) -> str:
+    """Allocate the next member number from the configured prefix + sequence.
+
+    Format is ``prefix + str(next).zfill(padding)`` (e.g. ``SCB-0001``), read from
+    the single-tenant ``organization_settings`` row. Race-safe within the tenant
+    via ``SELECT ... FOR UPDATE`` on that row, advancing the counter past any
+    existing collision. When no settings row exists (minimal setups) it falls
+    back to a bare zero-padded sequence derived from the current member count.
+    """
+    org = (
+        db.query(OrganizationSettings)
+        .filter(OrganizationSettings.id == 1)
+        .with_for_update()
         .first()
     )
-    if last_member and last_member.member_number:
-        try:
-            num = int(last_member.member_number.replace("M-", ""))
-            return f"M-{num + 1:04d}"
-        except ValueError:
-            pass
-    return "M-0001"
+    if org is not None:
+        prefix = org.member_number_prefix or ""
+        padding = org.member_number_padding or 4
+        next_num = org.member_number_next or 1
+    else:
+        prefix = ""
+        padding = 4
+        next_num = (db.query(func.count(Member.id)).scalar() or 0) + 1
+
+    while True:
+        candidate = f"{prefix}{str(next_num).zfill(padding)}"
+        collision = (
+            db.query(Member.id).filter(Member.member_number == candidate).first()
+        )
+        next_num += 1
+        if not collision:
+            break
+
+    if org is not None:
+        org.member_number_next = next_num
+    return candidate
+
+
+def assign_missing_member_numbers(db: Session) -> int:
+    """Assign a member number to every member that lacks one, in id order.
+
+    Returns the number of members updated. Respects the configured prefix by
+    routing each allocation through :func:`allocate_member_number`.
+    """
+    members = (
+        db.query(Member)
+        .filter(Member.member_number.is_(None))
+        .order_by(Member.id)
+        .all()
+    )
+    for member in members:
+        member.member_number = allocate_member_number(db)
+        db.flush()
+    return len(members)
 
 
 def create_member(
@@ -67,7 +109,7 @@ def create_member(
     db.add(person)
     db.flush()
 
-    member_number = generate_member_number(db)
+    member_number = allocate_member_number(db)
     minor = is_minor_by_dob(date_of_birth)
 
     member = Member(

@@ -1,0 +1,39 @@
+{
+  "memberCard": {
+    "title": "La meva targeta",
+    "unavailable": "La teva targeta de soci no està disponible.",
+    "downloadPdf": "Descarrega PDF",
+    "qrHint": "Mostra aquest codi al control d'accés",
+    "qrAlt": "Codi QR de soci",
+    "status": {
+      "active": "Actiu",
+      "pending": "Pendent",
+      "suspended": "Suspès",
+      "cancelled": "Cancel·lat",
+      "expired": "Caducat"
+    },
+    "tabLabel": "Carnet"
+  },
+  "scan": {
+    "title": "Escaneja la targeta de soci",
+    "hint": "Escaneja el codi QR d'un soci amb la càmera, o escriu el codi, per verificar-ne l'estat.",
+    "noAccess": "No tens accés a aquesta pàgina.",
+    "manualLabel": "Introdueix el codi manualment",
+    "manualPlaceholder": "Enganxa o escriu el codi de la targeta",
+    "verify": "Verifica",
+    "startCamera": "Escaneja amb la càmera",
+    "stopCamera": "Atura la càmera",
+    "cameraError": "No s'ha pogut accedir a la càmera.",
+    "invalid": "Codi de targeta no vàlid",
+    "notFound": "Soci no trobat",
+    "resultNumber": "Núm.",
+    "scanAnother": "Escaneja un altre"
+  },
+  "photo": {
+    "title": "Foto de perfil",
+    "dragOrClick": "Puja una foto",
+    "hint": "JPG, PNG o WebP, fins a {size} MB",
+    "remove": "Elimina",
+    "confirmRemove": "Vols eliminar la teva foto de perfil?"
+  }
+}

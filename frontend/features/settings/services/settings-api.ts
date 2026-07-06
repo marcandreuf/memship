@@ -20,6 +20,9 @@ export interface SettingsData {
   invoice_prefix: string;
   invoice_next_number: number;
   invoice_annual_reset: boolean;
+  member_number_prefix: string;
+  member_number_padding: number;
+  member_number_next: number;
   default_vat_rate: number;
   creditor_id: string | null;
   sepa_format: string | null;

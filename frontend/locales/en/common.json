@@ -20,7 +20,9 @@
     "logout": "Sign Out",
     "menu": "Menu",
     "communications": "Communications",
-    "announcements": "Announcements"
+    "announcements": "Announcements",
+    "myCard": "My Card",
+    "scan": "Scan"
   },
   "common": {
     "save": "Save",
@@ -81,7 +83,8 @@
     "language": "Language",
     "preferences": "Preferences",
     "editProfile": "Edit Profile",
-    "phone": "Phone"
+    "phone": "Phone",
+    "memberInfo": "Member Information"
   },
   "validation": {
     "required": "This field is required",

@@ -19,7 +19,13 @@ from app.domains.members.schemas import (
     MemberUpdate,
     PersonResponse,
 )
-from app.domains.members.service import change_member_status, create_member, is_minor_by_dob
+from app.domains.member_card.schemas import AssignNumbersResponse
+from app.domains.members.service import (
+    assign_missing_member_numbers,
+    change_member_status,
+    create_member,
+    is_minor_by_dob,
+)
 from app.domains.persons.models import Contact, ContactType, Person
 
 router = APIRouter(prefix="/members", tags=["members"])
@@ -145,6 +151,17 @@ def create_member_endpoint(
         .first()
     )
     return _to_response(member)
+
+
+@router.post("/assign-numbers", response_model=AssignNumbersResponse)
+def assign_numbers(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """Assign a member number to every member without one, in id order."""
+    assigned = assign_missing_member_numbers(db)
+    db.commit()
+    return AssignNumbersResponse(assigned=assigned)
 
 
 @router.put("/{member_id}", response_model=MemberResponse)

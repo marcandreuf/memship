@@ -7,6 +7,7 @@ from sqlalchemy import (
     DateTime,
     Integer,
     Numeric,
+    SmallInteger,
     String,
     Text,
     func,
@@ -42,6 +43,10 @@ class OrganizationSettings(Base):
     invoice_prefix = Column(String(10), default="INV")
     invoice_next_number = Column(Integer, default=1)
     invoice_annual_reset = Column(Boolean, default=True)
+    # Member numbering (v0.7.0 member card) — configurable prefix + zero-padded sequence
+    member_number_prefix = Column(String(20), nullable=False, server_default="")
+    member_number_padding = Column(SmallInteger, nullable=False, server_default="4")
+    member_number_next = Column(Integer, nullable=False, server_default="1")
     default_vat_rate = Column(Numeric(5, 2), default=21.00)
     # SEPA direct debit
     creditor_id = Column(String(35))

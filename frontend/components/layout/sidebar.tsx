@@ -16,6 +16,8 @@ import {
   CalendarClock,
   CreditCard,
   Megaphone,
+  IdCard,
+  ScanLine,
   LogOut,
   ChevronsUpDown,
 } from "lucide-react";
@@ -59,14 +61,17 @@ export function AppSidebar({ user }: AppSidebarProps) {
 
   const isAdmin = user.role === "admin" || user.role === "super_admin";
   const commsEnabled = Boolean(settings?.features?.communications);
+  const cardEnabled = Boolean(settings?.features?.member_card);
 
   const navItems = [
     { href: "/dashboard", label: t("nav.dashboard"), icon: LayoutDashboard, show: true },
     { href: "/activities", label: t("nav.activities"), icon: CalendarDays, show: true },
     { href: "/my-activities", label: t("activities.registration.myActivities"), icon: ClipboardList, show: !isAdmin },
     { href: "/my-receipts", label: t("receipts.myReceipts"), icon: Receipt, show: !isAdmin },
+    { href: "/my-card", label: t("nav.myCard"), icon: IdCard, show: !isAdmin && cardEnabled },
     { href: "/payment-method", label: t("paymentMethod.title"), icon: CreditCard, show: !isAdmin },
     { href: "/members", label: t("nav.members"), icon: Users, show: isAdmin },
+    { href: "/scan", label: t("nav.scan"), icon: ScanLine, show: isAdmin && cardEnabled },
     { href: "/receipts", label: t("nav.receipts"), icon: Receipt, show: isAdmin },
     { href: "/mandates", label: t("nav.mandates"), icon: FileText, show: isAdmin },
     { href: "/remittances", label: t("nav.remittances"), icon: Landmark, show: isAdmin },

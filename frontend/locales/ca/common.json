@@ -20,7 +20,9 @@
     "logout": "Tancar sessió",
     "menu": "Menú",
     "communications": "Comunicacions",
-    "announcements": "Anuncis"
+    "announcements": "Anuncis",
+    "myCard": "La meva targeta",
+    "scan": "Escanejar"
   },
   "common": {
     "save": "Desar",
@@ -81,7 +83,8 @@
     "language": "Idioma",
     "preferences": "Preferències",
     "editProfile": "Editar perfil",
-    "phone": "Telèfon"
+    "phone": "Telèfon",
+    "memberInfo": "Informació del soci"
   },
   "validation": {
     "required": "Aquest camp és obligatori",

@@ -9,6 +9,7 @@ import { PlaceholderTab } from "@/components/entity/placeholder-tab";
 import { MemberActivitiesTab } from "@/features/members/components/member-activities-tab";
 import { ContactInfoTab } from "@/features/members/components/contact-info-tab";
 import { MemberReceiptsTab } from "@/features/members/components/member-receipts-tab";
+import { MemberCardTab } from "@/features/member-card/components/member-card-tab";
 import { MemberDetailSection } from "@/features/members/components/member-detail-section";
 import { MemberForm } from "@/features/members/components/member-form";
 import { MemberStatusActions } from "@/features/members/components/member-status-actions";
@@ -17,6 +18,7 @@ import {
   useUpdateMember,
 } from "@/features/members/hooks/use-members";
 import { useReceipts } from "@/features/receipts/hooks/use-receipts";
+import { useSettings } from "@/features/settings/hooks/use-settings";
 import { toast } from "sonner";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { MEMBER_STATUS_VARIANTS } from "@/lib/status-variants";
@@ -36,6 +38,8 @@ export default function MemberDetailPage({
   const [isEditing, setIsEditing] = useState(false);
 
   const isAdmin = user?.role === "admin" || user?.role === "super_admin";
+  const { data: settings } = useSettings();
+  const cardEnabled = Boolean(settings?.features?.member_card);
 
   // Receipt count for badge
   const receiptParams = useMemo(() => {
@@ -126,6 +130,15 @@ export default function MemberDetailPage({
             badge: receiptData?.meta?.total,
             content: <MemberReceiptsTab memberId={memberId} />,
           },
+          ...(isAdmin && cardEnabled
+            ? [
+                {
+                  id: "card",
+                  label: t("memberCard.tabLabel"),
+                  content: <MemberCardTab memberId={memberId} />,
+                },
+              ]
+            : []),
           {
             id: "audit",
             label: t("members.auditLog"),

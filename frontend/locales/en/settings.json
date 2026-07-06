@@ -106,6 +106,19 @@
       "title": "Communications",
       "enabled": "Enable communications",
       "enabledDesc": "Let admins send announcements to members by email and in-app."
+    },
+    "memberCard": {
+      "tab": "Member Card",
+      "title": "Digital Member Card",
+      "enabled": "Enable member cards",
+      "enabledDesc": "Give members a digital card with a QR code for check-in.",
+      "numberingTitle": "Member numbering",
+      "prefix": "Number prefix",
+      "prefixHint": "e.g. SCB- produces SCB-0001",
+      "padding": "Digits",
+      "paddingHint": "Length of the zero-padded sequence",
+      "assignNumbers": "Assign numbers to members without one",
+      "assignedCount": "{count} member number(s) assigned"
     }
   }
 }

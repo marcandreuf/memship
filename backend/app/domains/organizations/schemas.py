@@ -28,6 +28,9 @@ class OrganizationSettingsResponse(BaseModel):
     invoice_prefix: str = "INV"
     invoice_next_number: int = 1
     invoice_annual_reset: bool | None = True
+    member_number_prefix: str = ""
+    member_number_padding: int = 4
+    member_number_next: int = 1
     default_vat_rate: float | None = 21.00
     creditor_id: str | None = None
     sepa_format: str | None = None
@@ -58,6 +61,8 @@ class OrganizationSettingsUpdate(BaseModel):
     invoice_prefix: str | None = Field(default=None, max_length=10)
     invoice_next_number: int | None = Field(default=None, ge=1)
     invoice_annual_reset: bool | None = None
+    member_number_prefix: str | None = Field(default=None, max_length=20)
+    member_number_padding: int | None = Field(default=None, ge=1, le=10)
     default_vat_rate: float | None = Field(default=None, ge=0, le=100)
     creditor_id: str | None = Field(default=None, max_length=35)
     sepa_format: str | None = Field(default=None, pattern=r"^(pain\.008)$")

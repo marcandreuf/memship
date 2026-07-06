@@ -87,10 +87,12 @@ Abre http://localhost:8081 e inicia sesión con tus credenciales. Cambia `PORT=8
 | v0.4.4 | Facturación recurrente — generación automática de cuotas | Hecho |
 | v0.4.5 | Recordatorios de pago — notificaciones por email de recibos vencidos | Hecho |
 | v0.5.0 | Comunicaciones simples — anuncios del admin a todos los socios / grupo / tipo de cuota | Hecho |
-| v0.6.0 | Reservas simples — espacios y reserva de franjas horarias | Próximo |
-| v0.7.0 | Carnet digital de socio + registro QR | Planificado |
-| v0.8.0 | Convocatorias — RSVP por token para asambleas (requisito legal en España) | Planificado |
-| v1.0.0 | Estabilización y lanzamiento — exportaciones CSV, datos demo, landing page, pulido de docs | Planificado |
+| v0.5.1 | Vista de envíos de comunicaciones — seguimiento de destinatarios + "Visto" en la app | Hecho |
+| v0.6.0 | ~~Reservas simples~~ — aplazado tras v1.0.0 (según demanda) | Aplazado |
+| v0.7.0 | Carnet digital de socio + registro QR — carnet en PDF, numeración automática de socios | Hecho |
+| v0.7.1 | Mejoras del carnet — vista de carnet para el admin, foto de perfil del socio, rediseño del perfil | Hecho |
+| v0.8.0 | ~~Convocatorias~~ — aplazado tras v1.0.0 (según demanda) | Aplazado |
+| v1.0.0 | Estabilización y lanzamiento — exportaciones CSV, datos demo, landing page, pulido de docs | Próximo |
 
 Aplazado tras v1.0.0: GoCardless e-mandatos, integración PayPal, flujo de Stripe Invoice, acciones masivas en recibos, generador de informes personalizados, encuestas, biblioteca de documentos del club, facturación familiar y otras variaciones complejas de las anteriores. Lista completa de aplazados en `memship-definition/docs/public/ROADMAP-v1.0.0.md`.
 
