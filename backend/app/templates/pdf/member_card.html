@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  {% set accent = card.organization.brand_color or '#0083ad' %}
+  @page { size: 90mm 55mm; margin: 0; }
+  body { font-family: sans-serif; margin: 0; color: #222; }
+  .card {
+    width: 90mm; height: 55mm; box-sizing: border-box; padding: 5mm 6mm;
+    display: flex; flex-direction: column; justify-content: space-between;
+    border-top: 4mm solid {{ accent }};
+  }
+  .top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .org { font-size: 9pt; font-weight: bold; color: {{ accent }}; max-width: 55mm; }
+  .status {
+    font-size: 7pt; text-transform: uppercase; letter-spacing: 0.5px;
+    font-weight: bold; padding: 1mm 2mm; border-radius: 2mm; color: #fff;
+    background: {{ '#16a34a' if card.status == 'active' else '#dc2626' }};
+  }
+  .body { display: flex; justify-content: space-between; align-items: flex-end; }
+  .details .name { font-size: 13pt; font-weight: bold; margin: 0 0 1mm 0; }
+  .details .number { font-size: 9pt; font-family: monospace; color: #555; letter-spacing: 1px; }
+  .qr { width: 24mm; height: 24mm; }
+  .qr svg { width: 24mm; height: 24mm; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="top">
+      <div class="org">{{ card.organization.name }}</div>
+      <div class="status">{{ card.status }}</div>
+    </div>
+    <div class="body">
+      <div class="details">
+        <p class="name">{{ card.full_name }}</p>
+        <div class="number">{{ card.member_number }}</div>
+      </div>
+      <div class="qr">{{ qr_svg | safe }}</div>
+    </div>
+  </div>
+</body>
+</html>
