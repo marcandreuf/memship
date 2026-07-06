@@ -87,10 +87,11 @@ Open http://localhost:8081 and log in with your credentials. Change `PORT=8081` 
 | v0.4.4 | Recurring billing — scheduled fee generation | Done |
 | v0.4.5 | Payment reminders — overdue email notifications | Done |
 | v0.5.0 | Simple Communications — admin announcements to all/group/membership type | Done |
-| v0.6.0 | Simple Bookings — spaces and time-slot reservations | Next |
-| v0.7.0 | Digital Member Card + QR Check-in | Planned |
-| v0.8.0 | Convocations — token-based RSVP for assemblies (Spanish legal requirement) | Planned |
-| v1.0.0 | Stabilization & Release — CSV exports, demo seed, landing page, docs polish | Planned |
+| v0.5.1 | Communications sent view — recipient tracking + in-app "Seen" | Done |
+| v0.6.0 | ~~Simple Bookings~~ — deferred post-1.0 (build on demand) | Deferred |
+| v0.7.0 | Digital Member Card + QR Check-in — PDF card, auto member numbers | Done |
+| v0.8.0 | ~~Convocations~~ — deferred post-1.0 (build on demand) | Deferred |
+| v1.0.0 | Stabilization & Release — CSV exports, demo seed, landing page, docs polish | Next |
 
 Deferred past v1.0.0: GoCardless e-mandates, PayPal integration, Stripe Invoice flow, bulk receipt actions, custom report builder, surveys, club document library, family group billing, and other complex variations of the above. See `memship-definition/docs/public/ROADMAP-v1.0.0.md` for the full deferred list.
 
