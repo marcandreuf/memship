@@ -135,7 +135,7 @@ export default function ProfilePage() {
             <CardTitle className="text-base">{t("profile.personalInfo")}</CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-4 pt-0">
-            <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
+            <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-8">
               <MemberPhotoUpload
                 photoUrl={person.photo_url ?? null}
                 fullName={`${person.first_name} ${person.last_name}`}
@@ -177,7 +177,7 @@ export default function ProfilePage() {
               <div>
                 <p className="text-xs text-muted-foreground mb-1.5">{t("members.gender")}</p>
                 <Select value={gender} onValueChange={handleGenderChange}>
-                  <SelectTrigger className="h-8">
+                  <SelectTrigger className="h-8 w-full">
                     <SelectValue placeholder="—" />
                   </SelectTrigger>
                   <SelectContent>
@@ -203,7 +203,7 @@ export default function ProfilePage() {
             <div>
               <p className="text-xs text-muted-foreground mb-1.5">{t("profile.language")}</p>
               <Select value={locale} onValueChange={handleLocaleChange}>
-                <SelectTrigger className="h-8">
+                <SelectTrigger className="h-8 w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
