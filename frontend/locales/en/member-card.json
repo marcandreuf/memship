@@ -12,5 +12,20 @@
       "cancelled": "Cancelled",
       "expired": "Expired"
     }
+  },
+  "scan": {
+    "title": "Scan Member Card",
+    "hint": "Scan a member's QR code with the camera, or type the code, to verify their status.",
+    "noAccess": "You do not have access to this page.",
+    "manualLabel": "Enter code manually",
+    "manualPlaceholder": "Paste or type the card code",
+    "verify": "Verify",
+    "startCamera": "Scan with camera",
+    "stopCamera": "Stop camera",
+    "cameraError": "Could not access the camera.",
+    "invalid": "Invalid card code",
+    "notFound": "Member not found",
+    "resultNumber": "No.",
+    "scanAnother": "Scan another"
   }
 }

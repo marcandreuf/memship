@@ -12,5 +12,20 @@
       "cancelled": "Cancel·lat",
       "expired": "Caducat"
     }
+  },
+  "scan": {
+    "title": "Escaneja la targeta de soci",
+    "hint": "Escaneja el codi QR d'un soci amb la càmera, o escriu el codi, per verificar-ne l'estat.",
+    "noAccess": "No tens accés a aquesta pàgina.",
+    "manualLabel": "Introdueix el codi manualment",
+    "manualPlaceholder": "Enganxa o escriu el codi de la targeta",
+    "verify": "Verifica",
+    "startCamera": "Escaneja amb la càmera",
+    "stopCamera": "Atura la càmera",
+    "cameraError": "No s'ha pogut accedir a la càmera.",
+    "invalid": "Codi de targeta no vàlid",
+    "notFound": "Soci no trobat",
+    "resultNumber": "Núm.",
+    "scanAnother": "Escaneja un altre"
   }
 }

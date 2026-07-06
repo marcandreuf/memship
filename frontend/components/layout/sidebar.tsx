@@ -17,6 +17,7 @@ import {
   CreditCard,
   Megaphone,
   IdCard,
+  ScanLine,
   LogOut,
   ChevronsUpDown,
 } from "lucide-react";
@@ -70,6 +71,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
     { href: "/my-card", label: t("nav.myCard"), icon: IdCard, show: !isAdmin && cardEnabled },
     { href: "/payment-method", label: t("paymentMethod.title"), icon: CreditCard, show: !isAdmin },
     { href: "/members", label: t("nav.members"), icon: Users, show: isAdmin },
+    { href: "/scan", label: t("nav.scan"), icon: ScanLine, show: isAdmin && cardEnabled },
     { href: "/receipts", label: t("nav.receipts"), icon: Receipt, show: isAdmin },
     { href: "/mandates", label: t("nav.mandates"), icon: FileText, show: isAdmin },
     { href: "/remittances", label: t("nav.remittances"), icon: Landmark, show: isAdmin },

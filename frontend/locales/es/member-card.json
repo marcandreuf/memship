@@ -12,5 +12,20 @@
       "cancelled": "Cancelado",
       "expired": "Caducado"
     }
+  },
+  "scan": {
+    "title": "Escanear tarjeta de socio",
+    "hint": "Escanea el código QR de un socio con la cámara, o escribe el código, para verificar su estado.",
+    "noAccess": "No tienes acceso a esta página.",
+    "manualLabel": "Introducir código manualmente",
+    "manualPlaceholder": "Pega o escribe el código de la tarjeta",
+    "verify": "Verificar",
+    "startCamera": "Escanear con la cámara",
+    "stopCamera": "Detener cámara",
+    "cameraError": "No se pudo acceder a la cámara.",
+    "invalid": "Código de tarjeta no válido",
+    "notFound": "Socio no encontrado",
+    "resultNumber": "Nº",
+    "scanAnother": "Escanear otro"
   }
 }
