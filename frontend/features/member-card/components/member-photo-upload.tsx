@@ -104,9 +104,9 @@ export function MemberPhotoUpload({ photoUrl, fullName }: MemberPhotoUploadProps
   return (
     <div className="flex flex-col items-center gap-2 shrink-0">
       {confirmDialog}
-      <Avatar className="h-28 w-28">
+      <Avatar className="h-40 w-40">
         {imageSrc ? <AvatarImage src={imageSrc} alt={fullName} /> : null}
-        <AvatarFallback className="text-3xl font-semibold">
+        <AvatarFallback className="text-5xl font-semibold">
           {initialsOf(fullName)}
         </AvatarFallback>
       </Avatar>
