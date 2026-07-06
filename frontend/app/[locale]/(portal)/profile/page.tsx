@@ -135,13 +135,19 @@ export default function ProfilePage() {
             <CardTitle className="text-base">{t("profile.personalInfo")}</CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-4 pt-0">
-            <dl className="grid gap-2 sm:grid-cols-2">
-              <Field label={t("profile.firstName")} value={person.first_name} />
-              <Field label={t("profile.lastName")} value={person.last_name} />
-              <Field label={t("profile.email")} value={person.email} />
-              <Field label={t("profile.dateOfBirth")} value={person.date_of_birth ? new Date(person.date_of_birth).toLocaleDateString() : null} />
-              <Field label={t("profile.nationalId")} value={person.national_id} />
-            </dl>
+            <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
+              <MemberPhotoUpload
+                photoUrl={person.photo_url ?? null}
+                fullName={`${person.first_name} ${person.last_name}`}
+              />
+              <dl className="grid flex-1 content-start gap-2 sm:grid-cols-2">
+                <Field label={t("profile.firstName")} value={person.first_name} />
+                <Field label={t("profile.lastName")} value={person.last_name} />
+                <Field label={t("profile.email")} value={person.email} />
+                <Field label={t("profile.dateOfBirth")} value={person.date_of_birth ? new Date(person.date_of_birth).toLocaleDateString() : null} />
+                <Field label={t("profile.nationalId")} value={person.national_id} />
+              </dl>
+            </div>
           </CardContent>
         </Card>
 
@@ -160,26 +166,13 @@ export default function ProfilePage() {
         </Card>
       </div>
 
-      {/* Profile photo — shown on the member card */}
-      <Card>
-        <CardHeader className="py-3 px-4">
-          <CardTitle className="text-base">{t("photo.title")}</CardTitle>
-        </CardHeader>
-        <CardContent className="px-4 pb-4 pt-0">
-          <MemberPhotoUpload
-            photoUrl={person.photo_url ?? null}
-            fullName={`${person.first_name} ${person.last_name}`}
-          />
-        </CardContent>
-      </Card>
-
-      {/* Editable profile fields */}
+      {/* Editable profile fields + language preference */}
       <Card>
         <CardHeader className="py-3 px-4">
           <CardTitle className="text-base">{t("profile.editProfile")}</CardTitle>
         </CardHeader>
         <CardContent className="px-4 pb-4 pt-0">
-          <div className="grid gap-3 sm:grid-cols-2 max-w-lg">
+          <div className="grid gap-3 sm:grid-cols-3 max-w-2xl">
             {genderOptions.length > 0 && (
               <div>
                 <p className="text-xs text-muted-foreground mb-1.5">{t("members.gender")}</p>
@@ -207,35 +200,27 @@ export default function ProfilePage() {
                 placeholder="+34 612 345 678"
               />
             </div>
+            <div>
+              <p className="text-xs text-muted-foreground mb-1.5">{t("profile.language")}</p>
+              <Select value={locale} onValueChange={handleLocaleChange}>
+                <SelectTrigger className="h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {locales.map((loc) => (
+                    <SelectItem key={loc} value={loc}>
+                      {t(`locale.${loc}`)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           {dirty && (
             <Button size="sm" className="mt-3" onClick={handleSave} disabled={updateMutation.isPending}>
               {updateMutation.isPending ? t("common.loading") : t("common.save")}
             </Button>
           )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="py-3 px-4">
-          <CardTitle className="text-base">{t("profile.preferences")}</CardTitle>
-        </CardHeader>
-        <CardContent className="px-4 pb-4 pt-0">
-          <div className="max-w-xs">
-            <p className="text-xs text-muted-foreground mb-1.5">{t("profile.language")}</p>
-            <Select value={locale} onValueChange={handleLocaleChange}>
-              <SelectTrigger className="h-8">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {locales.map((loc) => (
-                  <SelectItem key={loc} value={loc}>
-                    {t(`locale.${loc}`)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
         </CardContent>
       </Card>
     </div>

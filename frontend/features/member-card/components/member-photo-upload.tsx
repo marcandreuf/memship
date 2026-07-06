@@ -102,41 +102,39 @@ export function MemberPhotoUpload({ photoUrl, fullName }: MemberPhotoUploadProps
   };
 
   return (
-    <div>
+    <div className="flex flex-col items-center gap-2 shrink-0">
       {confirmDialog}
-      <div className="flex items-center gap-4">
-        <Avatar className="h-20 w-20">
-          {imageSrc ? <AvatarImage src={imageSrc} alt={fullName} /> : null}
-          <AvatarFallback className="text-xl font-semibold">
-            {initialsOf(fullName)}
-          </AvatarFallback>
-        </Avatar>
-        <div className="flex gap-2">
+      <Avatar className="h-28 w-28">
+        {imageSrc ? <AvatarImage src={imageSrc} alt={fullName} /> : null}
+        <AvatarFallback className="text-3xl font-semibold">
+          {initialsOf(fullName)}
+        </AvatarFallback>
+      </Avatar>
+      <div className="flex gap-2">
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploadMutation.isPending}
+        >
+          {uploadMutation.isPending
+            ? t("common.loading")
+            : photoUrl
+              ? t("common.change")
+              : t("photo.dragOrClick")}
+        </Button>
+        {photoUrl && (
           <Button
             type="button"
             size="sm"
-            variant="secondary"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploadMutation.isPending}
+            variant="destructive"
+            onClick={handleDelete}
+            disabled={deleteMutation.isPending}
           >
-            {uploadMutation.isPending
-              ? t("common.loading")
-              : photoUrl
-                ? t("common.change")
-                : t("photo.dragOrClick")}
+            {t("photo.remove")}
           </Button>
-          {photoUrl && (
-            <Button
-              type="button"
-              size="sm"
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={deleteMutation.isPending}
-            >
-              {t("photo.remove")}
-            </Button>
-          )}
-        </div>
+        )}
       </div>
       <input
         ref={fileInputRef}
@@ -145,9 +143,6 @@ export function MemberPhotoUpload({ photoUrl, fullName }: MemberPhotoUploadProps
         className="hidden"
         onChange={handleFileSelect}
       />
-      <p className="text-xs text-muted-foreground mt-1.5">
-        {t("photo.hint", { size: MAX_SIZE_MB })}
-      </p>
     </div>
   );
 }
