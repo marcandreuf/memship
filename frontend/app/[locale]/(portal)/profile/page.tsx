@@ -134,12 +134,16 @@ export default function ProfilePage() {
           <CardTitle className="text-base">{t("profile.memberInfo")}</CardTitle>
         </CardHeader>
         <CardContent className="px-4 pb-4 pt-0">
-          <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:gap-14">
-            <MemberPhotoUpload
-              photoUrl={person.photo_url ?? null}
-              fullName={`${person.first_name} ${person.last_name}`}
-            />
-            <dl className="grid flex-1 content-start gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
+          {/* photo = first column; fields fill the rest.
+              lg: 4 cols (photo + 3), sm/md: 2×2 fields, mobile: 1 col */}
+          <div className="grid gap-6 lg:grid-cols-[auto_1fr] lg:items-start lg:gap-14">
+            <div className="flex justify-center lg:block">
+              <MemberPhotoUpload
+                photoUrl={person.photo_url ?? null}
+                fullName={`${person.first_name} ${person.last_name}`}
+              />
+            </div>
+            <dl className="grid content-start gap-x-8 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
               <Field label={t("profile.firstName")} value={person.first_name} />
               <Field label={t("profile.lastName")} value={person.last_name} />
               <Field label={t("profile.email")} value={person.email} />
