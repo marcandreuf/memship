@@ -90,6 +90,7 @@ Obriu http://localhost:8081 i inicieu sessió amb les vostres credencials. Canvi
 | v0.5.1 | Vista d'enviaments de comunicacions — seguiment de destinataris + "Vist" a l'app | Fet |
 | v0.6.0 | ~~Reserves simples~~ — ajornat després de v1.0.0 (segons demanda) | Ajornat |
 | v0.7.0 | Carnet digital de soci + registre QR — carnet en PDF, numeració automàtica de socis | Fet |
+| v0.7.1 | Millores del carnet — vista de carnet per a l'admin, foto de perfil del soci, redisseny del perfil | Fet |
 | v0.8.0 | ~~Convocatòries~~ — ajornat després de v1.0.0 (segons demanda) | Ajornat |
 | v1.0.0 | Estabilització i llançament — exportacions CSV, dades demo, landing page, polit de docs | Següent |
 

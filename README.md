@@ -90,6 +90,7 @@ Open http://localhost:8081 and log in with your credentials. Change `PORT=8081` 
 | v0.5.1 | Communications sent view — recipient tracking + in-app "Seen" | Done |
 | v0.6.0 | ~~Simple Bookings~~ — deferred post-1.0 (build on demand) | Deferred |
 | v0.7.0 | Digital Member Card + QR Check-in — PDF card, auto member numbers | Done |
+| v0.7.1 | Member card polish — admin card view on member page, member profile photo upload, profile page redesign | Done |
 | v0.8.0 | ~~Convocations~~ — deferred post-1.0 (build on demand) | Deferred |
 | v1.0.0 | Stabilization & Release — CSV exports, demo seed, landing page, docs polish | Next |
 

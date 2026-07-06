@@ -90,6 +90,7 @@ Abre http://localhost:8081 e inicia sesión con tus credenciales. Cambia `PORT=8
 | v0.5.1 | Vista de envíos de comunicaciones — seguimiento de destinatarios + "Visto" en la app | Hecho |
 | v0.6.0 | ~~Reservas simples~~ — aplazado tras v1.0.0 (según demanda) | Aplazado |
 | v0.7.0 | Carnet digital de socio + registro QR — carnet en PDF, numeración automática de socios | Hecho |
+| v0.7.1 | Mejoras del carnet — vista de carnet para el admin, foto de perfil del socio, rediseño del perfil | Hecho |
 | v0.8.0 | ~~Convocatorias~~ — aplazado tras v1.0.0 (según demanda) | Aplazado |
 | v1.0.0 | Estabilización y lanzamiento — exportaciones CSV, datos demo, landing page, pulido de docs | Próximo |
 
