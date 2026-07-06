@@ -1,12 +1,26 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { getMyCard, assignMemberNumbers, scanCard } from "../services/member-card-api";
+import {
+  getMyCard,
+  getMemberCard,
+  assignMemberNumbers,
+  scanCard,
+} from "../services/member-card-api";
 
 export function useMyCard() {
   return useQuery({
     queryKey: ["me", "card"],
     queryFn: getMyCard,
+    retry: false,
+  });
+}
+
+export function useMemberCard(memberId: number, enabled = true) {
+  return useQuery({
+    queryKey: ["members", memberId, "card"],
+    queryFn: () => getMemberCard(memberId),
+    enabled,
     retry: false,
   });
 }

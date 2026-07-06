@@ -54,6 +54,36 @@ def _current_member(db: Session, user: User) -> Member:
     return member
 
 
+def _load_member_or_404(db: Session, member_id: int) -> Member:
+    member = (
+        db.query(Member)
+        .options(joinedload(Member.person))
+        .filter(Member.id == member_id)
+        .first()
+    )
+    if member is None:
+        raise HTTPException(status_code=404, detail="Member not found")
+    return member
+
+
+def _pdf_response(db: Session, member: Member) -> Response:
+    pdf = card_pdf(db, member)
+    filename = f"member-card-{member.member_number or member.id}.pdf"
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+def _qr_response(member: Member) -> Response:
+    return Response(
+        content=card_qr_svg(member),
+        media_type="image/svg+xml",
+        headers={"Cache-Control": "private, max-age=300"},
+    )
+
+
 @router.get("/me/card", response_model=CardResponse)
 def get_my_card(
     db: Session = Depends(get_db),
@@ -71,12 +101,7 @@ def get_my_card_qr(
 ):
     _require_card_enabled(db)
     member = _current_member(db, current_user)
-    svg = card_qr_svg(member)
-    return Response(
-        content=svg,
-        media_type="image/svg+xml",
-        headers={"Cache-Control": "private, max-age=300"},
-    )
+    return _qr_response(member)
 
 
 @router.get("/me/card/pdf")
@@ -86,13 +111,7 @@ def get_my_card_pdf(
 ):
     _require_card_enabled(db)
     member = _current_member(db, current_user)
-    pdf = card_pdf(db, member)
-    filename = f"member-card-{member.member_number or member.id}.pdf"
-    return Response(
-        content=pdf,
-        media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
-    )
+    return _pdf_response(db, member)
 
 
 @router.post("/card/scan", response_model=ScanResponse)
@@ -117,3 +136,39 @@ def scan_card(
         status=member.status,
         photo_url=person.photo_url,
     )
+
+
+# --- Admin: view/print any member's card (from the member detail page) ---
+
+
+@router.get("/members/{member_id}/card", response_model=CardResponse)
+def get_member_card_admin(
+    member_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    _require_card_enabled(db)
+    member = _load_member_or_404(db, member_id)
+    return build_card(db, member)
+
+
+@router.get("/members/{member_id}/card/qr.svg")
+def get_member_card_qr_admin(
+    member_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    _require_card_enabled(db)
+    member = _load_member_or_404(db, member_id)
+    return _qr_response(member)
+
+
+@router.get("/members/{member_id}/card/pdf")
+def get_member_card_pdf_admin(
+    member_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    _require_card_enabled(db)
+    member = _load_member_or_404(db, member_id)
+    return _pdf_response(db, member)

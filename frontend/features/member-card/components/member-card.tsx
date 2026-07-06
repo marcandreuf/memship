@@ -17,7 +17,19 @@ function initialsOf(fullName: string): string {
 
 const ACTIVE_STATUS = "active";
 
-export function MemberCard({ card }: { card: CardData }) {
+interface MemberCardProps {
+  card: CardData;
+  /** QR image source. Defaults to the current member's own card. */
+  qrSrc?: string;
+  /** PDF download href. Defaults to the current member's own card. */
+  pdfHref?: string;
+}
+
+export function MemberCard({
+  card,
+  qrSrc = "/api/me/card/qr.svg",
+  pdfHref = "/api/me/card/pdf",
+}: MemberCardProps) {
   const t = useTranslations();
   const accent = card.organization.brand_color || undefined;
   const isActive = card.status === ACTIVE_STATUS;
@@ -47,14 +59,14 @@ export function MemberCard({ card }: { card: CardData }) {
         </div>
 
         <div className="flex items-center gap-4">
-          <Avatar className="h-16 w-16">
+          <Avatar className="h-24 w-24">
             {photoSrc ? <AvatarImage src={photoSrc} alt={card.full_name} /> : null}
-            <AvatarFallback className="text-lg font-semibold">
+            <AvatarFallback className="text-2xl font-semibold">
               {initialsOf(card.full_name)}
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0">
-            <p className="truncate text-lg font-bold">{card.full_name}</p>
+            <p className="truncate text-xl font-bold">{card.full_name}</p>
             <p className="font-mono text-sm tracking-wider text-muted-foreground">
               {card.member_number}
             </p>
@@ -63,11 +75,7 @@ export function MemberCard({ card }: { card: CardData }) {
 
         <div className="flex flex-col items-center gap-2 rounded-lg border bg-muted/30 p-4">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/api/me/card/qr.svg"
-            alt={t("memberCard.qrAlt")}
-            className="h-40 w-40"
-          />
+          <img src={qrSrc} alt={t("memberCard.qrAlt")} className="h-28 w-28" />
           <p className="flex items-center gap-1 text-xs text-muted-foreground">
             <QrCode className="h-3 w-3" />
             {t("memberCard.qrHint")}
@@ -75,7 +83,7 @@ export function MemberCard({ card }: { card: CardData }) {
         </div>
 
         <Button asChild variant="outline" className="w-full">
-          <a href="/api/me/card/pdf" target="_blank" rel="noopener noreferrer">
+          <a href={pdfHref} target="_blank" rel="noopener noreferrer">
             <Download className="mr-2 h-4 w-4" />
             {t("memberCard.downloadPdf")}
           </a>

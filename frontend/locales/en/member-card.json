@@ -11,7 +11,8 @@
       "suspended": "Suspended",
       "cancelled": "Cancelled",
       "expired": "Expired"
-    }
+    },
+    "tabLabel": "Card"
   },
   "scan": {
     "title": "Scan Member Card",

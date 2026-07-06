@@ -32,6 +32,10 @@ export async function getMyCard(): Promise<CardData> {
   return apiClient("/me/card");
 }
 
+export async function getMemberCard(memberId: number): Promise<CardData> {
+  return apiClient(`/members/${memberId}/card`);
+}
+
 export async function assignMemberNumbers(): Promise<AssignNumbersResult> {
   return apiClient("/members/assign-numbers", { method: "POST" });
 }

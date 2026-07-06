@@ -234,6 +234,74 @@ class TestScan:
         assert resp.status_code == 404
 
 
+# --- Admin: view/print any member's card ---
+
+
+class TestAdminMemberCard:
+    def test_admin_gets_member_card(self, client, db):
+        _ensure_org(db)
+        admin = _create_admin(db)
+        _user, member = _create_member_user(db)
+        client.cookies.update(_auth_cookie(admin))
+
+        resp = client.get(f"/api/v1/members/{member.id}/card")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["member_id"] == member.id
+        assert data["full_name"] == "Mika Roig"
+        assert data["member_number"] == "SCB-0001"
+        assert verify_card_token(data["token"]) == member.id
+
+    def test_admin_gets_member_card_pdf(self, client, db):
+        _ensure_org(db)
+        admin = _create_admin(db)
+        _user, member = _create_member_user(db)
+        client.cookies.update(_auth_cookie(admin))
+
+        resp = client.get(f"/api/v1/members/{member.id}/card/pdf")
+        assert resp.status_code == 200
+        assert resp.headers["content-type"] == "application/pdf"
+        assert resp.content[:5] == b"%PDF-"
+
+    def test_admin_card_works_for_member_without_user_account(self, client, db):
+        # Members without a login (e.g. minors) still get a printable card.
+        _ensure_org(db)
+        admin = _create_admin(db)
+        _user, member = _create_member_user(db)
+        member.user_id = None
+        db.flush()
+        client.cookies.update(_auth_cookie(admin))
+
+        resp = client.get(f"/api/v1/members/{member.id}/card")
+        assert resp.status_code == 200
+        assert resp.json()["member_id"] == member.id
+
+    def test_member_cannot_view_admin_card_endpoint(self, client, db):
+        _ensure_org(db)
+        user, member = _create_member_user(db)
+        client.cookies.update(_auth_cookie(user))
+
+        resp = client.get(f"/api/v1/members/{member.id}/card")
+        assert resp.status_code == 403
+
+    def test_admin_card_unknown_member_404(self, client, db):
+        _ensure_org(db)
+        admin = _create_admin(db)
+        client.cookies.update(_auth_cookie(admin))
+
+        resp = client.get("/api/v1/members/999999/card")
+        assert resp.status_code == 404
+
+    def test_admin_card_404_when_module_off(self, client, db):
+        _ensure_org(db, member_card=False)
+        admin = _create_admin(db)
+        _user, member = _create_member_user(db)
+        client.cookies.update(_auth_cookie(admin))
+
+        assert client.get(f"/api/v1/members/{member.id}/card").status_code == 404
+        assert client.get(f"/api/v1/members/{member.id}/card/pdf").status_code == 404
+
+
 # --- Member numbering ---
 
 

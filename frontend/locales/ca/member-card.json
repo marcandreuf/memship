@@ -11,7 +11,8 @@
       "suspended": "Suspès",
       "cancelled": "Cancel·lat",
       "expired": "Caducat"
-    }
+    },
+    "tabLabel": "Carnet"
   },
   "scan": {
     "title": "Escaneja la targeta de soci",

@@ -11,7 +11,8 @@
       "suspended": "Suspendido",
       "cancelled": "Cancelado",
       "expired": "Caducado"
-    }
+    },
+    "tabLabel": "Carnet"
   },
   "scan": {
     "title": "Escanear tarjeta de socio",
