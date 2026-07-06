@@ -20,7 +20,9 @@
     "logout": "Cerrar sesión",
     "menu": "Menú",
     "communications": "Comunicaciones",
-    "announcements": "Anuncios"
+    "announcements": "Anuncios",
+    "myCard": "Mi tarjeta",
+    "scan": "Escanear"
   },
   "common": {
     "save": "Guardar",

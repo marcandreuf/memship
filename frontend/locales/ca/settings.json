@@ -106,6 +106,19 @@
       "title": "Comunicacions",
       "enabled": "Activa les comunicacions",
       "enabledDesc": "Permet als administradors enviar anuncis als membres per correu i a l'app."
+    },
+    "memberCard": {
+      "tab": "Targeta de soci",
+      "title": "Targeta de soci digital",
+      "enabled": "Activa les targetes de soci",
+      "enabledDesc": "Ofereix als socis una targeta digital amb codi QR per al control d'accés.",
+      "numberingTitle": "Numeració de socis",
+      "prefix": "Prefix de número",
+      "prefixHint": "p. ex. SCB- genera SCB-0001",
+      "padding": "Dígits",
+      "paddingHint": "Longitud de la seqüència amb zeros",
+      "assignNumbers": "Assigna números als socis que no en tinguin",
+      "assignedCount": "{count} número(s) de soci assignat(s)"
     }
   }
 }

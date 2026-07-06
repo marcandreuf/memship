@@ -1,0 +1,16 @@
+{
+  "memberCard": {
+    "title": "La meva targeta",
+    "unavailable": "La teva targeta de soci no està disponible.",
+    "downloadPdf": "Descarrega PDF",
+    "qrHint": "Mostra aquest codi al control d'accés",
+    "qrAlt": "Codi QR de soci",
+    "status": {
+      "active": "Actiu",
+      "pending": "Pendent",
+      "suspended": "Suspès",
+      "cancelled": "Cancel·lat",
+      "expired": "Caducat"
+    }
+  }
+}

@@ -106,6 +106,19 @@
       "title": "Comunicaciones",
       "enabled": "Activar comunicaciones",
       "enabledDesc": "Permite a los administradores enviar anuncios a los miembros por correo y en la app."
+    },
+    "memberCard": {
+      "tab": "Tarjeta de socio",
+      "title": "Tarjeta de socio digital",
+      "enabled": "Activar tarjetas de socio",
+      "enabledDesc": "Ofrece a los socios una tarjeta digital con código QR para el control de acceso.",
+      "numberingTitle": "Numeración de socios",
+      "prefix": "Prefijo de número",
+      "prefixHint": "p. ej. SCB- genera SCB-0001",
+      "padding": "Dígitos",
+      "paddingHint": "Longitud de la secuencia con ceros",
+      "assignNumbers": "Asignar números a los socios que no tengan",
+      "assignedCount": "{count} número(s) de socio asignado(s)"
     }
   }
 }

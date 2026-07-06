@@ -1,0 +1,16 @@
+{
+  "memberCard": {
+    "title": "Mi tarjeta",
+    "unavailable": "Tu tarjeta de socio no está disponible.",
+    "downloadPdf": "Descargar PDF",
+    "qrHint": "Muestra este código en el control de acceso",
+    "qrAlt": "Código QR de socio",
+    "status": {
+      "active": "Activo",
+      "pending": "Pendiente",
+      "suspended": "Suspendido",
+      "cancelled": "Cancelado",
+      "expired": "Caducado"
+    }
+  }
+}

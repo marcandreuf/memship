@@ -20,7 +20,9 @@
     "logout": "Tancar sessió",
     "menu": "Menú",
     "communications": "Comunicacions",
-    "announcements": "Anuncis"
+    "announcements": "Anuncis",
+    "myCard": "La meva targeta",
+    "scan": "Escanejar"
   },
   "common": {
     "save": "Desar",

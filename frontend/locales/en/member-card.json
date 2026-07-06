@@ -1,0 +1,16 @@
+{
+  "memberCard": {
+    "title": "My Card",
+    "unavailable": "Your membership card is not available.",
+    "downloadPdf": "Download PDF",
+    "qrHint": "Show this code at check-in",
+    "qrAlt": "Membership QR code",
+    "status": {
+      "active": "Active",
+      "pending": "Pending",
+      "suspended": "Suspended",
+      "cancelled": "Cancelled",
+      "expired": "Expired"
+    }
+  }
+}
