@@ -60,7 +60,7 @@ export function MemberCard({
 
         <div className="flex items-center gap-4">
           <Avatar className="h-24 w-24">
-            {photoSrc ? <AvatarImage src={photoSrc} alt={card.full_name} /> : null}
+            {photoSrc ? <AvatarImage src={photoSrc} alt={card.full_name} className="object-cover" /> : null}
             <AvatarFallback className="text-2xl font-semibold">
               {initialsOf(card.full_name)}
             </AvatarFallback>

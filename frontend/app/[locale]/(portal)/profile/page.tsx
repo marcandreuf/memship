@@ -129,42 +129,30 @@ export default function ProfilePage() {
         <Badge>{t(`status.${member.status}`)}</Badge>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Card>
-          <CardHeader className="py-3 px-4">
-            <CardTitle className="text-base">{t("profile.personalInfo")}</CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 pb-4 pt-0">
-            <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-8">
-              <MemberPhotoUpload
-                photoUrl={person.photo_url ?? null}
-                fullName={`${person.first_name} ${person.last_name}`}
-              />
-              <dl className="grid flex-1 content-start gap-2 sm:grid-cols-2">
-                <Field label={t("profile.firstName")} value={person.first_name} />
-                <Field label={t("profile.lastName")} value={person.last_name} />
-                <Field label={t("profile.email")} value={person.email} />
-                <Field label={t("profile.dateOfBirth")} value={person.date_of_birth ? new Date(person.date_of_birth).toLocaleDateString() : null} />
-                <Field label={t("profile.nationalId")} value={person.national_id} />
-              </dl>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="py-3 px-4">
-            <CardTitle className="text-base">{t("profile.membership")}</CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 pb-4 pt-0">
-            <dl className="grid gap-2 sm:grid-cols-2">
+      <Card>
+        <CardHeader className="py-3 px-4">
+          <CardTitle className="text-base">{t("profile.memberInfo")}</CardTitle>
+        </CardHeader>
+        <CardContent className="px-4 pb-4 pt-0">
+          <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:gap-8">
+            <MemberPhotoUpload
+              photoUrl={person.photo_url ?? null}
+              fullName={`${person.first_name} ${person.last_name}`}
+            />
+            <dl className="grid flex-1 content-start gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
+              <Field label={t("profile.firstName")} value={person.first_name} />
+              <Field label={t("profile.lastName")} value={person.last_name} />
+              <Field label={t("profile.email")} value={person.email} />
               <Field label={t("profile.memberNumber")} value={member.member_number} />
               <Field label={t("profile.membershipType")} value={member.membership_type_name} />
               <Field label={t("profile.status")} value={t(`status.${member.status}`)} />
+              <Field label={t("profile.dateOfBirth")} value={person.date_of_birth ? new Date(person.date_of_birth).toLocaleDateString() : null} />
+              <Field label={t("profile.nationalId")} value={person.national_id} />
               <Field label={t("profile.joinedAt")} value={new Date(member.joined_at).toLocaleDateString()} />
             </dl>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Editable profile fields + language preference */}
       <Card>

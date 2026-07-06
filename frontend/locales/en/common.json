@@ -83,7 +83,8 @@
     "language": "Language",
     "preferences": "Preferences",
     "editProfile": "Edit Profile",
-    "phone": "Phone"
+    "phone": "Phone",
+    "memberInfo": "Member Information"
   },
   "validation": {
     "required": "This field is required",

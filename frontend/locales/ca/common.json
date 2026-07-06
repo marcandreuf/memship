@@ -83,7 +83,8 @@
     "language": "Idioma",
     "preferences": "Preferències",
     "editProfile": "Editar perfil",
-    "phone": "Telèfon"
+    "phone": "Telèfon",
+    "memberInfo": "Informació del soci"
   },
   "validation": {
     "required": "Aquest camp és obligatori",

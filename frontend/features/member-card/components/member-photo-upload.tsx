@@ -105,7 +105,7 @@ export function MemberPhotoUpload({ photoUrl, fullName }: MemberPhotoUploadProps
     <div className="flex flex-col items-center gap-2 shrink-0">
       {confirmDialog}
       <Avatar className="h-40 w-40">
-        {imageSrc ? <AvatarImage src={imageSrc} alt={fullName} /> : null}
+        {imageSrc ? <AvatarImage src={imageSrc} alt={fullName} className="object-cover" /> : null}
         <AvatarFallback className="text-5xl font-semibold">
           {initialsOf(fullName)}
         </AvatarFallback>

@@ -83,7 +83,8 @@
     "language": "Idioma",
     "preferences": "Preferencias",
     "editProfile": "Editar perfil",
-    "phone": "Teléfono"
+    "phone": "Teléfono",
+    "memberInfo": "Información del socio"
   },
   "validation": {
     "required": "Este campo es obligatorio",

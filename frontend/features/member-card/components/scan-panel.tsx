@@ -181,6 +181,7 @@ export function ScanPanel() {
                   <AvatarImage
                     src={`/api/uploads${result.photo_url.replace("/uploads", "")}`}
                     alt={result.full_name}
+                    className="object-cover"
                   />
                 ) : null}
                 <AvatarFallback className="text-base font-semibold">
