@@ -1,0 +1,14 @@
+{
+  "annualSummary": {
+    "title": "Annual Summary",
+    "yearRevenue": "Year revenue",
+    "newMembers": "New members",
+    "activeMembers": "Active members",
+    "netGrowth": "Net growth",
+    "revenueVsOutstanding": "Revenue vs. outstanding",
+    "revenue": "Revenue",
+    "outstanding": "Outstanding",
+    "newMembersByMonth": "New members by month",
+    "topActivities": "Top activities by participation"
+  }
+}

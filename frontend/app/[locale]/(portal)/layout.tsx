@@ -8,7 +8,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { useRouter, usePathname } from "@/lib/i18n/routing";
 import { useEffect } from "react";
 
-const ADMIN_ROUTES = ["/members", "/groups", "/receipts", "/settings", "/billing-runs", "/communications"];
+const ADMIN_ROUTES = ["/members", "/groups", "/receipts", "/settings", "/billing-runs", "/communications", "/annual-summary"];
 
 export default function PortalLayout({
   children,

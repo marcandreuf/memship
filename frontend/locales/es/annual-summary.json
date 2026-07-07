@@ -1,0 +1,14 @@
+{
+  "annualSummary": {
+    "title": "Resumen anual",
+    "yearRevenue": "Ingresos del año",
+    "newMembers": "Nuevos socios",
+    "activeMembers": "Socios activos",
+    "netGrowth": "Crecimiento neto",
+    "revenueVsOutstanding": "Ingresos vs. pendiente",
+    "revenue": "Ingresos",
+    "outstanding": "Pendiente",
+    "newMembersByMonth": "Nuevos socios por mes",
+    "topActivities": "Actividades con más participación"
+  }
+}
