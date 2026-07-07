@@ -4,7 +4,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Query, Session, joinedload
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +29,41 @@ from app.domains.members.models import Member
 class RegistrationError(Exception):
     """Raised when a registration operation fails."""
     pass
+
+
+# --- Query builders ---
+
+
+def _registrations_base_query(db: Session) -> Query:
+    return db.query(Registration).options(
+        joinedload(Registration.member).joinedload(Member.person),
+        joinedload(Registration.activity),
+        joinedload(Registration.modality),
+    )
+
+
+def build_activity_registrations_query(
+    db: Session, activity_id: int, *, status: str | None = None
+) -> Query:
+    """Registrations for one activity, shared by the list and CSV export."""
+    query = _registrations_base_query(db).filter(
+        Registration.activity_id == activity_id
+    )
+    if status:
+        query = query.filter(Registration.status == status)
+    return query.order_by(Registration.created_at.desc())
+
+
+def build_member_registrations_query(
+    db: Session, member_id: int, *, status: str | None = None
+) -> Query:
+    """Registrations for one member, shared by the list and CSV export."""
+    query = _registrations_base_query(db).filter(
+        Registration.member_id == member_id
+    )
+    if status:
+        query = query.filter(Registration.status == status)
+    return query.order_by(Registration.created_at.desc())
 
 
 def register_member(

@@ -1,11 +1,13 @@
 """Receipt management endpoints."""
 
+from datetime import date
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import Response
-from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.authorization import require_admin
+from app.core.csv_export import stream_csv
 from app.core.pagination import paginate
 from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
@@ -23,6 +25,7 @@ from app.domains.billing.schemas import (
     ReceiptUpdate,
 )
 from app.domains.billing.service import (
+    build_receipts_query,
     cancel_receipt,
     create_receipt,
     emit_receipt,
@@ -63,43 +66,91 @@ def list_receipts(
     origin: str | None = Query(None),
     member_id: int | None = Query(None),
     search: str | None = Query(None),
+    emission_date_from: date | None = Query(None),
+    emission_date_to: date | None = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
     """List receipts with filters (admin only)."""
-    query = (
-        db.query(Receipt)
-        .filter(Receipt.is_active.is_(True))
-        .options(
-            joinedload(Receipt.member).joinedload(Member.person),
-            joinedload(Receipt.concept),
-        )
+    query = build_receipts_query(
+        db,
+        status=status_filter,
+        origin=origin,
+        member_id=member_id,
+        search=search,
+        emission_date_from=emission_date_from,
+        emission_date_to=emission_date_to,
     )
-
-    if status_filter:
-        query = query.filter(Receipt.status == status_filter)
-    if origin:
-        query = query.filter(Receipt.origin == origin)
-    if member_id:
-        query = query.filter(Receipt.member_id == member_id)
-    if search:
-        pattern = f"%{search}%"
-        query = query.join(Receipt.member).join(Member.person).filter(
-            or_(
-                Receipt.receipt_number.ilike(pattern),
-                Receipt.description.ilike(pattern),
-                Person.first_name.ilike(pattern),
-                Person.last_name.ilike(pattern),
-            )
-        )
-
-    query = query.order_by(Receipt.emission_date.desc(), Receipt.id.desc())
     items, meta = paginate(query, page, per_page)
 
     return {
         "items": [_to_detail(r) for r in items],
         "meta": meta.model_dump(),
     }
+
+
+_RECEIPTS_CSV_HEADERS = [
+    "receipt_number",
+    "member_number",
+    "member_name",
+    "concept",
+    "origin",
+    "status",
+    "base_amount",
+    "vat_amount",
+    "total_amount",
+    "emission_date",
+    "due_date",
+    "payment_date",
+]
+
+
+def _receipt_csv_row(receipt: Receipt) -> list:
+    member_name = None
+    member_number = None
+    if receipt.member and receipt.member.person:
+        p = receipt.member.person
+        member_name = f"{p.first_name} {p.last_name}"
+        member_number = receipt.member.member_number
+    return [
+        receipt.receipt_number,
+        member_number,
+        member_name,
+        receipt.concept.name if receipt.concept else None,
+        receipt.origin,
+        receipt.status,
+        receipt.base_amount,
+        receipt.vat_amount,
+        receipt.total_amount,
+        receipt.emission_date,
+        receipt.due_date,
+        receipt.payment_date,
+    ]
+
+
+@router.get("/export.csv")
+def export_receipts_csv(
+    status_filter: str | None = Query(None, alias="status"),
+    origin: str | None = Query(None),
+    member_id: int | None = Query(None),
+    search: str | None = Query(None),
+    emission_date_from: date | None = Query(None),
+    emission_date_to: date | None = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """Export receipts as CSV, honouring the same filters as the list endpoint."""
+    query = build_receipts_query(
+        db,
+        status=status_filter,
+        origin=origin,
+        member_id=member_id,
+        search=search,
+        emission_date_from=emission_date_from,
+        emission_date_to=emission_date_to,
+    )
+    rows = (_receipt_csv_row(r) for r in query.yield_per(500))
+    return stream_csv(_RECEIPTS_CSV_HEADERS, rows, "receipts.csv")
 
 
 @router.get("/stats")
@@ -109,7 +160,6 @@ def receipt_stats(
 ):
     """Receipt stats for admin dashboard."""
     from sqlalchemy import func as sqlfunc, extract
-    from datetime import date
     from app.domains.billing.models import Receipt as R
 
     # Status counts

@@ -10,7 +10,7 @@ from app.core.pagination import PageMeta, paginate
 from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
 from app.domains.auth.models import User
-from app.domains.members.models import Member, MembershipType
+from app.domains.members.models import Member
 from app.domains.members.schemas import (
     GuardianResponse,
     MemberCreate,
@@ -19,9 +19,11 @@ from app.domains.members.schemas import (
     MemberUpdate,
     PersonResponse,
 )
+from app.core.csv_export import stream_csv
 from app.domains.member_card.schemas import AssignNumbersResponse
 from app.domains.members.service import (
     assign_missing_member_numbers,
+    build_members_query,
     change_member_status,
     create_member,
     is_minor_by_dob,
@@ -66,35 +68,64 @@ def list_members(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
-    query = (
-        db.query(Member)
-        .options(joinedload(Member.person), joinedload(Member.membership_type), joinedload(Member.guardian))
+    query = build_members_query(
+        db, search=search, status=status_filter, group_id=group_id
     )
-
-    if group_id is not None:
-        query = query.join(
-            MembershipType, Member.membership_type_id == MembershipType.id
-        ).filter(MembershipType.group_id == group_id)
-
-    if search:
-        search_term = f"%{search}%"
-        query = query.join(Person, Member.person_id == Person.id).filter(
-            (Person.first_name.ilike(search_term))
-            | (Person.last_name.ilike(search_term))
-            | (Person.email.ilike(search_term))
-            | (Member.member_number.ilike(search_term))
-        )
-
-    if status_filter:
-        query = query.filter(Member.status == status_filter)
-
-    query = query.order_by(Member.id.desc())
     items, meta = paginate(query, page, per_page)
 
     return {
         "meta": meta.model_dump(),
         "items": [_to_response(m) for m in items],
     }
+
+
+_MEMBERS_CSV_HEADERS = [
+    "id",
+    "member_number",
+    "first_name",
+    "last_name",
+    "email",
+    "status",
+    "membership_type",
+    "group",
+    "joined_at",
+    "expires_at",
+    "is_minor",
+]
+
+
+def _member_csv_row(member: Member) -> list:
+    person = member.person
+    mt = member.membership_type
+    return [
+        member.id,
+        member.member_number,
+        person.first_name if person else None,
+        person.last_name if person else None,
+        person.email if person else None,
+        member.status,
+        mt.name if mt else None,
+        mt.group.name if mt and mt.group else None,
+        member.joined_at,
+        member.expires_at,
+        member.is_minor or False,
+    ]
+
+
+@router.get("/export.csv")
+def export_members_csv(
+    search: str | None = None,
+    status_filter: str | None = Query(None, alias="status"),
+    group_id: int | None = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """Export members as CSV, honouring the same filters as the list endpoint."""
+    query = build_members_query(
+        db, search=search, status=status_filter, group_id=group_id
+    )
+    rows = (_member_csv_row(m) for m in query.yield_per(500))
+    return stream_csv(_MEMBERS_CSV_HEADERS, rows, "members.csv")
 
 
 @router.get("/{member_id}", response_model=MemberResponse)
