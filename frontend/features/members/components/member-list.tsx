@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { SearchInput } from "@/components/entity/search-input";
 import { Pagination } from "@/components/entity/pagination";
+import { ExportButton } from "@/components/entity/export-button";
 import { MEMBER_STATUS_VARIANTS } from "@/lib/status-variants";
 import { TableSkeleton } from "@/components/ui/skeletons";
 import { useSearchParam, usePageParam, useStatusParam } from "@/hooks/use-url-state";
@@ -44,9 +45,15 @@ export function MemberList() {
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold">{t("nav.members")}</h1>
-        <Link href="/members/new">
-          <Button size="sm">{t("members.createMember")}</Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <ExportButton
+            path="/api/members/export.csv"
+            params={{ search: search || undefined, status: statusFilter || undefined }}
+          />
+          <Link href="/members/new">
+            <Button size="sm">{t("members.createMember")}</Button>
+          </Link>
+        </div>
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row">

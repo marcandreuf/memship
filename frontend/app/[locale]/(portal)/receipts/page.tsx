@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/table";
 import { SearchInput } from "@/components/entity/search-input";
 import { Pagination } from "@/components/entity/pagination";
+import { ExportButton } from "@/components/entity/export-button";
 import { TableSkeleton } from "@/components/ui/skeletons";
 import { toast } from "sonner";
 import { useReceipts, useGenerateMembershipFees } from "@/features/receipts/hooks/use-receipts";
@@ -75,7 +76,13 @@ export default function ReceiptsPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">{t("receipts.title")}</h1>
-        <GenerateFeesButton t={t} />
+        <div className="flex items-center gap-2">
+          <ExportButton
+            path="/api/receipts/export.csv"
+            params={{ search: search || undefined, status: statusFilter || undefined }}
+          />
+          <GenerateFeesButton t={t} />
+        </div>
       </div>
 
       <div className="flex items-center gap-3">
