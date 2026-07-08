@@ -22,6 +22,11 @@
     "overdueAmount": "Vencido",
     "nextBillingRun": "Próxima facturación recurrente",
     "nextBillingRunDetail": "Día {day} · {days, plural, =0 {hoy} one {en # día} other {en # días}}",
-    "recurringBillingDisabled": "Facturación recurrente desactivada"
+    "recurringBillingDisabled": "Facturación recurrente desactivada",
+    "financeOverview": "Resumen financiero · {year}",
+    "viewAnnualSummary": "Resumen anual",
+    "revenue": "Ingresos",
+    "outstanding": "Pendiente",
+    "upcomingEvents": "Próximas actividades"
   }
 }

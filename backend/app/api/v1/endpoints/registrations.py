@@ -5,6 +5,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.authorization import require_admin
+from app.core.csv_export import stream_csv
 from app.core.pagination import paginate
 from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
@@ -23,6 +24,8 @@ from app.domains.activities.registration_schemas import (
 from app.domains.activities.registration_service import (
     RegistrationError,
     admin_change_status,
+    build_activity_registrations_query,
+    build_member_registrations_query,
     cancel_registration,
     check_self_cancellation_allowed,
     register_member,
@@ -114,24 +117,60 @@ def list_activity_registrations(
     """List registrations for an activity (admin only)."""
     _get_activity_or_404(db, activity_id)
 
-    query = (
-        db.query(Registration)
-        .filter(Registration.activity_id == activity_id)
-        .options(
-            joinedload(Registration.member).joinedload(Member.person),
-        )
-    )
-
-    if status_filter:
-        query = query.filter(Registration.status == status_filter)
-
-    query = query.order_by(Registration.created_at.desc())
+    query = build_activity_registrations_query(db, activity_id, status=status_filter)
     items, meta = paginate(query, page, per_page)
 
     return {
         "meta": meta.model_dump(),
         "items": [_to_detail_response(r) for r in items],
     }
+
+
+_REGISTRATIONS_CSV_HEADERS = [
+    "activity_name",
+    "member_number",
+    "member_name",
+    "modality",
+    "status",
+    "original_amount",
+    "discounted_amount",
+    "created_at",
+    "cancelled_at",
+]
+
+
+def _registration_csv_row(registration: Registration) -> list:
+    member_name = None
+    member_number = None
+    if registration.member and registration.member.person:
+        p = registration.member.person
+        member_name = f"{p.first_name} {p.last_name}"
+        member_number = registration.member.member_number
+    return [
+        registration.activity.name if registration.activity else None,
+        member_number,
+        member_name,
+        registration.modality.name if registration.modality else None,
+        registration.status,
+        registration.original_amount,
+        registration.discounted_amount,
+        registration.created_at,
+        registration.cancelled_at,
+    ]
+
+
+@router.get("/activities/{activity_id}/registrations/export.csv")
+def export_activity_registrations_csv(
+    activity_id: int,
+    status_filter: str | None = Query(None, alias="status"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """Export an activity's registrations as CSV (same filters as the list)."""
+    _get_activity_or_404(db, activity_id)
+    query = build_activity_registrations_query(db, activity_id, status=status_filter)
+    rows = (_registration_csv_row(r) for r in query.yield_per(500))
+    return stream_csv(_REGISTRATIONS_CSV_HEADERS, rows, f"activity-{activity_id}-registrations.csv")
 
 
 @router.post(
@@ -348,18 +387,27 @@ def list_member_registrations(
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
 
-    query = (
-        db.query(Registration)
-        .filter(Registration.member_id == member_id)
-        .options(joinedload(Registration.activity))
-        .order_by(Registration.created_at.desc())
-    )
-    if status_filter:
-        query = query.filter(Registration.status == status_filter)
-
+    query = build_member_registrations_query(db, member_id, status=status_filter)
     items, meta = paginate(query, page, per_page)
 
     return {
         "meta": meta.model_dump(),
         "items": [_to_registration_with_activity(r) for r in items],
     }
+
+
+@router.get("/members/{member_id}/registrations/export.csv")
+def export_member_registrations_csv(
+    member_id: int,
+    status_filter: str | None = Query(None, alias="status"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """Export a member's registrations as CSV (same filters as the list)."""
+    member = db.query(Member).filter(Member.id == member_id).first()
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+
+    query = build_member_registrations_query(db, member_id, status=status_filter)
+    rows = (_registration_csv_row(r) for r in query.yield_per(500))
+    return stream_csv(_REGISTRATIONS_CSV_HEADERS, rows, f"member-{member_id}-registrations.csv")

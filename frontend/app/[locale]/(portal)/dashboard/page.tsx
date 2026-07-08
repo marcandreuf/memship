@@ -1,17 +1,18 @@
 "use client";
 
 import { useMemo } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/lib/i18n/routing";
 import {
-  BarChart,
+  ComposedChart,
   Bar,
+  Line,
   XAxis,
   YAxis,
-  Cell,
-  ResponsiveContainer,
+  CartesianGrid,
   Tooltip,
-  LabelList,
+  Legend,
+  ResponsiveContainer,
 } from "recharts";
 import { CalendarClock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +24,8 @@ import { useActivities } from "@/features/activities/hooks/use-activities";
 import { useMyRegistrations, useRegistrationStats } from "@/features/activities/hooks/use-registrations";
 import { useActivity } from "@/features/activities/hooks/use-activities";
 import { useReceiptStats, useMyReceipts } from "@/features/receipts/hooks/use-receipts";
+import { useAnnualSummary } from "@/features/reports/hooks/use-annual-summary";
+import { ReminderList } from "@/features/reminders/components/reminder-list";
 import { useFormatters } from "@/hooks/use-formatters";
 import type { RegistrationData } from "@/features/activities/services/registrations-api";
 
@@ -58,84 +61,62 @@ const REGISTRATION_COLORS: Record<string, string> = {
   pending: "hsl(220, 9%, 64%)",
 };
 
-interface ChartItem {
-  name: string;
+const REVENUE_COLOR = "hsl(142, 71%, 45%)";
+const OUTSTANDING_COLOR = "hsl(48, 96%, 53%)";
+
+const TOOLTIP_STYLE = {
+  fontSize: "0.75rem",
+  borderRadius: "0.375rem",
+  backgroundColor: "var(--popover)",
+  color: "var(--popover-foreground)",
+  border: "1px solid var(--border)",
+} as const;
+
+interface CounterItem {
+  label: string;
   value: number;
   color: string;
 }
 
-// Uniform chart height so paired charts in a grid row always match. A vertical
-// bar chart spreads its category bands evenly across this height; kept compact
-// (~24px per band) so cards stay tight and don't leave airy dead space.
-const CHART_HEIGHT = 5 * 24;
-
-function StatusBarChart({
-  data,
+// Condensed status distribution for the dashboard rail: a colored dot + label +
+// count per status, with the total in the header. Replaces the full-width bar
+// charts now that finance leads the dashboard.
+function CounterCard({
   title,
+  items,
   href,
 }: {
-  data: ChartItem[];
   title: string;
+  items: CounterItem[];
   href?: string;
 }) {
-  const hasData = data.some((d) => d.value > 0);
-  const total = data.reduce((sum, d) => sum + d.value, 0);
-
+  const total = items.reduce((sum, i) => sum + i.value, 0);
   const content = (
-    <Card className={`py-3 gap-2 ${href ? "hover:bg-accent/50 transition-colors" : ""}`}>
+    <Card className={`h-full py-3 gap-2 ${href ? "hover:bg-accent/50 transition-colors" : ""}`}>
       <CardHeader className="px-4 flex flex-row items-baseline justify-between">
-        <CardTitle className="text-base">{title}</CardTitle>
-        <span className="text-xl font-bold">{total}</span>
+        <CardTitle className="text-sm">{title}</CardTitle>
+        <span className="text-lg font-bold">{total}</span>
       </CardHeader>
-      <CardContent className="px-2">
-        {!hasData ? (
-          <div className="flex items-center justify-center h-24 text-sm text-muted-foreground">
-            —
-          </div>
-        ) : (
-          <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
-            <BarChart
-              data={data}
-              layout="vertical"
-              margin={{ top: 4, right: 40, bottom: 4, left: 0 }}
-            >
-              <XAxis type="number" hide />
-              <YAxis
-                type="category"
-                dataKey="name"
-                width={100}
-                tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <Tooltip
-                contentStyle={{
-                  fontSize: "0.75rem",
-                  borderRadius: "0.375rem",
-                  backgroundColor: "var(--popover)",
-                  color: "var(--popover-foreground)",
-                  border: "1px solid var(--border)",
-                }}
-                cursor={{ fill: "var(--accent)" }}
-              />
-              <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={20}>
-                {data.map((entry, i) => (
-                  <Cell key={i} fill={entry.color} />
-                ))}
-                <LabelList
-                  dataKey="value"
-                  position="right"
-                  style={{ fontSize: 12, fontWeight: 600, fill: "var(--muted-foreground)" }}
+      <CardContent className="px-4">
+        <ul className="space-y-1">
+          {items.map((i, idx) => (
+            <li key={idx} className="flex items-center justify-between text-xs">
+              <span className="flex items-center gap-2 min-w-0">
+                <span
+                  className="size-2 shrink-0 rounded-full"
+                  style={{ backgroundColor: i.color }}
                 />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        )}
+                <span className="truncate text-muted-foreground">{i.label}</span>
+              </span>
+              <span className="font-mono font-medium">{i.value}</span>
+            </li>
+          ))}
+        </ul>
       </CardContent>
     </Card>
   );
 
-  if (href) return <Link href={href}>{content}</Link>;
+  if (href) return <Link href={href} className="block h-full">{content}</Link>;
   return content;
 }
 
@@ -163,6 +144,88 @@ function StatCard({
 
   if (href) return <Link href={href}>{content}</Link>;
   return content;
+}
+
+// Current-year revenue (bars) with an outstanding/overdue overlay (line). Shares
+// the annual-summary aggregate so both surfaces read the same numbers.
+function FinanceGraphCard() {
+  const t = useTranslations();
+  const locale = useLocale();
+  const { formatCurrency } = useFormatters();
+  const currentYear = new Date().getFullYear();
+  const { data } = useAnnualSummary(currentYear);
+
+  const monthLabels = useMemo(
+    () =>
+      Array.from({ length: 12 }, (_, i) =>
+        new Date(2000, i, 1).toLocaleString(locale, { month: "short" })
+      ),
+    [locale]
+  );
+
+  const chartData = useMemo(() => {
+    if (!data) return [];
+    return monthLabels.map((month, i) => ({
+      month,
+      revenue: data.revenue_by_month[i] ?? 0,
+      outstanding: data.outstanding_by_month[i] ?? 0,
+    }));
+  }, [data, monthLabels]);
+
+  return (
+    <Card className="py-3 flex-1 flex flex-col">
+      <CardHeader className="px-4 flex flex-row items-baseline justify-between">
+        <CardTitle className="text-base">
+          {t("dashboard.financeOverview", { year: currentYear })}
+        </CardTitle>
+        <Link
+          href="/annual-summary"
+          className="text-xs text-primary hover:underline"
+        >
+          {t("dashboard.viewAnnualSummary")} →
+        </Link>
+      </CardHeader>
+      <CardContent className="px-2 flex-1 min-h-[320px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={chartData} margin={{ top: 8, right: 16, bottom: 4, left: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+            <XAxis
+              dataKey="month"
+              tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              tick={{ fontSize: 12, fill: "var(--muted-foreground)" }}
+              axisLine={false}
+              tickLine={false}
+              width={56}
+            />
+            <Tooltip
+              contentStyle={TOOLTIP_STYLE}
+              formatter={(value) => formatCurrency(Number(value))}
+            />
+            <Legend wrapperStyle={{ fontSize: "0.75rem" }} />
+            <Bar
+              dataKey="revenue"
+              name={t("dashboard.revenue")}
+              fill={REVENUE_COLOR}
+              radius={[4, 4, 0, 0]}
+              barSize={16}
+            />
+            <Line
+              type="monotone"
+              dataKey="outstanding"
+              name={t("dashboard.outstanding")}
+              stroke={OUTSTANDING_COLOR}
+              strokeWidth={2}
+              dot={false}
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
+  );
 }
 
 const REG_STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -203,6 +266,51 @@ function UpcomingActivityCard({ registration }: { registration: RegistrationData
   );
 }
 
+// Admin rail card: the next few published activities by start date. Filters and
+// sorts client-side (the activities list has no upcoming/date param yet).
+function UpcomingActivitiesCard() {
+  const t = useTranslations();
+  const { formatDate } = useFormatters();
+  const { data } = useActivities({ status: "published", per_page: 50 });
+
+  const upcoming = useMemo(() => {
+    const now = Date.now();
+    return (data?.items ?? [])
+      .filter((a) => new Date(a.starts_at).getTime() >= now)
+      .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime())
+      .slice(0, 3);
+  }, [data]);
+
+  return (
+    <Card className="py-3 gap-2">
+      <CardHeader className="px-4">
+        <CardTitle className="text-base">{t("dashboard.upcomingEvents")}</CardTitle>
+      </CardHeader>
+      <CardContent className="px-4">
+        {upcoming.length === 0 ? (
+          <p className="py-1 text-sm text-muted-foreground">{t("dashboard.noUpcoming")}</p>
+        ) : (
+          <div className="space-y-2">
+            {upcoming.map((a) => (
+              <Link
+                key={a.id}
+                href={`/activities/${a.id}`}
+                className="block rounded-lg border p-2 hover:bg-accent transition-colors"
+              >
+                <p className="font-medium text-sm truncate">{a.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {formatDate(a.starts_at)}
+                  {a.location && ` · ${a.location}`}
+                </p>
+              </Link>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function NextBillingRunCard() {
   const t = useTranslations();
   const { data: settings } = useSettings();
@@ -225,9 +333,9 @@ function NextBillingRunCard() {
   }
 
   return (
-    <Link href="/billing-runs" className="block h-full">
-      <Card className="h-full py-0 hover:bg-accent/50 transition-colors">
-        <CardContent className="flex items-center gap-3 py-3 px-4 h-full">
+    <Link href="/billing-runs" className="block">
+      <Card className="py-0 hover:bg-accent/50 transition-colors">
+        <CardContent className="flex items-center gap-3 py-3 px-4">
           <CalendarClock className="size-5 shrink-0 text-muted-foreground" />
           <div className="min-w-0">
             <p className="text-xs text-muted-foreground">{t("dashboard.nextBillingRun")}</p>
@@ -272,34 +380,34 @@ export default function DashboardPage() {
   }, []);
   const { data: myReceipts } = useMyReceipts(!isAdmin ? myReceiptsParams : undefined);
 
-  const memberChartData = useMemo<ChartItem[]>(() => [
-    { name: t("status.active"), value: activeMembers?.meta.total ?? 0, color: MEMBER_COLORS.active },
-    { name: t("status.pending"), value: pendingMembers?.meta.total ?? 0, color: MEMBER_COLORS.pending },
-    { name: t("status.suspended"), value: suspendedMembers?.meta.total ?? 0, color: MEMBER_COLORS.suspended },
-    { name: t("status.cancelled"), value: cancelledMembers?.meta.total ?? 0, color: MEMBER_COLORS.cancelled },
-    { name: t("status.expired"), value: expiredMembers?.meta.total ?? 0, color: MEMBER_COLORS.expired },
+  const memberCounters = useMemo<CounterItem[]>(() => [
+    { label: t("status.active"), value: activeMembers?.meta.total ?? 0, color: MEMBER_COLORS.active },
+    { label: t("status.pending"), value: pendingMembers?.meta.total ?? 0, color: MEMBER_COLORS.pending },
+    { label: t("status.suspended"), value: suspendedMembers?.meta.total ?? 0, color: MEMBER_COLORS.suspended },
+    { label: t("status.cancelled"), value: cancelledMembers?.meta.total ?? 0, color: MEMBER_COLORS.cancelled },
+    { label: t("status.expired"), value: expiredMembers?.meta.total ?? 0, color: MEMBER_COLORS.expired },
   ], [activeMembers, pendingMembers, suspendedMembers, cancelledMembers, expiredMembers, t]);
 
-  const activityChartData = useMemo<ChartItem[]>(() => [
-    { name: t("activities.status.draft"), value: draftActivities?.meta.total ?? 0, color: ACTIVITY_COLORS.draft },
-    { name: t("activities.status.published"), value: publishedActivities?.meta.total ?? 0, color: ACTIVITY_COLORS.published },
-    { name: t("activities.status.archived"), value: archivedActivities?.meta.total ?? 0, color: ACTIVITY_COLORS.archived },
-    { name: t("activities.status.cancelled"), value: cancelledActivities?.meta.total ?? 0, color: ACTIVITY_COLORS.cancelled },
+  const activityCounters = useMemo<CounterItem[]>(() => [
+    { label: t("activities.status.draft"), value: draftActivities?.meta.total ?? 0, color: ACTIVITY_COLORS.draft },
+    { label: t("activities.status.published"), value: publishedActivities?.meta.total ?? 0, color: ACTIVITY_COLORS.published },
+    { label: t("activities.status.archived"), value: archivedActivities?.meta.total ?? 0, color: ACTIVITY_COLORS.archived },
+    { label: t("activities.status.cancelled"), value: cancelledActivities?.meta.total ?? 0, color: ACTIVITY_COLORS.cancelled },
   ], [draftActivities, publishedActivities, archivedActivities, cancelledActivities, t]);
 
-  const registrationChartData = useMemo<ChartItem[]>(() => [
-    { name: t("dashboard.confirmedRegistrations"), value: regStats?.confirmed ?? 0, color: REGISTRATION_COLORS.confirmed },
-    { name: t("dashboard.waitlistRegistrations"), value: regStats?.waitlist ?? 0, color: REGISTRATION_COLORS.waitlist },
-    { name: t("dashboard.pendingRegistrations"), value: regStats?.pending ?? 0, color: REGISTRATION_COLORS.pending },
-    { name: t("dashboard.cancelledRegistrations"), value: regStats?.cancelled ?? 0, color: REGISTRATION_COLORS.cancelled },
+  const registrationCounters = useMemo<CounterItem[]>(() => [
+    { label: t("dashboard.confirmedRegistrations"), value: regStats?.confirmed ?? 0, color: REGISTRATION_COLORS.confirmed },
+    { label: t("dashboard.waitlistRegistrations"), value: regStats?.waitlist ?? 0, color: REGISTRATION_COLORS.waitlist },
+    { label: t("dashboard.pendingRegistrations"), value: regStats?.pending ?? 0, color: REGISTRATION_COLORS.pending },
+    { label: t("dashboard.cancelledRegistrations"), value: regStats?.cancelled ?? 0, color: REGISTRATION_COLORS.cancelled },
   ], [regStats, t]);
 
-  const receiptChartData = useMemo<ChartItem[]>(() => [
-    { name: t("receipts.statusPaid"), value: receiptStats?.paid ?? 0, color: RECEIPT_COLORS.paid },
-    { name: t("receipts.statusEmitted"), value: receiptStats?.emitted ?? 0, color: RECEIPT_COLORS.emitted },
-    { name: t("receipts.statusPending"), value: (receiptStats?.pending ?? 0) + (receiptStats?.new ?? 0), color: RECEIPT_COLORS.pending },
-    { name: t("receipts.statusOverdue"), value: receiptStats?.overdue ?? 0, color: RECEIPT_COLORS.overdue },
-    { name: t("receipts.statusReturned"), value: receiptStats?.returned ?? 0, color: RECEIPT_COLORS.returned },
+  const receiptCounters = useMemo<CounterItem[]>(() => [
+    { label: t("receipts.statusPaid"), value: receiptStats?.paid ?? 0, color: RECEIPT_COLORS.paid },
+    { label: t("receipts.statusEmitted"), value: receiptStats?.emitted ?? 0, color: RECEIPT_COLORS.emitted },
+    { label: t("receipts.statusPending"), value: (receiptStats?.pending ?? 0) + (receiptStats?.new ?? 0), color: RECEIPT_COLORS.pending },
+    { label: t("receipts.statusOverdue"), value: receiptStats?.overdue ?? 0, color: RECEIPT_COLORS.overdue },
+    { label: t("receipts.statusReturned"), value: receiptStats?.returned ?? 0, color: RECEIPT_COLORS.returned },
   ], [receiptStats, t]);
 
   const activeRegistrations = myRegistrations?.items.filter(
@@ -314,51 +422,45 @@ export default function DashboardPage() {
 
       {isAdmin && (
         <div className="space-y-3">
-          {/* Bar charts side by side */}
-          <div className="grid gap-3 sm:grid-cols-2">
-            <StatusBarChart
-              title={t("nav.members")}
-              data={memberChartData}
-              href="/members"
-            />
-            <StatusBarChart
-              title={t("nav.activities")}
-              data={activityChartData}
-              href="/activities"
-            />
+          {/* Status counters on top: 1×4 (md+), 2×2 (sm), 1×1 (mobile). */}
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
+            <CounterCard title={t("nav.members")} items={memberCounters} href="/members" />
+            <CounterCard title={t("receipts.title")} items={receiptCounters} href="/receipts" />
+            <CounterCard title={t("nav.activities")} items={activityCounters} href="/activities" />
+            <CounterCard title={t("dashboard.totalRegistrations")} items={registrationCounters} />
           </div>
 
-          {/* Registrations + Receipts charts */}
-          <div className="grid gap-3 sm:grid-cols-2">
-            <StatusBarChart
-              title={t("dashboard.totalRegistrations")}
-              data={registrationChartData}
-            />
-            <StatusBarChart
-              title={t("receipts.title")}
-              data={receiptChartData}
-              href="/receipts"
-            />
-          </div>
+          <div className="grid gap-3 lg:grid-cols-3">
+            {/* Main (2/3): finance leads; chart grows so the KPI cards below
+                align with the bottom of the rail. */}
+            <div className="lg:col-span-2 flex flex-col gap-3">
+              <FinanceGraphCard />
 
-          {/* Summary stat cards — recurring billing first, then receipt totals */}
-          <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
-            <NextBillingRunCard />
-            <StatCard
-              label={t("dashboard.pendingAmount")}
-              value={formatCurrency(receiptStats?.pending_amount ?? 0)}
-              href="/receipts?status=emitted"
-            />
-            <StatCard
-              label={t("dashboard.paidThisMonth")}
-              value={formatCurrency(receiptStats?.paid_this_month ?? 0)}
-              href="/receipts?status=paid"
-            />
-            <StatCard
-              label={t("dashboard.overdueAmount")}
-              value={formatCurrency(receiptStats?.overdue_amount ?? 0)}
-              href="/receipts?status=overdue"
-            />
+              <div className="grid gap-3 grid-cols-2 sm:grid-cols-3">
+                <StatCard
+                  label={t("dashboard.pendingAmount")}
+                  value={formatCurrency(receiptStats?.pending_amount ?? 0)}
+                  href="/receipts?status=emitted"
+                />
+                <StatCard
+                  label={t("dashboard.paidThisMonth")}
+                  value={formatCurrency(receiptStats?.paid_this_month ?? 0)}
+                  href="/receipts?status=paid"
+                />
+                <StatCard
+                  label={t("dashboard.overdueAmount")}
+                  value={formatCurrency(receiptStats?.overdue_amount ?? 0)}
+                  href="/receipts?status=overdue"
+                />
+              </div>
+            </div>
+
+            {/* Rail (1/3): actionable today/this-week widgets. */}
+            <div className="space-y-3">
+              <ReminderList />
+              <NextBillingRunCard />
+              <UpcomingActivitiesCard />
+            </div>
           </div>
         </div>
       )}

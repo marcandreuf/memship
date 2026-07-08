@@ -1406,6 +1406,11 @@ def main() -> None:
         action="store_true",
         help="Create test accounts with simple passwords instead of interactive prompts",
     )
+    parser.add_argument(
+        "--demo",
+        action="store_true",
+        help="Layer a realistic year-spread demo dataset (members, billing, SEPA, reminders) for evaluation/screenshots",
+    )
     args = parser.parse_args()
 
     print("\n=== Memship Seed ===\n")
@@ -1477,6 +1482,20 @@ def main() -> None:
             for account in TEST_ACCOUNTS:
                 print(f"     {account['role']:15s} {account['email']:25s} / {account['password']}")
             print(f"     {'member':15s} {'(+22 extra members)':25s} / TestMember1!")
+        elif args.demo:
+            # Non-interactive admin accounts so there's a login for the demo.
+            print("\nCreating admin accounts...")
+            for account in TEST_ACCOUNTS:
+                if account["role"] in ("super_admin", "admin"):
+                    create_user_with_member(db, account, account["role"], membership_type)
+            admin_user = db.query(User).filter_by(email="admin@test.com").first()
+
+            from app.cli.demo_data import seed_demo_data
+            seed_demo_data(db, membership_type, admin_user.id if admin_user else None)
+
+            print("\n  ⚠  DEMO ACCOUNTS — do NOT use in production:")
+            print(f"     {'admin':15s} {'admin@test.com':25s} / TestAdmin1!")
+            print(f"     {'super_admin':15s} {'super@test.com':25s} / TestSuper1!")
         else:
             # Interactive user creation
             super_admin = prompt_user_details("Super Admin")

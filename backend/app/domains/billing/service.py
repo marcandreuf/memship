@@ -4,8 +4,8 @@ from datetime import date, datetime, timezone
 from decimal import ROUND_HALF_UP, Decimal
 
 from fastapi import HTTPException, status
-from sqlalchemy import extract, func
-from sqlalchemy.orm import Session
+from sqlalchemy import extract, func, or_
+from sqlalchemy.orm import Query, Session, joinedload
 
 from app.domains.billing.models import Concept, Receipt
 from app.domains.billing.schemas import (
@@ -18,6 +18,57 @@ from app.domains.billing.schemas import (
 from app.domains.members.models import Member, MembershipType
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Person
+
+
+# --- Query builders ---
+
+
+def build_receipts_query(
+    db: Session,
+    *,
+    status: str | None = None,
+    origin: str | None = None,
+    member_id: int | None = None,
+    search: str | None = None,
+    emission_date_from: date | None = None,
+    emission_date_to: date | None = None,
+) -> Query:
+    """Build the filtered receipts query shared by the list and CSV export.
+
+    Includes an emission-date range so the export can be pulled per period; the
+    list endpoint accepts the same bounds, keeping the two in lockstep.
+    """
+    query = (
+        db.query(Receipt)
+        .filter(Receipt.is_active.is_(True))
+        .options(
+            joinedload(Receipt.member).joinedload(Member.person),
+            joinedload(Receipt.concept),
+        )
+    )
+
+    if status:
+        query = query.filter(Receipt.status == status)
+    if origin:
+        query = query.filter(Receipt.origin == origin)
+    if member_id:
+        query = query.filter(Receipt.member_id == member_id)
+    if emission_date_from is not None:
+        query = query.filter(Receipt.emission_date >= emission_date_from)
+    if emission_date_to is not None:
+        query = query.filter(Receipt.emission_date <= emission_date_to)
+    if search:
+        pattern = f"%{search}%"
+        query = query.join(Receipt.member).join(Member.person).filter(
+            or_(
+                Receipt.receipt_number.ilike(pattern),
+                Receipt.description.ilike(pattern),
+                Person.first_name.ilike(pattern),
+                Person.last_name.ilike(pattern),
+            )
+        )
+
+    return query.order_by(Receipt.emission_date.desc(), Receipt.id.desc())
 
 
 # --- VAT Calculation ---

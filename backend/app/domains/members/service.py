@@ -3,7 +3,7 @@
 from datetime import date, datetime, timezone
 
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Query, Session, joinedload
 
 from app.domains.members.models import Member, MembershipType
 from app.domains.organizations.models import OrganizationSettings
@@ -18,6 +18,44 @@ VALID_STATUS_TRANSITIONS = {
 }
 
 MINOR_AGE_THRESHOLD = 18
+
+
+def build_members_query(
+    db: Session,
+    *,
+    search: str | None = None,
+    status: str | None = None,
+    group_id: int | None = None,
+) -> Query:
+    """Build the filtered members query shared by the list and CSV export.
+
+    Keeping the filter/join logic in one place guarantees the export returns the
+    same rows the admin sees in the list.
+    """
+    query = db.query(Member).options(
+        joinedload(Member.person),
+        joinedload(Member.membership_type),
+        joinedload(Member.guardian),
+    )
+
+    if group_id is not None:
+        query = query.join(
+            MembershipType, Member.membership_type_id == MembershipType.id
+        ).filter(MembershipType.group_id == group_id)
+
+    if search:
+        search_term = f"%{search}%"
+        query = query.join(Person, Member.person_id == Person.id).filter(
+            (Person.first_name.ilike(search_term))
+            | (Person.last_name.ilike(search_term))
+            | (Person.email.ilike(search_term))
+            | (Member.member_number.ilike(search_term))
+        )
+
+    if status:
+        query = query.filter(Member.status == status)
+
+    return query.order_by(Member.id.desc())
 
 
 def is_minor_by_dob(date_of_birth: date | None) -> bool:

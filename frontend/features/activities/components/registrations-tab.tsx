@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/table";
 import { toast } from "sonner";
 import { Pagination } from "@/components/entity/pagination";
+import { ExportButton } from "@/components/entity/export-button";
 import {
   useActivityRegistrations,
   useChangeRegistrationStatus,
@@ -66,7 +67,7 @@ export function RegistrationsTab({ activityId }: RegistrationsTabProps) {
 
   return (
     <div className="space-y-3 table-compact">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between gap-3">
         <Select
           value={statusFilter}
           onValueChange={(v) => {
@@ -85,6 +86,10 @@ export function RegistrationsTab({ activityId }: RegistrationsTabProps) {
             <SelectItem value="pending">{t("activities.registration.status.pending")}</SelectItem>
           </SelectContent>
         </Select>
+        <ExportButton
+          path={`/api/activities/${activityId}/registrations/export.csv`}
+          params={{ status: statusFilter || undefined }}
+        />
       </div>
 
       {!data?.items.length ? (

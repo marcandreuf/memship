@@ -1,0 +1,16 @@
+{
+  "notes": {
+    "title": "Notes & reminders",
+    "addPlaceholder": "Add a note or reminder…",
+    "add": "Add",
+    "empty": "Nothing pending",
+    "note": "Note",
+    "overdue": "Overdue",
+    "today": "Today",
+    "thisWeek": "This week",
+    "markDone": "Mark done",
+    "delete": "Delete",
+    "addedToast": "Added",
+    "deletedToast": "Deleted"
+  }
+}

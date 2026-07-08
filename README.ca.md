@@ -51,6 +51,14 @@ docker compose exec demo-memship-api uv run python -m app.cli.seed
 
 Us demanarà que creeu els vostres propis comptes de superadministrador i administrador. No es generen dades d'exemple.
 
+**Opció C: Conjunt de dades demo realista**
+
+```bash
+docker compose exec demo-memship-api uv run python -m app.cli.seed --demo
+```
+
+Crea els comptes d'administrador anteriors més un any complet de dades d'exemple realistes — ~60 socis en tots els estats, activitats, rebuts en tots els estats repartits pels mesos, mandats SEPA i recordatoris del tauler — ideal per avaluar el tauler financer i el resum anual. Es pot tornar a executar sense duplicar (idempotent).
+
 Obriu http://localhost:8081 i inicieu sessió amb les vostres credencials. Canvieu `PORT=8081` per qualsevol port que preferiu (per defecte és el 80).
 
 ## Full de ruta
@@ -92,7 +100,7 @@ Obriu http://localhost:8081 i inicieu sessió amb les vostres credencials. Canvi
 | v0.7.0 | Carnet digital de soci + registre QR — carnet en PDF, numeració automàtica de socis | Fet |
 | v0.7.1 | Millores del carnet — vista de carnet per a l'admin, foto de perfil del soci, redisseny del perfil | Fet |
 | v0.8.0 | ~~Convocatòries~~ — ajornat després de v1.0.0 (segons demanda) | Ajornat |
-| v1.0.0 | Estabilització i llançament — exportacions CSV, dades demo, landing page, polit de docs | Següent |
+| v1.0.0 | Estabilització i llançament — exportacions CSV, tauler financer, notes i recordatoris, resum anual, dades demo, polit de docs | Fet |
 
 Ajornat després de v1.0.0: GoCardless e-mandats, integració PayPal, flux d'Stripe Invoice, accions massives en rebuts, generador d'informes personalitzats, enquestes, biblioteca de documents del club, facturació familiar i altres variacions complexes de les anteriors. Llista completa d'ajornats a `memship-definition/docs/public/ROADMAP-v1.0.0.md`.
 
