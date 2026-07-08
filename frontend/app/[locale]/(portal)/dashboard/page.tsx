@@ -173,7 +173,7 @@ function FinanceGraphCard() {
   }, [data, monthLabels]);
 
   return (
-    <Card className="py-3">
+    <Card className="py-3 flex-1 flex flex-col">
       <CardHeader className="px-4 flex flex-row items-baseline justify-between">
         <CardTitle className="text-base">
           {t("dashboard.financeOverview", { year: currentYear })}
@@ -185,8 +185,8 @@ function FinanceGraphCard() {
           {t("dashboard.viewAnnualSummary")} →
         </Link>
       </CardHeader>
-      <CardContent className="px-2">
-        <ResponsiveContainer width="100%" height={320}>
+      <CardContent className="px-2 flex-1 min-h-[320px]">
+        <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={chartData} margin={{ top: 8, right: 16, bottom: 4, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
             <XAxis
@@ -431,8 +431,9 @@ export default function DashboardPage() {
           </div>
 
           <div className="grid gap-3 lg:grid-cols-3">
-            {/* Main (2/3): finance leads. */}
-            <div className="lg:col-span-2 space-y-3">
+            {/* Main (2/3): finance leads; chart grows so the KPI cards below
+                align with the bottom of the rail. */}
+            <div className="lg:col-span-2 flex flex-col gap-3">
               <FinanceGraphCard />
 
               <div className="grid gap-3 grid-cols-2 sm:grid-cols-3">
