@@ -51,6 +51,14 @@ docker compose exec demo-memship-api uv run python -m app.cli.seed
 
 Te pedirá que crees tus propias cuentas de super admin y admin de organización. No se generan datos de ejemplo.
 
+**Opción C: Conjunto de datos demo realista**
+
+```bash
+docker compose exec demo-memship-api uv run python -m app.cli.seed --demo
+```
+
+Crea las cuentas de administrador anteriores más un año completo de datos de ejemplo realistas — ~60 socios en todos los estados, actividades, recibos en todos los estados repartidos por los meses, mandatos SEPA y recordatorios del panel — ideal para evaluar el panel financiero y el resumen anual. Se puede volver a ejecutar sin duplicar (idempotente).
+
 Abre http://localhost:8081 e inicia sesión con tus credenciales. Cambia `PORT=8081` por el puerto que prefieras (por defecto es el 80).
 
 ## Hoja de ruta
@@ -92,7 +100,7 @@ Abre http://localhost:8081 e inicia sesión con tus credenciales. Cambia `PORT=8
 | v0.7.0 | Carnet digital de socio + registro QR — carnet en PDF, numeración automática de socios | Hecho |
 | v0.7.1 | Mejoras del carnet — vista de carnet para el admin, foto de perfil del socio, rediseño del perfil | Hecho |
 | v0.8.0 | ~~Convocatorias~~ — aplazado tras v1.0.0 (según demanda) | Aplazado |
-| v1.0.0 | Estabilización y lanzamiento — exportaciones CSV, datos demo, landing page, pulido de docs | Próximo |
+| v1.0.0 | Estabilización y lanzamiento — exportaciones CSV, panel financiero, notas y recordatorios, resumen anual, datos demo, pulido de docs | Hecho |
 
 Aplazado tras v1.0.0: GoCardless e-mandatos, integración PayPal, flujo de Stripe Invoice, acciones masivas en recibos, generador de informes personalizados, encuestas, biblioteca de documentos del club, facturación familiar y otras variaciones complejas de las anteriores. Lista completa de aplazados en `memship-definition/docs/public/ROADMAP-v1.0.0.md`.
 

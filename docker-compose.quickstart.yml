@@ -4,6 +4,7 @@
 #   curl -fsSL https://raw.githubusercontent.com/marcandreuf/memship/main/docker-compose.quickstart.yml -o docker-compose.yml
 #   PORT=8081 docker compose up -d
 #   docker compose exec demo-memship-api uv run python -m app.cli.seed --test   # Quick demo with test accounts
+#   docker compose exec demo-memship-api uv run python -m app.cli.seed --demo   # Realistic year of demo data (idempotent)
 #   docker compose exec demo-memship-api uv run python -m app.cli.seed          # Custom setup (interactive)
 #   Open http://localhost:8081
 #

@@ -51,6 +51,14 @@ docker compose exec demo-memship-api uv run python -m app.cli.seed
 
 Prompts you to create your own super admin and org admin accounts. No sample data is generated.
 
+**Option C: Realistic demo dataset**
+
+```bash
+docker compose exec demo-memship-api uv run python -m app.cli.seed --demo
+```
+
+Creates the admin accounts above plus a full year of realistic sample data — ~60 members across all statuses, activities, receipts in every state spread across the months, SEPA mandates, and dashboard reminders — ideal for evaluating the finance dashboard and annual summary. Safe to re-run (idempotent).
+
 Open http://localhost:8081 and log in with your credentials. Change `PORT=8081` to any port you prefer (default is 80).
 
 ## Roadmap
@@ -92,7 +100,7 @@ Open http://localhost:8081 and log in with your credentials. Change `PORT=8081` 
 | v0.7.0 | Digital Member Card + QR Check-in — PDF card, auto member numbers | Done |
 | v0.7.1 | Member card polish — admin card view on member page, member profile photo upload, profile page redesign | Done |
 | v0.8.0 | ~~Convocations~~ — deferred post-1.0 (build on demand) | Deferred |
-| v1.0.0 | Stabilization & Release — CSV exports, demo seed, landing page, docs polish | Next |
+| v1.0.0 | Stabilization & Release — CSV exports, finance dashboard, notes & reminders, annual summary, demo seed, docs polish | Done |
 
 Deferred past v1.0.0: GoCardless e-mandates, PayPal integration, Stripe Invoice flow, bulk receipt actions, custom report builder, surveys, club document library, family group billing, and other complex variations of the above. See `memship-definition/docs/public/ROADMAP-v1.0.0.md` for the full deferred list.
 
