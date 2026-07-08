@@ -28,6 +28,7 @@ from app.api.v1.endpoints import (
     persons,
     receipts,
     registrations,
+    reminders,
     reports,
     settings,
     webhooks,
@@ -52,6 +53,7 @@ api_router.include_router(member_photo.router)
 api_router.include_router(membership_types.router)
 api_router.include_router(persons.router)
 api_router.include_router(registrations.router)
+api_router.include_router(reminders.router)
 api_router.include_router(reports.router)
 api_router.include_router(settings.router)
 api_router.include_router(logo.router)

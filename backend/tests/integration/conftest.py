@@ -55,6 +55,7 @@ from app.domains.communications.models import (  # noqa: F401
     AnnouncementRecipient,
     Notification,
 )
+from app.domains.reminders.models import Reminder  # noqa: F401
 
 # Use test database
 TEST_DATABASE_URL = os.getenv("DATABASE_TEST_URL", settings.DATABASE_TEST_URL)
