@@ -24,7 +24,9 @@ Most membership tools are either expensive SaaS platforms or outdated legacy sof
 Try memship with a single command — no cloning required:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/marcandreuf/memship/main/docker-compose.quickstart.yml -o docker-compose.yml && PORT=8081 docker compose up -d
+curl -fsSL https://raw.githubusercontent.com/marcandreuf/memship/main/docker-compose.quickstart.yml -o docker-compose.yml
+docker compose pull        # fetch the latest published images
+PORT=8081 docker compose up -d
 ```
 
 Then run the initial setup:

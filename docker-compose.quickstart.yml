@@ -40,6 +40,7 @@ services:
 
   demo-memship-api:
     image: ghcr.io/marcandreuf/memship-backend:latest
+    pull_policy: always
     container_name: demo-memship-api
     expose:
       - "8000"
@@ -60,6 +61,7 @@ services:
 
   demo-memship-frontend:
     image: ghcr.io/marcandreuf/memship-frontend:latest
+    pull_policy: always
     container_name: demo-memship-frontend
     expose:
       - "3000"

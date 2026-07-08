@@ -24,7 +24,9 @@ La majoria d'eines de gestió de socis són plataformes SaaS cares o programari 
 Proveu Memship amb una sola comanda — sense necessitat de clonar el repositori:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/marcandreuf/memship/main/docker-compose.quickstart.yml -o docker-compose.yml && PORT=8081 docker compose up -d
+curl -fsSL https://raw.githubusercontent.com/marcandreuf/memship/main/docker-compose.quickstart.yml -o docker-compose.yml
+docker compose pull        # descarrega les últimes imatges publicades
+PORT=8081 docker compose up -d
 ```
 
 A continuació, executeu la configuració inicial:
