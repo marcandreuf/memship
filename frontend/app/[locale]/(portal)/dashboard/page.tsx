@@ -92,7 +92,7 @@ function CounterCard({
 }) {
   const total = items.reduce((sum, i) => sum + i.value, 0);
   const content = (
-    <Card className={`py-3 gap-2 ${href ? "hover:bg-accent/50 transition-colors" : ""}`}>
+    <Card className={`h-full py-3 gap-2 ${href ? "hover:bg-accent/50 transition-colors" : ""}`}>
       <CardHeader className="px-4 flex flex-row items-baseline justify-between">
         <CardTitle className="text-sm">{title}</CardTitle>
         <span className="text-lg font-bold">{total}</span>
@@ -116,7 +116,7 @@ function CounterCard({
     </Card>
   );
 
-  if (href) return <Link href={href}>{content}</Link>;
+  if (href) return <Link href={href} className="block h-full">{content}</Link>;
   return content;
 }
 
@@ -421,39 +421,45 @@ export default function DashboardPage() {
       </h1>
 
       {isAdmin && (
-        <div className="grid gap-3 lg:grid-cols-3">
-          {/* Main (2/3): finance leads. */}
-          <div className="lg:col-span-2 space-y-3">
-            <FinanceGraphCard />
-
-            <div className="grid gap-3 grid-cols-2 sm:grid-cols-3">
-              <StatCard
-                label={t("dashboard.pendingAmount")}
-                value={formatCurrency(receiptStats?.pending_amount ?? 0)}
-                href="/receipts?status=emitted"
-              />
-              <StatCard
-                label={t("dashboard.paidThisMonth")}
-                value={formatCurrency(receiptStats?.paid_this_month ?? 0)}
-                href="/receipts?status=paid"
-              />
-              <StatCard
-                label={t("dashboard.overdueAmount")}
-                value={formatCurrency(receiptStats?.overdue_amount ?? 0)}
-                href="/receipts?status=overdue"
-              />
-            </div>
-          </div>
-
-          {/* Rail (1/3): actionable today/this-week widgets. */}
-          <div className="space-y-3">
-            <ReminderList />
-            <NextBillingRunCard />
-            <UpcomingActivitiesCard />
+        <div className="space-y-3">
+          {/* Status counters on top: 1×4 (md+), 2×2 (sm), 1×1 (mobile). */}
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
             <CounterCard title={t("nav.members")} items={memberCounters} href="/members" />
             <CounterCard title={t("receipts.title")} items={receiptCounters} href="/receipts" />
             <CounterCard title={t("nav.activities")} items={activityCounters} href="/activities" />
             <CounterCard title={t("dashboard.totalRegistrations")} items={registrationCounters} />
+          </div>
+
+          <div className="grid gap-3 lg:grid-cols-3">
+            {/* Main (2/3): finance leads. */}
+            <div className="lg:col-span-2 space-y-3">
+              <FinanceGraphCard />
+
+              <div className="grid gap-3 grid-cols-2 sm:grid-cols-3">
+                <StatCard
+                  label={t("dashboard.pendingAmount")}
+                  value={formatCurrency(receiptStats?.pending_amount ?? 0)}
+                  href="/receipts?status=emitted"
+                />
+                <StatCard
+                  label={t("dashboard.paidThisMonth")}
+                  value={formatCurrency(receiptStats?.paid_this_month ?? 0)}
+                  href="/receipts?status=paid"
+                />
+                <StatCard
+                  label={t("dashboard.overdueAmount")}
+                  value={formatCurrency(receiptStats?.overdue_amount ?? 0)}
+                  href="/receipts?status=overdue"
+                />
+              </div>
+            </div>
+
+            {/* Rail (1/3): actionable today/this-week widgets. */}
+            <div className="space-y-3">
+              <ReminderList />
+              <NextBillingRunCard />
+              <UpcomingActivitiesCard />
+            </div>
           </div>
         </div>
       )}
