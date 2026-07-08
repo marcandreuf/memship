@@ -24,9 +24,10 @@ export default getRequestConfig(async ({ requestLocale }) => {
   const memberCard = (await import(`@/locales/${locale}/member-card.json`)).default;
   const exportNs = (await import(`@/locales/${locale}/export.json`)).default;
   const annualSummary = (await import(`@/locales/${locale}/annual-summary.json`)).default;
+  const notes = (await import(`@/locales/${locale}/notes.json`)).default;
 
   return {
     locale,
-    messages: { ...common, ...auth, ...members, ...dashboard, ...settings, ...activities, ...receipts, ...mandates, ...remittances, ...paymentMethod, ...billingRuns, ...reminders, ...communications, ...memberCard, ...exportNs, ...annualSummary },
+    messages: { ...common, ...auth, ...members, ...dashboard, ...settings, ...activities, ...receipts, ...mandates, ...remittances, ...paymentMethod, ...billingRuns, ...reminders, ...communications, ...memberCard, ...exportNs, ...annualSummary, ...notes },
   };
 });

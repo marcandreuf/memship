@@ -22,6 +22,11 @@
     "overdueAmount": "Vençut",
     "nextBillingRun": "Propera facturació recurrent",
     "nextBillingRunDetail": "Dia {day} · {days, plural, =0 {avui} one {en # dia} other {en # dies}}",
-    "recurringBillingDisabled": "Facturació recurrent desactivada"
+    "recurringBillingDisabled": "Facturació recurrent desactivada",
+    "financeOverview": "Resum financer · {year}",
+    "viewAnnualSummary": "Resum anual",
+    "revenue": "Ingressos",
+    "outstanding": "Pendent",
+    "upcomingEvents": "Properes activitats"
   }
 }

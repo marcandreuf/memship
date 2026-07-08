@@ -22,6 +22,11 @@
     "overdueAmount": "Overdue",
     "nextBillingRun": "Next recurring billing",
     "nextBillingRunDetail": "Day {day} · {days, plural, =0 {today} one {in # day} other {in # days}}",
-    "recurringBillingDisabled": "Recurring billing disabled"
+    "recurringBillingDisabled": "Recurring billing disabled",
+    "financeOverview": "Finance overview · {year}",
+    "viewAnnualSummary": "Annual summary",
+    "revenue": "Revenue",
+    "outstanding": "Outstanding",
+    "upcomingEvents": "Upcoming activities"
   }
 }

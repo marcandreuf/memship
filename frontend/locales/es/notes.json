@@ -1,0 +1,16 @@
+{
+  "notes": {
+    "title": "Notas y recordatorios",
+    "addPlaceholder": "Añade una nota o recordatorio…",
+    "add": "Añadir",
+    "empty": "Nada pendiente",
+    "note": "Nota",
+    "overdue": "Vencido",
+    "today": "Hoy",
+    "thisWeek": "Esta semana",
+    "markDone": "Marcar como hecho",
+    "delete": "Eliminar",
+    "addedToast": "Añadido",
+    "deletedToast": "Eliminado"
+  }
+}

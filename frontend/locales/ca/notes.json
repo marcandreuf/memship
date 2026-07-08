@@ -1,0 +1,16 @@
+{
+  "notes": {
+    "title": "Notes i recordatoris",
+    "addPlaceholder": "Afegeix una nota o recordatori…",
+    "add": "Afegeix",
+    "empty": "Res pendent",
+    "note": "Nota",
+    "overdue": "Vençut",
+    "today": "Avui",
+    "thisWeek": "Aquesta setmana",
+    "markDone": "Marca com a fet",
+    "delete": "Elimina",
+    "addedToast": "Afegit",
+    "deletedToast": "Eliminat"
+  }
+}
