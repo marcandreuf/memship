@@ -24,7 +24,9 @@ La mayoría de herramientas de gestión de socios son plataformas SaaS caras o s
 Prueba Memship con un solo comando, sin necesidad de clonar el repositorio:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/marcandreuf/memship/main/docker-compose.quickstart.yml -o docker-compose.yml && PORT=8081 docker compose up -d
+curl -fsSL https://raw.githubusercontent.com/marcandreuf/memship/main/docker-compose.quickstart.yml -o docker-compose.yml
+docker compose pull        # descarga las últimas imágenes publicadas
+PORT=8081 docker compose up -d
 ```
 
 A continuación, ejecuta la configuración inicial:
