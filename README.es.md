@@ -109,7 +109,7 @@ Abre http://localhost:8081 e inicia sesión con tus credenciales. Cambia `PORT=8
 | v1.3.0 | Integración SSO / identidad — inicio de sesión con el IdP de la organización (SAML/OIDC); modo proveedor más adelante | Planificado |
 | v1.4.0 | Biblioteca de documentos — estatutos, actas, formularios con visibilidad por grupo | Planificado |
 | v1.5.0 | Calendario de eventos + confirmación de asistencia — vista de calendario y seguimiento de participación | Planificado |
-| (más adelante) | Módulos opcionales para superadmin — álbumes de fotos, foro, libro de visitas, directorio de enlaces, inventario/préstamos, widgets del portal | Planificado |
+| tras v1.5.0 | Módulos opcionales para superadmin — álbumes de fotos, foro, libro de visitas, directorio de enlaces, inventario/préstamos, widgets del portal (el enfoque de entrega se decide al completar las mejoras principales) | Planificado |
 
 Aplazado tras v1.0.0: GoCardless e-mandatos, integración PayPal, flujo de Stripe Invoice, acciones masivas en recibos, generador de informes personalizados, encuestas, facturación familiar y otras variaciones complejas de las anteriores. Lista completa de aplazados en `memship-definition/docs/public/ROADMAP-v1.0.0.md`.
 
