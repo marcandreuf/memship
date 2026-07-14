@@ -103,6 +103,7 @@ Abre http://localhost:8081 e inicia sesión con tus credenciales. Cambia `PORT=8
 | v0.7.1 | Mejoras del carnet — vista de carnet para el admin, foto de perfil del socio, rediseño del perfil | Hecho |
 | v0.8.0 | ~~Convocatorias~~ — aplazado tras v1.0.0 (según demanda) | Aplazado |
 | v1.0.0 | Estabilización y lanzamiento — exportaciones CSV, panel financiero, notas y recordatorios, resumen anual, datos demo, pulido de docs | Hecho |
+| v1.0.1 | Parche — corrige el registro de tareas programadas de facturación/recordatorios en Celery; protección de CI contra la sobrescritura de etiquetas de imagen | Hecho |
 
 Aplazado tras v1.0.0: GoCardless e-mandatos, integración PayPal, flujo de Stripe Invoice, acciones masivas en recibos, generador de informes personalizados, encuestas, biblioteca de documentos del club, facturación familiar y otras variaciones complejas de las anteriores. Lista completa de aplazados en `memship-definition/docs/public/ROADMAP-v1.0.0.md`.
 
