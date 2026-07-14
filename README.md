@@ -109,7 +109,7 @@ Open http://localhost:8081 and log in with your credentials. Change `PORT=8081` 
 | v1.3.0 | SSO / identity integration — sign in via an org's IdP (SAML/OIDC); provider mode later | Planned |
 | v1.4.0 | Document library — statutes, minutes, forms with per-group visibility | Planned |
 | v1.5.0 | Events calendar + RSVP — calendar view and participation tracking | Planned |
-| (later) | Optional super-admin modules — photo albums, forum, guestbook, weblinks directory, inventory/lending, portal widgets | Planned |
+| after v1.5.0 | Optional super-admin modules — photo albums, forum, guestbook, weblinks directory, inventory/lending, portal widgets (delivery approach decided once the core gaps ship) | Planned |
 
 Deferred past v1.0.0: GoCardless e-mandates, PayPal integration, Stripe Invoice flow, bulk receipt actions, custom report builder, surveys, family group billing, and other complex variations of the above. See `memship-definition/docs/public/ROADMAP-v1.0.0.md` for the full deferred list.
 

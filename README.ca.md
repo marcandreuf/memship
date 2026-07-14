@@ -109,7 +109,7 @@ Obriu http://localhost:8081 i inicieu sessió amb les vostres credencials. Canvi
 | v1.3.0 | Integració SSO / identitat — inici de sessió amb l'IdP de l'organització (SAML/OIDC); mode proveïdor més endavant | Planificat |
 | v1.4.0 | Biblioteca de documents — estatuts, actes, formularis amb visibilitat per grup | Planificat |
 | v1.5.0 | Calendari d'esdeveniments + confirmació d'assistència — vista de calendari i seguiment de participació | Planificat |
-| (més endavant) | Mòduls opcionals per a superadmin — àlbums de fotos, fòrum, llibre de visites, directori d'enllaços, inventari/préstecs, ginys del portal | Planificat |
+| després de v1.5.0 | Mòduls opcionals per a superadmin — àlbums de fotos, fòrum, llibre de visites, directori d'enllaços, inventari/préstecs, ginys del portal (l'enfocament de lliurament es decideix en completar les millores principals) | Planificat |
 
 Ajornat després de v1.0.0: GoCardless e-mandats, integració PayPal, flux d'Stripe Invoice, accions massives en rebuts, generador d'informes personalitzats, enquestes, facturació familiar i altres variacions complexes de les anteriors. Llista completa d'ajornats a `memship-definition/docs/public/ROADMAP-v1.0.0.md`.
 
