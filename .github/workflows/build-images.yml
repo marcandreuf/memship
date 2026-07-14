@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
     inputs:
       force_rebuild:
-        description: 'Force rebuild even if version exists'
+        description: 'Force rebuild even if the version tag already exists in GHCR'
         required: false
         type: boolean
         default: false
@@ -98,6 +98,9 @@ jobs:
     permissions:
       contents: read
       packages: write
+    outputs:
+      # 'true' when a build actually ran; 'false' when skipped because the tag exists.
+      built: ${{ steps.guard.outputs.exists == 'false' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -111,7 +114,26 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Protect released tags: never overwrite an existing $VERSION image. A backend
+      # change merged to main without a VERSION bump would otherwise silently re-push
+      # the current version tag (e.g. clobbering a shipped 1.0.0). Bump VERSION to
+      # publish, or re-run via workflow_dispatch with force_rebuild=true.
+      - name: Guard against overwriting a published version
+        id: guard
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+          IMAGE: ${{ env.REGISTRY }}/${{ github.repository_owner }}/memship-backend
+          FORCE_REBUILD: ${{ github.event.inputs.force_rebuild || 'false' }}
+        run: |
+          if [[ "$FORCE_REBUILD" != "true" ]] && docker buildx imagetools inspect "$IMAGE:$VERSION" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "::warning title=Image build skipped::$IMAGE:$VERSION already exists in GHCR. Bump VERSION to publish a new release, or re-run this workflow via workflow_dispatch with force_rebuild=true."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build and push Backend
+        if: ${{ steps.guard.outputs.exists == 'false' }}
         env:
           VERSION: ${{ needs.version.outputs.version }}
           IMAGE: ${{ env.REGISTRY }}/${{ github.repository_owner }}/memship-backend
@@ -132,6 +154,9 @@ jobs:
     permissions:
       contents: read
       packages: write
+    outputs:
+      # 'true' when a build actually ran; 'false' when skipped because the tag exists.
+      built: ${{ steps.guard.outputs.exists == 'false' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -145,7 +170,23 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Protect released tags — see the backend job's guard for rationale.
+      - name: Guard against overwriting a published version
+        id: guard
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+          IMAGE: ${{ env.REGISTRY }}/${{ github.repository_owner }}/memship-frontend
+          FORCE_REBUILD: ${{ github.event.inputs.force_rebuild || 'false' }}
+        run: |
+          if [[ "$FORCE_REBUILD" != "true" ]] && docker buildx imagetools inspect "$IMAGE:$VERSION" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "::warning title=Image build skipped::$IMAGE:$VERSION already exists in GHCR. Bump VERSION to publish a new release, or re-run this workflow via workflow_dispatch with force_rebuild=true."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build and push Frontend
+        if: ${{ steps.guard.outputs.exists == 'false' }}
         env:
           VERSION: ${{ needs.version.outputs.version }}
           IMAGE: ${{ env.REGISTRY }}/${{ github.repository_owner }}/memship-frontend
@@ -165,15 +206,23 @@ jobs:
     steps:
       - name: Build Summary
         run: |
-          echo "### Docker Images Built" >> $GITHUB_STEP_SUMMARY
+          echo "### Docker Images" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Service | Image |" >> $GITHUB_STEP_SUMMARY
-          echo "|---------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Service | Image | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|-------|--------|" >> $GITHUB_STEP_SUMMARY
           if [[ "${{ needs.build-backend.result }}" == "success" ]]; then
-            echo "| Backend | \`ghcr.io/${{ github.repository_owner }}/memship-backend:${{ needs.version.outputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
+            if [[ "${{ needs.build-backend.outputs.built }}" == "true" ]]; then
+              echo "| Backend | \`ghcr.io/${{ github.repository_owner }}/memship-backend:${{ needs.version.outputs.version }}\` | published |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| Backend | \`ghcr.io/${{ github.repository_owner }}/memship-backend:${{ needs.version.outputs.version }}\` | skipped (tag already exists) |" >> $GITHUB_STEP_SUMMARY
+            fi
           fi
           if [[ "${{ needs.build-frontend.result }}" == "success" ]]; then
-            echo "| Frontend | \`ghcr.io/${{ github.repository_owner }}/memship-frontend:${{ needs.version.outputs.version }}\` |" >> $GITHUB_STEP_SUMMARY
+            if [[ "${{ needs.build-frontend.outputs.built }}" == "true" ]]; then
+              echo "| Frontend | \`ghcr.io/${{ github.repository_owner }}/memship-frontend:${{ needs.version.outputs.version }}\` | published |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| Frontend | \`ghcr.io/${{ github.repository_owner }}/memship-frontend:${{ needs.version.outputs.version }}\` | skipped (tag already exists) |" >> $GITHUB_STEP_SUMMARY
+            fi
           fi
 
   ci-failed:
