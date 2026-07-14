@@ -9,6 +9,11 @@ celery = Celery(
     "memship",
     broker=settings.CELERY_BROKER_URL,
     backend=settings.CELERY_BROKER_URL,
+    include=[
+        "app.tasks.billing_tasks",
+        "app.tasks.communication_tasks",
+        "app.tasks.email_tasks",
+    ],
 )
 
 celery.conf.update(
@@ -36,5 +41,7 @@ celery.conf.beat_schedule = {
     },
 }
 
-# Auto-discover tasks in app.tasks package
-celery.autodiscover_tasks(["app.tasks"])
+# Load every model so the SQLAlchemy mapper registry is fully configured in the
+# worker/beat processes, which don't import the full API. Without this, string-based
+# relationships (e.g. Receipt -> Registration) fail to resolve at query time.
+import app.db.models_registry  # noqa: E402,F401
