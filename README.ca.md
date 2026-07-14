@@ -104,8 +104,14 @@ Obriu http://localhost:8081 i inicieu sessió amb les vostres credencials. Canvi
 | v0.8.0 | ~~Convocatòries~~ — ajornat després de v1.0.0 (segons demanda) | Ajornat |
 | v1.0.0 | Estabilització i llançament — exportacions CSV, tauler financer, notes i recordatoris, resum anual, dades demo, polit de docs | Fet |
 | v1.0.1 | Pedaç — corregeix el registre de tasques programades de facturació/recordatoris a Celery; protecció de CI contra la sobreescriptura d'etiquetes d'imatge | Fet |
+| v1.1.0 | Camps de perfil personalitzats — dades de soci configurables per l'organització (text, número, data, selecció, …) amb validació per camp | Planificat |
+| v1.2.0 | Rols i permisos flexibles — multi-rol i permisos per rol més enllà dels 4 rols fixos | Planificat |
+| v1.3.0 | Integració SSO / identitat — inici de sessió amb l'IdP de l'organització (SAML/OIDC); mode proveïdor més endavant | Planificat |
+| v1.4.0 | Biblioteca de documents — estatuts, actes, formularis amb visibilitat per grup | Planificat |
+| v1.5.0 | Calendari d'esdeveniments + confirmació d'assistència — vista de calendari i seguiment de participació | Planificat |
+| (més endavant) | Mòduls opcionals per a superadmin — àlbums de fotos, fòrum, llibre de visites, directori d'enllaços, inventari/préstecs, ginys del portal | Planificat |
 
-Ajornat després de v1.0.0: GoCardless e-mandats, integració PayPal, flux d'Stripe Invoice, accions massives en rebuts, generador d'informes personalitzats, enquestes, biblioteca de documents del club, facturació familiar i altres variacions complexes de les anteriors. Llista completa d'ajornats a `memship-definition/docs/public/ROADMAP-v1.0.0.md`.
+Ajornat després de v1.0.0: GoCardless e-mandats, integració PayPal, flux d'Stripe Invoice, accions massives en rebuts, generador d'informes personalitzats, enquestes, facturació familiar i altres variacions complexes de les anteriors. Llista completa d'ajornats a `memship-definition/docs/public/ROADMAP-v1.0.0.md`.
 
 ---
 

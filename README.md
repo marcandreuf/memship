@@ -104,8 +104,14 @@ Open http://localhost:8081 and log in with your credentials. Change `PORT=8081` 
 | v0.8.0 | ~~Convocations~~ — deferred post-1.0 (build on demand) | Deferred |
 | v1.0.0 | Stabilization & Release — CSV exports, finance dashboard, notes & reminders, annual summary, demo seed, docs polish | Done |
 | v1.0.1 | Patch — fix Celery scheduled billing/reminder task registration; CI guard against image tag overwrite | Done |
+| v1.1.0 | Custom profile fields — org-configurable member data (text, number, date, select, …) with per-field validation | Planned |
+| v1.2.0 | Flexible roles & permissions — multi-role, per-role rights beyond the 4 fixed roles | Planned |
+| v1.3.0 | SSO / identity integration — sign in via an org's IdP (SAML/OIDC); provider mode later | Planned |
+| v1.4.0 | Document library — statutes, minutes, forms with per-group visibility | Planned |
+| v1.5.0 | Events calendar + RSVP — calendar view and participation tracking | Planned |
+| (later) | Optional super-admin modules — photo albums, forum, guestbook, weblinks directory, inventory/lending, portal widgets | Planned |
 
-Deferred past v1.0.0: GoCardless e-mandates, PayPal integration, Stripe Invoice flow, bulk receipt actions, custom report builder, surveys, club document library, family group billing, and other complex variations of the above. See `memship-definition/docs/public/ROADMAP-v1.0.0.md` for the full deferred list.
+Deferred past v1.0.0: GoCardless e-mandates, PayPal integration, Stripe Invoice flow, bulk receipt actions, custom report builder, surveys, family group billing, and other complex variations of the above. See `memship-definition/docs/public/ROADMAP-v1.0.0.md` for the full deferred list.
 
 ---
 
