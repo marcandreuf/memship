@@ -1,7 +1,7 @@
 #!/bin/bash
 # Memship Dev Environment Manager
 # Backend runs in Docker (API + DB), Frontend runs locally with pnpm
-# Usage: ./scripts/dev.sh {start|stop|restart|status|logs|seed|test} [backend|frontend|all]
+# Usage: ./scripts/dev.sh {start|stop|restart|status|logs|seed|test} [backend|frontend|worker|beat|all]
 
 set -e
 

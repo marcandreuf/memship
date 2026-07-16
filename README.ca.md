@@ -232,9 +232,20 @@ Atureu-ho tot:
 | `./scripts/dev.sh status` | Mostrar l'estat de tots els serveis |
 | `./scripts/dev.sh logs backend` | Veure els registres de l'API |
 | `./scripts/dev.sh logs frontend` | Veure els registres del frontend (tail -f) |
+| `./scripts/dev.sh logs worker` | Veure els registres del worker de Celery |
+| `./scripts/dev.sh logs beat` | Veure els registres de Celery beat (planificador) |
 | `./scripts/dev.sh seed` | Executar la configuració inicial de la base de dades (interactiva) |
 | `./scripts/dev.sh seed test` | Inicialitzar amb comptes de prova (sense preguntes) |
 | `./scripts/dev.sh test` | Executar les proves del backend |
+
+`start all` aixeca el worker i el beat de Celery juntament amb l'API i la base de dades. `worker` i `beat` també són destinacions vàlides per a `start`, `stop` i `restart` si els necessites controlar per separat.
+
+> **Afegeixes una dependència del backend?** Les dependències de Python estan integrades a la imatge de Docker — `pyproject.toml` no es munta com a volum — així que una dependència nova no hi serà al contenidor en execució fins que el reconstrueixis:
+>
+> ```bash
+> docker compose -f backend/docker/docker-compose.yml build --no-cache api
+> docker compose -f backend/docker/docker-compose.yml up -d --force-recreate api
+> ```
 
 ### URLs dels serveis
 
