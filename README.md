@@ -233,9 +233,20 @@ Stop everything:
 | `./scripts/dev.sh status` | Show status of all services |
 | `./scripts/dev.sh logs backend` | View API logs |
 | `./scripts/dev.sh logs frontend` | View frontend logs (tail -f) |
+| `./scripts/dev.sh logs worker` | View Celery worker logs |
+| `./scripts/dev.sh logs beat` | View Celery beat (scheduler) logs |
 | `./scripts/dev.sh seed` | Run initial database setup (interactive) |
 | `./scripts/dev.sh seed test` | Seed with test accounts (no prompts) |
 | `./scripts/dev.sh test` | Run backend tests |
+
+`start all` brings up the Celery worker and beat along with the API and database. `worker` and `beat` are also valid targets for `start`, `stop` and `restart` if you need to control them on their own.
+
+> **Adding a backend dependency?** Python dependencies are baked into the Docker image — `pyproject.toml` is not bind-mounted — so a new dependency will be missing from the running container until you rebuild it:
+>
+> ```bash
+> docker compose -f backend/docker/docker-compose.yml build --no-cache api
+> docker compose -f backend/docker/docker-compose.yml up -d --force-recreate api
+> ```
 
 ### Service URLs
 
