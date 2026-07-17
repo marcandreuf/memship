@@ -1,0 +1,111 @@
+# Release — promote a validated RC image to a version tag
+#
+# Triggered by pushing an annotated git tag `vX.Y.Z` (git tags are the single source
+# of truth for the version — there is no VERSION file). This PROMOTES the RC image
+# already built for the tagged commit (build-images.yml) to `:X.Y.Z` + `:latest`
+# WITHOUT rebuilding — the exact bytes staging validated. If no RC image exists for
+# the commit (e.g. it was never built on main), it falls back to building from the tag.
+#
+# Release a validated commit with: ./scripts/release.sh <version>
+#
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing version tag to (re)promote, e.g. v1.3.0'
+        required: true
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Resolve tag and version
+        id: ver
+        run: |
+          REF="${{ github.event.inputs.tag || github.ref_name }}"
+          TAG="${REF#refs/tags/}"
+          VERSION="${TAG#v}"
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Tag '$TAG' is not of the form vX.Y.Z"
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout tag
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ steps.ver.outputs.tag }}
+
+      - name: Resolve commit SHA
+        id: sha
+        run: echo "short_sha=$(git rev-parse HEAD | cut -c1-12)" >> "$GITHUB_OUTPUT"
+
+      # The one genuinely useful check the old pre-commit hook did, moved server-side
+      # so it is enforced for everyone: the released version must be in the roadmap.
+      - name: Roadmap guard
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          if grep -qF "| v$VERSION " README.md; then
+            echo "v$VERSION found in the README roadmap."
+          else
+            echo "::error::v$VERSION is not in the README.md roadmap table. Add its row before releasing."
+            exit 1
+          fi
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Promote RC images (build once, promote)
+        env:
+          OWNER: ${{ github.repository_owner }}
+          VERSION: ${{ steps.ver.outputs.version }}
+          SHORT_SHA: ${{ steps.sha.outputs.short_sha }}
+        run: |
+          for svc in backend frontend; do
+            IMAGE="$REGISTRY/$OWNER/memship-$svc"
+            RC="$IMAGE:sha-$SHORT_SHA"
+            if docker buildx imagetools inspect "$RC" >/dev/null 2>&1; then
+              echo "Promoting $RC -> $IMAGE:$VERSION + :latest (no rebuild)"
+              docker buildx imagetools create -t "$IMAGE:$VERSION" -t "$IMAGE:latest" "$RC"
+            else
+              echo "::warning::No RC image $RC for this commit — building $svc from the tag instead."
+              if [[ "$svc" == "backend" ]]; then
+                docker build -f "$svc/docker/Dockerfile" --build-arg APP_VERSION="$VERSION" \
+                  -t "$IMAGE:$VERSION" -t "$IMAGE:latest" "$svc"
+              else
+                docker build -f "$svc/docker/Dockerfile" \
+                  -t "$IMAGE:$VERSION" -t "$IMAGE:latest" "$svc"
+              fi
+              docker push "$IMAGE:$VERSION"
+              docker push "$IMAGE:latest"
+            fi
+          done
+
+      - name: Summary
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          echo "### Released v$VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- \`ghcr.io/${{ github.repository_owner }}/memship-backend:$VERSION\` + \`:latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`ghcr.io/${{ github.repository_owner }}/memship-frontend:$VERSION\` + \`:latest\`" >> $GITHUB_STEP_SUMMARY

@@ -1,18 +1,34 @@
 """Application settings via pydantic-settings."""
 
+import os
+import subprocess
 from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 def _read_version() -> str:
-    # Search upward from this file for VERSION
-    current = Path(__file__).resolve().parent
-    while current != current.parent:
-        version_file = current / "VERSION"
-        if version_file.exists():
-            return version_file.read_text().strip()
-        current = current.parent
+    # Git tags are the single source of truth for the version (there is no VERSION
+    # file). Images bake the tag in as APP_VERSION at build time; running from source
+    # falls back to `git describe`.
+    env_version = os.environ.get("APP_VERSION", "").strip()
+    if env_version:
+        return env_version
+
+    try:
+        described = subprocess.run(
+            ["git", "describe", "--tags", "--always", "--dirty"],
+            cwd=Path(__file__).resolve().parent,
+            capture_output=True,
+            text=True,
+            timeout=2,
+            check=True,
+        ).stdout.strip()
+        if described:
+            return described.lstrip("v")
+    except (subprocess.SubprocessError, OSError):
+        pass
+
     return "0.0.0"
 
 
