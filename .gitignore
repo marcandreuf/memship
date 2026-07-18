@@ -55,10 +55,6 @@ Thumbs.db
 *.log
 logs/
 
-# Git hooks temp files
-.pending-tag
-.pending-tag-push
-
 # Backups
 backups/
 

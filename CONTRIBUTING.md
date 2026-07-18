@@ -26,10 +26,18 @@ Have a question or want to discuss the project direction? Open an [issue](https:
 
 ## Code Contributions
 
+### Branching model — GitHub Flow
+
+Memship uses **GitHub Flow**: `main` is the trunk and always deployable.
+
+- `main` is the single long-lived branch. It is what the staging environment deploys and what releases are cut from.
+- All work happens on **short-lived `feature/*` branches** taken from `main` and merged back through a pull request. There is no `develop` or `integration` branch.
+- Every push to `main` builds **release-candidate images** that staging validates before any release.
+
 ### Getting Started
 
 1. Fork the repository (or, if you have push access, clone it directly)
-2. Create a feature branch from `main`
+2. Create a `feature/*` branch from `main`
 3. Make your changes
 4. Run the tests to ensure nothing is broken
 5. Open a pull request against `main`
@@ -83,6 +91,26 @@ See the [Development section of the README](README.md#development) for the full 
 - **Python (backend):** Follow project linting rules (ruff)
 - **TypeScript (frontend):** Follow project ESLint configuration
 - All user-facing text must use translation keys (i18n) — never hardcode strings
+
+## Releases
+
+Releases are driven by **git tags — there is no `VERSION` file and no version-bumping git hooks.** The git tag is the single source of truth for the version.
+
+The flow is **build once, promote**:
+
+1. A PR merges to `main`. CI runs, then the Build Images workflow pushes **release-candidate images** tagged `sha-<commit>` and `main` to GHCR.
+2. The staging environment deploys that RC image and it is validated there.
+3. To release the validated commit, a maintainer tags it and pushes the tag:
+
+   ```bash
+   ./scripts/release.sh 1.3.0          # tags HEAD (must be a validated commit on main)
+   ./scripts/release.sh 1.3.0 <sha>    # or tag a specific validated commit
+   ```
+
+   This creates an annotated `v1.3.0` tag and pushes it.
+4. The Release workflow **promotes the exact RC image** for that commit to `:1.3.0` and `:latest` — it does not rebuild, so staging and production ship identical bytes. It also checks that the version has a row in the README roadmap.
+
+The version the running app reports comes from the `APP_VERSION` environment variable (set from the image tag at deploy time); running from source, it falls back to `git describe`.
 
 ## License
 

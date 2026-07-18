@@ -14,12 +14,12 @@ services:
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
       - CELERY_BROKER_URL=redis://redis:6379/0
       - RUN_MIGRATIONS=1
+      - APP_VERSION=${APP_VERSION:-dev}
     volumes:
       - ../app:/app/app
       - ../alembic:/app/alembic
       - ../start.py:/app/start.py
       - ../alembic.ini:/app/alembic.ini
-      - ../../VERSION:/app/VERSION
       - memship-storage:/app/storage
     depends_on:
       db:
@@ -50,9 +50,9 @@ services:
       - DATABASE_URL=postgresql://memship:memship@db:5432/memship_db
       - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
       - CELERY_BROKER_URL=redis://redis:6379/0
+      - APP_VERSION=${APP_VERSION:-dev}
     volumes:
       - ../app:/app/app
-      - ../../VERSION:/app/VERSION
       - memship-storage:/app/storage
     depends_on:
       redis:
@@ -71,9 +71,9 @@ services:
       - DATABASE_URL=postgresql://memship:memship@db:5432/memship_db
       - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
       - CELERY_BROKER_URL=redis://redis:6379/0
+      - APP_VERSION=${APP_VERSION:-dev}
     volumes:
       - ../app:/app/app
-      - ../../VERSION:/app/VERSION
       - memship-storage:/app/storage
     depends_on:
       redis:

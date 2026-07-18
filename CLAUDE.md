@@ -4,7 +4,7 @@
 
 Memship is a self-hosted membership management system for professional associations, sports clubs, and similar organizations. Licensed under Elastic License 2.0 (ELv2).
 
-**Current version:** See `VERSION` file
+**Current version:** the latest `git tag` (`git describe --tags`) — git tags are the single source of truth; there is no VERSION file
 
 ## Product Strategy: MVP-first toward v1.0.0
 
@@ -77,22 +77,20 @@ docker compose down              # Stop all
 
 ### Scripts
 ```bash
-./scripts/bump-version.sh patch  # Bump patch version (0.0.1 → 0.0.2)
-./scripts/bump-version.sh minor  # Bump minor version (0.0.1 → 0.1.0)
-./scripts/bump-version.sh major  # Bump major version (0.0.1 → 1.0.0)
+./scripts/release.sh 1.3.0       # Tag a validated commit on main → triggers image promotion
+./scripts/release.sh 1.3.0 <sha> # Tag a specific validated commit
 ```
 
 ## Project Structure
 
 ```
 memship/
-├── VERSION                      # Semantic version (single source of truth)
 ├── CLAUDE.md                    # This file
 ├── README.md
 ├── LICENSE                      # ELv2
 ├── CONTRIBUTING.md
 ├── scripts/                     # Dev scripts (no Makefiles)
-│   ├── bump-version.sh
+│   ├── release.sh               # Tag a validated commit → triggers image promotion
 │   └── dev.sh
 ├── backend/
 │   ├── pyproject.toml           # Python deps (uv)
@@ -141,15 +139,16 @@ memship/
 │   └── locales/                 # Translation files (es, ca, en)
 └── .github/
     └── workflows/
-        ├── ci.yml
-        └── build-images.yml
+        ├── ci.yml                # Tests on PRs + main
+        ├── build-images.yml      # RC images (sha-<commit>, main) after CI on main
+        └── release.yml           # Promote RC → :X.Y.Z + :latest on tag push
 ```
 
 ## Key Conventions
 
 ### General
 - No Makefiles — use scripts in `scripts/`
-- Version: single `VERSION` file at repo root, read by backend config and Docker builds
+- Version: git tags are the single source of truth (no VERSION file). Images bake the tag in as the `APP_VERSION` build-arg/env; running from source falls back to `git describe`. Release by tagging a validated commit with `scripts/release.sh`
 - Container naming: `memship-` prefix
 
 ### Backend

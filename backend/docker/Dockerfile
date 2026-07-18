@@ -13,10 +13,10 @@ RUN apt-get update && \
 # Install uv for fast dependency management
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-# Copy VERSION from repo root (build context is backend/)
-# VERSION is mounted as volume in dev, copied in production builds
-ARG APP_VERSION=0.0.1
-RUN echo "$APP_VERSION" > /app/VERSION
+# Version comes from the git tag at build time (there is no VERSION file). CI passes
+# --build-arg APP_VERSION=<tag>; the app reads it from the environment at runtime.
+ARG APP_VERSION=0.0.0
+ENV APP_VERSION=$APP_VERSION
 
 # Copy dependency files first (layer caching)
 COPY pyproject.toml ./

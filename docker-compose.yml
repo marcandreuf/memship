@@ -40,6 +40,9 @@ services:
       - APP_ENV=${APP_ENV:-production}
       - DEFAULT_LOCALE=${DEFAULT_LOCALE:-es}
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost}
+      # Report the deployed image tag as the app version (no VERSION file; images
+      # are promoted, not rebuilt, so the version is supplied at deploy time).
+      - APP_VERSION=${IMAGE_TAG:-latest}
       - SMTP_HOST=${SMTP_HOST:-}
       - SMTP_PORT=${SMTP_PORT:-587}
       - SMTP_USER=${SMTP_USER:-}
@@ -48,8 +51,6 @@ services:
       - SMTP_TLS=${SMTP_TLS:-true}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost}
       - RUN_MIGRATIONS=1
-    volumes:
-      - ./VERSION:/app/VERSION:ro
     depends_on:
       db:
         condition: service_healthy
