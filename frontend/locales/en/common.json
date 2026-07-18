@@ -3,6 +3,9 @@
     "name": "Memship",
     "tagline": "Membership management for everyone"
   },
+  "footer": {
+    "version": "Version {version}"
+  },
   "nav": {
     "dashboard": "Dashboard",
     "members": "Members",

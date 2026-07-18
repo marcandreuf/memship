@@ -3,6 +3,9 @@
     "name": "Memship",
     "tagline": "Gestión de socios para todos"
   },
+  "footer": {
+    "version": "Versión {version}"
+  },
   "nav": {
     "dashboard": "Panel",
     "members": "Socios",

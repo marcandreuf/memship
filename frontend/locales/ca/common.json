@@ -3,6 +3,9 @@
     "name": "Memship",
     "tagline": "Gestió de socis per a tothom"
   },
+  "footer": {
+    "version": "Versió {version}"
+  },
   "nav": {
     "dashboard": "Tauler",
     "members": "Socis",
