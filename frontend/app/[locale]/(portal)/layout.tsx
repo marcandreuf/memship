@@ -3,6 +3,7 @@
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { AppSidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
+import { AppFooter } from "@/components/layout/footer";
 import { BrandTheme } from "@/components/layout/brand-theme";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { useRouter, usePathname } from "@/lib/i18n/routing";
@@ -53,6 +54,7 @@ export default function PortalLayout({
       <SidebarInset>
         <Header />
         <main className="flex-1 p-4 md:p-6">{children}</main>
+        <AppFooter />
       </SidebarInset>
     </SidebarProvider>
   );
