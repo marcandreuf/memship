@@ -25,7 +25,8 @@
     "communications": "Comunicacions",
     "announcements": "Anuncis",
     "myCard": "La meva targeta",
-    "scan": "Escanejar"
+    "scan": "Escanejar",
+    "pendingRegistrations": "Altes pendents"
   },
   "common": {
     "save": "Desar",

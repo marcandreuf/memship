@@ -25,7 +25,8 @@
     "communications": "Communications",
     "announcements": "Announcements",
     "myCard": "My Card",
-    "scan": "Scan"
+    "scan": "Scan",
+    "pendingRegistrations": "Pending registrations"
   },
   "common": {
     "save": "Save",

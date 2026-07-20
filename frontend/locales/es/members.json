@@ -53,6 +53,21 @@
     "genderPreferNotToSay": "Prefiero no decirlo",
     "noActivities": "Este socio no tiene inscripciones en actividades",
     "registeredOn": "Inscrito",
-    "amount": "Importe"
+    "amount": "Importe",
+    "registration": {
+      "approve": "Aprobar",
+      "reject": "Rechazar",
+      "approved": "Alta aprobada",
+      "rejected": "Alta rechazada",
+      "approveTitle": "¿Aprobar esta alta?",
+      "approveDescription": "El solicitante pasa a ser socio activo, recibe un número de socio y se le avisa por correo.",
+      "rejectTitle": "¿Rechazar esta alta?",
+      "rejectDescription": "El solicitante no podrá acceder al portal. Se le avisa por correo.",
+      "reasonLabel": "Motivo (opcional)",
+      "reasonPlaceholder": "Se muestra al solicitante en el correo de notificación",
+      "queueTitle": "Altas pendientes",
+      "queueDescription": "Solicitudes de alta pendientes de decisión.",
+      "queueEmpty": "No hay altas pendientes de revisar."
+    }
   }
 }

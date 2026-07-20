@@ -7,6 +7,8 @@ import {
   login,
   logout,
   register,
+  resendVerification,
+  verifyEmail,
   type LoginData,
   type RegisterData,
   type User,
@@ -37,12 +39,10 @@ export function useAuth() {
     },
   });
 
+  // No redirect on success: registration no longer opens a session. The form
+  // shows a "confirm your email / awaiting approval" panel from the result.
   const registerMutation = useMutation({
     mutationFn: (data: RegisterData) => register(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
-      router.push("/dashboard");
-    },
   });
 
   const logoutMutation = useMutation({
@@ -66,4 +66,22 @@ export function useAuth() {
     isRegistering: registerMutation.isPending,
     logout: logoutMutation.mutateAsync,
   };
+}
+
+export function useVerifyEmail() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (token: string) => verifyEmail(token),
+    onSuccess: () => {
+      // A signed-in pending member sees their banner update immediately.
+      queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
+    },
+  });
+}
+
+export function useResendVerification() {
+  return useMutation({
+    mutationFn: (email: string) => resendVerification(email),
+  });
 }

@@ -2,12 +2,14 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  approveMember,
   changeMemberStatus,
   createMember,
   getMember,
   listMembers,
   listMemberRegistrations,
   listMembershipTypes,
+  rejectMember,
   updateMember,
   updateMembershipType,
   deleteMembershipType,
@@ -101,6 +103,27 @@ export function useChangeMemberStatus() {
       status: string;
       reason?: string;
     }) => changeMemberStatus(id, status, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: MEMBERS_KEY });
+    },
+  });
+}
+
+export function useApproveMember() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => approveMember(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: MEMBERS_KEY });
+    },
+  });
+}
+
+export function useRejectMember() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: number; reason?: string }) =>
+      rejectMember(id, reason),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: MEMBERS_KEY });
     },

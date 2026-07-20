@@ -5,6 +5,7 @@ import { usePathname, Link } from "@/lib/i18n/routing";
 import {
   LayoutDashboard,
   Users,
+  UserCheck,
   CalendarDays,
   FolderOpen,
   Settings,
@@ -72,6 +73,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
     { href: "/my-card", label: t("nav.myCard"), icon: IdCard, show: !isAdmin && cardEnabled },
     { href: "/payment-method", label: t("paymentMethod.title"), icon: CreditCard, show: !isAdmin },
     { href: "/members", label: t("nav.members"), icon: Users, show: isAdmin },
+    { href: "/members/pending", label: t("nav.pendingRegistrations"), icon: UserCheck, show: isAdmin },
     { href: "/scan", label: t("nav.scan"), icon: ScanLine, show: isAdmin && cardEnabled },
     { href: "/receipts", label: t("nav.receipts"), icon: Receipt, show: isAdmin },
     { href: "/mandates", label: t("nav.mandates"), icon: FileText, show: isAdmin },

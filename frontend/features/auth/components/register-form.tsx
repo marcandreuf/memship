@@ -21,9 +21,10 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { useState } from "react";
 import { Link } from "@/lib/i18n/routing";
 import { useAuth } from "../hooks/use-auth";
-import { ClientApiError } from "../services/auth-api";
+import { ClientApiError, type RegisterResult } from "../services/auth-api";
 
 const registerSchema = z
   .object({
@@ -43,6 +44,7 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 export function RegisterForm() {
   const t = useTranslations();
   const { register: registerUser, isRegistering, registerError } = useAuth();
+  const [result, setResult] = useState<RegisterResult | null>(null);
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -57,12 +59,13 @@ export function RegisterForm() {
 
   async function onSubmit(data: RegisterFormValues) {
     try {
-      await registerUser({
+      const response = await registerUser({
         first_name: data.first_name,
         last_name: data.last_name,
         email: data.email,
         password: data.password,
       });
+      setResult(response);
     } catch {
       // Error captured in registerError
     }
@@ -74,6 +77,49 @@ export function RegisterForm() {
       : registerError
         ? t("auth.registerError")
         : null;
+
+  if (result) {
+    return (
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl">
+            {t("auth.registrationReceived")}
+          </CardTitle>
+          <CardDescription>
+            {t("auth.checkYourEmail", { email: result.email })}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {result.requires_approval && (
+            <div className="rounded-md bg-muted p-3 text-sm">
+              {t("auth.awaitingApprovalNotice")}
+            </div>
+          )}
+
+          {result.verification_token && (
+            <div className="rounded-md border border-dashed p-3 text-xs break-all">
+              <p className="mb-1 font-medium">{t("auth.devModeToken")}</p>
+              <Link
+                href={`/verify-email?token=${result.verification_token}`}
+                className="text-primary underline-offset-4 hover:underline"
+              >
+                {result.verification_token}
+              </Link>
+            </div>
+          )}
+
+          <p className="text-center text-sm text-muted-foreground">
+            <Link
+              href="/login"
+              className="text-primary underline-offset-4 hover:underline"
+            >
+              {t("auth.loginLink")}
+            </Link>
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="w-full max-w-md">
