@@ -36,3 +36,10 @@ class UserRole(StrEnum):
     ADMIN = "admin"
     RESTRICTED = "restricted"
     MEMBER = "member"
+
+
+class AuthProvider(StrEnum):
+    """External identity providers that can be linked to a user."""
+
+    GOOGLE = "google"
+    APPLE = "apple"

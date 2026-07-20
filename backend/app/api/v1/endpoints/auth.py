@@ -1,6 +1,10 @@
 """Authentication endpoints."""
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from datetime import datetime, timezone
+from urllib.parse import urlencode
+
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -10,6 +14,7 @@ from app.core.email import (
 )
 from app.core.security.dependencies import get_current_user
 from app.core.security.jwt import create_access_token
+from app.core.security.oauth import get_provider, provider_redirect_uri
 from app.db.session import get_db
 from app.domains.auth.models import User
 from app.domains.auth.schemas import (
@@ -20,9 +25,16 @@ from app.domains.auth.schemas import (
     RegisterRequest,
     RegisterResponse,
     ResendVerificationRequest,
+    SsoProvidersResponse,
     TokenResponse,
     UserResponse,
     VerifyEmailRequest,
+)
+from app.domains.auth.oauth_service import (
+    EmailNotVerifiedError,
+    OAuthProfile,
+    RegistrationClosedError,
+    find_or_create_from_oauth,
 )
 from app.domains.auth.service import (
     authenticate_user,
@@ -35,6 +47,20 @@ from app.domains.auth.service import (
 )
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+SESSION_MAX_AGE = 60 * 30  # 30 minutes, matching ACCESS_TOKEN_EXPIRE_MINUTES
+
+
+def _set_session_cookie(response: Response, user: User) -> None:
+    response.set_cookie(
+        key="access_token",
+        value=create_access_token(user.id, user.role),
+        httponly=True,
+        secure=False,  # TODO: set True in production
+        samesite="lax",
+        max_age=SESSION_MAX_AGE,
+        path="/",
+    )
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -223,3 +249,89 @@ def get_me(current_user: User = Depends(get_current_user)):
 def logout(response: Response):
     response.delete_cookie(key="access_token", path="/")
     return MessageResponse(message="Logged out")
+
+
+# --- Single sign-on ---
+
+
+def _frontend_url(path: str, **params: str) -> str:
+    base = f"{settings.FRONTEND_URL.rstrip('/')}/{settings.DEFAULT_LOCALE}{path}"
+    if params:
+        base += "?" + urlencode(params)
+    return base
+
+
+@router.get("/sso/providers", response_model=SsoProvidersResponse)
+def sso_providers():
+    """Which SSO buttons the login/register pages should render."""
+    return SsoProvidersResponse(google=settings.google_sso_enabled)
+
+
+@router.get("/oauth/{provider}/login")
+async def oauth_login(provider: str, request: Request):
+    client = get_provider(provider)
+    if client is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"SSO provider '{provider}' is not configured",
+        )
+
+    # authlib stores the CSRF `state` and the OIDC `nonce` in the signed session
+    # cookie and checks both on the way back.
+    return await client.authorize_redirect(request, provider_redirect_uri(provider))
+
+
+@router.get("/oauth/{provider}/callback")
+async def oauth_callback(
+    provider: str, request: Request, db: Session = Depends(get_db)
+):
+    client = get_provider(provider)
+    if client is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"SSO provider '{provider}' is not configured",
+        )
+
+    try:
+        token = await client.authorize_access_token(request)
+    except Exception:
+        # Covers a denied consent screen, a replayed/expired code and a failed
+        # state or id_token check. None of it is actionable by the user beyond
+        # trying again, and echoing provider errors back would leak detail.
+        return RedirectResponse(_frontend_url("/login", error="sso_failed"))
+
+    claims = token.get("userinfo") or {}
+    subject = claims.get("sub")
+    email = claims.get("email")
+    if not subject or not email:
+        return RedirectResponse(_frontend_url("/login", error="sso_failed"))
+
+    profile = OAuthProfile(
+        provider=provider,
+        subject=subject,
+        email=email,
+        email_verified=bool(claims.get("email_verified")),
+        first_name=claims.get("given_name") or "",
+        last_name=claims.get("family_name") or "",
+    )
+
+    try:
+        user, _created = find_or_create_from_oauth(db, profile)
+    except EmailNotVerifiedError:
+        return RedirectResponse(_frontend_url("/login", error="sso_email_unverified"))
+    except RegistrationClosedError:
+        return RedirectResponse(_frontend_url("/login", error="registration_closed"))
+
+    if not user.is_active:
+        return RedirectResponse(_frontend_url("/login", error="account_disabled"))
+    if user.is_locked:
+        return RedirectResponse(_frontend_url("/login", error="account_locked"))
+
+    user.last_login_at = datetime.now(timezone.utc)
+    db.commit()
+
+    # A pending member still gets a session — the portal shows them the
+    # "awaiting approval" screen rather than a dead end.
+    response = RedirectResponse(_frontend_url("/dashboard"))
+    _set_session_cookie(response, user)
+    return response

@@ -25,6 +25,7 @@ import { useState } from "react";
 import { Link } from "@/lib/i18n/routing";
 import { useAuth } from "../hooks/use-auth";
 import { ClientApiError, type RegisterResult } from "../services/auth-api";
+import { SsoButtons } from "./sso-buttons";
 
 const registerSchema = z
   .object({
@@ -225,6 +226,8 @@ export function RegisterForm() {
             <Button type="submit" className="w-full" disabled={isRegistering}>
               {isRegistering ? t("common.loading") : t("auth.register")}
             </Button>
+
+            <SsoButtons />
 
             <p className="text-center text-sm text-muted-foreground">
               {t("auth.hasAccount")}{" "}

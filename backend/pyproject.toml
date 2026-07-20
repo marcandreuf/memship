@@ -24,6 +24,8 @@ dependencies = [
     "stripe>=10.0",
     "python-redsys>=1.2",
     "segno>=1.6",
+    "authlib>=1.3",
+    "itsdangerous>=2.2",
 ]
 
 [project.optional-dependencies]

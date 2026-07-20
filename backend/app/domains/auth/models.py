@@ -10,6 +10,7 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    UniqueConstraint,
     func,
 )
 from sqlalchemy.dialects.postgresql import INET, JSONB
@@ -62,3 +63,32 @@ class User(Base):
 
     # Relationships
     person = relationship("Person", back_populates="user")
+    identities = relationship(
+        "UserIdentity", back_populates="user", cascade="all, delete-orphan"
+    )
+
+
+class UserIdentity(Base):
+    """A external provider account (Google, Apple) linked to a memship user.
+
+    One user can have several identities plus a password, so signing in with
+    Google and later with Apple on the same verified email resolves to the same
+    account instead of creating a duplicate.
+    """
+
+    __tablename__ = "user_identities"
+    __table_args__ = (
+        CheckConstraint("provider IN ('google', 'apple')", name="valid_auth_provider"),
+        UniqueConstraint("provider", "provider_subject", name="uq_provider_subject"),
+        Index("idx_user_identities_user_id", "user_id"),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    provider = Column(String(20), nullable=False)
+    # The provider's stable subject id — never the email, which can change.
+    provider_subject = Column(String(255), nullable=False)
+    email = Column(String(255))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", back_populates="identities")

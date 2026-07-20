@@ -60,6 +60,14 @@ export async function register(data: RegisterData): Promise<RegisterResult> {
   });
 }
 
+export interface SsoProviders {
+  google: boolean;
+}
+
+export async function getSsoProviders(): Promise<SsoProviders> {
+  return apiClient("/auth/sso/providers");
+}
+
 export async function verifyEmail(token: string): Promise<{ message: string }> {
   return apiClient("/auth/verify-email", {
     method: "POST",

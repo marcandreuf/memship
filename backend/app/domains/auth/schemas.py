@@ -69,6 +69,12 @@ class MessageResponse(BaseModel):
     verification_token: str | None = None
 
 
+class SsoProvidersResponse(BaseModel):
+    """Which SSO providers are configured on this install."""
+
+    google: bool = False
+
+
 class RegisterResponse(BaseModel):
     """Registration no longer logs the user in — it reports what happens next."""
 

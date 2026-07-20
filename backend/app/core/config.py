@@ -70,6 +70,10 @@ class Settings(BaseSettings):
     RESEND_API_KEY: str = ""
     RESEND_FROM_EMAIL: str = ""
 
+    # Single sign-on (optional — a provider is offered only when configured)
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+
     # Celery / Redis
     CELERY_BROKER_URL: str = "redis://localhost:6379/0"
 
@@ -88,6 +92,14 @@ class Settings(BaseSettings):
     @property
     def email_enabled(self) -> bool:
         return bool(self.RESEND_API_KEY) or bool(self.SMTP_HOST)
+
+    @property
+    def google_sso_enabled(self) -> bool:
+        return bool(self.GOOGLE_CLIENT_ID and self.GOOGLE_CLIENT_SECRET)
+
+    @property
+    def sso_enabled(self) -> bool:
+        return self.google_sso_enabled
 
     @property
     def cors_origins_list(self) -> list[str]:
