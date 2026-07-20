@@ -31,8 +31,21 @@ Have a question or want to discuss the project direction? Open an [issue](https:
 Memship uses **GitHub Flow**: `main` is the trunk and always deployable.
 
 - `main` is the single long-lived branch. It is what the staging environment deploys and what releases are cut from.
-- All work happens on **short-lived `feature/*` branches** taken from `main` and merged back through a pull request. There is no `develop` or `integration` branch.
+- All work happens on **short-lived `feature/*` branches** taken from `main` and merged back through a pull request.
 - Every push to `main` builds **release-candidate images** that staging validates before any release.
+
+**There are no long-lived environment branches** — no `develop`, `integration`, `preproduction`, `release/*`, or `hotfix/*`. GitHub Flow deliberately rejects the multi-branch Git Flow model: at this team size its ceremony is overhead, and in Git Flow `develop` *is* the integration branch, so a separate `develop` **and** `integration` (or `preproduction`) branch is redundant. One trunk avoids the question entirely.
+
+#### Branches vs. environments
+
+The most common point of confusion: **"preproduction" (staging) is an *environment*, not a branch.** Environments are targets you deploy an image *to*; they do not each need a matching branch. The mapping is:
+
+| Environment | What deploys there | Trigger |
+|---|---|---|
+| **Staging** (preproduction) | the release-candidate image built from `main` (`sha-<commit>` / `main`) | every merge to `main` |
+| **Production** | the *same* RC image, re-tagged `:X.Y.Z` + `:latest` (build once, promote — never rebuilt) | pushing a `v*.*.*` git tag |
+
+So there is nothing to "prepare" as a `preproduction` branch — a pre-production gate is provided by the **staging environment** deploying the RC image and validating it before any tag is cut. See [Releases](#releases) below for the promote flow.
 
 ### Getting Started
 
