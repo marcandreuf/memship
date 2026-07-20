@@ -53,7 +53,9 @@ class Settings(BaseSettings):
     DEFAULT_LOCALE: str = "es"
     CORS_ORIGINS: str = "http://localhost:3000"
 
-    # SMTP (optional — emails disabled if SMTP_HOST is empty)
+    # SMTP (optional — emails disabled if SMTP_HOST is empty).
+    # Real credentials belong in backend/.env (gitignored), never here — this
+    # file is committed to a public repo.
     SMTP_HOST: str = ""
     SMTP_PORT: int = 587
     SMTP_USER: str = ""
