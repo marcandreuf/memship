@@ -187,6 +187,133 @@ class TestLinkingToAnExistingAccount:
         assert db.query(UserIdentity).count() == 0
 
 
+class TestAppleClientSecret:
+    """Apple has no static secret — it is an ES256 JWT signed with the .p8 key."""
+
+    # A throwaway P-256 key generated for this test only.
+    PRIVATE_KEY = (
+        "-----BEGIN PRIVATE KEY-----\n"
+        "MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgevZzL1gdAFr88hb2\n"
+        "OF/2NxApJCzGCEDdfSp6VQO30hyhRANCAAQRWz+jn65BtOMvdyHKcvjBeBSDZH2r\n"
+        "1RTwjmYSi9R/zpBnuQ4EiMnCqfMPWiZqB4QdbAd0E7oH50VpuZ1P087G\n"
+        "-----END PRIVATE KEY-----"
+    )
+
+    def _configure(self, monkeypatch, private_key=None):
+        from app.core.config import settings
+
+        monkeypatch.setattr(settings, "APPLE_CLIENT_ID", "com.example.memship", raising=False)
+        monkeypatch.setattr(settings, "APPLE_TEAM_ID", "TEAM123456", raising=False)
+        monkeypatch.setattr(settings, "APPLE_KEY_ID", "KEY1234567", raising=False)
+        monkeypatch.setattr(
+            settings, "APPLE_PRIVATE_KEY", private_key or self.PRIVATE_KEY, raising=False
+        )
+
+    def test_builds_an_es256_jwt_with_the_expected_claims(self, monkeypatch):
+        import jwt as pyjwt
+
+        from app.core.security.oauth import APPLE_AUDIENCE, build_apple_client_secret
+
+        self._configure(monkeypatch)
+
+        secret = build_apple_client_secret()
+
+        header = pyjwt.get_unverified_header(secret)
+        assert header["alg"] == "ES256"
+        assert header["kid"] == "KEY1234567"
+
+        claims = pyjwt.decode(
+            secret,
+            options={"verify_signature": False},
+            audience=APPLE_AUDIENCE,
+        )
+        assert claims["iss"] == "TEAM123456"
+        # `sub` must be the Services ID, not the team.
+        assert claims["sub"] == "com.example.memship"
+        assert claims["aud"] == APPLE_AUDIENCE
+        assert claims["exp"] > claims["iat"]
+
+    def test_accepts_a_key_with_escaped_newlines(self, monkeypatch):
+        """Env vars usually carry the .p8 as a single line with literal \\n."""
+        from app.core.security.oauth import build_apple_client_secret
+
+        self._configure(monkeypatch, private_key=self.PRIVATE_KEY.replace("\n", "\\n"))
+
+        assert build_apple_client_secret()
+
+    def test_apple_sso_stays_disabled_until_every_field_is_set(self, monkeypatch):
+        from app.core.config import settings
+
+        self._configure(monkeypatch)
+        assert settings.apple_sso_enabled is True
+
+        monkeypatch.setattr(settings, "APPLE_KEY_ID", "", raising=False)
+        assert settings.apple_sso_enabled is False
+
+
+class TestProviderRegistration:
+    """Guards two Apple settings whose absence fails silently rather than loudly."""
+
+    def test_apple_requests_the_openid_scope(self):
+        # authlib only generates a nonce — and so only parses the returned
+        # id_token into `userinfo` — when the scope asks for `openid`. Drop it
+        # and every Apple sign-in completes with an empty profile.
+        from app.core.security.oauth import APPLE_CLIENT_KWARGS
+
+        assert "openid" in APPLE_CLIENT_KWARGS["scope"].split()
+
+    def test_apple_uses_form_post(self):
+        # Apple only returns the email and name claims with form_post.
+        from app.core.security.oauth import APPLE_CLIENT_KWARGS
+
+        assert APPLE_CLIENT_KWARGS["response_mode"] == "form_post"
+
+
+class TestAppleFormPostName:
+    """Apple posts the profile name back only on the first authorization."""
+
+    @pytest.mark.anyio
+    async def test_reads_first_and_last_name_from_the_user_field(self):
+        from app.api.v1.endpoints.auth import _apple_form_name
+
+        request = _fake_form_request(
+            {"user": '{"name": {"firstName": "Ada", "lastName": "Lovelace"}}'}
+        )
+
+        assert await _apple_form_name(request) == ("Ada", "Lovelace")
+
+    @pytest.mark.anyio
+    async def test_returns_blanks_when_apple_omits_the_name(self):
+        from app.api.v1.endpoints.auth import _apple_form_name
+
+        # Every sign-in after the first has no `user` field.
+        assert await _apple_form_name(_fake_form_request({})) == ("", "")
+
+    @pytest.mark.anyio
+    async def test_malformed_user_payload_does_not_raise(self):
+        from app.api.v1.endpoints.auth import _apple_form_name
+
+        request = _fake_form_request({"user": "not-json"})
+
+        assert await _apple_form_name(request) == ("", "")
+
+
+class _FakeForm(dict):
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *exc):
+        return False
+
+
+def _fake_form_request(fields: dict):
+    class _Request:
+        async def form(self):
+            return _FakeForm(fields)
+
+    return _Request()
+
+
 class TestSsoEndpoints:
     def test_providers_endpoint_reports_google_off_by_default(self, client):
         response = client.get("/api/v1/auth/sso/providers")
@@ -205,4 +332,13 @@ class TestSsoEndpoints:
 
     def test_unknown_provider_404s(self, client):
         response = client.get("/api/v1/auth/oauth/facebook/login")
+        assert response.status_code == 404
+
+    def test_apple_callback_accepts_post(self, client):
+        """Apple uses response_mode=form_post, so the callback must allow POST."""
+        response = client.post(
+            "/api/v1/auth/oauth/apple/callback", data={"code": "x", "state": "y"}
+        )
+        # 404 because Apple is unconfigured here — a 405 would mean the route
+        # rejects POST outright, which would break Apple in production.
         assert response.status_code == 404

@@ -1,5 +1,6 @@
 """Authentication endpoints."""
 
+import json
 from datetime import datetime, timezone
 from urllib.parse import urlencode
 
@@ -264,7 +265,10 @@ def _frontend_url(path: str, **params: str) -> str:
 @router.get("/sso/providers", response_model=SsoProvidersResponse)
 def sso_providers():
     """Which SSO buttons the login/register pages should render."""
-    return SsoProvidersResponse(google=settings.google_sso_enabled)
+    return SsoProvidersResponse(
+        google=settings.google_sso_enabled,
+        apple=settings.apple_sso_enabled,
+    )
 
 
 @router.get("/oauth/{provider}/login")
@@ -276,12 +280,40 @@ async def oauth_login(provider: str, request: Request):
             detail=f"SSO provider '{provider}' is not configured",
         )
 
+    # Apple only returns the email and name claims when the response is posted
+    # back, which also makes the callback a POST.
+    extra = {"response_mode": "form_post"} if provider == "apple" else {}
+
     # authlib stores the CSRF `state` and the OIDC `nonce` in the signed session
     # cookie and checks both on the way back.
-    return await client.authorize_redirect(request, provider_redirect_uri(provider))
+    return await client.authorize_redirect(
+        request, provider_redirect_uri(provider), **extra
+    )
 
 
-@router.get("/oauth/{provider}/callback")
+async def _apple_form_name(request: Request) -> tuple[str, str]:
+    """Read the name Apple posts back, which it only ever sends once.
+
+    Apple includes a `user` field with the person's name on the **first**
+    authorization only; every later sign-in omits it. Must be read before
+    authlib consumes (and closes) the form.
+    """
+    try:
+        form = await request.form()
+    except Exception:
+        return "", ""
+
+    raw = form.get("user")
+    if not raw:
+        return "", ""
+    try:
+        name = json.loads(raw).get("name") or {}
+    except (ValueError, TypeError):
+        return "", ""
+    return name.get("firstName") or "", name.get("lastName") or ""
+
+
+@router.api_route("/oauth/{provider}/callback", methods=["GET", "POST"])
 async def oauth_callback(
     provider: str, request: Request, db: Session = Depends(get_db)
 ):
@@ -291,6 +323,12 @@ async def oauth_callback(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"SSO provider '{provider}' is not configured",
         )
+
+    # Apple posts the profile name in the form body; grab it before authlib
+    # reads and closes the form.
+    apple_first, apple_last = ("", "")
+    if provider == "apple" and request.method == "POST":
+        apple_first, apple_last = await _apple_form_name(request)
 
     try:
         token = await client.authorize_access_token(request)
@@ -306,13 +344,21 @@ async def oauth_callback(
     if not subject or not email:
         return RedirectResponse(_frontend_url("/login", error="sso_failed"))
 
+    # Apple sends email_verified as the string "true"/"false" rather than a bool.
+    raw_verified = claims.get("email_verified")
+    email_verified = (
+        raw_verified.lower() == "true"
+        if isinstance(raw_verified, str)
+        else bool(raw_verified)
+    )
+
     profile = OAuthProfile(
         provider=provider,
         subject=subject,
         email=email,
-        email_verified=bool(claims.get("email_verified")),
-        first_name=claims.get("given_name") or "",
-        last_name=claims.get("family_name") or "",
+        email_verified=email_verified,
+        first_name=claims.get("given_name") or apple_first,
+        last_name=claims.get("family_name") or apple_last,
     )
 
     try:

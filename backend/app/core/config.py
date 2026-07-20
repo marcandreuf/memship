@@ -74,6 +74,13 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
 
+    # Apple: APPLE_CLIENT_ID is the Services ID (not the App ID). APPLE_PRIVATE_KEY
+    # is the contents of the .p8 key file — newlines may be given as literal \n.
+    APPLE_CLIENT_ID: str = ""
+    APPLE_TEAM_ID: str = ""
+    APPLE_KEY_ID: str = ""
+    APPLE_PRIVATE_KEY: str = ""
+
     # Celery / Redis
     CELERY_BROKER_URL: str = "redis://localhost:6379/0"
 
@@ -98,8 +105,22 @@ class Settings(BaseSettings):
         return bool(self.GOOGLE_CLIENT_ID and self.GOOGLE_CLIENT_SECRET)
 
     @property
+    def apple_sso_enabled(self) -> bool:
+        return bool(
+            self.APPLE_CLIENT_ID
+            and self.APPLE_TEAM_ID
+            and self.APPLE_KEY_ID
+            and self.APPLE_PRIVATE_KEY
+        )
+
+    @property
+    def apple_private_key_pem(self) -> str:
+        """The .p8 key with escaped newlines restored to real ones."""
+        return self.APPLE_PRIVATE_KEY.replace("\\n", "\n").strip()
+
+    @property
     def sso_enabled(self) -> bool:
-        return self.google_sso_enabled
+        return self.google_sso_enabled or self.apple_sso_enabled
 
     @property
     def cors_origins_list(self) -> list[str]:

@@ -62,6 +62,7 @@ export async function register(data: RegisterData): Promise<RegisterResult> {
 
 export interface SsoProviders {
   google: boolean;
+  apple: boolean;
 }
 
 export async function getSsoProviders(): Promise<SsoProviders> {

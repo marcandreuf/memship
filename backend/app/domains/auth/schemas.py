@@ -73,6 +73,7 @@ class SsoProvidersResponse(BaseModel):
     """Which SSO providers are configured on this install."""
 
     google: bool = False
+    apple: bool = False
 
 
 class RegisterResponse(BaseModel):
