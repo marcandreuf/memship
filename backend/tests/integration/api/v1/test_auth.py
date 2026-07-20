@@ -105,10 +105,19 @@ class TestRegister:
         assert response.status_code == 201
         data = response.json()
         assert data["email"] == "new@test.com"
-        assert data["role"] == "member"
-        assert data["first_name"] == "New"
-        assert data["member_number"] is not None
-        assert "access_token" in response.cookies
+        assert data["member_status"] == "pending"
+        assert data["requires_approval"] is True
+        # Registration must NOT log the user in — approval is still pending.
+        assert "access_token" not in response.cookies
+
+        member = (
+            db.query(Member)
+            .join(Person, Member.person_id == Person.id)
+            .filter(Person.email == "new@test.com")
+            .first()
+        )
+        # The member number is allocated on approval, not at sign-up.
+        assert member.member_number is None
 
     def test_register_duplicate_email(self, client, db):
         _create_test_user(db, email="dupe@test.com")

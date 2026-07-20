@@ -4,7 +4,10 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.core.email import send_password_reset_email, send_welcome_email
+from app.core.email import (
+    send_password_reset_email,
+    send_verification_email,
+)
 from app.core.security.dependencies import get_current_user
 from app.core.security.jwt import create_access_token
 from app.db.session import get_db
@@ -15,14 +18,20 @@ from app.domains.auth.schemas import (
     PasswordReset,
     PasswordResetRequest,
     RegisterRequest,
+    RegisterResponse,
+    ResendVerificationRequest,
     TokenResponse,
     UserResponse,
+    VerifyEmailRequest,
 )
 from app.domains.auth.service import (
     authenticate_user,
+    get_registration_settings,
     register_user,
     request_password_reset,
+    resend_verification,
     reset_password,
+    verify_email,
 )
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -58,10 +67,23 @@ def login(data: LoginRequest, response: Response, db: Session = Depends(get_db))
     return TokenResponse()
 
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-def register(data: RegisterRequest, response: Response, db: Session = Depends(get_db)):
+def _verification_url(token: str) -> str:
+    return f"{settings.FRONTEND_URL}/{settings.DEFAULT_LOCALE}/verify-email?token={token}"
+
+
+@router.post(
+    "/register", response_model=RegisterResponse, status_code=status.HTTP_201_CREATED
+)
+def register(data: RegisterRequest, db: Session = Depends(get_db)):
+    public_registration, requires_approval = get_registration_settings(db)
+    if not public_registration:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Public registration is disabled",
+        )
+
     try:
-        user = register_user(
+        user, verification_token = register_user(
             db,
             first_name=data.first_name,
             last_name=data.last_name,
@@ -74,33 +96,70 @@ def register(data: RegisterRequest, response: Response, db: Session = Depends(ge
             detail=str(e),
         )
 
-    token = create_access_token(user.id, user.role)
-    response.set_cookie(
-        key="access_token",
-        value=token,
-        httponly=True,
-        secure=False,
-        samesite="lax",
-        max_age=60 * 30,
-        path="/",
-    )
+    member = user.person.member
+    member_status = member.status if member else "pending"
     db.commit()
 
-    member = user.person.member
-    if member:
-        send_welcome_email(user.email, user.person.first_name, member.member_number or "")
+    # No session cookie here: the account is not usable until the email is
+    # confirmed and (when configured) an admin approves the registration.
+    if settings.email_enabled:
+        send_verification_email(
+            user.email, user.person.first_name, _verification_url(verification_token)
+        )
+        return RegisterResponse(
+            message="Registration received. Check your email to confirm your address.",
+            email=user.email,
+            member_status=member_status,
+            requires_approval=requires_approval,
+        )
 
-    return UserResponse(
-        id=user.id,
+    # Dev mode — no transport configured, hand the token back like password reset does
+    return RegisterResponse(
+        message="Registration received (dev mode — no email sent)",
         email=user.email,
-        role=user.role,
-        is_active=user.is_active,
-        person_id=user.person_id,
-        first_name=user.person.first_name,
-        last_name=user.person.last_name,
-        member_id=member.id if member else None,
-        member_number=member.member_number if member else None,
+        member_status=member_status,
+        requires_approval=requires_approval,
+        verification_token=verification_token,
     )
+
+
+@router.post("/verify-email", response_model=MessageResponse)
+def verify_email_endpoint(data: VerifyEmailRequest, db: Session = Depends(get_db)):
+    user = verify_email(db, data.token)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired verification token",
+        )
+    db.commit()
+    return MessageResponse(message="Email verified")
+
+
+@router.post("/resend-verification", response_model=MessageResponse)
+def resend_verification_endpoint(
+    data: ResendVerificationRequest, db: Session = Depends(get_db)
+):
+    result = resend_verification(db, data.email)
+    db.commit()
+
+    # Generic response either way — never reveal whether the address exists.
+    generic = "If the email exists and is unverified, a new link has been sent"
+
+    if result and settings.email_enabled:
+        user, token = result
+        send_verification_email(
+            user.email, user.person.first_name, _verification_url(token)
+        )
+        return MessageResponse(message=generic)
+
+    if result:
+        _, token = result
+        return MessageResponse(
+            message="Verification token generated (dev mode — no email sent)",
+            verification_token=token,
+        )
+
+    return MessageResponse(message=generic)
 
 
 @router.post("/password-reset-request", response_model=MessageResponse)
@@ -155,6 +214,8 @@ def get_me(current_user: User = Depends(get_current_user)):
         member_id=member.id if member else None,
         member_number=member.member_number if member else None,
         gender=current_user.person.gender,
+        email_verified=bool(current_user.email_verified),
+        member_status=member.status if member else None,
     )
 
 

@@ -28,12 +28,19 @@ class User(Base):
         Index("idx_users_person_id", "person_id"),
         Index("idx_users_is_active", "is_active"),
         Index("idx_users_reset_token", "reset_token", postgresql_where="reset_token IS NOT NULL"),
+        Index(
+            "idx_users_verification_token",
+            "verification_token",
+            postgresql_where="verification_token IS NOT NULL",
+        ),
     )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     person_id = Column(Integer, ForeignKey("persons.id", ondelete="CASCADE"), nullable=False)
     email = Column(String(255), unique=True, nullable=False)
-    password_hash = Column(String(255), nullable=False)
+    # Nullable: SSO-only users (Google/Apple) have no password. The password login
+    # path rejects a user whose hash is NULL.
+    password_hash = Column(String(255))
     role = Column(String(50), nullable=False, default="member")
     permissions = Column(JSONB, default=list)
     email_verified = Column(Boolean, default=False)
@@ -42,6 +49,8 @@ class User(Base):
     last_login_ip = Column(INET)
     reset_token = Column(String(255))
     reset_token_expires_at = Column(DateTime(timezone=True))
+    verification_token = Column(String(255))
+    verification_token_expires_at = Column(DateTime(timezone=True))
     is_active = Column(Boolean, default=True)
     is_locked = Column(Boolean, default=False)
     locked_at = Column(DateTime(timezone=True))

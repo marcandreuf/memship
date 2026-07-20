@@ -57,6 +57,21 @@ _SUBJECTS = {
         "ca": "Restablir contrasenya",
         "en": "Reset your password",
     },
+    "verification": {
+        "es": "Confirma tu correo electrónico",
+        "ca": "Confirma el teu correu electrònic",
+        "en": "Confirm your email address",
+    },
+    "registration_approved": {
+        "es": "Tu solicitud de alta ha sido aprobada",
+        "ca": "La teva sol·licitud d'alta ha estat aprovada",
+        "en": "Your registration has been approved",
+    },
+    "registration_rejected": {
+        "es": "Sobre tu solicitud de alta",
+        "ca": "Sobre la teva sol·licitud d'alta",
+        "en": "About your registration request",
+    },
     "payment_reminder": {
         "es": "Recordatorio de pago: recibo {receipt_number}",
         "ca": "Recordatori de pagament: rebut {receipt_number}",
@@ -229,6 +244,44 @@ def send_password_reset_email(to: str, first_name: str, reset_url: str, locale: 
     html_body = render_template("password_reset", locale, {
         "first_name": first_name,
         "reset_url": reset_url,
+    })
+    return send_email(to, subject, html_body)
+
+
+def send_verification_email(
+    to: str, first_name: str, verification_url: str, locale: str = "es"
+) -> bool:
+    subject = _get_subject("verification", locale)
+    html_body = render_template("verification", locale, {
+        "first_name": first_name,
+        "verification_url": verification_url,
+    })
+    return send_email(to, subject, html_body)
+
+
+def send_registration_approved_email(
+    to: str,
+    first_name: str,
+    member_number: str,
+    login_url: str,
+    locale: str = "es",
+) -> bool:
+    subject = _get_subject("registration_approved", locale)
+    html_body = render_template("registration_approved", locale, {
+        "first_name": first_name,
+        "member_number": member_number,
+        "login_url": login_url,
+    })
+    return send_email(to, subject, html_body)
+
+
+def send_registration_rejected_email(
+    to: str, first_name: str, reason: str | None = None, locale: str = "es"
+) -> bool:
+    subject = _get_subject("registration_rejected", locale)
+    html_body = render_template("registration_rejected", locale, {
+        "first_name": first_name,
+        "reason": reason,
     })
     return send_email(to, subject, html_body)
 
