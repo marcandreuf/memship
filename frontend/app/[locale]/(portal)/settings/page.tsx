@@ -172,7 +172,7 @@ export default function SettingsPage() {
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">{t("settings.title")}</h1>
 
-      <Tabs defaultValue={isSuperAdmin ? "organization" : "membership-types"}>
+      <Tabs defaultValue={isSuperAdmin ? "organization" : "members"}>
         <TabsList>
           {isSuperAdmin && (
             <TabsTrigger value="organization">{t("settings.organization")}</TabsTrigger>
@@ -180,16 +180,9 @@ export default function SettingsPage() {
           {isSuperAdmin && (
             <TabsTrigger value="payments">{t("settings.payments")}</TabsTrigger>
           )}
-          {isSuperAdmin && (
-            <TabsTrigger value="communications">{t("settings.communications.tab")}</TabsTrigger>
-          )}
-          {isSuperAdmin && (
-            <TabsTrigger value="member-card">{t("settings.memberCard.tab")}</TabsTrigger>
-          )}
-          {isSuperAdmin && (
-            <TabsTrigger value="profile-fields">{t("profileFields.tab")}</TabsTrigger>
-          )}
-          <TabsTrigger value="membership-types">{t("nav.membershipTypes")}</TabsTrigger>
+          {/* Ungated: membership types is the one setting a plain admin can
+              reach, and it lives in here. */}
+          <TabsTrigger value="members">{t("nav.members")}</TabsTrigger>
         </TabsList>
 
         {isSuperAdmin && <TabsContent value="organization">
@@ -434,20 +427,37 @@ export default function SettingsPage() {
           </Tabs>
         </TabsContent>}
 
-        {isSuperAdmin && <TabsContent value="communications">
-          <CommunicationsSettings />
-        </TabsContent>}
+        {/* Everything about members and how the org talks to them. The group
+            is ungated; its children keep their own gates, so a plain admin
+            lands here and sees only membership types. */}
+        <TabsContent value="members">
+          <Tabs defaultValue={isSuperAdmin ? "communications" : "membership-types"}>
+            <TabsList className={SUBTAB_LIST}>
+              {isSuperAdmin && (
+                <TabsTrigger value="communications" className={SUBTAB_TRIGGER}>{t("settings.communications.tab")}</TabsTrigger>
+              )}
+              {isSuperAdmin && (
+                <TabsTrigger value="member-card" className={SUBTAB_TRIGGER}>{t("settings.memberCard.tab")}</TabsTrigger>
+              )}
+              {isSuperAdmin && (
+                <TabsTrigger value="profile-fields" className={SUBTAB_TRIGGER}>{t("profileFields.tab")}</TabsTrigger>
+              )}
+              <TabsTrigger value="membership-types" className={SUBTAB_TRIGGER}>{t("nav.membershipTypes")}</TabsTrigger>
+            </TabsList>
 
-        {isSuperAdmin && <TabsContent value="member-card">
-          <MemberCardSettings />
-        </TabsContent>}
-
-        {isSuperAdmin && <TabsContent value="profile-fields">
-          <ProfileFieldsSettings />
-        </TabsContent>}
-
-        <TabsContent value="membership-types">
-          <MembershipTypesSettings />
+            {isSuperAdmin && <TabsContent value="communications">
+              <CommunicationsSettings />
+            </TabsContent>}
+            {isSuperAdmin && <TabsContent value="member-card">
+              <MemberCardSettings />
+            </TabsContent>}
+            {isSuperAdmin && <TabsContent value="profile-fields">
+              <ProfileFieldsSettings />
+            </TabsContent>}
+            <TabsContent value="membership-types">
+              <MembershipTypesSettings />
+            </TabsContent>
+          </Tabs>
         </TabsContent>
       </Tabs>
     </div>
