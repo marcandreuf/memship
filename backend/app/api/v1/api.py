@@ -15,6 +15,7 @@ from app.api.v1.endpoints import (
     communications,
     concepts,
     contacts,
+    custom_fields,
     discount_codes,
     groups,
     health,
@@ -79,3 +80,7 @@ api_router.include_router(billing_runs.router, dependencies=_approved_only)
 api_router.include_router(communications.router, dependencies=_approved_only)
 api_router.include_router(communications.me_router, dependencies=_approved_only)
 api_router.include_router(webhooks.router)
+api_router.include_router(custom_fields.router)
+api_router.include_router(custom_fields.me_router)
+api_router.include_router(custom_fields.values_router)
+

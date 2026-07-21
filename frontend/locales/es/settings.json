@@ -152,5 +152,7 @@
       "nothingToSave": "No hay cambios que guardar.",
       "encryptionActive": "Cifrado activo: los secretos se guardan cifrados con una clave gestionada por el servidor y nunca se muestran aquí."
     }
+    },
+    "paymentsGeneral": "General"
   }
 }

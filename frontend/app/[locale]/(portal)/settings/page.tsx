@@ -48,6 +48,7 @@ import { PaymentRemindersSettings } from "@/features/settings/components/payment
 import { CommunicationsSettings } from "@/features/settings/components/communications-settings";
 import { MemberCardSettings } from "@/features/settings/components/member-card-settings";
 import { SsoSettings } from "@/features/settings/components/sso-settings";
+import { ProfileFieldsSettings } from "@/features/settings/components/profile-fields-settings";
 import { FormSkeleton } from "@/components/ui/skeletons";
 
 const settingsSchema = z.object({
@@ -76,6 +77,15 @@ const settingsSchema = z.object({
 type SettingsFormValues = z.infer<typeof settingsSchema>;
 
 const ADDRESS_FIELDS = ["address_line1", "address_line2", "city", "state_province", "postal_code", "country"] as const;
+
+// Nested tab styling. The shared Tabs component is underline-styled; a second
+// underline row would read as a peer of the top-level bar, so sub-tabs use the
+// muted pill look (shadcn's stock appearance) to sit visually inside their parent.
+// self-start: the Tabs root is `flex flex-col`, so without it the list
+// stretches to full width and the pill track spans the page.
+const SUBTAB_LIST = "h-auto w-auto self-start gap-0 rounded-lg border-0 bg-muted p-1";
+const SUBTAB_TRIGGER =
+  "rounded-md border-0 px-3 py-1 data-[state=active]:bg-background data-[state=active]:shadow-sm";
 
 export default function SettingsPage() {
   const t = useTranslations();
@@ -163,7 +173,7 @@ export default function SettingsPage() {
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">{t("settings.title")}</h1>
 
-      <Tabs defaultValue={isSuperAdmin ? "organization" : "membership-types"}>
+      <Tabs defaultValue={isSuperAdmin ? "organization" : "members"}>
         <TabsList>
           {isSuperAdmin && (
             <TabsTrigger value="organization">{t("settings.organization")}</TabsTrigger>
@@ -190,6 +200,9 @@ export default function SettingsPage() {
             <TabsTrigger value="sso">{t("settings.sso.tab")}</TabsTrigger>
           )}
           <TabsTrigger value="membership-types">{t("nav.membershipTypes")}</TabsTrigger>
+          {/* Ungated: membership types is the one setting a plain admin can
+              reach, and it lives in here. */}
+          <TabsTrigger value="members">{t("nav.members")}</TabsTrigger>
         </TabsList>
 
         {isSuperAdmin && <TabsContent value="organization">
@@ -406,20 +419,32 @@ export default function SettingsPage() {
           </div>
         </TabsContent>}
 
+        {/* Everything payment-related lives under one tab — four separate
+            top-level tabs pushed the bar past a single row. */}
         {isSuperAdmin && <TabsContent value="payments">
-          <PaymentsSettings />
-        </TabsContent>}
+          {/* Muted pills, not the underline the top-level bar uses — so the
+              nested row reads as a child of Payments rather than a peer. */}
+          <Tabs defaultValue="payments-general">
+            <TabsList className={SUBTAB_LIST}>
+              <TabsTrigger value="payments-general" className={SUBTAB_TRIGGER}>{t("settings.paymentsGeneral")}</TabsTrigger>
+              <TabsTrigger value="payment-providers" className={SUBTAB_TRIGGER}>{t("settings.providers.tab")}</TabsTrigger>
+              <TabsTrigger value="recurring-billing" className={SUBTAB_TRIGGER}>{t("settings.recurringBilling.tab")}</TabsTrigger>
+              <TabsTrigger value="payment-reminders" className={SUBTAB_TRIGGER}>{t("settings.paymentReminders.tab")}</TabsTrigger>
+            </TabsList>
 
-        {isSuperAdmin && <TabsContent value="payment-providers">
-          <PaymentProvidersSettings />
-        </TabsContent>}
-
-        {isSuperAdmin && <TabsContent value="recurring-billing">
-          <RecurringBillingSettings />
-        </TabsContent>}
-
-        {isSuperAdmin && <TabsContent value="payment-reminders">
-          <PaymentRemindersSettings />
+            <TabsContent value="payments-general">
+              <PaymentsSettings />
+            </TabsContent>
+            <TabsContent value="payment-providers">
+              <PaymentProvidersSettings />
+            </TabsContent>
+            <TabsContent value="recurring-billing">
+              <RecurringBillingSettings />
+            </TabsContent>
+            <TabsContent value="payment-reminders">
+              <PaymentRemindersSettings />
+            </TabsContent>
+          </Tabs>
         </TabsContent>}
 
         {isSuperAdmin && <TabsContent value="communications">
@@ -436,6 +461,37 @@ export default function SettingsPage() {
 
         <TabsContent value="membership-types">
           <MembershipTypesSettings />
+        {/* Everything about members and how the org talks to them. The group
+            is ungated; its children keep their own gates, so a plain admin
+            lands here and sees only membership types. */}
+        <TabsContent value="members">
+          <Tabs defaultValue={isSuperAdmin ? "communications" : "membership-types"}>
+            <TabsList className={SUBTAB_LIST}>
+              {isSuperAdmin && (
+                <TabsTrigger value="communications" className={SUBTAB_TRIGGER}>{t("settings.communications.tab")}</TabsTrigger>
+              )}
+              {isSuperAdmin && (
+                <TabsTrigger value="member-card" className={SUBTAB_TRIGGER}>{t("settings.memberCard.tab")}</TabsTrigger>
+              )}
+              {isSuperAdmin && (
+                <TabsTrigger value="profile-fields" className={SUBTAB_TRIGGER}>{t("profileFields.tab")}</TabsTrigger>
+              )}
+              <TabsTrigger value="membership-types" className={SUBTAB_TRIGGER}>{t("nav.membershipTypes")}</TabsTrigger>
+            </TabsList>
+
+            {isSuperAdmin && <TabsContent value="communications">
+              <CommunicationsSettings />
+            </TabsContent>}
+            {isSuperAdmin && <TabsContent value="member-card">
+              <MemberCardSettings />
+            </TabsContent>}
+            {isSuperAdmin && <TabsContent value="profile-fields">
+              <ProfileFieldsSettings />
+            </TabsContent>}
+            <TabsContent value="membership-types">
+              <MembershipTypesSettings />
+            </TabsContent>
+          </Tabs>
         </TabsContent>
       </Tabs>
     </div>

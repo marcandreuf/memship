@@ -24,6 +24,7 @@ import { apiClient } from "@/lib/client-api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { GenderOption } from "@/features/settings/components/gender-options-settings";
+import { MyCustomFieldsCard } from "@/features/custom-fields/components/my-custom-fields-card";
 
 function Field({ label, value }: { label: string; value: string | null | undefined }) {
   if (!value) return null;
@@ -215,6 +216,8 @@ export default function ProfilePage() {
           )}
         </CardContent>
       </Card>
+
+      <MyCustomFieldsCard />
     </div>
   );
 }

@@ -152,5 +152,7 @@
       "nothingToSave": "No changes to save.",
       "encryptionActive": "Encryption active — secrets are stored encrypted with a server-managed key and are never shown here."
     }
+    },
+    "paymentsGeneral": "General"
   }
 }

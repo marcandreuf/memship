@@ -38,6 +38,33 @@ class UserRole(StrEnum):
     MEMBER = "member"
 
 
+class CustomFieldType(StrEnum):
+    TEXT = "text"
+    TEXTAREA = "textarea"
+    NUMBER = "number"
+    DATE = "date"
+    BOOLEAN = "boolean"
+    SELECT = "select"
+
+
+class CustomFieldMemberAccess(StrEnum):
+    """What a member may do with their own value of a custom field."""
+
+    HIDDEN = "hidden"
+    READ = "read"
+    WRITE = "write"
+
+
+class CustomFieldAdminAccess(StrEnum):
+    """What an admin (and restricted) may do with any member's value.
+
+    Admins always read; this only gates writing. Super admin is always write.
+    """
+
+    READ = "read"
+    WRITE = "write"
+
+
 class AuthProvider(StrEnum):
     """External identity providers that can be linked to a user."""
 

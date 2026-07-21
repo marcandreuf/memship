@@ -152,5 +152,7 @@
       "nothingToSave": "No hi ha canvis per desar.",
       "encryptionActive": "Xifratge actiu: els secrets es desen xifrats amb una clau gestionada pel servidor i mai no es mostren aquí."
     }
+    },
+    "paymentsGeneral": "General"
   }
 }

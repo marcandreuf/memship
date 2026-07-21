@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { MEMBER_STATUS_VARIANTS } from "@/lib/status-variants";
 import { DetailSkeleton } from "@/components/ui/skeletons";
+import { CustomFieldsTab } from "@/features/custom-fields/components/custom-fields-tab";
 
 export default function MemberDetailPage({
   params,
@@ -40,6 +41,7 @@ export default function MemberDetailPage({
   const isAdmin = user?.role === "admin" || user?.role === "super_admin";
   const { data: settings } = useSettings();
   const cardEnabled = Boolean(settings?.features?.member_card);
+  const customFieldsEnabled = Boolean(settings?.features?.custom_profile_fields);
 
   // Receipt count for badge
   const receiptParams = useMemo(() => {
@@ -113,6 +115,9 @@ export default function MemberDetailPage({
       />
 
       <EntityTabs
+        // Each tab fetches its own data; without this every tab's queries fire
+        // on page load, whether or not anyone opens them.
+        lazy
         tabs={[
           {
             id: "contact",
@@ -136,6 +141,15 @@ export default function MemberDetailPage({
                   id: "card",
                   label: t("memberCard.tabLabel"),
                   content: <MemberCardTab memberId={memberId} />,
+                },
+              ]
+            : []),
+          ...(customFieldsEnabled
+            ? [
+                {
+                  id: "custom-fields",
+                  label: t("profileFields.tabLabel"),
+                  content: <CustomFieldsTab personId={member.person_id} />,
                 },
               ]
             : []),
