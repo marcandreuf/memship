@@ -1,0 +1,52 @@
+{
+  "profileFields": {
+    "tab": "Campos de perfil",
+    "title": "Campos de perfil personalizados",
+    "enabled": "Activar campos de perfil",
+    "enabledDesc": "Define campos propios para las fichas de los socios sin cambiar el código.",
+    "fields": "Campos definidos",
+    "noFields": "Todavía no hay campos definidos.",
+    "create": "Añadir campo",
+    "edit": "Editar campo",
+    "confirmDelete": "¿Eliminar este campo? Si ya tiene datos guardados, se archivará en lugar de borrarse.",
+    "retired": "Archivado",
+    "key": "Clave",
+    "keyHint": "Identificador estable, en minúsculas. No se puede cambiar después.",
+    "type": "Tipo",
+    "typeHint": "No se puede cambiar después de crear el campo.",
+    "label": "Etiqueta",
+    "labelLocale": {
+      "es": "Etiqueta (ES)",
+      "ca": "Etiqueta (CA)",
+      "en": "Etiqueta (EN)"
+    },
+    "helpText": "Texto de ayuda",
+    "options": "Opciones",
+    "addOption": "Añadir opción",
+    "optionValue": "Valor",
+    "optionLabel": "Etiqueta",
+    "required": "Obligatorio",
+    "active": "Activo",
+    "order": "Orden",
+    "memberAccess": "Acceso del socio",
+    "memberAccessHint": "Qué puede hacer el socio con su propio valor.",
+    "adminAccess": "Acceso del administrador",
+    "adminAccessHint": "Los administradores siempre pueden ver el campo. El superadministrador siempre puede editarlo.",
+    "access": {
+      "hidden": "Oculto",
+      "read": "Solo lectura",
+      "write": "Editable"
+    },
+    "types": {
+      "text": "Texto",
+      "textarea": "Texto largo",
+      "number": "Número",
+      "date": "Fecha",
+      "boolean": "Sí/No",
+      "select": "Lista de opciones"
+    },
+    "tabLabel": "Campos personalizados",
+    "noVisibleFields": "No hay campos personalizados visibles.",
+    "readOnlyNotice": "Algunos campos son de solo lectura para tu rol."
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "profileFields": {
+    "tab": "Profile fields",
+    "title": "Custom profile fields",
+    "enabled": "Enable profile fields",
+    "enabledDesc": "Define your own member profile fields without a code change.",
+    "fields": "Defined fields",
+    "noFields": "No fields defined yet.",
+    "create": "Add field",
+    "edit": "Edit field",
+    "confirmDelete": "Delete this field? If it already holds data it will be archived instead of deleted.",
+    "retired": "Archived",
+    "key": "Key",
+    "keyHint": "Stable lowercase identifier. It cannot be changed later.",
+    "type": "Type",
+    "typeHint": "Cannot be changed once the field is created.",
+    "label": "Label",
+    "labelLocale": {
+      "es": "Label (ES)",
+      "ca": "Label (CA)",
+      "en": "Label (EN)"
+    },
+    "helpText": "Help text",
+    "options": "Options",
+    "addOption": "Add option",
+    "optionValue": "Value",
+    "optionLabel": "Label",
+    "required": "Required",
+    "active": "Active",
+    "order": "Order",
+    "memberAccess": "Member access",
+    "memberAccessHint": "What a member can do with their own value.",
+    "adminAccess": "Admin access",
+    "adminAccessHint": "Admins can always see the field. A super admin can always edit it.",
+    "access": {
+      "hidden": "Hidden",
+      "read": "Read only",
+      "write": "Editable"
+    },
+    "types": {
+      "text": "Text",
+      "textarea": "Long text",
+      "number": "Number",
+      "date": "Date",
+      "boolean": "Yes/No",
+      "select": "Option list"
+    },
+    "tabLabel": "Custom fields",
+    "noVisibleFields": "No custom fields to show.",
+    "readOnlyNotice": "Some fields are read-only for your role."
+  }
+}
