@@ -77,6 +77,15 @@ type SettingsFormValues = z.infer<typeof settingsSchema>;
 
 const ADDRESS_FIELDS = ["address_line1", "address_line2", "city", "state_province", "postal_code", "country"] as const;
 
+// Nested tab styling. The shared Tabs component is underline-styled; a second
+// underline row would read as a peer of the top-level bar, so sub-tabs use the
+// muted pill look (shadcn's stock appearance) to sit visually inside their parent.
+// self-start: the Tabs root is `flex flex-col`, so without it the list
+// stretches to full width and the pill track spans the page.
+const SUBTAB_LIST = "h-auto w-auto self-start gap-0 rounded-lg border-0 bg-muted p-1";
+const SUBTAB_TRIGGER =
+  "rounded-md border-0 px-3 py-1 data-[state=active]:bg-background data-[state=active]:shadow-sm";
+
 export default function SettingsPage() {
   const t = useTranslations();
   const { user } = useAuth();
@@ -400,12 +409,14 @@ export default function SettingsPage() {
         {/* Everything payment-related lives under one tab — four separate
             top-level tabs pushed the bar past a single row. */}
         {isSuperAdmin && <TabsContent value="payments">
+          {/* Muted pills, not the underline the top-level bar uses — so the
+              nested row reads as a child of Payments rather than a peer. */}
           <Tabs defaultValue="payments-general">
-            <TabsList>
-              <TabsTrigger value="payments-general">{t("settings.paymentsGeneral")}</TabsTrigger>
-              <TabsTrigger value="payment-providers">{t("settings.providers.tab")}</TabsTrigger>
-              <TabsTrigger value="recurring-billing">{t("settings.recurringBilling.tab")}</TabsTrigger>
-              <TabsTrigger value="payment-reminders">{t("settings.paymentReminders.tab")}</TabsTrigger>
+            <TabsList className={SUBTAB_LIST}>
+              <TabsTrigger value="payments-general" className={SUBTAB_TRIGGER}>{t("settings.paymentsGeneral")}</TabsTrigger>
+              <TabsTrigger value="payment-providers" className={SUBTAB_TRIGGER}>{t("settings.providers.tab")}</TabsTrigger>
+              <TabsTrigger value="recurring-billing" className={SUBTAB_TRIGGER}>{t("settings.recurringBilling.tab")}</TabsTrigger>
+              <TabsTrigger value="payment-reminders" className={SUBTAB_TRIGGER}>{t("settings.paymentReminders.tab")}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="payments-general">
