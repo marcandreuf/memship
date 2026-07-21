@@ -119,6 +119,7 @@
       "paddingHint": "Longitud de la secuencia con ceros",
       "assignNumbers": "Asignar números a los socios que no tengan",
       "assignedCount": "{count} número(s) de socio asignado(s)"
-    }
+    },
+    "paymentsGeneral": "General"
   }
 }
