@@ -14,7 +14,6 @@ from sqlalchemy import (
     Text,
     func,
 )
-from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base
@@ -41,7 +40,6 @@ class Person(Base):
     bank_holder_name = Column(String(255))
     payment_method = Column(String(20))
     stripe_customer_id = Column(String(255), unique=True, index=True)
-    custom_fields = Column(JSONB, default=dict)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
