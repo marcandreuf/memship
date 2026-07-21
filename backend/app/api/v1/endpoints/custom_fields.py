@@ -9,6 +9,8 @@ Like the member card, these return 404 rather than 403 when
 rather than merely forbidden.
 """
 
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -24,17 +26,27 @@ from app.domains.custom_fields.schemas import (
 )
 from app.domains.custom_fields.service import (
     DuplicateFieldKey,
+    FieldNotWritable,
+    InvalidFieldValue,
+    UnknownFieldKey,
     can_write,
     create_definition,
     delete_definition,
     get_definition,
+    get_person_values,
+    set_person_values,
     update_definition,
     visible_definitions,
 )
 from app.domains.organizations.models import OrganizationSettings
+from app.domains.persons.models import Person
 from app.domains.shared.enums import UserRole
 
 router = APIRouter(prefix="/custom-fields", tags=["custom-fields"])
+values_router = APIRouter(
+    prefix="/persons/{person_id}/custom-fields", tags=["custom-fields"]
+)
+me_router = APIRouter(prefix="/me/custom-fields", tags=["custom-fields"])
 
 
 def require_custom_fields_enabled(db: Session) -> None:
@@ -160,3 +172,100 @@ def delete_custom_field(
 
     delete_definition(db, definition)
     db.commit()
+
+
+# --- Values ---------------------------------------------------------------
+
+
+def _resolve_person(db: Session, person_id: int, current_user: User) -> bool:
+    """404 unknown persons, 403 a member reaching past their own record.
+
+    Returns whether the record belongs to the caller, which drives the whole
+    access matrix downstream.
+    """
+    person = db.query(Person).filter(Person.id == person_id).first()
+    if not person:
+        raise HTTPException(status_code=404, detail="Person not found")
+
+    is_own = current_user.person_id == person_id
+    if current_user.role == UserRole.MEMBER and not is_own:
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    return is_own
+
+
+def _own_person_id(current_user: User) -> int:
+    if not current_user.person_id:
+        raise HTTPException(status_code=403, detail="No person profile")
+    return current_user.person_id
+
+
+def _field_error(key: str, message: str) -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        detail=[{"loc": ["body", key], "msg": message, "type": "value_error"}],
+    )
+
+
+def _save_values(
+    db: Session, person_id: int, submitted: dict, *, role: str, is_own: bool
+) -> dict[str, str | None]:
+    try:
+        set_person_values(db, person_id, submitted, role=role, is_own=is_own)
+    except InvalidFieldValue as exc:
+        raise _field_error(exc.key, exc.message)
+    except FieldNotWritable as exc:
+        raise _field_error(exc.key, "This field is not editable")
+    except UnknownFieldKey as exc:
+        raise _field_error(exc.key, "Unknown field")
+    db.commit()
+    return get_person_values(db, person_id, role=role, is_own=is_own)
+
+
+@me_router.get("/", response_model=dict[str, str | None])
+def get_my_custom_fields(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """The current user's own values — every field they may see."""
+    require_custom_fields_enabled(db)
+    person_id = _own_person_id(current_user)
+    return get_person_values(db, person_id, role=current_user.role, is_own=True)
+
+
+@me_router.put("/", response_model=dict[str, str | None])
+def update_my_custom_fields(
+    values: dict[str, Any],
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    require_custom_fields_enabled(db)
+    person_id = _own_person_id(current_user)
+    return _save_values(
+        db, person_id, values, role=current_user.role, is_own=True
+    )
+
+
+@values_router.get("/", response_model=dict[str, str | None])
+def get_person_custom_fields(
+    person_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    require_custom_fields_enabled(db)
+    is_own = _resolve_person(db, person_id, current_user)
+    return get_person_values(db, person_id, role=current_user.role, is_own=is_own)
+
+
+@values_router.put("/", response_model=dict[str, str | None])
+def update_person_custom_fields(
+    person_id: int,
+    values: dict[str, Any],
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Replace this person's values. Fields the caller can't write are untouched."""
+    require_custom_fields_enabled(db)
+    is_own = _resolve_person(db, person_id, current_user)
+    return _save_values(
+        db, person_id, values, role=current_user.role, is_own=is_own
+    )

@@ -64,6 +64,18 @@ class FieldNotWritable(CustomFieldError):
         super().__init__(key)
 
 
+class UnknownFieldKey(CustomFieldError):
+    """No field the actor can see goes by this key.
+
+    Also raised for a field the actor cannot *read*, so a hidden field can't be
+    probed for existence by submitting a guessed key.
+    """
+
+    def __init__(self, key: str):
+        self.key = key
+        super().__init__(key)
+
+
 # --- Access ---------------------------------------------------------------
 
 
@@ -151,6 +163,88 @@ def validate_value(definition: CustomFieldDefinition, raw) -> str | None:
     if len(value) > cap:
         raise InvalidFieldValue(definition.key, f"Must be at most {cap} characters")
     return value
+
+
+# --- Person values --------------------------------------------------------
+
+
+def get_person_values(
+    db: Session, person_id: int, *, role: str, is_own: bool
+) -> dict[str, str | None]:
+    """One person's values, keyed by field, limited to what the actor may see.
+
+    Every visible field appears, with ``None`` where nothing is stored yet, so
+    the caller can render the full form from this alone.
+    """
+    definitions = visible_definitions(db, role=role, is_own=is_own)
+    stored = {
+        v.definition_id: v.value
+        for v in db.query(CustomFieldValue)
+        .filter(CustomFieldValue.person_id == person_id)
+        .all()
+    }
+    return {d.key: stored.get(d.id) for d in definitions}
+
+
+def set_person_values(
+    db: Session,
+    person_id: int,
+    submitted: dict,
+    *,
+    role: str,
+    is_own: bool,
+) -> None:
+    """Replace one person's values with ``submitted`` (whole-map semantics).
+
+    Every active field the actor can write is considered: a key that is absent,
+    null or blank clears that field. Fields the actor cannot write are left
+    exactly as they are, and ``required`` is enforced only over the writable
+    subset — so a member can still save a form containing admin-only fields.
+
+    Keys of inactive definitions are ignored (a retired field may still linger
+    in a stale client). Keys the actor cannot read raise ``UnknownFieldKey``.
+    """
+    all_definitions = list_definitions(db, include_inactive=True)
+    by_key = {d.key: d for d in all_definitions}
+
+    for key in submitted:
+        definition = by_key.get(key)
+        if definition is None or not can_read(definition, role=role, is_own=is_own):
+            raise UnknownFieldKey(key)
+        if not definition.active:
+            continue
+        if not can_write(definition, role=role, is_own=is_own):
+            raise FieldNotWritable(key)
+
+    existing = {
+        v.definition_id: v
+        for v in db.query(CustomFieldValue)
+        .filter(CustomFieldValue.person_id == person_id)
+        .all()
+    }
+
+    for definition in all_definitions:
+        if not definition.active:
+            continue
+        if not can_write(definition, role=role, is_own=is_own):
+            continue
+
+        value = validate_value(definition, submitted.get(definition.key))
+        if value is None and definition.required:
+            raise InvalidFieldValue(definition.key, "This field is required")
+
+        row = existing.get(definition.id)
+        if value is None:
+            if row is not None:
+                db.delete(row)
+        elif row is not None:
+            row.value = value
+        else:
+            db.add(
+                CustomFieldValue(
+                    definition_id=definition.id, person_id=person_id, value=value
+                )
+            )
 
 
 # --- Definitions CRUD -----------------------------------------------------
