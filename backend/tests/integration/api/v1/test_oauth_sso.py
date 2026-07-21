@@ -213,10 +213,12 @@ class TestAppleClientSecret:
         import jwt as pyjwt
 
         from app.core.security.oauth import APPLE_AUDIENCE, build_apple_client_secret
+        from app.domains.auth.sso_config import _resolve_provider
 
         self._configure(monkeypatch)
 
-        secret = build_apple_client_secret()
+        # No DB node → the Apple credentials resolve from the patched env vars.
+        secret = build_apple_client_secret(_resolve_provider("apple", {}))
 
         header = pyjwt.get_unverified_header(secret)
         assert header["alg"] == "ES256"
@@ -236,10 +238,11 @@ class TestAppleClientSecret:
     def test_accepts_a_key_with_escaped_newlines(self, monkeypatch):
         """Env vars usually carry the .p8 as a single line with literal \\n."""
         from app.core.security.oauth import build_apple_client_secret
+        from app.domains.auth.sso_config import _resolve_provider
 
         self._configure(monkeypatch, private_key=self.PRIVATE_KEY.replace("\n", "\\n"))
 
-        assert build_apple_client_secret()
+        assert build_apple_client_secret(_resolve_provider("apple", {}))
 
     def test_apple_sso_stays_disabled_until_every_field_is_set(self, monkeypatch):
         from app.core.config import settings

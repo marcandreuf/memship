@@ -119,6 +119,38 @@
       "paddingHint": "Length of the zero-padded sequence",
       "assignNumbers": "Assign numbers to members without one",
       "assignedCount": "{count} member number(s) assigned"
+    },
+    "sso": {
+      "tab": "Single Sign-On",
+      "title": "Single sign-on (SSO)",
+      "description": "Let members sign in with Google or Apple. Enter each provider's credentials and switch it on — no redeploy needed.",
+      "providers": {
+        "google": "Google",
+        "apple": "Apple"
+      },
+      "live": "Live",
+      "off": "Off",
+      "enableHint": "Enable once the credentials are saved.",
+      "fields": {
+        "client_id": "Client ID",
+        "client_secret": "Client secret",
+        "team_id": "Team ID",
+        "key_id": "Key ID",
+        "private_key": "Private key (.p8)"
+      },
+      "fromEnv": "from environment",
+      "stored": "stored",
+      "notConfigured": "Not configured",
+      "secretHint": "Leave blank to keep the stored value; enter a new one to replace it.",
+      "clear": "Clear",
+      "undoClear": "Undo",
+      "redirectUri": "Redirect URI",
+      "backendUrl": "Backend URL",
+      "consoleHint": "Paste the backend URL and each redirect URI into the Google / Apple developer console.",
+      "encryptionKeyMissing": "The server could not initialise its encryption key — check that the storage volume is writable. Secret fields cannot be saved until it is.",
+      "encryptionKeyRequired": "Could not save the secret: the server has no working encryption key.",
+      "nothingToSave": "No changes to save.",
+      "encryptionActive": "Encryption active — secrets are stored encrypted with a server-managed key and are never shown here."
     }
   }
 }

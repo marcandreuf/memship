@@ -37,6 +37,7 @@ from app.domains.auth.oauth_service import (
     RegistrationClosedError,
     find_or_create_from_oauth,
 )
+from app.domains.auth.sso_config import resolve_sso_config
 from app.domains.auth.service import (
     authenticate_user,
     get_registration_settings,
@@ -263,17 +264,20 @@ def _frontend_url(path: str, **params: str) -> str:
 
 
 @router.get("/sso/providers", response_model=SsoProvidersResponse)
-def sso_providers():
+def sso_providers(db: Session = Depends(get_db)):
     """Which SSO buttons the login/register pages should render."""
+    resolved = resolve_sso_config(db)
     return SsoProvidersResponse(
-        google=settings.google_sso_enabled,
-        apple=settings.apple_sso_enabled,
+        google=resolved.google.ready,
+        apple=resolved.apple.ready,
     )
 
 
 @router.get("/oauth/{provider}/login")
-async def oauth_login(provider: str, request: Request):
-    client = get_provider(provider)
+async def oauth_login(
+    provider: str, request: Request, db: Session = Depends(get_db)
+):
+    client = get_provider(provider, resolve_sso_config(db))
     if client is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -317,7 +321,7 @@ async def _apple_form_name(request: Request) -> tuple[str, str]:
 async def oauth_callback(
     provider: str, request: Request, db: Session = Depends(get_db)
 ):
-    client = get_provider(provider)
+    client = get_provider(provider, resolve_sso_config(db))
     if client is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

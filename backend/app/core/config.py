@@ -46,6 +46,17 @@ class Settings(BaseSettings):
     # Security
     SECRET_KEY: str = "change-me-in-production"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    # Fernet key (urlsafe base64, 32 bytes) used to encrypt provider secrets stored
+    # in the DB via the SSO settings screen. Optional OVERRIDE: when set (e.g. from a
+    # secrets manager) it wins. When empty, the app auto-generates a per-install key
+    # and persists it to SECRETS_KEY_FILE (never the database), so a DB dump alone
+    # cannot decrypt the stored secrets. Generate one explicitly with:
+    #   python -c "from cryptography.fernet import Fernet;print(Fernet.generate_key().decode())"
+    MEMSHIP_SECRET_KEY: str = ""
+    # Where the auto-generated encryption key is stored when MEMSHIP_SECRET_KEY is
+    # unset. Empty → "<STORAGE_LOCAL_PATH>/secret.key". Must sit on a PERSISTENT
+    # volume so the key survives restarts (otherwise stored secrets become unreadable).
+    SECRETS_KEY_FILE: str = ""
 
     # Application
     APP_ENV: str = "development"

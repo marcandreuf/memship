@@ -119,6 +119,38 @@
       "paddingHint": "Longitud de la seqüència amb zeros",
       "assignNumbers": "Assigna números als socis que no en tinguin",
       "assignedCount": "{count} número(s) de soci assignat(s)"
+    },
+    "sso": {
+      "tab": "Inici de sessió (SSO)",
+      "title": "Inici de sessió únic (SSO)",
+      "description": "Permet als socis iniciar sessió amb Google o Apple. Introdueix les credencials de cada proveïdor i activa'l, sense necessitat de tornar a desplegar.",
+      "providers": {
+        "google": "Google",
+        "apple": "Apple"
+      },
+      "live": "Actiu",
+      "off": "Inactiu",
+      "enableHint": "Activa'l quan hagis desat les credencials.",
+      "fields": {
+        "client_id": "ID de client",
+        "client_secret": "Secret de client",
+        "team_id": "ID d'equip",
+        "key_id": "ID de clau",
+        "private_key": "Clau privada (.p8)"
+      },
+      "fromEnv": "de l'entorn",
+      "stored": "desat",
+      "notConfigured": "Sense configurar",
+      "secretHint": "Deixa-ho en blanc per mantenir el valor desat; introdueix-ne un de nou per reemplaçar-lo.",
+      "clear": "Esborra",
+      "undoClear": "Desfés",
+      "redirectUri": "URI de redirecció",
+      "backendUrl": "URL del backend",
+      "consoleHint": "Enganxa la URL del backend i cada URI de redirecció a la consola de desenvolupador de Google / Apple.",
+      "encryptionKeyMissing": "El servidor no ha pogut inicialitzar la seva clau de xifratge; comprova que el volum d'emmagatzematge té permisos d'escriptura. Els camps secrets no es poden desar fins llavors.",
+      "encryptionKeyRequired": "No s'ha pogut desar el secret: el servidor no té una clau de xifratge vàlida.",
+      "nothingToSave": "No hi ha canvis per desar.",
+      "encryptionActive": "Xifratge actiu: els secrets es desen xifrats amb una clau gestionada pel servidor i mai no es mostren aquí."
     }
   }
 }
