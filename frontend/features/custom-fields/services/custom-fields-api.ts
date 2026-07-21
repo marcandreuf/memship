@@ -78,3 +78,35 @@ export async function updateCustomField(
 export async function deleteCustomField(id: number): Promise<void> {
   return apiClient<void>(`/custom-fields/${id}`, { method: "DELETE" });
 }
+
+/** One person's values, keyed by field key. Null means nothing stored yet. */
+export type CustomFieldValues = Record<string, string | null>;
+
+export async function getPersonCustomFields(
+  personId: number
+): Promise<CustomFieldValues> {
+  return apiClient<CustomFieldValues>(`/persons/${personId}/custom-fields`);
+}
+
+export async function updatePersonCustomFields(
+  personId: number,
+  values: Record<string, string | boolean | null>
+): Promise<CustomFieldValues> {
+  return apiClient<CustomFieldValues>(`/persons/${personId}/custom-fields`, {
+    method: "PUT",
+    body: JSON.stringify(values),
+  });
+}
+
+export async function getMyCustomFields(): Promise<CustomFieldValues> {
+  return apiClient<CustomFieldValues>("/me/custom-fields");
+}
+
+export async function updateMyCustomFields(
+  values: Record<string, string | boolean | null>
+): Promise<CustomFieldValues> {
+  return apiClient<CustomFieldValues>("/me/custom-fields", {
+    method: "PUT",
+    body: JSON.stringify(values),
+  });
+}

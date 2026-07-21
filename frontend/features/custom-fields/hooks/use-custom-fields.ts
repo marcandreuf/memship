@@ -4,8 +4,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createCustomField,
   deleteCustomField,
+  getMyCustomFields,
+  getPersonCustomFields,
   listCustomFields,
   updateCustomField,
+  updateMyCustomFields,
+  updatePersonCustomFields,
   type CustomFieldDefinitionInput,
 } from "../services/custom-fields-api";
 
@@ -48,5 +52,44 @@ export function useDeleteCustomField() {
     mutationFn: deleteCustomField,
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["custom-fields"] }),
+  });
+}
+
+export function usePersonCustomFields(personId: number) {
+  return useQuery({
+    queryKey: ["custom-field-values", personId],
+    queryFn: () => getPersonCustomFields(personId),
+    enabled: personId > 0,
+  });
+}
+
+export function useUpdatePersonCustomFields(personId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (values: Record<string, string | boolean | null>) =>
+      updatePersonCustomFields(personId, values),
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: ["custom-field-values", personId],
+      }),
+  });
+}
+
+export function useMyCustomFields(enabled = true) {
+  return useQuery({
+    queryKey: ["custom-field-values", "me"],
+    queryFn: getMyCustomFields,
+    enabled,
+  });
+}
+
+export function useUpdateMyCustomFields() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateMyCustomFields,
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: ["custom-field-values", "me"],
+      }),
   });
 }

@@ -47,6 +47,14 @@
     },
     "tabLabel": "Custom fields",
     "noVisibleFields": "No custom fields to show.",
-    "readOnlyNotice": "Some fields are read-only for your role."
+    "readOnlyNotice": "Some fields are read-only for your role.",
+    "validation": {
+      "required": "This field is required",
+      "number": "Must be a number"
+    },
+    "yes": "Yes",
+    "no": "No",
+    "empty": "—",
+    "save": "Save fields"
   }
 }

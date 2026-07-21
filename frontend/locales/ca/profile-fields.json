@@ -47,6 +47,14 @@
     },
     "tabLabel": "Camps personalitzats",
     "noVisibleFields": "No hi ha camps personalitzats visibles.",
-    "readOnlyNotice": "Alguns camps són només de lectura per al teu rol."
+    "readOnlyNotice": "Alguns camps són només de lectura per al teu rol.",
+    "validation": {
+      "required": "Aquest camp és obligatori",
+      "number": "Ha de ser un número"
+    },
+    "yes": "Sí",
+    "no": "No",
+    "empty": "—",
+    "save": "Desar camps"
   }
 }

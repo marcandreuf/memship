@@ -47,6 +47,14 @@
     },
     "tabLabel": "Campos personalizados",
     "noVisibleFields": "No hay campos personalizados visibles.",
-    "readOnlyNotice": "Algunos campos son de solo lectura para tu rol."
+    "readOnlyNotice": "Algunos campos son de solo lectura para tu rol.",
+    "validation": {
+      "required": "Este campo es obligatorio",
+      "number": "Debe ser un número"
+    },
+    "yes": "Sí",
+    "no": "No",
+    "empty": "—",
+    "save": "Guardar campos"
   }
 }
