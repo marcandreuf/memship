@@ -199,7 +199,6 @@ export default function SettingsPage() {
           {isSuperAdmin && (
             <TabsTrigger value="sso">{t("settings.sso.tab")}</TabsTrigger>
           )}
-          <TabsTrigger value="membership-types">{t("nav.membershipTypes")}</TabsTrigger>
           {/* Ungated: membership types is the one setting a plain admin can
               reach, and it lives in here. */}
           <TabsTrigger value="members">{t("nav.members")}</TabsTrigger>
@@ -459,8 +458,6 @@ export default function SettingsPage() {
           <SsoSettings />
         </TabsContent>}
 
-        <TabsContent value="membership-types">
-          <MembershipTypesSettings />
         {/* Everything about members and how the org talks to them. The group
             is ungated; its children keep their own gates, so a plain admin
             lands here and sees only membership types. */}
