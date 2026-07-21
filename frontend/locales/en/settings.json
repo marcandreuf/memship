@@ -119,6 +119,7 @@
       "paddingHint": "Length of the zero-padded sequence",
       "assignNumbers": "Assign numbers to members without one",
       "assignedCount": "{count} member number(s) assigned"
-    }
+    },
+    "paymentsGeneral": "General"
   }
 }

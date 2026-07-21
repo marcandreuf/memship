@@ -172,15 +172,6 @@ export default function SettingsPage() {
             <TabsTrigger value="payments">{t("settings.payments")}</TabsTrigger>
           )}
           {isSuperAdmin && (
-            <TabsTrigger value="payment-providers">{t("settings.providers.tab")}</TabsTrigger>
-          )}
-          {isSuperAdmin && (
-            <TabsTrigger value="recurring-billing">{t("settings.recurringBilling.tab")}</TabsTrigger>
-          )}
-          {isSuperAdmin && (
-            <TabsTrigger value="payment-reminders">{t("settings.paymentReminders.tab")}</TabsTrigger>
-          )}
-          {isSuperAdmin && (
             <TabsTrigger value="communications">{t("settings.communications.tab")}</TabsTrigger>
           )}
           {isSuperAdmin && (
@@ -406,20 +397,30 @@ export default function SettingsPage() {
           </div>
         </TabsContent>}
 
+        {/* Everything payment-related lives under one tab — four separate
+            top-level tabs pushed the bar past a single row. */}
         {isSuperAdmin && <TabsContent value="payments">
-          <PaymentsSettings />
-        </TabsContent>}
+          <Tabs defaultValue="payments-general">
+            <TabsList>
+              <TabsTrigger value="payments-general">{t("settings.paymentsGeneral")}</TabsTrigger>
+              <TabsTrigger value="payment-providers">{t("settings.providers.tab")}</TabsTrigger>
+              <TabsTrigger value="recurring-billing">{t("settings.recurringBilling.tab")}</TabsTrigger>
+              <TabsTrigger value="payment-reminders">{t("settings.paymentReminders.tab")}</TabsTrigger>
+            </TabsList>
 
-        {isSuperAdmin && <TabsContent value="payment-providers">
-          <PaymentProvidersSettings />
-        </TabsContent>}
-
-        {isSuperAdmin && <TabsContent value="recurring-billing">
-          <RecurringBillingSettings />
-        </TabsContent>}
-
-        {isSuperAdmin && <TabsContent value="payment-reminders">
-          <PaymentRemindersSettings />
+            <TabsContent value="payments-general">
+              <PaymentsSettings />
+            </TabsContent>
+            <TabsContent value="payment-providers">
+              <PaymentProvidersSettings />
+            </TabsContent>
+            <TabsContent value="recurring-billing">
+              <RecurringBillingSettings />
+            </TabsContent>
+            <TabsContent value="payment-reminders">
+              <PaymentRemindersSettings />
+            </TabsContent>
+          </Tabs>
         </TabsContent>}
 
         {isSuperAdmin && <TabsContent value="communications">

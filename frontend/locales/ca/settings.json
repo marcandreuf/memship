@@ -119,6 +119,7 @@
       "paddingHint": "Longitud de la seqüència amb zeros",
       "assignNumbers": "Assigna números als socis que no en tinguin",
       "assignedCount": "{count} número(s) de soci assignat(s)"
-    }
+    },
+    "paymentsGeneral": "General"
   }
 }
