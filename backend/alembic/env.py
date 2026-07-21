@@ -32,6 +32,11 @@ from app.domains.communications.models import (  # noqa: F401
     AnnouncementRecipient,
     Notification,
 )
+from app.domains.reminders.models import Reminder  # noqa: F401
+from app.domains.custom_fields.models import (  # noqa: F401
+    CustomFieldDefinition,
+    CustomFieldValue,
+)
 
 config = context.config
 

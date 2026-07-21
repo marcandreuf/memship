@@ -1,0 +1,60 @@
+{
+  "profileFields": {
+    "tab": "Camps de perfil",
+    "title": "Camps de perfil personalitzats",
+    "enabled": "Activar camps de perfil",
+    "enabledDesc": "Defineix camps propis per a les fitxes dels socis sense canviar el codi.",
+    "fields": "Camps definits",
+    "noFields": "Encara no hi ha cap camp definit.",
+    "create": "Afegir camp",
+    "edit": "Editar camp",
+    "confirmDelete": "Voleu eliminar aquest camp? Si ja té dades desades, s'arxivarà en lloc d'esborrar-se.",
+    "retired": "Arxivat",
+    "key": "Clau",
+    "keyHint": "Identificador estable, en minúscules. No es pot canviar després.",
+    "type": "Tipus",
+    "typeHint": "No es pot canviar després de crear el camp.",
+    "label": "Etiqueta",
+    "labelLocale": {
+      "es": "Etiqueta (ES)",
+      "ca": "Etiqueta (CA)",
+      "en": "Etiqueta (EN)"
+    },
+    "helpText": "Text d'ajuda",
+    "options": "Opcions",
+    "addOption": "Afegir opció",
+    "optionValue": "Valor",
+    "optionLabel": "Etiqueta",
+    "required": "Obligatori",
+    "active": "Actiu",
+    "order": "Ordre",
+    "memberAccess": "Accés del soci",
+    "memberAccessHint": "Què pot fer el soci amb el seu propi valor.",
+    "adminAccess": "Accés de l'administrador",
+    "adminAccessHint": "Els administradors sempre poden veure el camp. El superadministrador sempre el pot editar.",
+    "access": {
+      "hidden": "Ocult",
+      "read": "Només lectura",
+      "write": "Editable"
+    },
+    "types": {
+      "text": "Text",
+      "textarea": "Text llarg",
+      "number": "Número",
+      "date": "Data",
+      "boolean": "Sí/No",
+      "select": "Llista d'opcions"
+    },
+    "tabLabel": "Camps personalitzats",
+    "noVisibleFields": "No hi ha camps personalitzats visibles.",
+    "readOnlyNotice": "Alguns camps són només de lectura per al teu rol.",
+    "validation": {
+      "required": "Aquest camp és obligatori",
+      "number": "Ha de ser un número"
+    },
+    "yes": "Sí",
+    "no": "No",
+    "empty": "—",
+    "save": "Desar camps"
+  }
+}

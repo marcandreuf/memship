@@ -73,7 +73,6 @@ class MembershipType(Base):
     is_fixed_term = Column(Boolean, default=False)
     term_months = Column(Integer)
     benefits = Column(ARRAY(Text))
-    custom_fields_schema = Column(JSONB, default=list)
     display_order = Column(Integer, default=0)
     color = Column(String(7))
     is_active = Column(Boolean, default=True)
@@ -116,7 +115,6 @@ class Member(Base):
     renewed_at = Column(Date)
     guardian_person_id = Column(Integer, ForeignKey("persons.id", ondelete="SET NULL"))
     is_minor = Column(Boolean, default=False)
-    custom_data = Column(JSONB, default=dict)
     communication_preferences = Column(
         JSONB, default=lambda: {"email": True, "sms": False, "push": False}
     )

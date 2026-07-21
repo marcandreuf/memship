@@ -14,6 +14,7 @@ from app.api.v1.endpoints import (
     communications,
     concepts,
     contacts,
+    custom_fields,
     discount_codes,
     groups,
     health,
@@ -60,6 +61,9 @@ api_router.include_router(logo.router)
 api_router.include_router(contacts.router)
 api_router.include_router(contacts.detail_router)
 api_router.include_router(contacts.types_router)
+api_router.include_router(custom_fields.router)
+api_router.include_router(custom_fields.me_router)
+api_router.include_router(custom_fields.values_router)
 api_router.include_router(payment_providers.router)
 api_router.include_router(mandates.member_router)
 api_router.include_router(mandates.router)
