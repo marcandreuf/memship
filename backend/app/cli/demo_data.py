@@ -16,7 +16,7 @@ fixtures. Randomness is seeded for reproducible screenshots.
 from __future__ import annotations
 
 import random
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 
 from app.domains.billing.models import Concept, PaymentProvider, Receipt, SepaMandate
@@ -346,6 +346,122 @@ def generate_reminders(db, created_by: int | None) -> None:
     print(f"  Demo reminders: created {len(items)} (notes + dated)")
 
 
+def _next_date_for(weekday: int, min_ahead: int = 1) -> date:
+    """The next occurrence of ``weekday`` (0=Mon) at least ``min_ahead`` days ahead."""
+    today = date.today()
+    delta = (weekday - today.weekday()) % 7
+    if delta < min_ahead:
+        delta += 7
+    return today + timedelta(days=delta)
+
+
+def generate_bookings(db) -> None:
+    """Enable Simple Bookings and seed spaces, slots and demo bookings.
+
+    Two spaces: a capacity-1 padel court (singles, with a waitlist demo) and a
+    capacity-6 group-class room. Bookings land on each slot's next upcoming
+    occurrence, within the booking window.
+    """
+    from app.domains.bookings.models import Booking, Space, SpaceSlot
+
+    if db.query(Space).first() is not None:
+        return  # already seeded
+
+    org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
+    if org is not None:
+        features = dict(org.features or {})
+        features.update(
+            {
+                "bookings": True,
+                "booking_window_days": 14,
+                "booking_cancellation_deadline_hours": 24,
+                "booking_waitlist_enabled": True,
+            }
+        )
+        org.features = features
+
+    members = _demo_members(db)
+    if not members:
+        return
+
+    padel = Space(
+        name="Pista de pádel 1",
+        space_type="court",
+        description="Pista individual, reserva por franjas",
+        open_time=time(8, 0),
+        close_time=time(22, 0),
+        is_active=True,
+    )
+    sala = Space(
+        name="Sala polivalente",
+        space_type="room",
+        description="Clases dirigidas en grupo",
+        open_time=time(9, 0),
+        close_time=time(21, 0),
+        is_active=True,
+    )
+    db.add_all([padel, sala])
+    db.flush()
+
+    # Padel: capacity-1 singles slots (Mon/Wed mornings, Fri evening).
+    padel_slots: list[SpaceSlot] = []
+    for weekday, start, end in [
+        (0, time(10, 0), time(11, 0)),
+        (2, time(10, 0), time(11, 0)),
+        (4, time(18, 0), time(19, 0)),
+    ]:
+        slot = SpaceSlot(
+            space_id=padel.id, weekday=weekday, start_time=start,
+            end_time=end, capacity=1, is_active=True,
+        )
+        db.add(slot)
+        padel_slots.append(slot)
+
+    # Sala: capacity-6 group class (Tue/Thu evenings).
+    sala_slots: list[SpaceSlot] = []
+    for weekday in (1, 3):
+        slot = SpaceSlot(
+            space_id=sala.id, weekday=weekday, start_time=time(19, 0),
+            end_time=time(20, 0), capacity=6, is_active=True,
+        )
+        db.add(slot)
+        sala_slots.append(slot)
+    db.flush()
+
+    pool = list(members)
+    cursor = 0
+
+    def take() -> Member:
+        nonlocal cursor
+        member = pool[cursor % len(pool)]
+        cursor += 1
+        return member
+
+    # Padel (capacity 1): one confirmed booking each; the first slot also gets a
+    # waitlisted member so the waitlist/promotion flow is visible in the demo.
+    for i, slot in enumerate(padel_slots):
+        day = _next_date_for(slot.weekday)
+        db.add(Booking(space_slot_id=slot.id, member_id=take().id,
+                       booking_date=day, status="booked"))
+        if i == 0:
+            db.add(Booking(space_slot_id=slot.id, member_id=take().id,
+                           booking_date=day, status="waitlisted",
+                           waitlisted_at=datetime.now(timezone.utc)))
+
+    # Sala (capacity 6): four confirmed bookings on the next class.
+    for slot in sala_slots:
+        day = _next_date_for(slot.weekday)
+        for _ in range(4):
+            db.add(Booking(space_slot_id=slot.id, member_id=take().id,
+                           booking_date=day, status="booked"))
+
+    db.flush()
+    print(
+        f"  Bookings: 2 spaces, {len(padel_slots) + len(sala_slots)} slots, "
+        "demo bookings + a waitlist"
+    )
+
+
 def seed_demo_data(db, default_membership_type: MembershipType, created_by: int | None) -> None:
     """Orchestrate the demo dataset on top of the base install.
 
@@ -373,3 +489,6 @@ def seed_demo_data(db, default_membership_type: MembershipType, created_by: int 
 
     print("\nSeeding demo reminders...")
     generate_reminders(db, created_by)
+
+    print("\nSeeding demo bookings...")
+    generate_bookings(db)
