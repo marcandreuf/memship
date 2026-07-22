@@ -109,6 +109,16 @@ See the [Development section of the README](README.md#development) for the full 
 
 Releases are driven by **git tags — there is no `VERSION` file and no version-bumping git hooks.** The git tag is the single source of truth for the version.
 
+### Choosing a version
+
+Version numbers follow [semantic versioning](https://semver.org/) and are **chosen at release time, not reserved on the roadmap in advance.** The [roadmap](README.md#roadmap) lists planned features without numbers; a feature only gets its number when it ships. Pick it relative to the latest released tag:
+
+- **Minor** (`x.Y.0`) — a new feature or roadmap item (a new domain, a new member-facing capability).
+- **Patch** (`x.y.Z`) — bug fixes and small polish, no new feature.
+- **Major** (`X.0.0`) — a breaking change to the API, data model, or deployment/upgrade contract.
+
+Because features are built in parallel, **the number is claimed at release, not when you branch.** Whoever releases first takes the next number; the next feature to ship takes the one after — so don't hard-code a target version into your branch, commits, or the roadmap while the work is in flight. When your feature is ready, add its row to the **Released** table in the [roadmap](README.md#roadmap) *in the same PR as the feature code*, then tag. That is also what satisfies the roadmap guard (step 4 below): the tagged commit must already carry the released version's README row.
+
 The flow is **build once, promote**:
 
 1. A PR merges to `main`. CI runs, then the Build Images workflow pushes **release-candidate images** tagged `sha-<commit>` and `main` to GHCR.
@@ -121,7 +131,7 @@ The flow is **build once, promote**:
    ```
 
    This creates an annotated `v1.3.0` tag and pushes it.
-4. The Release workflow **promotes the exact RC image** for that commit to `:1.3.0` and `:latest` — it does not rebuild, so staging and production ship identical bytes. It also checks that the version has a row in the README roadmap.
+4. The Release workflow **promotes the exact RC image** for that commit to `:1.3.0` and `:latest` — it does not rebuild, so staging and production ship identical bytes. It also checks that the released version has a row in the README roadmap's **Released** table.
 
 The version the running app reports comes from the `APP_VERSION` environment variable (set from the image tag at deploy time); running from source, it falls back to `git describe`.
 
