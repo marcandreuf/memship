@@ -1,0 +1,70 @@
+{
+  "bookings": {
+    "nav": "Espacios",
+    "spaces": {
+      "title": "Espacios",
+      "create": "Nuevo espacio",
+      "edit": "Editar espacio",
+      "name": "Nombre",
+      "type": "Tipo",
+      "description": "Descripción",
+      "openTime": "Apertura",
+      "closeTime": "Cierre",
+      "hours": "Horario",
+      "status": "Estado",
+      "active": "Activo",
+      "inactive": "Inactivo",
+      "noSpaces": "Aún no hay espacios. Crea uno para empezar a aceptar reservas.",
+      "manage": "Gestionar",
+      "notFound": "Espacio no encontrado."
+    },
+    "slots": {
+      "tab": "Franjas",
+      "add": "Añadir franja",
+      "edit": "Editar franja",
+      "weekday": "Día",
+      "start": "Inicio",
+      "end": "Fin",
+      "capacity": "Aforo",
+      "active": "Activa",
+      "inactive": "Inactiva",
+      "noSlots": "Aún no hay franjas. Añade una franja semanal que los socios puedan reservar.",
+      "confirmDelete": "¿Eliminar esta franja? También se eliminarán sus reservas."
+    },
+    "adminBookings": {
+      "tab": "Reservas",
+      "member": "Socio",
+      "date": "Fecha",
+      "time": "Horario",
+      "status": "Estado",
+      "noBookings": "Aún no hay reservas.",
+      "cancel": "Cancelar",
+      "confirmCancel": "¿Cancelar esta reserva? Se promocionará a un socio en lista de espera."
+    },
+    "status": {
+      "booked": "Reservada",
+      "waitlisted": "En lista de espera",
+      "cancelled": "Cancelada"
+    },
+    "weekdays": {
+      "0": "Lun",
+      "1": "Mar",
+      "2": "Mié",
+      "3": "Jue",
+      "4": "Vie",
+      "5": "Sáb",
+      "6": "Dom"
+    },
+    "settings": {
+      "tab": "Reservas",
+      "title": "Reservas",
+      "enabled": "Activar reservas",
+      "enabledDesc": "Permite a los socios reservar tiempo en espacios compartidos.",
+      "rules": "Reglas de reserva",
+      "windowDays": "Ventana de reserva (días de antelación)",
+      "deadlineHours": "Plazo de autocancelación (horas antes del inicio)",
+      "waitlist": "Activar lista de espera",
+      "waitlistDesc": "Cuando una franja está completa, permite a los socios apuntarse a una lista de espera y ser promocionados automáticamente."
+    }
+  }
+}

@@ -48,6 +48,7 @@ import { PaymentRemindersSettings } from "@/features/settings/components/payment
 import { CommunicationsSettings } from "@/features/settings/components/communications-settings";
 import { MemberCardSettings } from "@/features/settings/components/member-card-settings";
 import { ProfileFieldsSettings } from "@/features/settings/components/profile-fields-settings";
+import { BookingsSettings } from "@/features/settings/components/bookings-settings";
 import { FormSkeleton } from "@/components/ui/skeletons";
 
 const settingsSchema = z.object({
@@ -183,6 +184,9 @@ export default function SettingsPage() {
           {/* Ungated: membership types is the one setting a plain admin can
               reach, and it lives in here. */}
           <TabsTrigger value="members">{t("nav.members")}</TabsTrigger>
+          {isSuperAdmin && (
+            <TabsTrigger value="bookings">{t("bookings.settings.tab")}</TabsTrigger>
+          )}
         </TabsList>
 
         {isSuperAdmin && <TabsContent value="organization">
@@ -459,6 +463,12 @@ export default function SettingsPage() {
             </TabsContent>
           </Tabs>
         </TabsContent>
+
+        {isSuperAdmin && (
+          <TabsContent value="bookings">
+            <BookingsSettings />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

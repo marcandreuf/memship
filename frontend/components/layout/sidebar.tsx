@@ -19,6 +19,7 @@ import {
   IdCard,
   ScanLine,
   TrendingUp,
+  MapPin,
   LogOut,
   ChevronsUpDown,
 } from "lucide-react";
@@ -63,6 +64,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
   const isAdmin = user.role === "admin" || user.role === "super_admin";
   const commsEnabled = Boolean(settings?.features?.communications);
   const cardEnabled = Boolean(settings?.features?.member_card);
+  const bookingsEnabled = Boolean(settings?.features?.bookings);
 
   const navItems = [
     { href: "/dashboard", label: t("nav.dashboard"), icon: LayoutDashboard, show: true },
@@ -81,6 +83,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
     { href: "/communications", label: t("nav.communications"), icon: Megaphone, show: isAdmin && commsEnabled },
     { href: "/announcements", label: t("nav.announcements"), icon: Megaphone, show: !isAdmin && commsEnabled },
     { href: "/groups", label: t("nav.groups"), icon: FolderOpen, show: isAdmin },
+    { href: "/spaces", label: t("bookings.nav"), icon: MapPin, show: isAdmin && bookingsEnabled },
     { href: "/settings", label: t("nav.settings"), icon: Settings, show: isAdmin },
   ].filter((item) => item.show);
 

@@ -1,0 +1,70 @@
+{
+  "bookings": {
+    "nav": "Espais",
+    "spaces": {
+      "title": "Espais",
+      "create": "Nou espai",
+      "edit": "Edita l'espai",
+      "name": "Nom",
+      "type": "Tipus",
+      "description": "Descripció",
+      "openTime": "Obertura",
+      "closeTime": "Tancament",
+      "hours": "Horari",
+      "status": "Estat",
+      "active": "Actiu",
+      "inactive": "Inactiu",
+      "noSpaces": "Encara no hi ha espais. Crea'n un per començar a acceptar reserves.",
+      "manage": "Gestiona",
+      "notFound": "Espai no trobat."
+    },
+    "slots": {
+      "tab": "Franges",
+      "add": "Afegeix franja",
+      "edit": "Edita la franja",
+      "weekday": "Dia",
+      "start": "Inici",
+      "end": "Fi",
+      "capacity": "Aforament",
+      "active": "Activa",
+      "inactive": "Inactiva",
+      "noSlots": "Encara no hi ha franges. Afegeix una franja setmanal que els socis puguin reservar.",
+      "confirmDelete": "Vols eliminar aquesta franja? També se n'eliminaran les reserves."
+    },
+    "adminBookings": {
+      "tab": "Reserves",
+      "member": "Soci",
+      "date": "Data",
+      "time": "Horari",
+      "status": "Estat",
+      "noBookings": "Encara no hi ha reserves.",
+      "cancel": "Cancel·la",
+      "confirmCancel": "Vols cancel·lar aquesta reserva? Es promocionarà un soci de la llista d'espera."
+    },
+    "status": {
+      "booked": "Reservada",
+      "waitlisted": "En llista d'espera",
+      "cancelled": "Cancel·lada"
+    },
+    "weekdays": {
+      "0": "Dl",
+      "1": "Dt",
+      "2": "Dc",
+      "3": "Dj",
+      "4": "Dv",
+      "5": "Ds",
+      "6": "Dg"
+    },
+    "settings": {
+      "tab": "Reserves",
+      "title": "Reserves",
+      "enabled": "Activa les reserves",
+      "enabledDesc": "Permet als socis reservar temps en espais compartits.",
+      "rules": "Regles de reserva",
+      "windowDays": "Finestra de reserva (dies d'antelació)",
+      "deadlineHours": "Termini d'autocancel·lació (hores abans de l'inici)",
+      "waitlist": "Activa la llista d'espera",
+      "waitlistDesc": "Quan una franja és plena, permet als socis apuntar-se a una llista d'espera i ser promocionats automàticament."
+    }
+  }
+}
