@@ -1,6 +1,30 @@
 {
   "bookings": {
     "nav": "Spaces",
+    "navBook": "Book",
+    "navMyBookings": "My bookings",
+    "book": {
+      "title": "Book a space",
+      "pickSpace": "Space",
+      "prev": "Previous week",
+      "next": "Next week",
+      "noSpaces": "No spaces are open for booking yet.",
+      "book": "Book",
+      "joinWaitlist": "Join waitlist",
+      "confirmBook": "Book this slot?",
+      "confirmWaitlist": "This slot is full. Join the waitlist?",
+      "bookedToast": "Booked",
+      "waitlistedToast": "Added to the waitlist"
+    },
+    "my": {
+      "title": "My bookings",
+      "upcoming": "Upcoming",
+      "past": "Past",
+      "empty": "No bookings.",
+      "cancel": "Cancel",
+      "keep": "Keep",
+      "confirmCancel": "Cancel this booking?"
+    },
     "spaces": {
       "title": "Spaces",
       "create": "New space",

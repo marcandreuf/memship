@@ -1,6 +1,30 @@
 {
   "bookings": {
     "nav": "Espacios",
+    "navBook": "Reservar",
+    "navMyBookings": "Mis reservas",
+    "book": {
+      "title": "Reservar un espacio",
+      "pickSpace": "Espacio",
+      "prev": "Semana anterior",
+      "next": "Semana siguiente",
+      "noSpaces": "Aún no hay espacios abiertos para reservar.",
+      "book": "Reservar",
+      "joinWaitlist": "Unirse a la lista de espera",
+      "confirmBook": "¿Reservar esta franja?",
+      "confirmWaitlist": "Esta franja está completa. ¿Unirse a la lista de espera?",
+      "bookedToast": "Reserva confirmada",
+      "waitlistedToast": "Añadido a la lista de espera"
+    },
+    "my": {
+      "title": "Mis reservas",
+      "upcoming": "Próximas",
+      "past": "Pasadas",
+      "empty": "No hay reservas.",
+      "cancel": "Cancelar",
+      "keep": "Mantener",
+      "confirmCancel": "¿Cancelar esta reserva?"
+    },
     "spaces": {
       "title": "Espacios",
       "create": "Nuevo espacio",

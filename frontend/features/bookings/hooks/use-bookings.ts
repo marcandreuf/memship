@@ -3,11 +3,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   cancelBooking,
+  createBooking,
   createSlot,
   createSpace,
   deactivateSpace,
   deleteSlot,
+  getAvailability,
+  getMyBookings,
   getSpace,
+  listAvailableSpaces,
   listSlots,
   listSpaceBookings,
   listSpaces,
@@ -116,6 +120,53 @@ export function useCancelBooking(spaceId?: number) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["space-bookings", spaceId] });
       qc.invalidateQueries({ queryKey: ["my-bookings"] });
+      qc.invalidateQueries({ queryKey: ["availability"] });
     },
+  });
+}
+
+// --- Member ---
+
+export function useAvailableSpaces(enabled = true) {
+  return useQuery({
+    queryKey: ["available-spaces"],
+    queryFn: listAvailableSpaces,
+    enabled,
+  });
+}
+
+export function useAvailability(
+  spaceId: number,
+  weekStart: string,
+  enabled = true
+) {
+  return useQuery({
+    queryKey: ["availability", spaceId, weekStart],
+    queryFn: () => getAvailability(spaceId, weekStart),
+    enabled: enabled && spaceId > 0 && Boolean(weekStart),
+  });
+}
+
+export function useCreateBooking() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      spaceSlotId,
+      bookingDate,
+    }: {
+      spaceSlotId: number;
+      bookingDate: string;
+    }) => createBooking(spaceSlotId, bookingDate),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["availability"] });
+      qc.invalidateQueries({ queryKey: ["my-bookings"] });
+    },
+  });
+}
+
+export function useMyBookings(scope: "upcoming" | "past") {
+  return useQuery({
+    queryKey: ["my-bookings", scope],
+    queryFn: () => getMyBookings(scope),
   });
 }

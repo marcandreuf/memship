@@ -72,6 +72,8 @@ export function AppSidebar({ user }: AppSidebarProps) {
     { href: "/my-activities", label: t("activities.registration.myActivities"), icon: ClipboardList, show: !isAdmin },
     { href: "/my-receipts", label: t("receipts.myReceipts"), icon: Receipt, show: !isAdmin },
     { href: "/my-card", label: t("nav.myCard"), icon: IdCard, show: !isAdmin && cardEnabled },
+    { href: "/book", label: t("bookings.navBook"), icon: MapPin, show: !isAdmin && bookingsEnabled },
+    { href: "/my-bookings", label: t("bookings.navMyBookings"), icon: ClipboardList, show: !isAdmin && bookingsEnabled },
     { href: "/payment-method", label: t("paymentMethod.title"), icon: CreditCard, show: !isAdmin },
     { href: "/members", label: t("nav.members"), icon: Users, show: isAdmin },
     { href: "/scan", label: t("nav.scan"), icon: ScanLine, show: isAdmin && cardEnabled },

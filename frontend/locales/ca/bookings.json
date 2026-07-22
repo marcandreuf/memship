@@ -1,6 +1,30 @@
 {
   "bookings": {
     "nav": "Espais",
+    "navBook": "Reservar",
+    "navMyBookings": "Les meves reserves",
+    "book": {
+      "title": "Reserva un espai",
+      "pickSpace": "Espai",
+      "prev": "Setmana anterior",
+      "next": "Setmana següent",
+      "noSpaces": "Encara no hi ha espais oberts per reservar.",
+      "book": "Reserva",
+      "joinWaitlist": "Uneix-te a la llista d'espera",
+      "confirmBook": "Vols reservar aquesta franja?",
+      "confirmWaitlist": "Aquesta franja és plena. Vols unir-te a la llista d'espera?",
+      "bookedToast": "Reserva confirmada",
+      "waitlistedToast": "Afegit a la llista d'espera"
+    },
+    "my": {
+      "title": "Les meves reserves",
+      "upcoming": "Pròximes",
+      "past": "Passades",
+      "empty": "No hi ha reserves.",
+      "cancel": "Cancel·la",
+      "keep": "Mantén",
+      "confirmCancel": "Vols cancel·lar aquesta reserva?"
+    },
     "spaces": {
       "title": "Espais",
       "create": "Nou espai",

@@ -150,3 +150,80 @@ export async function listSpaceBookings(
 export async function cancelBooking(id: number): Promise<void> {
   return apiClient<void>(`/bookings/${id}`, { method: "DELETE" });
 }
+
+// --- Member: availability + booking ---
+
+export type CellState = "open" | "full" | "past" | "out_of_window";
+export type MyStatus = "none" | "booked" | "waitlisted";
+
+export interface AvailabilityCell {
+  space_slot_id: number;
+  date: string; // "YYYY-MM-DD"
+  weekday: number;
+  start_time: string;
+  end_time: string;
+  capacity: number;
+  booked_count: number;
+  waitlist_count: number;
+  my_status: MyStatus;
+  cell_state: CellState;
+}
+
+export interface WeekAvailability {
+  space_id: number;
+  week_start: string;
+  cells: AvailabilityCell[];
+}
+
+export interface MyBooking {
+  id: number;
+  space_slot_id: number;
+  space_id: number;
+  space_name: string;
+  booking_date: string;
+  weekday: number;
+  start_time: string;
+  end_time: string;
+  status: BookingStatus;
+  waitlist_position: number | null;
+}
+
+export interface BookingResult {
+  id: number;
+  space_slot_id: number;
+  member_id: number;
+  booking_date: string;
+  status: BookingStatus;
+}
+
+export async function listAvailableSpaces(): Promise<Space[]> {
+  return apiClient<Space[]>("/spaces-available");
+}
+
+export async function getAvailability(
+  spaceId: number,
+  weekStart: string
+): Promise<WeekAvailability> {
+  return apiClient<WeekAvailability>(
+    `/spaces/${spaceId}/availability?week_start=${weekStart}`
+  );
+}
+
+export async function createBooking(
+  spaceSlotId: number,
+  bookingDate: string
+): Promise<BookingResult> {
+  return apiClient<BookingResult>("/bookings", {
+    method: "POST",
+    body: JSON.stringify({
+      space_slot_id: spaceSlotId,
+      booking_date: bookingDate,
+    }),
+  });
+}
+
+export async function getMyBookings(
+  scope: "upcoming" | "past"
+): Promise<MyBooking[]> {
+  return apiClient<MyBooking[]>(`/me/bookings?scope=${scope}`);
+}
