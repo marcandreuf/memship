@@ -1,0 +1,7 @@
+<h2>Ets a la llista d'espera</h2>
+<p>Hola {{ member_name }},</p>
+<p>La reserva de <strong>{{ space_name }}</strong> està completa, així que t'hem afegit a la llista d'espera.</p>
+<p><strong>Data:</strong> {{ booking_date }}</p>
+<p><strong>Horari:</strong> {{ booking_time }}</p>
+{% if position %}<p><strong>La teva posició:</strong> {{ position }}</p>{% endif %}
+<p>T'avisarem si s'allibera una plaça.</p>

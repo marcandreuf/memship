@@ -9,6 +9,7 @@ from app.domains.activities import models as activities_models  # noqa: F401
 from app.domains.audit import models as audit_models  # noqa: F401
 from app.domains.auth import models as auth_models  # noqa: F401
 from app.domains.billing import models as billing_models  # noqa: F401
+from app.domains.bookings import models as bookings_models  # noqa: F401
 from app.domains.communications import models as communications_models  # noqa: F401
 from app.domains.custom_fields import models as custom_fields_models  # noqa: F401
 from app.domains.members import models as members_models  # noqa: F401

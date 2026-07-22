@@ -11,6 +11,7 @@ from app.api.v1.endpoints import (
     activity_prices,
     auth,
     billing_runs,
+    bookings,
     communications,
     concepts,
     contacts,
@@ -74,4 +75,6 @@ api_router.include_router(concepts.router)
 api_router.include_router(billing_runs.router)
 api_router.include_router(communications.router)
 api_router.include_router(communications.me_router)
+api_router.include_router(bookings.router)
+api_router.include_router(bookings.member_router)
 api_router.include_router(webhooks.router)

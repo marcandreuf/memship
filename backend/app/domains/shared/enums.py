@@ -38,6 +38,14 @@ class UserRole(StrEnum):
     MEMBER = "member"
 
 
+class BookingStatus(StrEnum):
+    """State of a member's reservation of a slot-instance."""
+
+    BOOKED = "booked"
+    WAITLISTED = "waitlisted"
+    CANCELLED = "cancelled"
+
+
 class CustomFieldType(StrEnum):
     TEXT = "text"
     TEXTAREA = "textarea"

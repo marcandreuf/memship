@@ -4,6 +4,9 @@ import logging
 
 from app.core.celery_app import celery
 from app.core.email import (
+    send_booking_confirmation_email,
+    send_booking_promoted_email,
+    send_booking_waitlisted_email,
     send_email,
     send_email_with_attachment,
     send_registration_confirmation_email,
@@ -81,6 +84,41 @@ def send_promotion_email_task(
         )
     except Exception as exc:
         logger.error(f"Promotion email task failed: to={to}, error={exc}")
+        raise self.retry(exc=exc)
+
+
+@celery.task(bind=True, max_retries=3, default_retry_delay=60)
+def send_booking_email_task(
+    self,
+    kind: str,
+    to: str,
+    member_name: str,
+    space_name: str,
+    date_str: str,
+    time_str: str,
+    locale: str = "es",
+    position: int | None = None,
+    cancellation_deadline_hours: int | None = None,
+) -> bool:
+    """Send a booking confirmation / waitlisted / promoted email."""
+    try:
+        if kind == "confirmation":
+            return send_booking_confirmation_email(
+                to, member_name, space_name, date_str, time_str,
+                cancellation_deadline_hours, locale,
+            )
+        if kind == "waitlisted":
+            return send_booking_waitlisted_email(
+                to, member_name, space_name, date_str, time_str, position, locale,
+            )
+        if kind == "promoted":
+            return send_booking_promoted_email(
+                to, member_name, space_name, date_str, time_str, locale,
+            )
+        logger.error(f"Unknown booking email kind: {kind}")
+        return False
+    except Exception as exc:
+        logger.error(f"Booking email task failed: to={to}, kind={kind}, error={exc}")
         raise self.retry(exc=exc)
 
 

@@ -1,0 +1,7 @@
+<h2>Booking confirmed!</h2>
+<p>Hi {{ member_name }},</p>
+<p>Your booking of <strong>{{ space_name }}</strong> is confirmed.</p>
+<p><strong>Date:</strong> {{ booking_date }}</p>
+<p><strong>Time:</strong> {{ booking_time }}</p>
+{% if cancellation_deadline_hours %}<p>You can cancel up to {{ cancellation_deadline_hours }} hours before the start.</p>{% endif %}
+<p>See you soon!</p>

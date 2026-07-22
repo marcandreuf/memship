@@ -47,6 +47,21 @@ _SUBJECTS = {
         "ca": "Plaça confirmada! {activity}",
         "en": "You're in! {activity}",
     },
+    "booking_confirmation": {
+        "es": "Reserva confirmada: {space}",
+        "ca": "Reserva confirmada: {space}",
+        "en": "Booking confirmed: {space}",
+    },
+    "booking_waitlisted": {
+        "es": "En lista de espera: {space}",
+        "ca": "En llista d'espera: {space}",
+        "en": "You're on the waitlist: {space}",
+    },
+    "booking_promoted": {
+        "es": "¡Plaza confirmada! {space}",
+        "ca": "Plaça confirmada! {space}",
+        "en": "You're in! {space}",
+    },
     "welcome": {
         "es": "Bienvenido a Memship",
         "ca": "Benvingut a Memship",
@@ -312,6 +327,67 @@ def send_payment_reminder_email(
         "org_name": org_name,
         "pay_now_url": pay_now_url,
         "bank_details": bank_details,
+    })
+    return send_email(to, subject, html_body)
+
+
+def send_booking_confirmation_email(
+    to: str,
+    member_name: str,
+    space_name: str,
+    booking_date: str,
+    booking_time: str,
+    cancellation_deadline_hours: int | None = None,
+    locale: str = "es",
+) -> bool:
+    """Confirm a member's booking of a slot-instance."""
+    subject = _get_subject("booking_confirmation", locale, space=space_name)
+    html_body = render_template("booking_confirmation", locale, {
+        "member_name": member_name,
+        "space_name": space_name,
+        "booking_date": booking_date,
+        "booking_time": booking_time,
+        "cancellation_deadline_hours": cancellation_deadline_hours,
+    })
+    return send_email(to, subject, html_body)
+
+
+def send_booking_waitlisted_email(
+    to: str,
+    member_name: str,
+    space_name: str,
+    booking_date: str,
+    booking_time: str,
+    position: int | None = None,
+    locale: str = "es",
+) -> bool:
+    """Tell a member their booking is on the waitlist."""
+    subject = _get_subject("booking_waitlisted", locale, space=space_name)
+    html_body = render_template("booking_waitlisted", locale, {
+        "member_name": member_name,
+        "space_name": space_name,
+        "booking_date": booking_date,
+        "booking_time": booking_time,
+        "position": position,
+    })
+    return send_email(to, subject, html_body)
+
+
+def send_booking_promoted_email(
+    to: str,
+    member_name: str,
+    space_name: str,
+    booking_date: str,
+    booking_time: str,
+    locale: str = "es",
+) -> bool:
+    """Tell a member a spot opened and they are now booked."""
+    subject = _get_subject("booking_promoted", locale, space=space_name)
+    html_body = render_template("booking_promoted", locale, {
+        "member_name": member_name,
+        "space_name": space_name,
+        "booking_date": booking_date,
+        "booking_time": booking_time,
     })
     return send_email(to, subject, html_body)
 

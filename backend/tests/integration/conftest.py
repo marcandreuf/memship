@@ -60,6 +60,7 @@ from app.domains.custom_fields.models import (  # noqa: F401
     CustomFieldDefinition,
     CustomFieldValue,
 )
+from app.domains.bookings.models import Booking, Space, SpaceSlot  # noqa: F401
 
 # Use test database
 TEST_DATABASE_URL = os.getenv("DATABASE_TEST_URL", settings.DATABASE_TEST_URL)
