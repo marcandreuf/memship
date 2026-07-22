@@ -108,20 +108,20 @@ Memship segueix el [versionat semàntic](https://semver.org/) i **els números d
 | v1.0.1 | Pedaç — corregeix el registre de tasques programades de facturació/recordatoris a Celery; protecció de CI contra la sobreescriptura d'etiquetes d'imatge | Fet |
 | v1.1.0 | Camps de perfil personalitzats — dades de soci configurables per l'organització (text, número, data, selecció, …) amb validació per camp i visibilitat/edició per camp | Fet |
 | v1.1.1 | Pedaç — reorganització de la navegació de configuració: ajustos de pagaments i de socis agrupats a les pestanyes Pagaments i Socis | Fet |
+| v1.2.0 | Reserves simples — reserves de socis en espais compartits mitjançant un calendari setmanal, aforament per franja, llista d'espera FIFO amb promoció automàtica i correus de confirmació/llista d'espera | Fet |
 
 ### Planificat
 
 Prioritzat, encara sense versió. Cada element esdevé un llançament versionat quan es publica, i el llançament pren el següent número semàntic per ordre.
 
 - **Integració SSO / identitat** — inici de sessió amb l'IdP de l'organització (SAML/OIDC); mode proveïdor més endavant _(en curs)_
-- **Reserves simples** — els socis reserven recursos compartits (camps, pistes, sales) en un calendari per espai _(en curs)_
 - **Convocatòries** — convocatòries formals d'Assemblea General amb confirmació del soci mitjançant token
 - **Rols i permisos flexibles** — multi-rol i permisos per rol més enllà dels 4 rols fixos
 - **Biblioteca de documents** — estatuts, actes, formularis amb visibilitat per grup
 - **Calendari d'esdeveniments + confirmació d'assistència** — vista de calendari i seguiment de participació
 - **Extensions — sistema de mòduls/connectors** — complements opcionals lliurats com a mòduls/connectors: àlbums de fotos, fòrum, llibre de visites, directori d'enllaços, inventari/préstecs, ginys del portal
 
-Les variacions complexes es construeixen sota demanda, quan una implementació real les necessita: GoCardless e-mandats, PayPal, flux d'Stripe Invoice, accions massives en rebuts, generador d'informes personalitzats, enquestes, facturació familiar, reserves amb classes de grup/llista d'espera, votació i adjunts en convocatòries, i variants més profundes de les funcions anteriors.
+Les variacions complexes es construeixen sota demanda, quan una implementació real les necessita: GoCardless e-mandats, PayPal, flux d'Stripe Invoice, accions massives en rebuts, generador d'informes personalitzats, enquestes, facturació familiar, pagaments i reserves recurrents, lloguer d'equipament, votació i adjunts en convocatòries, i variants més profundes de les funcions anteriors.
 
 ---
 

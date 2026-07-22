@@ -108,20 +108,20 @@ Memship sigue el [versionado semántico](https://semver.org/) y **los números d
 | v1.0.1 | Parche — corrige el registro de tareas programadas de facturación/recordatorios en Celery; protección de CI contra la sobrescritura de etiquetas de imagen | Hecho |
 | v1.1.0 | Campos de perfil personalizados — datos de socio configurables por la organización (texto, número, fecha, selección, …) con validación por campo y visibilidad/edición por campo | Hecho |
 | v1.1.1 | Parche — reorganización de la navegación de configuración: ajustes de pagos y de socios agrupados en las pestañas Pagos y Socios | Hecho |
+| v1.2.0 | Reservas simples — reservas de socios en espacios compartidos mediante un calendario semanal, aforo por franja, lista de espera FIFO con promoción automática y correos de confirmación/lista de espera | Hecho |
 
 ### Planificado
 
 Priorizado, aún sin versión. Cada elemento se convierte en un lanzamiento versionado cuando se publica, y el lanzamiento toma el siguiente número semántico por orden.
 
 - **Integración SSO / identidad** — inicio de sesión con el IdP de la organización (SAML/OIDC); modo proveedor más adelante _(en curso)_
-- **Reservas simples** — los socios reservan recursos compartidos (campos, pistas, salas) en un calendario por espacio _(en curso)_
 - **Convocatorias** — convocatorias formales de Asamblea General con confirmación del socio mediante token
 - **Roles y permisos flexibles** — multi-rol y permisos por rol más allá de los 4 roles fijos
 - **Biblioteca de documentos** — estatutos, actas, formularios con visibilidad por grupo
 - **Calendario de eventos + confirmación de asistencia** — vista de calendario y seguimiento de participación
 - **Extensiones — sistema de módulos/plugins** — complementos opcionales entregados como módulos/plugins: álbumes de fotos, foro, libro de visitas, directorio de enlaces, inventario/préstamos, widgets del portal
 
-Las variaciones complejas se construyen bajo demanda, cuando una implementación real las necesita: GoCardless e-mandatos, PayPal, flujo de Stripe Invoice, acciones masivas en recibos, generador de informes personalizados, encuestas, facturación familiar, reservas con clases de grupo/lista de espera, votación y adjuntos en convocatorias, y variantes más profundas de las funciones anteriores.
+Las variaciones complejas se construyen bajo demanda, cuando una implementación real las necesita: GoCardless e-mandatos, PayPal, flujo de Stripe Invoice, acciones masivas en recibos, generador de informes personalizados, encuestas, facturación familiar, pagos y reservas recurrentes, alquiler de equipamiento, votación y adjuntos en convocatorias, y variantes más profundas de las funciones anteriores.
 
 ---
 
