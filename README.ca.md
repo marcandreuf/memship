@@ -65,6 +65,10 @@ Obriu http://localhost:8081 i inicieu sessió amb les vostres credencials. Canvi
 
 ## Full de ruta
 
+Memship segueix el [versionat semàntic](https://semver.org/) i **els números de versió s'assignen en el moment del llançament, mai es reserven al full de ruta per avançat.** A continuació, la taula **Publicat** és l'historial llançat; **Planificat** és una llista prioritzada del que ve. Un element planificat rep versió només quan es publica — consulta [Triar una versió](CONTRIBUTING.md#choosing-a-version) per saber com s'escull el número.
+
+### Publicat
+
 | Versió | Fita | Estat |
 |--------|------|-------|
 | v0.1.0 | Gestió de socis MVP — autenticació, RBAC, CRUD de socis, tipus de membresies, i18n, Docker, CI | Fet |
@@ -98,21 +102,26 @@ Obriu http://localhost:8081 i inicieu sessió amb les vostres credencials. Canvi
 | v0.4.5 | Recordatoris de pagament — notificacions per correu de rebuts vençuts | Fet |
 | v0.5.0 | Comunicacions simples — anuncis de l'administrador a tots els socis / grup / tipus de quota | Fet |
 | v0.5.1 | Vista d'enviaments de comunicacions — seguiment de destinataris + "Vist" a l'app | Fet |
-| v0.6.0 | ~~Reserves simples~~ — ajornat després de v1.0.0 (segons demanda) | Ajornat |
 | v0.7.0 | Carnet digital de soci + registre QR — carnet en PDF, numeració automàtica de socis | Fet |
 | v0.7.1 | Millores del carnet — vista de carnet per a l'admin, foto de perfil del soci, redisseny del perfil | Fet |
-| v0.8.0 | ~~Convocatòries~~ — ajornat després de v1.0.0 (segons demanda) | Ajornat |
 | v1.0.0 | Estabilització i llançament — exportacions CSV, tauler financer, notes i recordatoris, resum anual, dades demo, polit de docs | Fet |
 | v1.0.1 | Pedaç — corregeix el registre de tasques programades de facturació/recordatoris a Celery; protecció de CI contra la sobreescriptura d'etiquetes d'imatge | Fet |
 | v1.1.0 | Camps de perfil personalitzats — dades de soci configurables per l'organització (text, número, data, selecció, …) amb validació per camp i visibilitat/edició per camp | Fet |
 | v1.1.1 | Pedaç — reorganització de la navegació de configuració: ajustos de pagaments i de socis agrupats a les pestanyes Pagaments i Socis | Fet |
-| v1.2.0 | Rols i permisos flexibles — multi-rol i permisos per rol més enllà dels 4 rols fixos | Planificat |
-| v1.3.0 | Integració SSO / identitat — inici de sessió amb l'IdP de l'organització (SAML/OIDC); mode proveïdor més endavant | Planificat |
-| v1.4.0 | Biblioteca de documents — estatuts, actes, formularis amb visibilitat per grup | Planificat |
-| v1.5.0 | Calendari d'esdeveniments + confirmació d'assistència — vista de calendari i seguiment de participació | Planificat |
-| després de v1.5.0 | Mòduls opcionals per a superadmin — àlbums de fotos, fòrum, llibre de visites, directori d'enllaços, inventari/préstecs, ginys del portal (l'enfocament de lliurament es decideix en completar les millores principals) | Planificat |
 
-Ajornat després de v1.0.0: GoCardless e-mandats, integració PayPal, flux d'Stripe Invoice, accions massives en rebuts, generador d'informes personalitzats, enquestes, facturació familiar i altres variacions complexes de les anteriors. Llista completa d'ajornats a `memship-definition/docs/public/ROADMAP-v1.0.0.md`.
+### Planificat
+
+Prioritzat, encara sense versió. Cada element esdevé un llançament versionat quan es publica, i el llançament pren el següent número semàntic per ordre.
+
+- **Integració SSO / identitat** — inici de sessió amb l'IdP de l'organització (SAML/OIDC); mode proveïdor més endavant _(en curs)_
+- **Reserves simples** — els socis reserven recursos compartits (camps, pistes, sales) en un calendari per espai _(en curs)_
+- **Convocatòries** — convocatòries formals d'Assemblea General amb confirmació del soci mitjançant token
+- **Rols i permisos flexibles** — multi-rol i permisos per rol més enllà dels 4 rols fixos
+- **Biblioteca de documents** — estatuts, actes, formularis amb visibilitat per grup
+- **Calendari d'esdeveniments + confirmació d'assistència** — vista de calendari i seguiment de participació
+- **Extensions — sistema de mòduls/connectors** — complements opcionals lliurats com a mòduls/connectors: àlbums de fotos, fòrum, llibre de visites, directori d'enllaços, inventari/préstecs, ginys del portal
+
+Les variacions complexes es construeixen sota demanda, quan una implementació real les necessita: GoCardless e-mandats, PayPal, flux d'Stripe Invoice, accions massives en rebuts, generador d'informes personalitzats, enquestes, facturació familiar, reserves amb classes de grup/llista d'espera, votació i adjunts en convocatòries, i variants més profundes de les funcions anteriors.
 
 ---
 

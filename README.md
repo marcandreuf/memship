@@ -65,6 +65,10 @@ Open http://localhost:8081 and log in with your credentials. Change `PORT=8081` 
 
 ## Roadmap
 
+Memship follows [semantic versioning](https://semver.org/), and **version numbers are assigned at release time — never reserved on the roadmap in advance.** Below, the **Released** table is the shipped history; **Planned** is a priority-ordered list of what's next. A planned item is given a version only when it ships — see [Choosing a version](CONTRIBUTING.md#choosing-a-version) for how the number is picked.
+
+### Released
+
 | Version | Milestone | Status |
 |---------|-----------|--------|
 | v0.1.0 | Member Management MVP — auth, RBAC, member CRUD, membership types, i18n, Docker, CI | Done |
@@ -98,21 +102,26 @@ Open http://localhost:8081 and log in with your credentials. Change `PORT=8081` 
 | v0.4.5 | Payment reminders — overdue email notifications | Done |
 | v0.5.0 | Simple Communications — admin announcements to all/group/membership type | Done |
 | v0.5.1 | Communications sent view — recipient tracking + in-app "Seen" | Done |
-| v0.6.0 | ~~Simple Bookings~~ — deferred post-1.0 (build on demand) | Deferred |
 | v0.7.0 | Digital Member Card + QR Check-in — PDF card, auto member numbers | Done |
 | v0.7.1 | Member card polish — admin card view on member page, member profile photo upload, profile page redesign | Done |
-| v0.8.0 | ~~Convocations~~ — deferred post-1.0 (build on demand) | Deferred |
 | v1.0.0 | Stabilization & Release — CSV exports, finance dashboard, notes & reminders, annual summary, demo seed, docs polish | Done |
 | v1.0.1 | Patch — fix Celery scheduled billing/reminder task registration; CI guard against image tag overwrite | Done |
 | v1.1.0 | Custom profile fields — org-configurable member data (text, number, date, select, …) with per-field validation and per-field visibility/editability | Done |
 | v1.1.1 | Patch — settings navigation reorganised: payment and member settings grouped under Payments and Members tabs | Done |
-| v1.2.0 | Flexible roles & permissions — multi-role, per-role rights beyond the 4 fixed roles | Planned |
-| v1.3.0 | SSO / identity integration — sign in via an org's IdP (SAML/OIDC); provider mode later | Planned |
-| v1.4.0 | Document library — statutes, minutes, forms with per-group visibility | Planned |
-| v1.5.0 | Events calendar + RSVP — calendar view and participation tracking | Planned |
-| after v1.5.0 | Optional super-admin modules — photo albums, forum, guestbook, weblinks directory, inventory/lending, portal widgets (delivery approach decided once the core gaps ship) | Planned |
 
-Deferred past v1.0.0: GoCardless e-mandates, PayPal integration, Stripe Invoice flow, bulk receipt actions, custom report builder, surveys, family group billing, and other complex variations of the above. See `memship-definition/docs/public/ROADMAP-v1.0.0.md` for the full deferred list.
+### Planned
+
+Priority-ordered, not yet versioned. Each becomes a versioned release when it ships, and the release claims the next semver number in order.
+
+- **SSO / identity integration** — sign in via an org's IdP (SAML/OIDC); provider mode later _(in progress)_
+- **Simple Bookings** — members reserve time on shared resources (pitches, courts, rooms) on a per-space calendar _(in progress)_
+- **Convocations** — formal General Assembly calls with token-based member RSVP
+- **Flexible roles & permissions** — multi-role, per-role rights beyond the 4 fixed roles
+- **Document library** — statutes, minutes, forms with per-group visibility
+- **Events calendar + RSVP** — calendar view and participation tracking
+- **Extensions — modules/plugins system** — optional add-ons delivered as modules/plugins: photo albums, forum, guestbook, weblinks directory, inventory/lending, portal widgets
+
+Complex variations are built on demand, when a real deployment needs them: GoCardless e-mandates, PayPal, Stripe Invoice flow, bulk receipt actions, custom report builder, surveys, family group billing, group-class/waitlist bookings, convocation voting & document attachments, and similar deeper cuts of the features above.
 
 ---
 
