@@ -11,6 +11,7 @@ export interface User {
   member_id: number | null;
   member_number: string | null;
   gender: string | null;
+  photo_url: string | null;
 }
 
 export interface LoginData {

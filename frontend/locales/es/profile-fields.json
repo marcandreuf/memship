@@ -55,6 +55,7 @@
     "yes": "Sí",
     "no": "No",
     "empty": "—",
-    "save": "Guardar campos"
+    "save": "Guardar campos",
+    "noFieldsForMember": "No hay campos visibles para ti en este momento."
   }
 }

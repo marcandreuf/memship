@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,16 +16,18 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { FormSkeleton } from "@/components/ui/skeletons";
+import { EntityTabs } from "@/components/entity/entity-tabs";
 import { useMember } from "@/features/members/hooks/use-members";
 import { useSettings } from "@/features/settings/hooks/use-settings";
 import { MemberPhotoUpload } from "@/features/member-card/components/member-photo-upload";
+import { MyPaymentMethod } from "@/features/members/components/my-payment-method";
 import { usePathname, useRouter } from "@/lib/i18n/routing";
 import { locales, type Locale } from "@/lib/i18n/config";
 import { apiClient } from "@/lib/client-api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { GenderOption } from "@/features/settings/components/gender-options-settings";
-import { MyCustomFieldsCard } from "@/features/custom-fields/components/my-custom-fields-card";
+import { MyCustomFields } from "@/features/custom-fields/components/my-custom-fields-card";
 
 function Field({ label, value }: { label: string; value: string | null | undefined }) {
   if (!value) return null;
@@ -68,12 +71,14 @@ export default function ProfilePage() {
   const locale = useLocale();
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const { data: member, isLoading } = useMember(user?.member_id || 0);
   const { data: profile, isLoading: profileLoading } = useMyProfile();
   const { data: settings } = useSettings();
   const updateMutation = useUpdateMyProfile();
   const genderOptions = (settings?.features?.gender_options as GenderOption[] | undefined) || [];
+  const customFieldsEnabled = Boolean(settings?.features?.custom_profile_fields);
 
   const [gender, setGender] = useState("");
   const [phone, setPhone] = useState("");
@@ -123,28 +128,96 @@ export default function ProfilePage() {
     return opt[`label_${locale}` as keyof GenderOption] || opt.label_en;
   }
 
+  const editProfileTab = (
+    <div className="max-w-2xl">
+      <div className="grid gap-3 sm:grid-cols-3">
+        {genderOptions.length > 0 && (
+          <div>
+            <p className="text-xs text-muted-foreground mb-1.5">{t("members.gender")}</p>
+            <Select value={gender} onValueChange={handleGenderChange}>
+              <SelectTrigger className="h-8 w-full">
+                <SelectValue placeholder="—" />
+              </SelectTrigger>
+              <SelectContent>
+                {genderOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt[`label_${locale}` as keyof GenderOption] || opt.label_en}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+        <div>
+          <p className="text-xs text-muted-foreground mb-1.5">{t("profile.phone")}</p>
+          <Input
+            className="h-8"
+            type="tel"
+            value={phone}
+            onChange={(e) => handlePhoneChange(e.target.value)}
+            placeholder="+34 612 345 678"
+          />
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground mb-1.5">{t("profile.language")}</p>
+          <Select value={locale} onValueChange={handleLocaleChange}>
+            <SelectTrigger className="h-8 w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {locales.map((loc) => (
+                <SelectItem key={loc} value={loc}>
+                  {t(`locale.${loc}`)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      {dirty && (
+        <Button size="sm" className="mt-3" onClick={handleSave} disabled={updateMutation.isPending}>
+          {updateMutation.isPending ? t("common.loading") : t("common.save")}
+        </Button>
+      )}
+    </div>
+  );
+
+  const tabs = [
+    { id: "edit", label: t("profile.editProfile"), content: editProfileTab },
+    ...(customFieldsEnabled
+      ? [
+          {
+            id: "custom-fields",
+            label: t("profileFields.tabLabel"),
+            content: <MyCustomFields />,
+          },
+        ]
+      : []),
+    { id: "payment", label: t("paymentMethod.title"), content: <MyPaymentMethod /> },
+  ];
+  const tabParam = searchParams.get("tab");
+  const defaultTab = tabs.some((tab) => tab.id === tabParam)
+    ? (tabParam as string)
+    : undefined;
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div className="flex items-center gap-3">
         <h1 className="text-2xl font-bold">{t("nav.profile")}</h1>
         <Badge>{t(`status.${member.status}`)}</Badge>
       </div>
 
-      <Card>
-        <CardHeader className="py-3 px-4">
-          <CardTitle className="text-base">{t("profile.memberInfo")}</CardTitle>
-        </CardHeader>
-        <CardContent className="px-4 pb-4 pt-0">
-          {/* photo = first column; fields fill the rest.
-              lg: 4 cols (photo + 3), sm/md: 2×2 fields, mobile: 1 col */}
-          <div className="grid gap-6 lg:grid-cols-[auto_1fr] lg:items-start lg:gap-14">
+      {/* Compact member-info header: photo + read-only facts. */}
+      <Card className="py-3">
+        <CardContent className="px-4">
+          <div className="grid gap-4 lg:grid-cols-[auto_1fr] lg:items-start lg:gap-8">
             <div className="flex justify-center lg:block">
               <MemberPhotoUpload
                 photoUrl={person.photo_url ?? null}
                 fullName={`${person.first_name} ${person.last_name}`}
               />
             </div>
-            <dl className="grid content-start gap-x-8 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
+            <dl className="grid content-start gap-x-8 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
               <Field label={t("profile.firstName")} value={person.first_name} />
               <Field label={t("profile.lastName")} value={person.last_name} />
               <Field label={t("profile.email")} value={person.email} />
@@ -159,65 +232,7 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
-      {/* Editable profile fields + language preference */}
-      <Card>
-        <CardHeader className="py-3 px-4">
-          <CardTitle className="text-base">{t("profile.editProfile")}</CardTitle>
-        </CardHeader>
-        <CardContent className="px-4 pb-4 pt-0">
-          <div className="grid gap-3 sm:grid-cols-3 max-w-2xl">
-            {genderOptions.length > 0 && (
-              <div>
-                <p className="text-xs text-muted-foreground mb-1.5">{t("members.gender")}</p>
-                <Select value={gender} onValueChange={handleGenderChange}>
-                  <SelectTrigger className="h-8 w-full">
-                    <SelectValue placeholder="—" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {genderOptions.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>
-                        {opt[`label_${locale}` as keyof GenderOption] || opt.label_en}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-            <div>
-              <p className="text-xs text-muted-foreground mb-1.5">{t("profile.phone")}</p>
-              <Input
-                className="h-8"
-                type="tel"
-                value={phone}
-                onChange={(e) => handlePhoneChange(e.target.value)}
-                placeholder="+34 612 345 678"
-              />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground mb-1.5">{t("profile.language")}</p>
-              <Select value={locale} onValueChange={handleLocaleChange}>
-                <SelectTrigger className="h-8 w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {locales.map((loc) => (
-                    <SelectItem key={loc} value={loc}>
-                      {t(`locale.${loc}`)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          {dirty && (
-            <Button size="sm" className="mt-3" onClick={handleSave} disabled={updateMutation.isPending}>
-              {updateMutation.isPending ? t("common.loading") : t("common.save")}
-            </Button>
-          )}
-        </CardContent>
-      </Card>
-
-      <MyCustomFieldsCard />
+      <EntityTabs tabs={tabs} defaultTab={defaultTab} lazy />
     </div>
   );
 }

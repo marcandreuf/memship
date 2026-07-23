@@ -41,6 +41,7 @@ class UserResponse(BaseModel):
     member_id: int | None = None
     member_number: str | None = None
     gender: str | None = None
+    photo_url: str | None = None
 
     model_config = {"from_attributes": True}
 

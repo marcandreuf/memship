@@ -14,7 +14,6 @@ import {
   FileText,
   Landmark,
   CalendarClock,
-  CreditCard,
   Megaphone,
   IdCard,
   ScanLine,
@@ -37,6 +36,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarSeparator,
 } from "@/components/ui/sidebar";
 import {
   DropdownMenu,
@@ -45,7 +45,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface AppSidebarProps {
   user: User;
@@ -66,28 +66,55 @@ export function AppSidebar({ user }: AppSidebarProps) {
   const cardEnabled = Boolean(settings?.features?.member_card);
   const bookingsEnabled = Boolean(settings?.features?.bookings);
 
-  const navItems = [
-    { href: "/dashboard", label: t("nav.dashboard"), icon: LayoutDashboard, show: true },
-    { href: "/activities", label: t("nav.activities"), icon: CalendarDays, show: true },
-    { href: "/my-activities", label: t("activities.registration.myActivities"), icon: ClipboardList, show: !isAdmin },
-    { href: "/my-receipts", label: t("receipts.myReceipts"), icon: Receipt, show: !isAdmin },
-    { href: "/my-card", label: t("nav.myCard"), icon: IdCard, show: !isAdmin && cardEnabled },
-    { href: "/book", label: t("bookings.navBook"), icon: MapPin, show: !isAdmin && bookingsEnabled },
-    { href: "/my-bookings", label: t("bookings.navMyBookings"), icon: ClipboardList, show: !isAdmin && bookingsEnabled },
-    { href: "/payment-method", label: t("paymentMethod.title"), icon: CreditCard, show: !isAdmin },
-    { href: "/members", label: t("nav.members"), icon: Users, show: isAdmin },
-    { href: "/scan", label: t("nav.scan"), icon: ScanLine, show: isAdmin && cardEnabled },
-    { href: "/receipts", label: t("nav.receipts"), icon: Receipt, show: isAdmin },
-    { href: "/mandates", label: t("nav.mandates"), icon: FileText, show: isAdmin },
-    { href: "/remittances", label: t("nav.remittances"), icon: Landmark, show: isAdmin },
-    { href: "/billing-runs", label: t("nav.billingRuns"), icon: CalendarClock, show: isAdmin },
-    { href: "/annual-summary", label: t("annualSummary.title"), icon: TrendingUp, show: isAdmin },
-    { href: "/communications", label: t("nav.communications"), icon: Megaphone, show: isAdmin && commsEnabled },
-    { href: "/announcements", label: t("nav.announcements"), icon: Megaphone, show: !isAdmin && commsEnabled },
-    { href: "/groups", label: t("nav.groups"), icon: FolderOpen, show: isAdmin },
-    { href: "/spaces", label: t("bookings.nav"), icon: MapPin, show: isAdmin && bookingsEnabled },
-    { href: "/settings", label: t("nav.settings"), icon: Settings, show: isAdmin },
-  ].filter((item) => item.show);
+  // Nav is grouped (separated by dividers): home/news, then club-wide items,
+  // then the user's own items; admins get people/club, money, comms, system.
+  // Payment method has no nav entry — it lives as a tab on the profile page.
+  const navGroups = (
+    isAdmin
+      ? [
+          [
+            { href: "/dashboard", label: t("nav.dashboard"), icon: LayoutDashboard, show: true },
+          ],
+          [
+            { href: "/members", label: t("nav.members"), icon: Users, show: true },
+            { href: "/groups", label: t("nav.groups"), icon: FolderOpen, show: true },
+            { href: "/activities", label: t("nav.activities"), icon: CalendarDays, show: true },
+            { href: "/spaces", label: t("bookings.nav"), icon: MapPin, show: bookingsEnabled },
+            { href: "/scan", label: t("nav.scan"), icon: ScanLine, show: cardEnabled },
+          ],
+          [
+            { href: "/receipts", label: t("nav.receipts"), icon: Receipt, show: true },
+            { href: "/mandates", label: t("nav.mandates"), icon: FileText, show: true },
+            { href: "/remittances", label: t("nav.remittances"), icon: Landmark, show: true },
+            { href: "/billing-runs", label: t("nav.billingRuns"), icon: CalendarClock, show: true },
+            { href: "/annual-summary", label: t("annualSummary.title"), icon: TrendingUp, show: true },
+          ],
+          [
+            { href: "/communications", label: t("nav.communications"), icon: Megaphone, show: commsEnabled },
+          ],
+          [
+            { href: "/settings", label: t("nav.settings"), icon: Settings, show: true },
+          ],
+        ]
+      : [
+          [
+            { href: "/dashboard", label: t("nav.dashboard"), icon: LayoutDashboard, show: true },
+            { href: "/announcements", label: t("nav.announcements"), icon: Megaphone, show: commsEnabled },
+          ],
+          [
+            { href: "/activities", label: t("nav.activities"), icon: CalendarDays, show: true },
+            { href: "/book", label: t("bookings.navBook"), icon: MapPin, show: bookingsEnabled },
+          ],
+          [
+            { href: "/my-activities", label: t("activities.registration.myActivities"), icon: ClipboardList, show: true },
+            { href: "/my-bookings", label: t("bookings.navMyBookings"), icon: ClipboardList, show: bookingsEnabled },
+            { href: "/my-receipts", label: t("receipts.myReceipts"), icon: Receipt, show: true },
+            { href: "/my-card", label: t("nav.myCard"), icon: IdCard, show: cardEnabled },
+          ],
+        ]
+  )
+    .map((group) => group.filter((item) => item.show))
+    .filter((group) => group.length > 0);
 
   const initials = `${user.first_name?.[0] ?? ""}${user.last_name?.[0] ?? ""}`.toUpperCase();
 
@@ -120,27 +147,30 @@ export function AppSidebar({ user }: AppSidebarProps) {
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>{t("nav.menu")}</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {navItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname === item.href || pathname.startsWith(item.href + "/")}
-                    tooltip={item.label}
-                  >
-                    <Link href={item.href}>
-                      <item.icon />
-                      <span>{item.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {navGroups.map((group, gi) => (
+          <SidebarGroup key={gi} className={gi > 0 ? "pt-0" : undefined}>
+            {gi === 0 && <SidebarGroupLabel>{t("nav.menu")}</SidebarGroupLabel>}
+            {gi > 0 && <SidebarSeparator className="mb-2" />}
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {group.map((item) => (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname === item.href || pathname.startsWith(item.href + "/")}
+                      tooltip={item.label}
+                    >
+                      <Link href={item.href}>
+                        <item.icon />
+                        <span>{item.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
 
       <SidebarFooter>
@@ -153,6 +183,15 @@ export function AppSidebar({ user }: AppSidebarProps) {
                   className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                 >
                   <Avatar className="h-8 w-8 rounded-lg">
+                    {user.photo_url && (
+                      /* Cache-buster per render — a re-upload keeps the same
+                         filename (the member-photo-upload precedent). */
+                      <AvatarImage
+                        src={`/api/uploads${user.photo_url.replace("/uploads", "")}?t=${Date.now()}`}
+                        alt=""
+                        className="rounded-lg object-cover"
+                      />
+                    )}
                     <AvatarFallback className="rounded-lg text-xs">{initials}</AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">

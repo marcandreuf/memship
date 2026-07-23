@@ -155,6 +155,7 @@ def get_me(current_user: User = Depends(get_current_user)):
         member_id=member.id if member else None,
         member_number=member.member_number if member else None,
         gender=current_user.person.gender,
+        photo_url=current_user.person.photo_url,
     )
 
 
