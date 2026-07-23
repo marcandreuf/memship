@@ -32,6 +32,9 @@ class RecordingNotifier:
     def send_promoted(self, note):
         self.calls.append(("promoted", note))
 
+    def send_admin_cancellation(self, note):
+        self.calls.append(("admin_cancellation", note))
+
 
 def _org(db, **features):
     org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
@@ -421,6 +424,113 @@ def test_admin_cancel_ignores_deadline(db):
     b1 = service.create_booking(db, m1, slot.id)
     service.cancel_booking(db, b1, cancelled_by_user_id=admin.id, is_admin=True)
     assert b1.status == "cancelled"
+
+
+def test_admin_cancel_notifies_member(db):
+    _org(db)
+    space = _space(db)
+    slot = _slot(db, space, _future(3), capacity=1)
+    m1 = _member(db, 1)
+    notifier = RecordingNotifier()
+
+    admin = _user(db, 8)
+    b1 = service.create_booking(db, m1, slot.id, notifier=notifier)
+    service.cancel_booking(
+        db, b1, cancelled_by_user_id=admin.id, is_admin=True, notifier=notifier
+    )
+
+    kinds = [k for k, _ in notifier.calls]
+    assert kinds[-1] == "admin_cancellation"
+    assert notifier.calls[-1][1].to == "m1@t.com"
+
+
+def test_member_self_cancel_sends_no_cancellation_email(db):
+    _org(db, booking_cancellation_deadline_hours=0)
+    space = _space(db)
+    slot = _slot(db, space, _future(3), capacity=1)
+    m1 = _member(db, 1)
+    canceller = _user(db, 7)
+    notifier = RecordingNotifier()
+
+    b1 = service.create_booking(db, m1, slot.id, notifier=notifier)
+    service.cancel_booking(
+        db, b1, cancelled_by_user_id=canceller.id, is_admin=False, notifier=notifier
+    )
+
+    assert "admin_cancellation" not in [k for k, _ in notifier.calls]
+
+
+# --- Destructive deletes notify affected members ---------------------------
+
+
+def test_forced_slot_delete_notifies_each_affected_member(db):
+    _org(db)
+    space = _space(db)
+    slot = _slot(db, space, _future(3), capacity=1)
+    m1, m2 = _member(db, 1), _member(db, 2)
+    service.create_booking(db, m1, slot.id)
+    service.create_booking(db, m2, slot.id)  # waitlisted — also loses a spot
+    notifier = RecordingNotifier()
+
+    with pytest.raises(service.HasActiveBookings):
+        service.delete_slot(db, slot, notifier=notifier)
+    assert notifier.calls == []  # refused → nobody emailed
+
+    service.delete_slot(db, slot, force=True, notifier=notifier)
+    kinds = [k for k, _ in notifier.calls]
+    assert kinds == ["admin_cancellation", "admin_cancellation"]
+    assert {n.to for _, n in notifier.calls} == {"m1@t.com", "m2@t.com"}
+
+
+def test_forced_space_delete_notifies_affected_members(db):
+    _org(db)
+    space = _space(db)
+    s1 = _slot(db, space, _future(3))
+    s2 = _slot(db, space, _future(4), start=time(15, 0), end=time(16, 0))
+    m1, m2 = _member(db, 1), _member(db, 2)
+    service.create_booking(db, m1, s1.id)
+    service.create_booking(db, m2, s2.id)
+    notifier = RecordingNotifier()
+
+    affected = service.delete_space(db, space, force=True, notifier=notifier)
+    assert len(affected) == 2
+    assert {n.to for _, n in notifier.calls} == {"m1@t.com", "m2@t.com"}
+
+
+def test_past_bookings_do_not_block_delete(db):
+    _org(db)
+    space = _space(db)
+    slot = _slot(db, space, date.today() - timedelta(days=7))
+    m1 = _member(db, 1)
+    from app.domains.bookings.models import Booking
+
+    db.add(Booking(space_slot_id=slot.id, member_id=m1.id, status="booked"))
+    db.flush()
+    notifier = RecordingNotifier()
+
+    # Only today-or-future bookings count as affected; history never blocks.
+    service.delete_slot(db, slot, notifier=notifier)
+    assert notifier.calls == []
+
+
+def test_email_notifier_dispatch_failure_never_raises(db, monkeypatch):
+    from app.domains.bookings.notifications import (
+        BookingNotification,
+        EmailBookingNotifier,
+    )
+
+    import app.tasks.email_tasks as tasks
+
+    class Boom:
+        def delay(self, **kwargs):
+            raise RuntimeError("broker down")
+
+    monkeypatch.setattr(tasks, "send_booking_email_task", Boom())
+    note = BookingNotification(
+        to="x@t.com", member_name="X", space_name="Court",
+        date_str="24/07/2026", time_str="10:00–11:00",
+    )
+    EmailBookingNotifier().send_admin_cancellation(note)  # must not raise
 
 
 # --- Availability + my bookings -------------------------------------------

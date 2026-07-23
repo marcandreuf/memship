@@ -36,6 +36,8 @@ class BookingNotifier(Protocol):
 
     def send_promoted(self, note: BookingNotification) -> None: ...
 
+    def send_admin_cancellation(self, note: BookingNotification) -> None: ...
+
 
 class EmailBookingNotifier:
     """Dispatches booking emails asynchronously via Celery. Never raises."""
@@ -48,6 +50,11 @@ class EmailBookingNotifier:
 
     def send_promoted(self, note: BookingNotification) -> None:
         self._dispatch("promoted", note)
+
+    def send_admin_cancellation(self, note: BookingNotification) -> None:
+        # One template covers all admin-initiated cases: single cancel, slot
+        # removal, space removal.
+        self._dispatch("cancelled", note)
 
     def _dispatch(self, kind: str, note: BookingNotification) -> None:
         if not note.to:
@@ -78,3 +85,5 @@ class NullBookingNotifier:
     def send_waitlisted(self, note: BookingNotification) -> None: ...
 
     def send_promoted(self, note: BookingNotification) -> None: ...
+
+    def send_admin_cancellation(self, note: BookingNotification) -> None: ...

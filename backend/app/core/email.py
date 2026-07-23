@@ -62,6 +62,11 @@ _SUBJECTS = {
         "ca": "Plaça confirmada! {space}",
         "en": "You're in! {space}",
     },
+    "booking_cancelled": {
+        "es": "Reserva cancelada: {space}",
+        "ca": "Reserva cancel·lada: {space}",
+        "en": "Booking cancelled: {space}",
+    },
     "welcome": {
         "es": "Bienvenido a Memship",
         "ca": "Benvingut a Memship",
@@ -384,6 +389,26 @@ def send_booking_promoted_email(
     """Tell a member a spot opened and they are now booked."""
     subject = _get_subject("booking_promoted", locale, space=space_name)
     html_body = render_template("booking_promoted", locale, {
+        "member_name": member_name,
+        "space_name": space_name,
+        "booking_date": booking_date,
+        "booking_time": booking_time,
+    })
+    return send_email(to, subject, html_body)
+
+
+def send_booking_cancelled_email(
+    to: str,
+    member_name: str,
+    space_name: str,
+    booking_date: str,
+    booking_time: str,
+    locale: str = "es",
+) -> bool:
+    """Tell a member the club cancelled their booking (admin cancel, or the
+    slot/space was removed)."""
+    subject = _get_subject("booking_cancelled", locale, space=space_name)
+    html_body = render_template("booking_cancelled", locale, {
         "member_name": member_name,
         "space_name": space_name,
         "booking_date": booking_date,

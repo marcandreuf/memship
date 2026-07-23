@@ -4,6 +4,7 @@ import logging
 
 from app.core.celery_app import celery
 from app.core.email import (
+    send_booking_cancelled_email,
     send_booking_confirmation_email,
     send_booking_promoted_email,
     send_booking_waitlisted_email,
@@ -113,6 +114,10 @@ def send_booking_email_task(
             )
         if kind == "promoted":
             return send_booking_promoted_email(
+                to, member_name, space_name, date_str, time_str, locale,
+            )
+        if kind == "cancelled":
+            return send_booking_cancelled_email(
                 to, member_name, space_name, date_str, time_str, locale,
             )
         logger.error(f"Unknown booking email kind: {kind}")

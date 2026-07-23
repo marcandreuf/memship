@@ -203,16 +203,25 @@ def _affected_active_bookings(db: Session, slot_ids: list[int]) -> list[Booking]
 
 
 def delete_space(
-    db: Session, space: Space, *, force: bool = False
+    db: Session,
+    space: Space,
+    *,
+    force: bool = False,
+    notifier: BookingNotifier | None = None,
 ) -> list[Booking]:
     """Destructively delete a space (slots + bookings cascade). Without force,
-    refuses when members hold active future bookings. Returns the affected
-    bookings so the endpoint can notify before they are gone; deactivation via
+    refuses when members hold active future bookings; with force, every
+    affected member is notified before the rows are gone. Deactivation via
     update is the non-destructive default path."""
+    notifier = notifier or NullBookingNotifier()
     slot_ids = [s.id for s in space.slots]
     affected = _affected_active_bookings(db, slot_ids)
     if affected and not force:
         raise HasActiveBookings(len({b.member_id for b in affected}))
+    for b in affected:
+        notifier.send_admin_cancellation(
+            _notification(db, b, b.slot, space, b.member)
+        )
     db.delete(space)
     return affected
 
@@ -424,14 +433,24 @@ def update_slot(
 
 
 def delete_slot(
-    db: Session, slot: SpaceSlot, *, force: bool = False
+    db: Session,
+    slot: SpaceSlot,
+    *,
+    force: bool = False,
+    notifier: BookingNotifier | None = None,
 ) -> list[Booking]:
     """Destructively delete a slot (bookings cascade). Without force, refuses
-    when members hold active bookings on it (today or future). Returns the
-    affected bookings so the endpoint can notify before they are gone."""
+    when members hold active bookings on it (today or future); with force,
+    every affected member is notified before the rows are gone."""
+    notifier = notifier or NullBookingNotifier()
     affected = _affected_active_bookings(db, [slot.id])
     if affected and not force:
         raise HasActiveBookings(len({b.member_id for b in affected}))
+    space = get_space(db, slot.space_id)
+    for b in affected:
+        notifier.send_admin_cancellation(
+            _notification(db, b, slot, space, b.member)
+        )
     db.delete(slot)
     return affected
 
@@ -656,6 +675,20 @@ def cancel_booking(
     booking.cancelled_at = now_local
     booking.cancelled_by_user_id = cancelled_by_user_id
     db.flush()
+
+    if is_admin:
+        # The member didn't cancel this themselves — tell them.
+        space = get_space(db, slot.space_id)
+        member = (
+            db.query(Member)
+            .options(joinedload(Member.person))
+            .filter(Member.id == booking.member_id)
+            .first()
+        )
+        if member is not None and space is not None:
+            notifier.send_admin_cancellation(
+                _notification(db, booking, slot, space, member)
+            )
 
     if was_booked:
         booked = _count(db, slot.id, BookingStatus.BOOKED)

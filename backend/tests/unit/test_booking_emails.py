@@ -4,7 +4,12 @@ import pytest
 
 from app.core.email import render_template
 
-KINDS = ["booking_confirmation", "booking_waitlisted", "booking_promoted"]
+KINDS = [
+    "booking_confirmation",
+    "booking_waitlisted",
+    "booking_promoted",
+    "booking_cancelled",
+]
 CONTEXT = {
     "member_name": "Alex",
     "space_name": "Court 1",
