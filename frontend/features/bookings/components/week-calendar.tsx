@@ -234,12 +234,15 @@ function SlotCell({
             {t("bookings.status.booked")}
           </Badge>
         ) : cell.my_status === "waitlisted" ? (
-          <Badge variant="secondary">{t("bookings.status.waitlisted")}</Badge>
+          /* Light amber status pill — deliberately paler than the amber
+             waitlist button so state and action stay distinguishable. */
+          <Badge className="bg-amber-100 text-amber-900 hover:bg-amber-100 dark:bg-amber-900/40 dark:text-amber-200">
+            {t("bookings.status.waitlisted")}
+          </Badge>
         ) : muted ? null : cell.cell_state === "full" ? (
           <Button
-            variant="outline"
             size="sm"
-            className="h-7 w-full px-1 text-xs"
+            className="h-7 w-full px-1 text-xs bg-amber-600 text-white hover:bg-amber-700"
             disabled={pending}
             onClick={onBook}
           >

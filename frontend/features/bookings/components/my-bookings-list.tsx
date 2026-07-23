@@ -48,11 +48,10 @@ export function MyBookingsList({ scope }: { scope: "upcoming" | "past" }) {
           </div>
           <div className="flex items-center gap-2">
             <Badge
-              variant={b.status === "booked" ? "default" : "secondary"}
               className={
                 b.status === "booked"
                   ? "bg-emerald-600 hover:bg-emerald-600"
-                  : undefined
+                  : "bg-amber-100 text-amber-900 hover:bg-amber-100 dark:bg-amber-900/40 dark:text-amber-200"
               }
             >
               {t(`bookings.status.${b.status}`)}
