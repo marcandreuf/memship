@@ -10,9 +10,10 @@
       "next": "Next week",
       "noSpaces": "No spaces are open for booking yet.",
       "book": "Book",
-      "joinWaitlist": "Join waitlist",
+      "joinWaitlist": "Waitlist",
       "confirmBook": "Book this slot?",
       "confirmWaitlist": "This slot is full. Join the waitlist?",
+      "confirmWaitlistAction": "Join",
       "bookedToast": "Booked",
       "waitlistedToast": "Added to the waitlist"
     },

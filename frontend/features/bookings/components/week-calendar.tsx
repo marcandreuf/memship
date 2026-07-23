@@ -85,7 +85,7 @@ export function WeekCalendar() {
         : t("bookings.book.confirmBook"),
       cancelLabel: t("common.cancel"),
       confirmLabel: waitlist
-        ? t("bookings.book.joinWaitlist")
+        ? t("bookings.book.confirmWaitlistAction")
         : t("bookings.book.book"),
       onConfirm: async () => {
         try {
@@ -228,14 +228,18 @@ function SlotCell({
       </div>
       <div className="mt-1">
         {cell.my_status === "booked" ? (
-          <Badge variant="default">{t("bookings.status.booked")}</Badge>
+          /* Success green, deliberately not the primary fill — the primary
+             fill is what the real "Reservar" buttons in sibling cells use. */
+          <Badge className="bg-emerald-600 hover:bg-emerald-600">
+            {t("bookings.status.booked")}
+          </Badge>
         ) : cell.my_status === "waitlisted" ? (
           <Badge variant="secondary">{t("bookings.status.waitlisted")}</Badge>
         ) : muted ? null : cell.cell_state === "full" ? (
           <Button
             variant="outline"
             size="sm"
-            className="h-7 w-full"
+            className="h-7 w-full px-1 text-xs"
             disabled={pending}
             onClick={onBook}
           >
@@ -244,7 +248,7 @@ function SlotCell({
         ) : (
           <Button
             size="sm"
-            className="h-7 w-full"
+            className="h-7 w-full px-1 text-xs"
             disabled={pending}
             onClick={onBook}
           >

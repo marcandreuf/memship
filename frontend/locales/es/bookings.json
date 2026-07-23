@@ -10,9 +10,10 @@
       "next": "Semana siguiente",
       "noSpaces": "Aún no hay espacios abiertos para reservar.",
       "book": "Reservar",
-      "joinWaitlist": "Unirse a la lista de espera",
+      "joinWaitlist": "Apuntarse",
       "confirmBook": "¿Reservar esta franja?",
       "confirmWaitlist": "Esta franja está completa. ¿Unirse a la lista de espera?",
+      "confirmWaitlistAction": "Unirse",
       "bookedToast": "Reserva confirmada",
       "waitlistedToast": "Añadido a la lista de espera"
     },

@@ -10,9 +10,10 @@
       "next": "Setmana següent",
       "noSpaces": "Encara no hi ha espais oberts per reservar.",
       "book": "Reserva",
-      "joinWaitlist": "Uneix-te a la llista d'espera",
+      "joinWaitlist": "Apunta-m'hi",
       "confirmBook": "Vols reservar aquesta franja?",
       "confirmWaitlist": "Aquesta franja és plena. Vols unir-te a la llista d'espera?",
+      "confirmWaitlistAction": "Uneix-m'hi",
       "bookedToast": "Reserva confirmada",
       "waitlistedToast": "Afegit a la llista d'espera"
     },
