@@ -237,31 +237,26 @@ const REG_STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive
 
 function UpcomingActivityCard({ registration }: { registration: RegistrationData }) {
   const t = useTranslations();
+  const { formatDate } = useFormatters();
   const { data: activity } = useActivity(registration.activity_id);
 
   return (
     <Link
       href={`/activities/${registration.activity_id}`}
-      className="block rounded-lg border p-3 hover:bg-accent transition-colors"
+      className="flex items-center justify-between gap-3 py-2 hover:bg-accent/50 transition-colors"
     >
-      <div className="flex items-center justify-between gap-2">
-        <div className="min-w-0">
-          <p className="font-medium text-sm truncate">
-            {activity?.name || `Activity #${registration.activity_id}`}
-          </p>
-          {activity && (
-            <p className="text-xs text-muted-foreground">
-              {new Date(activity.starts_at).toLocaleDateString(undefined, {
-                month: "short", day: "numeric", year: "numeric",
-              })}
-              {activity.location && ` · ${activity.location}`}
-            </p>
-          )}
-        </div>
-        <Badge variant={REG_STATUS_VARIANTS[registration.status] || "outline"} className="shrink-0">
-          {t(`activities.registration.status.${registration.status}`)}
-        </Badge>
-      </div>
+      <span className="min-w-0 flex-1 truncate text-sm font-medium">
+        {activity?.name || `Activity #${registration.activity_id}`}
+      </span>
+      {activity && (
+        <span className="text-xs text-muted-foreground shrink-0">
+          {formatDate(activity.starts_at)}
+          {activity.location && ` · ${activity.location}`}
+        </span>
+      )}
+      <Badge variant={REG_STATUS_VARIANTS[registration.status] || "outline"} className="shrink-0">
+        {t(`activities.registration.status.${registration.status}`)}
+      </Badge>
     </Link>
   );
 }
@@ -466,37 +461,36 @@ export default function DashboardPage() {
       )}
 
       {!isAdmin && (
-        <div className="space-y-4">
-          <Card>
-            <CardContent className="py-3 px-4">
-              <p className="text-muted-foreground">
-                {t("dashboard.memberWelcome", { gender: user?.gender ?? "other" })}
-              </p>
-              {user?.member_number && (
-                <p className="mt-1 font-mono text-sm">
+        <div className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            {t("dashboard.memberWelcome", { gender: user?.gender ?? "other" })}
+            {user?.member_number && (
+              <>
+                {" · "}
+                <span className="font-mono text-foreground">
                   {t("dashboard.yourNumber")}: {user.member_number}
-                </p>
-              )}
-            </CardContent>
-          </Card>
+                </span>
+              </>
+            )}
+          </p>
 
           {/* Upcoming activities */}
-          <Card>
-            <CardHeader className="py-3 px-4">
+          <Card className="py-3 gap-1">
+            <CardHeader className="px-4">
               <CardTitle className="text-base">{t("dashboard.upcomingActivities")}</CardTitle>
             </CardHeader>
-            <CardContent className="px-4 pb-4 pt-0">
+            <CardContent className="px-4">
               {activeRegistrations.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t("dashboard.noUpcoming")}</p>
               ) : (
-                <div className="space-y-2">
+                <div className="divide-y">
                   {activeRegistrations.map((reg) => (
                     <UpcomingActivityCard key={reg.id} registration={reg} />
                   ))}
                   {myRegistrations && myRegistrations.meta.total > 5 && (
                     <Link
                       href="/my-activities"
-                      className="block text-sm text-primary hover:underline pt-1"
+                      className="block text-sm text-primary hover:underline pt-2"
                     >
                       {t("common.view")} {t("activities.registration.myActivities").toLowerCase()} →
                     </Link>
@@ -507,34 +501,30 @@ export default function DashboardPage() {
           </Card>
 
           {/* My recent receipts */}
-          <Card>
-            <CardHeader className="py-3 px-4">
+          <Card className="py-3 gap-1">
+            <CardHeader className="px-4">
               <CardTitle className="text-base">{t("receipts.myReceipts")}</CardTitle>
             </CardHeader>
-            <CardContent className="px-4 pb-4 pt-0">
+            <CardContent className="px-4">
               {!myReceipts?.items.length ? (
                 <p className="text-sm text-muted-foreground">{t("receipts.noReceipts")}</p>
               ) : (
-                <div className="space-y-2">
+                <div className="divide-y">
                   {myReceipts.items.map((r) => (
-                    <div key={r.id} className="flex items-center justify-between rounded-lg border p-3">
-                      <div className="min-w-0">
-                        <p className="font-medium text-sm truncate">{r.description}</p>
-                        <p className="text-xs text-muted-foreground">{formatDate(r.emission_date)}</p>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="font-mono text-sm font-medium">{formatCurrency(r.total_amount)}</span>
-                        <Badge variant={
-                          r.status === "paid" ? "default" :
-                          r.status === "overdue" || r.status === "returned" ? "destructive" : "secondary"
-                        }>
-                          {t(`receipts.status${r.status.charAt(0).toUpperCase() + r.status.slice(1)}`)}
-                        </Badge>
-                      </div>
+                    <div key={r.id} className="flex items-center justify-between gap-3 py-2">
+                      <span className="min-w-0 flex-1 truncate text-sm font-medium">{r.description}</span>
+                      <span className="text-xs text-muted-foreground shrink-0">{formatDate(r.emission_date)}</span>
+                      <span className="font-mono text-sm font-medium shrink-0">{formatCurrency(r.total_amount)}</span>
+                      <Badge className="shrink-0" variant={
+                        r.status === "paid" ? "default" :
+                        r.status === "overdue" || r.status === "returned" ? "destructive" : "secondary"
+                      }>
+                        {t(`receipts.status${r.status.charAt(0).toUpperCase() + r.status.slice(1)}`)}
+                      </Badge>
                     </div>
                   ))}
                   {myReceipts.meta.total > 5 && (
-                    <Link href="/my-receipts" className="block text-sm text-primary hover:underline pt-1">
+                    <Link href="/my-receipts" className="block text-sm text-primary hover:underline pt-2">
                       {t("common.view")} {t("receipts.myReceipts").toLowerCase()} →
                     </Link>
                   )}
