@@ -37,10 +37,13 @@ export async function DELETE(
 ) {
   const { id } = await params;
   const cookie = request.headers.get("cookie") || "";
-  const res = await fetch(`${API_BASE_URL}/api/v1/spaces/${id}`, {
-    method: "DELETE",
-    headers: { Cookie: cookie },
-  });
+  const res = await fetch(
+    `${API_BASE_URL}/api/v1/spaces/${id}${request.nextUrl.search}`,
+    {
+      method: "DELETE",
+      headers: { Cookie: cookie },
+    }
+  );
   if (res.status === 204) return new NextResponse(null, { status: 204 });
   const data = await res.json();
   return NextResponse.json(data, { status: res.status });

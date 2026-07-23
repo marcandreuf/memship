@@ -128,14 +128,25 @@ def update_space(
 
 
 @router.delete("/{space_id}", status_code=status.HTTP_204_NO_CONTENT)
-def deactivate_space(
+def delete_space(
     space_id: int,
+    force: bool = False,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
+    """Destructive delete. 409 with the affected-member count when active future
+    bookings exist and force is absent — the UI confirms, then retries with
+    force=true. Deactivation (the default, non-destructive path) is a PUT with
+    is_active=false."""
     _require_bookings_enabled(db)
     space = _load_space_or_404(db, space_id)
-    service.deactivate_space(db, space)
+    try:
+        service.delete_space(db, space, force=force)
+    except service.HasActiveBookings as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"affected_members": exc.affected_members},
+        )
     db.commit()
 
 
@@ -218,6 +229,7 @@ def update_slot(
 def delete_slot(
     space_id: int,
     slot_id: int,
+    force: bool = False,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
@@ -226,7 +238,13 @@ def delete_slot(
     slot = service.get_slot(db, space_id, slot_id)
     if slot is None:
         raise HTTPException(status_code=404, detail="Slot not found")
-    service.delete_slot(db, slot)
+    try:
+        service.delete_slot(db, slot, force=force)
+    except service.HasActiveBookings as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"affected_members": exc.affected_members},
+        )
     db.commit()
 
 

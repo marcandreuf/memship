@@ -89,10 +89,7 @@ export function WeekCalendar() {
         : t("bookings.book.book"),
       onConfirm: async () => {
         try {
-          const result = await createBooking.mutateAsync({
-            spaceSlotId: cell.space_slot_id,
-            bookingDate: cell.date,
-          });
+          const result = await createBooking.mutateAsync(cell.space_slot_id);
           toast.success(
             result.status === "waitlisted"
               ? t("bookings.book.waitlistedToast")

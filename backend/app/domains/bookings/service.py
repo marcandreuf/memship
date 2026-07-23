@@ -92,6 +92,14 @@ class NotCancellable(BookingError):
     pass
 
 
+class HasActiveBookings(BookingError):
+    """Deleting would destroy members' active bookings; pass force to proceed."""
+
+    def __init__(self, affected_members: int):
+        super().__init__(str(affected_members))
+        self.affected_members = affected_members
+
+
 # --- Settings / time helpers ---------------------------------------------
 
 
@@ -169,6 +177,44 @@ def update_space(db: Session, space: Space, data: SpaceUpdate) -> Space:
 def deactivate_space(db: Session, space: Space) -> Space:
     space.is_active = False
     return space
+
+
+def _affected_active_bookings(db: Session, slot_ids: list[int]) -> list[Booking]:
+    """Active (booked/waitlisted) bookings on today-or-future slots — the members
+    a destructive delete would strand. Loaded with member+person+slot so the
+    caller can notify before the rows cascade away."""
+    if not slot_ids:
+        return []
+    today = datetime.now(_tz(db)).date()
+    return (
+        db.query(Booking)
+        .join(SpaceSlot, Booking.space_slot_id == SpaceSlot.id)
+        .options(
+            joinedload(Booking.slot).joinedload(SpaceSlot.space),
+            joinedload(Booking.member).joinedload(Member.person),
+        )
+        .filter(
+            Booking.space_slot_id.in_(slot_ids),
+            Booking.status.in_(ACTIVE_STATUSES),
+            SpaceSlot.slot_date >= today,
+        )
+        .all()
+    )
+
+
+def delete_space(
+    db: Session, space: Space, *, force: bool = False
+) -> list[Booking]:
+    """Destructively delete a space (slots + bookings cascade). Without force,
+    refuses when members hold active future bookings. Returns the affected
+    bookings so the endpoint can notify before they are gone; deactivation via
+    update is the non-destructive default path."""
+    slot_ids = [s.id for s in space.slots]
+    affected = _affected_active_bookings(db, slot_ids)
+    if affected and not force:
+        raise HasActiveBookings(len({b.member_id for b in affected}))
+    db.delete(space)
+    return affected
 
 
 # --- Slots ----------------------------------------------------------------
@@ -377,8 +423,17 @@ def update_slot(
     return slot
 
 
-def delete_slot(db: Session, slot: SpaceSlot) -> None:
+def delete_slot(
+    db: Session, slot: SpaceSlot, *, force: bool = False
+) -> list[Booking]:
+    """Destructively delete a slot (bookings cascade). Without force, refuses
+    when members hold active bookings on it (today or future). Returns the
+    affected bookings so the endpoint can notify before they are gone."""
+    affected = _affected_active_bookings(db, [slot.id])
+    if affected and not force:
+        raise HasActiveBookings(len({b.member_id for b in affected}))
     db.delete(slot)
+    return affected
 
 
 # --- Counts ---------------------------------------------------------------

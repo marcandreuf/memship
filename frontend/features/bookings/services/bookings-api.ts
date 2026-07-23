@@ -24,20 +24,33 @@ export interface SpaceInput {
 export interface SpaceSlot {
   id: number;
   space_id: number;
-  weekday: number; // 0=Mon … 6=Sun
+  slot_date: string; // "YYYY-MM-DD"
   start_time: string;
   end_time: string;
   capacity: number;
+  series_id: string | null;
   is_active: boolean;
+  // Slots of this slot's series dated on/after it (itself included).
+  series_size_upcoming: number;
+}
+
+export interface SlotRepeat {
+  weekdays: number[]; // 0=Mon … 6=Sun
+  interval_weeks: number;
+  count: number;
 }
 
 export interface SpaceSlotInput {
-  weekday: number;
-  start_time: string;
-  end_time: string;
+  slot_date: string;
+  start_time?: string;
+  end_time?: string;
+  all_day?: boolean;
   capacity: number;
   is_active?: boolean;
+  repeat?: SlotRepeat;
 }
+
+export type SlotApplyTo = "one" | "upcoming";
 
 export type BookingStatus = "booked" | "waitlisted" | "cancelled";
 
@@ -46,7 +59,7 @@ export interface AdminBooking {
   space_slot_id: number;
   member_id: number;
   member_name: string;
-  booking_date: string; // "YYYY-MM-DD"
+  slot_date: string; // "YYYY-MM-DD"
   start_time: string;
   end_time: string;
   status: BookingStatus;
@@ -91,8 +104,13 @@ export async function updateSpace(
   });
 }
 
-export async function deactivateSpace(id: number): Promise<void> {
-  return apiClient<void>(`/spaces/${id}`, { method: "DELETE" });
+// Destructive delete; deactivation (the default path) is updateSpace({is_active:false}).
+// Without force the backend answers 409 + {affected_members} when active future
+// bookings exist — the UI confirms, then retries with force.
+export async function deleteSpace(id: number, force = false): Promise<void> {
+  return apiClient<void>(`/spaces/${id}${force ? "?force=true" : ""}`, {
+    method: "DELETE",
+  });
 }
 
 // --- Slots (admin) ---
@@ -104,8 +122,8 @@ export async function listSlots(spaceId: number): Promise<SpaceSlot[]> {
 export async function createSlot(
   spaceId: number,
   data: SpaceSlotInput
-): Promise<SpaceSlot> {
-  return apiClient<SpaceSlot>(`/spaces/${spaceId}/slots`, {
+): Promise<SpaceSlot[]> {
+  return apiClient<SpaceSlot[]>(`/spaces/${spaceId}/slots`, {
     method: "POST",
     body: JSON.stringify(data),
   });
@@ -114,21 +132,27 @@ export async function createSlot(
 export async function updateSlot(
   spaceId: number,
   slotId: number,
-  data: Partial<SpaceSlotInput>
+  data: Partial<SpaceSlotInput>,
+  applyTo: SlotApplyTo = "one"
 ): Promise<SpaceSlot> {
-  return apiClient<SpaceSlot>(`/spaces/${spaceId}/slots/${slotId}`, {
-    method: "PUT",
-    body: JSON.stringify(data),
-  });
+  return apiClient<SpaceSlot>(
+    `/spaces/${spaceId}/slots/${slotId}?apply_to=${applyTo}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }
+  );
 }
 
 export async function deleteSlot(
   spaceId: number,
-  slotId: number
+  slotId: number,
+  force = false
 ): Promise<void> {
-  return apiClient<void>(`/spaces/${spaceId}/slots/${slotId}`, {
-    method: "DELETE",
-  });
+  return apiClient<void>(
+    `/spaces/${spaceId}/slots/${slotId}${force ? "?force=true" : ""}`,
+    { method: "DELETE" }
+  );
 }
 
 // --- Bookings ---
@@ -180,11 +204,12 @@ export interface MyBooking {
   space_slot_id: number;
   space_id: number;
   space_name: string;
-  booking_date: string;
-  weekday: number;
+  slot_date: string;
   start_time: string;
   end_time: string;
   status: BookingStatus;
+  capacity: number;
+  booked_count: number;
   waitlist_position: number | null;
 }
 
@@ -192,7 +217,6 @@ export interface BookingResult {
   id: number;
   space_slot_id: number;
   member_id: number;
-  booking_date: string;
   status: BookingStatus;
 }
 
@@ -210,15 +234,11 @@ export async function getAvailability(
 }
 
 export async function createBooking(
-  spaceSlotId: number,
-  bookingDate: string
+  spaceSlotId: number
 ): Promise<BookingResult> {
   return apiClient<BookingResult>("/bookings", {
     method: "POST",
-    body: JSON.stringify({
-      space_slot_id: spaceSlotId,
-      booking_date: bookingDate,
-    }),
+    body: JSON.stringify({ space_slot_id: spaceSlotId }),
   });
 }
 

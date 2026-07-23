@@ -6,12 +6,20 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { TabContentSkeleton } from "@/components/ui/skeletons";
+import { useFormatters } from "@/hooks/use-formatters";
 import { useCancelBooking, useMyBookings } from "../hooks/use-bookings";
 
 const hhmm = (t: string) => t.slice(0, 5);
 
+// "YYYY-MM-DD" → weekday 0=Mon … 6=Sun, parsed as a local date.
+function isoWeekday(dateStr: string): number {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return (new Date(y, m - 1, d).getDay() + 6) % 7;
+}
+
 export function MyBookingsList({ scope }: { scope: "upcoming" | "past" }) {
   const t = useTranslations();
+  const { formatDate } = useFormatters();
   const { data = [], isLoading } = useMyBookings(scope);
   const cancel = useCancelBooking();
   const [confirmDialog, confirmAction] = useConfirmDialog();
@@ -33,8 +41,9 @@ export function MyBookingsList({ scope }: { scope: "upcoming" | "past" }) {
           <div>
             <div className="font-medium">{b.space_name}</div>
             <div className="text-muted-foreground">
-              {t(`bookings.weekdays.${b.weekday}`)} {b.booking_date} ·{" "}
-              {hhmm(b.start_time)}–{hhmm(b.end_time)}
+              {t(`bookings.weekdays.${isoWeekday(b.slot_date)}`)}{" "}
+              {formatDate(b.slot_date)} · {hhmm(b.start_time)}–{hhmm(b.end_time)}{" "}
+              · {b.booked_count}/{b.capacity}
             </div>
           </div>
           <div className="flex items-center gap-2">

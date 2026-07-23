@@ -237,6 +237,66 @@ class TestSlots:
         assert by_id[slots[2]["id"]]["capacity"] == 5
 
 
+class TestDeleteGuards:
+    def test_slot_delete_409_then_force(self, client, db):
+        _org(db)
+        admin = _user(db, "admin")
+        space_id, slot_id = _make_space_and_slot(client, admin, capacity=2)
+        u1, _ = _member_user(db, "d1@test.com")
+        u2, _ = _member_user(db, "d2@test.com")
+        for u in (u1, u2):
+            client.post(
+                "/api/v1/bookings", json={"space_slot_id": slot_id}, cookies=_auth(u)
+            )
+
+        r = client.delete(
+            f"/api/v1/spaces/{space_id}/slots/{slot_id}", cookies=_auth(admin)
+        )
+        assert r.status_code == 409
+        assert r.json()["detail"]["affected_members"] == 2
+
+        rf = client.delete(
+            f"/api/v1/spaces/{space_id}/slots/{slot_id}?force=true",
+            cookies=_auth(admin),
+        )
+        assert rf.status_code == 204
+        listed = client.get(
+            f"/api/v1/spaces/{space_id}/slots", cookies=_auth(admin)
+        ).json()
+        assert listed == []
+
+    def test_slot_delete_without_bookings_needs_no_force(self, client, db):
+        _org(db)
+        admin = _user(db, "admin")
+        space_id, slot_id = _make_space_and_slot(client, admin)
+        r = client.delete(
+            f"/api/v1/spaces/{space_id}/slots/{slot_id}", cookies=_auth(admin)
+        )
+        assert r.status_code == 204
+
+    def test_space_delete_409_then_force(self, client, db):
+        _org(db)
+        admin = _user(db, "admin")
+        space_id, slot_id = _make_space_and_slot(client, admin)
+        u1, _ = _member_user(db, "d3@test.com")
+        client.post(
+            "/api/v1/bookings", json={"space_slot_id": slot_id}, cookies=_auth(u1)
+        )
+
+        r = client.delete(f"/api/v1/spaces/{space_id}", cookies=_auth(admin))
+        assert r.status_code == 409
+        assert r.json()["detail"]["affected_members"] == 1
+
+        rf = client.delete(
+            f"/api/v1/spaces/{space_id}?force=true", cookies=_auth(admin)
+        )
+        assert rf.status_code == 204
+        assert (
+            client.get(f"/api/v1/spaces/{space_id}", cookies=_auth(admin)).status_code
+            == 404
+        )
+
+
 class TestBooking:
     def test_member_books_a_free_slot(self, client, db):
         _org(db)

@@ -10,7 +10,7 @@ export async function PUT(
   const cookie = request.headers.get("cookie") || "";
   const body = await request.json();
   const res = await fetch(
-    `${API_BASE_URL}/api/v1/spaces/${id}/slots/${slotId}`,
+    `${API_BASE_URL}/api/v1/spaces/${id}/slots/${slotId}${request.nextUrl.search}`,
     {
       method: "PUT",
       headers: { "Content-Type": "application/json", Cookie: cookie },
@@ -28,7 +28,7 @@ export async function DELETE(
   const { id, slotId } = await params;
   const cookie = request.headers.get("cookie") || "";
   const res = await fetch(
-    `${API_BASE_URL}/api/v1/spaces/${id}/slots/${slotId}`,
+    `${API_BASE_URL}/api/v1/spaces/${id}/slots/${slotId}${request.nextUrl.search}`,
     { method: "DELETE", headers: { Cookie: cookie } }
   );
   if (res.status === 204) return new NextResponse(null, { status: 204 });

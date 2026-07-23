@@ -109,7 +109,7 @@ function BookingRow({
   return (
     <TableRow>
       <TableCell className="font-medium">{booking.member_name}</TableCell>
-      <TableCell>{booking.booking_date}</TableCell>
+      <TableCell>{booking.slot_date}</TableCell>
       <TableCell>{time}</TableCell>
       <TableCell>
         <Badge variant={statusVariant[booking.status]}>

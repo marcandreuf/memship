@@ -6,8 +6,8 @@ import {
   createBooking,
   createSlot,
   createSpace,
-  deactivateSpace,
   deleteSlot,
+  deleteSpace,
   getAvailability,
   getMyBookings,
   getSpace,
@@ -17,6 +17,7 @@ import {
   listSpaces,
   updateSlot,
   updateSpace,
+  type SlotApplyTo,
   type SpaceInput,
   type SpaceSlotInput,
 } from "../services/bookings-api";
@@ -57,10 +58,11 @@ export function useUpdateSpace() {
   });
 }
 
-export function useDeactivateSpace() {
+export function useDeleteSpace() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: deactivateSpace,
+    mutationFn: ({ id, force }: { id: number; force?: boolean }) =>
+      deleteSpace(id, force),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["spaces"] }),
   });
 }
@@ -85,8 +87,15 @@ export function useCreateSlot(spaceId: number) {
 export function useUpdateSlot(spaceId: number) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ slotId, data }: { slotId: number; data: Partial<SpaceSlotInput> }) =>
-      updateSlot(spaceId, slotId, data),
+    mutationFn: ({
+      slotId,
+      data,
+      applyTo,
+    }: {
+      slotId: number;
+      data: Partial<SpaceSlotInput>;
+      applyTo?: SlotApplyTo;
+    }) => updateSlot(spaceId, slotId, data, applyTo),
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: ["space-slots", spaceId] }),
   });
@@ -95,7 +104,8 @@ export function useUpdateSlot(spaceId: number) {
 export function useDeleteSlot(spaceId: number) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (slotId: number) => deleteSlot(spaceId, slotId),
+    mutationFn: ({ slotId, force }: { slotId: number; force?: boolean }) =>
+      deleteSlot(spaceId, slotId, force),
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: ["space-slots", spaceId] }),
   });
@@ -150,13 +160,7 @@ export function useAvailability(
 export function useCreateBooking() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({
-      spaceSlotId,
-      bookingDate,
-    }: {
-      spaceSlotId: number;
-      bookingDate: string;
-    }) => createBooking(spaceSlotId, bookingDate),
+    mutationFn: (spaceSlotId: number) => createBooking(spaceSlotId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["availability"] });
       qc.invalidateQueries({ queryKey: ["my-bookings"] });
