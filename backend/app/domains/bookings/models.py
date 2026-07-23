@@ -1,14 +1,15 @@
-"""Simple Bookings models — spaces, recurring weekly slots, member bookings.
+"""Simple Bookings models — spaces, dated slots, member bookings.
 
 A ``Space`` is a bookable resource with daily opening hours. A ``SpaceSlot`` is
-an admin-defined recurring weekly slot on that space with a ``capacity`` (how
-many members may hold one slot-instance at once). A ``Booking`` is one member
-holding a slot on a concrete date; when a slot-instance is full a booking is
+an admin-defined slot on a **concrete date** with a ``capacity`` (how many
+members may hold it at once); slots generated together by a repeat rule share a
+``series_id`` so an edit can target one occurrence or the upcoming series. A
+``Booking`` is one member holding a slot; when a slot is full a booking is
 ``waitlisted`` and promoted FIFO on a cancellation.
 
 Capacity is enforced in the service under a row lock, not by an index — a count
 is not a uniqueness rule. The partial unique index below only stops a member
-holding two active rows for the same slot-instance.
+holding two active rows for the same slot.
 """
 
 from sqlalchemy import (
@@ -27,6 +28,7 @@ from sqlalchemy import (
     func,
     text,
 )
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base
@@ -59,20 +61,22 @@ class Space(Base):
 class SpaceSlot(Base):
     __tablename__ = "space_slots"
     __table_args__ = (
-        CheckConstraint("weekday BETWEEN 0 AND 6", name="space_slot_weekday_valid"),
         CheckConstraint("end_time > start_time", name="space_slot_time_valid"),
         CheckConstraint("capacity >= 1", name="space_slot_capacity_valid"),
-        Index("ix_space_slots_space", "space_id"),
+        Index("ix_space_slots_space_date", "space_id", "slot_date"),
+        Index("ix_space_slots_series", "series_id"),
     )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     space_id = Column(
         Integer, ForeignKey("spaces.id", ondelete="CASCADE"), nullable=False
     )
-    weekday = Column(SmallInteger, nullable=False)  # 0=Mon … 6=Sun
+    slot_date = Column(Date, nullable=False)
     start_time = Column(Time, nullable=False)
     end_time = Column(Time, nullable=False)
     capacity = Column(SmallInteger, nullable=False, default=1)
+    # Slots generated together by one repeat rule share a series_id; NULL = one-off.
+    series_id = Column(UUID(as_uuid=True))
     is_active = Column(Boolean, nullable=False, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
@@ -89,14 +93,13 @@ class Booking(Base):
             "status IN ('booked', 'waitlisted', 'cancelled')",
             name="booking_status_valid",
         ),
-        Index("ix_bookings_slot_date", "space_slot_id", "booking_date"),
+        Index("ix_bookings_slot", "space_slot_id"),
         Index("ix_bookings_member", "member_id"),
-        # One active row per member per slot-instance — blocks double-booking
-        # and being both booked and waitlisted for the same instance.
+        # One active row per member per slot — blocks double-booking and being
+        # both booked and waitlisted for the same slot.
         Index(
-            "uq_bookings_member_slot_date_active",
+            "uq_bookings_member_slot_active",
             "space_slot_id",
-            "booking_date",
             "member_id",
             unique=True,
             postgresql_where=text("status IN ('booked', 'waitlisted')"),
@@ -110,7 +113,6 @@ class Booking(Base):
     member_id = Column(
         Integer, ForeignKey("members.id", ondelete="CASCADE"), nullable=False
     )
-    booking_date = Column(Date, nullable=False)
     status = Column(String(20), nullable=False, default="booked")
     # Set when a booking enters the waitlist; FIFO promotion orders by this.
     waitlisted_at = Column(DateTime(timezone=True))

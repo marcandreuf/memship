@@ -1,6 +1,7 @@
 """Simple Bookings schemas."""
 
 from datetime import date, datetime, time
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -51,24 +52,45 @@ class SpaceRead(BaseModel):
 # --- Slots ----------------------------------------------------------------
 
 
+class SlotRepeat(BaseModel):
+    """Materialized repeat rule: selected weekdays × every N weeks × count weeks."""
+
+    weekdays: list[int] = Field(default_factory=list)
+    interval_weeks: int = Field(default=1, ge=1, le=12)
+    count: int = Field(default=1, ge=1, le=52)
+
+    @model_validator(mode="after")
+    def _weekdays(self):
+        if any(d < 0 or d > 6 for d in self.weekdays):
+            raise ValueError("weekdays must be 0 (Mon) to 6 (Sun)")
+        return self
+
+
 class SpaceSlotCreate(BaseModel):
-    weekday: int = Field(ge=0, le=6)
-    start_time: time
-    end_time: time
+    slot_date: date
+    start_time: time | None = None
+    end_time: time | None = None
+    # all_day expands to the space's opening hours in the service.
+    all_day: bool = False
     capacity: int = Field(default=1, ge=1)
     is_active: bool = True
+    repeat: SlotRepeat | None = None
 
     @model_validator(mode="after")
     def _times(self):
-        if self.end_time <= self.start_time:
-            raise ValueError("end_time must be after start_time")
+        if not self.all_day:
+            if self.start_time is None or self.end_time is None:
+                raise ValueError("start_time and end_time are required unless all_day")
+            if self.end_time <= self.start_time:
+                raise ValueError("end_time must be after start_time")
         return self
 
 
 class SpaceSlotUpdate(BaseModel):
-    weekday: int | None = Field(default=None, ge=0, le=6)
+    slot_date: date | None = None
     start_time: time | None = None
     end_time: time | None = None
+    all_day: bool = False
     capacity: int | None = Field(default=None, ge=1)
     is_active: bool | None = None
 
@@ -78,11 +100,15 @@ class SpaceSlotRead(BaseModel):
 
     id: int
     space_id: int
-    weekday: int
+    slot_date: date
     start_time: time
     end_time: time
     capacity: int
+    series_id: UUID | None
     is_active: bool
+    # Slots in this slot's series dated today-or-later than it (itself included);
+    # the edit dialog asks "this or upcoming" only when > 1.
+    series_size_upcoming: int = 1
 
 
 # --- Bookings -------------------------------------------------------------
@@ -90,7 +116,6 @@ class SpaceSlotRead(BaseModel):
 
 class BookingCreate(BaseModel):
     space_slot_id: int
-    booking_date: date
 
 
 class BookingRead(BaseModel):
@@ -99,7 +124,6 @@ class BookingRead(BaseModel):
     id: int
     space_slot_id: int
     member_id: int
-    booking_date: date
     status: str
     created_at: datetime | None
 
@@ -111,11 +135,12 @@ class MyBookingRead(BaseModel):
     space_slot_id: int
     space_id: int
     space_name: str
-    booking_date: date
-    weekday: int
+    slot_date: date
     start_time: time
     end_time: time
     status: str
+    capacity: int
+    booked_count: int
     waitlist_position: int | None = None
 
 
@@ -124,7 +149,7 @@ class AdminBookingRead(BaseModel):
     space_slot_id: int
     member_id: int
     member_name: str
-    booking_date: date
+    slot_date: date
     start_time: time
     end_time: time
     status: str

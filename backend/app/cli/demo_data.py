@@ -356,11 +356,12 @@ def _next_date_for(weekday: int, min_ahead: int = 1) -> date:
 
 
 def generate_bookings(db) -> None:
-    """Enable Simple Bookings and seed spaces, slots and demo bookings.
+    """Enable Simple Bookings and seed spaces, dated slots and demo bookings.
 
     Two spaces: a capacity-1 padel court (singles, with a waitlist demo) and a
-    capacity-6 group-class room. Bookings land on each slot's next upcoming
-    occurrence, within the booking window.
+    capacity-6 group-class room. Slots land on the next upcoming occurrence of
+    their weekday, within the booking window; the group class is generated as a
+    series (shared series_id) like the admin repeat rule would.
     """
     from app.domains.bookings.models import Booking, Space, SpaceSlot
 
@@ -403,7 +404,7 @@ def generate_bookings(db) -> None:
     db.add_all([padel, sala])
     db.flush()
 
-    # Padel: capacity-1 singles slots (Mon/Wed mornings, Fri evening).
+    # Padel: capacity-1 singles slots on the next Mon/Wed mornings + Fri evening.
     padel_slots: list[SpaceSlot] = []
     for weekday, start, end in [
         (0, time(10, 0), time(11, 0)),
@@ -411,18 +412,23 @@ def generate_bookings(db) -> None:
         (4, time(18, 0), time(19, 0)),
     ]:
         slot = SpaceSlot(
-            space_id=padel.id, weekday=weekday, start_time=start,
-            end_time=end, capacity=1, is_active=True,
+            space_id=padel.id, slot_date=_next_date_for(weekday),
+            start_time=start, end_time=end, capacity=1, is_active=True,
         )
         db.add(slot)
         padel_slots.append(slot)
 
-    # Sala: capacity-6 group class (Tue/Thu evenings).
+    # Sala: capacity-6 group class on the next Tue/Thu evenings, generated as
+    # one series (shared series_id) like the admin repeat rule would.
+    from uuid import uuid4
+
+    sala_series = uuid4()
     sala_slots: list[SpaceSlot] = []
     for weekday in (1, 3):
         slot = SpaceSlot(
-            space_id=sala.id, weekday=weekday, start_time=time(19, 0),
-            end_time=time(20, 0), capacity=6, is_active=True,
+            space_id=sala.id, slot_date=_next_date_for(weekday),
+            start_time=time(19, 0), end_time=time(20, 0),
+            capacity=6, series_id=sala_series, is_active=True,
         )
         db.add(slot)
         sala_slots.append(slot)
@@ -440,20 +446,18 @@ def generate_bookings(db) -> None:
     # Padel (capacity 1): one confirmed booking each; the first slot also gets a
     # waitlisted member so the waitlist/promotion flow is visible in the demo.
     for i, slot in enumerate(padel_slots):
-        day = _next_date_for(slot.weekday)
         db.add(Booking(space_slot_id=slot.id, member_id=take().id,
-                       booking_date=day, status="booked"))
+                       status="booked"))
         if i == 0:
             db.add(Booking(space_slot_id=slot.id, member_id=take().id,
-                           booking_date=day, status="waitlisted",
+                           status="waitlisted",
                            waitlisted_at=datetime.now(timezone.utc)))
 
-    # Sala (capacity 6): four confirmed bookings on the next class.
+    # Sala (capacity 6): four confirmed bookings on each class.
     for slot in sala_slots:
-        day = _next_date_for(slot.weekday)
         for _ in range(4):
             db.add(Booking(space_slot_id=slot.id, member_id=take().id,
-                           booking_date=day, status="booked"))
+                           status="booked"))
 
     db.flush()
     print(

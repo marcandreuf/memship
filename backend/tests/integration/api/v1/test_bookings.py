@@ -1,4 +1,4 @@
-"""Integration tests for Simple Bookings — spaces, slots, book/waitlist/cancel."""
+"""Integration tests for Simple Bookings — spaces, dated slots, book/waitlist/cancel."""
 
 from datetime import date, timedelta
 
@@ -76,25 +76,29 @@ def _future(days=3):
     return date.today() + timedelta(days=days)
 
 
-def _make_space_and_slot(client, admin, *, capacity=1, weekday=None):
-    weekday = weekday if weekday is not None else _future(3).weekday()
+def _make_space(client, admin, *, open_="08:00:00", close="22:00:00"):
     sp = client.post(
         "/api/v1/spaces",
-        json={"name": "Court 1", "open_time": "08:00:00", "close_time": "22:00:00"},
+        json={"name": "Court 1", "open_time": open_, "close_time": close},
         cookies=_auth(admin),
     )
     assert sp.status_code == 201, sp.text
-    space_id = sp.json()["id"]
+    return sp.json()["id"]
+
+
+def _make_space_and_slot(client, admin, *, capacity=1, on=None):
+    on = on or _future(3)
+    space_id = _make_space(client, admin)
     sl = client.post(
         f"/api/v1/spaces/{space_id}/slots",
         json={
-            "weekday": weekday, "start_time": "10:00:00",
+            "slot_date": on.isoformat(), "start_time": "10:00:00",
             "end_time": "11:00:00", "capacity": capacity,
         },
         cookies=_auth(admin),
     )
     assert sl.status_code == 201, sl.text
-    return space_id, sl.json()["id"]
+    return space_id, sl.json()[0]["id"]
 
 
 class TestFeatureGate:
@@ -109,7 +113,7 @@ class TestFeatureGate:
         user, _ = _member_user(db, "m404@test.com")
         r = client.post(
             "/api/v1/bookings",
-            json={"space_slot_id": 1, "booking_date": _future(3).isoformat()},
+            json={"space_slot_id": 1},
             cookies=_auth(user),
         )
         assert r.status_code == 404
@@ -140,18 +144,97 @@ class TestSpacesRBAC:
     def test_slot_outside_hours_rejected(self, client, db):
         _org(db)
         admin = _user(db, "admin")
-        sp = client.post(
-            "/api/v1/spaces",
-            json={"name": "Court", "open_time": "10:00:00", "close_time": "12:00:00"},
-            cookies=_auth(admin),
-        )
-        space_id = sp.json()["id"]
+        space_id = _make_space(client, admin, open_="10:00:00", close="12:00:00")
         r = client.post(
             f"/api/v1/spaces/{space_id}/slots",
-            json={"weekday": 0, "start_time": "09:00:00", "end_time": "10:00:00", "capacity": 1},
+            json={
+                "slot_date": _future(3).isoformat(),
+                "start_time": "09:00:00", "end_time": "10:00:00", "capacity": 1,
+            },
             cookies=_auth(admin),
         )
         assert r.status_code == 422
+
+
+class TestSlots:
+    def test_past_slot_rejected(self, client, db):
+        _org(db)
+        admin = _user(db, "admin")
+        space_id = _make_space(client, admin)
+        r = client.post(
+            f"/api/v1/spaces/{space_id}/slots",
+            json={
+                "slot_date": (date.today() - timedelta(days=1)).isoformat(),
+                "start_time": "10:00:00", "end_time": "11:00:00",
+            },
+            cookies=_auth(admin),
+        )
+        assert r.status_code == 422
+
+    def test_repeat_creates_series(self, client, db):
+        _org(db)
+        admin = _user(db, "admin")
+        space_id = _make_space(client, admin)
+        start = _future(7)
+        r = client.post(
+            f"/api/v1/spaces/{space_id}/slots",
+            json={
+                "slot_date": start.isoformat(),
+                "start_time": "10:00:00", "end_time": "11:00:00",
+                "repeat": {"weekdays": [start.weekday()], "interval_weeks": 1, "count": 3},
+            },
+            cookies=_auth(admin),
+        )
+        assert r.status_code == 201, r.text
+        body = r.json()
+        assert len(body) == 3
+        assert len({s["series_id"] for s in body}) == 1
+        assert body[0]["series_id"] is not None
+        assert body[0]["series_size_upcoming"] == 3
+        assert body[2]["series_size_upcoming"] == 1
+
+    def test_all_day_slot_spans_opening_hours(self, client, db):
+        _org(db)
+        admin = _user(db, "admin")
+        space_id = _make_space(client, admin, open_="09:00:00", close="21:00:00")
+        r = client.post(
+            f"/api/v1/spaces/{space_id}/slots",
+            json={"slot_date": _future(3).isoformat(), "all_day": True},
+            cookies=_auth(admin),
+        )
+        assert r.status_code == 201, r.text
+        slot = r.json()[0]
+        assert slot["start_time"] == "09:00:00"
+        assert slot["end_time"] == "21:00:00"
+
+    def test_update_apply_to_upcoming(self, client, db):
+        _org(db)
+        admin = _user(db, "admin")
+        space_id = _make_space(client, admin)
+        start = _future(7)
+        r = client.post(
+            f"/api/v1/spaces/{space_id}/slots",
+            json={
+                "slot_date": start.isoformat(),
+                "start_time": "10:00:00", "end_time": "11:00:00",
+                "repeat": {"weekdays": [start.weekday()], "interval_weeks": 1, "count": 3},
+            },
+            cookies=_auth(admin),
+        )
+        slots = r.json()
+        ru = client.put(
+            f"/api/v1/spaces/{space_id}/slots/{slots[1]['id']}?apply_to=upcoming",
+            json={"capacity": 5},
+            cookies=_auth(admin),
+        )
+        assert ru.status_code == 200, ru.text
+        listed = client.get(
+            f"/api/v1/spaces/{space_id}/slots", cookies=_auth(admin)
+        ).json()
+        by_id = {s["id"]: s for s in listed}
+        assert by_id[slots[0]["id"]]["capacity"] == 1
+        assert by_id[slots[1]["id"]]["capacity"] == 5
+        assert by_id[slots[2]["id"]]["capacity"] == 5
 
 
 class TestBooking:
@@ -160,11 +243,10 @@ class TestBooking:
         admin = _user(db, "admin")
         _space_id, slot_id = _make_space_and_slot(client, admin)
         user, _ = _member_user(db, "booker@test.com")
-        target = _future(3)
 
         r = client.post(
             "/api/v1/bookings",
-            json={"space_slot_id": slot_id, "booking_date": target.isoformat()},
+            json={"space_slot_id": slot_id},
             cookies=_auth(user),
         )
         assert r.status_code == 201, r.text
@@ -174,20 +256,19 @@ class TestBooking:
         _org(db)
         admin = _user(db, "admin")
         _space_id, slot_id = _make_space_and_slot(client, admin, capacity=1)
-        target = _future(3)
         u1, _ = _member_user(db, "b1@test.com")
         u2, _ = _member_user(db, "b2@test.com")
 
         r1 = client.post(
             "/api/v1/bookings",
-            json={"space_slot_id": slot_id, "booking_date": target.isoformat()},
+            json={"space_slot_id": slot_id},
             cookies=_auth(u1),
         )
         assert r1.json()["status"] == "booked"
 
         r2 = client.post(
             "/api/v1/bookings",
-            json={"space_slot_id": slot_id, "booking_date": target.isoformat()},
+            json={"space_slot_id": slot_id},
             cookies=_auth(u2),
         )
         assert r2.json()["status"] == "waitlisted"
@@ -195,7 +276,7 @@ class TestBooking:
         # u1 booking again → duplicate → 409
         rdup = client.post(
             "/api/v1/bookings",
-            json={"space_slot_id": slot_id, "booking_date": target.isoformat()},
+            json={"space_slot_id": slot_id},
             cookies=_auth(u1),
         )
         assert rdup.status_code == 409
@@ -204,18 +285,17 @@ class TestBooking:
         _org(db, booking_waitlist_enabled=False)
         admin = _user(db, "admin")
         _space_id, slot_id = _make_space_and_slot(client, admin, capacity=1)
-        target = _future(3)
         u1, _ = _member_user(db, "f1@test.com")
         u2, _ = _member_user(db, "f2@test.com")
 
         client.post(
             "/api/v1/bookings",
-            json={"space_slot_id": slot_id, "booking_date": target.isoformat()},
+            json={"space_slot_id": slot_id},
             cookies=_auth(u1),
         )
         r2 = client.post(
             "/api/v1/bookings",
-            json={"space_slot_id": slot_id, "booking_date": target.isoformat()},
+            json={"space_slot_id": slot_id},
             cookies=_auth(u2),
         )
         assert r2.status_code == 409
@@ -224,19 +304,18 @@ class TestBooking:
         _org(db, booking_cancellation_deadline_hours=0)
         admin = _user(db, "admin")
         _space_id, slot_id = _make_space_and_slot(client, admin, capacity=1)
-        target = _future(3)
         u1, _ = _member_user(db, "c1@test.com")
         u2, m2 = _member_user(db, "c2@test.com")
 
         r1 = client.post(
             "/api/v1/bookings",
-            json={"space_slot_id": slot_id, "booking_date": target.isoformat()},
+            json={"space_slot_id": slot_id},
             cookies=_auth(u1),
         )
         booking1_id = r1.json()["id"]
         client.post(
             "/api/v1/bookings",
-            json={"space_slot_id": slot_id, "booking_date": target.isoformat()},
+            json={"space_slot_id": slot_id},
             cookies=_auth(u2),
         )
 
@@ -247,17 +326,36 @@ class TestBooking:
         assert mine.status_code == 200
         assert mine.json()[0]["status"] == "booked"
 
+    def test_my_bookings_reports_occupancy(self, client, db):
+        _org(db)
+        admin = _user(db, "admin")
+        _space_id, slot_id = _make_space_and_slot(client, admin, capacity=3)
+        u1, _ = _member_user(db, "occ1@test.com")
+        u2, _ = _member_user(db, "occ2@test.com")
+        client.post(
+            "/api/v1/bookings", json={"space_slot_id": slot_id}, cookies=_auth(u1)
+        )
+        client.post(
+            "/api/v1/bookings", json={"space_slot_id": slot_id}, cookies=_auth(u2)
+        )
+
+        mine = client.get("/api/v1/me/bookings?scope=upcoming", cookies=_auth(u1))
+        assert mine.status_code == 200
+        row = mine.json()[0]
+        assert row["capacity"] == 3
+        assert row["booked_count"] == 2
+        assert row["slot_date"] == _future(3).isoformat()
+
     def test_member_cannot_cancel_others_booking(self, client, db):
         _org(db, booking_cancellation_deadline_hours=0)
         admin = _user(db, "admin")
         _space_id, slot_id = _make_space_and_slot(client, admin, capacity=1)
-        target = _future(3)
         u1, _ = _member_user(db, "own1@test.com")
         u2, _ = _member_user(db, "own2@test.com")
 
         r1 = client.post(
             "/api/v1/bookings",
-            json={"space_slot_id": slot_id, "booking_date": target.isoformat()},
+            json={"space_slot_id": slot_id},
             cookies=_auth(u1),
         )
         booking_id = r1.json()["id"]
@@ -270,11 +368,10 @@ class TestAdminBookingsView:
         _org(db)
         admin = _user(db, "admin")
         space_id, slot_id = _make_space_and_slot(client, admin, capacity=2)
-        target = _future(3)
         u1, _ = _member_user(db, "a1@test.com")
         client.post(
             "/api/v1/bookings",
-            json={"space_slot_id": slot_id, "booking_date": target.isoformat()},
+            json={"space_slot_id": slot_id},
             cookies=_auth(u1),
         )
         r = client.get(f"/api/v1/spaces/{space_id}/bookings", cookies=_auth(admin))
@@ -282,3 +379,4 @@ class TestAdminBookingsView:
         body = r.json()
         assert body["meta"]["total"] == 1
         assert body["items"][0]["member_name"]
+        assert body["items"][0]["slot_date"] == _future(3).isoformat()

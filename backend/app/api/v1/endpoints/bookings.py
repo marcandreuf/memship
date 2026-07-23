@@ -142,6 +142,16 @@ def deactivate_space(
 # --- Admin: slots ---------------------------------------------------------
 
 
+def _slot_reads(slots: list["service.SpaceSlot"]) -> list[SpaceSlotRead]:
+    sizes = service.series_sizes_upcoming(slots)
+    return [
+        SpaceSlotRead.model_validate(s).model_copy(
+            update={"series_size_upcoming": sizes[s.id]}
+        )
+        for s in slots
+    ]
+
+
 @router.get("/{space_id}/slots", response_model=list[SpaceSlotRead])
 def list_slots(
     space_id: int,
@@ -150,12 +160,12 @@ def list_slots(
 ):
     _require_bookings_enabled(db)
     _load_space_or_404(db, space_id)
-    return service.list_slots(db, space_id)
+    return _slot_reads(service.list_slots(db, space_id))
 
 
 @router.post(
     "/{space_id}/slots",
-    response_model=SpaceSlotRead,
+    response_model=list[SpaceSlotRead],
     status_code=status.HTTP_201_CREATED,
 )
 def create_slot(
@@ -164,15 +174,18 @@ def create_slot(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
+    """Create one dated slot — or the whole materialized series when a repeat
+    rule is given. Returns every created slot."""
     _require_bookings_enabled(db)
     space = _load_space_or_404(db, space_id)
     try:
-        slot = service.create_slot(db, space, data)
+        slots = service.create_slot(db, space, data)
     except service.BookingError as exc:
         raise _slot_error_422(exc)
     db.commit()
-    db.refresh(slot)
-    return slot
+    for slot in slots:
+        db.refresh(slot)
+    return _slot_reads(slots)
 
 
 @router.put("/{space_id}/slots/{slot_id}", response_model=SpaceSlotRead)
@@ -180,6 +193,7 @@ def update_slot(
     space_id: int,
     slot_id: int,
     data: SpaceSlotUpdate,
+    apply_to: str = Query(default="one", pattern="^(one|upcoming)$"),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
@@ -189,12 +203,13 @@ def update_slot(
     if slot is None:
         raise HTTPException(status_code=404, detail="Slot not found")
     try:
-        service.update_slot(db, space, slot, data)
+        service.update_slot(db, space, slot, data, apply_to=apply_to)
     except service.BookingError as exc:
         raise _slot_error_422(exc)
     db.commit()
     db.refresh(slot)
-    return slot
+    reads = _slot_reads(service.list_slots(db, space_id))
+    return next(r for r in reads if r.id == slot.id)
 
 
 @router.delete(
@@ -246,7 +261,7 @@ def list_space_bookings(
                 space_slot_id=b.space_slot_id,
                 member_id=b.member_id,
                 member_name=name,
-                booking_date=b.booking_date,
+                slot_date=b.slot.slot_date,
                 start_time=b.slot.start_time,
                 end_time=b.slot.end_time,
                 status=b.status,
@@ -301,7 +316,6 @@ def create_booking(
             db,
             member,
             data.space_slot_id,
-            data.booking_date,
             notifier=_notifier,
         )
     except service.SlotNotFound:
@@ -309,7 +323,6 @@ def create_booking(
     except (service.SlotFull, service.DuplicateBooking) as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
     except (
-        service.WeekdayMismatch,
         service.BookingInPast,
         service.BookingWindowExceeded,
     ) as exc:

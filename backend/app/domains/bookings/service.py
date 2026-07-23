@@ -1,16 +1,20 @@
-"""Simple Bookings service — spaces, slots, availability, book/waitlist/cancel.
+"""Simple Bookings service — spaces, dated slots, availability, book/waitlist/cancel.
 
 Following the house convention, nothing here commits — the endpoint does.
 
-Capacity is enforced under a ``SELECT … FOR UPDATE`` lock on the parent
-``space_slots`` row: a slot-instance (slot + date) has no row of its own, so the
-slot row is the serialization point for both the capacity count and FIFO
+Capacity is enforced under a ``SELECT … FOR UPDATE`` lock on the ``space_slots``
+row, which is the serialization point for both the capacity count and FIFO
 promotion. The per-member partial unique index is the backstop against a member
 double-submitting.
+
+Slots live on concrete dates. A create with a repeat rule materializes every
+occurrence up front (bounded by the rule's count) and stamps them with a shared
+``series_id``; an edit can then target one occurrence or this-and-upcoming.
 """
 
 import logging
 from datetime import date, datetime, timedelta
+from uuid import uuid4
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from sqlalchemy import func
@@ -64,7 +68,7 @@ class SlotFull(BookingError):
     pass
 
 
-class WeekdayMismatch(BookingError):
+class SlotInPast(BookingError):
     pass
 
 
@@ -174,7 +178,7 @@ def list_slots(db: Session, space_id: int) -> list[SpaceSlot]:
     return (
         db.query(SpaceSlot)
         .filter(SpaceSlot.space_id == space_id)
-        .order_by(SpaceSlot.weekday, SpaceSlot.start_time)
+        .order_by(SpaceSlot.slot_date, SpaceSlot.start_time)
         .all()
     )
 
@@ -187,75 +191,189 @@ def get_slot(db: Session, space_id: int, slot_id: int) -> SpaceSlot | None:
     )
 
 
-def _validate_slot(
+def series_sizes_upcoming(slots: list[SpaceSlot]) -> dict[int, int]:
+    """Per slot id, how many slots of its series are dated on/after it (itself
+    included). One-off slots count as 1. Computed over the given list — callers
+    pass a space's full slot list, and a series never crosses spaces."""
+    by_series: dict = {}
+    for s in slots:
+        if s.series_id is not None:
+            by_series.setdefault(s.series_id, []).append(s.slot_date)
+    return {
+        s.id: (
+            sum(1 for d in by_series[s.series_id] if d >= s.slot_date)
+            if s.series_id is not None
+            else 1
+        )
+        for s in slots
+    }
+
+
+def _validate_slot_on_date(
     db: Session,
     space: Space,
     *,
-    weekday: int,
+    slot_date: date,
     start_time,
     end_time,
-    exclude_slot_id: int | None = None,
+    exclude_slot_ids: set[int] | None = None,
 ) -> None:
     if not (space.open_time <= start_time and end_time <= space.close_time):
         raise SlotOutsideOpeningHours(
-            "Slot must fall within the space's opening hours"
+            f"{slot_date.isoformat()}: slot must fall within the space's opening hours"
         )
-    # No overlap with another active slot on the same weekday.
+    # No overlap with another active slot on the same date.
     others = (
         db.query(SpaceSlot)
         .filter(
             SpaceSlot.space_id == space.id,
-            SpaceSlot.weekday == weekday,
+            SpaceSlot.slot_date == slot_date,
             SpaceSlot.is_active.is_(True),
         )
         .all()
     )
     for other in others:
-        if exclude_slot_id is not None and other.id == exclude_slot_id:
+        if exclude_slot_ids and other.id in exclude_slot_ids:
             continue
         if start_time < other.end_time and other.start_time < end_time:
-            raise SlotOverlap("Slot overlaps an existing slot on this weekday")
+            raise SlotOverlap(
+                f"{slot_date.isoformat()}: slot overlaps an existing slot"
+            )
 
 
-def create_slot(db: Session, space: Space, data: SpaceSlotCreate) -> SpaceSlot:
-    _validate_slot(
-        db,
-        space,
-        weekday=data.weekday,
-        start_time=data.start_time,
-        end_time=data.end_time,
-    )
-    slot = SpaceSlot(
-        space_id=space.id,
-        weekday=data.weekday,
-        start_time=data.start_time,
-        end_time=data.end_time,
-        capacity=data.capacity,
-        is_active=data.is_active,
-    )
-    db.add(slot)
-    return slot
+def _past_guard(db: Session, slot_date: date, start_time) -> None:
+    tz = _tz(db)
+    now_local = datetime.now(tz)
+    if datetime.combine(slot_date, start_time, tzinfo=tz) <= now_local:
+        raise SlotInPast(
+            f"{slot_date.isoformat()}: slot date and time are in the past"
+        )
+
+
+def _occurrence_dates(data: SpaceSlotCreate) -> list[date]:
+    """Concrete dates for a create: the picked date, expanded by the repeat rule.
+
+    Repeat semantics: selected weekdays (defaulting to the picked date's weekday)
+    on every Nth week for ``count`` weeks, starting from the picked date's week.
+    Dates before the picked date (a selected weekday earlier in week zero) are
+    skipped — the picked date is the series' first candidate day.
+    """
+    if data.repeat is None:
+        return [data.slot_date]
+    weekdays = sorted(set(data.repeat.weekdays)) or [data.slot_date.weekday()]
+    week_monday = data.slot_date - timedelta(days=data.slot_date.weekday())
+    dates: list[date] = []
+    for i in range(data.repeat.count):
+        monday = week_monday + timedelta(weeks=i * data.repeat.interval_weeks)
+        for wd in weekdays:
+            d = monday + timedelta(days=wd)
+            if d >= data.slot_date:
+                dates.append(d)
+    return dates
+
+
+def create_slot(db: Session, space: Space, data: SpaceSlotCreate) -> list[SpaceSlot]:
+    """Create one dated slot, or a materialized series when a repeat is given.
+
+    All-or-nothing: every occurrence must pass the past guard, opening hours and
+    overlap checks (each error names its date) or the whole batch is rejected.
+    """
+    start_time = space.open_time if data.all_day else data.start_time
+    end_time = space.close_time if data.all_day else data.end_time
+
+    dates = _occurrence_dates(data)
+    errors: list[str] = []
+    for d in dates:
+        try:
+            _past_guard(db, d, start_time)
+            _validate_slot_on_date(
+                db, space, slot_date=d, start_time=start_time, end_time=end_time
+            )
+        except BookingError as exc:
+            errors.append(str(exc))
+    if errors:
+        message = "; ".join(errors)
+        if any("overlaps" in e for e in errors):
+            raise SlotOverlap(message)
+        if any("opening hours" in e for e in errors):
+            raise SlotOutsideOpeningHours(message)
+        raise SlotInPast(message)
+
+    series_id = uuid4() if data.repeat is not None and len(dates) > 1 else None
+    slots = [
+        SpaceSlot(
+            space_id=space.id,
+            slot_date=d,
+            start_time=start_time,
+            end_time=end_time,
+            capacity=data.capacity,
+            series_id=series_id,
+            is_active=data.is_active,
+        )
+        for d in dates
+    ]
+    db.add_all(slots)
+    return slots
 
 
 def update_slot(
-    db: Session, space: Space, slot: SpaceSlot, data: SpaceSlotUpdate
+    db: Session,
+    space: Space,
+    slot: SpaceSlot,
+    data: SpaceSlotUpdate,
+    *,
+    apply_to: str = "one",
 ) -> SpaceSlot:
+    """Edit a slot; with ``apply_to="upcoming"``, apply the changed fields to
+    every slot in its series dated on/after it. ``slot_date`` only ever moves
+    the edited slot (a series keeps its generated dates). Past occurrences are
+    editable (no past guard) — admins may need to fix records; capacity lowering
+    never evicts existing bookings (documented behaviour)."""
     payload = data.model_dump(exclude_unset=True)
-    weekday = payload.get("weekday", slot.weekday)
-    start_time = payload.get("start_time", slot.start_time)
-    end_time = payload.get("end_time", slot.end_time)
-    if end_time <= start_time:
-        raise SlotOutsideOpeningHours("end_time must be after start_time")
-    _validate_slot(
-        db,
-        space,
-        weekday=weekday,
-        start_time=start_time,
-        end_time=end_time,
-        exclude_slot_id=slot.id,
-    )
-    for key, value in payload.items():
-        setattr(slot, key, value)
+    payload.pop("all_day", None)
+    if data.all_day:
+        payload["start_time"] = space.open_time
+        payload["end_time"] = space.close_time
+
+    if apply_to == "upcoming" and slot.series_id is not None:
+        targets = (
+            db.query(SpaceSlot)
+            .filter(
+                SpaceSlot.series_id == slot.series_id,
+                SpaceSlot.slot_date >= slot.slot_date,
+            )
+            .order_by(SpaceSlot.slot_date)
+            .all()
+        )
+        payload.pop("slot_date", None)
+    else:
+        targets = [slot]
+
+    exclude = {t.id for t in targets}
+    for target in targets:
+        slot_date = (
+            payload.get("slot_date", target.slot_date)
+            if target.id == slot.id
+            else target.slot_date
+        )
+        start_time = payload.get("start_time", target.start_time)
+        end_time = payload.get("end_time", target.end_time)
+        if end_time <= start_time:
+            raise SlotOutsideOpeningHours("end_time must be after start_time")
+        _validate_slot_on_date(
+            db,
+            space,
+            slot_date=slot_date,
+            start_time=start_time,
+            end_time=end_time,
+            exclude_slot_ids=exclude,
+        )
+
+    for target in targets:
+        for key, value in payload.items():
+            if key == "slot_date" and target.id != slot.id:
+                continue
+            setattr(target, key, value)
     return slot
 
 
@@ -266,12 +384,11 @@ def delete_slot(db: Session, slot: SpaceSlot) -> None:
 # --- Counts ---------------------------------------------------------------
 
 
-def _count(db: Session, slot_id: int, on: date, status: str) -> int:
+def _count(db: Session, slot_id: int, status: str) -> int:
     return (
         db.query(func.count(Booking.id))
         .filter(
             Booking.space_slot_id == slot_id,
-            Booking.booking_date == on,
             Booking.status == status,
         )
         .scalar()
@@ -280,13 +397,12 @@ def _count(db: Session, slot_id: int, on: date, status: str) -> int:
 
 
 def _member_active_booking(
-    db: Session, slot_id: int, on: date, member_id: int
+    db: Session, slot_id: int, member_id: int
 ) -> Booking | None:
     return (
         db.query(Booking)
         .filter(
             Booking.space_slot_id == slot_id,
-            Booking.booking_date == on,
             Booking.member_id == member_id,
             Booking.status.in_(ACTIVE_STATUSES),
         )
@@ -300,26 +416,33 @@ def _member_active_booking(
 def space_week_availability(
     db: Session, space: Space, week_start: date, member_id: int | None
 ) -> list[dict]:
-    """One cell per active slot, placed on the date its weekday falls in the week.
-
-    ``week_start`` should be the Monday of the target ISO week; each slot occurs
-    on ``week_start + weekday``.
-    """
+    """One cell per active slot dated within the week starting at ``week_start``
+    (which should be a Monday)."""
     tz = _tz(db)
     now_local = datetime.now(tz)
     today = now_local.date()
     window_end = today + timedelta(days=_window_days(db))
 
-    slots = [s for s in list_slots(db, space.id) if s.is_active]
+    slots = (
+        db.query(SpaceSlot)
+        .filter(
+            SpaceSlot.space_id == space.id,
+            SpaceSlot.is_active.is_(True),
+            SpaceSlot.slot_date >= week_start,
+            SpaceSlot.slot_date < week_start + timedelta(days=7),
+        )
+        .order_by(SpaceSlot.slot_date, SpaceSlot.start_time)
+        .all()
+    )
     cells: list[dict] = []
     for slot in slots:
-        on = week_start + timedelta(days=slot.weekday)
-        booked = _count(db, slot.id, on, BookingStatus.BOOKED)
-        waitlisted = _count(db, slot.id, on, BookingStatus.WAITLISTED)
+        on = slot.slot_date
+        booked = _count(db, slot.id, BookingStatus.BOOKED)
+        waitlisted = _count(db, slot.id, BookingStatus.WAITLISTED)
 
         my_status = "none"
         if member_id is not None:
-            mine = _member_active_booking(db, slot.id, on, member_id)
+            mine = _member_active_booking(db, slot.id, member_id)
             if mine is not None:
                 my_status = mine.status
 
@@ -337,7 +460,7 @@ def space_week_availability(
             {
                 "space_slot_id": slot.id,
                 "date": on,
-                "weekday": slot.weekday,
+                "weekday": on.weekday(),
                 "start_time": slot.start_time,
                 "end_time": slot.end_time,
                 "capacity": slot.capacity,
@@ -364,7 +487,7 @@ def _notification(
         to=to,
         member_name=name,
         space_name=space.name,
-        date_str=booking.booking_date.strftime("%d/%m/%Y"),
+        date_str=slot.slot_date.strftime("%d/%m/%Y"),
         time_str=time_str,
         locale=_locale(db),
         **extra,
@@ -375,11 +498,10 @@ def create_booking(
     db: Session,
     member: Member,
     space_slot_id: int,
-    booking_date: date,
     *,
     notifier: BookingNotifier | None = None,
 ) -> Booking:
-    """Book a slot-instance, or waitlist it when full. Returns the new booking."""
+    """Book a slot, or waitlist it when full. Returns the new booking."""
     notifier = notifier or NullBookingNotifier()
 
     # Lock the slot row: serializes the capacity count + any concurrent booking.
@@ -395,21 +517,18 @@ def create_booking(
     if space is None or not space.is_active:
         raise SlotNotFound(str(space_slot_id))
 
-    if booking_date.weekday() != slot.weekday:
-        raise WeekdayMismatch("booking_date does not fall on the slot's weekday")
-
     tz = _tz(db)
     now_local = datetime.now(tz)
-    slot_start = datetime.combine(booking_date, slot.start_time, tzinfo=tz)
+    slot_start = datetime.combine(slot.slot_date, slot.start_time, tzinfo=tz)
     if slot_start <= now_local:
         raise BookingInPast("Slot has already started")
-    if booking_date > now_local.date() + timedelta(days=_window_days(db)):
+    if slot.slot_date > now_local.date() + timedelta(days=_window_days(db)):
         raise BookingWindowExceeded("Beyond the booking window")
 
-    if _member_active_booking(db, slot.id, booking_date, member.id) is not None:
-        raise DuplicateBooking("Member already holds this slot-instance")
+    if _member_active_booking(db, slot.id, member.id) is not None:
+        raise DuplicateBooking("Member already holds this slot")
 
-    booked = _count(db, slot.id, booking_date, BookingStatus.BOOKED)
+    booked = _count(db, slot.id, BookingStatus.BOOKED)
     if booked < slot.capacity:
         status = BookingStatus.BOOKED
         waitlisted_at = None
@@ -422,7 +541,6 @@ def create_booking(
     booking = Booking(
         space_slot_id=slot.id,
         member_id=member.id,
-        booking_date=booking_date,
         status=status,
         waitlisted_at=waitlisted_at,
     )
@@ -441,7 +559,7 @@ def create_booking(
             )
         )
     else:
-        position = _count(db, slot.id, booking_date, BookingStatus.WAITLISTED)
+        position = _count(db, slot.id, BookingStatus.WAITLISTED)
         notifier.send_waitlisted(
             _notification(db, booking, slot, space, member, position=position)
         )
@@ -473,7 +591,7 @@ def cancel_booking(
     now_local = datetime.now(tz)
 
     if not is_admin:
-        slot_start = datetime.combine(booking.booking_date, slot.start_time, tzinfo=tz)
+        slot_start = datetime.combine(slot.slot_date, slot.start_time, tzinfo=tz)
         deadline = slot_start - timedelta(hours=_deadline_hours(db))
         if now_local >= deadline:
             raise CancellationTooLate("Past the cancellation deadline")
@@ -485,13 +603,12 @@ def cancel_booking(
     db.flush()
 
     if was_booked:
-        booked = _count(db, slot.id, booking.booking_date, BookingStatus.BOOKED)
+        booked = _count(db, slot.id, BookingStatus.BOOKED)
         if booked < slot.capacity:
             promoted = (
                 db.query(Booking)
                 .filter(
                     Booking.space_slot_id == slot.id,
-                    Booking.booking_date == booking.booking_date,
                     Booking.status == BookingStatus.WAITLISTED,
                 )
                 .order_by(Booking.waitlisted_at.asc(), Booking.id.asc())
@@ -525,6 +642,7 @@ def my_bookings(db: Session, member_id: int, *, scope: str) -> list[dict]:
 
     query = (
         db.query(Booking)
+        .join(SpaceSlot, Booking.space_slot_id == SpaceSlot.id)
         .options(joinedload(Booking.slot).joinedload(SpaceSlot.space))
         .filter(
             Booking.member_id == member_id,
@@ -532,12 +650,12 @@ def my_bookings(db: Session, member_id: int, *, scope: str) -> list[dict]:
         )
     )
     if scope == "past":
-        query = query.filter(Booking.booking_date < today).order_by(
-            Booking.booking_date.desc()
+        query = query.filter(SpaceSlot.slot_date < today).order_by(
+            SpaceSlot.slot_date.desc()
         )
     else:
-        query = query.filter(Booking.booking_date >= today).order_by(
-            Booking.booking_date.asc()
+        query = query.filter(SpaceSlot.slot_date >= today).order_by(
+            SpaceSlot.slot_date.asc()
         )
 
     out: list[dict] = []
@@ -550,7 +668,6 @@ def my_bookings(db: Session, member_id: int, *, scope: str) -> list[dict]:
                 db.query(func.count(Booking.id))
                 .filter(
                     Booking.space_slot_id == b.space_slot_id,
-                    Booking.booking_date == b.booking_date,
                     Booking.status == BookingStatus.WAITLISTED,
                     Booking.waitlisted_at < b.waitlisted_at,
                 )
@@ -564,11 +681,12 @@ def my_bookings(db: Session, member_id: int, *, scope: str) -> list[dict]:
                 "space_slot_id": b.space_slot_id,
                 "space_id": space.id,
                 "space_name": space.name,
-                "booking_date": b.booking_date,
-                "weekday": slot.weekday,
+                "slot_date": slot.slot_date,
                 "start_time": slot.start_time,
                 "end_time": slot.end_time,
                 "status": b.status,
+                "capacity": slot.capacity,
+                "booked_count": _count(db, slot.id, BookingStatus.BOOKED),
                 "waitlist_position": position,
             }
         )
@@ -588,10 +706,10 @@ def build_space_bookings_query(
         .filter(SpaceSlot.space_id == space_id)
     )
     if on is not None:
-        query = query.filter(Booking.booking_date == on)
+        query = query.filter(SpaceSlot.slot_date == on)
     if status:
         query = query.filter(Booking.status == status)
-    return query.order_by(Booking.booking_date.desc(), Booking.id.desc())
+    return query.order_by(SpaceSlot.slot_date.desc(), Booking.id.desc())
 
 
 def get_booking(db: Session, booking_id: int) -> Booking | None:
