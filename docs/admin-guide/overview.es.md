@@ -29,24 +29,29 @@ usa el enlace de recuperación de la pantalla de inicio de sesión (requiere que
 
 ## Áreas del panel
 
-El panel de administración se organiza en torno a estas áreas. Cada una tendrá su propia página
-en esta guía a medida que se desarrolle la documentación:
+El panel de administración se organiza en torno a estas áreas:
 
 - **Panel (Dashboard)** — resumen con gráficos de estado de socios y de recibos, e importes
   pendientes, pagados y vencidos.
-- **Socios** — ciclo de vida completo (alta, cambios de estado, baja), tipos de cuota, grupos y
-  soporte para menores con tutor.
-- **Actividades** — creación y publicación, inscripciones con control de elegibilidad, lista de
-  espera, códigos de descuento, consentimientos y adjuntos.
-- **Pagos** — recibos, generación de cuotas, IVA, facturación y generación de PDF.
-- **SEPA** — mandatos de domiciliación, remesas (XML pain.008) e importación de devoluciones.
-- **Pagos en línea** — cobro con Stripe y Redsys/Bizum.
-- **Comunicaciones** — anuncios a todos los socios, a un grupo o a un tipo de cuota.
-- **Carné digital** — carné en PDF con número de socio y check-in por QR.
-- **Campos personalizados** — campos de perfil configurables por la organización.
-- **Reservas** — reserva de espacios compartidos por franjas, con aforo y lista de espera.
-- **Informes** — exportaciones CSV, panel financiero y resumen anual.
-- **Configuración** — marca (nombre, color, logotipo), dirección, datos bancarios y facturación.
+- **[Socios](members.es.md)** — ciclo de vida completo (alta, cambios de estado, baja), tipos de
+  cuota, grupos y soporte para menores con tutor.
+- **[Actividades](activities.es.md)** — creación y publicación, inscripciones con control de
+  elegibilidad, lista de espera, códigos de descuento, consentimientos y adjuntos.
+- **[Pagos](payments.es.md)** — recibos, generación de cuotas, IVA, facturación, generación de
+  PDF y cobro en línea (Stripe, Redsys/Bizum).
+- **[SEPA](sepa.es.md)** — mandatos de domiciliación, remesas (XML pain.008) e importación de
+  devoluciones.
+- **[Comunicaciones](communications.es.md)** — anuncios a todos los socios, a un grupo o a un
+  tipo de cuota.
+- **[Carné digital](member-cards.es.md)** — carné en PDF con número de socio y check-in por QR.
+- **[Campos personalizados](custom-fields.es.md)** — campos de perfil configurables por la
+  organización.
+- **[Informes](reports.es.md)** — exportaciones CSV, panel financiero y resumen anual.
+- **[Configuración](settings.es.md)** — marca (nombre, color, logotipo), dirección, datos
+  bancarios, facturación y automatizaciones.
+
+> La reserva de espacios (**Simple Bookings**) aún no forma parte de una versión publicada y se
+> documentará cuando se libere.
 
 ## Configuración inicial
 

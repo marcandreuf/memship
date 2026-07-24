@@ -33,20 +33,34 @@ Running Memship on your own server.
 Para el personal que gestiona la organización desde el panel de administración.
 
 - [Introducción](admin-guide/overview.es.md) — roles, navegación y panel _(ES)_
-- Socios · Actividades · Pagos · SEPA · Comunicaciones · Carné digital ·
-  Campos personalizados · Reservas · Informes · Configuración — _planificado_
+- [Socios](admin-guide/members.es.md) — ciclo de vida, tipos de membresía, grupos _(ES)_
+- [Actividades](admin-guide/activities.es.md) — inscripciones, modalidades, descuentos _(ES)_
+- [Pagos y recibos](admin-guide/payments.es.md) — recibos, cuotas, IVA, pago en línea _(ES)_
+- [Domiciliación SEPA](admin-guide/sepa.es.md) — mandatos y remesas _(ES)_
+- [Comunicaciones](admin-guide/communications.es.md) — anuncios a los socios _(ES)_
+- [Carné digital](admin-guide/member-cards.es.md) — carné QR y control de acceso _(ES)_
+- [Campos de perfil](admin-guide/custom-fields.es.md) — campos personalizados _(ES)_
+- [Informes y panel](admin-guide/reports.es.md) — panel, resumen anual, exportaciones _(ES)_
+- [Configuración](admin-guide/settings.es.md) — organización, facturación, automatizaciones _(ES)_
 
 ## Guía del socio (member guide)
 
 Para las personas socias que usan el portal.
 
-- Cuenta y perfil · Actividades · Pagos · Carné digital · Reservas — _planificado_
+- [Tu cuenta y tu perfil](member-guide/account.es.md) — acceso, perfil, idioma, foto _(ES)_
+- [Actividades](member-guide/activities.es.md) — inscribirse, lista de espera _(ES)_
+- [Pagos y recibos](member-guide/payments.es.md) — mis recibos, pagar online, forma de pago _(ES)_
+- [Carné digital](member-guide/member-card.es.md) — carné QR _(ES)_
 
 ## Reference
 
-- Roles & permissions — _planned_
+- [Roles y permisos](reference/roles-and-permissions.es.md) _(ES)_
 - FAQ — _planned_
 - Glossary — _planned_
+
+> **Simple Bookings** (reserva de espacios) is not yet part of a released version — it ships on
+> its own feature branch. Its admin and member pages will be added **with that feature's PR**,
+> per the "docs live with the code" rule below.
 
 ---
 
