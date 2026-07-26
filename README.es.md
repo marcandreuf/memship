@@ -65,6 +65,10 @@ Abre http://localhost:8081 e inicia sesión con tus credenciales. Cambia `PORT=8
 
 ## Hoja de ruta
 
+Memship sigue el [versionado semántico](https://semver.org/) y **los números de versión se asignan en el momento del lanzamiento, nunca se reservan en la hoja de ruta por adelantado.** A continuación, la tabla **Publicado** es el historial lanzado; **Planificado** es una lista priorizada de lo siguiente. Un elemento planificado recibe versión solo cuando se lanza — consulta [Elegir una versión](CONTRIBUTING.md#choosing-a-version) para saber cómo se escoge el número.
+
+### Publicado
+
 | Versión | Hito | Estado |
 |---------|------|--------|
 | v0.1.0 | Gestión de socios MVP — autenticación, RBAC, CRUD de socios, tipos de membresía, i18n, Docker, CI | Hecho |
@@ -98,21 +102,26 @@ Abre http://localhost:8081 e inicia sesión con tus credenciales. Cambia `PORT=8
 | v0.4.5 | Recordatorios de pago — notificaciones por email de recibos vencidos | Hecho |
 | v0.5.0 | Comunicaciones simples — anuncios del admin a todos los socios / grupo / tipo de cuota | Hecho |
 | v0.5.1 | Vista de envíos de comunicaciones — seguimiento de destinatarios + "Visto" en la app | Hecho |
-| v0.6.0 | ~~Reservas simples~~ — aplazado tras v1.0.0 (según demanda) | Aplazado |
 | v0.7.0 | Carnet digital de socio + registro QR — carnet en PDF, numeración automática de socios | Hecho |
 | v0.7.1 | Mejoras del carnet — vista de carnet para el admin, foto de perfil del socio, rediseño del perfil | Hecho |
-| v0.8.0 | ~~Convocatorias~~ — aplazado tras v1.0.0 (según demanda) | Aplazado |
 | v1.0.0 | Estabilización y lanzamiento — exportaciones CSV, panel financiero, notas y recordatorios, resumen anual, datos demo, pulido de docs | Hecho |
 | v1.0.1 | Parche — corrige el registro de tareas programadas de facturación/recordatorios en Celery; protección de CI contra la sobrescritura de etiquetas de imagen | Hecho |
 | v1.1.0 | Campos de perfil personalizados — datos de socio configurables por la organización (texto, número, fecha, selección, …) con validación por campo y visibilidad/edición por campo | Hecho |
 | v1.1.1 | Parche — reorganización de la navegación de configuración: ajustes de pagos y de socios agrupados en las pestañas Pagos y Socios | Hecho |
-| v1.2.0 | Roles y permisos flexibles — multi-rol y permisos por rol más allá de los 4 roles fijos | Planificado |
-| v1.3.0 | Integración SSO / identidad — inicio de sesión con el IdP de la organización (SAML/OIDC); modo proveedor más adelante | Planificado |
-| v1.4.0 | Biblioteca de documentos — estatutos, actas, formularios con visibilidad por grupo | Planificado |
-| v1.5.0 | Calendario de eventos + confirmación de asistencia — vista de calendario y seguimiento de participación | Planificado |
-| tras v1.5.0 | Módulos opcionales para superadmin — álbumes de fotos, foro, libro de visitas, directorio de enlaces, inventario/préstamos, widgets del portal (el enfoque de entrega se decide al completar las mejoras principales) | Planificado |
 
-Aplazado tras v1.0.0: GoCardless e-mandatos, integración PayPal, flujo de Stripe Invoice, acciones masivas en recibos, generador de informes personalizados, encuestas, facturación familiar y otras variaciones complejas de las anteriores. Lista completa de aplazados en `memship-definition/docs/public/ROADMAP-v1.0.0.md`.
+### Planificado
+
+Priorizado, aún sin versión. Cada elemento se convierte en un lanzamiento versionado cuando se publica, y el lanzamiento toma el siguiente número semántico por orden.
+
+- **Integración SSO / identidad** — inicio de sesión con el IdP de la organización (SAML/OIDC); modo proveedor más adelante _(en curso)_
+- **Reservas simples** — los socios reservan recursos compartidos (campos, pistas, salas) en un calendario por espacio _(en curso)_
+- **Convocatorias** — convocatorias formales de Asamblea General con confirmación del socio mediante token
+- **Roles y permisos flexibles** — multi-rol y permisos por rol más allá de los 4 roles fijos
+- **Biblioteca de documentos** — estatutos, actas, formularios con visibilidad por grupo
+- **Calendario de eventos + confirmación de asistencia** — vista de calendario y seguimiento de participación
+- **Extensiones — sistema de módulos/plugins** — complementos opcionales entregados como módulos/plugins: álbumes de fotos, foro, libro de visitas, directorio de enlaces, inventario/préstamos, widgets del portal
+
+Las variaciones complejas se construyen bajo demanda, cuando una implementación real las necesita: GoCardless e-mandatos, PayPal, flujo de Stripe Invoice, acciones masivas en recibos, generador de informes personalizados, encuestas, facturación familiar, reservas con clases de grupo/lista de espera, votación y adjuntos en convocatorias, y variantes más profundas de las funciones anteriores.
 
 ---
 
