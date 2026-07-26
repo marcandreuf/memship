@@ -151,8 +151,54 @@
       "encryptionKeyRequired": "Could not save the secret: the server has no working encryption key.",
       "nothingToSave": "No changes to save.",
       "encryptionActive": "Encryption active — secrets are stored encrypted with a server-managed key and are never shown here."
-    }
     },
-    "paymentsGeneral": "General"
+    "paymentsGeneral": "General",
+    "integrations": {
+      "tab": "Integrations",
+      "description": "Third-party service configuration."
+    },
+    "mailing": {
+      "tab": "Mailing",
+      "title": "Mail provider",
+      "description": "Choose and configure the provider your emails are sent through. Only one can be active at a time.",
+      "providers": {
+        "resend": "Resend",
+        "gmail": "Gmail"
+      },
+      "hints": {
+        "resend": "Managed delivery through the Resend API.",
+        "gmail": "SMTP delivery with a Gmail account and an app password."
+      },
+      "activeProvider": "Active provider",
+      "oneAtATime": "Only one provider can be active at a time.",
+      "none": "None",
+      "active": "Active",
+      "ready": "Ready",
+      "off": "Not configured",
+      "fields": {
+        "api_key": "API key",
+        "from_email": "From address",
+        "user": "Gmail address",
+        "app_password": "App password"
+      },
+      "appPasswordHint": "Use a Google app password, not your account password. Leave blank to keep the stored one.",
+      "secretHint": "Leave blank to keep the stored value; enter a new one to replace it.",
+      "fromEnv": "from environment",
+      "stored": "stored",
+      "notConfigured": "Not configured",
+      "clear": "Clear",
+      "undoClear": "Undo",
+      "fillCredsFirst": "Fill in the credentials before activating it.",
+      "sendTest": "Send test",
+      "testSent": "Test email sent.",
+      "testFailed": "Test send failed: {error}",
+      "testNeedsReady": "Configure and save the credentials first.",
+      "testNeedsSave": "Save your changes before sending the test.",
+      "providerNotReady": "Credentials for that provider are missing.",
+      "nothingToSave": "No changes to save.",
+      "encryptionActive": "Encryption active: secrets are stored encrypted.",
+      "encryptionKeyMissing": "Set MEMSHIP_SECRET_KEY to store provider secrets.",
+      "encryptionKeyRequired": "Secrets cannot be saved without an encryption key."
+    }
   }
 }

@@ -28,7 +28,7 @@ class FieldSpec:
     secret_default: bool
 
 
-# Field → env-var mapping mirrors the v1.2.0 env vars one-to-one so the fallback
+# Field → env-var mapping mirrors the v1.3.0 env vars one-to-one so the fallback
 # is exact. ``secret_default`` marks which fields encrypt by default.
 PROVIDER_FIELDS: dict[str, list[FieldSpec]] = {
     "google": [
@@ -135,7 +135,7 @@ def _resolve_provider(name: str, node: object) -> ResolvedProvider:
     #  - explicit DB flag wins (the settings screen always writes one);
     #  - a DB node that exists but never set the flag is treated as off, so
     #    saving credentials does not auto-enable a provider;
-    #  - no DB node at all is a pre-UI (env-only) deployment: keep v1.2.0
+    #  - no DB node at all is a pre-UI (env-only) deployment: keep v1.3.0
     #    behaviour and enable implicitly once every required field resolves.
     if isinstance(node, dict) and "enabled" in node:
         enabled = bool(node["enabled"])

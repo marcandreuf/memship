@@ -1,4 +1,4 @@
-"""Tests for the superadmin SSO configuration screen (v1.2.1).
+"""Tests for the superadmin SSO configuration screen (v1.3.1).
 
 Covers the encryption helper, the DB-wins-env-fallback resolver, and the
 masked GET / write-only PUT endpoints.

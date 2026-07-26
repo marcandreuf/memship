@@ -11,63 +11,74 @@ from app.core.email import (
     send_waitlist_promotion_email,
     send_welcome_email,
 )
+from app.domains.mailing.mailing_config import ResolvedMailing, ResolvedProvider
+
+
+def _provider(name, values, sources=None):
+    return ResolvedProvider(
+        name=name,
+        values=values,
+        sources=sources or {k: "db" for k in values},
+        secret_flags={},
+    )
+
+
+def _resolved(active, resend_values=None, gmail_values=None, gmail_sources=None):
+    return ResolvedMailing(
+        active=active,
+        resend=_provider("resend", resend_values or {}),
+        gmail=_provider("gmail", gmail_values or {}, gmail_sources),
+    )
 
 
 class TestEmailTransport:
-    @patch("app.core.email.settings")
-    def test_send_email_disabled(self, mock_settings):
-        mock_settings.RESEND_API_KEY = ""
-        mock_settings.smtp_enabled = False
-        result = send_email("test@example.com", "Test", "<p>body</p>")
-        assert result is False
+    """Transport selection is now DB-driven via the resolved mailing config."""
 
-    @patch("app.core.email.settings")
+    @patch("app.core.email._resolve_transport")
+    def test_send_email_no_active_provider(self, mock_resolve):
+        mock_resolve.return_value = _resolved(active=None)
+        assert send_email("test@example.com", "Test", "<p>body</p>") is False
+
+    @patch("app.core.email._resolve_transport")
     @patch("app.core.email.smtplib.SMTP")
-    def test_send_email_smtp_success(self, mock_smtp_class, mock_settings):
-        mock_settings.RESEND_API_KEY = ""
-        mock_settings.smtp_enabled = True
-        mock_settings.SMTP_HOST = "smtp.example.com"
-        mock_settings.SMTP_PORT = 587
-        mock_settings.SMTP_TLS = True
-        mock_settings.SMTP_USER = "user"
-        mock_settings.SMTP_PASSWORD = "pass"
-        mock_settings.SMTP_FROM = "noreply@example.com"
-
+    def test_send_email_gmail_smtp_success(self, mock_smtp_class, mock_resolve):
+        mock_resolve.return_value = _resolved(
+            active="gmail",
+            gmail_values={
+                "user": "club@gmail.com",
+                "app_password": "app-pw",
+                "from_email": "club@gmail.com",
+            },
+        )
         mock_server = MagicMock()
-        mock_smtp_class.return_value = mock_server
+        mock_smtp_class.return_value.__enter__.return_value = mock_server
 
         result = send_email("test@example.com", "Test Subject", "<p>Hello</p>")
 
         assert result is True
+        # UI-configured Gmail pins Google's SMTP endpoint.
+        mock_smtp_class.assert_called_once_with("smtp.gmail.com", 587)
         mock_server.starttls.assert_called_once()
-        mock_server.login.assert_called_once_with("user", "pass")
+        mock_server.login.assert_called_once_with("club@gmail.com", "app-pw")
         mock_server.sendmail.assert_called_once()
-        mock_server.quit.assert_called_once()
 
-    @patch("app.core.email.settings")
+    @patch("app.core.email._resolve_transport")
     @patch("app.core.email.smtplib.SMTP")
-    def test_send_email_smtp_failure(self, mock_smtp_class, mock_settings):
-        mock_settings.RESEND_API_KEY = ""
-        mock_settings.smtp_enabled = True
-        mock_settings.SMTP_HOST = "smtp.example.com"
-        mock_settings.SMTP_PORT = 587
-        mock_settings.SMTP_TLS = False
-        mock_settings.SMTP_USER = ""
-        mock_settings.SMTP_PASSWORD = ""
-        mock_settings.SMTP_FROM = "noreply@example.com"
-
+    def test_send_email_smtp_failure(self, mock_smtp_class, mock_resolve):
+        mock_resolve.return_value = _resolved(
+            active="gmail",
+            gmail_values={"user": "club@gmail.com", "app_password": "pw"},
+        )
         mock_smtp_class.side_effect = ConnectionRefusedError("Connection refused")
 
-        result = send_email("test@example.com", "Test", "<p>body</p>")
-        assert result is False
+        assert send_email("test@example.com", "Test", "<p>body</p>") is False
 
-    @patch("app.core.email.settings")
-    def test_resend_takes_priority_over_smtp(self, mock_settings):
-        """When both Resend and SMTP are configured, Resend is used."""
-        mock_settings.RESEND_API_KEY = "re_test_key"
-        mock_settings.smtp_enabled = True
-        # The Resend import will fail in test env, but we verify it's attempted
-        # before SMTP
+    @patch("app.core.email._resolve_transport")
+    def test_send_email_resend(self, mock_resolve):
+        mock_resolve.return_value = _resolved(
+            active="resend",
+            resend_values={"api_key": "re_key", "from_email": "noreply@club.example"},
+        )
         with patch("app.core.email._send_via_resend", return_value=True) as mock_resend:
             result = send_email("test@example.com", "Test", "<p>body</p>")
             assert result is True

@@ -107,7 +107,8 @@ Open http://localhost:8081 and log in with your credentials. Change `PORT=8081` 
 | v1.1.0 | Custom profile fields — org-configurable member data (text, number, date, select, …) with per-field validation and per-field visibility/editability | Done |
 | v1.1.1 | Patch — settings navigation reorganised: payment and member settings grouped under Payments and Members tabs | Done |
 | v1.2.0 | Flexible roles & permissions — multi-role, per-role rights beyond the 4 fixed roles | Planned |
-| v1.3.0 | SSO / identity integration — sign in via an org's IdP (SAML/OIDC); provider mode later | Planned |
+| v1.3.0 | SSO / identity integration — public registration + email-verification onboarding, admin approval flow, and Google / Apple sign-in | Planned |
+| v1.3.1 | SSO provider configuration in Settings — superadmin sets Google / Apple credentials from an Integrations tab, no redeploy | Planned |
 | v1.4.0 | Document library — statutes, minutes, forms with per-group visibility | Planned |
 | v1.5.0 | Events calendar + RSVP — calendar view and participation tracking | Planned |
 | after v1.5.0 | Optional super-admin modules — photo albums, forum, guestbook, weblinks directory, inventory/lending, portal widgets (delivery approach decided once the core gaps ship) | Planned |

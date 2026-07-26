@@ -48,6 +48,7 @@ import { PaymentRemindersSettings } from "@/features/settings/components/payment
 import { CommunicationsSettings } from "@/features/settings/components/communications-settings";
 import { MemberCardSettings } from "@/features/settings/components/member-card-settings";
 import { SsoSettings } from "@/features/settings/components/sso-settings";
+import { MailingSettings } from "@/features/settings/components/mailing-settings";
 import { ProfileFieldsSettings } from "@/features/settings/components/profile-fields-settings";
 import { FormSkeleton } from "@/components/ui/skeletons";
 
@@ -197,7 +198,7 @@ export default function SettingsPage() {
             <TabsTrigger value="member-card">{t("settings.memberCard.tab")}</TabsTrigger>
           )}
           {isSuperAdmin && (
-            <TabsTrigger value="sso">{t("settings.sso.tab")}</TabsTrigger>
+            <TabsTrigger value="integrations">{t("settings.integrations.tab")}</TabsTrigger>
           )}
           {/* Ungated: membership types is the one setting a plain admin can
               reach, and it lives in here. */}
@@ -454,8 +455,19 @@ export default function SettingsPage() {
           <MemberCardSettings />
         </TabsContent>}
 
-        {isSuperAdmin && <TabsContent value="sso">
-          <SsoSettings />
+        {isSuperAdmin && <TabsContent value="integrations">
+          <Tabs defaultValue="sso">
+            <TabsList className={SUBTAB_LIST}>
+              <TabsTrigger value="sso" className={SUBTAB_TRIGGER}>{t("settings.sso.tab")}</TabsTrigger>
+              <TabsTrigger value="mailing" className={SUBTAB_TRIGGER}>{t("settings.mailing.tab")}</TabsTrigger>
+            </TabsList>
+            <TabsContent value="sso">
+              <SsoSettings />
+            </TabsContent>
+            <TabsContent value="mailing">
+              <MailingSettings />
+            </TabsContent>
+          </Tabs>
         </TabsContent>}
 
         {/* Everything about members and how the org talks to them. The group

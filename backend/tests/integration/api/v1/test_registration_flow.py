@@ -1,4 +1,4 @@
-"""Integration tests for the v1.2.0 registration / approval flow."""
+"""Integration tests for the v1.3.0 registration / approval flow."""
 
 from datetime import datetime, timedelta, timezone
 

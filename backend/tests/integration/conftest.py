@@ -84,7 +84,44 @@ def create_test_tables():
         # Another xdist worker already created the tables — safe to ignore
         pass
 
-    yield
+    # The mail transport (app.core.email) opens its own SessionLocal to resolve
+    # the active provider at send time. Point that at the test engine so a send
+    # during a test uses the test DB, not the developer's dev database.
+    import app.db.session as db_session
+
+    original_session_local = db_session.SessionLocal
+    db_session.SessionLocal = TestSessionLocal
+    try:
+        yield
+    finally:
+        db_session.SessionLocal = original_session_local
+
+
+@pytest.fixture(autouse=True)
+def _no_external_email(monkeypatch):
+    """Never touch a real mail provider during integration tests.
+
+    The dev ``.env`` may set ``SMTP_HOST`` / ``RESEND_API_KEY``, which would make
+    ``settings.email_enabled`` true and send real email. Blank those so mail is
+    treated as disabled (deterministic dev-mode: endpoints hand tokens back
+    instead of emailing), and stub the transport dispatch so no network call is
+    possible even when a test configures a provider in the DB. Tests that want to
+    assert a send still mock ``app.core.email.send_email`` themselves.
+    """
+    from app.core.config import settings as app_settings
+
+    for name in (
+        "SMTP_HOST",
+        "SMTP_USER",
+        "SMTP_PASSWORD",
+        "RESEND_API_KEY",
+        "RESEND_FROM_EMAIL",
+    ):
+        monkeypatch.setattr(app_settings, name, "", raising=False)
+
+    import app.core.email as email_module
+
+    monkeypatch.setattr(email_module, "_dispatch", lambda *args, **kwargs: True)
 
 
 @pytest.fixture

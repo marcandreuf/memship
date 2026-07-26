@@ -151,8 +151,54 @@
       "encryptionKeyRequired": "No s'ha pogut desar el secret: el servidor no té una clau de xifratge vàlida.",
       "nothingToSave": "No hi ha canvis per desar.",
       "encryptionActive": "Xifratge actiu: els secrets es desen xifrats amb una clau gestionada pel servidor i mai no es mostren aquí."
-    }
     },
-    "paymentsGeneral": "General"
+    "paymentsGeneral": "General",
+    "integrations": {
+      "tab": "Integracions",
+      "description": "Configuració de serveis de tercers."
+    },
+    "mailing": {
+      "tab": "Correu",
+      "title": "Proveïdor de correu",
+      "description": "Tria i configura el proveïdor amb què s'envien els correus. Només n'hi pot haver un d'actiu alhora.",
+      "providers": {
+        "resend": "Resend",
+        "gmail": "Gmail"
+      },
+      "hints": {
+        "resend": "Lliurament gestionat mitjançant l'API de Resend.",
+        "gmail": "Enviament per SMTP amb un compte de Gmail i una contrasenya d'aplicació."
+      },
+      "activeProvider": "Proveïdor actiu",
+      "oneAtATime": "Només es pot activar un proveïdor alhora.",
+      "none": "Cap",
+      "active": "Actiu",
+      "ready": "A punt",
+      "off": "Sense configurar",
+      "fields": {
+        "api_key": "Clau d'API",
+        "from_email": "Correu del remitent",
+        "user": "Adreça de Gmail",
+        "app_password": "Contrasenya d'aplicació"
+      },
+      "appPasswordHint": "Fes servir una contrasenya d'aplicació de Google, no la del compte. Deixa-ho en blanc per mantenir la desada.",
+      "secretHint": "Deixa-ho en blanc per mantenir el valor desat; introdueix-ne un de nou per reemplaçar-lo.",
+      "fromEnv": "de l'entorn",
+      "stored": "desat",
+      "notConfigured": "Sense configurar",
+      "clear": "Esborra",
+      "undoClear": "Desfés",
+      "fillCredsFirst": "Emplena les credencials abans d'activar-lo.",
+      "sendTest": "Envia una prova",
+      "testSent": "Correu de prova enviat.",
+      "testFailed": "L'enviament de prova ha fallat: {error}",
+      "testNeedsReady": "Configura i desa les credencials primer.",
+      "testNeedsSave": "Desa els canvis abans d'enviar la prova.",
+      "providerNotReady": "Falten credencials per a aquest proveïdor.",
+      "nothingToSave": "No hi ha canvis per desar.",
+      "encryptionActive": "Xifratge actiu: els secrets es desen xifrats.",
+      "encryptionKeyMissing": "Configura MEMSHIP_SECRET_KEY per poder desar secrets del proveïdor.",
+      "encryptionKeyRequired": "No es poden desar secrets sense una clau de xifratge."
+    }
   }
 }

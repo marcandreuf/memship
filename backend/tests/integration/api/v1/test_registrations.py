@@ -989,7 +989,7 @@ class TestEligibilityRules:
     def test_pending_member_cannot_register(self, client, db):
         """8.7 — Pending member is rejected.
 
-        Since v1.2.0 a pending member is one whose registration is still awaiting
+        Since v1.3.0 a pending member is one whose registration is still awaiting
         admin approval, so the approval gate stops them at the router (403) before
         the eligibility engine can run. The rule still holds — it is just enforced
         earlier and for every feature route, not only this one.

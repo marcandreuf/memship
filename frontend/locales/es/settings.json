@@ -151,8 +151,54 @@
       "encryptionKeyRequired": "No se pudo guardar el secreto: el servidor no tiene una clave de cifrado válida.",
       "nothingToSave": "No hay cambios que guardar.",
       "encryptionActive": "Cifrado activo: los secretos se guardan cifrados con una clave gestionada por el servidor y nunca se muestran aquí."
-    }
     },
-    "paymentsGeneral": "General"
+    "paymentsGeneral": "General",
+    "integrations": {
+      "tab": "Integraciones",
+      "description": "Configuración de servicios de terceros."
+    },
+    "mailing": {
+      "tab": "Correo",
+      "title": "Proveedor de correo",
+      "description": "Elige y configura el proveedor con el que se envían los correos. Solo puede haber uno activo a la vez.",
+      "providers": {
+        "resend": "Resend",
+        "gmail": "Gmail"
+      },
+      "hints": {
+        "resend": "Entrega gestionada mediante la API de Resend.",
+        "gmail": "Envío por SMTP con una cuenta de Gmail y una contraseña de aplicación."
+      },
+      "activeProvider": "Proveedor activo",
+      "oneAtATime": "Solo se puede activar un proveedor a la vez.",
+      "none": "Ninguno",
+      "active": "Activo",
+      "ready": "Listo",
+      "off": "Sin configurar",
+      "fields": {
+        "api_key": "Clave de API",
+        "from_email": "Correo del remitente",
+        "user": "Dirección de Gmail",
+        "app_password": "Contraseña de aplicación"
+      },
+      "appPasswordHint": "Usa una contraseña de aplicación de Google, no la contraseña de la cuenta. Déjalo en blanco para mantener la guardada.",
+      "secretHint": "Déjalo en blanco para mantener el valor guardado; introduce uno nuevo para reemplazarlo.",
+      "fromEnv": "del entorno",
+      "stored": "guardado",
+      "notConfigured": "Sin configurar",
+      "clear": "Borrar",
+      "undoClear": "Deshacer",
+      "fillCredsFirst": "Rellena las credenciales antes de activarlo.",
+      "sendTest": "Enviar prueba",
+      "testSent": "Correo de prueba enviado.",
+      "testFailed": "Ha fallado el envío de prueba: {error}",
+      "testNeedsReady": "Configura y guarda las credenciales primero.",
+      "testNeedsSave": "Guarda los cambios antes de enviar la prueba.",
+      "providerNotReady": "Faltan credenciales para ese proveedor.",
+      "nothingToSave": "No hay cambios que guardar.",
+      "encryptionActive": "Cifrado activo: los secretos se guardan cifrados.",
+      "encryptionKeyMissing": "Configura MEMSHIP_SECRET_KEY para poder guardar secretos del proveedor.",
+      "encryptionKeyRequired": "No se pueden guardar secretos sin una clave de cifrado."
+    }
   }
 }

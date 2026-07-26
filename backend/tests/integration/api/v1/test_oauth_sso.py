@@ -1,4 +1,4 @@
-"""Integration tests for SSO identity resolution (v1.2.1)."""
+"""Integration tests for SSO identity resolution (v1.3.0)."""
 
 import pytest
 
