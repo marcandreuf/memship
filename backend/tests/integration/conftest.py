@@ -62,18 +62,67 @@ from app.domains.custom_fields.models import (  # noqa: F401
 )
 
 # Use test database
-TEST_DATABASE_URL = os.getenv("DATABASE_TEST_URL", settings.DATABASE_TEST_URL)
+BASE_TEST_DATABASE_URL = os.getenv("DATABASE_TEST_URL", settings.DATABASE_TEST_URL)
+
+
+def _worker_database_url(base_url: str) -> str:
+    """Give each pytest-xdist worker its own database.
+
+    Every test holds an open transaction until teardown rolls it back. Two
+    workers sharing one database therefore block on each other's uncommitted
+    rows whenever they insert the same unique key (``membership_types.name``,
+    ``organization_settings.id = 1``, person emails, ...), which escalates to
+    ``DeadlockDetected`` as soon as the lock waits cross. Isolating the schema
+    per worker removes the contention entirely.
+
+    Creates the per-worker database on first use; no-op when running without
+    xdist or against SQLite.
+    """
+    worker = os.getenv("PYTEST_XDIST_WORKER")
+    if not worker:
+        return base_url
+
+    from sqlalchemy import text
+    from sqlalchemy.engine.url import make_url
+    from sqlalchemy.exc import ProgrammingError
+
+    url = make_url(base_url)
+    if not url.get_backend_name().startswith("postgresql"):
+        return base_url
+
+    worker_db = f"{url.database}_{worker}"
+    admin_engine = create_engine(
+        url.set(database="postgres"), isolation_level="AUTOCOMMIT"
+    )
+    try:
+        with admin_engine.connect() as conn:
+            exists = conn.execute(
+                text("SELECT 1 FROM pg_database WHERE datname = :name"),
+                {"name": worker_db},
+            ).scalar()
+            if not exists:
+                try:
+                    conn.execute(text(f'CREATE DATABASE "{worker_db}"'))
+                except ProgrammingError:
+                    # Lost the race against another worker — it exists now.
+                    pass
+    finally:
+        admin_engine.dispose()
+
+    return url.set(database=worker_db).render_as_string(hide_password=False)
+
+
+TEST_DATABASE_URL = _worker_database_url(BASE_TEST_DATABASE_URL)
 test_engine = create_engine(TEST_DATABASE_URL, pool_pre_ping=True)
 TestSessionLocal = sessionmaker(bind=test_engine, autocommit=False, autoflush=False)
 
 
 @pytest.fixture(scope="session", autouse=True)
 def create_test_tables():
-    """Create all tables once per test session.
+    """Create all tables once per test session (per xdist worker database).
 
-    With pytest-xdist, multiple workers may call this concurrently.
     create_all uses IF NOT EXISTS for most DDL, but PostgreSQL type
-    creation can race. We catch and ignore that specific error.
+    creation can race, so the error is caught and ignored.
     Skips drop_all — the test DB is ephemeral (CI service or local docker).
     """
     from sqlalchemy.exc import IntegrityError
