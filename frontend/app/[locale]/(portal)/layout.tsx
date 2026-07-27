@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@/features/auth/hooks/use-auth";
+import { PendingApproval } from "@/features/auth/components/pending-approval";
 import { AppSidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 import { AppFooter } from "@/components/layout/footer";
@@ -45,6 +46,18 @@ export default function PortalLayout({
 
   if (!user) {
     return null;
+  }
+
+  // Registration still awaiting admin approval: the backend closes every
+  // feature route for this member, so show why instead of an empty portal.
+  const isAdmin = user.role === "admin" || user.role === "super_admin";
+  if (!isAdmin && user.member_status === "pending") {
+    return (
+      <>
+        <BrandTheme />
+        <PendingApproval user={user} />
+      </>
+    );
   }
 
   return (

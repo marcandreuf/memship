@@ -95,6 +95,12 @@ class MemberStatusChange(BaseModel):
     reason: str | None = Field(default=None, max_length=2000)
 
 
+class MemberRegistrationRejection(BaseModel):
+    """Reason shown to the applicant when an admin rejects a self-registration."""
+
+    reason: str | None = Field(default=None, max_length=2000)
+
+
 class PersonResponse(BaseModel):
     id: int
     first_name: str

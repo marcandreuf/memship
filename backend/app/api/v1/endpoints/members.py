@@ -5,7 +5,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.authorization import require_admin
+from app.core.config import settings
 from app.core.db_utils import get_or_404
+from app.core.email import (
+    send_registration_approved_email,
+    send_registration_rejected_email,
+)
 from app.core.pagination import PageMeta, paginate
 from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
@@ -14,6 +19,7 @@ from app.domains.members.models import Member
 from app.domains.members.schemas import (
     GuardianResponse,
     MemberCreate,
+    MemberRegistrationRejection,
     MemberResponse,
     MemberStatusChange,
     MemberUpdate,
@@ -22,11 +28,13 @@ from app.domains.members.schemas import (
 from app.core.csv_export import stream_csv
 from app.domains.member_card.schemas import AssignNumbersResponse
 from app.domains.members.service import (
+    approve_registration,
     assign_missing_member_numbers,
     build_members_query,
     change_member_status,
     create_member,
     is_minor_by_dob,
+    reject_registration,
 )
 from app.domains.persons.models import Contact, ContactType, Person
 
@@ -265,6 +273,75 @@ def change_status(
 
     db.commit()
     db.refresh(member)
+    return _to_response(member)
+
+
+def _load_member_for_review(db: Session, member_id: int) -> Member:
+    member = (
+        db.query(Member)
+        .options(
+            joinedload(Member.person),
+            joinedload(Member.membership_type),
+            joinedload(Member.guardian),
+            joinedload(Member.user),
+        )
+        .filter(Member.id == member_id)
+        .first()
+    )
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+    return member
+
+
+@router.post("/{member_id}/approve", response_model=MemberResponse)
+def approve_member_registration(
+    member_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    member = _load_member_for_review(db, member_id)
+
+    try:
+        member = approve_registration(db, member)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    db.commit()
+    db.refresh(member)
+
+    if member.person and member.person.email:
+        send_registration_approved_email(
+            member.person.email,
+            member.person.first_name,
+            member.member_number or "",
+            f"{settings.FRONTEND_URL}/{settings.DEFAULT_LOCALE}/login",
+        )
+
+    return _to_response(member)
+
+
+@router.post("/{member_id}/reject", response_model=MemberResponse)
+def reject_member_registration(
+    member_id: int,
+    data: MemberRegistrationRejection,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    member = _load_member_for_review(db, member_id)
+    email = member.person.email if member.person else None
+    first_name = member.person.first_name if member.person else ""
+
+    try:
+        member = reject_registration(db, member, data.reason)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    db.commit()
+    db.refresh(member)
+
+    if email:
+        send_registration_rejected_email(email, first_name, data.reason)
+
     return _to_response(member)
 
 

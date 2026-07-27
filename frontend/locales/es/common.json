@@ -25,7 +25,8 @@
     "communications": "Comunicaciones",
     "announcements": "Anuncios",
     "myCard": "Mi tarjeta",
-    "scan": "Escanear"
+    "scan": "Escanear",
+    "pendingRegistrations": "Altas pendientes"
   },
   "common": {
     "save": "Guardar",

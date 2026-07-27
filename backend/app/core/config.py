@@ -46,6 +46,17 @@ class Settings(BaseSettings):
     # Security
     SECRET_KEY: str = "change-me-in-production"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    # Fernet key (urlsafe base64, 32 bytes) used to encrypt provider secrets stored
+    # in the DB via the SSO settings screen. Optional OVERRIDE: when set (e.g. from a
+    # secrets manager) it wins. When empty, the app auto-generates a per-install key
+    # and persists it to SECRETS_KEY_FILE (never the database), so a DB dump alone
+    # cannot decrypt the stored secrets. Generate one explicitly with:
+    #   python -c "from cryptography.fernet import Fernet;print(Fernet.generate_key().decode())"
+    MEMSHIP_SECRET_KEY: str = ""
+    # Where the auto-generated encryption key is stored when MEMSHIP_SECRET_KEY is
+    # unset. Empty → "<STORAGE_LOCAL_PATH>/secret.key". Must sit on a PERSISTENT
+    # volume so the key survives restarts (otherwise stored secrets become unreadable).
+    SECRETS_KEY_FILE: str = ""
 
     # Application
     APP_ENV: str = "development"
@@ -53,7 +64,9 @@ class Settings(BaseSettings):
     DEFAULT_LOCALE: str = "es"
     CORS_ORIGINS: str = "http://localhost:3000"
 
-    # SMTP (optional — emails disabled if SMTP_HOST is empty)
+    # SMTP (optional — emails disabled if SMTP_HOST is empty).
+    # Real credentials belong in backend/.env (gitignored), never here — this
+    # file is committed to a public repo.
     SMTP_HOST: str = ""
     SMTP_PORT: int = 587
     SMTP_USER: str = ""
@@ -69,6 +82,17 @@ class Settings(BaseSettings):
     # Resend (optional — alternative to SMTP for managed email delivery)
     RESEND_API_KEY: str = ""
     RESEND_FROM_EMAIL: str = ""
+
+    # Single sign-on (optional — a provider is offered only when configured)
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+
+    # Apple: APPLE_CLIENT_ID is the Services ID (not the App ID). APPLE_PRIVATE_KEY
+    # is the contents of the .p8 key file — newlines may be given as literal \n.
+    APPLE_CLIENT_ID: str = ""
+    APPLE_TEAM_ID: str = ""
+    APPLE_KEY_ID: str = ""
+    APPLE_PRIVATE_KEY: str = ""
 
     # Celery / Redis
     CELERY_BROKER_URL: str = "redis://localhost:6379/0"
@@ -88,6 +112,28 @@ class Settings(BaseSettings):
     @property
     def email_enabled(self) -> bool:
         return bool(self.RESEND_API_KEY) or bool(self.SMTP_HOST)
+
+    @property
+    def google_sso_enabled(self) -> bool:
+        return bool(self.GOOGLE_CLIENT_ID and self.GOOGLE_CLIENT_SECRET)
+
+    @property
+    def apple_sso_enabled(self) -> bool:
+        return bool(
+            self.APPLE_CLIENT_ID
+            and self.APPLE_TEAM_ID
+            and self.APPLE_KEY_ID
+            and self.APPLE_PRIVATE_KEY
+        )
+
+    @property
+    def apple_private_key_pem(self) -> str:
+        """The .p8 key with escaped newlines restored to real ones."""
+        return self.APPLE_PRIVATE_KEY.replace("\\n", "\n").strip()
+
+    @property
+    def sso_enabled(self) -> bool:
+        return self.google_sso_enabled or self.apple_sso_enabled
 
     @property
     def cors_origins_list(self) -> list[str]:

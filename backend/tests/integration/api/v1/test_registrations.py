@@ -987,7 +987,13 @@ class TestEligibilityRules:
         assert "closed" in response.json()["detail"].lower()
 
     def test_pending_member_cannot_register(self, client, db):
-        """8.7 — Pending member is rejected."""
+        """8.7 — Pending member is rejected.
+
+        Since v1.3.0 a pending member is one whose registration is still awaiting
+        admin approval, so the approval gate stops them at the router (403) before
+        the eligibility engine can run. The rule still holds — it is just enforced
+        earlier and for every feature route, not only this one.
+        """
         admin = _create_user(db, "admin", suffix="-pending")
         user, member = _create_member_with_user(db, suffix="-pending", status="pending")
         activity, price = _create_published_activity(db, admin.id)
@@ -997,8 +1003,8 @@ class TestEligibilityRules:
             f"/api/v1/activities/{activity.id}/register",
             json={"price_id": price.id},
         )
-        assert response.status_code == 400
-        assert "not active" in response.json()["detail"]
+        assert response.status_code == 403
+        assert response.json()["detail"]["code"] == "pending_approval"
 
     def test_cancelled_member_cannot_register(self, client, db):
         """8.7 — Cancelled member is rejected."""

@@ -23,7 +23,18 @@ import {
 } from "@/components/ui/form";
 import { Link } from "@/lib/i18n/routing";
 import { useAuth } from "../hooks/use-auth";
+import { useSearchParams } from "next/navigation";
 import { ClientApiError } from "../services/auth-api";
+import { SsoButtons } from "./sso-buttons";
+
+// Codes the backend appends when an SSO handshake cannot complete.
+const SSO_ERROR_KEYS: Record<string, string> = {
+  sso_failed: "auth.ssoFailed",
+  sso_email_unverified: "auth.ssoEmailUnverified",
+  registration_closed: "auth.ssoRegistrationClosed",
+  account_disabled: "auth.ssoAccountDisabled",
+  account_locked: "auth.ssoAccountLocked",
+};
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -35,6 +46,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 export function LoginForm() {
   const t = useTranslations();
   const { login, isLoggingIn, loginError } = useAuth();
+  const searchParams = useSearchParams();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -49,12 +61,16 @@ export function LoginForm() {
     }
   }
 
+  const ssoErrorKey = SSO_ERROR_KEYS[searchParams.get("error") ?? ""];
+
   const errorMessage =
     loginError instanceof ClientApiError
       ? loginError.message
       : loginError
         ? t("auth.loginError")
-        : null;
+        : ssoErrorKey
+          ? t(ssoErrorKey)
+          : null;
 
   return (
     <Card className="w-full max-w-md">
@@ -112,6 +128,8 @@ export function LoginForm() {
             <Button type="submit" className="w-full" disabled={isLoggingIn}>
               {isLoggingIn ? t("common.loading") : t("auth.login")}
             </Button>
+
+            <SsoButtons />
 
             <div className="text-center text-sm space-y-2">
               <Link

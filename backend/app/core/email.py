@@ -15,6 +15,12 @@ from pathlib import Path
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound, select_autoescape
 
 from app.core.config import settings
+from app.db import session as db_session
+from app.domains.mailing.mailing_config import (
+    ResolvedMailing,
+    env_only_mailing_config,
+    resolve_mailing_config,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -57,10 +63,30 @@ _SUBJECTS = {
         "ca": "Restablir contrasenya",
         "en": "Reset your password",
     },
+    "verification": {
+        "es": "Confirma tu correo electrónico",
+        "ca": "Confirma el teu correu electrònic",
+        "en": "Confirm your email address",
+    },
+    "registration_approved": {
+        "es": "Tu solicitud de alta ha sido aprobada",
+        "ca": "La teva sol·licitud d'alta ha estat aprovada",
+        "en": "Your registration has been approved",
+    },
+    "registration_rejected": {
+        "es": "Sobre tu solicitud de alta",
+        "ca": "Sobre la teva sol·licitud d'alta",
+        "en": "About your registration request",
+    },
     "payment_reminder": {
         "es": "Recordatorio de pago: recibo {receipt_number}",
         "ca": "Recordatori de pagament: rebut {receipt_number}",
         "en": "Payment reminder: receipt {receipt_number}",
+    },
+    "mailing_test": {
+        "es": "Correo de prueba de Memship",
+        "ca": "Correu de prova de Memship",
+        "en": "Memship test email",
     },
 }
 
@@ -84,62 +110,168 @@ def _get_subject(template_name: str, locale: str, **kwargs) -> str:
 
 
 # --- Transport layer ---
+#
+# The active provider and its credentials are resolved at send time from the DB
+# (with an env-var fallback) via ``app.domains.mailing.mailing_config``. The
+# module-level ``send_*`` API is unchanged for every caller; only the transport
+# picks its credentials from the resolved config instead of ``settings`` directly.
 
-def _send_via_resend(to: str, subject: str, html_body: str) -> bool:
-    """Send email via Resend API."""
+
+def _resolve_transport() -> ResolvedMailing:
+    """Resolve the active mail provider using a short-lived DB session.
+
+    Callers (Celery tasks, request handlers, the billing reminder service) do
+    not all carry a Session, so the transport opens its own for the one-row
+    lookup. A settings save therefore applies on the next email with no restart.
+    """
+    try:
+        db = db_session.SessionLocal()
+    except Exception:  # noqa: BLE001 — never let mail config resolution break a send
+        return env_only_mailing_config()
+    try:
+        return resolve_mailing_config(db)
+    except Exception as e:  # noqa: BLE001 — degrade to env-only rather than failing the send
+        logger.warning(f"Mailing config resolution failed, falling back to env: {e}")
+        return env_only_mailing_config()
+    finally:
+        db.close()
+
+
+def _send_via_resend(
+    to: str,
+    subject: str,
+    html_body: str,
+    api_key: str,
+    from_email: str,
+    attachment: bytes | None = None,
+    attachment_filename: str = "document.pdf",
+    attachment_mime: str = "application/pdf",
+    raise_errors: bool = False,
+) -> bool:
+    """Send email via the Resend API with explicit credentials."""
     try:
         import resend
-        resend.api_key = settings.RESEND_API_KEY
-        from_email = settings.RESEND_FROM_EMAIL or settings.SMTP_FROM
-        resend.Emails.send({
+        resend.api_key = api_key
+        payload: dict = {
             "from": from_email,
             "to": [to],
             "subject": subject,
             "html": html_body,
-        })
+        }
+        if attachment is not None:
+            payload["attachments"] = [{
+                "filename": attachment_filename,
+                "content": list(attachment),
+                "content_type": attachment_mime,
+            }]
+        resend.Emails.send(payload)
         logger.info(f"Email sent via Resend: to={to}, subject={subject}")
         return True
     except Exception as e:
         logger.error(f"Resend email failed: to={to}, error={e}")
+        if raise_errors:
+            raise
         return False
 
 
-def _send_via_smtp(to: str, subject: str, html_body: str) -> bool:
-    """Send email via SMTP."""
-    msg = MIMEMultipart("alternative")
-    msg["From"] = settings.SMTP_FROM
+def _send_via_smtp(
+    to: str,
+    subject: str,
+    html_body: str,
+    host: str,
+    port: int,
+    tls: bool,
+    user: str,
+    password: str,
+    from_email: str,
+    attachment: bytes | None = None,
+    attachment_filename: str = "document.pdf",
+    attachment_mime: str = "application/pdf",
+    raise_errors: bool = False,
+) -> bool:
+    """Send email via SMTP with explicit connection parameters."""
+    if attachment is None:
+        msg = MIMEMultipart("alternative")
+    else:
+        msg = MIMEMultipart()
+    msg["From"] = from_email
     msg["To"] = to
     msg["Subject"] = subject
     msg.attach(MIMEText(html_body, "html"))
 
+    if attachment is not None:
+        from email.mime.base import MIMEBase
+        from email import encoders
+
+        part = MIMEBase(*attachment_mime.split("/"))
+        part.set_payload(attachment)
+        encoders.encode_base64(part)
+        part.add_header("Content-Disposition", f'attachment; filename="{attachment_filename}"')
+        msg.attach(part)
+
     try:
-        if settings.SMTP_TLS:
-            server = smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT)
-            server.starttls()
-        else:
-            server = smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT)
-
-        if settings.SMTP_USER and settings.SMTP_PASSWORD:
-            server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-
-        server.sendmail(settings.SMTP_FROM, to, msg.as_string())
-        server.quit()
+        with smtplib.SMTP(host, port) as server:
+            if tls:
+                server.starttls()
+            if user and password:
+                server.login(user, password)
+            server.sendmail(from_email, to, msg.as_string())
         logger.info(f"Email sent via SMTP: to={to}, subject={subject}")
         return True
     except Exception as e:
         logger.error(f"SMTP email failed: to={to}, error={e}")
+        if raise_errors:
+            raise
         return False
+
+
+def _dispatch(
+    provider: str,
+    resolved: ResolvedMailing,
+    to: str,
+    subject: str,
+    html_body: str,
+    attachment: bytes | None = None,
+    attachment_filename: str = "document.pdf",
+    attachment_mime: str = "application/pdf",
+    raise_errors: bool = False,
+) -> bool:
+    """Send through a specific resolved provider (Resend or Gmail/SMTP)."""
+    if provider == "resend":
+        c = resolved.resend
+        return _send_via_resend(
+            to, subject, html_body,
+            api_key=c.get("api_key"),
+            from_email=c.get("from_email") or settings.SMTP_FROM,
+            attachment=attachment,
+            attachment_filename=attachment_filename,
+            attachment_mime=attachment_mime,
+            raise_errors=raise_errors,
+        )
+    if provider == "gmail":
+        g = resolved.gmail
+        host, port, tls = resolved.gmail_smtp()
+        return _send_via_smtp(
+            to, subject, html_body,
+            host=host, port=port, tls=tls,
+            user=g.get("user"),
+            password=g.get("app_password"),
+            from_email=g.get("from_email") or g.get("user"),
+            attachment=attachment,
+            attachment_filename=attachment_filename,
+            attachment_mime=attachment_mime,
+            raise_errors=raise_errors,
+        )
+    return False
 
 
 def send_email(to: str, subject: str, html_body: str) -> bool:
-    """Send an email using the best available transport."""
-    if settings.RESEND_API_KEY:
-        return _send_via_resend(to, subject, html_body)
-    elif settings.smtp_enabled:
-        return _send_via_smtp(to, subject, html_body)
-    else:
+    """Send an email through the active mail provider."""
+    resolved = _resolve_transport()
+    if not resolved.active:
         logger.info(f"Email skipped (no transport): to={to}, subject={subject}")
         return False
+    return _dispatch(resolved.active, resolved, to, subject, html_body)
 
 
 def send_email_with_attachment(
@@ -150,67 +282,36 @@ def send_email_with_attachment(
     attachment_filename: str = "document.pdf",
     attachment_mime: str = "application/pdf",
 ) -> bool:
-    """Send an email with a file attachment. Tries Resend first, then SMTP."""
-    import base64
+    """Send an email with a file attachment through the active mail provider."""
+    resolved = _resolve_transport()
+    if not resolved.active:
+        logger.info(
+            f"Email with attachment skipped (no transport): to={to}, "
+            f"subject={subject}, file={attachment_filename}"
+        )
+        return False
+    return _dispatch(
+        resolved.active, resolved, to, subject, html_body,
+        attachment=attachment,
+        attachment_filename=attachment_filename,
+        attachment_mime=attachment_mime,
+    )
 
-    # Try Resend first
-    if settings.RESEND_API_KEY:
-        try:
-            import resend
-            resend.api_key = settings.RESEND_API_KEY
-            from_email = settings.RESEND_FROM_EMAIL or settings.SMTP_FROM
-            resend.Emails.send({
-                "from": from_email,
-                "to": [to],
-                "subject": subject,
-                "html": html_body,
-                "attachments": [{
-                    "filename": attachment_filename,
-                    "content": list(attachment),
-                    "content_type": attachment_mime,
-                }],
-            })
-            logger.info(f"Email with attachment sent via Resend: to={to}, file={attachment_filename}")
-            return True
-        except Exception as e:
-            logger.error(f"Resend email with attachment failed: to={to}, error={e}")
-            # Fall through to SMTP
 
-    # Try SMTP
-    if settings.smtp_enabled:
-        import smtplib
-        from email.mime.multipart import MIMEMultipart
-        from email.mime.text import MIMEText
-        from email.mime.base import MIMEBase
-        from email import encoders
+def send_test_email(resolved: ResolvedMailing, provider: str, to: str, locale: str = "es") -> tuple[bool, str | None]:
+    """Send a test message through a specific provider, bypassing ``active``.
 
-        try:
-            msg = MIMEMultipart()
-            msg["From"] = settings.SMTP_FROM
-            msg["To"] = to
-            msg["Subject"] = subject
-            msg.attach(MIMEText(html_body, "html"))
-
-            part = MIMEBase(*attachment_mime.split("/"))
-            part.set_payload(attachment)
-            encoders.encode_base64(part)
-            part.add_header("Content-Disposition", f'attachment; filename="{attachment_filename}"')
-            msg.attach(part)
-
-            with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
-                if settings.SMTP_TLS:
-                    server.starttls()
-                if settings.SMTP_USER:
-                    server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-                server.sendmail(settings.SMTP_FROM, to, msg.as_string())
-            logger.info(f"Email with attachment sent via SMTP: to={to}, file={attachment_filename}")
-            return True
-        except Exception as e:
-            logger.error(f"SMTP email with attachment failed: to={to}, error={e}")
-            return False
-
-    logger.info(f"Email with attachment skipped (no transport): to={to}, subject={subject}, file={attachment_filename}")
-    return False
+    Used by the settings screen so a superadmin can verify credentials before
+    switching the active provider to them. Returns ``(ok, error)`` where a
+    transport failure surfaces as a sanitized message rather than raising.
+    """
+    subject = _get_subject("mailing_test", locale)
+    html_body = render_template("mailing_test", locale, {"provider": provider})
+    try:
+        ok = _dispatch(provider, resolved, to, subject, html_body, raise_errors=True)
+        return (True, None) if ok else (False, "send_failed")
+    except Exception as e:  # noqa: BLE001 — surface the transport error to the UI
+        return False, str(e)
 
 
 # --- High-level email functions ---
@@ -229,6 +330,44 @@ def send_password_reset_email(to: str, first_name: str, reset_url: str, locale: 
     html_body = render_template("password_reset", locale, {
         "first_name": first_name,
         "reset_url": reset_url,
+    })
+    return send_email(to, subject, html_body)
+
+
+def send_verification_email(
+    to: str, first_name: str, verification_url: str, locale: str = "es"
+) -> bool:
+    subject = _get_subject("verification", locale)
+    html_body = render_template("verification", locale, {
+        "first_name": first_name,
+        "verification_url": verification_url,
+    })
+    return send_email(to, subject, html_body)
+
+
+def send_registration_approved_email(
+    to: str,
+    first_name: str,
+    member_number: str,
+    login_url: str,
+    locale: str = "es",
+) -> bool:
+    subject = _get_subject("registration_approved", locale)
+    html_body = render_template("registration_approved", locale, {
+        "first_name": first_name,
+        "member_number": member_number,
+        "login_url": login_url,
+    })
+    return send_email(to, subject, html_body)
+
+
+def send_registration_rejected_email(
+    to: str, first_name: str, reason: str | None = None, locale: str = "es"
+) -> bool:
+    subject = _get_subject("registration_rejected", locale)
+    html_body = render_template("registration_rejected", locale, {
+        "first_name": first_name,
+        "reason": reason,
     })
     return send_email(to, subject, html_body)
 

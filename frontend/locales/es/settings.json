@@ -120,6 +120,85 @@
       "assignNumbers": "Asignar números a los socios que no tengan",
       "assignedCount": "{count} número(s) de socio asignado(s)"
     },
-    "paymentsGeneral": "General"
+    "sso": {
+      "tab": "Inicio de sesión (SSO)",
+      "title": "Inicio de sesión único (SSO)",
+      "description": "Permite a los socios iniciar sesión con Google o Apple. Introduce las credenciales de cada proveedor y actívalo, sin necesidad de volver a desplegar.",
+      "providers": {
+        "google": "Google",
+        "apple": "Apple"
+      },
+      "live": "Activo",
+      "off": "Inactivo",
+      "enableHint": "Actívalo cuando hayas guardado las credenciales.",
+      "fields": {
+        "client_id": "ID de cliente",
+        "client_secret": "Secreto de cliente",
+        "team_id": "ID de equipo",
+        "key_id": "ID de clave",
+        "private_key": "Clave privada (.p8)"
+      },
+      "fromEnv": "del entorno",
+      "stored": "guardado",
+      "notConfigured": "Sin configurar",
+      "secretHint": "Déjalo en blanco para mantener el valor guardado; introduce uno nuevo para reemplazarlo.",
+      "clear": "Borrar",
+      "undoClear": "Deshacer",
+      "redirectUri": "URI de redirección",
+      "backendUrl": "URL del backend",
+      "consoleHint": "Pega la URL del backend y cada URI de redirección en la consola de desarrollador de Google / Apple.",
+      "encryptionKeyMissing": "El servidor no pudo inicializar su clave de cifrado; comprueba que el volumen de almacenamiento tiene permisos de escritura. Los campos secretos no se pueden guardar hasta entonces.",
+      "encryptionKeyRequired": "No se pudo guardar el secreto: el servidor no tiene una clave de cifrado válida.",
+      "nothingToSave": "No hay cambios que guardar.",
+      "encryptionActive": "Cifrado activo: los secretos se guardan cifrados con una clave gestionada por el servidor y nunca se muestran aquí."
+    },
+    "paymentsGeneral": "General",
+    "integrations": {
+      "tab": "Integraciones",
+      "description": "Configuración de servicios de terceros."
+    },
+    "mailing": {
+      "tab": "Correo",
+      "title": "Proveedor de correo",
+      "description": "Elige y configura el proveedor con el que se envían los correos. Solo puede haber uno activo a la vez.",
+      "providers": {
+        "resend": "Resend",
+        "gmail": "Gmail"
+      },
+      "hints": {
+        "resend": "Entrega gestionada mediante la API de Resend.",
+        "gmail": "Envío por SMTP con una cuenta de Gmail y una contraseña de aplicación."
+      },
+      "activeProvider": "Proveedor activo",
+      "oneAtATime": "Solo se puede activar un proveedor a la vez.",
+      "none": "Ninguno",
+      "active": "Activo",
+      "ready": "Listo",
+      "off": "Sin configurar",
+      "fields": {
+        "api_key": "Clave de API",
+        "from_email": "Correo del remitente",
+        "user": "Dirección de Gmail",
+        "app_password": "Contraseña de aplicación"
+      },
+      "appPasswordHint": "Usa una contraseña de aplicación de Google, no la contraseña de la cuenta. Déjalo en blanco para mantener la guardada.",
+      "secretHint": "Déjalo en blanco para mantener el valor guardado; introduce uno nuevo para reemplazarlo.",
+      "fromEnv": "del entorno",
+      "stored": "guardado",
+      "notConfigured": "Sin configurar",
+      "clear": "Borrar",
+      "undoClear": "Deshacer",
+      "fillCredsFirst": "Rellena las credenciales antes de activarlo.",
+      "sendTest": "Enviar prueba",
+      "testSent": "Correo de prueba enviado.",
+      "testFailed": "Ha fallado el envío de prueba: {error}",
+      "testNeedsReady": "Configura y guarda las credenciales primero.",
+      "testNeedsSave": "Guarda los cambios antes de enviar la prueba.",
+      "providerNotReady": "Faltan credenciales para ese proveedor.",
+      "nothingToSave": "No hay cambios que guardar.",
+      "encryptionActive": "Cifrado activo: los secretos se guardan cifrados.",
+      "encryptionKeyMissing": "Configura MEMSHIP_SECRET_KEY para poder guardar secretos del proveedor.",
+      "encryptionKeyRequired": "No se pueden guardar secretos sin una clave de cifrado."
+    }
   }
 }
