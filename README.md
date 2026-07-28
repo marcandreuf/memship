@@ -108,13 +108,12 @@ Memship follows [semantic versioning](https://semver.org/), and **version number
 | v1.0.1 | Patch — fix Celery scheduled billing/reminder task registration; CI guard against image tag overwrite                                                                                                            | Done   |
 | v1.1.0 | Custom profile fields — org-configurable member data (text, number, date, select, …) with per-field validation and per-field visibility/editability                                                              | Done   |
 | v1.1.1 | Patch — settings navigation reorganised: payment and member settings grouped under Payments and Members tabs                                                                                                     | Done   |
-| v1.3.0 | SSO / identity integration — public registration + email-verification onboarding, admin approval flow, and Google / Apple sign-in                                                                                | Done   |
-| v1.3.1 | SSO provider configuration in Settings — superadmin sets Google / Apple credentials from an Integrations tab, no redeploy                                                                                        | Done   |
-| v1.3.1 | Mailing configuration in Settings — superadmin sets Resend / Google SMTP from an Integrations tab                                                                                                                | Done   |
+| v1.2.0 | SSO / identity integration — public registration + email-verification onboarding, admin approval flow, Google / Apple sign-in, and superadmin SSO provider configuration from an Integrations tab | Done   |
+| v1.2.1 | Mailing configuration in Settings — superadmin sets Resend / Google SMTP from an Integrations tab | Done   |
+| v1.2.2 | Patch — drop a duplicate mailing-config migration whose revision id collided with an existing one, which made `alembic upgrade head` fail on startup | Done   |
 
 Priority-ordered, not yet versioned. Each becomes a versioned release when it ships, and the release claims the next semver number in order.
 
-- **SSO / identity integration** — sign in via an org's IdP (SAML/OIDC); provider mode later _(in progress)_
 - **Simple Bookings** — members reserve time on shared resources (pitches, courts, rooms) on a per-space calendar _(in progress)_
 - **Convocations** — formal General Assembly calls with token-based member RSVP
 - **Flexible roles & permissions** — multi-role, per-role rights beyond the 4 fixed roles

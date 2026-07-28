@@ -108,12 +108,14 @@ Memship segueix el [versionat semàntic](https://semver.org/) i **els números d
 | v1.0.1 | Pedaç — corregeix el registre de tasques programades de facturació/recordatoris a Celery; protecció de CI contra la sobreescriptura d'etiquetes d'imatge | Fet |
 | v1.1.0 | Camps de perfil personalitzats — dades de soci configurables per l'organització (text, número, data, selecció, …) amb validació per camp i visibilitat/edició per camp | Fet |
 | v1.1.1 | Pedaç — reorganització de la navegació de configuració: ajustos de pagaments i de socis agrupats a les pestanyes Pagaments i Socis | Fet |
+| v1.2.0 | Integració SSO / identitat — alta pública amb verificació per correu, flux d'aprovació per la junta, inici de sessió amb Google / Apple i configuració de proveïdors SSO pel superadministrador des d'una pestanya d'Integracions | Fet |
+| v1.2.1 | Configuració de correu a Ajustos — el superadministrador defineix Resend / Google SMTP des d'una pestanya d'Integracions | Fet |
+| v1.2.2 | Pedaç — elimina una migració duplicada de configuració de correu amb un identificador de revisió que xocava amb un altre existent, cosa que feia fallar `alembic upgrade head` en arrencar | Fet |
 
 ### Planificat
 
 Prioritzat, encara sense versió. Cada element esdevé un llançament versionat quan es publica, i el llançament pren el següent número semàntic per ordre.
 
-- **Integració SSO / identitat** — inici de sessió amb l'IdP de l'organització (SAML/OIDC); mode proveïdor més endavant _(en curs)_
 - **Reserves simples** — els socis reserven recursos compartits (camps, pistes, sales) en un calendari per espai _(en curs)_
 - **Convocatòries** — convocatòries formals d'Assemblea General amb confirmació del soci mitjançant token
 - **Rols i permisos flexibles** — multi-rol i permisos per rol més enllà dels 4 rols fixos
