@@ -109,12 +109,14 @@ Memship sigue el [versionado semántico](https://semver.org/) y **los números d
 | v1.1.0 | Campos de perfil personalizados — datos de socio configurables por la organización (texto, número, fecha, selección, …) con validación por campo y visibilidad/edición por campo | Hecho |
 | v1.1.1 | Parche — reorganización de la navegación de configuración: ajustes de pagos y de socios agrupados en las pestañas Pagos y Socios | Hecho |
 | v1.2.0 | Reservas simples — reservas de socios en espacios compartidos mediante un calendario semanal, aforo por franja, lista de espera FIFO con promoción automática y correos de confirmación/lista de espera | Hecho |
+| v1.3.0 | Integración SSO / identidad — alta pública con verificación por correo, flujo de aprobación por la directiva e inicio de sesión con Google / Apple | Hecho |
+| v1.3.1 | Configuración de proveedores SSO en Ajustes — el superadministrador define las credenciales de Google / Apple desde una pestaña de Integraciones, sin redespliegue | Hecho |
+| v1.3.1 | Configuración de correo en Ajustes — el superadministrador define Resend / Google SMTP desde una pestaña de Integraciones | Hecho |
 
 ### Planificado
 
 Priorizado, aún sin versión. Cada elemento se convierte en un lanzamiento versionado cuando se publica, y el lanzamiento toma el siguiente número semántico por orden.
 
-- **Integración SSO / identidad** — inicio de sesión con el IdP de la organización (SAML/OIDC); modo proveedor más adelante _(en curso)_
 - **Convocatorias** — convocatorias formales de Asamblea General con confirmación del socio mediante token
 - **Roles y permisos flexibles** — multi-rol y permisos por rol más allá de los 4 roles fijos
 - **Biblioteca de documentos** — estatutos, actas, formularios con visibilidad por grupo
@@ -187,10 +189,12 @@ Las variaciones complejas se construyen bajo demanda, cuando una implementación
 - Mensajería directa entre la directiva y los socios
 - Plantillas de email multiidioma
 
-**Reservas y espacios** (previsto)
-- Sistema de reserva de espacios e instalaciones
-- Vistas de calendario con disponibilidad
-- Reglas de reserva y prevención de conflictos
+**Reservas y espacios** (disponible)
+- Espacios reservables con horario de apertura diario y franjas con fecha definidas por la directiva
+- Reglas de repetición que materializan una serie de fechas (días de la semana elegidos, cada N semanas) y franjas de día completo
+- Aforo por franja con lista de espera FIFO y promoción automática al cancelar
+- Calendario semanal del socio con ocupación en vivo y autocancelación hasta un plazo configurable
+- Correos de confirmación, lista de espera, promoción y cancelación por la directiva
 
 **Informes y cuadros de mando** (previsto)
 - Estadísticas y tendencias de membresía

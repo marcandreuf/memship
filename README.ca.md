@@ -109,12 +109,14 @@ Memship segueix el [versionat semàntic](https://semver.org/) i **els números d
 | v1.1.0 | Camps de perfil personalitzats — dades de soci configurables per l'organització (text, número, data, selecció, …) amb validació per camp i visibilitat/edició per camp | Fet |
 | v1.1.1 | Pedaç — reorganització de la navegació de configuració: ajustos de pagaments i de socis agrupats a les pestanyes Pagaments i Socis | Fet |
 | v1.2.0 | Reserves simples — reserves de socis en espais compartits mitjançant un calendari setmanal, aforament per franja, llista d'espera FIFO amb promoció automàtica i correus de confirmació/llista d'espera | Fet |
+| v1.3.0 | Integració SSO / identitat — alta pública amb verificació per correu, flux d'aprovació per la junta i inici de sessió amb Google / Apple | Fet |
+| v1.3.1 | Configuració de proveïdors SSO a Ajustos — el superadministrador defineix les credencials de Google / Apple des d'una pestanya d'Integracions, sense redesplegament | Fet |
+| v1.3.1 | Configuració de correu a Ajustos — el superadministrador defineix Resend / Google SMTP des d'una pestanya d'Integracions | Fet |
 
 ### Planificat
 
 Prioritzat, encara sense versió. Cada element esdevé un llançament versionat quan es publica, i el llançament pren el següent número semàntic per ordre.
 
-- **Integració SSO / identitat** — inici de sessió amb l'IdP de l'organització (SAML/OIDC); mode proveïdor més endavant _(en curs)_
 - **Convocatòries** — convocatòries formals d'Assemblea General amb confirmació del soci mitjançant token
 - **Rols i permisos flexibles** — multi-rol i permisos per rol més enllà dels 4 rols fixos
 - **Biblioteca de documents** — estatuts, actes, formularis amb visibilitat per grup
@@ -187,10 +189,12 @@ Les variacions complexes es construeixen sota demanda, quan una implementació r
 - Missatgeria directa entre administradors i socis
 - Plantilles de correu multiidioma
 
-**Reserves i espais** (previst)
-- Sistema de reserva d'espais i recursos
-- Vistes de calendari amb disponibilitat
-- Regles de reserva i prevenció de conflictes
+**Reserves i espais** (disponible)
+- Espais reservables amb horari d'obertura diari i franges amb data definides per la junta
+- Regles de repetició que materialitzen una sèrie de dates (dies de la setmana triats, cada N setmanes) i franges de dia complet
+- Aforament per franja amb llista d'espera FIFO i promoció automàtica en cancel·lar
+- Calendari setmanal del soci amb ocupació en viu i autocancel·lació fins a un termini configurable
+- Correus de confirmació, llista d'espera, promoció i cancel·lació per la junta
 
 **Informes i taulers** (previst)
 - Estadístiques i tendències de socis
