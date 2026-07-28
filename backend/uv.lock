@@ -955,6 +955,7 @@ dependencies = [
     { name = "cryptography" },
     { name = "email-validator" },
     { name = "fastapi" },
+    { name = "httpx" },
     { name = "itsdangerous" },
     { name = "jinja2" },
     { name = "psycopg2-binary" },
@@ -975,7 +976,6 @@ dependencies = [
 [package.optional-dependencies]
 dev = [
     { name = "factory-boy" },
-    { name = "httpx" },
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "pytest-xdist" },
@@ -991,7 +991,7 @@ requires-dist = [
     { name = "email-validator", specifier = ">=2.0" },
     { name = "factory-boy", marker = "extra == 'dev'", specifier = ">=3.3" },
     { name = "fastapi", specifier = ">=0.115" },
-    { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.27" },
+    { name = "httpx", specifier = ">=0.27" },
     { name = "itsdangerous", specifier = ">=2.2" },
     { name = "jinja2", specifier = ">=3.1" },
     { name = "psycopg2-binary", specifier = ">=2.9" },
