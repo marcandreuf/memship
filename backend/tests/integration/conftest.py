@@ -39,7 +39,7 @@ from app.domains.persons.models import (  # noqa: F401
     ContactType,
     Person,
 )
-from app.domains.auth.models import User  # noqa: F401
+from app.domains.auth.models import User, UserIdentity  # noqa: F401
 from app.domains.members.models import Group, Member, MembershipType  # noqa: F401
 from app.domains.audit.models import AuditLog  # noqa: F401
 from app.domains.activities.models import (  # noqa: F401
@@ -63,18 +63,67 @@ from app.domains.custom_fields.models import (  # noqa: F401
 from app.domains.bookings.models import Booking, Space, SpaceSlot  # noqa: F401
 
 # Use test database
-TEST_DATABASE_URL = os.getenv("DATABASE_TEST_URL", settings.DATABASE_TEST_URL)
+BASE_TEST_DATABASE_URL = os.getenv("DATABASE_TEST_URL", settings.DATABASE_TEST_URL)
+
+
+def _worker_database_url(base_url: str) -> str:
+    """Give each pytest-xdist worker its own database.
+
+    Every test holds an open transaction until teardown rolls it back. Two
+    workers sharing one database therefore block on each other's uncommitted
+    rows whenever they insert the same unique key (``membership_types.name``,
+    ``organization_settings.id = 1``, person emails, ...), which escalates to
+    ``DeadlockDetected`` as soon as the lock waits cross. Isolating the schema
+    per worker removes the contention entirely.
+
+    Creates the per-worker database on first use; no-op when running without
+    xdist or against SQLite.
+    """
+    worker = os.getenv("PYTEST_XDIST_WORKER")
+    if not worker:
+        return base_url
+
+    from sqlalchemy import text
+    from sqlalchemy.engine.url import make_url
+    from sqlalchemy.exc import ProgrammingError
+
+    url = make_url(base_url)
+    if not url.get_backend_name().startswith("postgresql"):
+        return base_url
+
+    worker_db = f"{url.database}_{worker}"
+    admin_engine = create_engine(
+        url.set(database="postgres"), isolation_level="AUTOCOMMIT"
+    )
+    try:
+        with admin_engine.connect() as conn:
+            exists = conn.execute(
+                text("SELECT 1 FROM pg_database WHERE datname = :name"),
+                {"name": worker_db},
+            ).scalar()
+            if not exists:
+                try:
+                    conn.execute(text(f'CREATE DATABASE "{worker_db}"'))
+                except ProgrammingError:
+                    # Lost the race against another worker — it exists now.
+                    pass
+    finally:
+        admin_engine.dispose()
+
+    return url.set(database=worker_db).render_as_string(hide_password=False)
+
+
+TEST_DATABASE_URL = _worker_database_url(BASE_TEST_DATABASE_URL)
 test_engine = create_engine(TEST_DATABASE_URL, pool_pre_ping=True)
 TestSessionLocal = sessionmaker(bind=test_engine, autocommit=False, autoflush=False)
 
 
 @pytest.fixture(scope="session", autouse=True)
 def create_test_tables():
-    """Create all tables once per test session.
+    """Create all tables once per test session (per xdist worker database).
 
-    With pytest-xdist, multiple workers may call this concurrently.
     create_all uses IF NOT EXISTS for most DDL, but PostgreSQL type
-    creation can race. We catch and ignore that specific error.
+    creation can race, so the error is caught and ignored.
     Skips drop_all — the test DB is ephemeral (CI service or local docker).
     """
     from sqlalchemy.exc import IntegrityError
@@ -85,7 +134,44 @@ def create_test_tables():
         # Another xdist worker already created the tables — safe to ignore
         pass
 
-    yield
+    # The mail transport (app.core.email) opens its own SessionLocal to resolve
+    # the active provider at send time. Point that at the test engine so a send
+    # during a test uses the test DB, not the developer's dev database.
+    import app.db.session as db_session
+
+    original_session_local = db_session.SessionLocal
+    db_session.SessionLocal = TestSessionLocal
+    try:
+        yield
+    finally:
+        db_session.SessionLocal = original_session_local
+
+
+@pytest.fixture(autouse=True)
+def _no_external_email(monkeypatch):
+    """Never touch a real mail provider during integration tests.
+
+    The dev ``.env`` may set ``SMTP_HOST`` / ``RESEND_API_KEY``, which would make
+    ``settings.email_enabled`` true and send real email. Blank those so mail is
+    treated as disabled (deterministic dev-mode: endpoints hand tokens back
+    instead of emailing), and stub the transport dispatch so no network call is
+    possible even when a test configures a provider in the DB. Tests that want to
+    assert a send still mock ``app.core.email.send_email`` themselves.
+    """
+    from app.core.config import settings as app_settings
+
+    for name in (
+        "SMTP_HOST",
+        "SMTP_USER",
+        "SMTP_PASSWORD",
+        "RESEND_API_KEY",
+        "RESEND_FROM_EMAIL",
+    ):
+        monkeypatch.setattr(app_settings, name, "", raising=False)
+
+    import app.core.email as email_module
+
+    monkeypatch.setattr(email_module, "_dispatch", lambda *args, **kwargs: True)
 
 
 @pytest.fixture

@@ -184,3 +184,39 @@ def change_member_status(
 
     db.flush()
     return member
+
+
+def approve_registration(db: Session, member: Member) -> Member:
+    """Approve a pending self-registration: allocate a member number, activate.
+
+    The member number is deliberately allocated here rather than at sign-up, so
+    rejected/abandoned registrations never burn a number.
+    """
+    if member.status != "pending":
+        raise ValueError(f"Only pending registrations can be approved (is '{member.status}')")
+
+    if not member.member_number:
+        member.member_number = allocate_member_number(db)
+
+    member.status = "active"
+    member.status_reason = None
+    member.status_changed_at = datetime.now(timezone.utc)
+    db.flush()
+    return member
+
+
+def reject_registration(db: Session, member: Member, reason: str | None = None) -> Member:
+    """Reject a pending self-registration and disable the linked login."""
+    if member.status != "pending":
+        raise ValueError(f"Only pending registrations can be rejected (is '{member.status}')")
+
+    member.status = "cancelled"
+    member.status_reason = reason
+    member.status_changed_at = datetime.now(timezone.utc)
+    member.is_active = False
+
+    if member.user is not None:
+        member.user.is_active = False
+
+    db.flush()
+    return member

@@ -1,12 +1,21 @@
 """Authentication endpoints."""
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+import json
+from datetime import datetime, timezone
+from urllib.parse import urlencode
+
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.core.email import send_password_reset_email, send_welcome_email
+from app.core.email import (
+    send_password_reset_email,
+    send_verification_email,
+)
 from app.core.security.dependencies import get_current_user
 from app.core.security.jwt import create_access_token
+from app.core.security.oauth import get_provider, provider_redirect_uri
 from app.db.session import get_db
 from app.domains.auth.models import User
 from app.domains.auth.schemas import (
@@ -15,17 +24,45 @@ from app.domains.auth.schemas import (
     PasswordReset,
     PasswordResetRequest,
     RegisterRequest,
+    RegisterResponse,
+    ResendVerificationRequest,
+    SsoProvidersResponse,
     TokenResponse,
     UserResponse,
+    VerifyEmailRequest,
 )
+from app.domains.auth.oauth_service import (
+    EmailNotVerifiedError,
+    OAuthProfile,
+    RegistrationClosedError,
+    find_or_create_from_oauth,
+)
+from app.domains.auth.sso_config import resolve_sso_config
 from app.domains.auth.service import (
     authenticate_user,
+    get_registration_settings,
     register_user,
     request_password_reset,
+    resend_verification,
     reset_password,
+    verify_email,
 )
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+SESSION_MAX_AGE = 60 * 30  # 30 minutes, matching ACCESS_TOKEN_EXPIRE_MINUTES
+
+
+def _set_session_cookie(response: Response, user: User) -> None:
+    response.set_cookie(
+        key="access_token",
+        value=create_access_token(user.id, user.role),
+        httponly=True,
+        secure=False,  # TODO: set True in production
+        samesite="lax",
+        max_age=SESSION_MAX_AGE,
+        path="/",
+    )
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -58,10 +95,23 @@ def login(data: LoginRequest, response: Response, db: Session = Depends(get_db))
     return TokenResponse()
 
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-def register(data: RegisterRequest, response: Response, db: Session = Depends(get_db)):
+def _verification_url(token: str) -> str:
+    return f"{settings.FRONTEND_URL}/{settings.DEFAULT_LOCALE}/verify-email?token={token}"
+
+
+@router.post(
+    "/register", response_model=RegisterResponse, status_code=status.HTTP_201_CREATED
+)
+def register(data: RegisterRequest, db: Session = Depends(get_db)):
+    public_registration, requires_approval = get_registration_settings(db)
+    if not public_registration:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Public registration is disabled",
+        )
+
     try:
-        user = register_user(
+        user, verification_token = register_user(
             db,
             first_name=data.first_name,
             last_name=data.last_name,
@@ -74,33 +124,70 @@ def register(data: RegisterRequest, response: Response, db: Session = Depends(ge
             detail=str(e),
         )
 
-    token = create_access_token(user.id, user.role)
-    response.set_cookie(
-        key="access_token",
-        value=token,
-        httponly=True,
-        secure=False,
-        samesite="lax",
-        max_age=60 * 30,
-        path="/",
-    )
+    member = user.person.member
+    member_status = member.status if member else "pending"
     db.commit()
 
-    member = user.person.member
-    if member:
-        send_welcome_email(user.email, user.person.first_name, member.member_number or "")
+    # No session cookie here: the account is not usable until the email is
+    # confirmed and (when configured) an admin approves the registration.
+    if settings.email_enabled:
+        send_verification_email(
+            user.email, user.person.first_name, _verification_url(verification_token)
+        )
+        return RegisterResponse(
+            message="Registration received. Check your email to confirm your address.",
+            email=user.email,
+            member_status=member_status,
+            requires_approval=requires_approval,
+        )
 
-    return UserResponse(
-        id=user.id,
+    # Dev mode — no transport configured, hand the token back like password reset does
+    return RegisterResponse(
+        message="Registration received (dev mode — no email sent)",
         email=user.email,
-        role=user.role,
-        is_active=user.is_active,
-        person_id=user.person_id,
-        first_name=user.person.first_name,
-        last_name=user.person.last_name,
-        member_id=member.id if member else None,
-        member_number=member.member_number if member else None,
+        member_status=member_status,
+        requires_approval=requires_approval,
+        verification_token=verification_token,
     )
+
+
+@router.post("/verify-email", response_model=MessageResponse)
+def verify_email_endpoint(data: VerifyEmailRequest, db: Session = Depends(get_db)):
+    user = verify_email(db, data.token)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired verification token",
+        )
+    db.commit()
+    return MessageResponse(message="Email verified")
+
+
+@router.post("/resend-verification", response_model=MessageResponse)
+def resend_verification_endpoint(
+    data: ResendVerificationRequest, db: Session = Depends(get_db)
+):
+    result = resend_verification(db, data.email)
+    db.commit()
+
+    # Generic response either way — never reveal whether the address exists.
+    generic = "If the email exists and is unverified, a new link has been sent"
+
+    if result and settings.email_enabled:
+        user, token = result
+        send_verification_email(
+            user.email, user.person.first_name, _verification_url(token)
+        )
+        return MessageResponse(message=generic)
+
+    if result:
+        _, token = result
+        return MessageResponse(
+            message="Verification token generated (dev mode — no email sent)",
+            verification_token=token,
+        )
+
+    return MessageResponse(message=generic)
 
 
 @router.post("/password-reset-request", response_model=MessageResponse)
@@ -156,6 +243,8 @@ def get_me(current_user: User = Depends(get_current_user)):
         member_number=member.member_number if member else None,
         gender=current_user.person.gender,
         photo_url=current_user.person.photo_url,
+        email_verified=bool(current_user.email_verified),
+        member_status=member.status if member else None,
     )
 
 
@@ -163,3 +252,137 @@ def get_me(current_user: User = Depends(get_current_user)):
 def logout(response: Response):
     response.delete_cookie(key="access_token", path="/")
     return MessageResponse(message="Logged out")
+
+
+# --- Single sign-on ---
+
+
+def _frontend_url(path: str, **params: str) -> str:
+    base = f"{settings.FRONTEND_URL.rstrip('/')}/{settings.DEFAULT_LOCALE}{path}"
+    if params:
+        base += "?" + urlencode(params)
+    return base
+
+
+@router.get("/sso/providers", response_model=SsoProvidersResponse)
+def sso_providers(db: Session = Depends(get_db)):
+    """Which SSO buttons the login/register pages should render."""
+    resolved = resolve_sso_config(db)
+    return SsoProvidersResponse(
+        google=resolved.google.ready,
+        apple=resolved.apple.ready,
+    )
+
+
+@router.get("/oauth/{provider}/login")
+async def oauth_login(
+    provider: str, request: Request, db: Session = Depends(get_db)
+):
+    client = get_provider(provider, resolve_sso_config(db))
+    if client is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"SSO provider '{provider}' is not configured",
+        )
+
+    # Apple only returns the email and name claims when the response is posted
+    # back, which also makes the callback a POST.
+    extra = {"response_mode": "form_post"} if provider == "apple" else {}
+
+    # authlib stores the CSRF `state` and the OIDC `nonce` in the signed session
+    # cookie and checks both on the way back.
+    return await client.authorize_redirect(
+        request, provider_redirect_uri(provider), **extra
+    )
+
+
+async def _apple_form_name(request: Request) -> tuple[str, str]:
+    """Read the name Apple posts back, which it only ever sends once.
+
+    Apple includes a `user` field with the person's name on the **first**
+    authorization only; every later sign-in omits it. Must be read before
+    authlib consumes (and closes) the form.
+    """
+    try:
+        form = await request.form()
+    except Exception:
+        return "", ""
+
+    raw = form.get("user")
+    if not raw:
+        return "", ""
+    try:
+        name = json.loads(raw).get("name") or {}
+    except (ValueError, TypeError):
+        return "", ""
+    return name.get("firstName") or "", name.get("lastName") or ""
+
+
+@router.api_route("/oauth/{provider}/callback", methods=["GET", "POST"])
+async def oauth_callback(
+    provider: str, request: Request, db: Session = Depends(get_db)
+):
+    client = get_provider(provider, resolve_sso_config(db))
+    if client is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"SSO provider '{provider}' is not configured",
+        )
+
+    # Apple posts the profile name in the form body; grab it before authlib
+    # reads and closes the form.
+    apple_first, apple_last = ("", "")
+    if provider == "apple" and request.method == "POST":
+        apple_first, apple_last = await _apple_form_name(request)
+
+    try:
+        token = await client.authorize_access_token(request)
+    except Exception:
+        # Covers a denied consent screen, a replayed/expired code and a failed
+        # state or id_token check. None of it is actionable by the user beyond
+        # trying again, and echoing provider errors back would leak detail.
+        return RedirectResponse(_frontend_url("/login", error="sso_failed"))
+
+    claims = token.get("userinfo") or {}
+    subject = claims.get("sub")
+    email = claims.get("email")
+    if not subject or not email:
+        return RedirectResponse(_frontend_url("/login", error="sso_failed"))
+
+    # Apple sends email_verified as the string "true"/"false" rather than a bool.
+    raw_verified = claims.get("email_verified")
+    email_verified = (
+        raw_verified.lower() == "true"
+        if isinstance(raw_verified, str)
+        else bool(raw_verified)
+    )
+
+    profile = OAuthProfile(
+        provider=provider,
+        subject=subject,
+        email=email,
+        email_verified=email_verified,
+        first_name=claims.get("given_name") or apple_first,
+        last_name=claims.get("family_name") or apple_last,
+    )
+
+    try:
+        user, _created = find_or_create_from_oauth(db, profile)
+    except EmailNotVerifiedError:
+        return RedirectResponse(_frontend_url("/login", error="sso_email_unverified"))
+    except RegistrationClosedError:
+        return RedirectResponse(_frontend_url("/login", error="registration_closed"))
+
+    if not user.is_active:
+        return RedirectResponse(_frontend_url("/login", error="account_disabled"))
+    if user.is_locked:
+        return RedirectResponse(_frontend_url("/login", error="account_locked"))
+
+    user.last_login_at = datetime.now(timezone.utc)
+    db.commit()
+
+    # A pending member still gets a session — the portal shows them the
+    # "awaiting approval" screen rather than a dead end.
+    response = RedirectResponse(_frontend_url("/dashboard"))
+    _set_session_cookie(response, user)
+    return response

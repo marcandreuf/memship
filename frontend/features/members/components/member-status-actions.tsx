@@ -4,10 +4,13 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useChangeMemberStatus } from "../hooks/use-members";
+import { RegistrationReviewActions } from "./registration-review-actions";
 import type { MemberData } from "../services/members-api";
 
+// `pending` is intentionally absent: a pending member is an unreviewed
+// registration, handled by RegistrationReviewActions below so that approving
+// also allocates the member number.
 const STATUS_ACTIONS: Record<string, string[]> = {
-  pending: ["active", "cancelled"],
   active: ["suspended", "cancelled"],
   suspended: ["active", "cancelled"],
   expired: ["active"],
@@ -27,6 +30,10 @@ interface MemberStatusActionsProps {
 export function MemberStatusActions({ member }: MemberStatusActionsProps) {
   const t = useTranslations();
   const { mutateAsync: changeStatus, isPending } = useChangeMemberStatus();
+
+  if (member.status === "pending") {
+    return <RegistrationReviewActions member={member} />;
+  }
 
   const actions = STATUS_ACTIONS[member.status] || [];
 

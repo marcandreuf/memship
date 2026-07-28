@@ -8,12 +8,33 @@ from sqlalchemy.orm import Session
 from app.core.security.password import hash_password, verify_password
 from app.domains.auth.models import User
 from app.domains.members.models import Member, MembershipType
+from app.domains.members.service import allocate_member_number
+from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Person
+
+VERIFICATION_TOKEN_TTL_HOURS = 24
+
+
+def get_registration_settings(db: Session) -> tuple[bool, bool]:
+    """Return ``(public_registration, registration_requires_approval)``.
+
+    Both default to True when the org row or the flag is absent: a fresh install
+    accepts public sign-ups and holds them for admin approval.
+    """
+    org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
+    features = (org.features if org and org.features else {}) or {}
+    return (
+        features.get("public_registration", True),
+        features.get("registration_requires_approval", True),
+    )
 
 
 def authenticate_user(db: Session, email: str, password: str) -> User | None:
     user = db.query(User).filter(User.email == email, User.is_active == True).first()
     if not user:
+        return None
+    # SSO-only accounts have no password hash — they cannot log in on this path.
+    if not user.password_hash:
         return None
     if not verify_password(password, user.password_hash):
         return None
@@ -23,13 +44,29 @@ def authenticate_user(db: Session, email: str, password: str) -> User | None:
     return user
 
 
+def _issue_verification_token(user: User) -> str:
+    token = secrets.token_urlsafe(32)
+    user.verification_token = token
+    user.verification_token_expires_at = datetime.now(timezone.utc) + timedelta(
+        hours=VERIFICATION_TOKEN_TTL_HOURS
+    )
+    return token
+
+
 def register_user(
     db: Session,
     first_name: str,
     last_name: str,
     email: str,
     password: str,
-) -> User:
+) -> tuple[User, str]:
+    """Create a self-registered member and return ``(user, verification_token)``.
+
+    The member lands in ``pending`` with **no member number** — the number is
+    allocated on approval (see ``members.service.approve_registration``). When the
+    org has turned ``registration_requires_approval`` off, the registration is
+    approved inline so the member is immediately active.
+    """
     # Check if email already exists
     existing = db.query(User).filter(User.email == email).first()
     if existing:
@@ -51,6 +88,7 @@ def register_user(
         password_hash=hash_password(password),
         role="member",
         is_active=True,
+        email_verified=False,
     )
     db.add(user)
     db.flush()
@@ -63,33 +101,71 @@ def register_user(
         .first()
     )
 
-    # Generate next member number
-    last_member = (
-        db.query(Member)
-        .filter(Member.member_number.isnot(None))
-        .order_by(Member.id.desc())
-        .first()
-    )
-    if last_member and last_member.member_number:
-        try:
-            num = int(last_member.member_number.replace("M-", ""))
-            next_number = f"M-{num + 1:04d}"
-        except ValueError:
-            next_number = f"M-{person.id:04d}"
-    else:
-        next_number = "M-0001"
-
     member = Member(
         person_id=person.id,
         user_id=user.id,
         membership_type_id=default_type.id if default_type else None,
-        member_number=next_number,
+        member_number=None,
         status="pending",
     )
     db.add(member)
     db.flush()
 
+    _, requires_approval = get_registration_settings(db)
+    if not requires_approval:
+        member.member_number = allocate_member_number(db)
+        member.status = "active"
+        member.status_changed_at = datetime.now(timezone.utc)
+        db.flush()
+
+    token = _issue_verification_token(user)
+    db.flush()
+
+    return user, token
+
+
+def verify_email(db: Session, token: str) -> User | None:
+    """Consume a verification token. Returns the user, or None if invalid/expired."""
+    user = (
+        db.query(User)
+        .filter(User.verification_token == token, User.is_active == True)
+        .first()
+    )
+    if not user:
+        return None
+
+    if (
+        user.verification_token_expires_at is None
+        or user.verification_token_expires_at < datetime.now(timezone.utc)
+    ):
+        return None
+
+    user.email_verified = True
+    user.email_verified_at = datetime.now(timezone.utc)
+    user.verification_token = None
+    user.verification_token_expires_at = None
+    db.flush()
+
     return user
+
+
+def resend_verification(db: Session, email: str) -> tuple[User, str] | None:
+    """Reissue a verification token. Returns None when there is nothing to send."""
+    user = (
+        db.query(User)
+        .filter(
+            User.email == email,
+            User.is_active == True,
+            User.email_verified == False,
+        )
+        .first()
+    )
+    if not user:
+        return None
+
+    token = _issue_verification_token(user)
+    db.flush()
+    return user, token
 
 
 def request_password_reset(db: Session, email: str) -> str | None:

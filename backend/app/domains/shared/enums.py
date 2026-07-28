@@ -71,3 +71,10 @@ class CustomFieldAdminAccess(StrEnum):
 
     READ = "read"
     WRITE = "write"
+
+
+class AuthProvider(StrEnum):
+    """External identity providers that can be linked to a user."""
+
+    GOOGLE = "google"
+    APPLE = "apple"

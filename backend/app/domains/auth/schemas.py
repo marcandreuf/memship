@@ -21,6 +21,14 @@ class RegisterRequest(BaseModel):
     password: str = Field(min_length=8, max_length=128)
 
 
+class VerifyEmailRequest(BaseModel):
+    token: str
+
+
+class ResendVerificationRequest(BaseModel):
+    email: Email
+
+
 class PasswordResetRequest(BaseModel):
     email: Email
 
@@ -42,6 +50,10 @@ class UserResponse(BaseModel):
     member_number: str | None = None
     gender: str | None = None
     photo_url: str | None = None
+    email_verified: bool = False
+    # Drives the portal's "awaiting approval" gate — None for staff accounts
+    # that have no member record.
+    member_status: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -53,3 +65,24 @@ class TokenResponse(BaseModel):
 class MessageResponse(BaseModel):
     message: str
     reset_token: str | None = None
+    # Dev-mode escape hatch, mirroring reset_token: surfaced only when no email
+    # transport is configured so local setups can complete the flow.
+    verification_token: str | None = None
+
+
+class SsoProvidersResponse(BaseModel):
+    """Which SSO providers are configured on this install."""
+
+    google: bool = False
+    apple: bool = False
+
+
+class RegisterResponse(BaseModel):
+    """Registration no longer logs the user in — it reports what happens next."""
+
+    message: str
+    email: str
+    member_status: str
+    requires_approval: bool
+    email_verified: bool = False
+    verification_token: str | None = None

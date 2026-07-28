@@ -53,6 +53,21 @@
     "genderPreferNotToSay": "Prefer not to say",
     "noActivities": "No activity registrations for this member",
     "registeredOn": "Registered",
-    "amount": "Amount"
+    "amount": "Amount",
+    "registration": {
+      "approve": "Approve",
+      "reject": "Reject",
+      "approved": "Registration approved",
+      "rejected": "Registration rejected",
+      "approveTitle": "Approve this registration?",
+      "approveDescription": "The applicant becomes an active member, gets a member number and is notified by email.",
+      "rejectTitle": "Reject this registration?",
+      "rejectDescription": "The applicant will not be able to access the portal. They are notified by email.",
+      "reasonLabel": "Reason (optional)",
+      "reasonPlaceholder": "Shown to the applicant in the notification email",
+      "queueTitle": "Pending registrations",
+      "queueDescription": "Sign-ups waiting for a decision.",
+      "queueEmpty": "No registrations are waiting for review."
+    }
   }
 }

@@ -43,6 +43,33 @@ def get_current_user(
     return user
 
 
+def require_approved_member(current_user: User = Depends(get_current_user)) -> User:
+    """Block members whose registration is still awaiting admin approval.
+
+    A pending member can authenticate and keep a session (so the portal can show
+    them *why* they are blocked), but every feature router guarded by this
+    dependency stays closed until an admin approves the registration.
+
+    Only ``pending`` is blocked here. Suspended / cancelled / expired members are
+    a separate lifecycle concern that the domain rules (activity eligibility,
+    member card status, billing) already handle with far better errors than a
+    blanket 403 — widening this gate would swallow those messages. Admins and
+    super admins always pass, as does any user with no member record (staff
+    accounts created directly).
+    """
+    if current_user.role in ("admin", "super_admin"):
+        return current_user
+
+    member = current_user.person.member if current_user.person else None
+    if member is not None and member.status == "pending":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"code": "pending_approval", "member_status": member.status},
+        )
+
+    return current_user
+
+
 def get_optional_user(
     access_token: str | None = Cookie(default=None),
     db: Session = Depends(get_db),

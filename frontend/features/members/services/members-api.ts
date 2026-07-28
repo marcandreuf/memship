@@ -114,6 +114,25 @@ export async function changeMemberStatus(
   });
 }
 
+/**
+ * Approving a pending self-registration goes through its own endpoint rather
+ * than the generic status change: the backend also allocates the member number
+ * here and emails the applicant.
+ */
+export async function approveMember(id: number): Promise<MemberData> {
+  return apiClient(`/members/${id}/approve`, { method: "POST" });
+}
+
+export async function rejectMember(
+  id: number,
+  reason?: string
+): Promise<MemberData> {
+  return apiClient(`/members/${id}/reject`, {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+  });
+}
+
 export async function listMembershipTypes(): Promise<MembershipTypeData[]> {
   return apiClient("/membership-types");
 }

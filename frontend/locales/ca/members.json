@@ -53,6 +53,21 @@
     "genderPreferNotToSay": "Prefereixo no dir-ho",
     "noActivities": "Aquest soci no té inscripcions en activitats",
     "registeredOn": "Inscrit",
-    "amount": "Import"
+    "amount": "Import",
+    "registration": {
+      "approve": "Aprovar",
+      "reject": "Rebutjar",
+      "approved": "Alta aprovada",
+      "rejected": "Alta rebutjada",
+      "approveTitle": "Vols aprovar aquesta alta?",
+      "approveDescription": "El sol·licitant passa a ser soci actiu, rep un número de soci i se l'avisa per correu.",
+      "rejectTitle": "Vols rebutjar aquesta alta?",
+      "rejectDescription": "El sol·licitant no podrà accedir al portal. Se l'avisa per correu.",
+      "reasonLabel": "Motiu (opcional)",
+      "reasonPlaceholder": "Es mostra al sol·licitant al correu de notificació",
+      "queueTitle": "Altes pendents",
+      "queueDescription": "Sol·licituds d'alta pendents de decisió.",
+      "queueEmpty": "No hi ha altes pendents de revisar."
+    }
   }
 }
