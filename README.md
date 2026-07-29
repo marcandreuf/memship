@@ -111,17 +111,19 @@ Memship follows [semantic versioning](https://semver.org/), and **version number
 | v1.2.0 | SSO / identity integration — public registration + email-verification onboarding, admin approval flow, Google / Apple sign-in, and superadmin SSO provider configuration from an Integrations tab | Done   |
 | v1.2.1 | Mailing configuration in Settings — superadmin sets Resend / Google SMTP from an Integrations tab | Done   |
 | v1.2.2 | Patch — drop a duplicate mailing-config migration whose revision id collided with an existing one, which made `alembic upgrade head` fail on startup | Done   |
+| v1.3.0 | Simple Bookings — member reservations of shared spaces on a week calendar, per-slot capacity, FIFO waitlist with auto-promotion, and confirmation/waitlist emails | Done   |
+
+### Planned
 
 Priority-ordered, not yet versioned. Each becomes a versioned release when it ships, and the release claims the next semver number in order.
 
-- **Simple Bookings** — members reserve time on shared resources (pitches, courts, rooms) on a per-space calendar _(in progress)_
 - **Convocations** — formal General Assembly calls with token-based member RSVP
 - **Flexible roles & permissions** — multi-role, per-role rights beyond the 4 fixed roles
 - **Document library** — statutes, minutes, forms with per-group visibility
 - **Events calendar + RSVP** — calendar view and participation tracking
 - **Extensions — modules/plugins system** — optional add-ons delivered as modules/plugins: photo albums, forum, guestbook, weblinks directory, inventory/lending, portal widgets
 
-Complex variations are built on demand, when a real deployment needs them: GoCardless e-mandates, PayPal, Stripe Invoice flow, bulk receipt actions, custom report builder, surveys, family group billing, group-class/waitlist bookings, convocation voting & document attachments, and similar deeper cuts of the features above.
+Complex variations are built on demand, when a real deployment needs them: GoCardless e-mandates, PayPal, Stripe Invoice flow, bulk receipt actions, custom report builder, surveys, family group billing, paid & recurring bookings, equipment rental, convocation voting & document attachments, and similar deeper cuts of the features above.
 
 ---
 
@@ -183,15 +185,17 @@ Complex variations are built on demand, when a real deployment needs them: GoCar
 - Webhook infrastructure for real-time payment status updates (POST /webhooks/{provider})
 - Extensible adapter pattern for regional providers (GoCardless, MercadoPago, Razorpay, etc.)
 
+**Bookings & Spaces** (available now)
+- Bookable spaces with daily opening hours and admin-defined dated slots
+- Repeat rules that materialize a dated series (selected weekdays, every N weeks), plus whole-day slots
+- Per-slot capacity with a FIFO waitlist and automatic promotion on cancellation
+- Member week calendar with live occupancy, self-cancellation up to a configurable deadline
+- Confirmation, waitlist, promotion and admin-cancellation emails
+
 **Communications** (planned)
 - Email campaigns with templates and audience targeting
 - Direct messaging between admins and members
 - Multi-language email templates
-
-**Bookings & Spaces** (planned)
-- Space and resource reservation system
-- Calendar views with availability
-- Booking rules and conflict prevention
 
 **Reports & Dashboards** (planned)
 - Membership statistics and trends

@@ -1,11 +1,16 @@
-describe("Payment Method Page", () => {
+// Payment method lives as a tab on the profile page; the old /payment-method
+// URL redirects there (with the tab preselected) for bookmarks.
+
+describe("Payment Method Tab", () => {
   beforeEach(() => {
     cy.loginAsMember();
     cy.visit("/en/payment-method");
   });
 
-  it("shows payment method page with title", () => {
-    cy.contains("h1", /payment method/i).should("be.visible");
+  it("old URL redirects to the profile payment tab", () => {
+    cy.url().should("include", "/profile");
+    cy.contains('[role="tab"]', /payment method/i)
+      .should("have.attr", "data-state", "active");
   });
 
   it("shows payment method options", () => {
@@ -51,13 +56,17 @@ describe("Payment Method — Member with Mandate", () => {
   });
 });
 
-describe("Payment Method — Access Control", () => {
-  it("payment method link visible in member sidebar", () => {
+describe("Payment Method — Navigation", () => {
+  it("has no sidebar entry; reachable via the profile tabs", () => {
     cy.loginAsMember();
-    cy.contains(/payment method/i).should("be.visible");
+    cy.visit("/en/dashboard");
+    cy.contains("a", /payment method/i).should("not.exist");
+    cy.visit("/en/profile");
+    cy.contains('[role="tab"]', /payment method/i).click();
+    cy.contains(/direct debit/i).should("be.visible");
   });
 
-  it("payment method link not visible in admin sidebar", () => {
+  it("payment method not visible in admin sidebar", () => {
     cy.loginAsAdmin();
     cy.contains("a", /payment method/i).should("not.exist");
   });

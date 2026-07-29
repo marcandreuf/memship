@@ -1,0 +1,113 @@
+{
+  "bookings": {
+    "nav": "Spaces",
+    "navBook": "Book",
+    "navMyBookings": "My bookings",
+    "book": {
+      "title": "Book a space",
+      "pickSpace": "Space",
+      "prev": "Previous week",
+      "next": "Next week",
+      "noSpaces": "No spaces are open for booking yet.",
+      "book": "Book",
+      "joinWaitlist": "Waitlist",
+      "confirmBook": "Book this slot?",
+      "confirmWaitlist": "This slot is full. Join the waitlist?",
+      "confirmWaitlistAction": "Join",
+      "bookedToast": "Booked",
+      "waitlistedToast": "Added to the waitlist"
+    },
+    "my": {
+      "title": "My bookings",
+      "upcoming": "Upcoming",
+      "past": "Past",
+      "empty": "No bookings.",
+      "cancel": "Cancel",
+      "keep": "Keep",
+      "confirmCancel": "Cancel this booking?"
+    },
+    "spaces": {
+      "title": "Spaces",
+      "create": "New space",
+      "edit": "Edit space",
+      "name": "Name",
+      "type": "Type",
+      "description": "Description",
+      "openTime": "Opens",
+      "closeTime": "Closes",
+      "hours": "Hours",
+      "status": "Status",
+      "active": "Active",
+      "inactive": "Inactive",
+      "noSpaces": "No spaces yet. Create one to start taking bookings.",
+      "manage": "Manage",
+      "notFound": "Space not found.",
+      "confirmDelete": "Delete this space? Its slots and bookings will be removed. To stop taking bookings without deleting anything, deactivate it from Edit.",
+      "deleteAffected": "{count, plural, one {# member has active bookings that will be cancelled and notified by email.} other {# members have active bookings that will be cancelled and notified by email.}}"
+    },
+    "slots": {
+      "tab": "Slots",
+      "add": "Add slot",
+      "edit": "Edit slot",
+      "date": "Date",
+      "start": "Start",
+      "end": "End",
+      "capacity": "Capacity",
+      "active": "Active",
+      "inactive": "Inactive",
+      "activate": "Activate",
+      "deactivate": "Deactivate",
+      "allDay": "All day (the space's opening hours)",
+      "repeat": "Repeat",
+      "repeatWeekdays": "Weekdays",
+      "repeatWeekdaysHint": "With no selection, the picked date's weekday is used.",
+      "repeatInterval": "Every N weeks",
+      "repeatCount": "Weeks to generate",
+      "createdSeries": "{count} slots created",
+      "applyTo": "Apply to",
+      "applyToOne": "Only this slot",
+      "applyToUpcoming": "This and upcoming ({count})",
+      "series": "Part of a series",
+      "pastDate": "That date has already passed.",
+      "pastTime": "That time today has already passed.",
+      "noSlots": "No slots yet. Add slots on concrete dates members can book.",
+      "confirmDelete": "Delete this slot? Its bookings will be removed too. To stop taking bookings without deleting anything, use Deactivate.",
+      "deleteAffected": "{count, plural, one {# member has active bookings that will be cancelled and notified by email.} other {# members have active bookings that will be cancelled and notified by email.}}"
+    },
+    "adminBookings": {
+      "tab": "Bookings",
+      "member": "Member",
+      "date": "Date",
+      "time": "Time",
+      "status": "Status",
+      "noBookings": "No bookings yet.",
+      "cancel": "Cancel",
+      "confirmCancel": "Cancel this booking? A waitlisted member will be promoted."
+    },
+    "status": {
+      "booked": "Booked",
+      "waitlisted": "Waitlisted",
+      "cancelled": "Cancelled"
+    },
+    "weekdays": {
+      "0": "Mon",
+      "1": "Tue",
+      "2": "Wed",
+      "3": "Thu",
+      "4": "Fri",
+      "5": "Sat",
+      "6": "Sun"
+    },
+    "settings": {
+      "tab": "Bookings",
+      "title": "Bookings",
+      "enabled": "Enable bookings",
+      "enabledDesc": "Let members reserve time on shared spaces.",
+      "rules": "Booking rules",
+      "windowDays": "Booking window (days ahead)",
+      "deadlineHours": "Self-cancellation deadline (hours before start)",
+      "waitlist": "Enable waitlist",
+      "waitlistDesc": "When a slot is full, let members join a waitlist and be promoted automatically."
+    }
+  }
+}

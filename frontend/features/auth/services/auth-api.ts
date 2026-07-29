@@ -18,6 +18,7 @@ export interface User {
   member_id: number | null;
   member_number: string | null;
   gender: string | null;
+  photo_url: string | null;
   email_verified: boolean;
   /** null for staff accounts that have no member record */
   member_status: MemberStatus | null;

@@ -37,6 +37,11 @@ from app.domains.custom_fields.models import (  # noqa: F401
     CustomFieldDefinition,
     CustomFieldValue,
 )
+from app.domains.bookings.models import (  # noqa: F401
+    Booking,
+    Space,
+    SpaceSlot,
+)
 
 config = context.config
 

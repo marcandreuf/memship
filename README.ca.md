@@ -111,19 +111,19 @@ Memship segueix el [versionat semàntic](https://semver.org/) i **els números d
 | v1.2.0 | Integració SSO / identitat — alta pública amb verificació per correu, flux d'aprovació per la junta, inici de sessió amb Google / Apple i configuració de proveïdors SSO pel superadministrador des d'una pestanya d'Integracions | Fet |
 | v1.2.1 | Configuració de correu a Ajustos — el superadministrador defineix Resend / Google SMTP des d'una pestanya d'Integracions | Fet |
 | v1.2.2 | Pedaç — elimina una migració duplicada de configuració de correu amb un identificador de revisió que xocava amb un altre existent, cosa que feia fallar `alembic upgrade head` en arrencar | Fet |
+| v1.3.0 | Reserves simples — reserves de socis en espais compartits mitjançant un calendari setmanal, aforament per franja, llista d'espera FIFO amb promoció automàtica i correus de confirmació/llista d'espera | Fet |
 
 ### Planificat
 
 Prioritzat, encara sense versió. Cada element esdevé un llançament versionat quan es publica, i el llançament pren el següent número semàntic per ordre.
 
-- **Reserves simples** — els socis reserven recursos compartits (camps, pistes, sales) en un calendari per espai _(en curs)_
 - **Convocatòries** — convocatòries formals d'Assemblea General amb confirmació del soci mitjançant token
 - **Rols i permisos flexibles** — multi-rol i permisos per rol més enllà dels 4 rols fixos
 - **Biblioteca de documents** — estatuts, actes, formularis amb visibilitat per grup
 - **Calendari d'esdeveniments + confirmació d'assistència** — vista de calendari i seguiment de participació
 - **Extensions — sistema de mòduls/connectors** — complements opcionals lliurats com a mòduls/connectors: àlbums de fotos, fòrum, llibre de visites, directori d'enllaços, inventari/préstecs, ginys del portal
 
-Les variacions complexes es construeixen sota demanda, quan una implementació real les necessita: GoCardless e-mandats, PayPal, flux d'Stripe Invoice, accions massives en rebuts, generador d'informes personalitzats, enquestes, facturació familiar, reserves amb classes de grup/llista d'espera, votació i adjunts en convocatòries, i variants més profundes de les funcions anteriors.
+Les variacions complexes es construeixen sota demanda, quan una implementació real les necessita: GoCardless e-mandats, PayPal, flux d'Stripe Invoice, accions massives en rebuts, generador d'informes personalitzats, enquestes, facturació familiar, pagaments i reserves recurrents, lloguer d'equipament, votació i adjunts en convocatòries, i variants més profundes de les funcions anteriors.
 
 ---
 
@@ -189,10 +189,12 @@ Les variacions complexes es construeixen sota demanda, quan una implementació r
 - Missatgeria directa entre administradors i socis
 - Plantilles de correu multiidioma
 
-**Reserves i espais** (previst)
-- Sistema de reserva d'espais i recursos
-- Vistes de calendari amb disponibilitat
-- Regles de reserva i prevenció de conflictes
+**Reserves i espais** (disponible)
+- Espais reservables amb horari d'obertura diari i franges amb data definides per la junta
+- Regles de repetició que materialitzen una sèrie de dates (dies de la setmana triats, cada N setmanes) i franges de dia complet
+- Aforament per franja amb llista d'espera FIFO i promoció automàtica en cancel·lar
+- Calendari setmanal del soci amb ocupació en viu i autocancel·lació fins a un termini configurable
+- Correus de confirmació, llista d'espera, promoció i cancel·lació per la junta
 
 **Informes i taulers** (previst)
 - Estadístiques i tendències de socis

@@ -111,19 +111,19 @@ Memship sigue el [versionado semántico](https://semver.org/) y **los números d
 | v1.2.0 | Integración SSO / identidad — alta pública con verificación por correo, flujo de aprobación por la directiva, inicio de sesión con Google / Apple y configuración de proveedores SSO por el superadministrador desde una pestaña de Integraciones | Hecho |
 | v1.2.1 | Configuración de correo en Ajustes — el superadministrador define Resend / Google SMTP desde una pestaña de Integraciones | Hecho |
 | v1.2.2 | Parche — elimina una migración duplicada de configuración de correo cuyo identificador de revisión chocaba con otro existente, lo que hacía fallar `alembic upgrade head` al arrancar | Hecho |
+| v1.3.0 | Reservas simples — reservas de socios en espacios compartidos mediante un calendario semanal, aforo por franja, lista de espera FIFO con promoción automática y correos de confirmación/lista de espera | Hecho |
 
 ### Planificado
 
 Priorizado, aún sin versión. Cada elemento se convierte en un lanzamiento versionado cuando se publica, y el lanzamiento toma el siguiente número semántico por orden.
 
-- **Reservas simples** — los socios reservan recursos compartidos (campos, pistas, salas) en un calendario por espacio _(en curso)_
 - **Convocatorias** — convocatorias formales de Asamblea General con confirmación del socio mediante token
 - **Roles y permisos flexibles** — multi-rol y permisos por rol más allá de los 4 roles fijos
 - **Biblioteca de documentos** — estatutos, actas, formularios con visibilidad por grupo
 - **Calendario de eventos + confirmación de asistencia** — vista de calendario y seguimiento de participación
 - **Extensiones — sistema de módulos/plugins** — complementos opcionales entregados como módulos/plugins: álbumes de fotos, foro, libro de visitas, directorio de enlaces, inventario/préstamos, widgets del portal
 
-Las variaciones complejas se construyen bajo demanda, cuando una implementación real las necesita: GoCardless e-mandatos, PayPal, flujo de Stripe Invoice, acciones masivas en recibos, generador de informes personalizados, encuestas, facturación familiar, reservas con clases de grupo/lista de espera, votación y adjuntos en convocatorias, y variantes más profundas de las funciones anteriores.
+Las variaciones complejas se construyen bajo demanda, cuando una implementación real las necesita: GoCardless e-mandatos, PayPal, flujo de Stripe Invoice, acciones masivas en recibos, generador de informes personalizados, encuestas, facturación familiar, pagos y reservas recurrentes, alquiler de equipamiento, votación y adjuntos en convocatorias, y variantes más profundas de las funciones anteriores.
 
 ---
 
@@ -189,10 +189,12 @@ Las variaciones complejas se construyen bajo demanda, cuando una implementación
 - Mensajería directa entre la directiva y los socios
 - Plantillas de email multiidioma
 
-**Reservas y espacios** (previsto)
-- Sistema de reserva de espacios e instalaciones
-- Vistas de calendario con disponibilidad
-- Reglas de reserva y prevención de conflictos
+**Reservas y espacios** (disponible)
+- Espacios reservables con horario de apertura diario y franjas con fecha definidas por la directiva
+- Reglas de repetición que materializan una serie de fechas (días de la semana elegidos, cada N semanas) y franjas de día completo
+- Aforo por franja con lista de espera FIFO y promoción automática al cancelar
+- Calendario semanal del socio con ocupación en vivo y autocancelación hasta un plazo configurable
+- Correos de confirmación, lista de espera, promoción y cancelación por la directiva
 
 **Informes y cuadros de mando** (previsto)
 - Estadísticas y tendencias de membresía

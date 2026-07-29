@@ -1,0 +1,7 @@
+<h2>Reserva confirmada!</h2>
+<p>Hola {{ member_name }},</p>
+<p>La teva reserva de <strong>{{ space_name }}</strong> ha estat confirmada.</p>
+<p><strong>Data:</strong> {{ booking_date }}</p>
+<p><strong>Horari:</strong> {{ booking_time }}</p>
+{% if cancellation_deadline_hours %}<p>Pots cancel·lar fins a {{ cancellation_deadline_hours }} hores abans de l'inici.</p>{% endif %}
+<p>Ens veiem aviat!</p>

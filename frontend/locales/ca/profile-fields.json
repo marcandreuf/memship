@@ -55,6 +55,7 @@
     "yes": "Sí",
     "no": "No",
     "empty": "—",
-    "save": "Desar camps"
+    "save": "Desar camps",
+    "noFieldsForMember": "Ara mateix no hi ha camps visibles per a tu."
   }
 }

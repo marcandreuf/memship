@@ -12,6 +12,7 @@ from app.api.v1.endpoints import (
     activity_prices,
     auth,
     billing_runs,
+    bookings,
     communications,
     concepts,
     contacts,
@@ -79,8 +80,9 @@ api_router.include_router(concepts.router, dependencies=_approved_only)
 api_router.include_router(billing_runs.router, dependencies=_approved_only)
 api_router.include_router(communications.router, dependencies=_approved_only)
 api_router.include_router(communications.me_router, dependencies=_approved_only)
+api_router.include_router(bookings.router, dependencies=_approved_only)
+api_router.include_router(bookings.member_router, dependencies=_approved_only)
 api_router.include_router(webhooks.router)
 api_router.include_router(custom_fields.router)
 api_router.include_router(custom_fields.me_router)
 api_router.include_router(custom_fields.values_router)
-

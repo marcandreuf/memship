@@ -55,6 +55,7 @@
     "yes": "Yes",
     "no": "No",
     "empty": "—",
-    "save": "Save fields"
+    "save": "Save fields",
+    "noFieldsForMember": "There are no fields visible to you right now."
   }
 }

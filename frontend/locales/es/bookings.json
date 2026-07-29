@@ -1,0 +1,113 @@
+{
+  "bookings": {
+    "nav": "Espacios",
+    "navBook": "Reservar",
+    "navMyBookings": "Mis reservas",
+    "book": {
+      "title": "Reservar un espacio",
+      "pickSpace": "Espacio",
+      "prev": "Semana anterior",
+      "next": "Semana siguiente",
+      "noSpaces": "Aún no hay espacios abiertos para reservar.",
+      "book": "Reservar",
+      "joinWaitlist": "Apuntarse",
+      "confirmBook": "¿Reservar esta franja?",
+      "confirmWaitlist": "Esta franja está completa. ¿Unirse a la lista de espera?",
+      "confirmWaitlistAction": "Unirse",
+      "bookedToast": "Reserva confirmada",
+      "waitlistedToast": "Añadido a la lista de espera"
+    },
+    "my": {
+      "title": "Mis reservas",
+      "upcoming": "Próximas",
+      "past": "Pasadas",
+      "empty": "No hay reservas.",
+      "cancel": "Cancelar",
+      "keep": "Mantener",
+      "confirmCancel": "¿Cancelar esta reserva?"
+    },
+    "spaces": {
+      "title": "Espacios",
+      "create": "Nuevo espacio",
+      "edit": "Editar espacio",
+      "name": "Nombre",
+      "type": "Tipo",
+      "description": "Descripción",
+      "openTime": "Apertura",
+      "closeTime": "Cierre",
+      "hours": "Horario",
+      "status": "Estado",
+      "active": "Activo",
+      "inactive": "Inactivo",
+      "noSpaces": "Aún no hay espacios. Crea uno para empezar a aceptar reservas.",
+      "manage": "Gestionar",
+      "notFound": "Espacio no encontrado.",
+      "confirmDelete": "¿Eliminar este espacio? Se eliminarán sus franjas y reservas. Para dejar de aceptar reservas sin borrar nada, desactívalo desde Editar.",
+      "deleteAffected": "{count, plural, one {# socio tiene reservas activas que se cancelarán y se le avisará por correo.} other {# socios tienen reservas activas que se cancelarán y se les avisará por correo.}}"
+    },
+    "slots": {
+      "tab": "Franjas",
+      "add": "Añadir franja",
+      "edit": "Editar franja",
+      "date": "Fecha",
+      "start": "Inicio",
+      "end": "Fin",
+      "capacity": "Aforo",
+      "active": "Activa",
+      "inactive": "Inactiva",
+      "activate": "Activar",
+      "deactivate": "Desactivar",
+      "allDay": "Todo el día (horario de apertura del espacio)",
+      "repeat": "Repetir",
+      "repeatWeekdays": "Días de la semana",
+      "repeatWeekdaysHint": "Sin selección, se usa el día de la fecha elegida.",
+      "repeatInterval": "Cada N semanas",
+      "repeatCount": "Semanas a generar",
+      "createdSeries": "{count} franjas creadas",
+      "applyTo": "Aplicar a",
+      "applyToOne": "Solo esta franja",
+      "applyToUpcoming": "Esta y las siguientes ({count})",
+      "series": "Parte de una serie",
+      "pastDate": "La fecha ya ha pasado.",
+      "pastTime": "Esa hora de hoy ya ha pasado.",
+      "noSlots": "Aún no hay franjas. Añade franjas en fechas concretas que los socios puedan reservar.",
+      "confirmDelete": "¿Eliminar esta franja? También se eliminarán sus reservas. Para dejar de aceptar reservas sin borrar nada, usa Desactivar.",
+      "deleteAffected": "{count, plural, one {# socio tiene reservas activas que se cancelarán y se le avisará por correo.} other {# socios tienen reservas activas que se cancelarán y se les avisará por correo.}}"
+    },
+    "adminBookings": {
+      "tab": "Reservas",
+      "member": "Socio",
+      "date": "Fecha",
+      "time": "Horario",
+      "status": "Estado",
+      "noBookings": "Aún no hay reservas.",
+      "cancel": "Cancelar",
+      "confirmCancel": "¿Cancelar esta reserva? Se promocionará a un socio en lista de espera."
+    },
+    "status": {
+      "booked": "Reservada",
+      "waitlisted": "En lista de espera",
+      "cancelled": "Cancelada"
+    },
+    "weekdays": {
+      "0": "Lun",
+      "1": "Mar",
+      "2": "Mié",
+      "3": "Jue",
+      "4": "Vie",
+      "5": "Sáb",
+      "6": "Dom"
+    },
+    "settings": {
+      "tab": "Reservas",
+      "title": "Reservas",
+      "enabled": "Activar reservas",
+      "enabledDesc": "Permite a los socios reservar tiempo en espacios compartidos.",
+      "rules": "Reglas de reserva",
+      "windowDays": "Ventana de reserva (días de antelación)",
+      "deadlineHours": "Plazo de autocancelación (horas antes del inicio)",
+      "waitlist": "Activar lista de espera",
+      "waitlistDesc": "Cuando una franja está completa, permite a los socios apuntarse a una lista de espera y ser promocionados automáticamente."
+    }
+  }
+}
