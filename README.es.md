@@ -108,12 +108,14 @@ Memship sigue el [versionado semántico](https://semver.org/) y **los números d
 | v1.0.1 | Parche — corrige el registro de tareas programadas de facturación/recordatorios en Celery; protección de CI contra la sobrescritura de etiquetas de imagen | Hecho |
 | v1.1.0 | Campos de perfil personalizados — datos de socio configurables por la organización (texto, número, fecha, selección, …) con validación por campo y visibilidad/edición por campo | Hecho |
 | v1.1.1 | Parche — reorganización de la navegación de configuración: ajustes de pagos y de socios agrupados en las pestañas Pagos y Socios | Hecho |
+| v1.2.0 | Integración SSO / identidad — alta pública con verificación por correo, flujo de aprobación por la directiva, inicio de sesión con Google / Apple y configuración de proveedores SSO por el superadministrador desde una pestaña de Integraciones | Hecho |
+| v1.2.1 | Configuración de correo en Ajustes — el superadministrador define Resend / Google SMTP desde una pestaña de Integraciones | Hecho |
+| v1.2.2 | Parche — elimina una migración duplicada de configuración de correo cuyo identificador de revisión chocaba con otro existente, lo que hacía fallar `alembic upgrade head` al arrancar | Hecho |
 
 ### Planificado
 
 Priorizado, aún sin versión. Cada elemento se convierte en un lanzamiento versionado cuando se publica, y el lanzamiento toma el siguiente número semántico por orden.
 
-- **Integración SSO / identidad** — inicio de sesión con el IdP de la organización (SAML/OIDC); modo proveedor más adelante _(en curso)_
 - **Reservas simples** — los socios reservan recursos compartidos (campos, pistas, salas) en un calendario por espacio _(en curso)_
 - **Convocatorias** — convocatorias formales de Asamblea General con confirmación del socio mediante token
 - **Roles y permisos flexibles** — multi-rol y permisos por rol más allá de los 4 roles fijos
