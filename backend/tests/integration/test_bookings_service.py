@@ -8,12 +8,19 @@ and query back within the same transaction.
 from datetime import date, time, timedelta
 
 import pytest
+from pydantic import ValidationError
 
 from app.core.security.password import hash_password
 from app.domains.auth.models import User
 from app.domains.bookings import service
 from app.domains.bookings.models import Space, SpaceSlot
-from app.domains.bookings.schemas import SlotRepeat, SpaceSlotCreate, SpaceSlotUpdate
+from app.domains.bookings.schemas import (
+    SlotRepeat,
+    SpaceCreate,
+    SpaceSlotCreate,
+    SpaceSlotUpdate,
+    SpaceUpdate,
+)
 from app.domains.members.models import Member
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Person
@@ -95,6 +102,67 @@ def _slot(db, space, on, capacity=1, start=time(10, 0), end=time(11, 0), series_
 
 def _future(days=3):
     return date.today() + timedelta(days=days)
+
+
+# --- Space opening hours --------------------------------------------------
+#
+# Two layers guard `close_time > open_time`: the create schema validates it, and
+# the service re-checks on update. The update path needs the service check
+# because SpaceUpdate is partial — a lone open_time can cross a close_time it
+# never sees. The DB CHECK constraint is the last line, and reaching it means a
+# 500 instead of a 422.
+
+
+def test_create_space_rejects_close_before_open():
+    with pytest.raises(ValidationError):
+        SpaceCreate(name="Court", open_time=time(22, 0), close_time=time(8, 0))
+
+
+def test_create_space_rejects_equal_hours():
+    """A zero-length day is not a valid space — the bound is `<=`, not `<`."""
+    with pytest.raises(ValidationError):
+        SpaceCreate(name="Court", open_time=time(9, 0), close_time=time(9, 0))
+
+
+def test_update_space_rejects_close_before_open(db):
+    _org(db)
+    space = _space(db)
+    with pytest.raises(service.SlotOutsideOpeningHours):
+        service.update_space(
+            db, space, SpaceUpdate(open_time=time(22, 0), close_time=time(8, 0))
+        )
+
+
+def test_update_space_rejects_partial_open_time_crossing_close(db):
+    """Only open_time is supplied, and it lands after the stored close_time.
+
+    SpaceUpdate cannot catch this on its own — it never sees close_time — so the
+    service comparing the merged values is what stops it.
+    """
+    _org(db)
+    space = _space(db)  # 08:00–22:00
+    with pytest.raises(service.SlotOutsideOpeningHours):
+        service.update_space(db, space, SpaceUpdate(open_time=time(23, 0)))
+
+
+def test_update_space_rejects_partial_close_time_crossing_open(db):
+    _org(db)
+    space = _space(db)  # 08:00–22:00
+    with pytest.raises(service.SlotOutsideOpeningHours):
+        service.update_space(db, space, SpaceUpdate(close_time=time(7, 0)))
+
+
+def test_update_space_accepts_widened_hours(db):
+    """The guard must not fire on a legitimate edit."""
+    _org(db)
+    space = _space(db)
+    service.update_space(
+        db, space, SpaceUpdate(open_time=time(7, 0), close_time=time(23, 0))
+    )
+    db.flush()
+
+    assert space.open_time == time(7, 0)
+    assert space.close_time == time(23, 0)
 
 
 # --- Slot validation + creation -------------------------------------------
@@ -366,6 +434,76 @@ def test_booking_past_slot_rejected(db):
 
     with pytest.raises(service.BookingInPast):
         service.create_booking(db, m1, slot.id)
+
+
+def test_booking_a_deactivated_slot_rejected(db):
+    """A deactivated slot is invisible, not merely unbookable.
+
+    The service reports SlotNotFound rather than a distinct "inactive" error so
+    a caller cannot probe which slot ids exist behind a withdrawn slot.
+    """
+    _org(db)
+    space = _space(db)
+    slot = _slot(db, space, _future(3), capacity=5)
+    slot.is_active = False
+    db.flush()
+    m1 = _member(db, 1)
+
+    with pytest.raises(service.SlotNotFound):
+        service.create_booking(db, m1, slot.id)
+
+
+def test_booking_an_active_slot_in_a_deactivated_space_rejected(db):
+    """Deactivating a space must close its slots without touching each one."""
+    _org(db)
+    space = _space(db)
+    slot = _slot(db, space, _future(3), capacity=5)
+    service.deactivate_space(db, space)
+    db.flush()
+    m1 = _member(db, 1)
+
+    assert slot.is_active is True
+    with pytest.raises(service.SlotNotFound):
+        service.create_booking(db, m1, slot.id)
+
+
+def test_deactivated_slot_absent_from_week_availability(db):
+    """The calendar and the booking guard must agree on what is bookable."""
+    _org(db)
+    space = _space(db)
+    target = _future(3)
+    week_start = target - timedelta(days=target.weekday())
+    live = _slot(db, space, target, capacity=1, start=time(10, 0), end=time(11, 0))
+    hidden = _slot(db, space, target, capacity=1, start=time(12, 0), end=time(13, 0))
+    hidden.is_active = False
+    db.flush()
+    m1 = _member(db, 1)
+
+    ids = {
+        c["space_slot_id"]
+        for c in service.space_week_availability(db, space, week_start, m1.id)
+    }
+
+    assert live.id in ids
+    assert hidden.id not in ids
+
+
+def test_reactivating_a_slot_makes_it_bookable_again(db):
+    """Deactivation is reversible — it must not strand the slot permanently."""
+    _org(db)
+    space = _space(db)
+    slot = _slot(db, space, _future(3), capacity=5)
+    slot.is_active = False
+    db.flush()
+    m1 = _member(db, 1)
+
+    with pytest.raises(service.SlotNotFound):
+        service.create_booking(db, m1, slot.id)
+
+    slot.is_active = True
+    db.flush()
+
+    assert service.create_booking(db, m1, slot.id).status == "booked"
 
 
 def test_booking_beyond_window_rejected(db):
