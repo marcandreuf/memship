@@ -28,7 +28,7 @@ def _create_user(db, role="admin", suffix="mnd"):
 
 
 def _auth_cookie(user):
-    return {"access_token": create_access_token(user.id, user.role)}
+    return {"access_token": create_access_token(user.id)}
 
 
 def _ensure_org_settings(db, creditor_id="ES12000B12345678"):

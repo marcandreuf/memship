@@ -29,7 +29,8 @@ from sqlalchemy import text
 from app.db.session import SessionLocal
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Address, AddressType, Contact, ContactType, Person
-from app.domains.auth.models import User
+from app.domains.auth.models import Role, RolePermission, User
+from app.domains.auth.roles import assign_roles
 from app.domains.activities.models import (
     Activity, ActivityAttachmentType, ActivityConsent, ActivityModality,
     ActivityPrice, DiscountCode, Registration, RegistrationConsent,
@@ -131,6 +132,9 @@ def seed_org_settings(db) -> None:
         invoice_annual_reset=True,
         default_vat_rate=21.00,
         features={
+            # On out of the box: the permission layer is always active, and
+            # hiding the only screen that can retune it helps nobody.
+            "custom_roles": True,
             "gender_options": [
                 {"value": "male", "label_es": "Hombre", "label_ca": "Home", "label_en": "Male"},
                 {"value": "female", "label_es": "Mujer", "label_ca": "Dona", "label_en": "Female"},
@@ -297,12 +301,13 @@ def create_user_with_member(
         person_id=person.id,
         email=details["email"],
         password_hash=ph.hash(details["password"]),
-        role=role,
         is_active=True,
         email_verified=True,
     )
     db.add(user)
     db.flush()
+
+    assign_roles(db, user, role)
 
     member_number = next_member_number(db)
     member = Member(
@@ -493,7 +498,45 @@ TEST_ACCOUNTS = [
         "password": "TestMember1!",
         "role": "member",
     },
+    {
+        "first_name": "Club",
+        "last_name": "Treasurer",
+        "email": "treasurer@test.com",
+        "password": "TestTreasurer1!",
+        "role": "treasurer",
+    },
 ]
+
+# A deliberately narrow custom role. The three system roles cannot express a
+# partial admin, so nothing else in the seed exercises the permission model's
+# actual point — nor the permission-driven nav, which has no other way to be
+# tested end to end.
+NARROW_ROLE = {
+    "slug": "treasurer",
+    "name": "Tesorero",
+    "description": "Solo facturación: recibos, mandatos y remesas.",
+    "permission_keys": ["billing.read", "billing.write", "billing.run"],
+}
+
+
+def seed_narrow_role(db) -> None:
+    existing = db.query(Role).filter_by(slug=NARROW_ROLE["slug"]).first()
+    if existing:
+        print(f"  custom role: already exists ({NARROW_ROLE['slug']})")
+        return
+
+    role = Role(
+        slug=NARROW_ROLE["slug"],
+        name=NARROW_ROLE["name"],
+        description=NARROW_ROLE["description"],
+        is_system=False,
+    )
+    role.permissions = [
+        RolePermission(permission_key=key) for key in NARROW_ROLE["permission_keys"]
+    ]
+    db.add(role)
+    db.flush()
+    print(f"  custom role: created ({NARROW_ROLE['slug']})")
 
 # Extra members for realistic registration data (--test only)
 EXTRA_MEMBERS = [
@@ -553,7 +596,6 @@ def seed_extra_members(db, default_membership_type: MembershipType) -> list[Memb
             person_id=person.id,
             email=data["email"],
             password_hash=ph.hash("TestMember1!"),
-            role="member",
             is_active=True,
             email_verified=True,
         )
@@ -728,7 +770,7 @@ def seed_registrations(db) -> None:
                 member_notes=f"Seeded registration #{count + 1}" if i == 0 else None,
             )
             if status == "cancelled":
-                admin_user = db.query(User).filter_by(role="admin").first()
+                admin_user = db.query(User).join(User.roles).filter(Role.slug == "admin").first()
                 reg.cancelled_at = datetime.now(timezone.utc)
                 reg.cancelled_by = admin_user.id if admin_user else None
                 reg.cancelled_reason = "Schedule conflict"
@@ -979,7 +1021,7 @@ def seed_billing_data(db) -> None:
         return
 
     org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
-    admin = db.query(User).filter(User.role == "admin").first()
+    admin = db.query(User).join(User.roles).filter(Role.slug == "admin").first()
     created_by = admin.id if admin else None
 
     # --- Concepts ---
@@ -1437,6 +1479,11 @@ def main() -> None:
         membership_type = seed_membership_types(db, groups)
 
         if args.test:
+            # Before the accounts: `assign_roles` resolves by slug, so the
+            # treasurer role has to exist by the time its holder is created.
+            print("\nSeeding custom roles...")
+            seed_narrow_role(db)
+
             print("\nCreating test accounts...")
             for account in TEST_ACCOUNTS:
                 create_user_with_member(

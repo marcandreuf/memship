@@ -24,7 +24,7 @@ def _create_user(db, role="super_admin", suffix="settings"):
 
 
 def _auth_cookie(user):
-    return {"access_token": create_access_token(user.id, user.role)}
+    return {"access_token": create_access_token(user.id)}
 
 
 def _ensure_org_settings(db):

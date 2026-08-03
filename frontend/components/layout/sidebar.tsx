@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import type { User } from "@/features/auth/services/auth-api";
 import { useAuth } from "@/features/auth/hooks/use-auth";
+import { usePermissions } from "@/features/auth/hooks/use-permissions";
 import { useSettings } from "@/features/settings/hooks/use-settings";
 import {
   Sidebar,
@@ -62,7 +63,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
     ? `/api/uploads${settings.logo_url.replace("/uploads", "")}?t=${new Date(settings.updated_at).getTime()}`
     : null;
 
-  const isAdmin = user.role === "admin" || user.role === "super_admin";
+  const { isStaff: isAdmin, has, hasAny } = usePermissions();
   const commsEnabled = Boolean(settings?.features?.communications);
   const cardEnabled = Boolean(settings?.features?.member_card);
   const bookingsEnabled = Boolean(settings?.features?.bookings);
@@ -70,6 +71,10 @@ export function AppSidebar({ user }: AppSidebarProps) {
   // Nav is grouped (separated by dividers): home/news, then club-wide items,
   // then the user's own items; admins get people/club, money, comms, system.
   // Payment method has no nav entry — it lives as a tab on the profile page.
+  //
+  // Every item renders from the permission its destination is guarded by, so a
+  // narrow custom role sees exactly what it can open. A feature flag and a
+  // permission are ANDed: the flag says the club uses the feature at all.
   const navGroups = (
     isAdmin
       ? [
@@ -77,41 +82,55 @@ export function AppSidebar({ user }: AppSidebarProps) {
             { href: "/dashboard", label: t("nav.dashboard"), icon: LayoutDashboard, show: true },
           ],
           [
-            { href: "/members", label: t("nav.members"), icon: Users, show: true },
-            { href: "/members/pending", label: t("nav.pendingRegistrations"), icon: UserCheck, show: true },
-            { href: "/groups", label: t("nav.groups"), icon: FolderOpen, show: true },
-            { href: "/activities", label: t("nav.activities"), icon: CalendarDays, show: true },
-            { href: "/spaces", label: t("bookings.nav"), icon: MapPin, show: bookingsEnabled },
-            { href: "/scan", label: t("nav.scan"), icon: ScanLine, show: cardEnabled },
+            { href: "/members", label: t("nav.members"), icon: Users, show: has("members.read") },
+            { href: "/members/pending", label: t("nav.pendingRegistrations"), icon: UserCheck, show: has("members.approve") },
+            { href: "/groups", label: t("nav.groups"), icon: FolderOpen, show: has("membership.read") },
+            { href: "/activities", label: t("nav.activities"), icon: CalendarDays, show: has("activities.read") },
+            { href: "/spaces", label: t("bookings.nav"), icon: MapPin, show: bookingsEnabled && has("bookings.read") },
+            // Scanning renders the member's card, which is `members.read` data.
+            { href: "/scan", label: t("nav.scan"), icon: ScanLine, show: cardEnabled && has("members.read") },
           ],
           [
-            { href: "/receipts", label: t("nav.receipts"), icon: Receipt, show: true },
-            { href: "/mandates", label: t("nav.mandates"), icon: FileText, show: true },
-            { href: "/remittances", label: t("nav.remittances"), icon: Landmark, show: true },
-            { href: "/billing-runs", label: t("nav.billingRuns"), icon: CalendarClock, show: true },
-            { href: "/annual-summary", label: t("annualSummary.title"), icon: TrendingUp, show: true },
+            { href: "/receipts", label: t("nav.receipts"), icon: Receipt, show: has("billing.read") },
+            { href: "/mandates", label: t("nav.mandates"), icon: FileText, show: has("billing.read") },
+            { href: "/remittances", label: t("nav.remittances"), icon: Landmark, show: has("billing.read") },
+            { href: "/billing-runs", label: t("nav.billingRuns"), icon: CalendarClock, show: has("billing.read") },
+            { href: "/annual-summary", label: t("annualSummary.title"), icon: TrendingUp, show: has("reports.read") },
           ],
           [
-            { href: "/communications", label: t("nav.communications"), icon: Megaphone, show: commsEnabled },
+            { href: "/communications", label: t("nav.communications"), icon: Megaphone, show: commsEnabled && has("communications.read") },
           ],
           [
-            { href: "/settings", label: t("nav.settings"), icon: Settings, show: true },
+            // Settings is a bag of tabs with their own gates — membership types
+            // is reachable on `membership.write` alone, so this is an OR.
+            {
+              href: "/settings",
+              label: t("nav.settings"),
+              icon: Settings,
+              show: hasAny(
+                "settings.read",
+                "membership.write",
+                "roles.read",
+                "users.read",
+                "settings.custom_fields.write",
+              ),
+            },
           ],
         ]
       : [
           [
             { href: "/dashboard", label: t("nav.dashboard"), icon: LayoutDashboard, show: true },
-            { href: "/announcements", label: t("nav.announcements"), icon: Megaphone, show: commsEnabled },
+            { href: "/announcements", label: t("nav.announcements"), icon: Megaphone, show: commsEnabled && has("self.communications.read") },
           ],
           [
-            { href: "/activities", label: t("nav.activities"), icon: CalendarDays, show: true },
-            { href: "/book", label: t("bookings.navBook"), icon: MapPin, show: bookingsEnabled },
+            { href: "/activities", label: t("nav.activities"), icon: CalendarDays, show: has("self.activities.read") },
+            { href: "/book", label: t("bookings.navBook"), icon: MapPin, show: bookingsEnabled && has("self.bookings.write") },
           ],
           [
-            { href: "/my-activities", label: t("activities.registration.myActivities"), icon: ClipboardList, show: true },
-            { href: "/my-bookings", label: t("bookings.navMyBookings"), icon: ClipboardList, show: bookingsEnabled },
-            { href: "/my-receipts", label: t("receipts.myReceipts"), icon: Receipt, show: true },
-            { href: "/my-card", label: t("nav.myCard"), icon: IdCard, show: cardEnabled },
+            { href: "/my-activities", label: t("activities.registration.myActivities"), icon: ClipboardList, show: has("self.registrations.read") },
+            { href: "/my-bookings", label: t("bookings.navMyBookings"), icon: ClipboardList, show: bookingsEnabled && has("self.bookings.read") },
+            { href: "/my-receipts", label: t("receipts.myReceipts"), icon: Receipt, show: has("self.billing.read") },
+            { href: "/my-card", label: t("nav.myCard"), icon: IdCard, show: cardEnabled && has("self.card.read") },
           ],
         ]
   )

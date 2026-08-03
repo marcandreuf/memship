@@ -26,10 +26,11 @@ export default getRequestConfig(async ({ requestLocale }) => {
   const annualSummary = (await import(`@/locales/${locale}/annual-summary.json`)).default;
   const notes = (await import(`@/locales/${locale}/notes.json`)).default;
   const profileFields = (await import(`@/locales/${locale}/profile-fields.json`)).default;
+  const roles = (await import(`@/locales/${locale}/roles.json`)).default;
   const bookings = (await import(`@/locales/${locale}/bookings.json`)).default;
 
   return {
     locale,
-    messages: { ...common, ...auth, ...members, ...dashboard, ...settings, ...activities, ...receipts, ...mandates, ...remittances, ...paymentMethod, ...billingRuns, ...reminders, ...communications, ...memberCard, ...exportNs, ...annualSummary, ...notes, ...profileFields, ...bookings },
+    messages: { ...common, ...auth, ...members, ...dashboard, ...settings, ...activities, ...receipts, ...mandates, ...remittances, ...paymentMethod, ...billingRuns, ...reminders, ...communications, ...memberCard, ...exportNs, ...annualSummary, ...notes, ...profileFields, ...bookings, ...roles },
   };
 });

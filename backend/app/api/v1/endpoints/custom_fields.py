@@ -14,7 +14,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.core.authorization import require_super_admin
+from app.core.authorization import require_permission, resolve_permissions, user_has
 from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
 from app.domains.auth.models import User
@@ -40,7 +40,6 @@ from app.domains.custom_fields.service import (
 )
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Person
-from app.domains.shared.enums import UserRole
 
 router = APIRouter(prefix="/custom-fields", tags=["custom-fields"])
 values_router = APIRouter(
@@ -59,10 +58,10 @@ def require_custom_fields_enabled(db: Session) -> None:
 
 
 def to_read(
-    definition: CustomFieldDefinition, *, role: str, is_own: bool
+    definition: CustomFieldDefinition, *, permissions: frozenset[str], is_own: bool
 ) -> CustomFieldDefinitionRead:
     out = CustomFieldDefinitionRead.model_validate(definition)
-    out.writable = can_write(definition, role=role, is_own=is_own)
+    out.writable = can_write(definition, permissions=permissions, is_own=is_own)
     return out
 
 
@@ -84,21 +83,22 @@ def _duplicate_key_error(key: str) -> HTTPException:
 def list_custom_fields(
     include_inactive: bool = False,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.profile.read")),
 ):
     """List definitions the current user may see, in display order."""
     require_custom_fields_enabled(db)
 
+    permissions = resolve_permissions(current_user)
     # A member only ever lists definitions in order to render their own record.
-    is_own = current_user.role == UserRole.MEMBER
-    if include_inactive and current_user.role != UserRole.SUPER_ADMIN:
+    is_own = "members.read" not in permissions
+    if include_inactive and "settings.custom_fields.write" not in permissions:
         include_inactive = False
 
     definitions = visible_definitions(
-        db, role=current_user.role, is_own=is_own, include_inactive=include_inactive
+        db, permissions=permissions, is_own=is_own, include_inactive=include_inactive
     )
     return [
-        to_read(d, role=current_user.role, is_own=is_own) for d in definitions
+        to_read(d, permissions=permissions, is_own=is_own) for d in definitions
     ]
 
 
@@ -108,7 +108,7 @@ def list_custom_fields(
 def create_custom_field(
     data: CustomFieldDefinitionCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_super_admin),
+    current_user: User = Depends(require_permission("settings.custom_fields.write")),
 ):
     require_custom_fields_enabled(db)
     try:
@@ -117,20 +117,20 @@ def create_custom_field(
         raise _duplicate_key_error(data.key)
     db.commit()
     db.refresh(definition)
-    return to_read(definition, role=current_user.role, is_own=False)
+    return to_read(definition, permissions=resolve_permissions(current_user), is_own=False)
 
 
 @router.get("/{definition_id}", response_model=CustomFieldDefinitionRead)
 def get_custom_field(
     definition_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_super_admin),
+    current_user: User = Depends(require_permission("settings.custom_fields.write")),
 ):
     require_custom_fields_enabled(db)
     definition = get_definition(db, definition_id)
     if not definition:
         raise HTTPException(status_code=404, detail="Custom field not found")
-    return to_read(definition, role=current_user.role, is_own=False)
+    return to_read(definition, permissions=resolve_permissions(current_user), is_own=False)
 
 
 @router.patch("/{definition_id}", response_model=CustomFieldDefinitionRead)
@@ -138,7 +138,7 @@ def update_custom_field(
     definition_id: int,
     data: CustomFieldDefinitionUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_super_admin),
+    current_user: User = Depends(require_permission("settings.custom_fields.write")),
 ):
     """Update a definition. `key` and `field_type` are immutable by design."""
     require_custom_fields_enabled(db)
@@ -155,14 +155,14 @@ def update_custom_field(
         )
     db.commit()
     db.refresh(definition)
-    return to_read(definition, role=current_user.role, is_own=False)
+    return to_read(definition, permissions=resolve_permissions(current_user), is_own=False)
 
 
 @router.delete("/{definition_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_custom_field(
     definition_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_super_admin),
+    current_user: User = Depends(require_permission("settings.custom_fields.write")),
 ):
     """Delete an unused definition; archive it instead once it holds values."""
     require_custom_fields_enabled(db)
@@ -188,7 +188,7 @@ def _resolve_person(db: Session, person_id: int, current_user: User) -> bool:
         raise HTTPException(status_code=404, detail="Person not found")
 
     is_own = current_user.person_id == person_id
-    if current_user.role == UserRole.MEMBER and not is_own:
+    if not user_has(current_user, "members.read") and not is_own:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     return is_own
 
@@ -207,10 +207,10 @@ def _field_error(key: str, message: str) -> HTTPException:
 
 
 def _save_values(
-    db: Session, person_id: int, submitted: dict, *, role: str, is_own: bool
+    db: Session, person_id: int, submitted: dict, *, permissions: frozenset[str], is_own: bool
 ) -> dict[str, str | None]:
     try:
-        set_person_values(db, person_id, submitted, role=role, is_own=is_own)
+        set_person_values(db, person_id, submitted, permissions=permissions, is_own=is_own)
     except InvalidFieldValue as exc:
         raise _field_error(exc.key, exc.message)
     except FieldNotWritable as exc:
@@ -218,30 +218,32 @@ def _save_values(
     except UnknownFieldKey as exc:
         raise _field_error(exc.key, "Unknown field")
     db.commit()
-    return get_person_values(db, person_id, role=role, is_own=is_own)
+    return get_person_values(db, person_id, permissions=permissions, is_own=is_own)
 
 
 @me_router.get("/", response_model=dict[str, str | None])
 def get_my_custom_fields(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.profile.read")),
 ):
     """The current user's own values — every field they may see."""
     require_custom_fields_enabled(db)
     person_id = _own_person_id(current_user)
-    return get_person_values(db, person_id, role=current_user.role, is_own=True)
+    return get_person_values(
+        db, person_id, permissions=resolve_permissions(current_user), is_own=True
+    )
 
 
 @me_router.put("/", response_model=dict[str, str | None])
 def update_my_custom_fields(
     values: dict[str, Any],
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.profile.write")),
 ):
     require_custom_fields_enabled(db)
     person_id = _own_person_id(current_user)
     return _save_values(
-        db, person_id, values, role=current_user.role, is_own=True
+        db, person_id, values, permissions=resolve_permissions(current_user), is_own=True
     )
 
 
@@ -249,11 +251,13 @@ def update_my_custom_fields(
 def get_person_custom_fields(
     person_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.profile.read")),
 ):
     require_custom_fields_enabled(db)
     is_own = _resolve_person(db, person_id, current_user)
-    return get_person_values(db, person_id, role=current_user.role, is_own=is_own)
+    return get_person_values(
+        db, person_id, permissions=resolve_permissions(current_user), is_own=is_own
+    )
 
 
 @values_router.put("/", response_model=dict[str, str | None])
@@ -261,11 +265,11 @@ def update_person_custom_fields(
     person_id: int,
     values: dict[str, Any],
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.profile.write")),
 ):
     """Replace this person's values. Fields the caller can't write are untouched."""
     require_custom_fields_enabled(db)
     is_own = _resolve_person(db, person_id, current_user)
     return _save_values(
-        db, person_id, values, role=current_user.role, is_own=is_own
+        db, person_id, values, permissions=resolve_permissions(current_user), is_own=is_own
     )

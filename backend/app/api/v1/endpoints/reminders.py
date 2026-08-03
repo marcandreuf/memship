@@ -7,7 +7,7 @@ A note has no due date; a reminder has one. Shown in the dashboard rail
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from app.core.authorization import require_admin
+from app.core.authorization import require_permission
 from app.db.session import get_db
 from app.domains.auth.models import User
 from app.domains.reminders import service
@@ -24,7 +24,7 @@ router = APIRouter(prefix="/reminders", tags=["reminders"])
 def list_reminders(
     only_open: bool = Query(False),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("reminders.read")),
 ):
     """List reminders; ``only_open=true`` (the rail default) hides done items."""
     return service.list_reminders(db, only_open=only_open)
@@ -34,7 +34,7 @@ def list_reminders(
 def create_reminder(
     data: ReminderCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("reminders.write")),
 ):
     reminder = service.create_reminder(db, data, created_by=current_user.id)
     db.commit()
@@ -47,7 +47,7 @@ def update_reminder(
     reminder_id: int,
     data: ReminderUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("reminders.write")),
 ):
     reminder = service.get_reminder(db, reminder_id)
     if reminder is None:
@@ -62,7 +62,7 @@ def update_reminder(
 def delete_reminder(
     reminder_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("reminders.write")),
 ):
     reminder = service.get_reminder(db, reminder_id)
     if reminder is None:

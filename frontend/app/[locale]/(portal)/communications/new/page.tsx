@@ -3,12 +3,13 @@
 import { useTranslations } from "next-intl";
 import { DetailHeader } from "@/components/entity/detail-header";
 import { useAuth } from "@/features/auth/hooks/use-auth";
+import { usePermissions } from "@/features/auth/hooks/use-permissions";
 import { AnnouncementForm } from "@/features/communications/components/announcement-form";
 
 export default function NewAnnouncementPage() {
   const t = useTranslations();
   const { user } = useAuth();
-  const isAdmin = user?.role === "admin" || user?.role === "super_admin";
+  const { isStaff: isAdmin } = usePermissions();
 
   if (!isAdmin) {
     return (

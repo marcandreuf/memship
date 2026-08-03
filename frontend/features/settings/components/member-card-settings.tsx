@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/form";
 import { toast } from "sonner";
 import { mapApiErrorsToForm } from "@/lib/errors";
-import { useSettings, useUpdateSettings } from "../hooks/use-settings";
+import { useOrgSettings, useUpdateSettings } from "../hooks/use-settings";
 import { useAssignMemberNumbers } from "@/features/member-card/hooks/use-member-card";
 import { FormSkeleton } from "@/components/ui/skeletons";
 
@@ -34,7 +34,7 @@ type MemberCardFormValues = z.infer<typeof memberCardSchema>;
 
 export function MemberCardSettings() {
   const t = useTranslations();
-  const { data: settings, isLoading } = useSettings();
+  const { data: settings, isLoading } = useOrgSettings();
   const updateMutation = useUpdateSettings();
   const assignMutation = useAssignMemberNumbers();
 

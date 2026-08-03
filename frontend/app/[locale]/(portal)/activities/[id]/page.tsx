@@ -13,6 +13,7 @@ import { ACTIVITY_STATUS_VARIANTS } from "@/lib/status-variants";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "sonner";
 import { useAuth } from "@/features/auth/hooks/use-auth";
+import { usePermissions } from "@/features/auth/hooks/use-permissions";
 import {
   useActivity,
   useUpdateActivity,
@@ -45,7 +46,12 @@ export default function ActivityDetailPage({
   const t = useTranslations();
   const router = useRouter();
   const { user } = useAuth();
-  const isAdmin = user?.role === "admin" || user?.role === "super_admin";
+  const { isStaff: isAdmin, has } = usePermissions();
+  // `isAdmin` still picks the staff-vs-member shape of the page; within the
+  // staff shape each tab answers to the key its own endpoints are guarded by.
+  const canReadActivities = has("activities.read");
+  const canWriteActivities = has("activities.write");
+  const canReadRegistrations = has("registrations.read");
 
   const { data: activity, isLoading } = useActivity(activityId);
   const { data: eligibility } = useEligibility(activityId);
@@ -211,7 +217,7 @@ export default function ActivityDetailPage({
 
       <EntityTabs
         tabs={[
-          ...(isAdmin
+          ...(canReadActivities
             ? [
                 {
                   id: "modalities",
@@ -237,17 +243,21 @@ export default function ActivityDetailPage({
                 prices={activity.prices}
                 modalities={activity.modalities}
                 activity={activity}
-                isAdmin={isAdmin}
+                isAdmin={canWriteActivities}
               />
             ),
           },
-          ...(isAdmin
+          ...(canReadRegistrations
             ? [
                 {
                   id: "registrations",
                   label: t("activities.registrations"),
                   content: <RegistrationsTab activityId={activityId} />,
                 },
+              ]
+            : []),
+          ...(canReadActivities
+            ? [
                 {
                   id: "discounts",
                   label: t("activities.discounts.title"),
@@ -266,16 +276,26 @@ export default function ActivityDetailPage({
                 {
                   id: "coverImage",
                   label: t("activities.coverImage.tab"),
-                  content: <ActivityCoverImage activity={activity} isAdmin />,
+                  content: (
+                    <ActivityCoverImage
+                      activity={activity}
+                      isAdmin={canWriteActivities}
+                    />
+                  ),
                 },
               ]
-            : [
+            : []),
+          // The read-only member view, keyed off the page shape rather than a
+          // permission: it is what someone sees *instead of* the staff tabs.
+          ...(!isAdmin
+            ? [
                 {
                   id: "details",
                   label: t("activities.details"),
                   content: <MemberActivityDetailsTab activity={activity} />,
                 },
-              ]),
+              ]
+            : []),
           ...(!isAdmin && activity.status === "published"
             ? [
                 {

@@ -22,10 +22,6 @@ from app.db.base import Base
 class User(Base):
     __tablename__ = "users"
     __table_args__ = (
-        CheckConstraint(
-            "role IN ('super_admin', 'admin', 'restricted', 'member')",
-            name="valid_role",
-        ),
         Index("idx_users_person_id", "person_id"),
         Index("idx_users_is_active", "is_active"),
         Index("idx_users_reset_token", "reset_token", postgresql_where="reset_token IS NOT NULL"),
@@ -42,8 +38,6 @@ class User(Base):
     # Nullable: SSO-only users (Google/Apple) have no password. The password login
     # path rejects a user whose hash is NULL.
     password_hash = Column(String(255))
-    role = Column(String(50), nullable=False, default="member")
-    permissions = Column(JSONB, default=list)
     email_verified = Column(Boolean, default=False)
     email_verified_at = Column(DateTime(timezone=True))
     last_login_at = Column(DateTime(timezone=True))
@@ -66,6 +60,79 @@ class User(Base):
     identities = relationship(
         "UserIdentity", back_populates="user", cascade="all, delete-orphan"
     )
+    role_assignments = relationship(
+        "UserRoleAssignment",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        foreign_keys="UserRoleAssignment.user_id",
+    )
+    # selectin, not lazy: authorization resolves on every request and a lazy load
+    # here raises once the request's session is gone.
+    roles = relationship(
+        "Role",
+        secondary="user_roles",
+        primaryjoin="User.id == UserRoleAssignment.user_id",
+        secondaryjoin="Role.id == UserRoleAssignment.role_id",
+        viewonly=True,
+        lazy="selectin",
+    )
+
+
+class Role(Base):
+    __tablename__ = "roles"
+    __table_args__ = (Index("idx_roles_slug", "slug"),)
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    slug = Column(String(50), unique=True, nullable=False)
+    name = Column(String(100), nullable=False)
+    description = Column(Text)
+    is_system = Column(Boolean, nullable=False, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    permissions = relationship(
+        "RolePermission",
+        back_populates="role",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+
+    @property
+    def permission_keys(self) -> set[str]:
+        return {p.permission_key for p in self.permissions}
+
+
+class RolePermission(Base):
+    __tablename__ = "role_permissions"
+    __table_args__ = (Index("idx_role_permissions_role", "role_id"),)
+
+    role_id = Column(
+        Integer, ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True
+    )
+    permission_key = Column(String(64), primary_key=True)
+
+    role = relationship("Role", back_populates="permissions")
+
+
+class UserRoleAssignment(Base):
+    __tablename__ = "user_roles"
+    __table_args__ = (Index("idx_user_roles_user", "user_id"),)
+
+    user_id = Column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    # RESTRICT, not CASCADE: deleting a role that is still assigned must fail at
+    # the database, so an "assign" racing a "delete" cannot orphan the assignment.
+    role_id = Column(
+        Integer, ForeignKey("roles.id", ondelete="RESTRICT"), primary_key=True
+    )
+    assigned_at = Column(DateTime(timezone=True), server_default=func.now())
+    assigned_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+
+    user = relationship("User", foreign_keys=[user_id], back_populates="role_assignments")
+    role = relationship("Role")
 
 
 class UserIdentity(Base):

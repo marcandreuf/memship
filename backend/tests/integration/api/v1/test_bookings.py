@@ -24,7 +24,7 @@ def _no_broker(monkeypatch):
 def _auth(user):
     from app.core.security.jwt import create_access_token
 
-    return {"access_token": create_access_token(user.id, user.role)}
+    return {"access_token": create_access_token(user.id)}
 
 
 def _org(db, *, enabled=True, **features):

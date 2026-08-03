@@ -3,12 +3,12 @@
 Access is resolved in exactly one place (``can_read``/``can_write``) so the
 endpoints, the value writer and the tests all agree on the matrix:
 
-| role              | read                   | write                          |
-|-------------------|------------------------|--------------------------------|
-| super_admin       | always                 | always                         |
-| admin, restricted | always                 | ``admin_access == "write"``    |
-| member (own)      | ``member_access != hidden`` | ``member_access == "write"`` |
-| member (other)    | never                  | never                          |
+| holds                          | read                        | write                        |
+|--------------------------------|-----------------------------|------------------------------|
+| ``settings.custom_fields.write`` | always                    | always                       |
+| ``members.read`` / ``members.write`` | always                | ``admin_access == "write"``  |
+| ``self.profile.*`` (own record)  | ``member_access != hidden`` | ``member_access == "write"`` |
+| ``self.profile.*`` (other)       | never                     | never                        |
 
 Following the house convention, nothing here commits — the endpoint does.
 """
@@ -29,14 +29,20 @@ from app.domains.shared.enums import (
     CustomFieldAdminAccess,
     CustomFieldMemberAccess,
     CustomFieldType,
-    UserRole,
 )
 
 # Length caps for the free-text types, mirrored by the frontend Zod schema.
 TEXT_MAX_LENGTH = 255
 TEXTAREA_MAX_LENGTH = 5000
 
-STAFF_ROLES = {UserRole.ADMIN, UserRole.RESTRICTED}
+# Whoever may edit the schema may write any value on it. This is the one key
+# super_admin holds and admin does not, so it preserves the pre-v1.4 split where
+# only a super admin overrode admin_access.
+SCHEMA_WRITE = "settings.custom_fields.write"
+STAFF_READ = "members.read"
+STAFF_WRITE = "members.write"
+OWN_READ = "self.profile.read"
+OWN_WRITE = "self.profile.write"
 
 
 class CustomFieldError(Exception):
@@ -79,34 +85,36 @@ class UnknownFieldKey(CustomFieldError):
 # --- Access ---------------------------------------------------------------
 
 
-def can_read(definition: CustomFieldDefinition, *, role: str, is_own: bool) -> bool:
-    if role == UserRole.SUPER_ADMIN:
+def can_read(
+    definition: CustomFieldDefinition, *, permissions: frozenset[str], is_own: bool
+) -> bool:
+    if STAFF_READ in permissions:
         return True
-    if role in STAFF_ROLES:
-        return True
-    if role == UserRole.MEMBER and is_own:
+    if is_own and OWN_READ in permissions:
         return definition.member_access != CustomFieldMemberAccess.HIDDEN
     return False
 
 
-def can_write(definition: CustomFieldDefinition, *, role: str, is_own: bool) -> bool:
-    if role == UserRole.SUPER_ADMIN:
+def can_write(
+    definition: CustomFieldDefinition, *, permissions: frozenset[str], is_own: bool
+) -> bool:
+    if SCHEMA_WRITE in permissions:
         return True
-    if role in STAFF_ROLES:
+    if STAFF_WRITE in permissions:
         return definition.admin_access == CustomFieldAdminAccess.WRITE
-    if role == UserRole.MEMBER and is_own:
+    if is_own and OWN_WRITE in permissions:
         return definition.member_access == CustomFieldMemberAccess.WRITE
     return False
 
 
 def visible_definitions(
-    db: Session, *, role: str, is_own: bool, include_inactive: bool = False
+    db: Session, *, permissions: frozenset[str], is_own: bool, include_inactive: bool = False
 ) -> list[CustomFieldDefinition]:
     """Definitions the actor may see, in display order."""
     return [
         d
         for d in list_definitions(db, include_inactive=include_inactive)
-        if can_read(d, role=role, is_own=is_own)
+        if can_read(d, permissions=permissions, is_own=is_own)
     ]
 
 
@@ -169,14 +177,14 @@ def validate_value(definition: CustomFieldDefinition, raw) -> str | None:
 
 
 def get_person_values(
-    db: Session, person_id: int, *, role: str, is_own: bool
+    db: Session, person_id: int, *, permissions: frozenset[str], is_own: bool
 ) -> dict[str, str | None]:
     """One person's values, keyed by field, limited to what the actor may see.
 
     Every visible field appears, with ``None`` where nothing is stored yet, so
     the caller can render the full form from this alone.
     """
-    definitions = visible_definitions(db, role=role, is_own=is_own)
+    definitions = visible_definitions(db, permissions=permissions, is_own=is_own)
     stored = {
         v.definition_id: v.value
         for v in db.query(CustomFieldValue)
@@ -191,7 +199,7 @@ def set_person_values(
     person_id: int,
     submitted: dict,
     *,
-    role: str,
+    permissions: frozenset[str],
     is_own: bool,
 ) -> None:
     """Replace one person's values with ``submitted`` (whole-map semantics).
@@ -209,11 +217,11 @@ def set_person_values(
 
     for key in submitted:
         definition = by_key.get(key)
-        if definition is None or not can_read(definition, role=role, is_own=is_own):
+        if definition is None or not can_read(definition, permissions=permissions, is_own=is_own):
             raise UnknownFieldKey(key)
         if not definition.active:
             continue
-        if not can_write(definition, role=role, is_own=is_own):
+        if not can_write(definition, permissions=permissions, is_own=is_own):
             raise FieldNotWritable(key)
 
     existing = {
@@ -226,7 +234,7 @@ def set_person_values(
     for definition in all_definitions:
         if not definition.active:
             continue
-        if not can_write(definition, role=role, is_own=is_own):
+        if not can_write(definition, permissions=permissions, is_own=is_own):
             continue
 
         value = validate_value(definition, submitted.get(definition.key))

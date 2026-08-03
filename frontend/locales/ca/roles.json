@@ -1,0 +1,264 @@
+{
+  "roles": {
+    "tab": "Rols",
+    "enabled": "Rols personalitzats",
+    "enabledDesc": "Permet definir rols a mida i assignar-los als comptes. Els permisos continuen actius encara que això estigui desactivat.",
+    "title": "Rols i permisos",
+    "description": "Defineix què pot fer cada tipus de compte. Només el superadministrador crea rols; els administradors els assignen.",
+    "create": "Crear rol",
+    "edit": "Editar rol",
+    "name": "Nom",
+    "roleDescription": "Descripció",
+    "permissions": "Permisos",
+    "system": "Del sistema",
+    "assignedUsers": "{count} comptes",
+    "confirmDelete": "Vols eliminar aquest rol? Ha d'estar sense assignar.",
+    "inUse": "No es pot eliminar: {count} comptes encara el tenen.",
+    "slugExists": "Ja existeix un rol amb aquest nom ({name}).",
+    "locked": "Aquest rol és del sistema: no es pot reanomenar ni eliminar.",
+    "reserved": "Reservat al superadministrador",
+    "notAssignable": "No pots assignar un rol amb més permisos dels que tens.",
+    "superAdminOnly": "Només un superadministrador pot assignar aquest rol.",
+    "memberPinned": "Tots els comptes tenen el rol Soci de manera permanent.",
+    "rolesRequired": "Cal assignar almenys un rol.",
+    "lastSuperAdmin": "No es pot retirar l'últim superadministrador.",
+    "users": "Comptes",
+    "usersDescription": "Assigna rols als comptes existents.",
+    "active": "Activa",
+    "inactive": "Inactiva",
+    "search": "Cercar per correu",
+    "administrative": "Administració",
+    "selfService": "Àrea personal",
+    "domains": {
+      "members": "Socis",
+      "membership": "Quotes i grups",
+      "activities": "Activitats",
+      "registrations": "Inscripcions",
+      "billing": "Facturació",
+      "communications": "Comunicacions",
+      "bookings": "Reserves",
+      "reports": "Informes",
+      "reminders": "Notes i avisos",
+      "settings": "Configuració",
+      "users": "Comptes",
+      "roles": "Rols",
+      "self_profile": "Perfil propi",
+      "self_activities": "Catàleg",
+      "self_registrations": "Inscripcions pròpies",
+      "self_billing": "Rebuts propis",
+      "self_card": "Carnet propi",
+      "self_bookings": "Reserves pròpies",
+      "self_communications": "Avisos propis"
+    }
+  },
+  "permissions": {
+    "members": {
+      "read": {
+        "label": "Veure socis",
+        "description": "Consultar les fitxes de socis, les seves dades de contacte i exportar-les."
+      },
+      "write": {
+        "label": "Editar socis",
+        "description": "Crear, modificar, suspendre o donar de baixa socis i les seves dades."
+      },
+      "approve": {
+        "label": "Aprovar altes",
+        "description": "Acceptar o rebutjar sol·licituds d'alta pendents."
+      }
+    },
+    "membership": {
+      "read": {
+        "label": "Veure tipus i grups",
+        "description": "Consultar els tipus de quota i els grups del club."
+      },
+      "write": {
+        "label": "Editar tipus i grups",
+        "description": "Crear i modificar tipus de quota i grups."
+      }
+    },
+    "activities": {
+      "read": {
+        "label": "Veure activitats",
+        "description": "Consultar totes les activitats, inclosos esborranys i arxivades."
+      },
+      "write": {
+        "label": "Editar activitats",
+        "description": "Crear i modificar activitats, preus, modalitats i consentiments."
+      },
+      "publish": {
+        "label": "Publicar activitats",
+        "description": "Publicar, arxivar o cancel·lar una activitat. Sense aquest permís només es poden preparar esborranys."
+      }
+    },
+    "registrations": {
+      "read": {
+        "label": "Veure inscripcions",
+        "description": "Consultar i exportar les inscripcions de qualsevol soci o activitat."
+      },
+      "write": {
+        "label": "Gestionar inscripcions",
+        "description": "Canviar l'estat d'una inscripció, cancel·lar-la o promoure des de la llista d'espera."
+      }
+    },
+    "billing": {
+      "read": {
+        "label": "Veure facturació",
+        "description": "Consultar rebuts, conceptes, mandats i remeses, i descarregar-ne els PDF."
+      },
+      "write": {
+        "label": "Editar facturació",
+        "description": "Emetre, cobrar, anul·lar o retornar rebuts i gestionar mandats i remeses."
+      },
+      "run": {
+        "label": "Executar facturació massiva",
+        "description": "Generar les quotes de tot el club de cop. És una acció excepcional."
+      }
+    },
+    "communications": {
+      "read": {
+        "label": "Veure comunicacions",
+        "description": "Consultar els comunicats, la seva audiència i les seves estadístiques."
+      },
+      "write": {
+        "label": "Redactar comunicacions",
+        "description": "Crear i editar comunicats sense arribar a enviar-los."
+      },
+      "send": {
+        "label": "Enviar comunicacions",
+        "description": "Enviar un comunicat a la seva audiència. No es pot desfer."
+      }
+    },
+    "bookings": {
+      "read": {
+        "label": "Veure reserves",
+        "description": "Consultar espais, zones, franges horàries i totes les reserves."
+      },
+      "write": {
+        "label": "Gestionar reserves",
+        "description": "Crear i editar espais i franges, i reservar o cancel·lar en nom de qualsevol."
+      }
+    },
+    "reports": {
+      "read": {
+        "label": "Veure informes",
+        "description": "Consultar els totals anuals del club. Només xifres agregades: no permet obrir cap fitxa."
+      }
+    },
+    "reminders": {
+      "read": {
+        "label": "Veure notes i avisos",
+        "description": "Consultar les notes internes i els recordatoris."
+      },
+      "write": {
+        "label": "Editar notes i avisos",
+        "description": "Crear, editar i completar notes internes i recordatoris."
+      }
+    },
+    "settings": {
+      "read": {
+        "label": "Veure configuració",
+        "description": "Consultar les dades i la configuració de l'organització."
+      },
+      "write": {
+        "label": "Editar configuració",
+        "description": "Canviar les dades del club, el logotip, l'adreça i les funcionalitats actives."
+      },
+      "custom_fields": {
+        "write": {
+          "label": "Editar camps de perfil",
+          "description": "Definir quins camps personalitzats existeixen a les fitxes de soci."
+        }
+      },
+      "integrations": {
+        "write": {
+          "label": "Editar integracions",
+          "description": "Configurar l'accés amb SSO, el correu sortint i les passarel·les de pagament. Reservat al superadministrador perquè dona accés a credencials."
+        }
+      }
+    },
+    "users": {
+      "read": {
+        "label": "Veure comptes",
+        "description": "Consultar els comptes d'usuari i els rols que tenen assignats."
+      },
+      "write": {
+        "label": "Gestionar comptes",
+        "description": "Assignar o retirar rols i activar o desactivar comptes."
+      }
+    },
+    "roles": {
+      "read": {
+        "label": "Veure rols",
+        "description": "Consultar els rols definits i quins permisos inclou cadascun."
+      },
+      "write": {
+        "label": "Crear rols",
+        "description": "Crear, editar i eliminar rols. Reservat al superadministrador: qui pot crear rols pot atorgar qualsevol permís."
+      }
+    },
+    "self": {
+      "profile": {
+        "read": {
+          "label": "Veure el propi perfil",
+          "description": "Consultar les dades de la pròpia fitxa i els contactes propis."
+        },
+        "write": {
+          "label": "Editar el propi perfil",
+          "description": "Modificar les dades pròpies i la foto de perfil."
+        }
+      },
+      "activities": {
+        "read": {
+          "label": "Veure el catàleg",
+          "description": "Consultar les activitats publicades i els seus preus per poder inscriure's."
+        }
+      },
+      "registrations": {
+        "read": {
+          "label": "Veure les pròpies inscripcions",
+          "description": "Consultar en quines activitats està inscrit i els seus documents."
+        },
+        "write": {
+          "label": "Inscriure's",
+          "description": "Apuntar-se a una activitat, cancel·lar la pròpia inscripció i pujar documents."
+        }
+      },
+      "billing": {
+        "read": {
+          "label": "Veure els propis rebuts",
+          "description": "Consultar i descarregar els rebuts propis i el mandat bancari."
+        },
+        "write": {
+          "label": "Pagar els propis rebuts",
+          "description": "Canviar la forma de pagament pròpia i pagar un rebut en línia."
+        }
+      },
+      "card": {
+        "read": {
+          "label": "Veure el propi carnet",
+          "description": "Consultar i descarregar el carnet de soci propi."
+        }
+      },
+      "bookings": {
+        "read": {
+          "label": "Veure les pròpies reserves",
+          "description": "Consultar els espais disponibles i les reserves pròpies."
+        },
+        "write": {
+          "label": "Reservar",
+          "description": "Reservar un espai i cancel·lar les reserves pròpies."
+        }
+      },
+      "communications": {
+        "read": {
+          "label": "Veure els propis avisos",
+          "description": "Consultar les notificacions i els comunicats rebuts."
+        },
+        "write": {
+          "label": "Marcar avisos com a llegits",
+          "description": "Marcar les pròpies notificacions com a llegides."
+        }
+      }
+    }
+  }
+}

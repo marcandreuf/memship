@@ -5,10 +5,9 @@ import copy
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.core.authorization import require_super_admin
+from app.core.authorization import require_permission
 from app.core.config import settings as app_settings
 from app.core.security import secrets_crypto
-from app.core.security.dependencies import get_current_user
 from app.core.security.oauth import provider_redirect_uri
 from app.db.session import get_db
 from app.domains.audit.models import AuditLog
@@ -44,6 +43,7 @@ from app.domains.mailing.mailing_schemas import (
 )
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.organizations.schemas import (
+    OrganizationBrandingResponse,
     OrganizationSettingsResponse,
     OrganizationSettingsUpdate,
 )
@@ -56,10 +56,19 @@ from app.domains.persons.models import Address
 router = APIRouter(prefix="/settings", tags=["settings"])
 
 
+@router.get("/branding", response_model=OrganizationBrandingResponse)
+def get_branding(db: Session = Depends(get_db)):
+    """The portal shell's identity: name, logo, colour, contact block, feature
+    flags. Unauthenticated on purpose — the shell renders it around the login
+    form, and none of it is private. `settings.read` guards the rest.
+    """
+    return db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
+
+
 @router.get("/", response_model=OrganizationSettingsResponse)
 def get_settings(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("settings.read")),
 ):
     return db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
 
@@ -68,7 +77,7 @@ def get_settings(
 def update_settings(
     data: OrganizationSettingsUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_super_admin),
+    current_user: User = Depends(require_permission("settings.write")),
 ):
     settings_obj = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
     update_data = data.model_dump(exclude_unset=True)
@@ -82,7 +91,7 @@ def update_settings(
 @router.get("/address", response_model=OrganizationAddressResponse | None)
 def get_organization_address(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("settings.read")),
 ):
     """Get the organization's address."""
     return (
@@ -100,7 +109,7 @@ def get_organization_address(
 def update_organization_address(
     data: OrganizationAddressUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_super_admin),
+    current_user: User = Depends(require_permission("settings.write")),
 ):
     """Create or update the organization's address."""
     address = (
@@ -211,7 +220,7 @@ def _apply_provider_update(pname: str, pupdate, node: dict, changed: list[str]) 
 @router.get("/sso", response_model=SsoConfigView)
 def get_sso_config(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_super_admin),
+    current_user: User = Depends(require_permission("settings.integrations.write")),
 ):
     """Masked SSO configuration for the settings screen. Never returns secrets."""
     return _build_sso_view(db)
@@ -221,7 +230,7 @@ def get_sso_config(
 def update_sso_config(
     data: SsoConfigUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_super_admin),
+    current_user: User = Depends(require_permission("settings.integrations.write")),
 ):
     settings_obj = (
         db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
@@ -328,7 +337,7 @@ def _apply_mail_provider_update(pname: str, pupdate, node: dict, changed: list[s
 @router.get("/mailing", response_model=MailingConfigView)
 def get_mailing_config(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_super_admin),
+    current_user: User = Depends(require_permission("settings.integrations.write")),
 ):
     """Masked mailing configuration for the settings screen. Never returns secrets."""
     return _build_mailing_view(db)
@@ -338,7 +347,7 @@ def get_mailing_config(
 def update_mailing_config(
     data: MailingConfigUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_super_admin),
+    current_user: User = Depends(require_permission("settings.integrations.write")),
 ):
     settings_obj = (
         db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
@@ -395,7 +404,7 @@ def update_mailing_config(
 def test_mailing_provider(
     data: MailingTestRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_super_admin),
+    current_user: User = Depends(require_permission("settings.integrations.write")),
 ):
     """Send a test email through a specific provider, bypassing ``active_provider``.
 

@@ -90,7 +90,7 @@ def _create_user(db, role="super_admin", suffix="sso"):
 
 
 def _auth_cookie(user):
-    return {"access_token": create_access_token(user.id, user.role)}
+    return {"access_token": create_access_token(user.id)}
 
 
 class TestSecretsCrypto:

@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.security.password import hash_password, verify_password
 from app.domains.auth.models import User
+from app.domains.auth.roles import assign_roles
 from app.domains.members.models import Member, MembershipType
 from app.domains.members.service import allocate_member_number
 from app.domains.organizations.models import OrganizationSettings
@@ -86,12 +87,13 @@ def register_user(
         person_id=person.id,
         email=email,
         password_hash=hash_password(password),
-        role="member",
         is_active=True,
         email_verified=False,
     )
     db.add(user)
     db.flush()
+
+    assign_roles(db, user)
 
     # Create member with default membership type
     default_type = (

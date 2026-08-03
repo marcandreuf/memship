@@ -21,6 +21,7 @@ import { useReceipts } from "@/features/receipts/hooks/use-receipts";
 import { useSettings } from "@/features/settings/hooks/use-settings";
 import { toast } from "sonner";
 import { useAuth } from "@/features/auth/hooks/use-auth";
+import { usePermissions } from "@/features/auth/hooks/use-permissions";
 import { MEMBER_STATUS_VARIANTS } from "@/lib/status-variants";
 import { DetailSkeleton } from "@/components/ui/skeletons";
 import { CustomFieldsTab } from "@/features/custom-fields/components/custom-fields-tab";
@@ -38,10 +39,16 @@ export default function MemberDetailPage({
   const { mutateAsync: update, isPending: isUpdating } = useUpdateMember();
   const [isEditing, setIsEditing] = useState(false);
 
-  const isAdmin = user?.role === "admin" || user?.role === "super_admin";
+  const { isStaff: isAdmin, has } = usePermissions();
   const { data: settings } = useSettings();
   const cardEnabled = Boolean(settings?.features?.member_card);
   const customFieldsEnabled = Boolean(settings?.features?.custom_profile_fields);
+
+  // Each tab is a different domain behind a different guard: a treasurer opens
+  // a member and should see receipts and nothing else.
+  const canReadRegistrations = has("registrations.read");
+  const canReadBilling = has("billing.read");
+  const canReadMembers = has("members.read");
 
   // Receipt count for badge
   const receiptParams = useMemo(() => {
@@ -50,7 +57,7 @@ export default function MemberDetailPage({
     p.set("per_page", "1");
     return p;
   }, [memberId]);
-  const { data: receiptData } = useReceipts(isAdmin ? receiptParams : undefined);
+  const { data: receiptData } = useReceipts(receiptParams, canReadBilling);
 
   if (isLoading) {
     return <DetailSkeleton />;
@@ -119,23 +126,35 @@ export default function MemberDetailPage({
         // on page load, whether or not anyone opens them.
         lazy
         tabs={[
-          {
-            id: "contact",
-            label: t("members.contactInfo"),
-            content: <ContactInfoTab personId={member.person_id} />,
-          },
-          {
-            id: "activities",
-            label: t("members.activities"),
-            content: <MemberActivitiesTab memberId={memberId} />,
-          },
-          {
-            id: "receipts",
-            label: t("receipts.title"),
-            badge: receiptData?.meta?.total,
-            content: <MemberReceiptsTab memberId={memberId} />,
-          },
-          ...(isAdmin && cardEnabled
+          ...(canReadMembers
+            ? [
+                {
+                  id: "contact",
+                  label: t("members.contactInfo"),
+                  content: <ContactInfoTab personId={member.person_id} />,
+                },
+              ]
+            : []),
+          ...(canReadRegistrations
+            ? [
+                {
+                  id: "activities",
+                  label: t("members.activities"),
+                  content: <MemberActivitiesTab memberId={memberId} />,
+                },
+              ]
+            : []),
+          ...(canReadBilling
+            ? [
+                {
+                  id: "receipts",
+                  label: t("receipts.title"),
+                  badge: receiptData?.meta?.total,
+                  content: <MemberReceiptsTab memberId={memberId} />,
+                },
+              ]
+            : []),
+          ...(cardEnabled && canReadMembers
             ? [
                 {
                   id: "card",
@@ -144,7 +163,8 @@ export default function MemberDetailPage({
                 },
               ]
             : []),
-          ...(customFieldsEnabled
+          // Custom-field values on someone else's record are `members.read`.
+          ...(customFieldsEnabled && canReadMembers
             ? [
                 {
                   id: "custom-fields",

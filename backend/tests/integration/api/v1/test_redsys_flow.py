@@ -149,7 +149,7 @@ def _create_redsys_provider(db, status="active"):
 
 
 def _auth_cookie(user):
-    return {"access_token": create_access_token(user.id, user.role)}
+    return {"access_token": create_access_token(user.id)}
 
 
 def _sign_notification(

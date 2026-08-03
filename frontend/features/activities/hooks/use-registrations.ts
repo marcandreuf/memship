@@ -82,10 +82,11 @@ export function useActivityRegistrations(params: ListRegistrationsParams) {
   });
 }
 
-export function useRegistrationStats() {
+export function useRegistrationStats(enabled = true) {
   return useQuery({
     queryKey: ["registration-stats"],
     queryFn: () => getRegistrationStats(),
+    enabled,
   });
 }
 

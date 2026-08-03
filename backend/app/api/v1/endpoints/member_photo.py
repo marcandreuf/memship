@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.security.dependencies import get_current_user
+from app.core.authorization import require_permission
 from app.db.session import get_db
 from app.domains.auth.models import User
 
@@ -30,7 +31,7 @@ def _photo_dir(person_id: int) -> Path:
 async def upload_my_photo(
     file: UploadFile,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.profile.write")),
 ):
     """Upload or replace the current member's profile photo."""
     person = current_user.person
@@ -75,7 +76,7 @@ async def upload_my_photo(
 @router.delete("/", status_code=status.HTTP_204_NO_CONTENT)
 def delete_my_photo(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.profile.write")),
 ):
     """Remove the current member's profile photo (card falls back to initials)."""
     person = current_user.person

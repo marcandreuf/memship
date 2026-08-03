@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, status
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
-from app.core.authorization import require_admin
+from app.core.authorization import require_permission
 from app.core.config import settings
 from app.core.pagination import paginate
 from app.core.security.dependencies import get_current_user
@@ -37,7 +37,7 @@ def list_mandates(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("billing.read")),
 ):
     """List all mandates with optional filters."""
     query = db.query(SepaMandate).filter(SepaMandate.is_active.is_(True))
@@ -86,7 +86,7 @@ def _enrich_document_info(mandate: SepaMandate) -> dict:
 def get_mandate(
     mandate_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("billing.read")),
 ):
     """Get a mandate by ID."""
     mandate = db.query(SepaMandate).filter(
@@ -101,7 +101,7 @@ def get_mandate(
 def create_mandate_endpoint(
     data: MandateCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("billing.write")),
 ):
     """Create a new SEPA mandate for a member."""
     mandate = create_mandate(db, data)
@@ -115,7 +115,7 @@ def update_mandate_endpoint(
     mandate_id: int,
     data: MandateUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("billing.write")),
 ):
     """Update a mandate (only active mandates)."""
     mandate = db.query(SepaMandate).filter(
@@ -133,7 +133,7 @@ def update_mandate_endpoint(
 def cancel_mandate_endpoint(
     mandate_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("billing.write")),
 ):
     """Cancel a mandate."""
     mandate = db.query(SepaMandate).filter(
@@ -151,7 +151,7 @@ def cancel_mandate_endpoint(
 def download_mandate_pdf(
     mandate_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("billing.read")),
 ):
     """Download a paper mandate PDF for signing."""
     mandate = db.query(SepaMandate).filter(
@@ -177,7 +177,7 @@ async def upload_signed_mandate(
     mandate_id: int,
     file: UploadFile,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("billing.write")),
 ):
     """Upload a signed mandate document (PDF or image)."""
     mandate = db.query(SepaMandate).filter(
@@ -222,7 +222,7 @@ async def upload_signed_mandate(
 @member_router.get("/members/me/mandate", response_model=MandateResponse | None)
 def get_my_mandate(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.billing.read")),
 ):
     """Get the current member's active mandate (read-only)."""
     member = (

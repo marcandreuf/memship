@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from app.domains.auth.models import User, UserIdentity
+from app.domains.auth.roles import assign_roles
 from app.domains.auth.service import get_registration_settings
 from app.domains.members.models import Member, MembershipType
 from app.domains.members.service import allocate_member_number
@@ -96,13 +97,14 @@ def find_or_create_from_oauth(db: Session, profile: OAuthProfile) -> tuple[User,
         person_id=person.id,
         email=profile.email,
         password_hash=None,
-        role="member",
         is_active=True,
         email_verified=True,
         email_verified_at=datetime.now(timezone.utc),
     )
     db.add(user)
     db.flush()
+
+    assign_roles(db, user)
 
     default_type = (
         db.query(MembershipType)

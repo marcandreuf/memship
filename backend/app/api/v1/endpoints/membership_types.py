@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 
-from app.core.authorization import require_admin
+from app.core.authorization import require_permission
 from app.core.db_utils import get_or_404
 from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
@@ -36,7 +36,7 @@ def _to_response(mt: MembershipType) -> MembershipTypeResponse:
 @router.get("/", response_model=list[MembershipTypeResponse])
 def list_membership_types(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.activities.read")),
 ):
     types = (
         db.query(MembershipType)
@@ -51,7 +51,7 @@ def list_membership_types(
 def get_membership_type(
     type_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.activities.read")),
 ):
     mt = (
         db.query(MembershipType)
@@ -68,7 +68,7 @@ def get_membership_type(
 def create_membership_type(
     data: MembershipTypeCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("membership.write")),
 ):
     existing = db.query(MembershipType).filter(MembershipType.slug == data.slug).first()
     if existing:
@@ -89,7 +89,7 @@ def update_membership_type(
     type_id: int,
     data: MembershipTypeUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("membership.write")),
 ):
     mt = get_or_404(db, MembershipType, type_id)
     update_data = data.model_dump(exclude_unset=True)
@@ -104,7 +104,7 @@ def update_membership_type(
 def delete_membership_type(
     type_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("membership.write")),
 ):
     mt = get_or_404(db, MembershipType, type_id)
     mt.is_active = False

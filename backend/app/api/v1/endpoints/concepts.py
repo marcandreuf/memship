@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from app.core.authorization import require_admin
+from app.core.authorization import require_permission
 from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
 from app.domains.auth.models import User
@@ -17,7 +17,7 @@ router = APIRouter(prefix="/concepts", tags=["concepts"])
 def list_concepts(
     concept_type: str | None = Query(None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("billing.read")),
 ):
     """List all active billing concepts."""
     query = db.query(Concept).filter(Concept.is_active.is_(True))
@@ -30,7 +30,7 @@ def list_concepts(
 def create_concept(
     data: ConceptCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("billing.write")),
 ):
     """Create a billing concept."""
     if data.code:
@@ -53,7 +53,7 @@ def update_concept(
     concept_id: int,
     data: ConceptUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("billing.write")),
 ):
     """Update a billing concept."""
     concept = db.query(Concept).filter(Concept.id == concept_id).first()

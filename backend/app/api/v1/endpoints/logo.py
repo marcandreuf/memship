@@ -6,7 +6,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
-from app.core.authorization import require_super_admin
+from app.core.authorization import require_permission
 from app.core.config import settings
 from app.db.session import get_db
 from app.domains.auth.models import User
@@ -22,7 +22,7 @@ router = APIRouter(prefix="/settings/logo", tags=["settings"])
 async def upload_logo(
     file: UploadFile,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_super_admin),
+    current_user: User = Depends(require_permission("settings.write")),
 ):
     """Upload or replace the organization logo."""
     org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
@@ -80,7 +80,7 @@ async def upload_logo(
 @router.delete("/", status_code=status.HTTP_204_NO_CONTENT)
 def delete_logo(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_super_admin),
+    current_user: User = Depends(require_permission("settings.write")),
 ):
     """Delete the organization logo."""
     org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()

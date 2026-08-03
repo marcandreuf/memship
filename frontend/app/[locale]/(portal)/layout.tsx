@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@/features/auth/hooks/use-auth";
+import { usePermissions } from "@/features/auth/hooks/use-permissions";
 import { PendingApproval } from "@/features/auth/components/pending-approval";
 import { AppSidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
@@ -18,6 +19,7 @@ export default function PortalLayout({
   children: React.ReactNode;
 }) {
   const { user, isLoading, isAuthenticated } = useAuth();
+  const { isStaff: isAdmin } = usePermissions();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -29,12 +31,11 @@ export default function PortalLayout({
 
   useEffect(() => {
     if (!isLoading && user) {
-      const isAdmin = user.role === "admin" || user.role === "super_admin";
       if (!isAdmin && ADMIN_ROUTES.some((r) => pathname === r || pathname.startsWith(r + "/"))) {
         router.push("/dashboard");
       }
     }
-  }, [isLoading, user, pathname, router]);
+  }, [isLoading, user, isAdmin, pathname, router]);
 
   if (isLoading) {
     return (
@@ -50,7 +51,6 @@ export default function PortalLayout({
 
   // Registration still awaiting admin approval: the backend closes every
   // feature route for this member, so show why instead of an empty portal.
-  const isAdmin = user.role === "admin" || user.role === "super_admin";
   if (!isAdmin && user.member_status === "pending") {
     return (
       <>

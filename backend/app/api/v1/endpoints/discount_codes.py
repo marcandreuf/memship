@@ -5,7 +5,7 @@ from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.core.authorization import require_admin
+from app.core.authorization import require_permission
 from app.core.db_utils import get_or_404
 from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
@@ -31,7 +31,7 @@ router = APIRouter(prefix="/activities/{activity_id}/discount-codes", tags=["dis
 def list_discount_codes(
     activity_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("activities.read")),
 ):
     """List discount codes for an activity (admin only)."""
     get_or_404(db, Activity, activity_id)
@@ -48,7 +48,7 @@ def create_discount_code(
     activity_id: int,
     data: DiscountCodeCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("activities.write")),
 ):
     """Create a discount code for an activity (admin only)."""
     get_or_404(db, Activity, activity_id)
@@ -81,7 +81,7 @@ def update_discount_code(
     code_id: int,
     data: DiscountCodeUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("activities.write")),
 ):
     """Update a discount code (admin only)."""
     discount = get_or_404(db, DiscountCode, code_id)
@@ -119,7 +119,7 @@ def delete_discount_code(
     activity_id: int,
     code_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("activities.write")),
 ):
     """Delete a discount code (admin only)."""
     discount = get_or_404(db, DiscountCode, code_id)
@@ -142,7 +142,7 @@ def validate_discount(
     data: ValidateDiscountRequest,
     price_id: int | None = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.activities.read")),
 ):
     """Validate a discount code and return the discount preview."""
     get_or_404(db, Activity, activity_id)

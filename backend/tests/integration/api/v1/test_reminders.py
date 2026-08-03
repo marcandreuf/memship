@@ -11,7 +11,7 @@ from app.domains.reminders.models import Reminder
 
 
 def _auth_cookie(user):
-    return {"access_token": create_access_token(user.id, user.role)}
+    return {"access_token": create_access_token(user.id)}
 
 
 def _admin(db, suffix):

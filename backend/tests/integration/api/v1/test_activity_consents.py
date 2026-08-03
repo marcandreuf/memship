@@ -51,7 +51,7 @@ def _create_member_with_user(db, suffix=""):
 
 
 def _auth_cookie(user):
-    return {"access_token": create_access_token(user.id, user.role)}
+    return {"access_token": create_access_token(user.id)}
 
 
 def _create_published_activity(db, admin_id=None, **overrides):

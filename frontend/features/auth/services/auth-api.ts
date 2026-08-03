@@ -7,10 +7,18 @@ export type MemberStatus =
   | "cancelled"
   | "expired";
 
+export interface RoleSummary {
+  id: number;
+  slug: string;
+  name: string;
+}
+
 export interface User {
   id: number;
   email: string;
-  role: "super_admin" | "admin" | "member";
+  roles: RoleSummary[];
+  /** Effective permission keys — the union of every assigned role. */
+  permissions: string[];
   is_active: boolean;
   person_id: number;
   first_name: string;

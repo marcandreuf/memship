@@ -27,6 +27,7 @@ from app.api.v1.endpoints import (
     members,
     payment_providers,
     remittances,
+    roles,
     membership_types,
     persons,
     receipts,
@@ -66,6 +67,9 @@ api_router.include_router(registrations.router, dependencies=_approved_only)
 api_router.include_router(reminders.router, dependencies=_approved_only)
 api_router.include_router(reports.router, dependencies=_approved_only)
 api_router.include_router(settings.router)
+api_router.include_router(roles.permissions_router)
+api_router.include_router(roles.router)
+api_router.include_router(roles.users_router)
 api_router.include_router(logo.router)
 api_router.include_router(contacts.router, dependencies=_approved_only)
 api_router.include_router(contacts.detail_router, dependencies=_approved_only)

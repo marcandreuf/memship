@@ -1,0 +1,264 @@
+{
+  "roles": {
+    "tab": "Roles",
+    "enabled": "Roles personalizados",
+    "enabledDesc": "Permite definir roles a medida y asignarlos a las cuentas. Los permisos siguen activos aunque esto esté desactivado.",
+    "title": "Roles y permisos",
+    "description": "Define qué puede hacer cada tipo de cuenta. Solo el superadministrador crea roles; los administradores los asignan.",
+    "create": "Crear rol",
+    "edit": "Editar rol",
+    "name": "Nombre",
+    "roleDescription": "Descripción",
+    "permissions": "Permisos",
+    "system": "Del sistema",
+    "assignedUsers": "{count} cuentas",
+    "confirmDelete": "¿Eliminar este rol? Debe estar sin asignar.",
+    "inUse": "No se puede eliminar: {count} cuentas todavía lo tienen.",
+    "slugExists": "Ya existe un rol con ese nombre ({name}).",
+    "locked": "Este rol es del sistema: no se puede renombrar ni eliminar.",
+    "reserved": "Reservado al superadministrador",
+    "notAssignable": "No puedes asignar un rol con más permisos de los que tienes.",
+    "superAdminOnly": "Solo un superadministrador puede asignar este rol.",
+    "memberPinned": "Todas las cuentas tienen el rol Socio de forma permanente.",
+    "rolesRequired": "Hay que asignar al menos un rol.",
+    "lastSuperAdmin": "No se puede retirar el último superadministrador.",
+    "users": "Cuentas",
+    "usersDescription": "Asigna roles a las cuentas existentes.",
+    "active": "Activa",
+    "inactive": "Inactiva",
+    "search": "Buscar por correo",
+    "administrative": "Administración",
+    "selfService": "Área personal",
+    "domains": {
+      "members": "Socios",
+      "membership": "Cuotas y grupos",
+      "activities": "Actividades",
+      "registrations": "Inscripciones",
+      "billing": "Facturación",
+      "communications": "Comunicaciones",
+      "bookings": "Reservas",
+      "reports": "Informes",
+      "reminders": "Notas y avisos",
+      "settings": "Configuración",
+      "users": "Cuentas",
+      "roles": "Roles",
+      "self_profile": "Perfil propio",
+      "self_activities": "Catálogo",
+      "self_registrations": "Inscripciones propias",
+      "self_billing": "Recibos propios",
+      "self_card": "Carné propio",
+      "self_bookings": "Reservas propias",
+      "self_communications": "Avisos propios"
+    }
+  },
+  "permissions": {
+    "members": {
+      "read": {
+        "label": "Ver socios",
+        "description": "Consultar las fichas de socios, sus datos de contacto y exportarlas."
+      },
+      "write": {
+        "label": "Editar socios",
+        "description": "Crear, modificar, suspender o dar de baja socios y sus datos."
+      },
+      "approve": {
+        "label": "Aprobar altas",
+        "description": "Aceptar o rechazar solicitudes de alta pendientes."
+      }
+    },
+    "membership": {
+      "read": {
+        "label": "Ver tipos y grupos",
+        "description": "Consultar los tipos de cuota y los grupos del club."
+      },
+      "write": {
+        "label": "Editar tipos y grupos",
+        "description": "Crear y modificar tipos de cuota y grupos."
+      }
+    },
+    "activities": {
+      "read": {
+        "label": "Ver actividades",
+        "description": "Consultar todas las actividades, incluidos borradores y archivadas."
+      },
+      "write": {
+        "label": "Editar actividades",
+        "description": "Crear y modificar actividades, precios, modalidades y consentimientos."
+      },
+      "publish": {
+        "label": "Publicar actividades",
+        "description": "Publicar, archivar o cancelar una actividad. Sin este permiso solo se pueden preparar borradores."
+      }
+    },
+    "registrations": {
+      "read": {
+        "label": "Ver inscripciones",
+        "description": "Consultar y exportar las inscripciones de cualquier socio o actividad."
+      },
+      "write": {
+        "label": "Gestionar inscripciones",
+        "description": "Cambiar el estado de una inscripción, cancelarla o promover desde la lista de espera."
+      }
+    },
+    "billing": {
+      "read": {
+        "label": "Ver facturación",
+        "description": "Consultar recibos, conceptos, mandatos y remesas, y descargar sus PDF."
+      },
+      "write": {
+        "label": "Editar facturación",
+        "description": "Emitir, cobrar, anular o devolver recibos y gestionar mandatos y remesas."
+      },
+      "run": {
+        "label": "Ejecutar facturación masiva",
+        "description": "Generar las cuotas de todo el club de una vez. Es una acción excepcional."
+      }
+    },
+    "communications": {
+      "read": {
+        "label": "Ver comunicaciones",
+        "description": "Consultar los comunicados, su audiencia y sus estadísticas."
+      },
+      "write": {
+        "label": "Redactar comunicaciones",
+        "description": "Crear y editar comunicados sin llegar a enviarlos."
+      },
+      "send": {
+        "label": "Enviar comunicaciones",
+        "description": "Enviar un comunicado a su audiencia. No se puede deshacer."
+      }
+    },
+    "bookings": {
+      "read": {
+        "label": "Ver reservas",
+        "description": "Consultar espacios, zonas, franjas horarias y todas las reservas."
+      },
+      "write": {
+        "label": "Gestionar reservas",
+        "description": "Crear y editar espacios y franjas, y reservar o cancelar en nombre de cualquiera."
+      }
+    },
+    "reports": {
+      "read": {
+        "label": "Ver informes",
+        "description": "Consultar los totales anuales del club. Solo cifras agregadas: no permite abrir ninguna ficha."
+      }
+    },
+    "reminders": {
+      "read": {
+        "label": "Ver notas y avisos",
+        "description": "Consultar las notas internas y los recordatorios."
+      },
+      "write": {
+        "label": "Editar notas y avisos",
+        "description": "Crear, editar y completar notas internas y recordatorios."
+      }
+    },
+    "settings": {
+      "read": {
+        "label": "Ver configuración",
+        "description": "Consultar los datos y la configuración de la organización."
+      },
+      "write": {
+        "label": "Editar configuración",
+        "description": "Cambiar los datos del club, el logotipo, la dirección y las funcionalidades activas."
+      },
+      "custom_fields": {
+        "write": {
+          "label": "Editar campos de perfil",
+          "description": "Definir qué campos personalizados existen en las fichas de socio."
+        }
+      },
+      "integrations": {
+        "write": {
+          "label": "Editar integraciones",
+          "description": "Configurar el acceso con SSO, el correo saliente y las pasarelas de pago. Reservado al superadministrador porque da acceso a credenciales."
+        }
+      }
+    },
+    "users": {
+      "read": {
+        "label": "Ver cuentas",
+        "description": "Consultar las cuentas de usuario y los roles que tienen asignados."
+      },
+      "write": {
+        "label": "Gestionar cuentas",
+        "description": "Asignar o retirar roles y activar o desactivar cuentas."
+      }
+    },
+    "roles": {
+      "read": {
+        "label": "Ver roles",
+        "description": "Consultar los roles definidos y qué permisos incluye cada uno."
+      },
+      "write": {
+        "label": "Crear roles",
+        "description": "Crear, editar y eliminar roles. Reservado al superadministrador: quien puede crear roles puede otorgar cualquier permiso."
+      }
+    },
+    "self": {
+      "profile": {
+        "read": {
+          "label": "Ver el propio perfil",
+          "description": "Consultar los datos de la propia ficha y los contactos propios."
+        },
+        "write": {
+          "label": "Editar el propio perfil",
+          "description": "Modificar los datos propios y la foto de perfil."
+        }
+      },
+      "activities": {
+        "read": {
+          "label": "Ver el catálogo",
+          "description": "Consultar las actividades publicadas y sus precios para poder inscribirse."
+        }
+      },
+      "registrations": {
+        "read": {
+          "label": "Ver las propias inscripciones",
+          "description": "Consultar en qué actividades está inscrito y sus documentos."
+        },
+        "write": {
+          "label": "Inscribirse",
+          "description": "Apuntarse a una actividad, cancelar la propia inscripción y subir documentos."
+        }
+      },
+      "billing": {
+        "read": {
+          "label": "Ver los propios recibos",
+          "description": "Consultar y descargar los recibos propios y el mandato bancario."
+        },
+        "write": {
+          "label": "Pagar los propios recibos",
+          "description": "Cambiar la forma de pago propia y pagar un recibo en línea."
+        }
+      },
+      "card": {
+        "read": {
+          "label": "Ver el propio carné",
+          "description": "Consultar y descargar el carné de socio propio."
+        }
+      },
+      "bookings": {
+        "read": {
+          "label": "Ver las propias reservas",
+          "description": "Consultar los espacios disponibles y las reservas propias."
+        },
+        "write": {
+          "label": "Reservar",
+          "description": "Reservar un espacio y cancelar las reservas propias."
+        }
+      },
+      "communications": {
+        "read": {
+          "label": "Ver los propios avisos",
+          "description": "Consultar las notificaciones y los comunicados recibidos."
+        },
+        "write": {
+          "label": "Marcar avisos como leídos",
+          "description": "Marcar las propias notificaciones como leídas."
+        }
+      }
+    }
+  }
+}

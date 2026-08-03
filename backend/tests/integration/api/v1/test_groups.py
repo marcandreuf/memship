@@ -24,7 +24,7 @@ def _create_user(db, role="admin"):
 
 
 def _auth_cookie(user):
-    return {"access_token": create_access_token(user.id, user.role)}
+    return {"access_token": create_access_token(user.id)}
 
 
 class TestGroupCRUD:

@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.core.authorization import require_admin
+from app.core.authorization import require_permission
 from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
 from app.domains.auth.models import User
@@ -22,7 +22,7 @@ types_router = APIRouter(prefix="/contact-types", tags=["contacts"])
 @types_router.get("/")
 def list_contact_types(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.activities.read")),
 ):
     """List all active contact types."""
     types = (
@@ -50,7 +50,7 @@ def _contact_to_response(contact: Contact) -> dict:
 def list_contacts(
     person_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.profile.read")),
 ):
     """List all contacts for a person."""
     person = db.query(Person).filter(Person.id == person_id).first()
@@ -75,7 +75,7 @@ def create_contact(
     person_id: int,
     data: ContactCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("members.write")),
 ):
     """Add a contact to a person."""
     person = db.query(Person).filter(Person.id == person_id).first()
@@ -106,7 +106,7 @@ def update_contact(
     contact_id: int,
     data: ContactUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("members.write")),
 ):
     """Update a contact."""
     contact = db.query(Contact).filter(Contact.id == contact_id).first()
@@ -125,7 +125,7 @@ def update_contact(
 def delete_contact(
     contact_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("members.write")),
 ):
     """Delete a contact."""
     contact = db.query(Contact).filter(Contact.id == contact_id).first()

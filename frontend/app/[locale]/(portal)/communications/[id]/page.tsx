@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { DetailHeader } from "@/components/entity/detail-header";
 import { DetailSkeleton } from "@/components/ui/skeletons";
 import { useAuth } from "@/features/auth/hooks/use-auth";
+import { usePermissions } from "@/features/auth/hooks/use-permissions";
 import { AnnouncementForm } from "@/features/communications/components/announcement-form";
 import { SentAnnouncementView } from "@/features/communications/components/sent-announcement-view";
 import { useAnnouncement } from "@/features/communications/hooks/use-announcements";
@@ -17,7 +18,7 @@ export default function AnnouncementDetailPage({
   const { id } = use(params);
   const t = useTranslations();
   const { user } = useAuth();
-  const isAdmin = user?.role === "admin" || user?.role === "super_admin";
+  const { isStaff: isAdmin } = usePermissions();
   const { data: announcement, isLoading } = useAnnouncement(Number(id));
 
   if (!isAdmin) {

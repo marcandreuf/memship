@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.core.authorization import require_admin
+from app.core.authorization import require_permission
 from app.core.db_utils import get_or_404
 from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
@@ -17,7 +17,7 @@ router = APIRouter(prefix="/groups", tags=["groups"])
 @router.get("/", response_model=list[GroupResponse])
 def list_groups(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.activities.read")),
 ):
     return db.query(Group).order_by(Group.display_order).all()
 
@@ -26,7 +26,7 @@ def list_groups(
 def get_group(
     group_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.activities.read")),
 ):
     return get_or_404(db, Group, group_id)
 
@@ -35,7 +35,7 @@ def get_group(
 def create_group(
     data: GroupCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("membership.write")),
 ):
     existing = db.query(Group).filter(
         (Group.slug == data.slug) | (Group.name == data.name)
@@ -59,7 +59,7 @@ def update_group(
     group_id: int,
     data: GroupUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("membership.write")),
 ):
     group = get_or_404(db, Group, group_id)
     update_data = data.model_dump(exclude_unset=True)
@@ -74,7 +74,7 @@ def update_group(
 def delete_group(
     group_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("membership.write")),
 ):
     group = get_or_404(db, Group, group_id)
     db.delete(group)

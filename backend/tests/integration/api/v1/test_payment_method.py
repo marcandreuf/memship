@@ -54,7 +54,7 @@ def _setup(db, iban=None, payment_method=None):
 
 
 def _auth(user):
-    return {"access_token": create_access_token(user.id, user.role)}
+    return {"access_token": create_access_token(user.id)}
 
 
 class TestGetPaymentMethod:

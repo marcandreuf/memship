@@ -19,10 +19,14 @@ import {
 const MEMBERS_KEY = ["members"];
 const MEMBERSHIP_TYPES_KEY = ["membership-types"];
 
-export function useMembers(params: ListMembersParams = {}) {
+/** `enabled` exists for callers that render for both staff and members: the
+ *  list is `members.read`-guarded, so asking without the key is a guaranteed
+ *  403 and an error toast. */
+export function useMembers(params: ListMembersParams = {}, enabled = true) {
   return useQuery({
     queryKey: [...MEMBERS_KEY, params],
     queryFn: () => listMembers(params),
+    enabled,
   });
 }
 
