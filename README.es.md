@@ -108,9 +108,7 @@ Memship sigue el [versionado semántico](https://semver.org/) y **los números d
 | v1.0.1 | Parche — corrige el registro de tareas programadas de facturación/recordatorios en Celery; protección de CI contra la sobrescritura de etiquetas de imagen | Hecho |
 | v1.1.0 | Campos de perfil personalizados — datos de socio configurables por la organización (texto, número, fecha, selección, …) con validación por campo y visibilidad/edición por campo | Hecho |
 | v1.1.1 | Parche — reorganización de la navegación de configuración: ajustes de pagos y de socios agrupados en las pestañas Pagos y Socios | Hecho |
-| v1.2.0 | Integración SSO / identidad — alta pública con verificación por correo, flujo de aprobación por la directiva, inicio de sesión con Google / Apple y configuración de proveedores SSO por el superadministrador desde una pestaña de Integraciones | Hecho |
-| v1.2.1 | Configuración de correo en Ajustes — el superadministrador define Resend / Google SMTP desde una pestaña de Integraciones | Hecho |
-| v1.2.2 | Parche — elimina una migración duplicada de configuración de correo cuyo identificador de revisión chocaba con otro existente, lo que hacía fallar `alembic upgrade head` al arrancar | Hecho |
+| v1.2.2 | Integración SSO / identidad y configuración de correo — alta pública con verificación por correo, flujo de aprobación por la directiva, inicio de sesión con Google / Apple, configuración de proveedores SSO por el superadministrador y ajuste de Resend / Google SMTP desde una pestaña de Integraciones. También elimina una migración duplicada de configuración de correo cuyo identificador de revisión chocaba con otro existente, lo que hacía fallar `alembic upgrade head` al arrancar | Hecho |
 | v1.3.0 | Reservas simples — reservas de socios en espacios compartidos mediante un calendario semanal, aforo por franja, lista de espera FIFO con promoción automática y correos de confirmación/lista de espera | Hecho |
 
 ### Planificado
