@@ -72,12 +72,21 @@ describe("8. Eligibility Rules — Age Restrictions", () => {
 });
 
 describe("8. Eligibility Rules — Member Status", () => {
-  it("8.7a — pending member is not eligible", () => {
+  // A pending member no longer reaches the eligibility check at all: the
+  // portal layout short-circuits to the approval screen before any page
+  // renders, so the block happens earlier and harder than this section's
+  // other cases. Asserted here to keep the pending status covered alongside
+  // suspended and expired.
+  it("8.7a — pending member is stopped by the approval gate", () => {
     cy.login("david@test.com", PASSWORD);
-    visitRegisterPage("Yoga Workshop");
 
-    cy.contains("You are not eligible").should("be.visible");
-    cy.contains("Member status is not active").should("be.visible");
+    cy.contains("Awaiting approval").should("be.visible");
+    cy.contains("david@test.com").should("be.visible");
+
+    // The portal itself is unreachable — no sidebar, no activities list.
+    cy.visit("/en/activities");
+    cy.contains("Awaiting approval").should("be.visible");
+    cy.contains("h3", "Yoga Workshop").should("not.exist");
   });
 
   it("8.7b — suspended member is not eligible", () => {

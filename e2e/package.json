@@ -17,6 +17,7 @@
     "test:smoke": "cypress run --env grepTags=@smoke",
     "test:tag": "cypress run --env grepTags=",
     "test:parallel": "./scripts/run-parallel.sh 4",
+    "test:parallel:prod": "./scripts/run-parallel-prod.sh 4",
     "test:parallel:all": "cypress-parallel -s cypress:run -t 4 -d cypress/e2e"
   },
   "devDependencies": {

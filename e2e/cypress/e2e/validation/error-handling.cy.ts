@@ -21,7 +21,10 @@ describe("Error Handling — Toast Notifications", () => {
     });
 
     it("shows success toast when saving organization settings", () => {
-      cy.get('input[name="name"]').should("be.visible");
+      // Visible is not enough: the form mounts empty and is reset once the
+      // settings query resolves. Saving in that window submits a blank name
+      // and gets a 422 instead of the success toast.
+      cy.get('input[name="name"]').should("not.have.value", "");
       cy.contains("button", "Save").click();
       cy.get(TOAST).should("contain.text", "Saved successfully");
     });
@@ -105,8 +108,8 @@ describe("Error Handling — Error Toasts on Invalid Data", () => {
     it("shows error toast when creating with duplicate slug", () => {
       cy.loginAsSuperAdmin();
       cy.visit("/en/settings");
-      // Switch to Membership Types tab
-      cy.contains("button", "Membership Types").click();
+      // Membership Types is a sub-tab of Members, not a top-level tab.
+      cy.settingsTab("Members", "Membership Types");
       // Click the create/new button in the membership types section
       cy.get('[role="tabpanel"]').find("button").contains(/create|new/i).click();
       cy.get('[role="dialog"]').should("be.visible");
