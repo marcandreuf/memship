@@ -25,6 +25,7 @@ import { useReceipts, useGenerateMembershipFees } from "@/features/receipts/hook
 import { useSearchParam, usePageParam, useStatusParam } from "@/hooks/use-url-state";
 import { useFormatters } from "@/hooks/use-formatters";
 import type { ReceiptData } from "@/features/receipts/services/receipts-api";
+import { usePermissions } from "@/features/auth/hooks/use-permissions";
 
 const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   new: "outline",
@@ -150,6 +151,9 @@ export default function ReceiptsPage() {
 }
 
 function GenerateFeesButton({ t }: { t: ReturnType<typeof useTranslations> }) {
+  // A bulk generation across the whole roster — its own key, so a treasurer
+  // who edits receipts daily can still be denied it.
+  const { has } = usePermissions();
   const [open, setOpen] = useState(false);
   const mutation = useGenerateMembershipFees();
   const today = new Date().toISOString().split("T")[0];
@@ -181,6 +185,8 @@ function GenerateFeesButton({ t }: { t: ReturnType<typeof useTranslations> }) {
       toast.error(t("toast.error.generic"));
     }
   }
+
+  if (!has("billing.run")) return null;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

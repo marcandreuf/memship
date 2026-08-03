@@ -39,7 +39,9 @@ export default function MemberDetailPage({
   const { mutateAsync: update, isPending: isUpdating } = useUpdateMember();
   const [isEditing, setIsEditing] = useState(false);
 
-  const { isStaff: isAdmin, has } = usePermissions();
+  const { has } = usePermissions();
+  // Status changes and inline editing are writes, not "staff at all".
+  const isAdmin = has("members.write");
   const { data: settings } = useSettings();
   const cardEnabled = Boolean(settings?.features?.member_card);
   const customFieldsEnabled = Boolean(settings?.features?.custom_profile_fields);

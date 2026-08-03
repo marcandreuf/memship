@@ -3,6 +3,7 @@
 import { use, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/lib/i18n/routing";
+import { usePermissions } from "@/features/auth/hooks/use-permissions";
 import { Button } from "@/components/ui/button";
 import { DetailHeader } from "@/components/entity/detail-header";
 import { InlineEditWrapper } from "@/components/entity/inline-edit-wrapper";
@@ -24,6 +25,8 @@ export default function GroupDetailPage({
   const { id } = use(params);
   const groupId = Number(id);
   const t = useTranslations();
+  const { has } = usePermissions();
+  const canWrite = has("membership.write");
   const router = useRouter();
   const { data: group, isLoading } = useGroup(groupId);
   const { mutateAsync: remove } = useDeleteGroup();
@@ -47,7 +50,7 @@ export default function GroupDetailPage({
         ]}
         title={group.name}
         actions={
-          !isEditing ? (
+          !isEditing && canWrite ? (
             <>
               {confirmDialog}
               <Button
@@ -80,6 +83,7 @@ export default function GroupDetailPage({
         isEditing={isEditing}
         onEdit={() => setIsEditing(true)}
         onCancel={() => setIsEditing(false)}
+        canEdit={canWrite}
         readContent={<GroupDetailSection group={group} />}
         editContent={
           <GroupEditForm

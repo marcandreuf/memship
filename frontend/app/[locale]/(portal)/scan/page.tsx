@@ -9,7 +9,9 @@ import { ScanPanel } from "@/features/member-card/components/scan-panel";
 export default function ScanPage() {
   const t = useTranslations();
   const { user } = useAuth();
-  const { isStaff: isAdmin } = usePermissions();
+  // Scanning renders the scanned member's record.
+  const { has } = usePermissions();
+  const isAdmin = has("members.read");
 
   if (!isAdmin) {
     return (

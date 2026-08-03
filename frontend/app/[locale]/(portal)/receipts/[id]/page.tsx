@@ -35,6 +35,7 @@ import {
   useSendReceiptReminder,
 } from "@/features/receipts/hooks/use-receipt-reminders";
 import { useSettings } from "@/features/settings/hooks/use-settings";
+import { usePermissions } from "@/features/auth/hooks/use-permissions";
 
 const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   new: "outline",
@@ -48,6 +49,8 @@ const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | 
 
 export default function ReceiptDetailPage() {
   const t = useTranslations();
+  const { has } = usePermissions();
+  const canWrite = has("billing.write");
   const router = useRouter();
   const { id } = useParams<{ id: string }>();
   const { data: receipt, isLoading } = useReceipt(Number(id));
@@ -136,13 +139,16 @@ export default function ReceiptDetailPage() {
     } catch { /* global handler */ }
   }
 
-  const canEdit = ["new", "pending"].includes(receipt.status);
-  const canEmit = ["new", "pending"].includes(receipt.status);
-  const canPay = ["emitted", "overdue"].includes(receipt.status);
-  const canReturn = ["emitted", "overdue"].includes(receipt.status);
-  const canCancel = !["paid", "cancelled"].includes(receipt.status);
-  const canReemit = receipt.status === "returned";
-  const canRemind = ["emitted", "overdue"].includes(receipt.status);
+  // Status says whether the action is possible; `billing.write` says whether
+  // this account may take it. Both, always — a read-only billing role sees
+  // the receipt and none of the buttons.
+  const canEdit = canWrite && ["new", "pending"].includes(receipt.status);
+  const canEmit = canWrite && ["new", "pending"].includes(receipt.status);
+  const canPay = canWrite && ["emitted", "overdue"].includes(receipt.status);
+  const canReturn = canWrite && ["emitted", "overdue"].includes(receipt.status);
+  const canCancel = canWrite && !["paid", "cancelled"].includes(receipt.status);
+  const canReemit = canWrite && receipt.status === "returned";
+  const canRemind = canWrite && ["emitted", "overdue"].includes(receipt.status);
   const sentReminderCount = (reminders ?? []).filter((r) => r.status === "sent").length;
   const maxReminders = Number(settings?.features?.reminder_max_count ?? 3);
   const remindersExhausted = sentReminderCount >= maxReminders;

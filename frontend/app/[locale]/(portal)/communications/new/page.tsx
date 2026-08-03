@@ -9,7 +9,8 @@ import { AnnouncementForm } from "@/features/communications/components/announcem
 export default function NewAnnouncementPage() {
   const t = useTranslations();
   const { user } = useAuth();
-  const { isStaff: isAdmin } = usePermissions();
+  const { has } = usePermissions();
+  const isAdmin = has("communications.write");
 
   if (!isAdmin) {
     return (

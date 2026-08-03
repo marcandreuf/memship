@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { usePermissions } from "@/features/auth/hooks/use-permissions";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/lib/i18n/routing";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,8 @@ export function AnnouncementForm({
   announcement?: AnnouncementData;
 }) {
   const t = useTranslations();
+  const { has } = usePermissions();
+  const canSend = has("communications.send");
   const router = useRouter();
   const isSent = announcement?.status === "sent";
 
@@ -287,12 +290,14 @@ export function AnnouncementForm({
               ? t("common.loading")
               : t("communications.compose.saveDraft")}
           </Button>
-          <Button
-            disabled={!canSave || createMutation.isPending || sendMutation.isPending}
-            onClick={() => setConfirmOpen(true)}
-          >
-            {t("communications.compose.send")}
-          </Button>
+          {canSend && (
+            <Button
+              disabled={!canSave || createMutation.isPending || sendMutation.isPending}
+              onClick={() => setConfirmOpen(true)}
+            >
+              {t("communications.compose.send")}
+            </Button>
+          )}
         </div>
       )}
 

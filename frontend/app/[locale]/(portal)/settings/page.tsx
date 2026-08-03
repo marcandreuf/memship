@@ -96,8 +96,17 @@ const SUBTAB_TRIGGER =
 export default function SettingsPage() {
   const t = useTranslations();
   const { user } = useAuth();
-  const { isStaff: isAdmin, hasRole, has } = usePermissions();
+  const { hasRole, has, hasAny } = usePermissions();
   const canReadSettings = has("settings.read");
+  // Any one of these opens at least one tab. "Are you staff" would let a
+  // treasurer in to an empty page.
+  const isAdmin = hasAny(
+    "settings.read",
+    "membership.write",
+    "roles.read",
+    "users.read",
+    "settings.custom_fields.write",
+  );
 
   const { data: branding, isLoading } = useSettings();
   // The org form edits banking and invoice counters, which the branding subset

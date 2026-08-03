@@ -33,6 +33,7 @@ import {
   useDeleteContact,
 } from "../hooks/use-contacts";
 import type { ContactData } from "../services/contacts-api";
+import { usePermissions } from "@/features/auth/hooks/use-permissions";
 
 const contactSchema = z.object({
   contact_type_id: z.string().optional(),
@@ -48,6 +49,8 @@ interface ContactInfoTabProps {
 
 export function ContactInfoTab({ personId }: ContactInfoTabProps) {
   const t = useTranslations();
+  const { has } = usePermissions();
+  const canWrite = has("members.write");
   const { data: contacts = [], isLoading } = useContacts(personId);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<ContactData | null>(null);
@@ -57,7 +60,7 @@ export function ContactInfoTab({ personId }: ContactInfoTabProps) {
   return (
     <div className="space-y-4 table-compact">
       <div className="flex justify-end">
-        <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setEditing(null); }}>
+        {canWrite && <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setEditing(null); }}>
           <DialogTrigger asChild>
             <Button variant="outline" size="sm" onClick={() => setEditing(null)}>
               {t("members.addContact")}
@@ -75,7 +78,7 @@ export function ContactInfoTab({ personId }: ContactInfoTabProps) {
               onSuccess={() => { setOpen(false); setEditing(null); }}
             />
           </DialogContent>
-        </Dialog>
+        </Dialog>}
       </div>
 
       {!contacts.length ? (
@@ -217,6 +220,8 @@ function ContactRow({
   onEdit: () => void;
 }) {
   const t = useTranslations();
+  const { has } = usePermissions();
+  const canWrite = has("members.write");
   const deleteMutation = useDeleteContact(personId);
   const [confirmDialog, confirmAction] = useConfirmDialog();
 
@@ -233,6 +238,7 @@ function ContactRow({
       <TableCell>
         <div className="flex gap-2">
           {confirmDialog}
+          {canWrite && (<>
           <Button variant="outline" size="sm" onClick={onEdit}>{t("common.edit")}</Button>
           <Button
             variant="outline" size="sm"
@@ -253,6 +259,7 @@ function ContactRow({
           >
             {t("common.delete")}
           </Button>
+          </>)}
         </div>
       </TableCell>
     </TableRow>

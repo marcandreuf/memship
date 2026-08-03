@@ -23,9 +23,12 @@ import { deleteSpace as deleteSpaceApi } from "@/features/bookings/services/book
 import { SpaceForm } from "@/features/bookings/components/space-form";
 import { SlotsTab } from "@/features/bookings/components/slots-tab";
 import { SpaceBookingsTab } from "@/features/bookings/components/space-bookings-tab";
+import { usePermissions } from "@/features/auth/hooks/use-permissions";
 
 export default function SpaceDetailPage() {
   const t = useTranslations();
+  const { has } = usePermissions();
+  const canWrite = has("bookings.write");
   const params = useParams();
   const router = useRouter();
   const id = Number(params.id);
@@ -95,6 +98,7 @@ export default function SpaceDetailPage() {
         </div>
         <div className="flex gap-2">
           {confirmDialog}
+          {canWrite && (<>
           <Dialog open={editOpen} onOpenChange={setEditOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm">
@@ -124,6 +128,7 @@ export default function SpaceDetailPage() {
           >
             {t("common.delete")}
           </Button>
+          </>)}
         </div>
       </div>
 

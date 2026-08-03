@@ -18,7 +18,8 @@ export default function AnnouncementDetailPage({
   const { id } = use(params);
   const t = useTranslations();
   const { user } = useAuth();
-  const { isStaff: isAdmin } = usePermissions();
+  const { has } = usePermissions();
+  const isAdmin = has("communications.read");
   const { data: announcement, isLoading } = useAnnouncement(Number(id));
 
   if (!isAdmin) {

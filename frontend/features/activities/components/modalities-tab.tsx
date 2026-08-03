@@ -39,6 +39,7 @@ import {
   useDeleteModality,
 } from "../hooks/use-activities";
 import type { ActivityData, ActivityModalityData } from "../services/activities-api";
+import { usePermissions } from "@/features/auth/hooks/use-permissions";
 
 const modalitySchema = z.object({
   name: z.string().min(1).max(255),
@@ -73,13 +74,15 @@ interface ModalitiesTabProps {
 
 export function ModalitiesTab({ activityId, modalities, activity }: ModalitiesTabProps) {
   const t = useTranslations();
+  const { has } = usePermissions();
+  const canWrite = has("activities.write");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<ActivityModalityData | null>(null);
 
   return (
     <div className="space-y-4 table-compact">
       <div className="flex justify-end">
-        <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setEditing(null); }}>
+        {canWrite && <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setEditing(null); }}>
           <DialogTrigger asChild>
             <Button variant="outline" size="sm" onClick={() => setEditing(null)}>
               {t("activities.modalities.create")}
@@ -97,7 +100,7 @@ export function ModalitiesTab({ activityId, modalities, activity }: ModalitiesTa
               onSuccess={() => { setOpen(false); setEditing(null); }}
             />
           </DialogContent>
-        </Dialog>
+        </Dialog>}
       </div>
 
       {!modalities.length ? (
@@ -210,6 +213,8 @@ function ModalityRow({
   onEdit: () => void;
 }) {
   const t = useTranslations();
+  const { has } = usePermissions();
+  const canWrite = has("activities.write");
   const deleteMutation = useDeleteModality(activityId);
   const [confirmDialog, confirmAction] = useConfirmDialog();
 
@@ -222,6 +227,7 @@ function ModalityRow({
       <TableCell>
         <div className="flex gap-2">
           {confirmDialog}
+          {canWrite && (<>
           <Button variant="outline" size="sm" onClick={onEdit}>{t("common.edit")}</Button>
           <Button
             variant="outline"
@@ -243,6 +249,7 @@ function ModalityRow({
           >
             {t("common.delete")}
           </Button>
+          </>)}
         </div>
       </TableCell>
     </TableRow>

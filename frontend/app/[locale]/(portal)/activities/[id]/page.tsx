@@ -46,11 +46,16 @@ export default function ActivityDetailPage({
   const t = useTranslations();
   const router = useRouter();
   const { user } = useAuth();
-  const { isStaff: isAdmin, has } = usePermissions();
-  // `isAdmin` still picks the staff-vs-member shape of the page; within the
-  // staff shape each tab answers to the key its own endpoints are guarded by.
+  const { has } = usePermissions();
+  // The staff-vs-member shape of the page follows `activities.read` — the
+  // key that grants the draft/archived catalog. Within the staff shape each
+  // tab answers to the key its own endpoints are guarded by.
   const canReadActivities = has("activities.read");
+  const isAdmin = canReadActivities;
   const canWriteActivities = has("activities.write");
+  // Publish / archive / cancel is its own key: an activity coordinator drafts
+  // and prices all season while the board decides what goes live.
+  const canPublishActivities = has("activities.publish");
   const canReadRegistrations = has("registrations.read");
 
   const { data: activity, isLoading } = useActivity(activityId);
@@ -91,10 +96,10 @@ export default function ActivityDetailPage({
           variant: ACTIVITY_STATUS_VARIANTS[activity.status] || "outline",
         }}
         actions={
-          isAdmin ? (
+          canPublishActivities || canWriteActivities ? (
             <>
               {confirmDialog}
-              {activity.status === "draft" && (
+              {canPublishActivities && activity.status === "draft" && (
                 <Button
                   size="sm"
                   onClick={() => {
@@ -116,7 +121,7 @@ export default function ActivityDetailPage({
                   {t("activities.actions.publish")}
                 </Button>
               )}
-              {activity.status === "published" && (
+              {canPublishActivities && activity.status === "published" && (
                 <Button
                   variant="secondary"
                   size="sm"
@@ -138,7 +143,8 @@ export default function ActivityDetailPage({
                   {t("activities.actions.archive")}
                 </Button>
               )}
-              {(activity.status === "draft" || activity.status === "published") && (
+              {canPublishActivities &&
+                (activity.status === "draft" || activity.status === "published") && (
                 <Button
                   variant="destructive"
                   size="sm"
@@ -160,7 +166,7 @@ export default function ActivityDetailPage({
                   {t("activities.actions.cancel")}
                 </Button>
               )}
-              {activity.status === "draft" && (
+              {canWriteActivities && activity.status === "draft" && (
                 <Button
                   variant="destructive"
                   size="sm"
@@ -194,7 +200,7 @@ export default function ActivityDetailPage({
           isEditing={isEditing}
           onEdit={() => setIsEditing(true)}
           onCancel={() => setIsEditing(false)}
-          canEdit={isAdmin}
+          canEdit={canWriteActivities}
           readContent={<ActivityDetailSection activity={activity} />}
           editContent={
             <ActivityEditForm

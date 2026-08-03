@@ -11,7 +11,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { useRouter, usePathname } from "@/lib/i18n/routing";
 import { useEffect } from "react";
 
-const ADMIN_ROUTES = ["/members", "/groups", "/receipts", "/settings", "/billing-runs", "/communications", "/annual-summary"];
+import { requiredPermissions } from "@/lib/route-permissions";
 
 export default function PortalLayout({
   children,
@@ -19,7 +19,7 @@ export default function PortalLayout({
   children: React.ReactNode;
 }) {
   const { user, isLoading, isAuthenticated } = useAuth();
-  const { isStaff: isAdmin } = usePermissions();
+  const { isStaff: isAdmin, hasAny } = usePermissions();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -29,13 +29,18 @@ export default function PortalLayout({
     }
   }, [isLoading, isAuthenticated, router]);
 
+  // Per-route, per-permission — the ordinal "admin routes" list this replaced
+  // could only ask "are you staff", which sent a treasurer to /receipts and a
+  // front-desk role to /members alike. The server still guards every endpoint;
+  // this only decides where an unauthorized URL lands.
   useEffect(() => {
     if (!isLoading && user) {
-      if (!isAdmin && ADMIN_ROUTES.some((r) => pathname === r || pathname.startsWith(r + "/"))) {
+      const required = requiredPermissions(pathname);
+      if (required && !hasAny(...required)) {
         router.push("/dashboard");
       }
     }
-  }, [isLoading, user, isAdmin, pathname, router]);
+  }, [isLoading, user, hasAny, pathname, router]);
 
   if (isLoading) {
     return (

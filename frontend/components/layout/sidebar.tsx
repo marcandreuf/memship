@@ -68,19 +68,29 @@ export function AppSidebar({ user }: AppSidebarProps) {
   const cardEnabled = Boolean(settings?.features?.member_card);
   const bookingsEnabled = Boolean(settings?.features?.bookings);
 
-  // Nav is grouped (separated by dividers): home/news, then club-wide items,
-  // then the user's own items; admins get people/club, money, comms, system.
+  // Nav is grouped (separated by dividers): home/news, then the staff groups
+  // (people/club, money, comms), then the user's own items, then system.
   // Payment method has no nav entry — it lives as a tab on the profile page.
   //
   // Every item renders from the permission its destination is guarded by, so a
   // narrow custom role sees exactly what it can open. A feature flag and a
   // permission are ANDed: the flag says the club uses the feature at all.
-  const navGroups = (
-    isAdmin
+  //
+  // **Additive, not either/or.** `member` is pinned to every account, so staff
+  // hold every `self.*` key too — an account that gains one administrative
+  // permission must not lose its personal nav. The staff groups are appended
+  // when the account is staff; the personal groups always render, gated on the
+  // `self.*` keys. `/activities` and `/dashboard` appear on both sides and are
+  // deduplicated below, first occurrence winning, so the staff catalog (which
+  // shows drafts) beats the member catalog for anyone holding both.
+  const seenHrefs = new Set<string>();
+  const navGroups = [
+    [
+      { href: "/dashboard", label: t("nav.dashboard"), icon: LayoutDashboard, show: true },
+      { href: "/announcements", label: t("nav.announcements"), icon: Megaphone, show: commsEnabled && has("self.communications.read") },
+    ],
+    ...(isAdmin
       ? [
-          [
-            { href: "/dashboard", label: t("nav.dashboard"), icon: LayoutDashboard, show: true },
-          ],
           [
             { href: "/members", label: t("nav.members"), icon: Users, show: has("members.read") },
             { href: "/members/pending", label: t("nav.pendingRegistrations"), icon: UserCheck, show: has("members.approve") },
@@ -100,6 +110,20 @@ export function AppSidebar({ user }: AppSidebarProps) {
           [
             { href: "/communications", label: t("nav.communications"), icon: Megaphone, show: commsEnabled && has("communications.read") },
           ],
+        ]
+      : []),
+    [
+      { href: "/activities", label: t("nav.activities"), icon: CalendarDays, show: has("self.activities.read") },
+      { href: "/book", label: t("bookings.navBook"), icon: MapPin, show: bookingsEnabled && has("self.bookings.write") },
+    ],
+    [
+      { href: "/my-activities", label: t("activities.registration.myActivities"), icon: ClipboardList, show: has("self.registrations.read") },
+      { href: "/my-bookings", label: t("bookings.navMyBookings"), icon: ClipboardList, show: bookingsEnabled && has("self.bookings.read") },
+      { href: "/my-receipts", label: t("receipts.myReceipts"), icon: Receipt, show: has("self.billing.read") },
+      { href: "/my-card", label: t("nav.myCard"), icon: IdCard, show: cardEnabled && has("self.card.read") },
+    ],
+    ...(isAdmin
+      ? [
           [
             // Settings is a bag of tabs with their own gates — membership types
             // is reachable on `membership.write` alone, so this is an OR.
@@ -117,24 +141,14 @@ export function AppSidebar({ user }: AppSidebarProps) {
             },
           ],
         ]
-      : [
-          [
-            { href: "/dashboard", label: t("nav.dashboard"), icon: LayoutDashboard, show: true },
-            { href: "/announcements", label: t("nav.announcements"), icon: Megaphone, show: commsEnabled && has("self.communications.read") },
-          ],
-          [
-            { href: "/activities", label: t("nav.activities"), icon: CalendarDays, show: has("self.activities.read") },
-            { href: "/book", label: t("bookings.navBook"), icon: MapPin, show: bookingsEnabled && has("self.bookings.write") },
-          ],
-          [
-            { href: "/my-activities", label: t("activities.registration.myActivities"), icon: ClipboardList, show: has("self.registrations.read") },
-            { href: "/my-bookings", label: t("bookings.navMyBookings"), icon: ClipboardList, show: bookingsEnabled && has("self.bookings.read") },
-            { href: "/my-receipts", label: t("receipts.myReceipts"), icon: Receipt, show: has("self.billing.read") },
-            { href: "/my-card", label: t("nav.myCard"), icon: IdCard, show: cardEnabled && has("self.card.read") },
-          ],
-        ]
-  )
+      : []),
+  ]
     .map((group) => group.filter((item) => item.show))
+    .map((group) => {
+      const kept = group.filter((item) => !seenHrefs.has(item.href));
+      kept.forEach((item) => seenHrefs.add(item.href));
+      return kept;
+    })
     .filter((group) => group.length > 0);
 
   const initials = `${user.first_name?.[0] ?? ""}${user.last_name?.[0] ?? ""}`.toUpperCase();

@@ -14,6 +14,7 @@ import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DetailSkeleton } from "@/components/ui/skeletons";
 import { useFormatters } from "@/hooks/use-formatters";
 import { toast } from "sonner";
+import { usePermissions } from "@/features/auth/hooks/use-permissions";
 import {
   useMandate,
   useCancelMandate,
@@ -34,6 +35,8 @@ const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | 
 
 export default function MandateDetailPage() {
   const t = useTranslations();
+  const { has } = usePermissions();
+  const canWrite = has("billing.write");
   const { id } = useParams<{ id: string }>();
   const { data: mandate, isLoading } = useMandate(Number(id));
   const [confirmDialog, confirmAction] = useConfirmDialog();
@@ -108,7 +111,7 @@ export default function MandateDetailPage() {
                 {t("mandates.downloadPdf")}
               </a>
             </Button>
-            {isActive && (
+            {isActive && canWrite && (
               <>
                 <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()}>
                   {t("mandates.uploadSigned")}

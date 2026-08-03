@@ -48,6 +48,7 @@ import { createMembershipType } from "@/features/members/services/members-api";
 import type { MembershipTypeData } from "@/features/members/services/members-api";
 import { useGroups } from "@/features/groups/hooks/use-groups";
 import { useQueryClient } from "@tanstack/react-query";
+import { usePermissions } from "@/features/auth/hooks/use-permissions";
 
 const createSchema = z.object({
   name: z.string().min(1).max(255),
@@ -61,6 +62,8 @@ type CreateFormValues = z.infer<typeof createSchema>;
 
 export function MembershipTypesSettings() {
   const t = useTranslations();
+  const { has } = usePermissions();
+  const canWrite = has("membership.write");
   const { data: types, isLoading } = useMembershipTypes();
   const { data: groups } = useGroups();
   const updateMutation = useUpdateMembershipType();
@@ -141,6 +144,9 @@ export function MembershipTypesSettings() {
       {confirmDialog}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">{t("members.typesInfo")}</p>
+        {/* Gating the trigger's child instead would leave `asChild` with no
+            element to clone — the whole dialog goes. */}
+        {canWrite && (
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button size="sm" onClick={openCreate}>{t("members.createType")}</Button>
@@ -233,6 +239,7 @@ export function MembershipTypesSettings() {
             </Form>
           </DialogContent>
         </Dialog>
+        )}
       </div>
 
       {!types?.length ? (

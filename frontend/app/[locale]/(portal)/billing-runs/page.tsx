@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { useBillingRuns, useRunBillingNow } from "@/features/settings/hooks/use-billing-runs";
 import type { BillingRun, BillingFrequency } from "@/features/settings/services/billing-runs-api";
 import { useFormatters } from "@/hooks/use-formatters";
+import { usePermissions } from "@/features/auth/hooks/use-permissions";
 
 const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   success: "default",
@@ -135,6 +136,8 @@ export default function BillingRunsPage() {
 }
 
 function RunNowButton({ t }: { t: ReturnType<typeof useTranslations> }) {
+  // Same bulk action as Generate fees, triggered by hand.
+  const { has } = usePermissions();
   const [open, setOpen] = useState(false);
   const [frequency, setFrequency] = useState("all");
   const mutation = useRunBillingNow();
@@ -152,6 +155,8 @@ function RunNowButton({ t }: { t: ReturnType<typeof useTranslations> }) {
       toast.error(t("toast.error.generic"));
     }
   }
+
+  if (!has("billing.run")) return null;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

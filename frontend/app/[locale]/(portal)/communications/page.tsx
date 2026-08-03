@@ -25,7 +25,8 @@ export default function CommunicationsPage() {
   const t = useTranslations();
   const router = useRouter();
   const { user } = useAuth();
-  const { isStaff: isAdmin } = usePermissions();
+  const { has } = usePermissions();
+  const isAdmin = has("communications.read");
   const [page, setPage] = useState(1);
   const { data, isLoading } = useAnnouncements({ page, per_page: 20 });
   const { formatDate } = useFormatters();

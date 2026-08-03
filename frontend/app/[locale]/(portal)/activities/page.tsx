@@ -61,7 +61,12 @@ export default function ActivitiesPage() {
   const t = useTranslations();
   const router = useRouter();
   const { user } = useAuth();
-  const { isStaff: isAdmin } = usePermissions();
+  // The page has two shapes. Which one you get is `activities.read` — the
+  // staff catalog including drafts — not "are you staff at all": a treasurer
+  // holds neither key and must land on the member catalog like anyone else.
+  const { has } = usePermissions();
+  const isAdmin = has("activities.read");
+  const canCreate = has("activities.write");
 
   const [page, setPage] = usePageParam();
   const [search, setSearch] = useSearchParam();
@@ -82,7 +87,7 @@ export default function ActivitiesPage() {
           <h1 className="text-2xl font-bold">{t("activities.title")}</h1>
           <PageInfo text={t("activities.info")} />
         </div>
-        {isAdmin && (
+        {canCreate && (
           <Link href="/activities/new">
             <Button size="sm">{t("activities.createActivity")}</Button>
           </Link>
