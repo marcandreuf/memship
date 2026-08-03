@@ -108,9 +108,7 @@ Memship segueix el [versionat semàntic](https://semver.org/) i **els números d
 | v1.0.1 | Pedaç — corregeix el registre de tasques programades de facturació/recordatoris a Celery; protecció de CI contra la sobreescriptura d'etiquetes d'imatge | Fet |
 | v1.1.0 | Camps de perfil personalitzats — dades de soci configurables per l'organització (text, número, data, selecció, …) amb validació per camp i visibilitat/edició per camp | Fet |
 | v1.1.1 | Pedaç — reorganització de la navegació de configuració: ajustos de pagaments i de socis agrupats a les pestanyes Pagaments i Socis | Fet |
-| v1.2.0 | Integració SSO / identitat — alta pública amb verificació per correu, flux d'aprovació per la junta, inici de sessió amb Google / Apple i configuració de proveïdors SSO pel superadministrador des d'una pestanya d'Integracions | Fet |
-| v1.2.1 | Configuració de correu a Ajustos — el superadministrador defineix Resend / Google SMTP des d'una pestanya d'Integracions | Fet |
-| v1.2.2 | Pedaç — elimina una migració duplicada de configuració de correu amb un identificador de revisió que xocava amb un altre existent, cosa que feia fallar `alembic upgrade head` en arrencar | Fet |
+| v1.2.2 | Integració SSO / identitat i configuració de correu — alta pública amb verificació per correu, flux d'aprovació per la junta, inici de sessió amb Google / Apple, configuració de proveïdors SSO pel superadministrador i ajust de Resend / Google SMTP des d'una pestanya d'Integracions. També elimina una migració duplicada de configuració de correu amb un identificador de revisió que xocava amb un altre existent, cosa que feia fallar `alembic upgrade head` en arrencar | Fet |
 | v1.3.0 | Reserves simples — reserves de socis en espais compartits mitjançant un calendari setmanal, aforament per franja, llista d'espera FIFO amb promoció automàtica i correus de confirmació/llista d'espera | Fet |
 
 ### Planificat
