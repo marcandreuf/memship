@@ -6,7 +6,7 @@ describe("Payment Reminders — Settings tab (super admin)", () => {
   beforeEach(() => {
     cy.loginAsSuperAdmin();
     cy.visit("/en/settings");
-    cy.contains('[role="tab"]', "Payment reminders").click();
+    cy.settingsTab("Payments", "Payment reminders");
   });
 
   it("shows the payment reminder controls", () => {
@@ -35,7 +35,7 @@ describe("Payment Reminders — Settings tab (super admin)", () => {
 
   it("does not clobber other feature flags (membership types still load)", () => {
     // Saving the reminder keys must merge into the features JSONB, not replace it.
-    cy.contains('[role="tab"]', "Membership Types").click();
+    cy.settingsTab("Members", "Membership Types");
     cy.contains(/full member|student/i).should("be.visible");
   });
 });

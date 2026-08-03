@@ -184,15 +184,6 @@ export default function SettingsPage() {
             <TabsTrigger value="payments">{t("settings.payments")}</TabsTrigger>
           )}
           {isSuperAdmin && (
-            <TabsTrigger value="payment-providers">{t("settings.providers.tab")}</TabsTrigger>
-          )}
-          {isSuperAdmin && (
-            <TabsTrigger value="recurring-billing">{t("settings.recurringBilling.tab")}</TabsTrigger>
-          )}
-          {isSuperAdmin && (
-            <TabsTrigger value="payment-reminders">{t("settings.paymentReminders.tab")}</TabsTrigger>
-          )}
-          {isSuperAdmin && (
             <TabsTrigger value="communications">{t("settings.communications.tab")}</TabsTrigger>
           )}
           {isSuperAdmin && (

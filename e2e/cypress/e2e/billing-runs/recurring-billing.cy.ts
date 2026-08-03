@@ -6,7 +6,7 @@ describe("Recurring Billing — Settings tab (super admin)", () => {
   beforeEach(() => {
     cy.loginAsSuperAdmin();
     cy.visit("/en/settings");
-    cy.contains('[role="tab"]', "Recurring billing").click();
+    cy.settingsTab("Payments", "Recurring billing");
   });
 
   it("shows the recurring billing controls", () => {
@@ -34,7 +34,7 @@ describe("Recurring Billing — Settings tab (super admin)", () => {
 
   it("does not clobber other feature flags (membership types still load)", () => {
     // Saving the recurring-billing keys must merge into features JSONB, not replace it.
-    cy.contains('[role="tab"]', "Membership Types").click();
+    cy.settingsTab("Members", "Membership Types");
     cy.contains(/full member|student/i).should("be.visible");
   });
 });
