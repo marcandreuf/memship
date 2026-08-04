@@ -119,7 +119,7 @@ Priority-ordered, not yet versioned. Each becomes a versioned release when it sh
 - **Convocations** — formal General Assembly calls with token-based member RSVP
 - **Document library** — statutes, minutes, forms with per-group visibility
 - **Events calendar + RSVP** — calendar view and participation tracking
-- **Messaging integrations** — reach members on the channels they already use: announcements and notifications delivered over WhatsApp, Telegram, Signal and Instagram, not email alone. Each platform is a separate integration with its own cost and constraints, so they ship one at a time rather than as a single feature
+- **Integrations** — connect memship to the tools a club already runs on, instead of asking it to move. Instant messaging first (WhatsApp, Telegram, Signal, Instagram), since that is where most clubs actually communicate; then calendar subscriptions, accounting and e-invoicing exports, sports-federation licence submissions, and outbound webhooks as the generic escape hatch. Each connector has its own cost and constraints and ships on its own
 - **Extensions — modules/plugins system** — optional add-ons delivered as modules/plugins: photo albums, forum, guestbook, weblinks directory, inventory/lending, portal widgets
 
 Complex variations are built on demand, when a real deployment needs them: GoCardless e-mandates, PayPal, Stripe Invoice flow, bulk receipt actions, custom report builder, surveys, family group billing, paid & recurring bookings, equipment rental, convocation voting & document attachments, and similar deeper cuts of the features above.
