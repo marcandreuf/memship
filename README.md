@@ -115,10 +115,11 @@ Memship follows [semantic versioning](https://semver.org/), and **version number
 
 Priority-ordered, not yet versioned. Each becomes a versioned release when it ships, and the release claims the next semver number in order.
 
-- **Convocations** — formal General Assembly calls with token-based member RSVP
 - **Flexible roles & permissions** — multi-role, per-role rights beyond the 4 fixed roles
+- **Convocations** — formal General Assembly calls with token-based member RSVP
 - **Document library** — statutes, minutes, forms with per-group visibility
 - **Events calendar + RSVP** — calendar view and participation tracking
+- **Messaging integrations** — reach members on the channels they already use: announcements and notifications delivered over WhatsApp, Telegram, Signal and Instagram, not email alone. Each platform is a separate integration with its own cost and constraints, so they ship one at a time rather than as a single feature
 - **Extensions — modules/plugins system** — optional add-ons delivered as modules/plugins: photo albums, forum, guestbook, weblinks directory, inventory/lending, portal widgets
 
 Complex variations are built on demand, when a real deployment needs them: GoCardless e-mandates, PayPal, Stripe Invoice flow, bulk receipt actions, custom report builder, surveys, family group billing, paid & recurring bookings, equipment rental, convocation voting & document attachments, and similar deeper cuts of the features above.

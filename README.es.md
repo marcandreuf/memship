@@ -115,10 +115,11 @@ Memship sigue el [versionado semántico](https://semver.org/) y **los números d
 
 Priorizado, aún sin versión. Cada elemento se convierte en un lanzamiento versionado cuando se publica, y el lanzamiento toma el siguiente número semántico por orden.
 
-- **Convocatorias** — convocatorias formales de Asamblea General con confirmación del socio mediante token
 - **Roles y permisos flexibles** — multi-rol y permisos por rol más allá de los 4 roles fijos
+- **Convocatorias** — convocatorias formales de Asamblea General con confirmación del socio mediante token
 - **Biblioteca de documentos** — estatutos, actas, formularios con visibilidad por grupo
 - **Calendario de eventos + confirmación de asistencia** — vista de calendario y seguimiento de participación
+- **Integraciones de mensajería** — llegar a los socios por los canales que ya utilizan: comunicaciones y notificaciones enviadas por WhatsApp, Telegram, Signal e Instagram, no solo por correo electrónico. Cada plataforma es una integración independiente, con su propio coste y sus propias limitaciones, por lo que se publican una a una y no como una única función
 - **Extensiones — sistema de módulos/plugins** — complementos opcionales entregados como módulos/plugins: álbumes de fotos, foro, libro de visitas, directorio de enlaces, inventario/préstamos, widgets del portal
 
 Las variaciones complejas se construyen bajo demanda, cuando una implementación real las necesita: GoCardless e-mandatos, PayPal, flujo de Stripe Invoice, acciones masivas en recibos, generador de informes personalizados, encuestas, facturación familiar, pagos y reservas recurrentes, alquiler de equipamiento, votación y adjuntos en convocatorias, y variantes más profundas de las funciones anteriores.

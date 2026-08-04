@@ -115,10 +115,11 @@ Memship segueix el [versionat semàntic](https://semver.org/) i **els números d
 
 Prioritzat, encara sense versió. Cada element esdevé un llançament versionat quan es publica, i el llançament pren el següent número semàntic per ordre.
 
-- **Convocatòries** — convocatòries formals d'Assemblea General amb confirmació del soci mitjançant token
 - **Rols i permisos flexibles** — multi-rol i permisos per rol més enllà dels 4 rols fixos
+- **Convocatòries** — convocatòries formals d'Assemblea General amb confirmació del soci mitjançant token
 - **Biblioteca de documents** — estatuts, actes, formularis amb visibilitat per grup
 - **Calendari d'esdeveniments + confirmació d'assistència** — vista de calendari i seguiment de participació
+- **Integracions de missatgeria** — arribar als socis pels canals que ja utilitzen: comunicacions i notificacions enviades per WhatsApp, Telegram, Signal i Instagram, no només per correu electrònic. Cada plataforma és una integració independent, amb el seu propi cost i les seves pròpies limitacions, de manera que es publiquen una a una i no com una única funció
 - **Extensions — sistema de mòduls/connectors** — complements opcionals lliurats com a mòduls/connectors: àlbums de fotos, fòrum, llibre de visites, directori d'enllaços, inventari/préstecs, ginys del portal
 
 Les variacions complexes es construeixen sota demanda, quan una implementació real les necessita: GoCardless e-mandats, PayPal, flux d'Stripe Invoice, accions massives en rebuts, generador d'informes personalitzats, enquestes, facturació familiar, pagaments i reserves recurrents, lloguer d'equipament, votació i adjunts en convocatòries, i variants més profundes de les funcions anteriors.
