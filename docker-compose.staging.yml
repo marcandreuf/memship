@@ -1,0 +1,66 @@
+# Staging overlay — use together with the base file:
+#   docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d
+#
+# Mail containment. Staging runs demo data, but a demo record can hold a real
+# address and every email path works, so nothing may leave the box. Mailpit
+# accepts all SMTP and shows what was sent at :8025, which also makes "did the
+# receipt email actually send?" checkable instead of assumed.
+
+services:
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: memship-mailpit
+    expose:
+      - "1025"
+      - "8025"
+    environment:
+      MP_DATABASE: /data/mailpit.db
+      MP_MAX_MESSAGES: 5000
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+    volumes:
+      - mailpit:/data
+    restart: unless-stopped
+
+  # depends_on is restated in full — an override that lists only mailpit would
+  # drop the db/redis health conditions from the base file.
+  api:
+    environment:
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      SMTP_TLS: "false"
+      SMTP_USER: ""
+      SMTP_PASSWORD: ""
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+
+  celery-worker:
+    environment:
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      SMTP_TLS: "false"
+      SMTP_USER: ""
+      SMTP_PASSWORD: ""
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+
+  celery-beat:
+    environment:
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      SMTP_TLS: "false"
+      SMTP_USER: ""
+      SMTP_PASSWORD: ""
+
+volumes:
+  mailpit:

@@ -1,0 +1,118 @@
+# Deploy Staging
+#
+# Staging tracks `main` HEAD. After Build Images publishes the release-candidate
+# images for a merged commit, this deploys those exact images to the staging VPS.
+# The commit staging validates is the one release.sh later tags, and release.yml
+# promotes the same image without rebuilding — so what ships is what was tested.
+#
+# Required repository secrets:
+#   STAGING_HOST         hostname or IP of the VPS
+#   STAGING_USER         deploy user (member of the docker group)
+#   STAGING_SSH_KEY      private key for that user — dedicated to this workflow
+#   STAGING_KNOWN_HOSTS  output of `ssh-keyscan <host>`, so the host key is
+#                        pinned rather than trusted on first use
+name: Deploy Staging
+
+on:
+  workflow_run:
+    workflows: ["Build Images"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: "Commit SHA to deploy (full, or the 12-char short form). Defaults to main HEAD. Use this to roll back."
+        required: false
+
+# One deploy at a time; never cancel one midway, since that can leave the stack
+# half-updated.
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    environment:
+      name: staging
+      url: https://staging.openmemship.com
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Resolve the images to deploy
+        id: images
+        env:
+          INPUT_SHA: ${{ github.event.inputs.sha }}
+          EVENT_SHA: ${{ github.event.workflow_run.head_sha }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          set -euo pipefail
+          SHA="${INPUT_SHA:-${EVENT_SHA:-$GITHUB_SHA}}"
+          SHORT="${SHA:0:12}"
+
+          # Build Images only rebuilds the service that changed, so
+          # `sha-<commit>` exists for one image and not the other on most
+          # merges. Fall back to whatever `:main` currently points at, pinned
+          # by digest — still an exact, immutable reference.
+          resolve() {
+            local image="$1"
+            if docker buildx imagetools inspect "${image}:sha-${SHORT}" >/dev/null 2>&1; then
+              echo "${image}:sha-${SHORT}"
+            else
+              local digest
+              digest="$(docker buildx imagetools inspect "${image}:main" --format '{{.Manifest.Digest}}')"
+              echo "${image}@${digest}"
+            fi
+          }
+
+          API_IMAGE="$(resolve "ghcr.io/${OWNER}/memship-backend")"
+          FRONTEND_IMAGE="$(resolve "ghcr.io/${OWNER}/memship-frontend")"
+
+          {
+            echo "sha=${SHA}"
+            echo "short=${SHORT}"
+            echo "api_image=${API_IMAGE}"
+            echo "frontend_image=${FRONTEND_IMAGE}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Configure SSH
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "${{ secrets.STAGING_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "${{ secrets.STAGING_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Deploy
+        env:
+          HOST: ${{ secrets.STAGING_HOST }}
+          USER_NAME: ${{ secrets.STAGING_USER }}
+          API_IMAGE: ${{ steps.images.outputs.api_image }}
+          FRONTEND_IMAGE: ${{ steps.images.outputs.frontend_image }}
+          IMAGE_TAG: sha-${{ steps.images.outputs.short }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes "${USER_NAME}@${HOST}" \
+            "API_IMAGE='${API_IMAGE}' FRONTEND_IMAGE='${FRONTEND_IMAGE}' IMAGE_TAG='${IMAGE_TAG}' bash -s" \
+            < scripts/staging-deploy.sh
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Staging deploy"
+            echo ""
+            echo "- commit: \`${{ steps.images.outputs.sha }}\`"
+            echo "- api: \`${{ steps.images.outputs.api_image }}\`"
+            echo "- frontend: \`${{ steps.images.outputs.frontend_image }}\`"
+            echo ""
+            echo "Tag this commit for release only once it has been validated on staging."
+          } >> "$GITHUB_STEP_SUMMARY"
