@@ -63,6 +63,7 @@ class Settings(BaseSettings):
     APP_VERSION: str = _read_version()
     DEFAULT_LOCALE: str = "es"
     CORS_ORIGINS: str = "http://localhost:3000"
+    LOG_LEVEL: str = "info"
 
     # SMTP (optional — emails disabled if SMTP_HOST is empty).
     # Real credentials belong in backend/.env (gitignored), never here — this

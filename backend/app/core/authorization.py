@@ -1,10 +1,15 @@
 """Permission-based access control."""
 
+import logging
+
 from fastapi import Depends, HTTPException, Request, status
 
 from app.core.permissions import ALL_KEYS, SELF_KEYS, SUPER_ADMIN_SLUG
 from app.core.security.dependencies import get_current_user
 from app.domains.auth.models import User
+
+logger = logging.getLogger(__name__)
+
 
 def resolve_permissions(user: User) -> frozenset[str]:
     """The permissions a user effectively holds.
@@ -16,9 +21,14 @@ def resolve_permissions(user: User) -> frozenset[str]:
     ``role_permissions`` to decide what a user can do.
     """
     if any(role.slug == SUPER_ADMIN_SLUG for role in user.roles):
+        logger.debug(
+            "resolve_permissions: user_id=%s roles=%s -> super admin, all permissions granted",
+            user.id,
+            [role.slug for role in user.roles],
+        )
         return ALL_KEYS
 
-    return frozenset(
+    permissions = frozenset(
         key
         for role in user.roles
         for key in role.permission_keys
@@ -26,6 +36,13 @@ def resolve_permissions(user: User) -> frozenset[str]:
         # downgrade would re-grant it.
         if key in ALL_KEYS
     )
+    logger.debug(
+        "resolve_permissions: user_id=%s roles=%s permissions=%s",
+        user.id,
+        [role.slug for role in user.roles],
+        sorted(permissions),
+    )
+    return permissions
 
 
 def get_permissions(request: Request, user: User) -> frozenset[str]:
