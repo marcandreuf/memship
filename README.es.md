@@ -116,13 +116,15 @@ Memship sigue el [versionado semántico](https://semver.org/) y **los números d
 Priorizado, aún sin versión. Cada elemento se convierte en un lanzamiento versionado cuando se publica, y el lanzamiento toma el siguiente número semántico por orden.
 
 - **Roles y permisos flexibles** — multi-rol y permisos por rol más allá de los 4 roles fijos
+- **Copias de seguridad** — descargar una copia completa desde el área de administración, con la base de datos y los archivos subidos, y una restauración documentada y probada
 - **Convocatorias** — convocatorias formales de Asamblea General con confirmación del socio mediante token
 - **Biblioteca de documentos** — estatutos, actas, formularios con visibilidad por grupo
 - **Calendario de eventos + confirmación de asistencia** — vista de calendario y seguimiento de participación
 - **Integraciones** — conectar memship con las herramientas que el club ya utiliza, en lugar de pedirle que las abandone. Primero mensajería instantánea (WhatsApp, Telegram, Signal, Instagram), que es donde la mayoría de los clubes se comunican realmente; después suscripciones de calendario, exportaciones a contabilidad y facturación electrónica, envío de licencias a federaciones deportivas y webhooks salientes como vía genérica para todo lo demás. Cada conector tiene su propio coste y sus propias limitaciones, y se publica por separado
-- **Extensiones — sistema de módulos/plugins** — complementos opcionales entregados como módulos/plugins: álbumes de fotos, foro, libro de visitas, directorio de enlaces, inventario/préstamos, widgets del portal
 
 Las variaciones complejas se construyen bajo demanda, cuando una implementación real las necesita: GoCardless e-mandatos, PayPal, flujo de Stripe Invoice, acciones masivas en recibos, generador de informes personalizados, encuestas, facturación familiar, pagos y reservas recurrentes, alquiler de equipamiento, votación y adjuntos en convocatorias, y variantes más profundas de las funciones anteriores.
+
+**Aplazado — las extensiones como sistema de módulos/plugins.** Los complementos opcionales como álbumes de fotos, foro, libro de visitas, directorio de enlaces, inventario/préstamos y widgets del portal necesitan un sistema de módulos diseñado dentro de la arquitectura, no añadido sobre ella. Esto espera a una futura revisión de esa arquitectura en lugar de publicarse como una función.
 
 ---
 
