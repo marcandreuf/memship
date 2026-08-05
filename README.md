@@ -108,22 +108,23 @@ Memship follows [semantic versioning](https://semver.org/), and **version number
 | v1.0.1 | Patch — fix Celery scheduled billing/reminder task registration; CI guard against image tag overwrite                                                                                                            | Done   |
 | v1.1.0 | Custom profile fields — org-configurable member data (text, number, date, select, …) with per-field validation and per-field visibility/editability                                                              | Done   |
 | v1.1.1 | Patch — settings navigation reorganised: payment and member settings grouped under Payments and Members tabs                                                                                                     | Done   |
-| v1.2.0 | SSO / identity integration — public registration + email-verification onboarding, admin approval flow, Google / Apple sign-in, and superadmin SSO provider configuration from an Integrations tab | Done   |
-| v1.2.1 | Mailing configuration in Settings — superadmin sets Resend / Google SMTP from an Integrations tab | Done   |
-| v1.2.2 | Patch — drop a duplicate mailing-config migration whose revision id collided with an existing one, which made `alembic upgrade head` fail on startup | Done   |
+| v1.2.2 | SSO / identity integration and mailing configuration — public registration + email-verification onboarding, admin approval flow, Google / Apple sign-in, superadmin SSO provider configuration and Resend / Google SMTP setup from an Integrations tab. Also drops a duplicate mailing-config migration whose revision id collided with an existing one, which made `alembic upgrade head` fail on startup | Done   |
 | v1.3.0 | Simple Bookings — member reservations of shared spaces on a week calendar, per-slot capacity, FIFO waitlist with auto-promotion, and confirmation/waitlist emails | Done   |
 
 ### Planned
 
 Priority-ordered, not yet versioned. Each becomes a versioned release when it ships, and the release claims the next semver number in order.
 
-- **Convocations** — formal General Assembly calls with token-based member RSVP
 - **Flexible roles & permissions** — multi-role, per-role rights beyond the 4 fixed roles
+- **Data backups** — download a full backup from the admin area, covering the database and the uploaded files, with a documented and tested restore
+- **Convocations** — formal General Assembly calls with token-based member RSVP
 - **Document library** — statutes, minutes, forms with per-group visibility
 - **Events calendar + RSVP** — calendar view and participation tracking
-- **Extensions — modules/plugins system** — optional add-ons delivered as modules/plugins: photo albums, forum, guestbook, weblinks directory, inventory/lending, portal widgets
+- **Integrations** — connect memship to the tools a club already runs on, instead of asking it to move. Instant messaging first (WhatsApp, Telegram, Signal, Instagram), since that is where most clubs actually communicate; then calendar subscriptions, accounting and e-invoicing exports, sports-federation licence submissions, and outbound webhooks as the generic escape hatch. Each connector has its own cost and constraints and ships on its own
 
 Complex variations are built on demand, when a real deployment needs them: GoCardless e-mandates, PayPal, Stripe Invoice flow, bulk receipt actions, custom report builder, surveys, family group billing, paid & recurring bookings, equipment rental, convocation voting & document attachments, and similar deeper cuts of the features above.
+
+**Deferred — extensions as a modules/plugins system.** Optional add-ons such as photo albums, a forum, a guestbook, a weblinks directory, inventory/lending and portal widgets need a module system designed into the architecture rather than added on top of it. This waits for a future revision of that architecture instead of shipping as a feature.
 
 ---
 

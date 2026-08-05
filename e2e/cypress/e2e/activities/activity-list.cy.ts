@@ -23,9 +23,12 @@ describe("Activity List — Admin", () => {
   });
 
   it("shows all statuses for admin via filter", () => {
-    // Admin can filter to see draft activities
+    // Admin can filter to see draft activities.
+    // Scope to the dropdown option: "Draft" also appears as a status badge in
+    // the table, and the open select puts pointer-events:none on the body, so
+    // an unscoped cy.contains can match the badge and never be clickable.
     cy.get("select, [role='combobox']").first().click();
-    cy.contains("Draft").click();
+    cy.get("[role='option']").contains("Draft").click();
     cy.contains("Annual Gala Dinner").should("be.visible");
   });
 

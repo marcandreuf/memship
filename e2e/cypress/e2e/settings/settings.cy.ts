@@ -19,8 +19,8 @@ describe("Settings — Super Admin", () => {
   });
 
   it("shows membership types tab", () => {
-    cy.contains("button", "Membership Types").should("be.visible");
-    cy.contains("button", "Membership Types").click();
+    // Membership Types is a sub-tab of Members, not a top-level tab.
+    cy.settingsTab("Members", "Membership Types");
     cy.contains("Full Member").should("be.visible");
     cy.contains("Student").should("be.visible");
   });

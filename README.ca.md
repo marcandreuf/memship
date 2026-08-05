@@ -108,22 +108,23 @@ Memship segueix el [versionat semàntic](https://semver.org/) i **els números d
 | v1.0.1 | Pedaç — corregeix el registre de tasques programades de facturació/recordatoris a Celery; protecció de CI contra la sobreescriptura d'etiquetes d'imatge | Fet |
 | v1.1.0 | Camps de perfil personalitzats — dades de soci configurables per l'organització (text, número, data, selecció, …) amb validació per camp i visibilitat/edició per camp | Fet |
 | v1.1.1 | Pedaç — reorganització de la navegació de configuració: ajustos de pagaments i de socis agrupats a les pestanyes Pagaments i Socis | Fet |
-| v1.2.0 | Integració SSO / identitat — alta pública amb verificació per correu, flux d'aprovació per la junta, inici de sessió amb Google / Apple i configuració de proveïdors SSO pel superadministrador des d'una pestanya d'Integracions | Fet |
-| v1.2.1 | Configuració de correu a Ajustos — el superadministrador defineix Resend / Google SMTP des d'una pestanya d'Integracions | Fet |
-| v1.2.2 | Pedaç — elimina una migració duplicada de configuració de correu amb un identificador de revisió que xocava amb un altre existent, cosa que feia fallar `alembic upgrade head` en arrencar | Fet |
+| v1.2.2 | Integració SSO / identitat i configuració de correu — alta pública amb verificació per correu, flux d'aprovació per la junta, inici de sessió amb Google / Apple, configuració de proveïdors SSO pel superadministrador i ajust de Resend / Google SMTP des d'una pestanya d'Integracions. També elimina una migració duplicada de configuració de correu amb un identificador de revisió que xocava amb un altre existent, cosa que feia fallar `alembic upgrade head` en arrencar | Fet |
 | v1.3.0 | Reserves simples — reserves de socis en espais compartits mitjançant un calendari setmanal, aforament per franja, llista d'espera FIFO amb promoció automàtica i correus de confirmació/llista d'espera | Fet |
 
 ### Planificat
 
 Prioritzat, encara sense versió. Cada element esdevé un llançament versionat quan es publica, i el llançament pren el següent número semàntic per ordre.
 
-- **Convocatòries** — convocatòries formals d'Assemblea General amb confirmació del soci mitjançant token
 - **Rols i permisos flexibles** — multi-rol i permisos per rol més enllà dels 4 rols fixos
+- **Còpies de seguretat** — descarregar una còpia completa des de l'àrea d'administració, amb la base de dades i els fitxers pujats, i una restauració documentada i provada
+- **Convocatòries** — convocatòries formals d'Assemblea General amb confirmació del soci mitjançant token
 - **Biblioteca de documents** — estatuts, actes, formularis amb visibilitat per grup
 - **Calendari d'esdeveniments + confirmació d'assistència** — vista de calendari i seguiment de participació
-- **Extensions — sistema de mòduls/connectors** — complements opcionals lliurats com a mòduls/connectors: àlbums de fotos, fòrum, llibre de visites, directori d'enllaços, inventari/préstecs, ginys del portal
+- **Integracions** — connectar memship amb les eines que el club ja utilitza, en comptes de demanar-li que les abandoni. Primer missatgeria instantània (WhatsApp, Telegram, Signal, Instagram), que és on la majoria de clubs es comuniquen realment; després subscripcions de calendari, exportacions a comptabilitat i facturació electrònica, enviament de llicències a federacions esportives i webhooks sortints com a via genèrica per a la resta. Cada connector té el seu propi cost i les seves pròpies limitacions, i es publica per separat
 
 Les variacions complexes es construeixen sota demanda, quan una implementació real les necessita: GoCardless e-mandats, PayPal, flux d'Stripe Invoice, accions massives en rebuts, generador d'informes personalitzats, enquestes, facturació familiar, pagaments i reserves recurrents, lloguer d'equipament, votació i adjunts en convocatòries, i variants més profundes de les funcions anteriors.
+
+**Ajornat — les extensions com a sistema de mòduls/connectors.** Els complements opcionals com àlbums de fotos, fòrum, llibre de visites, directori d'enllaços, inventari/préstecs i ginys del portal necessiten un sistema de mòduls dissenyat dins de l'arquitectura, no afegit al damunt. Això espera una futura revisió d'aquesta arquitectura en lloc de publicar-se com una funció.
 
 ---
 

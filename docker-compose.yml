@@ -8,6 +8,27 @@
 # To use pre-built images from GHCR instead of building locally,
 # set IMAGE_TAG in .env (e.g., IMAGE_TAG=0.1.3)
 
+# The API, the Celery worker and Celery beat run the same image with the same
+# settings — only the command differs. Kept in one anchor so a new setting cannot
+# be added to the API and silently forgotten on the worker.
+x-backend-env: &backend-env
+  DATABASE_URL: postgresql://memship:${DB_PASSWORD:-memship}@db:5432/memship_db
+  SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
+  APP_ENV: ${APP_ENV:-production}
+  DEFAULT_LOCALE: ${DEFAULT_LOCALE:-es}
+  CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
+  # Report the deployed image tag as the app version (no VERSION file; images
+  # are promoted, not rebuilt, so the version is supplied at deploy time).
+  APP_VERSION: ${IMAGE_TAG:-latest}
+  CELERY_BROKER_URL: redis://redis:6379/0
+  SMTP_HOST: ${SMTP_HOST:-}
+  SMTP_PORT: ${SMTP_PORT:-587}
+  SMTP_USER: ${SMTP_USER:-}
+  SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+  SMTP_FROM: ${SMTP_FROM:-noreply@memship.local}
+  SMTP_TLS: ${SMTP_TLS:-true}
+  FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+
 services:
   caddy:
     image: caddy:2-alpine
@@ -35,24 +56,61 @@ services:
     ports:
       - "${API_PORT:-8003}:8000"
     environment:
-      - DATABASE_URL=postgresql://memship:${DB_PASSWORD:-memship}@db:5432/memship_db
-      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
-      - APP_ENV=${APP_ENV:-production}
-      - DEFAULT_LOCALE=${DEFAULT_LOCALE:-es}
-      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost}
-      # Report the deployed image tag as the app version (no VERSION file; images
-      # are promoted, not rebuilt, so the version is supplied at deploy time).
-      - APP_VERSION=${IMAGE_TAG:-latest}
-      - SMTP_HOST=${SMTP_HOST:-}
-      - SMTP_PORT=${SMTP_PORT:-587}
-      - SMTP_USER=${SMTP_USER:-}
-      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
-      - SMTP_FROM=${SMTP_FROM:-noreply@memship.local}
-      - SMTP_TLS=${SMTP_TLS:-true}
-      - FRONTEND_URL=${FRONTEND_URL:-http://localhost}
-      - RUN_MIGRATIONS=1
+      <<: *backend-env
+      RUN_MIGRATIONS: 1
+    volumes:
+      # Uploaded files (logos, member photos, activity covers, attachments) AND
+      # the auto-generated encryption key at storage/secret.key. Without this
+      # volume a container recreate destroys the uploads and rotates the key,
+      # which makes every stored SSO/payment secret undecryptable — see
+      # SECRETS_KEY_FILE in backend/app/core/config.py.
+      - storage:/app/storage
     depends_on:
       db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  celery-worker:
+    image: ${API_IMAGE:-ghcr.io/marcandreuf/memship-backend:${IMAGE_TAG:-latest}}
+    build:
+      context: backend
+      dockerfile: docker/Dockerfile
+    container_name: memship-celery-worker
+    command: uv run celery -A app.core.celery_app worker --loglevel=info
+    environment:
+      <<: *backend-env
+      # Only the API applies migrations; a second migrator races it on startup.
+      RUN_MIGRATIONS: 0
+    volumes:
+      - storage:/app/storage
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  celery-beat:
+    image: ${API_IMAGE:-ghcr.io/marcandreuf/memship-backend:${IMAGE_TAG:-latest}}
+    build:
+      context: backend
+      dockerfile: docker/Dockerfile
+    container_name: memship-celery-beat
+    # Scheduled billing run (02:00) and payment reminders (03:00) — see
+    # beat_schedule in backend/app/core/celery_app.py. The schedule database is
+    # kept on a volume so a restart does not re-fire a job it already ran.
+    command: uv run celery -A app.core.celery_app beat --loglevel=info --schedule=/var/lib/celery/celerybeat-schedule
+    environment:
+      <<: *backend-env
+      RUN_MIGRATIONS: 0
+    volumes:
+      - celerybeat:/var/lib/celery
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     restart: unless-stopped
 
@@ -68,6 +126,18 @@ services:
       - API_BASE_URL=http://api:8000
     depends_on:
       - api
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: memship-redis
+    expose:
+      - "6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
     restart: unless-stopped
 
   db:
@@ -91,5 +161,7 @@ services:
 
 volumes:
   pgdata:
+  storage:
+  celerybeat:
   caddy_data:
   caddy_config:

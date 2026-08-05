@@ -66,6 +66,26 @@ pnpm build                       # Production build
 pnpm lint                        # Run linter
 ```
 
+### E2E (Cypress)
+```bash
+cd e2e
+pnpm test:parallel:prod          # Full suite, 4 workers, production build (use this)
+pnpm test:parallel               # Full suite against whatever is on :3000
+pnpm cypress:run --spec 'cypress/e2e/auth/login.cy.ts'   # Single spec
+```
+
+**Run the full suite against a production build.** `next dev` compiles each
+route on first request; with 4 workers sharing one dev server that stall pushes
+navigations past their timeouts, so specs fail — or pass only on retry — and
+which ones fail changes between runs. `test:parallel:prod` builds, serves, runs
+and tears down. Measured on the same commit: 167/167 with no retries in 15m
+against a production build, versus 165–166/167 with ~12 retry-only passes in
+68m against the dev server.
+
+Retries mask this, so read the failure screenshots in `cypress/screenshots/`
+(gitignored, overwritten each run) — a screenshot with no "attempt N" suffix
+means a test failed once and passed on retry. A clean run leaves none.
+
 ### Docker (backend services)
 ```bash
 cd backend/docker

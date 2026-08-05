@@ -2,7 +2,7 @@ describe("Payment Providers — Super Admin", () => {
   beforeEach(() => {
     cy.loginAsSuperAdmin();
     cy.visit("/en/settings");
-    cy.contains("button", "Payment Providers").click();
+    cy.settingsTab("Payments", "Payment Providers");
   });
 
   it("shows Payment Providers tab and list", () => {

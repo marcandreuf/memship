@@ -33,6 +33,12 @@ declare global {
       logout(): Chainable<void>;
       /** Login via API (faster, no UI) */
       apiLogin(email: string, password: string): Chainable<void>;
+      /**
+       * Select a settings tab. Settings nests sub-tabs inside parent tabs, so
+       * a leaf like "Payment Providers" is only in the DOM once its parent is
+       * open. Pass the parent alone for a top-level tab, or parent + child.
+       */
+      settingsTab(parent: string, child?: string): Chainable<void>;
     }
   }
 }
@@ -74,9 +80,29 @@ Cypress.Commands.add("apiLogin", (email: string, password: string) => {
   });
 });
 
+// --- Navigation commands ---
+
+Cypress.Commands.add("settingsTab", (parent: string, child?: string) => {
+  // The parent list is the first tablist on the page; sub-tab lists render
+  // inside whichever parent panel is active, so scope the child to that panel
+  // rather than matching a label that may also exist at the top level.
+  cy.contains('[role="tab"]', parent).click();
+  if (child) {
+    cy.get('[role="tabpanel"][data-state="active"]')
+      .contains('[role="tab"]', child)
+      .click();
+  }
+});
+
+// --- Authentication commands (cont.) ---
+
 Cypress.Commands.add("logout", () => {
   // Click user dropdown in sidebar footer, then logout
   cy.get('[data-slot="sidebar-footer"]').find("button").click();
   cy.contains("Sign Out").click();
-  cy.url().should("include", "/login", { timeout: 10000 });
+  // Headroom for runs against `next dev`, where /login is compiled on first
+  // request and 4 parallel workers share one server — that pushes this
+  // redirect past 10s and makes the test flaky. Against a production build
+  // it resolves quickly; the allowance only matters for local dev runs.
+  cy.url().should("include", "/login", { timeout: 30000 });
 });

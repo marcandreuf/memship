@@ -108,22 +108,23 @@ Memship sigue el [versionado semántico](https://semver.org/) y **los números d
 | v1.0.1 | Parche — corrige el registro de tareas programadas de facturación/recordatorios en Celery; protección de CI contra la sobrescritura de etiquetas de imagen | Hecho |
 | v1.1.0 | Campos de perfil personalizados — datos de socio configurables por la organización (texto, número, fecha, selección, …) con validación por campo y visibilidad/edición por campo | Hecho |
 | v1.1.1 | Parche — reorganización de la navegación de configuración: ajustes de pagos y de socios agrupados en las pestañas Pagos y Socios | Hecho |
-| v1.2.0 | Integración SSO / identidad — alta pública con verificación por correo, flujo de aprobación por la directiva, inicio de sesión con Google / Apple y configuración de proveedores SSO por el superadministrador desde una pestaña de Integraciones | Hecho |
-| v1.2.1 | Configuración de correo en Ajustes — el superadministrador define Resend / Google SMTP desde una pestaña de Integraciones | Hecho |
-| v1.2.2 | Parche — elimina una migración duplicada de configuración de correo cuyo identificador de revisión chocaba con otro existente, lo que hacía fallar `alembic upgrade head` al arrancar | Hecho |
+| v1.2.2 | Integración SSO / identidad y configuración de correo — alta pública con verificación por correo, flujo de aprobación por la directiva, inicio de sesión con Google / Apple, configuración de proveedores SSO por el superadministrador y ajuste de Resend / Google SMTP desde una pestaña de Integraciones. También elimina una migración duplicada de configuración de correo cuyo identificador de revisión chocaba con otro existente, lo que hacía fallar `alembic upgrade head` al arrancar | Hecho |
 | v1.3.0 | Reservas simples — reservas de socios en espacios compartidos mediante un calendario semanal, aforo por franja, lista de espera FIFO con promoción automática y correos de confirmación/lista de espera | Hecho |
 
 ### Planificado
 
 Priorizado, aún sin versión. Cada elemento se convierte en un lanzamiento versionado cuando se publica, y el lanzamiento toma el siguiente número semántico por orden.
 
-- **Convocatorias** — convocatorias formales de Asamblea General con confirmación del socio mediante token
 - **Roles y permisos flexibles** — multi-rol y permisos por rol más allá de los 4 roles fijos
+- **Copias de seguridad** — descargar una copia completa desde el área de administración, con la base de datos y los archivos subidos, y una restauración documentada y probada
+- **Convocatorias** — convocatorias formales de Asamblea General con confirmación del socio mediante token
 - **Biblioteca de documentos** — estatutos, actas, formularios con visibilidad por grupo
 - **Calendario de eventos + confirmación de asistencia** — vista de calendario y seguimiento de participación
-- **Extensiones — sistema de módulos/plugins** — complementos opcionales entregados como módulos/plugins: álbumes de fotos, foro, libro de visitas, directorio de enlaces, inventario/préstamos, widgets del portal
+- **Integraciones** — conectar memship con las herramientas que el club ya utiliza, en lugar de pedirle que las abandone. Primero mensajería instantánea (WhatsApp, Telegram, Signal, Instagram), que es donde la mayoría de los clubes se comunican realmente; después suscripciones de calendario, exportaciones a contabilidad y facturación electrónica, envío de licencias a federaciones deportivas y webhooks salientes como vía genérica para todo lo demás. Cada conector tiene su propio coste y sus propias limitaciones, y se publica por separado
 
 Las variaciones complejas se construyen bajo demanda, cuando una implementación real las necesita: GoCardless e-mandatos, PayPal, flujo de Stripe Invoice, acciones masivas en recibos, generador de informes personalizados, encuestas, facturación familiar, pagos y reservas recurrentes, alquiler de equipamiento, votación y adjuntos en convocatorias, y variantes más profundas de las funciones anteriores.
+
+**Aplazado — las extensiones como sistema de módulos/plugins.** Los complementos opcionales como álbumes de fotos, foro, libro de visitas, directorio de enlaces, inventario/préstamos y widgets del portal necesitan un sistema de módulos diseñado dentro de la arquitectura, no añadido sobre ella. Esto espera a una futura revisión de esa arquitectura en lugar de publicarse como una función.
 
 ---
 
