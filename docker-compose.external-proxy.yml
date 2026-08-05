@@ -1,0 +1,85 @@
+# Run memship behind an EXTERNAL reverse proxy (Traefik) instead of the
+# bundled Caddy.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.external-proxy.yml up -d
+#
+# The application containers are identical either way — only what sits in front
+# of them changes. That is deliberate: the stack a club self-hosts and the stack
+# we run on staging stay the same images with the same settings.
+#
+# Use this when something else already terminates TLS on the host: our staging
+# and demo VPS, a Docker Swarm deployment, or a club that already runs its own
+# proxy. Otherwise use docker-compose.yml on its own and keep the bundled Caddy.
+#
+# Required in .env:
+#   MEMSHIP_HOST          the hostname, e.g. staging.openmemship.com
+#   TRAEFIK_NETWORK       the external network Traefik watches
+#   TRAEFIK_CERTRESOLVER  the ACME resolver configured in traefik.yml
+
+services:
+  # Disables the bundled proxy. The profile is never activated, so Caddy is
+  # simply not part of this deployment. Done from the override rather than the
+  # base file so that a plain `docker compose up -d` still starts Caddy and the
+  # ordinary self-hosted install needs no .env at all.
+  caddy:
+    profiles: ["bundled-proxy-disabled"]
+
+  api:
+    # `!override` REPLACES the port list. Without the tag Compose APPENDS, and
+    # the base file's published 8003 would survive alongside anything added
+    # here. Publishing it on a public VPS is not protected by ufw either —
+    # Docker writes its own iptables rules ahead of it — so the API would be
+    # reachable on the internet, bypassing the proxy and its TLS.
+    ports: !override []
+    networks:
+      # `default` must stay listed. A service that declares networks no longer
+      # joins the default one implicitly, and the API still needs db and redis.
+      - default
+      - proxy
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: ${TRAEFIK_NETWORK:?set TRAEFIK_NETWORK in .env}
+
+      # Uploaded files are served by the API, not the frontend — the route whose
+      # absence broke images on the bundled proxy. Keep both prefixes together.
+      traefik.http.routers.memship-api.rule: Host(`${MEMSHIP_HOST:?set MEMSHIP_HOST in .env}`) && (PathPrefix(`/api/v1`) || PathPrefix(`/uploads`))
+      traefik.http.routers.memship-api.entrypoints: websecure
+      traefik.http.routers.memship-api.tls.certresolver: ${TRAEFIK_CERTRESOLVER:?set TRAEFIK_CERTRESOLVER in .env}
+      traefik.http.routers.memship-api.priority: "20"
+      traefik.http.routers.memship-api.service: memship-api
+
+      # Payment providers POST here from their own infrastructure and cannot
+      # present credentials. It is a separate router, at a higher priority and
+      # with NO middlewares, so that adding an auth middleware to gate a staging
+      # or demo site cannot break webhook delivery. These endpoints authenticate
+      # by provider signature, which is their real security boundary.
+      traefik.http.routers.memship-webhooks.rule: Host(`${MEMSHIP_HOST}`) && PathPrefix(`/api/v1/webhooks`)
+      traefik.http.routers.memship-webhooks.entrypoints: websecure
+      traefik.http.routers.memship-webhooks.tls.certresolver: ${TRAEFIK_CERTRESOLVER}
+      traefik.http.routers.memship-webhooks.priority: "30"
+      traefik.http.routers.memship-webhooks.service: memship-api
+
+      traefik.http.services.memship-api.loadbalancer.server.port: "8000"
+
+  frontend:
+    networks:
+      - default
+      - proxy
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: ${TRAEFIK_NETWORK}
+      # Lowest priority: the catch-all, reached only when neither API rule matches.
+      traefik.http.routers.memship-frontend.rule: Host(`${MEMSHIP_HOST}`)
+      traefik.http.routers.memship-frontend.entrypoints: websecure
+      traefik.http.routers.memship-frontend.tls.certresolver: ${TRAEFIK_CERTRESOLVER}
+      traefik.http.routers.memship-frontend.priority: "10"
+      traefik.http.services.memship-frontend.loadbalancer.server.port: "3000"
+
+  # Same reasoning as the API: never publish Postgres on a public host.
+  db:
+    ports: !override []
+
+networks:
+  proxy:
+    external: true
+    name: ${TRAEFIK_NETWORK:?set TRAEFIK_NETWORK in .env}
