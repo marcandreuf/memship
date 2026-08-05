@@ -9,6 +9,12 @@
 		reverse_proxy api:8000
 	}
 
+	# Uploaded files are served by the API (StaticFiles mount in app/main.py),
+	# not by the frontend.
+	handle /uploads/* {
+		reverse_proxy api:8000
+	}
+
 	# Everything else → frontend
 	handle {
 		reverse_proxy frontend:3000
