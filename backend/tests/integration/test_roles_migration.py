@@ -18,7 +18,10 @@ BEFORE = "c5d6e7f8a9b0"
 ROLES = "d1a2b3c4e5f6"
 
 BASE_URL = os.getenv("DATABASE_TEST_URL", settings.DATABASE_TEST_URL)
-SCRATCH = "memship_roles_migration_test"
+# Suffixed per xdist worker (gw0, gw1, ...) so parallel workers don't race
+# DROP/CREATE DATABASE against the same scratch database.
+_WORKER = os.getenv("PYTEST_XDIST_WORKER", "master")
+SCRATCH = f"memship_roles_migration_test_{_WORKER}"
 
 
 def _server_url() -> str:

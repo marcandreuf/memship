@@ -90,9 +90,9 @@ class TestLogoUpload:
         assert response.status_code == 400
         assert "not allowed" in response.json()["detail"].lower()
 
-    def test_upload_requires_super_admin(self, client, db):
+    def test_upload_member_forbidden(self, client, db):
         _ensure_org_settings(db)
-        user = _create_user(db, "admin", "logo-rbac")
+        user = _create_user(db, "member", "logo-rbac")
         client.cookies.update(_auth_cookie(user))
 
         filename, file_obj, content_type = _make_image_file()
@@ -129,7 +129,7 @@ class TestLogoUpload:
         org = _ensure_org_settings(db)
         org.logo_url = "/uploads/org/logo.png"
         db.flush()
-        user = _create_user(db, "member", "logo-get")
+        user = _create_user(db, "admin", "logo-get")
         client.cookies.update(_auth_cookie(user))
 
         response = client.get("/api/v1/settings/")

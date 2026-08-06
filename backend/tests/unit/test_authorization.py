@@ -25,6 +25,7 @@ class FakeRole:
 @dataclass
 class FakeUser:
     roles: list[FakeRole] = field(default_factory=list)
+    id: int = 1
 
 
 class TestResolvePermissions:
