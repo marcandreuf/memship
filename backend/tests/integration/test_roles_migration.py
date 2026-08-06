@@ -32,10 +32,44 @@ def _scratch_url() -> str:
     return BASE_URL.rsplit("/", 1)[0] + f"/{SCRATCH}"
 
 
-def _alembic_at(revision: str) -> None:
+def _alembic_downgrade_to(revision: str) -> None:
     cfg = Config("alembic.ini")
     cfg.set_main_option("sqlalchemy.url", _scratch_url())
-    command.upgrade(cfg, revision)
+    previous = os.environ.get("DATABASE_URL")
+    os.environ["DATABASE_URL"] = _scratch_url()
+    try:
+        command.downgrade(cfg, revision)
+    finally:
+        if previous is None:
+            os.environ.pop("DATABASE_URL", None)
+        else:
+            os.environ["DATABASE_URL"] = previous
+
+
+def _alembic_at(revision: str) -> None:
+    """Run migrations against the scratch database, not whatever ``DATABASE_URL``
+    points at.
+
+    ``alembic/env.py`` reads ``os.environ["DATABASE_URL"]`` and, when set,
+    overrides the URL on the ``Config`` object outright — including one set
+    programmatically via ``set_main_option`` right here. CI exports
+    ``DATABASE_URL`` for the whole integration-test step, so without this
+    override every call silently migrated the shared main test database
+    instead of the scratch one: two xdist workers running this module then
+    raced real DDL against a database hundreds of other tests were using
+    concurrently.
+    """
+    cfg = Config("alembic.ini")
+    cfg.set_main_option("sqlalchemy.url", _scratch_url())
+    previous = os.environ.get("DATABASE_URL")
+    os.environ["DATABASE_URL"] = _scratch_url()
+    try:
+        command.upgrade(cfg, revision)
+    finally:
+        if previous is None:
+            os.environ.pop("DATABASE_URL", None)
+        else:
+            os.environ["DATABASE_URL"] = previous
 
 
 @pytest.fixture(scope="module")
@@ -183,9 +217,7 @@ class TestColumnsDropped:
 
 class TestDowngrade:
     def test_downgrade_restores_a_single_role_per_user(self, migrated):
-        cfg = Config("alembic.ini")
-        cfg.set_main_option("sqlalchemy.url", _scratch_url())
-        command.downgrade(cfg, BEFORE)
+        _alembic_downgrade_to(BEFORE)
 
         with migrated.connect() as conn:
             roles = dict(conn.execute(sa.text("SELECT email, role FROM users")).all())
