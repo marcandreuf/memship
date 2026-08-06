@@ -29,6 +29,10 @@ export function useAuth() {
     queryFn: getMe,
     retry: false,
     staleTime: 5 * 60 * 1000,
+    // The server resolves permissions per request, so a revoked role takes
+    // effect there immediately. Without refetching, this cached copy would keep
+    // rendering nav the user can no longer use until a full reload.
+    refetchOnWindowFocus: true,
   });
 
   const loginMutation = useMutation({

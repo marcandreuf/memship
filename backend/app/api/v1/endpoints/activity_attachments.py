@@ -7,7 +7,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
-from app.core.authorization import require_admin
+from app.core.authorization import require_permission, user_has
 from app.core.config import settings
 from app.core.db_utils import get_or_404
 from app.core.security.dependencies import get_current_user
@@ -36,7 +36,7 @@ router = APIRouter(prefix="/activities/{activity_id}/attachment-types", tags=["a
 def list_attachment_types(
     activity_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.activities.read")),
 ):
     """List attachment types for an activity (all authenticated users)."""
     get_or_404(db, Activity, activity_id)
@@ -56,7 +56,7 @@ def create_attachment_type(
     activity_id: int,
     data: ActivityAttachmentTypeCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("activities.write")),
 ):
     """Create an attachment type for an activity (admin only)."""
     get_or_404(db, Activity, activity_id)
@@ -73,7 +73,7 @@ def update_attachment_type(
     type_id: int,
     data: ActivityAttachmentTypeUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("activities.write")),
 ):
     """Update an attachment type (admin only)."""
     att_type = get_or_404(db, ActivityAttachmentType, type_id)
@@ -92,7 +92,7 @@ def delete_attachment_type(
     activity_id: int,
     type_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("activities.write")),
 ):
     """Delete an attachment type (admin only)."""
     att_type = get_or_404(db, ActivityAttachmentType, type_id)
@@ -114,13 +114,13 @@ upload_router = APIRouter(tags=["registration-attachments"])
 def list_registration_attachments(
     registration_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.registrations.read")),
 ):
     """List attachments for a registration."""
     registration = get_or_404(db, Registration, registration_id)
 
     # Check access: admin or own registration
-    is_admin = current_user.role in ("admin", "super_admin")
+    is_admin = user_has(current_user, "registrations.read")
     if not is_admin:
         member = db.query(Member).filter(Member.user_id == current_user.id).first()
         if not member or registration.member_id != member.id:
@@ -144,13 +144,13 @@ async def upload_registration_attachment(
     file: UploadFile,
     attachment_type_id: int | None = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.registrations.write")),
 ):
     """Upload a file attachment for a registration."""
     registration = get_or_404(db, Registration, registration_id)
 
     # Check access: admin or own registration
-    is_admin = current_user.role in ("admin", "super_admin")
+    is_admin = user_has(current_user, "registrations.write")
     if not is_admin:
         member = db.query(Member).filter(Member.user_id == current_user.id).first()
         if not member or registration.member_id != member.id:

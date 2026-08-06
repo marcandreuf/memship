@@ -8,7 +8,7 @@ verification tool.
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session, joinedload
 
-from app.core.authorization import require_admin
+from app.core.authorization import require_permission
 from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
 from app.domains.auth.models import User
@@ -87,7 +87,7 @@ def _qr_response(member: Member) -> Response:
 @router.get("/me/card", response_model=CardResponse)
 def get_my_card(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.card.read")),
 ):
     _require_card_enabled(db)
     member = _current_member(db, current_user)
@@ -97,7 +97,7 @@ def get_my_card(
 @router.get("/me/card/qr.svg")
 def get_my_card_qr(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.card.read")),
 ):
     _require_card_enabled(db)
     member = _current_member(db, current_user)
@@ -107,7 +107,7 @@ def get_my_card_qr(
 @router.get("/me/card/pdf")
 def get_my_card_pdf(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.card.read")),
 ):
     _require_card_enabled(db)
     member = _current_member(db, current_user)
@@ -118,7 +118,7 @@ def get_my_card_pdf(
 def scan_card(
     data: ScanRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("members.read")),
 ):
     _require_card_enabled(db)
     try:
@@ -145,7 +145,7 @@ def scan_card(
 def get_member_card_admin(
     member_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("members.read")),
 ):
     _require_card_enabled(db)
     member = _load_member_or_404(db, member_id)
@@ -156,7 +156,7 @@ def get_member_card_admin(
 def get_member_card_qr_admin(
     member_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("members.read")),
 ):
     _require_card_enabled(db)
     member = _load_member_or_404(db, member_id)
@@ -167,7 +167,7 @@ def get_member_card_qr_admin(
 def get_member_card_pdf_admin(
     member_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("members.read")),
 ):
     _require_card_enabled(db)
     member = _load_member_or_404(db, member_id)

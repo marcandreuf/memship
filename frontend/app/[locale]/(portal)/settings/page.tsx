@@ -32,8 +32,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { mapApiErrorsToForm } from "@/lib/errors";
 import { useAuth } from "@/features/auth/hooks/use-auth";
+import { usePermissions } from "@/features/auth/hooks/use-permissions";
 import {
   useSettings,
+  useOrgSettings,
   useUpdateSettings,
   useAddress,
   useUpdateAddress,
@@ -51,6 +53,8 @@ import { SsoSettings } from "@/features/settings/components/sso-settings";
 import { MailingSettings } from "@/features/settings/components/mailing-settings";
 import { ProfileFieldsSettings } from "@/features/settings/components/profile-fields-settings";
 import { BookingsSettings } from "@/features/settings/components/bookings-settings";
+import { RolesSettings } from "@/features/roles/components/roles-settings";
+import { UsersSettings } from "@/features/roles/components/users-settings";
 import { FormSkeleton } from "@/components/ui/skeletons";
 
 const settingsSchema = z.object({
@@ -92,7 +96,22 @@ const SUBTAB_TRIGGER =
 export default function SettingsPage() {
   const t = useTranslations();
   const { user } = useAuth();
-  const { data: settings, isLoading } = useSettings();
+  const { hasRole, has, hasAny } = usePermissions();
+  const canReadSettings = has("settings.read");
+  // Any one of these opens at least one tab. "Are you staff" would let a
+  // treasurer in to an empty page.
+  const isAdmin = hasAny(
+    "settings.read",
+    "membership.write",
+    "roles.read",
+    "users.read",
+    "settings.custom_fields.write",
+  );
+
+  const { data: branding, isLoading } = useSettings();
+  // The org form edits banking and invoice counters, which the branding subset
+  // deliberately withholds — ask for the full record, and only if allowed.
+  const { data: settings } = useOrgSettings(canReadSettings);
   const updateMutation = useUpdateSettings();
   const { data: address } = useAddress();
   const updateAddressMutation = useUpdateAddress();
@@ -133,8 +152,15 @@ export default function SettingsPage() {
     }
   }, [settings, address, form]);
 
-  const isAdmin = user?.role === "admin" || user?.role === "super_admin";
-  const isSuperAdmin = user?.role === "super_admin";
+  const isSuperAdmin = hasRole("super_admin");
+
+  // The roles/users API 404s while `custom_roles` is off. The Roles tab stays
+  // visible anyway because it carries the switch that turns the feature on —
+  // the bookings/profile-fields precedent. Users has nothing to show without
+  // the API, so it goes with the flag.
+  const customRolesEnabled = Boolean(branding?.features?.custom_roles);
+  const showRolesTab = has("roles.read");
+  const showUsersTab = customRolesEnabled && has("users.read");
 
   if (!isAdmin) {
     return (
@@ -197,6 +223,15 @@ export default function SettingsPage() {
           <TabsTrigger value="members">{t("nav.members")}</TabsTrigger>
           {isSuperAdmin && (
             <TabsTrigger value="bookings">{t("bookings.settings.tab")}</TabsTrigger>
+          )}
+          {/* Gated on the permission, not on the super-admin role: authoring
+              roles is superadmin-only because `roles.write` is reserved, but a
+              custom role may legitimately hold `roles.read` or `users.read`. */}
+          {showRolesTab && (
+            <TabsTrigger value="roles">{t("roles.tab")}</TabsTrigger>
+          )}
+          {showUsersTab && (
+            <TabsTrigger value="users">{t("roles.users")}</TabsTrigger>
           )}
         </TabsList>
 
@@ -501,6 +536,18 @@ export default function SettingsPage() {
         {isSuperAdmin && (
           <TabsContent value="bookings">
             <BookingsSettings />
+          </TabsContent>
+        )}
+
+        {showRolesTab && (
+          <TabsContent value="roles">
+            <RolesSettings />
+          </TabsContent>
+        )}
+
+        {showUsersTab && (
+          <TabsContent value="users">
+            <UsersSettings />
           </TabsContent>
         )}
       </Tabs>

@@ -47,6 +47,7 @@ import { useFormatters } from "@/hooks/use-formatters";
 import { ClientApiError } from "@/lib/client-api";
 import { mapApiErrorsToForm } from "@/lib/errors";
 import { useQueryClient } from "@tanstack/react-query";
+import { usePermissions } from "@/features/auth/hooks/use-permissions";
 import {
   useCreateSlot,
   useDeleteSlot,
@@ -128,6 +129,8 @@ type SlotFormValues = z.infer<typeof slotSchema>;
 
 export function SlotsTab({ spaceId }: { spaceId: number }) {
   const t = useTranslations();
+  const { has } = usePermissions();
+  const canWrite = has("bookings.write");
   const { data: slots = [], isLoading } = useSlots(spaceId);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<SpaceSlot | null>(null);
@@ -135,7 +138,7 @@ export function SlotsTab({ spaceId }: { spaceId: number }) {
   return (
     <div className="space-y-3">
       <div className="flex justify-end">
-        <Dialog
+        {canWrite && <Dialog
           open={open}
           onOpenChange={(o) => {
             setOpen(o);
@@ -162,7 +165,7 @@ export function SlotsTab({ spaceId }: { spaceId: number }) {
               }}
             />
           </DialogContent>
-        </Dialog>
+        </Dialog>}
       </div>
 
       <div className="table-compact overflow-x-auto">
@@ -213,6 +216,8 @@ function SlotRow({
   onEdit: () => void;
 }) {
   const t = useTranslations();
+  const { has } = usePermissions();
+  const canWrite = has("bookings.write");
   const { formatDate } = useFormatters();
   const qc = useQueryClient();
   const updateMutation = useUpdateSlot(spaceId);
@@ -274,6 +279,7 @@ function SlotRow({
       <TableCell>
         <div className="flex gap-2">
           {confirmDialog}
+          {canWrite && (<>
           <Button variant="outline" size="sm" onClick={onEdit}>
             {t("common.edit")}
           </Button>
@@ -313,6 +319,7 @@ function SlotRow({
           >
             {t("common.delete")}
           </Button>
+          </>)}
         </div>
       </TableCell>
     </TableRow>

@@ -9,13 +9,15 @@ from app.core.config import settings
 ALGORITHM = "HS256"
 
 
-def create_access_token(user_id: int, role: str) -> str:
+def create_access_token(user_id: int) -> str:
+    # No role/permission claim: authorization resolves from the database on every
+    # request, so revoking a role takes effect without waiting for a token to
+    # expire. Tokens minted before v1.4 still carry "role"; it is simply ignored.
     expire = datetime.now(timezone.utc) + timedelta(
         minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
     )
     payload = {
         "sub": str(user_id),
-        "role": role,
         "exp": expire,
         "iat": datetime.now(timezone.utc),
     }

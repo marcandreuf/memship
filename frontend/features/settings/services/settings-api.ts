@@ -32,6 +32,26 @@ export interface SettingsData {
   updated_at: string;
 }
 
+/** The public subset the portal shell renders. A strict subset of
+ *  `SettingsData`, so anything that only reads branding or feature flags can
+ *  take either. */
+export interface BrandingData {
+  id: number;
+  name: string;
+  legal_name: string | null;
+  email: string | null;
+  phone: string | null;
+  website: string | null;
+  logo_url: string | null;
+  locale: string;
+  timezone: string;
+  currency: string;
+  date_format: string;
+  brand_color: string | null;
+  features: Record<string, unknown>;
+  updated_at: string;
+}
+
 export interface AddressData {
   id: number;
   address_line1: string;
@@ -42,6 +62,11 @@ export interface AddressData {
   country: string;
 }
 
+export async function getBranding(): Promise<BrandingData> {
+  return apiClient("/settings/branding");
+}
+
+/** Everything, including banking and invoice counters — `settings.read` only. */
 export async function getSettings(): Promise<SettingsData> {
   return apiClient("/settings");
 }

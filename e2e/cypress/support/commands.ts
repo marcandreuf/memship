@@ -8,6 +8,10 @@ export const TEST_ACCOUNTS = {
   superAdmin: { email: "super@test.com", password: "TestSuper1!" },
   admin: { email: "admin@test.com", password: "TestAdmin1!" },
   member: { email: "member@test.com", password: "TestMember1!" },
+  // Holds the seeded `treasurer` custom role: billing.* and nothing else. The
+  // three system roles cannot express a partial admin, so this is the only
+  // account that exercises permission-driven nav.
+  treasurer: { email: "treasurer@test.com", password: "TestTreasurer1!" },
 };
 
 // --- Type declarations ---
@@ -23,6 +27,8 @@ declare global {
       loginAsSuperAdmin(): Chainable<void>;
       /** Login as member (member@test.com) */
       loginAsMember(): Chainable<void>;
+      /** Login as the narrow custom role (treasurer@test.com) */
+      loginAsTreasurer(): Chainable<void>;
       /** Logout via the sidebar user dropdown */
       logout(): Chainable<void>;
       /** Login via API (faster, no UI) */
@@ -57,6 +63,10 @@ Cypress.Commands.add("loginAsSuperAdmin", () => {
 
 Cypress.Commands.add("loginAsMember", () => {
   cy.login(TEST_ACCOUNTS.member.email, TEST_ACCOUNTS.member.password);
+});
+
+Cypress.Commands.add("loginAsTreasurer", () => {
+  cy.login(TEST_ACCOUNTS.treasurer.email, TEST_ACCOUNTS.treasurer.password);
 });
 
 Cypress.Commands.add("apiLogin", (email: string, password: string) => {

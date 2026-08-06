@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
-from app.core.authorization import require_admin
+from app.core.authorization import require_permission, user_has
 from app.core.csv_export import stream_csv
 from app.core.pagination import paginate
 from app.core.security.dependencies import get_current_user
@@ -84,7 +84,7 @@ def _to_detail_response(registration: Registration) -> RegistrationDetailRespons
 @router.get("/registrations/stats")
 def registration_stats(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("registrations.read")),
 ):
     """Get registration counts by status (admin only)."""
     rows = (
@@ -112,7 +112,7 @@ def list_activity_registrations(
     per_page: int = Query(20, ge=1, le=100),
     status_filter: str | None = Query(None, alias="status"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("registrations.read")),
 ):
     """List registrations for an activity (admin only)."""
     _get_activity_or_404(db, activity_id)
@@ -164,7 +164,7 @@ def export_activity_registrations_csv(
     activity_id: int,
     status_filter: str | None = Query(None, alias="status"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("registrations.read")),
 ):
     """Export an activity's registrations as CSV (same filters as the list)."""
     _get_activity_or_404(db, activity_id)
@@ -182,7 +182,7 @@ def register_for_activity(
     activity_id: int,
     data: RegisterRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.registrations.write")),
 ):
     """Register current user's member for an activity."""
     activity = _get_activity_or_404(db, activity_id)
@@ -214,7 +214,7 @@ def register_for_activity(
 def check_activity_eligibility(
     activity_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.registrations.read")),
 ):
     """Check if current user is eligible to register."""
     activity = _get_activity_or_404(db, activity_id)
@@ -235,7 +235,7 @@ def cancel_own_registration(
     registration_id: int,
     data: CancelRegistrationRequest | None = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.registrations.write")),
 ):
     """Cancel a registration (own or admin)."""
     registration = (
@@ -251,7 +251,7 @@ def cancel_own_registration(
     if not registration:
         raise HTTPException(status_code=404, detail="Registration not found")
 
-    is_admin = current_user.role in ("admin", "super_admin")
+    is_admin = user_has(current_user, "registrations.read")
 
     # Check ownership if not admin
     if not is_admin:
@@ -284,7 +284,7 @@ def change_registration_status(
     registration_id: int,
     data: AdminStatusChangeRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("registrations.write")),
 ):
     """Change registration status (admin only)."""
     registration = (
@@ -317,7 +317,7 @@ def list_my_registrations(
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.registrations.read")),
 ):
     """List current user's registrations."""
     member = _get_member_for_user(db, current_user)
@@ -380,7 +380,7 @@ def list_member_registrations(
     per_page: int = Query(20, ge=1, le=100),
     status_filter: str | None = Query(None, alias="status"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("registrations.read")),
 ):
     """List all registrations for a specific member (admin only)."""
     member = db.query(Member).filter(Member.id == member_id).first()
@@ -401,7 +401,7 @@ def export_member_registrations_csv(
     member_id: int,
     status_filter: str | None = Query(None, alias="status"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("registrations.read")),
 ):
     """Export a member's registrations as CSV (same filters as the list)."""
     member = db.query(Member).filter(Member.id == member_id).first()

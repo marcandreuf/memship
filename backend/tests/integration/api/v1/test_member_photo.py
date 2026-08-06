@@ -9,7 +9,7 @@ from app.domains.persons.models import Person
 
 
 def _auth_cookie(user):
-    return {"access_token": create_access_token(user.id, user.role)}
+    return {"access_token": create_access_token(user.id)}
 
 
 def _create_member_user(db, email="photo-member@test.com"):

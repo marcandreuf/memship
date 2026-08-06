@@ -65,7 +65,7 @@ def _ensure_membership_type(db):
 
 
 def _auth_cookie(user):
-    token = create_access_token(user.id, user.role)
+    token = create_access_token(user.id)
     return {"access_token": token}
 
 

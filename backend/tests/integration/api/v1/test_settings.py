@@ -24,7 +24,7 @@ def _create_user(db, role="super_admin", suffix="settings"):
 
 
 def _auth_cookie(user):
-    return {"access_token": create_access_token(user.id, user.role)}
+    return {"access_token": create_access_token(user.id)}
 
 
 def _ensure_org_settings(db):
@@ -47,7 +47,7 @@ def _ensure_org_settings(db):
 class TestGetSettings:
     def test_get_settings_authenticated(self, client, db):
         _ensure_org_settings(db)
-        user = _create_user(db, "member", "get-set")
+        user = _create_user(db, "admin", "get-set")
         client.cookies.update(_auth_cookie(user))
 
         response = client.get("/api/v1/settings/")
@@ -78,16 +78,19 @@ class TestUpdateSettings:
         assert data["locale"] == "ca"
         assert data["brand_color"] == "#3B82F6"
 
-    def test_update_settings_admin_forbidden(self, client, db):
+    def test_update_settings_admin_allowed(self, client, db):
+        """admin holds settings.write (unlike settings.integrations.write / roles.write,
+        it isn't reserved to super_admin) — see ADMIN_SEED_KEYS."""
         _ensure_org_settings(db)
         user = _create_user(db, "admin", "upd-adm")
         client.cookies.update(_auth_cookie(user))
 
         response = client.put(
             "/api/v1/settings/",
-            json={"name": "Blocked"},
+            json={"name": "Updated by Admin"},
         )
-        assert response.status_code == 403
+        assert response.status_code == 200
+        assert response.json()["name"] == "Updated by Admin"
 
     def test_update_settings_member_forbidden(self, client, db):
         _ensure_org_settings(db)
@@ -201,7 +204,7 @@ class TestBankingFields:
         org.invoice_next_number = 50
         db.flush()
 
-        user = _create_user(db, "member", "bank-get")
+        user = _create_user(db, "admin", "bank-get")
         client.cookies.update(_auth_cookie(user))
 
         response = client.get("/api/v1/settings/")
@@ -216,7 +219,7 @@ class TestBankingFields:
 class TestOrganizationAddress:
     def test_get_address_empty(self, client, db):
         _ensure_org_settings(db)
-        user = _create_user(db, "member", "addr-empty")
+        user = _create_user(db, "admin", "addr-empty")
         client.cookies.update(_auth_cookie(user))
 
         response = client.get("/api/v1/settings/address")
@@ -277,9 +280,9 @@ class TestOrganizationAddress:
         assert data["city"] == "Girona"
         assert data["id"] == addr.id  # same record, updated
 
-    def test_create_address_requires_super_admin(self, client, db):
+    def test_create_address_member_forbidden(self, client, db):
         _ensure_org_settings(db)
-        user = _create_user(db, "admin", "addr-rbac")
+        user = _create_user(db, "member", "addr-rbac")
         client.cookies.update(_auth_cookie(user))
 
         response = client.put(

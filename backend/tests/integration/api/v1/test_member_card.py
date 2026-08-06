@@ -11,7 +11,7 @@ from app.domains.persons.models import Person
 def _auth_cookie(user):
     from app.core.security.jwt import create_access_token
 
-    return {"access_token": create_access_token(user.id, user.role)}
+    return {"access_token": create_access_token(user.id)}
 
 
 def _ensure_org(db, *, member_card=True, prefix="", padding=4, next_num=1):

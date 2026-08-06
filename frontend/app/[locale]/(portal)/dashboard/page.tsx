@@ -18,6 +18,7 @@ import { CalendarClock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/features/auth/hooks/use-auth";
+import { usePermissions } from "@/features/auth/hooks/use-permissions";
 import { useSettings } from "@/features/settings/hooks/use-settings";
 import { useMembers } from "@/features/members/hooks/use-members";
 import { useActivities } from "@/features/activities/hooks/use-activities";
@@ -345,24 +346,33 @@ function NextBillingRunCard() {
 export default function DashboardPage() {
   const t = useTranslations();
   const { user } = useAuth();
-  const isAdmin = user?.role === "admin" || user?.role === "super_admin";
+  const { isStaff: isAdmin, has } = usePermissions();
   const { formatCurrency, formatDate } = useFormatters();
 
+  // Each card asks only for what its permission covers. Without this a
+  // treasurer (billing only) would fire nine guaranteed 403s on page load.
+  const canReadMembers = has("members.read");
+  const canReadActivities = has("activities.read");
+  const canReadRegistrations = has("registrations.read");
+  const canReadBilling = has("billing.read");
+  const canReadReports = has("reports.read");
+  const canReadReminders = has("reminders.read");
+
   // Member counts by status
-  const { data: activeMembers } = useMembers(isAdmin ? { status: "active", per_page: 1 } : {});
-  const { data: pendingMembers } = useMembers(isAdmin ? { status: "pending", per_page: 1 } : {});
-  const { data: suspendedMembers } = useMembers(isAdmin ? { status: "suspended", per_page: 1 } : {});
-  const { data: cancelledMembers } = useMembers(isAdmin ? { status: "cancelled", per_page: 1 } : {});
-  const { data: expiredMembers } = useMembers(isAdmin ? { status: "expired", per_page: 1 } : {});
+  const { data: activeMembers } = useMembers({ status: "active", per_page: 1 }, canReadMembers);
+  const { data: pendingMembers } = useMembers({ status: "pending", per_page: 1 }, canReadMembers);
+  const { data: suspendedMembers } = useMembers({ status: "suspended", per_page: 1 }, canReadMembers);
+  const { data: cancelledMembers } = useMembers({ status: "cancelled", per_page: 1 }, canReadMembers);
+  const { data: expiredMembers } = useMembers({ status: "expired", per_page: 1 }, canReadMembers);
 
   // Activity counts by status
-  const { data: draftActivities } = useActivities(isAdmin ? { status: "draft", per_page: 1 } : {});
-  const { data: publishedActivities } = useActivities(isAdmin ? { status: "published", per_page: 1 } : {});
-  const { data: archivedActivities } = useActivities(isAdmin ? { status: "archived", per_page: 1 } : {});
-  const { data: cancelledActivities } = useActivities(isAdmin ? { status: "cancelled", per_page: 1 } : {});
+  const { data: draftActivities } = useActivities({ status: "draft", per_page: 1 }, canReadActivities);
+  const { data: publishedActivities } = useActivities({ status: "published", per_page: 1 }, canReadActivities);
+  const { data: archivedActivities } = useActivities({ status: "archived", per_page: 1 }, canReadActivities);
+  const { data: cancelledActivities } = useActivities({ status: "cancelled", per_page: 1 }, canReadActivities);
 
-  const { data: regStats } = useRegistrationStats();
-  const { data: receiptStats } = useReceiptStats();
+  const { data: regStats } = useRegistrationStats(canReadRegistrations);
+  const { data: receiptStats } = useReceiptStats(canReadBilling);
 
   // Member: my registrations + receipts
   const { data: myRegistrations } = useMyRegistrations(
@@ -419,42 +429,54 @@ export default function DashboardPage() {
         <div className="space-y-3">
           {/* Status counters on top: 1×4 (md+), 2×2 (sm), 1×1 (mobile). */}
           <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
-            <CounterCard title={t("nav.members")} items={memberCounters} href="/members" />
-            <CounterCard title={t("receipts.title")} items={receiptCounters} href="/receipts" />
-            <CounterCard title={t("nav.activities")} items={activityCounters} href="/activities" />
-            <CounterCard title={t("dashboard.totalRegistrations")} items={registrationCounters} />
+            {canReadMembers && (
+              <CounterCard title={t("nav.members")} items={memberCounters} href="/members" />
+            )}
+            {canReadBilling && (
+              <CounterCard title={t("receipts.title")} items={receiptCounters} href="/receipts" />
+            )}
+            {canReadActivities && (
+              <CounterCard title={t("nav.activities")} items={activityCounters} href="/activities" />
+            )}
+            {canReadRegistrations && (
+              <CounterCard title={t("dashboard.totalRegistrations")} items={registrationCounters} />
+            )}
           </div>
 
           <div className="grid gap-3 lg:grid-cols-3">
             {/* Main (2/3): finance leads; chart grows so the KPI cards below
                 align with the bottom of the rail. */}
             <div className="lg:col-span-2 flex flex-col gap-3">
-              <FinanceGraphCard />
+              {/* The graph reads the annual summary — aggregates only, which is
+                  its own sensitivity class and its own key. */}
+              {canReadReports && <FinanceGraphCard />}
 
-              <div className="grid gap-3 grid-cols-2 sm:grid-cols-3">
-                <StatCard
-                  label={t("dashboard.pendingAmount")}
-                  value={formatCurrency(receiptStats?.pending_amount ?? 0)}
-                  href="/receipts?status=emitted"
-                />
-                <StatCard
-                  label={t("dashboard.paidThisMonth")}
-                  value={formatCurrency(receiptStats?.paid_this_month ?? 0)}
-                  href="/receipts?status=paid"
-                />
-                <StatCard
-                  label={t("dashboard.overdueAmount")}
-                  value={formatCurrency(receiptStats?.overdue_amount ?? 0)}
-                  href="/receipts?status=overdue"
-                />
-              </div>
+              {canReadBilling && (
+                <div className="grid gap-3 grid-cols-2 sm:grid-cols-3">
+                  <StatCard
+                    label={t("dashboard.pendingAmount")}
+                    value={formatCurrency(receiptStats?.pending_amount ?? 0)}
+                    href="/receipts?status=emitted"
+                  />
+                  <StatCard
+                    label={t("dashboard.paidThisMonth")}
+                    value={formatCurrency(receiptStats?.paid_this_month ?? 0)}
+                    href="/receipts?status=paid"
+                  />
+                  <StatCard
+                    label={t("dashboard.overdueAmount")}
+                    value={formatCurrency(receiptStats?.overdue_amount ?? 0)}
+                    href="/receipts?status=overdue"
+                  />
+                </div>
+              )}
             </div>
 
             {/* Rail (1/3): actionable today/this-week widgets. */}
             <div className="space-y-3">
-              <ReminderList />
-              <NextBillingRunCard />
-              <UpcomingActivitiesCard />
+              {canReadReminders && <ReminderList />}
+              {canReadBilling && <NextBillingRunCard />}
+              {canReadActivities && <UpcomingActivitiesCard />}
             </div>
           </div>
         </div>

@@ -18,6 +18,7 @@ import {
   useDeleteReminder,
 } from "../hooks/use-reminders";
 import type { Reminder } from "../services/reminders-api";
+import { usePermissions } from "@/features/auth/hooks/use-permissions";
 
 // Days from today, at local midnight. Negative = past.
 function daysUntil(due: string): number {
@@ -53,6 +54,8 @@ function DueBadge({ due }: { due: string }) {
 
 function ReminderRow({ reminder }: { reminder: Reminder }) {
   const t = useTranslations();
+  const { has } = usePermissions();
+  const canWrite = has("reminders.write");
   const update = useUpdateReminder();
   const remove = useDeleteReminder();
 
@@ -62,7 +65,7 @@ function ReminderRow({ reminder }: { reminder: Reminder }) {
         className="mt-0.5"
         aria-label={t("notes.markDone")}
         checked={reminder.is_done}
-        disabled={update.isPending}
+        disabled={!canWrite || update.isPending}
         onCheckedChange={() =>
           update.mutate({ id: reminder.id, data: { is_done: true } })
         }
@@ -75,12 +78,13 @@ function ReminderRow({ reminder }: { reminder: Reminder }) {
           {t("notes.note")}
         </Badge>
       )}
+      {canWrite && (
       <Button
         variant="ghost"
         size="icon"
         className="size-6 shrink-0 text-muted-foreground hover:text-destructive"
         aria-label={t("notes.delete")}
-        disabled={remove.isPending}
+        disabled={!canWrite || remove.isPending}
         onClick={() =>
           remove.mutate(reminder.id, {
             onSuccess: () => toast.success(t("notes.deletedToast")),
@@ -90,12 +94,15 @@ function ReminderRow({ reminder }: { reminder: Reminder }) {
       >
         <Trash2 className="size-3.5" />
       </Button>
+      )}
     </div>
   );
 }
 
 export function ReminderList() {
   const t = useTranslations();
+  const { has } = usePermissions();
+  const canWrite = has("reminders.write");
   const { data: reminders, isLoading } = useReminders(true);
   const create = useCreateReminder();
   const [content, setContent] = useState("");
@@ -124,26 +131,30 @@ export function ReminderList() {
         <CardTitle className="text-base">{t("notes.title")}</CardTitle>
       </CardHeader>
       <CardContent className="px-4 space-y-3">
-        <form onSubmit={submit} className="space-y-2">
-          <Input
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder={t("notes.addPlaceholder")}
-            maxLength={2000}
-          />
-          <div className="flex gap-2">
+        {/* The whole compose form, not just its button: `reminders.read` is
+            what puts this card on the dashboard, writing is a separate key. */}
+        {canWrite && (
+          <form onSubmit={submit} className="space-y-2">
             <Input
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              className="flex-1"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder={t("notes.addPlaceholder")}
+              maxLength={2000}
             />
-            <Button type="submit" size="sm" disabled={!content.trim() || create.isPending}>
-              <Plus className="size-4" />
-              {t("notes.add")}
-            </Button>
-          </div>
-        </form>
+            <div className="flex gap-2">
+              <Input
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="flex-1"
+              />
+              <Button type="submit" size="sm" disabled={!content.trim() || create.isPending}>
+                <Plus className="size-4" />
+                {t("notes.add")}
+              </Button>
+            </div>
+          </form>
+        )}
 
         {isLoading ? null : !reminders?.length ? (
           <p className="py-2 text-center text-sm text-muted-foreground">

@@ -38,6 +38,7 @@ import { SearchInput } from "@/components/entity/search-input";
 import { TableSkeleton } from "@/components/ui/skeletons";
 import { useSearchParam } from "@/hooks/use-url-state";
 import { useGroups, useCreateGroup } from "@/features/groups/hooks/use-groups";
+import { usePermissions } from "@/features/auth/hooks/use-permissions";
 
 const groupSchema = z.object({
   name: z.string().min(1).max(255),
@@ -51,6 +52,8 @@ type GroupFormValues = z.infer<typeof groupSchema>;
 
 export default function GroupsPage() {
   const t = useTranslations();
+  const { has } = usePermissions();
+  const canWrite = has("membership.write");
   const router = useRouter();
   const { data: groups, isLoading } = useGroups();
   const createMutation = useCreateGroup();
@@ -93,7 +96,8 @@ export default function GroupsPage() {
           <h1 className="text-2xl font-bold">{t("groups.title")}</h1>
           <PageInfo text={t("groups.info")} />
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
+        {canWrite && (
+          <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button size="sm">{t("groups.createGroup")}</Button>
           </DialogTrigger>
@@ -158,7 +162,8 @@ export default function GroupsPage() {
               </form>
             </Form>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        )}
       </div>
 
       <SearchInput

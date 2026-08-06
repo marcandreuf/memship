@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from app.core.authorization import require_super_admin
+from app.core.authorization import require_permission
 from app.core.encryption import decrypt_config, encrypt_config, mask_config
 from app.core.pagination import paginate
 from app.core.security.dependencies import get_current_user
@@ -37,7 +37,7 @@ def _mask_provider(provider: PaymentProvider) -> dict:
 @router.get("/active-methods")
 def list_active_methods(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.activities.read")),
 ):
     """Return the set of active payment provider types for member self-service.
 
@@ -54,7 +54,7 @@ def list_active_methods(
 
 @router.get("/types")
 def list_provider_types(
-    current_user: User = Depends(require_super_admin),
+    current_user: User = Depends(require_permission("settings.integrations.write")),
 ):
     """List available provider types with config schemas and availability status."""
     # Providers with real payment processing implemented
@@ -76,7 +76,7 @@ def list_providers(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_super_admin),
+    current_user: User = Depends(require_permission("settings.integrations.write")),
 ):
     """List all configured payment providers (config masked)."""
     query = db.query(PaymentProvider).order_by(PaymentProvider.id)
@@ -92,7 +92,7 @@ def list_providers(
 def get_provider(
     provider_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_super_admin),
+    current_user: User = Depends(require_permission("settings.integrations.write")),
 ):
     """Get provider detail (config masked)."""
     provider = db.query(PaymentProvider).filter(
@@ -108,7 +108,7 @@ def get_provider(
 def create_provider(
     data: PaymentProviderCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_super_admin),
+    current_user: User = Depends(require_permission("settings.integrations.write")),
 ):
     """Create a new payment provider. One provider per type enforced."""
     # Check one-per-type constraint
@@ -151,7 +151,7 @@ def update_provider(
     provider_id: int,
     data: PaymentProviderUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_super_admin),
+    current_user: User = Depends(require_permission("settings.integrations.write")),
 ):
     """Update a payment provider. Re-encrypts config if changed."""
     provider = db.query(PaymentProvider).filter(
@@ -192,7 +192,7 @@ def update_provider(
 def delete_provider(
     provider_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_super_admin),
+    current_user: User = Depends(require_permission("settings.integrations.write")),
 ):
     """Delete a payment provider. Rejects if it has linked receipts."""
     provider = db.query(PaymentProvider).filter(
@@ -220,7 +220,7 @@ def delete_provider(
 def toggle_provider(
     provider_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_super_admin),
+    current_user: User = Depends(require_permission("settings.integrations.write")),
 ):
     """Toggle provider status between active and disabled."""
     provider = db.query(PaymentProvider).filter(
@@ -243,7 +243,7 @@ def toggle_provider(
 def test_provider(
     provider_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_super_admin),
+    current_user: User = Depends(require_permission("settings.integrations.write")),
 ):
     """Test provider configuration (local validation only, no external API calls)."""
     provider = db.query(PaymentProvider).filter(

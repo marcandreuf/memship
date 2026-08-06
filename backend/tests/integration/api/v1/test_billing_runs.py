@@ -31,7 +31,7 @@ def _create_user(db, role="admin", suffix="brun"):
 
 
 def _auth_cookie(user):
-    return {"access_token": create_access_token(user.id, user.role)}
+    return {"access_token": create_access_token(user.id)}
 
 
 def _ensure_org_settings(db, features=None):

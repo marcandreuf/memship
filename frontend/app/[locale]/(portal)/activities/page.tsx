@@ -24,6 +24,7 @@ import { SearchInput } from "@/components/entity/search-input";
 import { Pagination } from "@/components/entity/pagination";
 import { ACTIVITY_STATUS_VARIANTS, REGISTRATION_STATUS_VARIANTS } from "@/lib/status-variants";
 import { useAuth } from "@/features/auth/hooks/use-auth";
+import { usePermissions } from "@/features/auth/hooks/use-permissions";
 import { TableSkeleton, CardGridSkeleton } from "@/components/ui/skeletons";
 import { useSearchParam, usePageParam, useStatusParam } from "@/hooks/use-url-state";
 import { useActivities } from "@/features/activities/hooks/use-activities";
@@ -60,7 +61,12 @@ export default function ActivitiesPage() {
   const t = useTranslations();
   const router = useRouter();
   const { user } = useAuth();
-  const isAdmin = user?.role === "admin" || user?.role === "super_admin";
+  // The page has two shapes. Which one you get is `activities.read` — the
+  // staff catalog including drafts — not "are you staff at all": a treasurer
+  // holds neither key and must land on the member catalog like anyone else.
+  const { has } = usePermissions();
+  const isAdmin = has("activities.read");
+  const canCreate = has("activities.write");
 
   const [page, setPage] = usePageParam();
   const [search, setSearch] = useSearchParam();
@@ -81,7 +87,7 @@ export default function ActivitiesPage() {
           <h1 className="text-2xl font-bold">{t("activities.title")}</h1>
           <PageInfo text={t("activities.info")} />
         </div>
-        {isAdmin && (
+        {canCreate && (
           <Link href="/activities/new">
             <Button size="sm">{t("activities.createActivity")}</Button>
           </Link>

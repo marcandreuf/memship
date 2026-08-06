@@ -6,7 +6,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
-from app.core.authorization import require_admin
+from app.core.authorization import require_permission
 from app.core.config import settings
 from app.core.db_utils import get_or_404
 from app.db.session import get_db
@@ -23,7 +23,7 @@ async def upload_cover_image(
     activity_id: int,
     file: UploadFile,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("activities.write")),
 ):
     """Upload or replace the cover image for an activity."""
     activity = get_or_404(db, Activity, activity_id)
@@ -78,7 +78,7 @@ async def upload_cover_image(
 def delete_cover_image(
     activity_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("activities.write")),
 ):
     """Delete the cover image for an activity."""
     activity = get_or_404(db, Activity, activity_id)

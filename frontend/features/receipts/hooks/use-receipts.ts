@@ -23,17 +23,19 @@ import {
 } from "../services/receipts-api";
 import type { RedsysMethod, RedsysLocale } from "../services/receipts-api";
 
-export function useReceipts(params?: URLSearchParams) {
+export function useReceipts(params?: URLSearchParams, enabled = true) {
   return useQuery({
     queryKey: ["receipts", params?.toString()],
     queryFn: () => getReceipts(params),
+    enabled,
   });
 }
 
-export function useReceiptStats() {
+export function useReceiptStats(enabled = true) {
   return useQuery({
     queryKey: ["receipt-stats"],
     queryFn: getReceiptStats,
+    enabled,
   });
 }
 

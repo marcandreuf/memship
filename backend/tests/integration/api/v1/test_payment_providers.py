@@ -26,7 +26,7 @@ def _create_user(db, role="super_admin", suffix="pp"):
 
 
 def _auth_cookie(user):
-    return {"access_token": create_access_token(user.id, user.role)}
+    return {"access_token": create_access_token(user.id)}
 
 
 def _create_provider(db, provider_type="stripe", status="disabled", config=None):

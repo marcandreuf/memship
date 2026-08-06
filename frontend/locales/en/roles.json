@@ -1,0 +1,264 @@
+{
+  "roles": {
+    "tab": "Roles",
+    "enabled": "Custom roles",
+    "enabledDesc": "Lets you define tailored roles and assign them to accounts. Permissions stay in force even when this is off.",
+    "title": "Roles and permissions",
+    "description": "Define what each kind of account can do. Only the super admin authors roles; administrators assign them.",
+    "create": "Create role",
+    "edit": "Edit role",
+    "name": "Name",
+    "roleDescription": "Description",
+    "permissions": "Permissions",
+    "system": "System",
+    "assignedUsers": "{count} accounts",
+    "confirmDelete": "Delete this role? It must be unassigned first.",
+    "inUse": "Cannot delete: {count} accounts still hold it.",
+    "slugExists": "A role with that name already exists ({name}).",
+    "locked": "This is a system role: it cannot be renamed or deleted.",
+    "reserved": "Reserved to the super admin",
+    "notAssignable": "You cannot assign a role holding more permissions than you do.",
+    "superAdminOnly": "Only a super admin can assign this role.",
+    "memberPinned": "Every account holds the Member role permanently.",
+    "rolesRequired": "At least one role must be assigned.",
+    "lastSuperAdmin": "The last super admin cannot be removed.",
+    "users": "Accounts",
+    "usersDescription": "Assign roles to existing accounts.",
+    "active": "Active",
+    "inactive": "Inactive",
+    "search": "Search by email",
+    "administrative": "Administration",
+    "selfService": "Personal area",
+    "domains": {
+      "members": "Members",
+      "membership": "Fees and groups",
+      "activities": "Activities",
+      "registrations": "Registrations",
+      "billing": "Billing",
+      "communications": "Communications",
+      "bookings": "Bookings",
+      "reports": "Reports",
+      "reminders": "Notes and reminders",
+      "settings": "Settings",
+      "users": "Accounts",
+      "roles": "Roles",
+      "self_profile": "Own profile",
+      "self_activities": "Catalogue",
+      "self_registrations": "Own registrations",
+      "self_billing": "Own receipts",
+      "self_card": "Own card",
+      "self_bookings": "Own bookings",
+      "self_communications": "Own notices"
+    }
+  },
+  "permissions": {
+    "members": {
+      "read": {
+        "label": "View members",
+        "description": "Read member records, their contact details, and export them."
+      },
+      "write": {
+        "label": "Edit members",
+        "description": "Create, edit, suspend or cancel members and their data."
+      },
+      "approve": {
+        "label": "Approve registrations",
+        "description": "Accept or reject pending membership requests."
+      }
+    },
+    "membership": {
+      "read": {
+        "label": "View types and groups",
+        "description": "Read membership types and club groups."
+      },
+      "write": {
+        "label": "Edit types and groups",
+        "description": "Create and edit membership types and groups."
+      }
+    },
+    "activities": {
+      "read": {
+        "label": "View activities",
+        "description": "Read every activity, including drafts and archived ones."
+      },
+      "write": {
+        "label": "Edit activities",
+        "description": "Create and edit activities, prices, modalities and consents."
+      },
+      "publish": {
+        "label": "Publish activities",
+        "description": "Publish, archive or cancel an activity. Without it, only drafts can be prepared."
+      }
+    },
+    "registrations": {
+      "read": {
+        "label": "View registrations",
+        "description": "Read and export any member's or activity's registrations."
+      },
+      "write": {
+        "label": "Manage registrations",
+        "description": "Change a registration's status, cancel it, or promote from the waitlist."
+      }
+    },
+    "billing": {
+      "read": {
+        "label": "View billing",
+        "description": "Read receipts, concepts, mandates and remittances, and download their PDFs."
+      },
+      "write": {
+        "label": "Edit billing",
+        "description": "Emit, settle, void or return receipts, and manage mandates and remittances."
+      },
+      "run": {
+        "label": "Run bulk billing",
+        "description": "Generate fees across the whole club at once. An exceptional action."
+      }
+    },
+    "communications": {
+      "read": {
+        "label": "View communications",
+        "description": "Read announcements, their audience and their stats."
+      },
+      "write": {
+        "label": "Draft communications",
+        "description": "Create and edit announcements without sending them."
+      },
+      "send": {
+        "label": "Send communications",
+        "description": "Send an announcement to its audience. Cannot be undone."
+      }
+    },
+    "bookings": {
+      "read": {
+        "label": "View bookings",
+        "description": "Read spaces, zones, slots and all bookings."
+      },
+      "write": {
+        "label": "Manage bookings",
+        "description": "Create and edit spaces and slots, and book or cancel on anyone's behalf."
+      }
+    },
+    "reports": {
+      "read": {
+        "label": "View reports",
+        "description": "Read the club's annual totals. Aggregates only — it opens no individual record."
+      }
+    },
+    "reminders": {
+      "read": {
+        "label": "View notes and reminders",
+        "description": "Read internal notes and reminders."
+      },
+      "write": {
+        "label": "Edit notes and reminders",
+        "description": "Create, edit and complete internal notes and reminders."
+      }
+    },
+    "settings": {
+      "read": {
+        "label": "View settings",
+        "description": "Read the organisation's details and configuration."
+      },
+      "write": {
+        "label": "Edit settings",
+        "description": "Change club details, logo, address and which features are enabled."
+      },
+      "custom_fields": {
+        "write": {
+          "label": "Edit profile fields",
+          "description": "Define which custom fields exist on member records."
+        }
+      },
+      "integrations": {
+        "write": {
+          "label": "Edit integrations",
+          "description": "Configure SSO, outgoing mail and payment providers. Reserved to the super admin because it exposes credentials."
+        }
+      }
+    },
+    "users": {
+      "read": {
+        "label": "View accounts",
+        "description": "Read user accounts and the roles assigned to them."
+      },
+      "write": {
+        "label": "Manage accounts",
+        "description": "Assign or remove roles and activate or deactivate accounts."
+      }
+    },
+    "roles": {
+      "read": {
+        "label": "View roles",
+        "description": "Read the defined roles and which permissions each one holds."
+      },
+      "write": {
+        "label": "Author roles",
+        "description": "Create, edit and delete roles. Reserved to the super admin: whoever authors roles can grant any permission."
+      }
+    },
+    "self": {
+      "profile": {
+        "read": {
+          "label": "View own profile",
+          "description": "Read one's own record and contact details."
+        },
+        "write": {
+          "label": "Edit own profile",
+          "description": "Change one's own details and profile photo."
+        }
+      },
+      "activities": {
+        "read": {
+          "label": "View the catalogue",
+          "description": "Read published activities and their prices in order to register."
+        }
+      },
+      "registrations": {
+        "read": {
+          "label": "View own registrations",
+          "description": "Read which activities one is registered for, and their documents."
+        },
+        "write": {
+          "label": "Register for activities",
+          "description": "Sign up for an activity, cancel one's own registration and upload documents."
+        }
+      },
+      "billing": {
+        "read": {
+          "label": "View own receipts",
+          "description": "Read and download one's own receipts and bank mandate."
+        },
+        "write": {
+          "label": "Pay own receipts",
+          "description": "Change one's own payment method and pay a receipt online."
+        }
+      },
+      "card": {
+        "read": {
+          "label": "View own card",
+          "description": "Read and download one's own membership card."
+        }
+      },
+      "bookings": {
+        "read": {
+          "label": "View own bookings",
+          "description": "Read available spaces and one's own bookings."
+        },
+        "write": {
+          "label": "Make bookings",
+          "description": "Book a space and cancel one's own bookings."
+        }
+      },
+      "communications": {
+        "read": {
+          "label": "View own notifications",
+          "description": "Read one's notifications and received announcements."
+        },
+        "write": {
+          "label": "Mark notifications read",
+          "description": "Mark one's own notifications as read."
+        }
+      }
+    }
+  }
+}

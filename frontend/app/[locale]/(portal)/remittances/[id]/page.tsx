@@ -19,6 +19,7 @@ import { DetailSection } from "@/components/entity/detail-section";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DetailSkeleton } from "@/components/ui/skeletons";
 import { Textarea } from "@/components/ui/textarea";
+import { usePermissions } from "@/features/auth/hooks/use-permissions";
 import { useFormatters } from "@/hooks/use-formatters";
 import { toast } from "sonner";
 import {
@@ -50,6 +51,8 @@ const RECEIPT_STATUS_VARIANTS: Record<string, "default" | "secondary" | "destruc
 
 export default function RemittanceDetailPage() {
   const t = useTranslations();
+  const { has } = usePermissions();
+  const canWrite = has("billing.write");
   const { id } = useParams<{ id: string }>();
   const { data: remittance, isLoading } = useRemittance(Number(id));
   const [confirmDialog, confirmAction] = useConfirmDialog();
@@ -68,12 +71,12 @@ export default function RemittanceDetailPage() {
 
   const statusLabel = t(`remittances.status${remittance.status.charAt(0).toUpperCase() + remittance.status.slice(1)}`);
 
-  const canGenerateXml = ["draft", "ready"].includes(remittance.status);
+  const canGenerateXml = canWrite && ["draft", "ready"].includes(remittance.status);
   const canDownloadXml = remittance.sepa_file_path !== null;
-  const canSubmit = remittance.status === "ready";
-  const canImportReturns = ["submitted", "processed"].includes(remittance.status);
-  const canClose = remittance.status === "processed";
-  const canCancel = ["draft", "ready"].includes(remittance.status);
+  const canSubmit = canWrite && remittance.status === "ready";
+  const canImportReturns = canWrite && ["submitted", "processed"].includes(remittance.status);
+  const canClose = canWrite && remittance.status === "processed";
+  const canCancel = canWrite && ["draft", "ready"].includes(remittance.status);
   const isTerminal = ["closed", "cancelled"].includes(remittance.status);
 
   async function handleGenerateXml() {

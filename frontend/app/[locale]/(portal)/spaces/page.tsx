@@ -24,9 +24,12 @@ import {
 import { TabContentSkeleton } from "@/components/ui/skeletons";
 import { useSpaces } from "@/features/bookings/hooks/use-bookings";
 import { SpaceForm } from "@/features/bookings/components/space-form";
+import { usePermissions } from "@/features/auth/hooks/use-permissions";
 
 export default function SpacesPage() {
   const t = useTranslations();
+  const { has } = usePermissions();
+  const canWrite = has("bookings.write");
   const { data: spaces = [], isLoading } = useSpaces();
   const [open, setOpen] = useState(false);
 
@@ -34,17 +37,19 @@ export default function SpacesPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">{t("bookings.spaces.title")}</h1>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm">{t("bookings.spaces.create")}</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{t("bookings.spaces.create")}</DialogTitle>
-            </DialogHeader>
-            <SpaceForm space={null} onSuccess={() => setOpen(false)} />
-          </DialogContent>
-        </Dialog>
+        {canWrite && (
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm">{t("bookings.spaces.create")}</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{t("bookings.spaces.create")}</DialogTitle>
+              </DialogHeader>
+              <SpaceForm space={null} onSuccess={() => setOpen(false)} />
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       <Card>

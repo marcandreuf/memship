@@ -25,10 +25,13 @@ import { ExportButton } from "@/components/entity/export-button";
 import { MEMBER_STATUS_VARIANTS } from "@/lib/status-variants";
 import { TableSkeleton } from "@/components/ui/skeletons";
 import { useSearchParam, usePageParam, useStatusParam } from "@/hooks/use-url-state";
+import { usePermissions } from "@/features/auth/hooks/use-permissions";
 import { useMembers } from "../hooks/use-members";
 
 export function MemberList() {
   const t = useTranslations();
+  const { has } = usePermissions();
+  const canWrite = has("members.write");
   const router = useRouter();
   const [page, setPage] = usePageParam();
   const [search, setSearch] = useSearchParam();
@@ -50,9 +53,11 @@ export function MemberList() {
             path="/api/members/export.csv"
             params={{ search: search || undefined, status: statusFilter || undefined }}
           />
-          <Link href="/members/new">
-            <Button size="sm">{t("members.createMember")}</Button>
-          </Link>
+          {canWrite && (
+            <Link href="/members/new">
+              <Button size="sm">{t("members.createMember")}</Button>
+            </Link>
+          )}
         </div>
       </div>
 

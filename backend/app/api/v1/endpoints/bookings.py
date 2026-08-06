@@ -11,7 +11,7 @@ from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session, joinedload
 
-from app.core.authorization import require_admin
+from app.core.authorization import require_permission, user_has
 from app.core.pagination import paginate
 from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
@@ -80,7 +80,7 @@ def _slot_error_422(exc: Exception) -> HTTPException:
 @router.get("", response_model=list[SpaceRead])
 def list_spaces_admin(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("bookings.read")),
 ):
     _require_bookings_enabled(db)
     return service.list_spaces(db)
@@ -90,7 +90,7 @@ def list_spaces_admin(
 def create_space(
     data: SpaceCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("bookings.write")),
 ):
     _require_bookings_enabled(db)
     space = service.create_space(db, data)
@@ -103,7 +103,7 @@ def create_space(
 def get_space_admin(
     space_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("bookings.read")),
 ):
     _require_bookings_enabled(db)
     return _load_space_or_404(db, space_id)
@@ -114,7 +114,7 @@ def update_space(
     space_id: int,
     data: SpaceUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("bookings.write")),
 ):
     _require_bookings_enabled(db)
     space = _load_space_or_404(db, space_id)
@@ -132,7 +132,7 @@ def delete_space(
     space_id: int,
     force: bool = False,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("bookings.write")),
 ):
     """Destructive delete. 409 with the affected-member count when active future
     bookings exist and force is absent — the UI confirms, then retries with
@@ -167,7 +167,7 @@ def _slot_reads(slots: list["service.SpaceSlot"]) -> list[SpaceSlotRead]:
 def list_slots(
     space_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("bookings.read")),
 ):
     _require_bookings_enabled(db)
     _load_space_or_404(db, space_id)
@@ -183,7 +183,7 @@ def create_slot(
     space_id: int,
     data: SpaceSlotCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("bookings.write")),
 ):
     """Create one dated slot — or the whole materialized series when a repeat
     rule is given. Returns every created slot."""
@@ -206,7 +206,7 @@ def update_slot(
     data: SpaceSlotUpdate,
     apply_to: str = Query(default="one", pattern="^(one|upcoming)$"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("bookings.write")),
 ):
     _require_bookings_enabled(db)
     space = _load_space_or_404(db, space_id)
@@ -231,7 +231,7 @@ def delete_slot(
     slot_id: int,
     force: bool = False,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("bookings.write")),
 ):
     _require_bookings_enabled(db)
     _load_space_or_404(db, space_id)
@@ -259,7 +259,7 @@ def list_space_bookings(
     page: int = 1,
     per_page: int = 20,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("bookings.read")),
 ):
     _require_bookings_enabled(db)
     _load_space_or_404(db, space_id)
@@ -294,7 +294,7 @@ def list_space_bookings(
 @member_router.get("/spaces-available", response_model=list[SpaceRead])
 def list_spaces_member(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.bookings.read")),
 ):
     """Active spaces, for the member's space picker."""
     _require_bookings_enabled(db)
@@ -308,7 +308,7 @@ def get_availability(
     space_id: int,
     week_start: date,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.bookings.read")),
 ):
     _require_bookings_enabled(db)
     space = service.get_space(db, space_id)
@@ -325,7 +325,7 @@ def get_availability(
 def create_booking(
     data: BookingCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.bookings.write")),
 ):
     _require_bookings_enabled(db)
     member = _current_member(db, current_user)
@@ -356,7 +356,7 @@ def create_booking(
 def get_my_bookings(
     scope: str = "upcoming",
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.bookings.read")),
 ):
     _require_bookings_enabled(db)
     member = _current_member(db, current_user)
@@ -370,14 +370,14 @@ def get_my_bookings(
 def cancel_booking(
     booking_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.bookings.write")),
 ):
     _require_bookings_enabled(db)
     booking = service.get_booking(db, booking_id)
     if booking is None:
         raise HTTPException(status_code=404, detail="Booking not found")
 
-    is_admin = current_user.role in ("super_admin", "admin", "restricted")
+    is_admin = user_has(current_user, "bookings.write")
     if not is_admin:
         member = _current_member(db, current_user)
         if booking.member_id != member.id:

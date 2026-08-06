@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session, joinedload
 
-from app.core.authorization import require_admin
+from app.core.authorization import require_permission, user_has
 from app.core.config import settings
 from app.core.db_utils import get_or_404
 from app.core.email import (
@@ -74,7 +74,7 @@ def list_members(
     status_filter: str | None = Query(None, alias="status"),
     group_id: int | None = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("members.read")),
 ):
     query = build_members_query(
         db, search=search, status=status_filter, group_id=group_id
@@ -126,7 +126,7 @@ def export_members_csv(
     status_filter: str | None = Query(None, alias="status"),
     group_id: int | None = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("members.read")),
 ):
     """Export members as CSV, honouring the same filters as the list endpoint."""
     query = build_members_query(
@@ -140,7 +140,7 @@ def export_members_csv(
 def get_member(
     member_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.profile.read")),
 ):
     member = (
         db.query(Member)
@@ -152,7 +152,7 @@ def get_member(
         raise HTTPException(status_code=404, detail="Member not found")
 
     # Members can only view themselves
-    if current_user.role == "member":
+    if not user_has(current_user, "members.read"):
         own_member = (
             db.query(Member).filter(Member.user_id == current_user.id).first()
         )
@@ -166,7 +166,7 @@ def get_member(
 def create_member_endpoint(
     data: MemberCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("members.write")),
 ):
     member = create_member(
         db,
@@ -195,7 +195,7 @@ def create_member_endpoint(
 @router.post("/assign-numbers", response_model=AssignNumbersResponse)
 def assign_numbers(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("members.write")),
 ):
     """Assign a member number to every member without one, in id order."""
     assigned = assign_missing_member_numbers(db)
@@ -208,7 +208,7 @@ def update_member(
     member_id: int,
     data: MemberUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.profile.write")),
 ):
     member = (
         db.query(Member)
@@ -220,7 +220,7 @@ def update_member(
         raise HTTPException(status_code=404, detail="Member not found")
 
     # Members can only edit themselves (limited fields)
-    if current_user.role == "member":
+    if not user_has(current_user, "members.write"):
         own_member = (
             db.query(Member).filter(Member.user_id == current_user.id).first()
         )
@@ -255,7 +255,7 @@ def change_status(
     member_id: int,
     data: MemberStatusChange,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("members.write")),
 ):
     member = (
         db.query(Member)
@@ -297,7 +297,7 @@ def _load_member_for_review(db: Session, member_id: int) -> Member:
 def approve_member_registration(
     member_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("members.approve")),
 ):
     member = _load_member_for_review(db, member_id)
 
@@ -325,7 +325,7 @@ def reject_member_registration(
     member_id: int,
     data: MemberRegistrationRejection,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("members.approve")),
 ):
     member = _load_member_for_review(db, member_id)
     email = member.person.email if member.person else None
@@ -361,7 +361,7 @@ class ProfileResponse(BaseModel):
 @router.get("/me/profile", response_model=ProfileResponse)
 def get_my_profile(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.profile.read")),
 ):
     """Get the current member's editable profile fields."""
     person = current_user.person
@@ -386,7 +386,7 @@ def get_my_profile(
 def update_my_profile(
     data: ProfileUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.profile.write")),
 ):
     """Update the current member's profile (gender, phone)."""
     person = current_user.person
@@ -521,7 +521,7 @@ def _is_valid_iban_format(iban: str) -> bool:
 @router.get("/me/payment-method", response_model=PaymentMethodResponse)
 def get_my_payment_method(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.billing.read")),
 ):
     """Get the current member's payment method and mandate info."""
     return _build_payment_response(current_user.person, db)
@@ -531,7 +531,7 @@ def get_my_payment_method(
 def update_my_payment_method(
     data: PaymentMethodUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.billing.write")),
 ):
     """Update the current member's payment method."""
     person = current_user.person

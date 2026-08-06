@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from app.core.authorization import require_admin
+from app.core.authorization import require_permission, user_has
 from app.core.db_utils import get_or_404
 from app.core.pagination import paginate
 from app.core.security.dependencies import get_current_user
@@ -122,12 +122,12 @@ def list_activities(
     search: str | None = None,
     status_filter: str | None = Query(None, alias="status"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.activities.read")),
 ):
     query = db.query(Activity).filter(Activity.is_active.is_(True))
 
     # Members can only see published activities
-    if current_user.role == "member":
+    if not user_has(current_user, "activities.read"):
         query = query.filter(Activity.status == "published")
     elif status_filter:
         query = query.filter(Activity.status == status_filter)
@@ -149,14 +149,14 @@ def list_activities(
 def get_activity(
     activity_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.activities.read")),
 ):
     activity = db.query(Activity).filter(Activity.id == activity_id).first()
     if not activity:
         raise HTTPException(status_code=404, detail="Activity not found")
 
     # Members can only see published activities
-    if current_user.role == "member" and activity.status != "published":
+    if not user_has(current_user, "activities.read") and activity.status != "published":
         raise HTTPException(status_code=404, detail="Activity not found")
 
     return _to_response(activity)
@@ -166,7 +166,7 @@ def get_activity(
 def create_activity_endpoint(
     data: ActivityCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("activities.write")),
 ):
     activity = create_activity(db, data, current_user.id)
     db.commit()
@@ -179,7 +179,7 @@ def update_activity_endpoint(
     activity_id: int,
     data: ActivityUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("activities.write")),
 ):
     activity = get_or_404(db, Activity, activity_id)
     activity = update_activity(db, activity, data)
@@ -192,7 +192,7 @@ def update_activity_endpoint(
 def delete_activity(
     activity_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("activities.write")),
 ):
     activity = get_or_404(db, Activity, activity_id)
     if activity.status != "draft":
@@ -208,7 +208,7 @@ def delete_activity(
 def publish_activity_endpoint(
     activity_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("activities.publish")),
 ):
     activity = get_or_404(db, Activity, activity_id)
     activity = publish_activity(db, activity)
@@ -221,7 +221,7 @@ def publish_activity_endpoint(
 def archive_activity_endpoint(
     activity_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("activities.publish")),
 ):
     activity = get_or_404(db, Activity, activity_id)
     activity = archive_activity(db, activity)
@@ -234,7 +234,7 @@ def archive_activity_endpoint(
 def cancel_activity_endpoint(
     activity_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("activities.publish")),
 ):
     activity = get_or_404(db, Activity, activity_id)
     activity = cancel_activity(db, activity)

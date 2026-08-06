@@ -27,6 +27,7 @@ import {
   useConsents, useCreateConsent, useUpdateConsent, useDeleteConsent,
 } from "../hooks/use-activities";
 import type { ActivityConsentData } from "../services/activities-api";
+import { usePermissions } from "@/features/auth/hooks/use-permissions";
 
 const consentSchema = z.object({
   title: z.string().min(1).max(255),
@@ -42,6 +43,8 @@ interface ConsentsTabProps {
 
 export function ConsentsTab({ activityId }: ConsentsTabProps) {
   const t = useTranslations();
+  const { has } = usePermissions();
+  const canWrite = has("activities.write");
   const { data: consents = [], isLoading } = useConsents(activityId);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<ActivityConsentData | null>(null);
@@ -51,7 +54,7 @@ export function ConsentsTab({ activityId }: ConsentsTabProps) {
   return (
     <div className="space-y-4 table-compact">
       <div className="flex justify-end">
-        <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setEditing(null); }}>
+        {canWrite && <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setEditing(null); }}>
           <DialogTrigger asChild>
             <Button variant="outline" size="sm" onClick={() => setEditing(null)}>
               {t("activities.consents.create")}
@@ -69,7 +72,7 @@ export function ConsentsTab({ activityId }: ConsentsTabProps) {
               onSuccess={() => { setOpen(false); setEditing(null); }}
             />
           </DialogContent>
-        </Dialog>
+        </Dialog>}
       </div>
 
       {!consents.length ? (
@@ -168,6 +171,8 @@ function ConsentRow({
   onEdit: () => void;
 }) {
   const t = useTranslations();
+  const { has } = usePermissions();
+  const canWrite = has("activities.write");
   const deleteMutation = useDeleteConsent(activityId);
   const [confirmDialog, confirmAction] = useConfirmDialog();
 
@@ -183,6 +188,7 @@ function ConsentRow({
       <TableCell>
         <div className="flex gap-2">
           {confirmDialog}
+          {canWrite && (<>
           <Button variant="outline" size="sm" onClick={onEdit}>{t("common.edit")}</Button>
           <Button
             variant="outline" size="sm"
@@ -203,6 +209,7 @@ function ConsentRow({
           >
             {t("common.delete")}
           </Button>
+          </>)}
         </div>
       </TableCell>
     </TableRow>

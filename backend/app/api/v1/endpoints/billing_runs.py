@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from app.core.authorization import require_admin
+from app.core.authorization import require_permission
 from app.core.pagination import paginate
 from app.db.session import get_db
 from app.domains.auth.models import User
@@ -21,7 +21,7 @@ router = APIRouter(prefix="/billing-runs", tags=["billing-runs"])
 def run_now(
     data: RunNowRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("billing.run")),
 ):
     """Manually trigger recurring billing now.
 
@@ -46,7 +46,7 @@ def run_now(
 @router.get("")
 def list_billing_runs(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("billing.read")),
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
     frequency: str | None = Query(None),
@@ -71,7 +71,7 @@ def list_billing_runs(
 def get_billing_run(
     run_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("billing.read")),
 ):
     """Single run detail, including the per-member error list."""
     run = db.query(BillingRun).filter(BillingRun.id == run_id).first()

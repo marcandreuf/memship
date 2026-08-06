@@ -5,7 +5,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from app.core.authorization import require_admin
+from app.core.authorization import require_permission
 from app.core.pagination import paginate
 from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
@@ -38,7 +38,7 @@ me_router = APIRouter(prefix="/me", tags=["communications"])
 def create_announcement(
     data: AnnouncementCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("communications.write")),
 ):
     """Create a draft announcement."""
     ann = service.create_announcement(db, data, current_user)
@@ -49,7 +49,7 @@ def create_announcement(
 @router.get("")
 def list_announcements(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("communications.read")),
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
 ):
@@ -65,7 +65,7 @@ def list_announcements(
 def get_announcement(
     announcement_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("communications.read")),
 ):
     ann = service.get_announcement(db, announcement_id)
     if ann is None:
@@ -78,7 +78,7 @@ def update_announcement(
     announcement_id: int,
     data: AnnouncementUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("communications.write")),
 ):
     """Edit a draft. 409 if already sent, 422 if the target is inconsistent."""
     try:
@@ -100,7 +100,7 @@ def update_announcement(
 def send_announcement(
     announcement_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("communications.send")),
 ):
     """Resolve the audience, deliver in-app notifications, enqueue email, flip to sent."""
     try:
@@ -135,7 +135,7 @@ def send_announcement(
 def audience_preview(
     announcement_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("communications.read")),
 ):
     """Audience size for the announcement's current target (compose preview)."""
     ann = service.get_announcement(db, announcement_id)
@@ -149,7 +149,7 @@ def audience_preview(
 def list_recipients(
     announcement_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("communications.read")),
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
 ):
@@ -176,7 +176,7 @@ def list_recipients(
 def recipient_stats(
     announcement_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("communications.read")),
 ):
     """Aggregate delivery stats (recipients / emailed / seen) for the sent view."""
     ann = service.get_announcement(db, announcement_id)
@@ -191,7 +191,7 @@ def recipient_stats(
 @me_router.get("/announcements")
 def my_announcements(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.communications.read")),
 ):
     """Announcements the current user received, newest first."""
     items = service.member_announcements(db, current_user)
@@ -201,7 +201,7 @@ def my_announcements(
 @me_router.get("/notifications")
 def my_notifications(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.communications.read")),
 ):
     items = service.list_notifications(db, current_user)
     return [NotificationResponse.model_validate(n).model_dump() for n in items]
@@ -210,7 +210,7 @@ def my_notifications(
 @me_router.get("/notifications/unread-count")
 def my_unread_count(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.communications.read")),
 ):
     return {"count": service.unread_count(db, current_user)}
 
@@ -219,7 +219,7 @@ def my_unread_count(
 def mark_notifications_read(
     data: MarkReadRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.communications.write")),
 ):
     updated = service.mark_read(db, current_user, ids=data.ids, all_=data.all)
     db.commit()

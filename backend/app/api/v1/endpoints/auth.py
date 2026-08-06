@@ -14,6 +14,7 @@ from app.core.email import (
     send_verification_email,
 )
 from app.core.security.dependencies import get_current_user
+from app.core.authorization import require_permission, resolve_permissions
 from app.core.security.jwt import create_access_token
 from app.core.security.oauth import get_provider, provider_redirect_uri
 from app.db.session import get_db
@@ -24,6 +25,7 @@ from app.domains.auth.schemas import (
     PasswordReset,
     PasswordResetRequest,
     RegisterRequest,
+    RoleSummary,
     RegisterResponse,
     ResendVerificationRequest,
     SsoProvidersResponse,
@@ -56,7 +58,7 @@ SESSION_MAX_AGE = 60 * 30  # 30 minutes, matching ACCESS_TOKEN_EXPIRE_MINUTES
 def _set_session_cookie(response: Response, user: User) -> None:
     response.set_cookie(
         key="access_token",
-        value=create_access_token(user.id, user.role),
+        value=create_access_token(user.id),
         httponly=True,
         secure=False,  # TODO: set True in production
         samesite="lax",
@@ -80,7 +82,7 @@ def login(data: LoginRequest, response: Response, db: Session = Depends(get_db))
             detail="Account is locked",
         )
 
-    token = create_access_token(user.id, user.role)
+    token = create_access_token(user.id)
     response.set_cookie(
         key="access_token",
         value=token,
@@ -229,12 +231,15 @@ def password_reset_confirm(data: PasswordReset, db: Session = Depends(get_db)):
 
 
 @router.get("/me", response_model=UserResponse)
-def get_me(current_user: User = Depends(get_current_user)):
+def get_me(current_user: User = Depends(require_permission("self.profile.read"))):
     member = current_user.person.member
     return UserResponse(
         id=current_user.id,
         email=current_user.email,
-        role=current_user.role,
+        roles=[
+            RoleSummary(id=r.id, slug=r.slug, name=r.name) for r in current_user.roles
+        ],
+        permissions=sorted(resolve_permissions(current_user)),
         is_active=current_user.is_active,
         person_id=current_user.person_id,
         first_name=current_user.person.first_name,

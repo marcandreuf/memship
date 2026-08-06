@@ -11,11 +11,11 @@ from app.domains.custom_fields.service import (
     can_write,
     validate_value,
 )
+from app.core.permissions import ALL_KEYS, MEMBER_SEED_KEYS
 from app.domains.shared.enums import (
     CustomFieldAdminAccess,
     CustomFieldMemberAccess,
     CustomFieldType,
-    UserRole,
 )
 
 
@@ -112,54 +112,57 @@ class TestValidateValue:
         assert exc.value.key == "licence"
 
 
+SCHEMA_EDITOR = frozenset(ALL_KEYS)
+STAFF = frozenset({"members.read", "members.write"} | MEMBER_SEED_KEYS)
+MEMBER = frozenset(MEMBER_SEED_KEYS)
+
+
 class TestAccessMatrix:
-    """Super admin always writes; admins read but write only when allowed;
-    members see and edit only their own record, per member_access."""
+    """A schema editor always writes; staff read but write only when allowed;
+    a self-service account sees and edits only its own record, per member_access."""
 
     @pytest.mark.parametrize("member_access", list(CustomFieldMemberAccess))
     @pytest.mark.parametrize("admin_access", list(CustomFieldAdminAccess))
-    def test_super_admin_always_reads_and_writes(self, member_access, admin_access):
+    def test_schema_editor_always_reads_and_writes(self, member_access, admin_access):
         definition = make_definition(
             member_access=member_access, admin_access=admin_access
         )
-        assert can_read(definition, role=UserRole.SUPER_ADMIN, is_own=False)
-        assert can_write(definition, role=UserRole.SUPER_ADMIN, is_own=False)
+        assert can_read(definition, permissions=SCHEMA_EDITOR, is_own=False)
+        assert can_write(definition, permissions=SCHEMA_EDITOR, is_own=False)
 
-    @pytest.mark.parametrize("role", [UserRole.ADMIN, UserRole.RESTRICTED])
     @pytest.mark.parametrize("member_access", list(CustomFieldMemberAccess))
-    def test_staff_always_read_regardless_of_member_access(self, role, member_access):
+    def test_staff_always_read_regardless_of_member_access(self, member_access):
         definition = make_definition(member_access=member_access)
-        assert can_read(definition, role=role, is_own=False)
+        assert can_read(definition, permissions=STAFF, is_own=False)
 
-    @pytest.mark.parametrize("role", [UserRole.ADMIN, UserRole.RESTRICTED])
-    def test_staff_write_follows_admin_access(self, role):
+    def test_staff_write_follows_admin_access(self):
         writable = make_definition(admin_access=CustomFieldAdminAccess.WRITE)
         read_only = make_definition(admin_access=CustomFieldAdminAccess.READ)
-        assert can_write(writable, role=role, is_own=False)
-        assert not can_write(read_only, role=role, is_own=False)
+        assert can_write(writable, permissions=STAFF, is_own=False)
+        assert not can_write(read_only, permissions=STAFF, is_own=False)
 
     def test_member_hidden_field_is_invisible(self):
         definition = make_definition(member_access=CustomFieldMemberAccess.HIDDEN)
-        assert not can_read(definition, role=UserRole.MEMBER, is_own=True)
-        assert not can_write(definition, role=UserRole.MEMBER, is_own=True)
+        assert not can_read(definition, permissions=MEMBER, is_own=True)
+        assert not can_write(definition, permissions=MEMBER, is_own=True)
 
     def test_member_read_field_is_visible_but_not_writable(self):
         definition = make_definition(member_access=CustomFieldMemberAccess.READ)
-        assert can_read(definition, role=UserRole.MEMBER, is_own=True)
-        assert not can_write(definition, role=UserRole.MEMBER, is_own=True)
+        assert can_read(definition, permissions=MEMBER, is_own=True)
+        assert not can_write(definition, permissions=MEMBER, is_own=True)
 
     def test_member_write_field_is_both(self):
         definition = make_definition(member_access=CustomFieldMemberAccess.WRITE)
-        assert can_read(definition, role=UserRole.MEMBER, is_own=True)
-        assert can_write(definition, role=UserRole.MEMBER, is_own=True)
+        assert can_read(definition, permissions=MEMBER, is_own=True)
+        assert can_write(definition, permissions=MEMBER, is_own=True)
 
     @pytest.mark.parametrize("member_access", list(CustomFieldMemberAccess))
     def test_member_gets_nothing_on_another_persons_record(self, member_access):
         definition = make_definition(member_access=member_access)
-        assert not can_read(definition, role=UserRole.MEMBER, is_own=False)
-        assert not can_write(definition, role=UserRole.MEMBER, is_own=False)
+        assert not can_read(definition, permissions=MEMBER, is_own=False)
+        assert not can_write(definition, permissions=MEMBER, is_own=False)
 
-    def test_unknown_role_is_denied(self):
+    def test_holding_no_permissions_is_denied(self):
         definition = make_definition(member_access=CustomFieldMemberAccess.WRITE)
-        assert not can_read(definition, role="ghost", is_own=True)
-        assert not can_write(definition, role="ghost", is_own=True)
+        assert not can_read(definition, permissions=frozenset(), is_own=True)
+        assert not can_write(definition, permissions=frozenset(), is_own=True)

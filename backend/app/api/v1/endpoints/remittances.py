@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
-from app.core.authorization import require_admin
+from app.core.authorization import require_permission
 from app.core.pagination import paginate
 from app.db.session import get_db
 from app.domains.auth.models import User
@@ -35,7 +35,7 @@ def list_remittances(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("billing.read")),
 ):
     """List remittances with optional status filter."""
     query = db.query(Remittance).filter(Remittance.is_active.is_(True))
@@ -57,7 +57,7 @@ def list_remittances(
 def get_remittance(
     remittance_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("billing.read")),
 ):
     """Get remittance detail with receipt list."""
     remittance = db.query(Remittance).filter(
@@ -81,7 +81,7 @@ def get_remittance(
 def create_remittance_endpoint(
     data: RemittanceCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("billing.write")),
 ):
     """Create a remittance batch from receipt IDs."""
     remittance = create_remittance(db, data, current_user.id)
@@ -94,7 +94,7 @@ def create_remittance_endpoint(
 def generate_xml_endpoint(
     remittance_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("billing.write")),
 ):
     """Generate SEPA XML file for a remittance."""
     remittance = db.query(Remittance).filter(
@@ -113,7 +113,7 @@ def generate_xml_endpoint(
 def download_xml(
     remittance_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("billing.read")),
 ):
     """Download the generated SEPA XML file."""
     remittance = db.query(Remittance).filter(
@@ -142,7 +142,7 @@ def download_xml(
 def mark_submitted_endpoint(
     remittance_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("billing.write")),
 ):
     """Mark remittance as submitted to bank."""
     remittance = db.query(Remittance).filter(
@@ -162,7 +162,7 @@ async def import_returns_endpoint(
     remittance_id: int,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("billing.write")),
 ):
     """Import return/rejection data for a remittance.
 
@@ -198,7 +198,7 @@ async def import_returns_endpoint(
 def close_remittance_endpoint(
     remittance_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("billing.write")),
 ):
     """Close a remittance — finalize the batch."""
     remittance = db.query(Remittance).filter(
@@ -217,7 +217,7 @@ def close_remittance_endpoint(
 def cancel_remittance_endpoint(
     remittance_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("billing.write")),
 ):
     """Cancel a remittance — unlink all receipts."""
     remittance = db.query(Remittance).filter(
@@ -236,7 +236,7 @@ def cancel_remittance_endpoint(
 def remittance_stats(
     remittance_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("billing.read")),
 ):
     """Get stats for a remittance batch."""
     remittance = db.query(Remittance).filter(

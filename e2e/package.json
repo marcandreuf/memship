@@ -13,6 +13,7 @@
     "test:registrations": "cypress run --spec 'cypress/e2e/registrations/**'",
     "test:groups": "cypress run --spec 'cypress/e2e/groups/**'",
     "test:settings": "cypress run --spec 'cypress/e2e/settings/**'",
+    "test:roles": "cypress run --spec 'cypress/e2e/roles/**'",
     "test:dashboard": "cypress run --spec 'cypress/e2e/dashboard/**'",
     "test:smoke": "cypress run --env grepTags=@smoke",
     "test:tag": "cypress run --env grepTags=",

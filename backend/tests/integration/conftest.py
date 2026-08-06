@@ -39,7 +39,13 @@ from app.domains.persons.models import (  # noqa: F401
     ContactType,
     Person,
 )
-from app.domains.auth.models import User, UserIdentity  # noqa: F401
+from app.domains.auth.models import (  # noqa: F401
+    Role,
+    RolePermission,
+    User,
+    UserIdentity,
+    UserRoleAssignment,
+)
 from app.domains.members.models import Group, Member, MembershipType  # noqa: F401
 from app.domains.audit.models import AuditLog  # noqa: F401
 from app.domains.activities.models import (  # noqa: F401
@@ -118,6 +124,88 @@ test_engine = create_engine(TEST_DATABASE_URL, pool_pre_ping=True)
 TestSessionLocal = sessionmaker(bind=test_engine, autocommit=False, autoflush=False)
 
 
+def _seed_system_roles():
+    from sqlalchemy import text
+
+    from app.core.permissions import ADMIN_SEED_KEYS, MEMBER_SEED_KEYS
+
+    seeds = (
+        ("super_admin", "Super Admin", frozenset()),
+        ("admin", "Administrator", ADMIN_SEED_KEYS),
+        ("member", "Member", MEMBER_SEED_KEYS),
+    )
+    with test_engine.begin() as conn:
+        for slug, name, keys in seeds:
+            role_id = conn.execute(
+                text("SELECT id FROM roles WHERE slug = :slug"), {"slug": slug}
+            ).scalar()
+            if role_id is not None:
+                continue
+            role_id = conn.execute(
+                text(
+                    "INSERT INTO roles (slug, name, is_system) "
+                    "VALUES (:slug, :name, true) RETURNING id"
+                ),
+                {"slug": slug, "name": name},
+            ).scalar_one()
+            for key in sorted(keys):
+                conn.execute(
+                    text(
+                        "INSERT INTO role_permissions (role_id, permission_key) "
+                        "VALUES (:role_id, :key)"
+                    ),
+                    {"role_id": role_id, "key": key},
+                )
+
+
+def _install_role_assignment_hook(session):
+    """Give every test-created ``User`` the role assignments the app would.
+
+    ``users.role`` is gone, so ``User(role="admin")`` would be a TypeError.
+    Tests keep writing it as fixture shorthand: ``User.__init__`` pops the kwarg
+    and the flush hook turns it into real ``user_roles`` rows — ``member``
+    always (it is pinned to every account), plus the named staff role. Tests
+    build users directly rather than through registration, so without this
+    nothing would populate ``user_roles`` and every check would deny.
+    """
+    from sqlalchemy import event, text
+
+    role_ids: dict[str, int] = {}
+
+    @event.listens_for(session, "before_flush")
+    def _assign(sess, flush_context, instances):
+        pending = [obj for obj in sess.new if isinstance(obj, User)]
+        if not pending:
+            return
+
+        if not role_ids:
+            for slug, rid in sess.execute(text("SELECT slug, id FROM roles")).all():
+                role_ids[slug] = rid
+
+        for user in pending:
+            if user.role_assignments:
+                continue
+            slugs = {"member", getattr(user, "_fixture_role", "member")}
+            user.role_assignments = [
+                UserRoleAssignment(role_id=role_ids[slug])
+                for slug in sorted(slugs)
+                if slug in role_ids
+            ]
+
+
+def _accept_fixture_role_kwarg():
+    original_init = User.__init__
+
+    def __init__(self, **kwargs):
+        self._fixture_role = kwargs.pop("role", "member")
+        original_init(self, **kwargs)
+
+    User.__init__ = __init__
+
+
+_accept_fixture_role_kwarg()
+
+
 @pytest.fixture(scope="session", autouse=True)
 def create_test_tables():
     """Create all tables once per test session (per xdist worker database).
@@ -133,6 +221,8 @@ def create_test_tables():
     except IntegrityError:
         # Another xdist worker already created the tables — safe to ignore
         pass
+
+    _seed_system_roles()
 
     # The mail transport (app.core.email) opens its own SessionLocal to resolve
     # the active provider at send time. Point that at the test engine so a send
@@ -180,6 +270,7 @@ def db():
     connection = test_engine.connect()
     transaction = connection.begin()
     session = TestSessionLocal(bind=connection)
+    _install_role_assignment_hook(session)
 
     yield session
 

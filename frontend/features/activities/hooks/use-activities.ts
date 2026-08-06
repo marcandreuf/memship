@@ -13,10 +13,11 @@ import {
   type ListActivitiesParams,
 } from "../services/activities-api";
 
-export function useActivities(params: ListActivitiesParams = {}) {
+export function useActivities(params: ListActivitiesParams = {}, enabled = true) {
   return useQuery({
     queryKey: ["activities", params],
     queryFn: () => listActivities(params),
+    enabled,
   });
 }
 

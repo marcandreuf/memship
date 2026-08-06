@@ -53,11 +53,15 @@ def require_approved_member(current_user: User = Depends(get_current_user)) -> U
     Only ``pending`` is blocked here. Suspended / cancelled / expired members are
     a separate lifecycle concern that the domain rules (activity eligibility,
     member card status, billing) already handle with far better errors than a
-    blanket 403 — widening this gate would swallow those messages. Admins and
-    super admins always pass, as does any user with no member record (staff
-    accounts created directly).
+    blanket 403 — widening this gate would swallow those messages. Staff always
+    pass, as does any user with no member record (staff accounts created
+    directly).
     """
-    if current_user.role in ("admin", "super_admin"):
+    # Imported here because app.core.authorization imports get_current_user from
+    # this module.
+    from app.core.authorization import is_staff, resolve_permissions
+
+    if is_staff(resolve_permissions(current_user)):
         return current_user
 
     member = current_user.person.member if current_user.person else None

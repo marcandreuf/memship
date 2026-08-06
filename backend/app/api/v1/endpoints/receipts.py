@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import Response
 from sqlalchemy.orm import Session, joinedload
 
-from app.core.authorization import require_admin
+from app.core.authorization import require_permission, user_has
 from app.core.csv_export import stream_csv
 from app.core.pagination import paginate
 from app.core.security.dependencies import get_current_user
@@ -69,7 +69,7 @@ def list_receipts(
     emission_date_from: date | None = Query(None),
     emission_date_to: date | None = Query(None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("billing.read")),
 ):
     """List receipts with filters (admin only)."""
     query = build_receipts_query(
@@ -137,7 +137,7 @@ def export_receipts_csv(
     emission_date_from: date | None = Query(None),
     emission_date_to: date | None = Query(None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("billing.read")),
 ):
     """Export receipts as CSV, honouring the same filters as the list endpoint."""
     query = build_receipts_query(
@@ -156,7 +156,7 @@ def export_receipts_csv(
 @router.get("/stats")
 def receipt_stats(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("billing.read")),
 ):
     """Receipt stats for admin dashboard."""
     from sqlalchemy import func as sqlfunc, extract
@@ -212,7 +212,7 @@ def receipt_stats(
 def get_receipt(
     receipt_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("billing.read")),
 ):
     """Get a single receipt detail."""
     receipt = (
@@ -233,7 +233,7 @@ def get_receipt(
 def download_receipt_pdf(
     receipt_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.billing.read")),
 ):
     """Download a receipt as PDF. Admin can download any, member can download own."""
     receipt = (
@@ -245,7 +245,7 @@ def download_receipt_pdf(
         raise HTTPException(status_code=404, detail="Receipt not found")
 
     # Members can only download their own receipts
-    if current_user.role == "member":
+    if not user_has(current_user, "billing.read"):
         member = (
             db.query(Member)
             .join(Person, Member.person_id == Person.id)
@@ -271,7 +271,7 @@ def download_receipt_pdf(
 def create_receipt_endpoint(
     data: ReceiptCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("billing.write")),
 ):
     """Create a manual receipt."""
     # Validate member exists
@@ -290,7 +290,7 @@ def update_receipt_endpoint(
     receipt_id: int,
     data: ReceiptUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("billing.write")),
 ):
     """Update a receipt (only in new/pending status)."""
     receipt = db.query(Receipt).filter(
@@ -309,7 +309,7 @@ def update_receipt_endpoint(
 def emit_receipt_endpoint(
     receipt_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("billing.write")),
 ):
     """Emit a receipt — assign number and send to member."""
     receipt = db.query(Receipt).filter(
@@ -337,7 +337,7 @@ def pay_receipt_endpoint(
     receipt_id: int,
     data: ReceiptPayRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("billing.write")),
 ):
     """Mark a receipt as paid."""
     receipt = db.query(Receipt).filter(
@@ -356,7 +356,7 @@ def pay_receipt_endpoint(
 def send_receipt_reminder(
     receipt_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("billing.write")),
 ):
     """Manually send a payment reminder for an unpaid (emitted/overdue) receipt."""
     receipt = db.query(Receipt).filter(
@@ -397,7 +397,7 @@ def send_receipt_reminder(
 def list_receipt_reminders(
     receipt_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("billing.read")),
 ):
     """List the reminders sent for a receipt, newest first."""
     receipt = db.query(Receipt).filter(Receipt.id == receipt_id).first()
@@ -415,7 +415,7 @@ def list_receipt_reminders(
 def cancel_receipt_endpoint(
     receipt_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("billing.write")),
 ):
     """Cancel a receipt."""
     receipt = db.query(Receipt).filter(
@@ -435,7 +435,7 @@ def return_receipt_endpoint(
     receipt_id: int,
     data: ReceiptReturnRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("billing.write")),
 ):
     """Mark a receipt as returned (rejected by bank)."""
     receipt = db.query(Receipt).filter(
@@ -454,7 +454,7 @@ def return_receipt_endpoint(
 def reemit_receipt_endpoint(
     receipt_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("billing.write")),
 ):
     """Re-emit a returned receipt — moves back to pending."""
     receipt = db.query(Receipt).filter(
@@ -474,7 +474,7 @@ def list_my_receipts(
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.billing.read")),
 ):
     """List current user's receipts (member self-service)."""
     member = (
@@ -504,7 +504,7 @@ def list_my_receipts(
 def create_stripe_checkout(
     receipt_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.billing.write")),
 ):
     """Create a Stripe Checkout session for a receipt.
 
@@ -525,7 +525,7 @@ def create_stripe_checkout(
         raise HTTPException(status_code=404, detail="Receipt not found")
 
     # Auth: member can only pay own receipts
-    if current_user.role == "member":
+    if not user_has(current_user, "billing.read"):
         member = (
             db.query(Member)
             .join(Person, Member.person_id == Person.id)
@@ -604,7 +604,7 @@ def initiate_redsys_payment(
     receipt_id: int,
     payload: dict | None = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.billing.write")),
 ):
     """Build signed Redsys form params for a browser redirect.
 
@@ -632,7 +632,7 @@ def initiate_redsys_payment(
     if not receipt:
         raise HTTPException(status_code=404, detail="Receipt not found")
 
-    if current_user.role == "member":
+    if not user_has(current_user, "billing.read"):
         member = (
             db.query(Member)
             .join(Person, Member.person_id == Person.id)
@@ -699,7 +699,7 @@ def initiate_redsys_payment(
 def get_redsys_return_status(
     receipt_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.billing.read")),
 ):
     """Return the current receipt status for the Redsys return page to poll.
 
@@ -717,7 +717,7 @@ def get_redsys_return_status(
     if not receipt:
         raise HTTPException(status_code=404, detail="Receipt not found")
 
-    if current_user.role == "member":
+    if not user_has(current_user, "billing.read"):
         member = (
             db.query(Member)
             .join(Person, Member.person_id == Person.id)
@@ -745,7 +745,7 @@ def get_redsys_return_status(
 def get_receipt_by_stripe_session(
     session_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.billing.read")),
 ):
     """Look up a receipt by Stripe Checkout session ID.
 
@@ -768,7 +768,7 @@ def get_receipt_by_stripe_session(
         raise HTTPException(status_code=404, detail="Receipt not found")
 
     # Auth: member can only see own receipts
-    if current_user.role == "member":
+    if not user_has(current_user, "billing.read"):
         member = (
             db.query(Member)
             .join(Person, Member.person_id == Person.id)
@@ -785,7 +785,7 @@ def get_receipt_by_stripe_session(
 def generate_membership_fees_endpoint(
     data: GenerateMembershipFeesRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("billing.run")),
 ):
     """Bulk generate membership fee receipts for all active members."""
     receipts = generate_membership_fees(db, data, current_user.id)

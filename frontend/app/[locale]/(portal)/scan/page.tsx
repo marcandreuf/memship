@@ -3,12 +3,15 @@
 import { useTranslations } from "next-intl";
 import { ScanLine } from "lucide-react";
 import { useAuth } from "@/features/auth/hooks/use-auth";
+import { usePermissions } from "@/features/auth/hooks/use-permissions";
 import { ScanPanel } from "@/features/member-card/components/scan-panel";
 
 export default function ScanPage() {
   const t = useTranslations();
   const { user } = useAuth();
-  const isAdmin = user?.role === "admin" || user?.role === "super_admin";
+  // Scanning renders the scanned member's record.
+  const { has } = usePermissions();
+  const isAdmin = has("members.read");
 
   if (!isAdmin) {
     return (

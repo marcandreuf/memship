@@ -16,6 +16,7 @@ import {
 import { Pagination } from "@/components/entity/pagination";
 import { TableSkeleton } from "@/components/ui/skeletons";
 import { useAuth } from "@/features/auth/hooks/use-auth";
+import { usePermissions } from "@/features/auth/hooks/use-permissions";
 import { useAnnouncements } from "@/features/communications/hooks/use-announcements";
 import type { AnnouncementData } from "@/features/communications/services/announcements-api";
 import { useFormatters } from "@/hooks/use-formatters";
@@ -24,7 +25,8 @@ export default function CommunicationsPage() {
   const t = useTranslations();
   const router = useRouter();
   const { user } = useAuth();
-  const isAdmin = user?.role === "admin" || user?.role === "super_admin";
+  const { has } = usePermissions();
+  const isAdmin = has("communications.read");
   const [page, setPage] = useState(1);
   const { data, isLoading } = useAnnouncements({ page, per_page: 20 });
   const { formatDate } = useFormatters();

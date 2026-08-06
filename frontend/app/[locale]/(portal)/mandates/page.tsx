@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { useMandates, useCreateMandate } from "@/features/mandates/hooks/use-mandates";
 import { useSearchParam, usePageParam, useStatusParam } from "@/hooks/use-url-state";
 import { useFormatters } from "@/hooks/use-formatters";
+import { usePermissions } from "@/features/auth/hooks/use-permissions";
 
 const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   active: "default",
@@ -36,6 +37,8 @@ function StatusBadge({ status, t }: { status: string; t: (key: string) => string
 
 export default function MandatesPage() {
   const t = useTranslations();
+  const { has } = usePermissions();
+  const canWrite = has("billing.write");
   const router = useRouter();
   const [page, setPage] = usePageParam();
   const [search, setSearch] = useSearchParam();
@@ -63,17 +66,19 @@ export default function MandatesPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">{t("mandates.title")}</h1>
-        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogTrigger asChild>
-            <Button>{t("mandates.createMandate")}</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{t("mandates.createMandate")}</DialogTitle>
-            </DialogHeader>
-            <CreateMandateForm t={t} onSuccess={() => setCreateOpen(false)} />
-          </DialogContent>
-        </Dialog>
+        {canWrite && (
+          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+            <DialogTrigger asChild>
+              <Button>{t("mandates.createMandate")}</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{t("mandates.createMandate")}</DialogTitle>
+              </DialogHeader>
+              <CreateMandateForm t={t} onSuccess={() => setCreateOpen(false)} />
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       <div className="flex items-center gap-3">

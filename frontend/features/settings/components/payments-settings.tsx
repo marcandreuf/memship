@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/form";
 import { toast } from "sonner";
 import { mapApiErrorsToForm } from "@/lib/errors";
-import { useSettings, useUpdateSettings } from "../hooks/use-settings";
+import { useOrgSettings, useUpdateSettings } from "../hooks/use-settings";
 import { FormSkeleton } from "@/components/ui/skeletons";
 
 const paymentsSchema = z.object({
@@ -46,7 +46,7 @@ type PaymentsFormValues = z.infer<typeof paymentsSchema>;
 
 export function PaymentsSettings() {
   const t = useTranslations();
-  const { data: settings, isLoading } = useSettings();
+  const { data: settings, isLoading } = useOrgSettings();
   const updateMutation = useUpdateSettings();
 
   const form = useForm<PaymentsFormValues>({

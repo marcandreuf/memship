@@ -23,6 +23,7 @@ import { useRemittances, useCreateRemittance } from "@/features/remittances/hook
 import { useReceipts } from "@/features/receipts/hooks/use-receipts";
 import { usePageParam, useStatusParam } from "@/hooks/use-url-state";
 import { useFormatters } from "@/hooks/use-formatters";
+import { usePermissions } from "@/features/auth/hooks/use-permissions";
 
 const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   draft: "outline",
@@ -40,6 +41,8 @@ function StatusBadge({ status, t }: { status: string; t: (key: string) => string
 
 export default function RemittancesPage() {
   const t = useTranslations();
+  const { has } = usePermissions();
+  const canWrite = has("billing.write");
   const router = useRouter();
   const [page, setPage] = usePageParam();
   const [statusFilter, setStatusFilter] = useStatusParam();
@@ -65,17 +68,19 @@ export default function RemittancesPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">{t("remittances.title")}</h1>
-        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogTrigger asChild>
-            <Button>{t("remittances.createRemittance")}</Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>{t("remittances.createRemittance")}</DialogTitle>
-            </DialogHeader>
-            <CreateRemittanceForm onSuccess={() => setCreateOpen(false)} />
-          </DialogContent>
-        </Dialog>
+        {canWrite && (
+          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+            <DialogTrigger asChild>
+              <Button>{t("remittances.createRemittance")}</Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>{t("remittances.createRemittance")}</DialogTitle>
+              </DialogHeader>
+              <CreateRemittanceForm onSuccess={() => setCreateOpen(false)} />
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       <div className="flex items-center gap-3">

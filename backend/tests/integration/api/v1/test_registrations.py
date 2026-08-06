@@ -65,7 +65,7 @@ def _create_member_with_user(db, suffix="", status="active", membership_type_id=
 
 
 def _auth_cookie(user):
-    return {"access_token": create_access_token(user.id, user.role)}
+    return {"access_token": create_access_token(user.id)}
 
 
 def _create_published_activity(db, admin_id=None, max_participants=50, features=None, **overrides):

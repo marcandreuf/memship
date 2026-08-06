@@ -38,10 +38,17 @@ class PasswordReset(BaseModel):
     new_password: str = Field(min_length=8, max_length=128)
 
 
+class RoleSummary(BaseModel):
+    id: int
+    slug: str
+    name: str
+
+
 class UserResponse(BaseModel):
     id: int
     email: str
-    role: str
+    roles: list[RoleSummary] = []
+    permissions: list[str] = []
     is_active: bool
     person_id: int
     first_name: str
@@ -86,3 +93,52 @@ class RegisterResponse(BaseModel):
     requires_approval: bool
     email_verified: bool = False
     verification_token: str | None = None
+
+
+class PermissionRead(BaseModel):
+    key: str
+    domain: str
+    action: str
+    reserved: bool
+    label_key: str
+    description_key: str
+
+
+class RoleRead(BaseModel):
+    id: int
+    slug: str
+    name: str
+    description: str | None = None
+    is_system: bool
+    permission_keys: list[str]
+    assigned_user_count: int
+    assignable: bool
+
+
+class RoleCreate(BaseModel):
+    name: Annotated[str, StringConstraints(min_length=1, max_length=100)]
+    description: str | None = None
+    permission_keys: list[str] = []
+
+
+class RoleUpdate(BaseModel):
+    name: Annotated[str, StringConstraints(min_length=1, max_length=100)] | None = None
+    description: str | None = None
+    permission_keys: list[str] | None = None
+
+
+class UserRolesUpdate(BaseModel):
+    role_ids: list[int]
+
+
+class UserActiveUpdate(BaseModel):
+    is_active: bool
+
+
+class UserListItem(BaseModel):
+    id: int
+    email: str
+    first_name: str
+    last_name: str
+    is_active: bool
+    roles: list[RoleSummary]

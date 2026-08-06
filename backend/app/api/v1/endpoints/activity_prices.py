@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from app.core.authorization import require_admin
+from app.core.authorization import require_permission
 from app.core.db_utils import get_or_404
 from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
@@ -23,7 +23,7 @@ def list_prices(
     activity_id: int,
     modality_id: int | None = Query(None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("self.activities.read")),
 ):
     get_or_404(db, Activity, activity_id)
     query = db.query(ActivityPrice).filter(ActivityPrice.activity_id == activity_id)
@@ -37,7 +37,7 @@ def create_price(
     activity_id: int,
     data: ActivityPriceCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("activities.write")),
 ):
     get_or_404(db, Activity, activity_id)
 
@@ -66,7 +66,7 @@ def update_price(
     price_id: int,
     data: ActivityPriceUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("activities.write")),
 ):
     price = get_or_404(db, ActivityPrice, price_id)
     if price.activity_id != activity_id:
@@ -85,7 +85,7 @@ def delete_price(
     activity_id: int,
     price_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_permission("activities.write")),
 ):
     price = get_or_404(db, ActivityPrice, price_id)
     if price.activity_id != activity_id:
