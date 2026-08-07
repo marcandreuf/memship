@@ -32,7 +32,37 @@ COPY docker/entrypoint.sh /entrypoint.sh
 COPY docker/wait-for-postgres.sh /wait-for-postgres.sh
 RUN chmod +x /entrypoint.sh /wait-for-postgres.sh
 
+# Activate the virtualenv on PATH instead of going through `uv run`.
+#
+# `uv run` re-verifies the environment on every start and needs write access to
+# /app/.venv, which forces the container to run as the user that built it — root.
+# Putting the venv on PATH means NOTHING under /app is written at runtime, so the
+# container runs under any uid. That is what lets Compose pass the host user's
+# uid/gid through, which in turn keeps bind-mounted uploads readable on the host.
+#
+# Consequence: use `python`, `celery` and `alembic` directly in commands and in
+# `docker compose exec` — not `uv run <cmd>`, which will fail as a non-root user.
+# PYTHONPATH is required, not decoration: dependencies are installed with
+# `--no-install-project`, so the `app` package itself is not in the venv. `uv run`
+# used to paper over that by injecting the project root into sys.path. Console
+# scripts (alembic, celery) get sys.path[0] = /app/.venv/bin instead, so without
+# this they fail with "No module named 'app'".
+ENV PATH="/app/.venv/bin:$PATH" \
+    PYTHONPATH=/app \
+    PYTHONDONTWRITEBYTECODE=1
+
+# Storage is normally a bind mount from the host; create it anyway so a bare
+# `docker run` with no mount still starts. The app writes subdirectories here.
+RUN groupadd -g 1001 memship \
+    && useradd -u 1001 -g 1001 -m -d /home/memship memship \
+    && mkdir -p /app/storage \
+    && chown -R 1001:1001 /app/storage
+
+# Default to non-root. Compose overrides this with the host user's ids so files
+# written to the bind mount belong to the operator rather than to uid 1001.
+USER 1001:1001
+
 EXPOSE 8000
 
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["uv", "run", "python", "start.py"]
+CMD ["python", "start.py"]

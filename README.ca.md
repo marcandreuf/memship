@@ -34,7 +34,7 @@ A continuació, executeu la configuració inicial:
 **Opció A: Demostració ràpida amb comptes de prova (sense preguntes)**
 
 ```bash
-docker compose exec demo-memship-api uv run python -m app.cli.seed --test
+docker compose exec demo-memship-api python -m app.cli.seed --test
 ```
 
 Això crea comptes de prova preconfigurats, socis d'exemple, activitats i inscripcions:
@@ -48,7 +48,7 @@ Això crea comptes de prova preconfigurats, socis d'exemple, activitats i inscri
 **Opció B: Configuració personalitzada (interactiva)**
 
 ```bash
-docker compose exec demo-memship-api uv run python -m app.cli.seed
+docker compose exec demo-memship-api python -m app.cli.seed
 ```
 
 Us demanarà que creeu els vostres propis comptes de superadministrador i administrador. No es generen dades d'exemple.
@@ -56,7 +56,7 @@ Us demanarà que creeu els vostres propis comptes de superadministrador i admini
 **Opció C: Conjunt de dades demo realista**
 
 ```bash
-docker compose exec demo-memship-api uv run python -m app.cli.seed --demo
+docker compose exec demo-memship-api python -m app.cli.seed --demo
 ```
 
 Crea els comptes d'administrador anteriors més un any complet de dades d'exemple realistes — ~60 socis en tots els estats, activitats, rebuts en tots els estats repartits pels mesos, mandats SEPA i recordatoris del tauler — ideal per avaluar el tauler financer i el resum anual. Es pot tornar a executar sense duplicar (idempotent).
@@ -322,7 +322,7 @@ docker compose pull
 docker compose up -d
 
 # Executeu la configuració inicial (crea els comptes d'administrador)
-docker compose exec -it api uv run python -m app.cli.seed
+docker compose exec -it api python -m app.cli.seed
 
 # Obriu http://localhost
 ```
@@ -336,7 +336,7 @@ git clone https://github.com/marcandreuf/memship.git
 cd memship
 cp .env.example .env
 docker compose up -d --build
-docker compose exec -it api uv run python -m app.cli.seed
+docker compose exec -it api python -m app.cli.seed
 ```
 
 ### Serveis

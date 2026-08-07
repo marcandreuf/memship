@@ -3,9 +3,9 @@
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/marcandreuf/memship/main/docker-compose.quickstart.yml -o docker-compose.yml
 #   PORT=8081 docker compose up -d
-#   docker compose exec demo-memship-api uv run python -m app.cli.seed --test   # Quick demo with test accounts
-#   docker compose exec demo-memship-api uv run python -m app.cli.seed --demo   # Realistic year of demo data (idempotent)
-#   docker compose exec demo-memship-api uv run python -m app.cli.seed          # Custom setup (interactive)
+#   docker compose exec demo-memship-api python -m app.cli.seed --test   # Quick demo with test accounts
+#   docker compose exec demo-memship-api python -m app.cli.seed --demo   # Realistic year of demo data (idempotent)
+#   docker compose exec demo-memship-api python -m app.cli.seed          # Custom setup (interactive)
 #   Open http://localhost:8081
 #
 
@@ -76,7 +76,7 @@ services:
     image: ghcr.io/marcandreuf/memship-backend:latest
     pull_policy: always
     container_name: demo-memship-celery-worker
-    command: uv run celery -A app.core.celery_app worker --loglevel=info
+    command: celery -A app.core.celery_app worker --loglevel=info
     environment:
       <<: *backend-env
       # Only the API applies migrations; a second migrator races it on startup.
@@ -96,7 +96,7 @@ services:
     image: ghcr.io/marcandreuf/memship-backend:latest
     pull_policy: always
     container_name: demo-memship-celery-beat
-    command: uv run celery -A app.core.celery_app beat --loglevel=info --schedule=/var/lib/celery/celerybeat-schedule
+    command: celery -A app.core.celery_app beat --loglevel=info --schedule=/var/lib/celery/celerybeat-schedule
     environment:
       <<: *backend-env
       RUN_MIGRATIONS: 0

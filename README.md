@@ -34,7 +34,7 @@ Then run the initial setup:
 **Option A: Quick demo with test accounts (no prompts)**
 
 ```bash
-docker compose exec demo-memship-api uv run python -m app.cli.seed --test
+docker compose exec demo-memship-api python -m app.cli.seed --test
 ```
 
 This creates pre-configured test accounts, sample members, activities, and registrations:
@@ -48,7 +48,7 @@ This creates pre-configured test accounts, sample members, activities, and regis
 **Option B: Custom setup (interactive)**
 
 ```bash
-docker compose exec demo-memship-api uv run python -m app.cli.seed
+docker compose exec demo-memship-api python -m app.cli.seed
 ```
 
 Prompts you to create your own super admin and org admin accounts. No sample data is generated.
@@ -56,7 +56,7 @@ Prompts you to create your own super admin and org admin accounts. No sample dat
 **Option C: Realistic demo dataset**
 
 ```bash
-docker compose exec demo-memship-api uv run python -m app.cli.seed --demo
+docker compose exec demo-memship-api python -m app.cli.seed --demo
 ```
 
 Creates the admin accounts above plus a full year of realistic sample data — ~60 members across all statuses, activities, receipts in every state spread across the months, SEPA mandates, and dashboard reminders — ideal for evaluating the finance dashboard and annual summary. Safe to re-run (idempotent).
@@ -323,7 +323,7 @@ docker compose pull
 docker compose up -d
 
 # Run initial setup (creates admin accounts)
-docker compose exec -it api uv run python -m app.cli.seed
+docker compose exec -it api python -m app.cli.seed
 
 # Open http://localhost
 ```
@@ -337,7 +337,7 @@ git clone https://github.com/marcandreuf/memship.git
 cd memship
 cp .env.example .env
 docker compose up -d --build
-docker compose exec -it api uv run python -m app.cli.seed
+docker compose exec -it api python -m app.cli.seed
 ```
 
 ### Services

@@ -34,7 +34,7 @@ A continuación, ejecuta la configuración inicial:
 **Opción A: Demo rápida con cuentas de prueba (sin preguntas)**
 
 ```bash
-docker compose exec demo-memship-api uv run python -m app.cli.seed --test
+docker compose exec demo-memship-api python -m app.cli.seed --test
 ```
 
 Esto crea cuentas de prueba preconfiguradas, socios de ejemplo, actividades e inscripciones:
@@ -48,7 +48,7 @@ Esto crea cuentas de prueba preconfiguradas, socios de ejemplo, actividades e in
 **Opción B: Configuración personalizada (interactiva)**
 
 ```bash
-docker compose exec demo-memship-api uv run python -m app.cli.seed
+docker compose exec demo-memship-api python -m app.cli.seed
 ```
 
 Te pedirá que crees tus propias cuentas de super admin y admin de organización. No se generan datos de ejemplo.
@@ -56,7 +56,7 @@ Te pedirá que crees tus propias cuentas de super admin y admin de organización
 **Opción C: Conjunto de datos demo realista**
 
 ```bash
-docker compose exec demo-memship-api uv run python -m app.cli.seed --demo
+docker compose exec demo-memship-api python -m app.cli.seed --demo
 ```
 
 Crea las cuentas de administrador anteriores más un año completo de datos de ejemplo realistas — ~60 socios en todos los estados, actividades, recibos en todos los estados repartidos por los meses, mandatos SEPA y recordatorios del panel — ideal para evaluar el panel financiero y el resumen anual. Se puede volver a ejecutar sin duplicar (idempotente).
@@ -322,7 +322,7 @@ docker compose pull
 docker compose up -d
 
 # Ejecutar la configuración inicial (crea las cuentas de admin)
-docker compose exec -it api uv run python -m app.cli.seed
+docker compose exec -it api python -m app.cli.seed
 
 # Abre http://localhost
 ```
@@ -336,7 +336,7 @@ git clone https://github.com/marcandreuf/memship.git
 cd memship
 cp .env.example .env
 docker compose up -d --build
-docker compose exec -it api uv run python -m app.cli.seed
+docker compose exec -it api python -m app.cli.seed
 ```
 
 ### Servicios
