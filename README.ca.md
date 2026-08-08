@@ -110,12 +110,12 @@ Memship segueix el [versionat semàntic](https://semver.org/) i **els números d
 | v1.1.1 | Pedaç — reorganització de la navegació de configuració: ajustos de pagaments i de socis agrupats a les pestanyes Pagaments i Socis | Fet |
 | v1.2.2 | Integració SSO / identitat i configuració de correu — alta pública amb verificació per correu, flux d'aprovació per la junta, inici de sessió amb Google / Apple, configuració de proveïdors SSO pel superadministrador i ajust de Resend / Google SMTP des d'una pestanya d'Integracions. També elimina una migració duplicada de configuració de correu amb un identificador de revisió que xocava amb un altre existent, cosa que feia fallar `alembic upgrade head` en arrencar | Fet |
 | v1.3.0 | Reserves simples — reserves de socis en espais compartits mitjançant un calendari setmanal, aforament per franja, llista d'espera FIFO amb promoció automàtica i correus de confirmació/llista d'espera | Fet |
+| v1.4.0 | Rols i permisos flexibles — assignació multi-rol i comprovacions granulars per permís en lloc dels quatre rols fixos, amb una API `/roles` de gestió i navegació i accés a pàgines guiats per permisos a tot el portal. També repara els stacks de desplegament publicats, que no executaven cap worker de Celery — de manera que tots els correus que envia el producte es perdien en silenci i les tasques nocturnes de facturació i de recordatoris de pagament no s'executaven mai — i no muntaven cap volum al servei d'API, de manera que una actualització destruïa els fitxers pujats i regenerava la clau secreta que xifra les credencials emmagatzemades d'SSO i dels proveïdors de pagament | Fet |
 
 ### Planificat
 
 Prioritzat, encara sense versió. Cada element esdevé un llançament versionat quan es publica, i el llançament pren el següent número semàntic per ordre.
 
-- **Rols i permisos flexibles** — multi-rol i permisos per rol més enllà dels 4 rols fixos
 - **Còpies de seguretat** — descarregar una còpia completa des de l'àrea d'administració, amb la base de dades i els fitxers pujats, i una restauració documentada i provada
 - **Convocatòries** — convocatòries formals d'Assemblea General amb confirmació del soci mitjançant token
 - **Biblioteca de documents** — estatuts, actes, formularis amb visibilitat per grup

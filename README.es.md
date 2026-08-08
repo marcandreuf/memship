@@ -110,12 +110,12 @@ Memship sigue el [versionado semántico](https://semver.org/) y **los números d
 | v1.1.1 | Parche — reorganización de la navegación de configuración: ajustes de pagos y de socios agrupados en las pestañas Pagos y Socios | Hecho |
 | v1.2.2 | Integración SSO / identidad y configuración de correo — alta pública con verificación por correo, flujo de aprobación por la directiva, inicio de sesión con Google / Apple, configuración de proveedores SSO por el superadministrador y ajuste de Resend / Google SMTP desde una pestaña de Integraciones. También elimina una migración duplicada de configuración de correo cuyo identificador de revisión chocaba con otro existente, lo que hacía fallar `alembic upgrade head` al arrancar | Hecho |
 | v1.3.0 | Reservas simples — reservas de socios en espacios compartidos mediante un calendario semanal, aforo por franja, lista de espera FIFO con promoción automática y correos de confirmación/lista de espera | Hecho |
+| v1.4.0 | Roles y permisos flexibles — asignación multi-rol y comprobaciones granulares por permiso en lugar de los cuatro roles fijos, con una API `/roles` de gestión y navegación y acceso a páginas guiados por permisos en todo el portal. También repara los stacks de despliegue publicados, que no ejecutaban ningún worker de Celery — por lo que todos los correos que envía el producto se perdían en silencio y las tareas nocturnas de facturación y de recordatorios de pago no se ejecutaban nunca — y no montaban ningún volumen en el servicio de API, de modo que una actualización destruía los archivos subidos y regeneraba la clave secreta que cifra las credenciales almacenadas de SSO y de los proveedores de pago | Hecho |
 
 ### Planificado
 
 Priorizado, aún sin versión. Cada elemento se convierte en un lanzamiento versionado cuando se publica, y el lanzamiento toma el siguiente número semántico por orden.
 
-- **Roles y permisos flexibles** — multi-rol y permisos por rol más allá de los 4 roles fijos
 - **Copias de seguridad** — descargar una copia completa desde el área de administración, con la base de datos y los archivos subidos, y una restauración documentada y probada
 - **Convocatorias** — convocatorias formales de Asamblea General con confirmación del socio mediante token
 - **Biblioteca de documentos** — estatutos, actas, formularios con visibilidad por grupo
