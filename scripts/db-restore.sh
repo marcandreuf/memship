@@ -7,8 +7,20 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
-BACKUP_DIR="$REPO_ROOT/backups"
 COMPOSE_FILE="$REPO_ROOT/docker-compose.yml"
+
+# Must match db-backup.sh: backups live under the data root, which is what
+# docker-compose.yml bind-mounts onto /backups in the db container.
+DATA_ROOT="${MEMSHIP_DATA_ROOT:-}"
+if [[ -z "$DATA_ROOT" && -f "$REPO_ROOT/.env" ]]; then
+    DATA_ROOT="$(grep -E '^MEMSHIP_DATA_ROOT=' "$REPO_ROOT/.env" | tail -1 | cut -d= -f2- || true)"
+fi
+DATA_ROOT="${DATA_ROOT:-$REPO_ROOT/data}"
+case "$DATA_ROOT" in
+    /*) ;;
+    *) DATA_ROOT="$REPO_ROOT/${DATA_ROOT#./}" ;;
+esac
+BACKUP_DIR="$DATA_ROOT/backups"
 
 # Colors
 GREEN='\033[0;32m'
