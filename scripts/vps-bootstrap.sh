@@ -83,7 +83,11 @@ esac
 # rather than after half the box is configured.
 if [ -n "$SSH_KEY_FILE" ]; then
     [ -r "$SSH_KEY_FILE" ] || die "cannot read $SSH_KEY_FILE"
-    SSH_KEY="$(cat "$SSH_KEY_FILE")"
+    # First valid key line, so an authorized_keys file with several keys works
+    # here as well as a single .pub — taking the whole file would append every
+    # line again as one blob.
+    SSH_KEY="$(grep -E '^(ssh|ecdsa)-' "$SSH_KEY_FILE" | head -1 || true)"
+    [ -n "$SSH_KEY" ] || die "no SSH public key found in $SSH_KEY_FILE"
 elif [ -z "$SSH_KEY" ] && [ -r /root/.ssh/authorized_keys ]; then
     # Most providers install your key for root on a fresh box. Reusing it means
     # the deploy user is reachable with the same key you are already using.
@@ -288,17 +292,42 @@ fi
 
 # ---------------------------------------------------------------- what is left
 
-step "Done — two things remain, and both are yours to do"
+step "Done"
 
+# Report sshd's actual state rather than assuming it needs hardening. Cloud
+# images increasingly ship with all three already set, and telling someone to
+# fix what is already correct is how the real instructions get skimmed past.
+# Read the effective config once. Do NOT pipe `sshd -T` into an awk that exits
+# early: awk closes the pipe, sshd takes SIGPIPE, and under `set -o pipefail`
+# that is a 141 which `set -e` turns into an abort right here — with everything
+# already done and none of the instructions below printed.
+SSHD_CONF="$(sshd -T 2>/dev/null || true)"
+sshd_val() { printf '%s\n' "$SSHD_CONF" | awk -v k="$1" '$1==k {print $2}' | tail -1; }
+
+SSH_PORT="$(sshd_val port)"
+SSH_PORT="${SSH_PORT:-22}"
+SSH_ROOT="$(sshd_val permitrootlogin)"
+SSH_PASSWD="$(sshd_val passwordauthentication)"
+
+if [ "$SSH_ROOT" = "no" ] && [ "$SSH_PASSWD" = "no" ]; then
+    cat <<EOF
+
+  SSH is already hardened on this host — root login and password authentication
+  are both off, on port $SSH_PORT. Nothing to do; skip to step 2.
+
+EOF
+else
 cat <<EOF
 
   1. HARDEN SSH. This script does not touch sshd, on purpose: it cannot verify
      that you can still log in, and getting the order wrong locks you out of a
      box you may have no console access to.
 
+     Currently: PermitRootLogin=${SSH_ROOT:-unknown}, PasswordAuthentication=${SSH_PASSWD:-unknown}, port $SSH_PORT.
+
      FIRST, in a SECOND terminal, confirm this works and keep it open:
 
-       ssh $DEPLOY_USER@<this-host>
+       ssh -p $SSH_PORT $DEPLOY_USER@<this-host>
        sudo -v
 
      Only once that succeeds, edit /etc/ssh/sshd_config:
@@ -310,11 +339,15 @@ cat <<EOF
      Then reload and, in a THIRD terminal, verify again before closing anything:
 
        sudo sshd -t && sudo systemctl reload ssh
-       ssh $DEPLOY_USER@<this-host>
+       ssh -p $SSH_PORT $DEPLOY_USER@<this-host>
 
      'sshd -t' checks the config for syntax errors. Reloading a broken config
      is how people lock themselves out.
 
+EOF
+fi
+
+cat <<EOF
   2. INSTALL MEMSHIP as $DEPLOY_USER — not as root:
 
        su - $DEPLOY_USER          # or log in again over SSH, so the docker group applies
