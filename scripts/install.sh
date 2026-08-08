@@ -97,8 +97,8 @@ for d in postgres storage celerybeat caddy/data caddy/config backups; do
 done
 
 # storage/ holds uploads AND the auto-generated encryption key (secret.key). The
-# backend image currently runs as root, so its files land root-owned on the host;
-# 0770 at least keeps the directory itself yours. See docs/self-hosting/.
+# backend runs as HOST_UID/HOST_GID, so what it writes here belongs to you and
+# needs no sudo to read; 0770 keeps it off other local accounts. See docs/self-hosting/.
 chmod 0770 "$DATA_ROOT/storage"
 chmod 0700 "$DATA_ROOT/backups"
 
@@ -234,7 +234,7 @@ cat <<EOF
 
   Create the first admin account:
 
-    docker compose exec api uv run python -m app.cli.seed
+    docker compose exec api python -m app.cli.seed
 
   Then:  docker compose ps       # check everything is up
          docker compose logs -f  # watch it start

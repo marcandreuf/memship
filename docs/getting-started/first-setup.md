@@ -9,7 +9,7 @@ Run the interactive seed for a real deployment — it prompts you to create your
 and organization admin, and generates **no** sample data:
 
 ```bash
-docker compose exec -it api uv run python -m app.cli.seed
+docker compose exec -it api python -m app.cli.seed
 ```
 
 > **Do not use the `--test` / `--demo` seed modes in production.** They create publicly-known

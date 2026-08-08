@@ -35,7 +35,7 @@ docker compose pull
 docker compose up -d
 
 # Run initial setup (creates admin accounts) — see First-time setup
-docker compose exec -it api uv run python -m app.cli.seed
+docker compose exec -it api python -m app.cli.seed
 ```
 
 Open **http://localhost** (or your domain).
@@ -49,7 +49,7 @@ git clone https://github.com/marcandreuf/memship.git
 cd memship
 cp .env.example .env      # edit SECRET_KEY and DB_PASSWORD at minimum
 docker compose up -d --build
-docker compose exec -it api uv run python -m app.cli.seed
+docker compose exec -it api python -m app.cli.seed
 ```
 
 ## Services
