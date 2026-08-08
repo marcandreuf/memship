@@ -167,6 +167,20 @@ fi
 if [ -n "$DOMAIN" ]; then
     sed -i "s|^SITE_ADDRESS=.*|SITE_ADDRESS=$DOMAIN|" "$ENV_FILE"
     info "SITE_ADDRESS=$DOMAIN"
+
+    # SITE_ADDRESS alone is not enough. Installing on plain HTTP first and adding
+    # a domain later is the normal order — you cannot get a certificate before
+    # DNS resolves — and these three would otherwise still say http://localhost:
+    # email links would point at localhost, CORS would reject the real origin,
+    # and BACKEND_PUBLIC_URL builds the SSO callback, which must match the
+    # provider's registered redirect URI exactly or sign-in fails.
+    for var in FRONTEND_URL CORS_ORIGINS BACKEND_PUBLIC_URL; do
+        current="$(grep -E "^$var=" "$ENV_FILE" | tail -1 | cut -d= -f2- || true)"
+        if [ "$current" != "https://$DOMAIN" ]; then
+            sed -i "s|^$var=.*|$var=https://$DOMAIN|" "$ENV_FILE"
+            info "$var=https://$DOMAIN (was ${current:-unset})"
+        fi
+    done
 fi
 if [ -n "$IMAGE_TAG" ]; then
     sed -i "s|^IMAGE_TAG=.*|IMAGE_TAG=$IMAGE_TAG|" "$ENV_FILE"
