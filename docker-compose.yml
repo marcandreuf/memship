@@ -74,7 +74,12 @@ services:
     expose:
       - "8000"
     ports:
-      - "${API_PORT:-8003}:8000"
+      # Loopback-only. Docker publishes ports by writing its own iptables rules
+      # ahead of ufw's, so a bare "8003:8000" is reachable from the internet on
+      # any box with a public IP even while the firewall reports it denied.
+      # Nothing needs this from outside — Caddy reaches the API over the compose
+      # network. Set API_BIND=0.0.0.0 if you deliberately want it published.
+      - "${API_BIND:-127.0.0.1}:${API_PORT:-8003}:8000"
     environment:
       <<: *backend-env
       RUN_MIGRATIONS: 1
@@ -172,7 +177,11 @@ services:
     image: postgres:15-alpine
     container_name: memship-db
     ports:
-      - "${DB_PORT:-5433}:5432"
+      # Loopback-only, for the same reason as the API above — and it matters more
+      # here: this was publishing PostgreSQL to the internet, password-protected
+      # but exposed. Backups use `docker compose exec`, not this port, so nothing
+      # in normal operation needs it. Set DB_BIND=0.0.0.0 to publish deliberately.
+      - "${DB_BIND:-127.0.0.1}:${DB_PORT:-5433}:5432"
     environment:
       - POSTGRES_USER=memship
       - POSTGRES_PASSWORD=${DB_PASSWORD:-memship}
