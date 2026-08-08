@@ -7,11 +7,24 @@ setting the backend reads.
 > **Minimum for production:** change `SECRET_KEY` and `DB_PASSWORD`, set `IMAGE_TAG` to a
 > released version, and configure [email](email.md).
 
+## Deployment layout
+
+| Variable            | Default  | Description                                                        |
+|---------------------|----------|--------------------------------------------------------------------|
+| `MEMSHIP_DATA_ROOT` | `./data` | Absolute path holding every persistent path — database, uploads, scheduler state, TLS certificates, backups. Back this up. See [Installation](../getting-started/installation.md#the-data-root). |
+| `SITE_ADDRESS`      | _(empty)_ | The address Caddy serves. A bare hostname (`memship.example.com`) makes Caddy provision a Let's Encrypt certificate automatically; empty serves plain HTTP on port 80. |
+| `HOST_UID`          | `1001`   | Uid the backend containers run as. Set to your `id -u` so bind-mounted uploads belong to you and are readable without `sudo`. |
+| `HOST_GID`          | `1001`   | Gid, likewise — your `id -g`.                                      |
+
+`scripts/install.sh` sets all four for you.
+
 ## Security
 
 | Variable      | Default                 | Description                                                                 |
 |---------------|-------------------------|-----------------------------------------------------------------------------|
 | `SECRET_KEY`  | `change-me-in-production` | **Change this.** Signing key for auth tokens. Use a random 64-char string. |
+| `MEMSHIP_SECRET_KEY` | _(generated into `storage/secret.key`)_ | Encrypts SSO and payment-provider credentials stored in the database. **Set it explicitly** — an auto-generated key lives only in the data root, so a rebuilt host cannot decrypt a restored backup without it. Rotating it makes existing stored credentials unreadable. |
+| `SECRETS_KEY_FILE` | `<STORAGE_LOCAL_PATH>/secret.key` | Where the auto-generated key is persisted when `MEMSHIP_SECRET_KEY` is unset. Must sit on persistent storage, or stored credentials become unreadable after a restart. |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | `30`      | Access token lifetime in minutes.                                          |
 
 ## Database
@@ -81,7 +94,7 @@ scheduled fee generation, and payment reminders.
 
 | Variable             | Default   | Description                                              |
 |----------------------|-----------|----------------------------------------------------------|
-| `STORAGE_LOCAL_PATH` | `storage` | Local path for uploads (logos, activity images, PDFs). Mounted as a Docker volume — include it in [backups](backups-and-restore.md). |
+| `STORAGE_LOCAL_PATH` | `storage` | In-container path for uploads (logos, activity images, PDFs). Bind-mounted from `$MEMSHIP_DATA_ROOT/storage`, which also holds `secret.key` — include it in [backups](backups-and-restore.md). |
 | `MAX_UPLOAD_SIZE_MB` | `10`      | Maximum upload size in megabytes.                        |
 
 ## Server
