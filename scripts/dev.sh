@@ -201,10 +201,10 @@ case "$ACTION" in
     seed)
         if [ "$TARGET" = "test" ]; then
             echo -e "${BLUE}i${NC} Running seed command with test accounts..."
-            docker compose -f "$BACKEND_COMPOSE" exec -it api uv run python -m app.cli.seed --test
+            docker compose -f "$BACKEND_COMPOSE" exec -it api python -m app.cli.seed --test
         else
             echo -e "${BLUE}i${NC} Running seed command (interactive)..."
-            docker compose -f "$BACKEND_COMPOSE" exec -it api uv run python -m app.cli.seed
+            docker compose -f "$BACKEND_COMPOSE" exec -it api python -m app.cli.seed
         fi
         ;;
     reset)
@@ -220,7 +220,7 @@ case "$ACTION" in
             sleep 2
         done
         echo -e "${BLUE}i${NC} Running seed with test accounts..."
-        docker compose -f "$BACKEND_COMPOSE" exec -T api uv run python -m app.cli.seed --test
+        docker compose -f "$BACKEND_COMPOSE" exec -T api python -m app.cli.seed --test
         echo -e "${GREEN}+${NC} Restarting frontend (clearing cache)..."
         (cd "$FRONTEND_DIR" && ./dev.sh restart)
         echo -e "${GREEN}+${NC} Reset complete"

@@ -7,9 +7,23 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
-BACKUP_DIR="$REPO_ROOT/backups"
 COMPOSE_FILE="$REPO_ROOT/docker-compose.yml"
 RETENTION_DAYS=10
+
+# Backups live under the data root: that is what docker-compose.yml bind-mounts
+# onto /backups in the db container, which is where pg_dump writes below. Resolve
+# it the way Compose does — environment first, then .env, then the ./data default
+# — or the dump lands somewhere this script never looks.
+DATA_ROOT="${MEMSHIP_DATA_ROOT:-}"
+if [[ -z "$DATA_ROOT" && -f "$REPO_ROOT/.env" ]]; then
+    DATA_ROOT="$(grep -E '^MEMSHIP_DATA_ROOT=' "$REPO_ROOT/.env" | tail -1 | cut -d= -f2- || true)"
+fi
+DATA_ROOT="${DATA_ROOT:-$REPO_ROOT/data}"
+case "$DATA_ROOT" in
+    /*) ;;
+    *) DATA_ROOT="$REPO_ROOT/${DATA_ROOT#./}" ;;
+esac
+BACKUP_DIR="$DATA_ROOT/backups"
 
 # Colors
 GREEN='\033[0;32m'

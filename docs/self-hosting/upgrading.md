@@ -36,6 +36,36 @@ IMAGE_TAG=1.2.0
    docker compose up -d
    ```
 
+## Upgrading from a release before the non-root backend
+
+The backend containers used to run as root, so anything they wrote into the storage directory
+landed root-owned. They now run as `HOST_UID`/`HOST_GID`, which is what makes bind-mounted
+uploads readable on the host without `sudo` — but the container can no longer write the files
+its root-era self left behind.
+
+Take ownership once, after upgrading:
+
+```bash
+sudo chown -R $(id -u):$(id -g) "$MEMSHIP_DATA_ROOT/storage"
+```
+
+`scripts/install.sh` detects this and prints the exact command; running it by hand has the same
+effect.
+
+Two related changes in the same release:
+
+- **`uv run` no longer works inside the containers.** The virtualenv is on `PATH` instead, so
+  nothing under `/app` is written at runtime — that is what lets the container run under any uid.
+  Use `docker compose exec api python -m …`, not `docker compose exec api uv run python -m …`.
+  Anything you have scripted against the containers needs the same edit.
+- **Persistent data moved from named volumes to bind mounts** under `MEMSHIP_DATA_ROOT`. If you
+  are upgrading an install that used named volumes, copy each one across before starting:
+
+  ```bash
+  docker run --rm -v pgdata:/from -v /srv/openmemship/data/postgres:/to \
+      alpine cp -a /from/. /to/
+  ```
+
 ## Database migrations
 
 Migrations run automatically on backend startup when `RUN_MIGRATIONS=1` (the default in the

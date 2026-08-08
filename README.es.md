@@ -34,7 +34,7 @@ A continuación, ejecuta la configuración inicial:
 **Opción A: Demo rápida con cuentas de prueba (sin preguntas)**
 
 ```bash
-docker compose exec demo-memship-api uv run python -m app.cli.seed --test
+docker compose exec demo-memship-api python -m app.cli.seed --test
 ```
 
 Esto crea cuentas de prueba preconfiguradas, socios de ejemplo, actividades e inscripciones:
@@ -48,7 +48,7 @@ Esto crea cuentas de prueba preconfiguradas, socios de ejemplo, actividades e in
 **Opción B: Configuración personalizada (interactiva)**
 
 ```bash
-docker compose exec demo-memship-api uv run python -m app.cli.seed
+docker compose exec demo-memship-api python -m app.cli.seed
 ```
 
 Te pedirá que crees tus propias cuentas de super admin y admin de organización. No se generan datos de ejemplo.
@@ -56,7 +56,7 @@ Te pedirá que crees tus propias cuentas de super admin y admin de organización
 **Opción C: Conjunto de datos demo realista**
 
 ```bash
-docker compose exec demo-memship-api uv run python -m app.cli.seed --demo
+docker compose exec demo-memship-api python -m app.cli.seed --demo
 ```
 
 Crea las cuentas de administrador anteriores más un año completo de datos de ejemplo realistas — ~60 socios en todos los estados, actividades, recibos en todos los estados repartidos por los meses, mandatos SEPA y recordatorios del panel — ideal para evaluar el panel financiero y el resumen anual. Se puede volver a ejecutar sin duplicar (idempotente).
@@ -111,6 +111,7 @@ Memship sigue el [versionado semántico](https://semver.org/) y **los números d
 | v1.2.2 | Integración SSO / identidad y configuración de correo — alta pública con verificación por correo, flujo de aprobación por la directiva, inicio de sesión con Google / Apple, configuración de proveedores SSO por el superadministrador y ajuste de Resend / Google SMTP desde una pestaña de Integraciones. También elimina una migración duplicada de configuración de correo cuyo identificador de revisión chocaba con otro existente, lo que hacía fallar `alembic upgrade head` al arrancar | Hecho |
 | v1.3.0 | Reservas simples — reservas de socios en espacios compartidos mediante un calendario semanal, aforo por franja, lista de espera FIFO con promoción automática y correos de confirmación/lista de espera | Hecho |
 | v1.4.0 | Roles y permisos flexibles — asignación multi-rol y comprobaciones granulares por permiso en lugar de los cuatro roles fijos, con una API `/roles` de gestión y navegación y acceso a páginas guiados por permisos en todo el portal. También repara los stacks de despliegue publicados, que no ejecutaban ningún worker de Celery — por lo que todos los correos que envía el producto se perdían en silencio y las tareas nocturnas de facturación y de recordatorios de pago no se ejecutaban nunca — y no montaban ningún volumen en el servicio de API, de modo que una actualización destruía los archivos subidos y regeneraba la clave secreta que cifra las credenciales almacenadas de SSO y de los proveedores de pago | Hecho |
+| v2.0.0 | Revisión del autoalojamiento — los datos persistentes pasan a montajes de tipo bind visibles en el host bajo un único `MEMSHIP_DATA_ROOT`, los contenedores del backend se ejecutan con el uid del propio operador, un `install.sh` de un solo comando y `vps-bootstrap.sh` para preparar el servidor. **Seguridad:** PostgreSQL y la API dejan de publicarse en internet — Docker escribe sus reglas de iptables por delante de las del cortafuegos, así que ambos eran accesibles en cualquier host con IP pública en todas las versiones anteriores. **Cambio incompatible:** `uv run` ya no funciona dentro de los contenedores, y las instalaciones existentes necesitan un `sudo chown -R $(id -u):$(id -g) <data-root>/storage` una sola vez | Hecho |
 
 ### Planificado
 
@@ -322,7 +323,7 @@ docker compose pull
 docker compose up -d
 
 # Ejecutar la configuración inicial (crea las cuentas de admin)
-docker compose exec -it api uv run python -m app.cli.seed
+docker compose exec -it api python -m app.cli.seed
 
 # Abre http://localhost
 ```
@@ -336,7 +337,7 @@ git clone https://github.com/marcandreuf/memship.git
 cd memship
 cp .env.example .env
 docker compose up -d --build
-docker compose exec -it api uv run python -m app.cli.seed
+docker compose exec -it api python -m app.cli.seed
 ```
 
 ### Servicios

@@ -25,7 +25,7 @@ Pick one of the three seed modes:
 **Option A — Quick demo with test accounts (no prompts)**
 
 ```bash
-docker compose exec demo-memship-api uv run python -m app.cli.seed --test
+docker compose exec demo-memship-api python -m app.cli.seed --test
 ```
 
 Creates pre-configured test accounts plus sample members, activities, and registrations:
@@ -39,7 +39,7 @@ Creates pre-configured test accounts plus sample members, activities, and regist
 **Option B — Custom setup (interactive)**
 
 ```bash
-docker compose exec demo-memship-api uv run python -m app.cli.seed
+docker compose exec demo-memship-api python -m app.cli.seed
 ```
 
 Prompts you to create your own super admin and org admin. No sample data.
@@ -47,7 +47,7 @@ Prompts you to create your own super admin and org admin. No sample data.
 **Option C — Realistic demo dataset**
 
 ```bash
-docker compose exec demo-memship-api uv run python -m app.cli.seed --demo
+docker compose exec demo-memship-api python -m app.cli.seed --demo
 ```
 
 Creates the admin accounts plus a full year of realistic data — ~60 members across all

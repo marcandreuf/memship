@@ -34,7 +34,7 @@ Then run the initial setup:
 **Option A: Quick demo with test accounts (no prompts)**
 
 ```bash
-docker compose exec demo-memship-api uv run python -m app.cli.seed --test
+docker compose exec demo-memship-api python -m app.cli.seed --test
 ```
 
 This creates pre-configured test accounts, sample members, activities, and registrations:
@@ -48,7 +48,7 @@ This creates pre-configured test accounts, sample members, activities, and regis
 **Option B: Custom setup (interactive)**
 
 ```bash
-docker compose exec demo-memship-api uv run python -m app.cli.seed
+docker compose exec demo-memship-api python -m app.cli.seed
 ```
 
 Prompts you to create your own super admin and org admin accounts. No sample data is generated.
@@ -56,7 +56,7 @@ Prompts you to create your own super admin and org admin accounts. No sample dat
 **Option C: Realistic demo dataset**
 
 ```bash
-docker compose exec demo-memship-api uv run python -m app.cli.seed --demo
+docker compose exec demo-memship-api python -m app.cli.seed --demo
 ```
 
 Creates the admin accounts above plus a full year of realistic sample data — ~60 members across all statuses, activities, receipts in every state spread across the months, SEPA mandates, and dashboard reminders — ideal for evaluating the finance dashboard and annual summary. Safe to re-run (idempotent).
@@ -111,6 +111,7 @@ Memship follows [semantic versioning](https://semver.org/), and **version number
 | v1.2.2 | SSO / identity integration and mailing configuration — public registration + email-verification onboarding, admin approval flow, Google / Apple sign-in, superadmin SSO provider configuration and Resend / Google SMTP setup from an Integrations tab. Also drops a duplicate mailing-config migration whose revision id collided with an existing one, which made `alembic upgrade head` fail on startup | Done   |
 | v1.3.0 | Simple Bookings — member reservations of shared spaces on a week calendar, per-slot capacity, FIFO waitlist with auto-promotion, and confirmation/waitlist emails | Done   |
 | v1.4.0 | Flexible roles & permissions — multi-role assignment and granular per-permission checks in place of the four fixed roles, with a `/roles` management API and permission-driven navigation and page access across the portal. Also repairs the shipped deployment stacks, which ran no Celery worker — so every email the product sends was dropped silently, and the nightly billing and payment-reminder jobs never ran at all — and mounted no volume on the API service, so an upgrade destroyed uploaded files and regenerated the secret key that encrypts stored SSO and payment-provider credentials | Done   |
+| v2.0.0 | Self-hosting overhaul — persistent data on host-visible bind mounts under a single `MEMSHIP_DATA_ROOT`, backend containers running as the operator's own uid, a one-command `install.sh`, and `vps-bootstrap.sh` for host preparation. **Security:** PostgreSQL and the API are no longer published to the internet — Docker writes its iptables rules ahead of the firewall's, so both were reachable on any host with a public IP in every earlier release. **Breaking:** `uv run` no longer works inside the containers, and existing installs need a one-off `sudo chown -R $(id -u):$(id -g) <data-root>/storage` | Done   |
 
 ### Planned
 
@@ -323,7 +324,7 @@ docker compose pull
 docker compose up -d
 
 # Run initial setup (creates admin accounts)
-docker compose exec -it api uv run python -m app.cli.seed
+docker compose exec -it api python -m app.cli.seed
 
 # Open http://localhost
 ```
@@ -337,7 +338,7 @@ git clone https://github.com/marcandreuf/memship.git
 cd memship
 cp .env.example .env
 docker compose up -d --build
-docker compose exec -it api uv run python -m app.cli.seed
+docker compose exec -it api python -m app.cli.seed
 ```
 
 ### Services
