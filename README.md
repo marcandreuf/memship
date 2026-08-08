@@ -110,12 +110,12 @@ Memship follows [semantic versioning](https://semver.org/), and **version number
 | v1.1.1 | Patch — settings navigation reorganised: payment and member settings grouped under Payments and Members tabs                                                                                                     | Done   |
 | v1.2.2 | SSO / identity integration and mailing configuration — public registration + email-verification onboarding, admin approval flow, Google / Apple sign-in, superadmin SSO provider configuration and Resend / Google SMTP setup from an Integrations tab. Also drops a duplicate mailing-config migration whose revision id collided with an existing one, which made `alembic upgrade head` fail on startup | Done   |
 | v1.3.0 | Simple Bookings — member reservations of shared spaces on a week calendar, per-slot capacity, FIFO waitlist with auto-promotion, and confirmation/waitlist emails | Done   |
+| v1.4.0 | Flexible roles & permissions — multi-role assignment and granular per-permission checks in place of the four fixed roles, with a `/roles` management API and permission-driven navigation and page access across the portal. Also repairs the shipped deployment stacks, which ran no Celery worker — so every email the product sends was dropped silently, and the nightly billing and payment-reminder jobs never ran at all — and mounted no volume on the API service, so an upgrade destroyed uploaded files and regenerated the secret key that encrypts stored SSO and payment-provider credentials | Done   |
 
 ### Planned
 
 Priority-ordered, not yet versioned. Each becomes a versioned release when it ships, and the release claims the next semver number in order.
 
-- **Flexible roles & permissions** — multi-role, per-role rights beyond the 4 fixed roles
 - **Data backups** — download a full backup from the admin area, covering the database and the uploaded files, with a documented and tested restore
 - **Convocations** — formal General Assembly calls with token-based member RSVP
 - **Document library** — statutes, minutes, forms with per-group visibility
