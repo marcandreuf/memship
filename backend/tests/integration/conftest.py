@@ -241,9 +241,10 @@ def create_test_tables():
 def _no_external_email(monkeypatch):
     """Never touch a real mail provider during integration tests.
 
-    The dev ``.env`` may set ``SMTP_HOST`` / ``RESEND_API_KEY``, which would make
-    ``settings.email_enabled`` true and send real email. Blank those so mail is
-    treated as disabled (deterministic dev-mode: endpoints hand tokens back
+    The dev ``.env`` may set ``SMTP_HOST`` / ``RESEND_API_KEY``, which the mailing
+    config resolves as an active env-only transport and sends real email. Blank
+    those so mail is treated as disabled (deterministic dev-mode: endpoints hand
+    tokens back
     instead of emailing), and stub the transport dispatch so no network call is
     possible even when a test configures a provider in the DB. Tests that want to
     assert a send still mock ``app.core.email.send_email`` themselves.

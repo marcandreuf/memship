@@ -17,11 +17,11 @@
 		reverse_proxy api:8000
 	}
 
-	# Uploaded files are served by the API (StaticFiles mount in app/main.py),
-	# not by the frontend.
-	handle /uploads/* {
-		reverse_proxy api:8000
-	}
+	# No /uploads rule on purpose. Uploaded files reach the browser through the
+	# frontend's /api/uploads proxy, which forwards the session cookie to the
+	# API's authenticated uploads router. Routing /uploads straight at the API
+	# used to bypass the frontend entirely, and back when that router was a
+	# StaticFiles mount it handed out the encryption key and the SEPA files.
 
 	# Everything else → frontend
 	handle {

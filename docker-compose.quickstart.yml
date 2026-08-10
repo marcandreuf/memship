@@ -14,7 +14,12 @@
 # be added to the API and silently forgotten on the worker.
 x-backend-env: &backend-env
   DATABASE_URL: postgresql://memship:memship@demo-memship-db:5432/memship_db
-  SECRET_KEY: change-me-in-production-use-a-random-64-char-string
+  # Deliberately empty. This file is published in a public repository, so any
+  # literal key here would be a key everyone has — enough to mint a super-admin
+  # session on every demo instance running it. Left unset, the backend generates
+  # a per-install key on first boot and persists it to /app/storage/session.key
+  # on the shared volume. Set SECRET_KEY in the environment to supply your own.
+  SECRET_KEY: ${SECRET_KEY:-}
   APP_ENV: production
   APP_VERSION: ${IMAGE_TAG:-latest}
   DEFAULT_LOCALE: es
@@ -35,9 +40,6 @@ services:
         cat > /etc/caddy/Caddyfile <<'CADDYEOF'
         :80 {
           handle /api/v1/* {
-            reverse_proxy demo-memship-api:8000
-          }
-          handle /uploads/* {
             reverse_proxy demo-memship-api:8000
           }
           handle {

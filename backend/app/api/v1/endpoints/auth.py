@@ -1,6 +1,7 @@
 """Authentication endpoints."""
 
 import json
+import logging
 from datetime import datetime, timezone
 from urllib.parse import urlencode
 
@@ -40,6 +41,7 @@ from app.domains.auth.oauth_service import (
     find_or_create_from_oauth,
 )
 from app.domains.auth.sso_config import resolve_sso_config
+from app.domains.mailing.mailing_config import mailing_enabled
 from app.domains.auth.service import (
     authenticate_user,
     get_registration_settings,
@@ -50,17 +52,37 @@ from app.domains.auth.service import (
     verify_email,
 )
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 SESSION_MAX_AGE = 60 * 30  # 30 minutes, matching ACCESS_TOKEN_EXPIRE_MINUTES
 
 
+def _dev_tokens_allowed() -> bool:
+    """Whether a verification / reset token may be returned in the response body.
+
+    Only ever in local development. Anywhere else this is an unauthenticated
+    account-takeover primitive: ask for a reset on someone's address, read the
+    token out of the 200, set their password.
+    """
+    return settings.APP_ENV == "development"
+
+
 def _set_session_cookie(response: Response, user: User) -> None:
+    """Issue the session cookie. The single place that decides its flags.
+
+    ``secure`` follows the deployment's own URL scheme (see
+    ``settings.session_cookie_secure``) rather than being hardcoded off: on an
+    HTTPS install, one plain-HTTP request to the host — an http:// image, a
+    typed URL, a captive portal — hands the session to anyone on the path
+    before Caddy's redirect fires.
+    """
     response.set_cookie(
         key="access_token",
         value=create_access_token(user.id),
         httponly=True,
-        secure=False,  # TODO: set True in production
+        secure=settings.session_cookie_secure,
         samesite="lax",
         max_age=SESSION_MAX_AGE,
         path="/",
@@ -82,16 +104,7 @@ def login(data: LoginRequest, response: Response, db: Session = Depends(get_db))
             detail="Account is locked",
         )
 
-    token = create_access_token(user.id)
-    response.set_cookie(
-        key="access_token",
-        value=token,
-        httponly=True,
-        secure=False,  # TODO: set True in production
-        samesite="lax",
-        max_age=60 * 30,  # 30 minutes
-        path="/",
-    )
+    _set_session_cookie(response, user)
     db.commit()
 
     return TokenResponse()
@@ -132,7 +145,7 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
 
     # No session cookie here: the account is not usable until the email is
     # confirmed and (when configured) an admin approves the registration.
-    if settings.email_enabled:
+    if mailing_enabled(db):
         send_verification_email(
             user.email, user.person.first_name, _verification_url(verification_token)
         )
@@ -144,12 +157,24 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
         )
 
     # Dev mode — no transport configured, hand the token back like password reset does
+    if _dev_tokens_allowed():
+        return RegisterResponse(
+            message="Registration received (dev mode — no email sent)",
+            email=user.email,
+            member_status=member_status,
+            requires_approval=requires_approval,
+            verification_token=verification_token,
+        )
+
+    logger.error(
+        "A user registered but no mail transport is configured — the verification "
+        "email cannot be sent. Configure a provider in Settings → Integrations."
+    )
     return RegisterResponse(
-        message="Registration received (dev mode — no email sent)",
+        message="Registration received. Check your email to confirm your address.",
         email=user.email,
         member_status=member_status,
         requires_approval=requires_approval,
-        verification_token=verification_token,
     )
 
 
@@ -175,14 +200,14 @@ def resend_verification_endpoint(
     # Generic response either way — never reveal whether the address exists.
     generic = "If the email exists and is unverified, a new link has been sent"
 
-    if result and settings.email_enabled:
+    if result and mailing_enabled(db):
         user, token = result
         send_verification_email(
             user.email, user.person.first_name, _verification_url(token)
         )
         return MessageResponse(message=generic)
 
-    if result:
+    if result and _dev_tokens_allowed():
         _, token = result
         return MessageResponse(
             message="Verification token generated (dev mode — no email sent)",
@@ -197,25 +222,36 @@ def password_reset_request(data: PasswordResetRequest, db: Session = Depends(get
     token = request_password_reset(db, data.email)
     db.commit()
 
+    generic = "If the email exists, a password reset link has been sent"
+
     if token:
-        if settings.smtp_enabled:
-            # Send reset email
+        # Whichever transport is active sends it — Resend and Gmail/SMTP are
+        # interchangeable here. This used to key off SMTP_HOST alone, so a
+        # Resend install sent no mail and fell through to the dev branch below,
+        # handing the reset token to any anonymous caller.
+        if mailing_enabled(db):
             user = db.query(User).filter(User.email == data.email).first()
-            reset_url = f"{settings.FRONTEND_URL}/es/reset-password?token={token}"
+            reset_url = f"{settings.FRONTEND_URL}/{settings.DEFAULT_LOCALE}/reset-password?token={token}"
             if user:
                 send_password_reset_email(user.email, user.person.first_name, reset_url)
-            return MessageResponse(
-                message="If the email exists, a password reset link has been sent"
-            )
-        else:
-            # Dev mode — return token directly
+            return MessageResponse(message=generic)
+
+        if _dev_tokens_allowed():
             return MessageResponse(
                 message="Password reset token generated (dev mode — no email sent)",
                 reset_token=token,
             )
 
+        # Production with no transport: the token exists but there is no safe way
+        # to deliver it, and returning it would be an account takeover primitive.
+        logger.error(
+            "Password reset requested but no mail transport is configured — "
+            "the token cannot be delivered. Configure a provider in "
+            "Settings → Integrations or via RESEND_API_KEY / SMTP_HOST."
+        )
+
     # Don't reveal whether email exists
-    return MessageResponse(message="If the email exists, a password reset link has been sent")
+    return MessageResponse(message=generic)
 
 
 @router.post("/password-reset", response_model=MessageResponse)
@@ -255,7 +291,15 @@ def get_me(current_user: User = Depends(require_permission("self.profile.read"))
 
 @router.post("/logout", response_model=MessageResponse)
 def logout(response: Response):
-    response.delete_cookie(key="access_token", path="/")
+    # Same flags as when it was set — a browser ignores a deletion whose
+    # attributes do not match.
+    response.delete_cookie(
+        key="access_token",
+        path="/",
+        httponly=True,
+        secure=settings.session_cookie_secure,
+        samesite="lax",
+    )
     return MessageResponse(message="Logged out")
 
 

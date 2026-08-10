@@ -22,7 +22,11 @@
 # be added to the API and silently forgotten on the worker.
 x-backend-env: &backend-env
   DATABASE_URL: postgresql://memship:${DB_PASSWORD:-memship}@db:5432/memship_db
-  SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
+  # No default: the old "dev-secret-key-change-in-production" fallback is in the
+  # repository, so any stack brought up without .env was signing sessions with a
+  # published key. scripts/install.sh generates a real one; unset, the backend
+  # persists a per-install key to storage/session.key instead.
+  SECRET_KEY: ${SECRET_KEY:-}
   APP_ENV: ${APP_ENV:-production}
   DEFAULT_LOCALE: ${DEFAULT_LOCALE:-es}
   CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}

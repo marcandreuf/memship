@@ -9,7 +9,7 @@ Two things, and you need both:
 
 | What | Why |
 |---|---|
-| **The data root** (`MEMSHIP_DATA_ROOT`, e.g. `/srv/openmemship/data`) | The database, uploads, `secret.key`, TLS certificates — everything that must survive |
+| **The data root** (`MEMSHIP_DATA_ROOT`, e.g. `/srv/openmemship/data`) | The database, uploads, `secret.key`, `session.key`, TLS certificates — everything that must survive |
 | **`.env`** | Your generated secrets. Losing `SECRET_KEY` and `MEMSHIP_SECRET_KEY` means losing access to encrypted data even with a perfect database dump |
 
 Because every persistent path is a bind mount under one directory, backing memship up is copying

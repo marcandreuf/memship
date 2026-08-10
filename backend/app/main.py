@@ -4,9 +4,9 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
+from app.api.uploads import router as uploads_router
 from app.api.v1.api import api_router
 from app.core.config import settings
 
@@ -51,7 +51,10 @@ app.add_middleware(
 
 app.include_router(api_router, prefix="/api/v1")
 
-# Serve uploaded files (cover images, attachments)
+# Uploaded files. NOT a StaticFiles mount: the storage root also holds the
+# encryption key, generated SEPA files and scanned mandates, and StaticFiles
+# serves every one of them to anonymous callers. app/api/uploads.py enforces a
+# per-prefix ownership rule and 404s anything without one.
 storage_path = Path(settings.STORAGE_LOCAL_PATH)
 storage_path.mkdir(parents=True, exist_ok=True)
-app.mount("/uploads", StaticFiles(directory=str(storage_path)), name="uploads")
+app.include_router(uploads_router)

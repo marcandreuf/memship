@@ -58,8 +58,9 @@ for evaluating the finance dashboard and annual summary. Safe to re-run (idempot
 
 Go to **http://localhost:8081** and log in with your credentials.
 
-> **Do not use the test accounts in production.** The quick-start compose file uses insecure
-> default secrets (`SECRET_KEY`, database password) and is for local evaluation only. See
+> **Do not use the test accounts in production.** The quick-start compose file uses a fixed
+> database password and generates its signing key into the storage volume, and is for local
+> evaluation only. See
 > [Installation](installation.md) and the [Configuration reference](../self-hosting/configuration.md)
 > before exposing Memship to a network.
 
