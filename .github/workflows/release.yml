@@ -3,8 +3,17 @@
 # Triggered by pushing an annotated git tag `vX.Y.Z` (git tags are the single source
 # of truth for the version — there is no VERSION file). This PROMOTES the RC image
 # already built for the tagged commit (build-images.yml) to `:X.Y.Z` + `:latest`
-# WITHOUT rebuilding — the exact bytes staging validated. If no RC image exists for
-# the commit (e.g. it was never built on main), it falls back to building from the tag.
+# WITHOUT rebuilding — the exact bytes staging validated.
+#
+# A missing RC image FAILS the release rather than rebuilding from the tag. Rebuilding
+# looks like it worked and quietly breaks the guarantee: what ships is then a fresh
+# build nobody validated, differing from staging by whatever moved in the base image
+# or the dependency tree since. That is what happened to the frontend in v2.0.0.
+# build-images.yml now builds every service on every main commit, so an absent RC
+# means something genuinely went wrong and is worth stopping for.
+#
+# `allow_rebuild` is the escape hatch, for re-promoting a tag old enough that its RC
+# images have been cleaned up.
 #
 # Release a validated commit with: ./scripts/release.sh <version>
 #
@@ -19,6 +28,10 @@ on:
       tag:
         description: 'Existing version tag to (re)promote, e.g. v1.3.0'
         required: true
+      allow_rebuild:
+        description: 'Build from the tag if no RC image exists (breaks build-once-promote)'
+        type: boolean
+        default: false
 
 env:
   REGISTRY: ghcr.io
@@ -75,6 +88,52 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Checked for every service before anything is promoted, so a half-released
+      # version — backend at the new tag, frontend still at the old one — is not
+      # reachable. Operators upgrade by moving one IMAGE_TAG.
+      - name: Check the RC set is complete
+        id: rc
+        env:
+          OWNER: ${{ github.repository_owner }}
+          SHORT_SHA: ${{ steps.sha.outputs.short_sha }}
+        run: |
+          missing=()
+          for svc in backend frontend; do
+            RC="$REGISTRY/$OWNER/memship-$svc:sha-$SHORT_SHA"
+            if docker buildx imagetools inspect "$RC" >/dev/null 2>&1; then
+              echo "found $RC"
+            else
+              echo "MISSING $RC"
+              missing+=("$svc")
+            fi
+          done
+
+          if [ ${#missing[@]} -eq 0 ]; then
+            echo "complete=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "complete=false" >> "$GITHUB_OUTPUT"
+          if [[ "${{ github.event.inputs.allow_rebuild }}" == "true" ]]; then
+            echo "::warning::No RC image for: ${missing[*]}. Rebuilding from the tag because allow_rebuild was set — the released bytes will not be the ones staging validated."
+            exit 0
+          fi
+
+          echo "::error::No RC image for: ${missing[*]} at commit $SHORT_SHA."
+          {
+            echo "### Release aborted — incomplete RC set"
+            echo ""
+            echo "No release-candidate image for: **${missing[*]}** at \`$SHORT_SHA\`."
+            echo ""
+            echo "A release promotes the images staging validated; it does not build new"
+            echo "ones. Build the missing RC first (Actions → **Build Images** → Run"
+            echo "workflow, on this commit), then re-run this release."
+            echo ""
+            echo "To release anyway, re-run with \`allow_rebuild\` — the published images"
+            echo "will then be a fresh build that nothing has validated."
+          } >> $GITHUB_STEP_SUMMARY
+          exit 1
+
       - name: Promote RC images (build once, promote)
         env:
           OWNER: ${{ github.repository_owner }}
@@ -88,7 +147,7 @@ jobs:
               echo "Promoting $RC -> $IMAGE:$VERSION + :latest (no rebuild)"
               docker buildx imagetools create -t "$IMAGE:$VERSION" -t "$IMAGE:latest" "$RC"
             else
-              echo "::warning::No RC image $RC for this commit — building $svc from the tag instead."
+              echo "::warning::Rebuilding $svc from the tag (allow_rebuild)."
               if [[ "$svc" == "backend" ]]; then
                 docker build -f "$svc/docker/Dockerfile" --build-arg APP_VERSION="$VERSION" \
                   -t "$IMAGE:$VERSION" -t "$IMAGE:latest" "$svc"
@@ -104,8 +163,17 @@ jobs:
       - name: Summary
         env:
           VERSION: ${{ steps.ver.outputs.version }}
+          COMPLETE: ${{ steps.rc.outputs.complete }}
         run: |
-          echo "### Released v$VERSION" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- \`ghcr.io/${{ github.repository_owner }}/memship-backend:$VERSION\` + \`:latest\`" >> $GITHUB_STEP_SUMMARY
-          echo "- \`ghcr.io/${{ github.repository_owner }}/memship-frontend:$VERSION\` + \`:latest\`" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "### Released v$VERSION"
+            echo ""
+            echo "- \`ghcr.io/${{ github.repository_owner }}/memship-backend:$VERSION\` + \`:latest\`"
+            echo "- \`ghcr.io/${{ github.repository_owner }}/memship-frontend:$VERSION\` + \`:latest\`"
+            echo ""
+            if [[ "$COMPLETE" == "true" ]]; then
+              echo "Promoted from the release candidates staging validated — no rebuild."
+            else
+              echo "⚠ Rebuilt from the tag (\`allow_rebuild\`). These are not the bytes staging validated."
+            fi
+          } >> $GITHUB_STEP_SUMMARY
