@@ -6,6 +6,20 @@
 # PROMOTES the exact RC image for the validated commit to `:X.Y.Z` + `:latest`
 # (see release.yml) — build once, promote, so staging and prod ship identical bytes.
 #
+# EVERY service is built on EVERY main commit, deliberately. This used to filter
+# by changed path, which left a commit touching only `backend/**` with no frontend
+# RC — and release.yml then fell back to rebuilding the frontend from the tag, so
+# what shipped was not what staging validated. Confirmed on v2.0.0: the backend
+# was promoted, the frontend was rebuilt.
+#
+# Retagging the unchanged service's `:main` image under the new sha would be
+# cheaper, but it is only correct if that service really is unchanged since the
+# image `:main` points at. The filter compared `HEAD~1..HEAD`, which sees one
+# commit — so a push of several commits could retag stale bytes under a fresh sha
+# and ship the wrong frontend silently. Building both is correct by construction,
+# the jobs run in parallel so it costs a couple of minutes of wall clock, and
+# Actions minutes are free on a public repository.
+#
 name: Build Images
 
 on:
@@ -21,23 +35,15 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
-  changes:
+  resolve:
     runs-on: ubuntu-latest
     if: >
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     outputs:
-      backend: ${{ steps.filter.outputs.backend }}
-      frontend: ${{ steps.filter.outputs.frontend }}
       sha: ${{ steps.sha.outputs.sha }}
       short_sha: ${{ steps.sha.outputs.short_sha }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-        with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
-          fetch-depth: 2
-
       - name: Resolve commit SHA
         id: sha
         run: |
@@ -45,32 +51,8 @@ jobs:
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
           echo "short_sha=${SHA:0:12}" >> "$GITHUB_OUTPUT"
 
-      - name: Detect changed images
-        id: filter
-        run: |
-          # Manual dispatch rebuilds both RC images.
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "backend=true" >> "$GITHUB_OUTPUT"
-            echo "frontend=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          CHANGED="$(git diff --name-only HEAD~1 HEAD)"
-          echo "Changed files:"
-          echo "$CHANGED"
-
-          backend=false
-          frontend=false
-          if echo "$CHANGED" | grep -qE '^backend/'; then backend=true; fi
-          if echo "$CHANGED" | grep -qE '^frontend/'; then frontend=true; fi
-
-          echo "backend=$backend" >> "$GITHUB_OUTPUT"
-          echo "frontend=$frontend" >> "$GITHUB_OUTPUT"
-          echo "Build backend: $backend | Build frontend: $frontend"
-
   build-backend:
-    needs: changes
-    if: ${{ needs.changes.outputs.backend == 'true' }}
+    needs: resolve
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -79,7 +61,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
         with:
-          ref: ${{ needs.changes.outputs.sha }}
+          ref: ${{ needs.resolve.outputs.sha }}
 
       - name: Log in to GHCR
         uses: docker/login-action@v4
@@ -91,11 +73,14 @@ jobs:
       - name: Build and push backend RC
         env:
           IMAGE: ${{ env.REGISTRY }}/${{ github.repository_owner }}/memship-backend
-          SHORT_SHA: ${{ needs.changes.outputs.short_sha }}
+          SHA: ${{ needs.resolve.outputs.sha }}
+          SHORT_SHA: ${{ needs.resolve.outputs.short_sha }}
         run: |
           cd backend
           docker build -f docker/Dockerfile \
             --build-arg APP_VERSION=sha-$SHORT_SHA \
+            --label org.opencontainers.image.revision=$SHA \
+            --label org.opencontainers.image.source=https://github.com/${{ github.repository }} \
             -t $IMAGE:sha-$SHORT_SHA \
             -t $IMAGE:main \
             .
@@ -103,8 +88,7 @@ jobs:
           docker push $IMAGE:main
 
   build-frontend:
-    needs: changes
-    if: ${{ needs.changes.outputs.frontend == 'true' }}
+    needs: resolve
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -113,7 +97,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
         with:
-          ref: ${{ needs.changes.outputs.sha }}
+          ref: ${{ needs.resolve.outputs.sha }}
 
       - name: Log in to GHCR
         uses: docker/login-action@v4
@@ -125,34 +109,55 @@ jobs:
       - name: Build and push frontend RC
         env:
           IMAGE: ${{ env.REGISTRY }}/${{ github.repository_owner }}/memship-frontend
-          SHORT_SHA: ${{ needs.changes.outputs.short_sha }}
+          SHA: ${{ needs.resolve.outputs.sha }}
+          SHORT_SHA: ${{ needs.resolve.outputs.short_sha }}
         run: |
           cd frontend
           docker build -f docker/Dockerfile \
+            --label org.opencontainers.image.revision=$SHA \
+            --label org.opencontainers.image.source=https://github.com/${{ github.repository }} \
             -t $IMAGE:sha-$SHORT_SHA \
             -t $IMAGE:main \
             .
           docker push $IMAGE:sha-$SHORT_SHA
           docker push $IMAGE:main
 
+  # A release can only promote what exists, so an incomplete RC set is a failure,
+  # not a footnote — release.yml refuses to rebuild and would stop dead.
   summary:
-    needs: [changes, build-backend, build-frontend]
-    if: ${{ always() && (needs.build-backend.result == 'success' || needs.build-frontend.result == 'success') }}
+    needs: [resolve, build-backend, build-frontend]
+    if: ${{ always() && needs.resolve.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: RC summary
+        env:
+          OWNER: ${{ github.repository_owner }}
+          SHORT_SHA: ${{ needs.resolve.outputs.short_sha }}
+          BACKEND: ${{ needs.build-backend.result }}
+          FRONTEND: ${{ needs.build-frontend.result }}
         run: |
-          echo "### Release-candidate images (deploy to staging)" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Commit: \`${{ needs.changes.outputs.short_sha }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          if [[ "${{ needs.build-backend.result }}" == "success" ]]; then
-            echo "- backend: \`ghcr.io/${{ github.repository_owner }}/memship-backend:sha-${{ needs.changes.outputs.short_sha }}\` (also \`:main\`)" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "### Release-candidate images (deploy to staging)"
+            echo ""
+            echo "Commit: \`$SHORT_SHA\`"
+            echo ""
+            echo "| Service | Result | Tag |"
+            echo "|---|---|---|"
+            echo "| backend | $BACKEND | \`ghcr.io/$OWNER/memship-backend:sha-$SHORT_SHA\` |"
+            echo "| frontend | $FRONTEND | \`ghcr.io/$OWNER/memship-frontend:sha-$SHORT_SHA\` |"
+            echo ""
+          } >> $GITHUB_STEP_SUMMARY
+
+          if [[ "$BACKEND" != "success" || "$FRONTEND" != "success" ]]; then
+            {
+              echo "**This commit has an incomplete RC set and cannot be released.**"
+              echo ""
+              echo "Re-run this workflow (Actions → Build Images → Run workflow) once the"
+              echo "failure is fixed, then release."
+            } >> $GITHUB_STEP_SUMMARY
+            exit 1
           fi
-          if [[ "${{ needs.build-frontend.result }}" == "success" ]]; then
-            echo "- frontend: \`ghcr.io/${{ github.repository_owner }}/memship-frontend:sha-${{ needs.changes.outputs.short_sha }}\` (also \`:main\`)" >> $GITHUB_STEP_SUMMARY
-          fi
-          echo "" >> $GITHUB_STEP_SUMMARY
+
           echo "Release with: \`./scripts/release.sh <version>\` on the validated commit." >> $GITHUB_STEP_SUMMARY
 
   ci-failed:
