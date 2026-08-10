@@ -698,6 +698,13 @@ def seed_extra_members(db, default_membership_type: MembershipType) -> list[Memb
         db.add(user)
         db.flush()
 
+        # Every account holds `member` permanently — permissions come from
+        # user_roles, so without this the account authenticates and then gets
+        # 403 on its own portal. Missed when roles & permissions replaced the
+        # users.role column: the migration backfilled existing rows, but this
+        # seeding path kept creating users with no assignment at all.
+        assign_roles(db, user)
+
         member_number = next_member_number(db)
         status = statuses[i % len(statuses)]
         member = Member(
