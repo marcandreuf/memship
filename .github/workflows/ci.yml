@@ -2,22 +2,27 @@
 # Runs backend tests and frontend checks on push to main and PRs.
 # Each suite only runs when its own paths changed (see the `changes` job).
 #
+# The workflow itself runs on EVERY push and PR, with the path filtering done per
+# job rather than at the trigger. Two reasons:
+#
+#   - build-images.yml keys off this workflow completing on main. Filtering at the
+#     trigger meant a commit touching only docs never ran CI, so it never got RC
+#     images either — and release.yml refuses to release a commit without them.
+#     That would leave a docs-only commit at the tip of main unreleasable.
+#   - A PR that changes neither backend nor frontend used to report no checks at
+#     all, which is indistinguishable from checks that have not started yet.
+#
+# The cost is the `changes` job on runs that then skip everything else.
+#
 name: CI
 
 on:
   push:
     branches:
       - main
-    paths:
-      - 'backend/**'
-      - 'frontend/**'
-      - '.github/workflows/ci.yml'
   pull_request:
     branches:
       - main
-    paths:
-      - 'backend/**'
-      - 'frontend/**'
   workflow_dispatch:
 
 jobs:
