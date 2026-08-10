@@ -71,7 +71,10 @@ export default function PortalLayout({
       <AppSidebar user={user} />
       <SidebarInset>
         <Header />
-        <main className="flex-1 p-4 md:p-6">{children}</main>
+        {/* A div, not a main: SidebarInset is already the <main> landmark, and
+            HTML forbids nesting one inside another. Two of them also made every
+            `cy.get("main")` in the suite ambiguous. */}
+        <div className="flex-1 p-4 md:p-6">{children}</div>
         <AppFooter />
       </SidebarInset>
     </SidebarProvider>

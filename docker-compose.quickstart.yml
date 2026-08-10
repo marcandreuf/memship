@@ -3,10 +3,13 @@
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/marcandreuf/memship/main/docker-compose.quickstart.yml -o docker-compose.yml
 #   PORT=8081 docker compose up -d
-#   docker compose exec demo-memship-api python -m app.cli.seed --test   # Quick demo with test accounts
-#   docker compose exec demo-memship-api python -m app.cli.seed --demo   # Realistic year of demo data (idempotent)
-#   docker compose exec demo-memship-api python -m app.cli.seed          # Custom setup (interactive)
+#   docker compose exec -it demo-memship-api python -m app.cli.seed
 #   Open http://localhost:8081
+#
+# EVALUATION ONLY. SECRET_KEY below is committed to the repository and the data
+# lives in throwaway Docker volumes. To run memship for a real organization use
+# scripts/install.sh and the root docker-compose.yml — see
+# docs/getting-started/installation.md.
 #
 
 # The API, the Celery worker and Celery beat run the same image with the same

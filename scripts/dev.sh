@@ -200,10 +200,10 @@ case "$ACTION" in
         ;;
     seed)
         if [ "$TARGET" = "test" ]; then
-            echo -e "${BLUE}i${NC} Running seed command with test accounts..."
+            echo -e "${BLUE}i${NC} Running setup with the fixed e2e test accounts..."
             docker compose -f "$BACKEND_COMPOSE" exec -it api python -m app.cli.seed --test
         else
-            echo -e "${BLUE}i${NC} Running seed command (interactive)..."
+            echo -e "${BLUE}i${NC} Running the interactive setup..."
             docker compose -f "$BACKEND_COMPOSE" exec -it api python -m app.cli.seed
         fi
         ;;
@@ -254,8 +254,8 @@ case "$ACTION" in
         echo "  restart [target]  - Restart services"
         echo "  status            - Show status of all services"
         echo "  logs [target]     - View logs (requires specific target)"
-        echo "  seed              - Run database seed command (interactive)"
-        echo "  seed test         - Seed with test accounts (no prompts)"
+        echo "  seed              - Run the interactive setup (same on every environment)"
+        echo "  seed test         - Seed the fixed e2e test accounts (development only)"
         echo "  reset             - Wipe DB, restart backend, and re-seed with test data"
         echo "  test              - Run backend tests"
         echo "  e2e               - Run Cypress E2E tests (headless)"

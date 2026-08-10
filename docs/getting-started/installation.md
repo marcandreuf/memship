@@ -52,11 +52,14 @@ an hour. Use `--skip-dns-check` only if you know why you are skipping it.
 The script is safe to re-run. It never overwrites an existing `.env`, and re-running is how you
 pick up a new `IMAGE_TAG` later.
 
-Then create the first admin account:
+Then run the setup — it creates your super admin and your organization:
 
 ```bash
-docker compose exec api python -m app.cli.seed
+docker compose exec -it api python -m app.cli.seed
 ```
+
+The `-it` matters: the command prompts. See [First-time setup](first-setup.md) for what it
+asks and for the unattended flags an automated deployment uses instead.
 
 Open your domain (or **http://localhost** if you installed without one).
 
