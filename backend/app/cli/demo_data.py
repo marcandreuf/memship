@@ -79,7 +79,7 @@ def generate_members(
     """
     if db.query(Person).filter(Person.email.like("demo%@mediterrani.example")).first():
         print("  Demo members: already seeded")
-        return _demo_members(db)
+        return demo_members(db)
 
     types = db.query(MembershipType).filter(MembershipType.is_active.is_(True)).all()
     type_ids = [mt.id for mt in types] or [default_membership_type.id]
@@ -146,7 +146,7 @@ def generate_members(
     return members
 
 
-def _demo_members(db) -> list[Member]:
+def demo_members(db) -> list[Member]:
     return (
         db.query(Member)
         .join(Person, Member.person_id == Person.id)
@@ -198,7 +198,7 @@ def generate_billing(db, created_by: int | None) -> None:
         concepts.get("membership-full-member") or next(iter(concepts.values()))
     )
 
-    members = _demo_members(db)
+    members = demo_members(db)
     if not members:
         print("  Demo billing: no demo members to bill")
         return
@@ -381,7 +381,7 @@ def generate_bookings(db) -> None:
         )
         org.features = features
 
-    members = _demo_members(db)
+    members = demo_members(db)
     if not members:
         return
 

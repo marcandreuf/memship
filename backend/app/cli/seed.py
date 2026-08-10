@@ -1,31 +1,42 @@
-"""CLI seed command — populates initial data for a fresh Memship installation.
+"""CLI setup command — prepares a Memship installation for use.
 
-Creates:
-- Organization settings (defaults)
-- Address types (home, work, billing, legal, venue)
-- Contact types (phone_home, phone_mobile, phone_work, phone_emergency, email_work, email_other)
-- Groups (Adult Members, Youth Programs, Senior Members, Honorary Members)
-- Membership types (Full Member, Student, Family, Youth, Senior, Honorary)
-- Admin accounts (interactive prompts or --test for test accounts)
-- Sample activities with modalities and prices (--test only)
-- Extra member accounts for realistic data (--test only)
-- Sample registrations: confirmed, waitlisted, cancelled (--test only)
-- Discount codes, consents, and attachment types per activity (--test only)
-- SEPA mandates, payment provider, and batchable receipts (--test only)
+Interactive by default, and the same command on every environment. It asks
+three independent questions, so one script covers every situation:
+
+    1. Super admin      — create the operator account, or reset its password
+    2. Club data        — wipe what is there (see app/cli/reset.py)
+    3. Club setup       — enter the real club's details, or generate a demo club
+
+    going live for real          yes / yes / real details
+    fresh production install     yes / no  / real details
+    evaluating the product       yes / no  / demo
+    re-demoing before a call     no  / yes / demo
+
+Base data every install needs — address and contact types, the default groups
+and membership types — is seeded regardless of the answers.
+
+No credentials are published for any of this. The super admin is whatever the
+operator types; the demo club's accounts get generated passwords, printed once.
 
 Usage:
-    python -m app.cli.seed          # Interactive
-    python -m app.cli.seed --test   # Test accounts + sample data
+    python -m app.cli.seed                      # interactive (all environments)
+    python -m app.cli.seed --admin-email ...    # unattended, see _parse_args
+    python -m app.cli.seed --test               # fixed test accounts, CI only
 """
 
 import argparse
 import getpass
+import os
+import secrets
+import string
 import sys
 from pathlib import Path
 
 from argon2 import PasswordHasher
 from sqlalchemy import text
 
+from app.cli.reset import preview_club_data, reset_club_data
+from app.core.permissions import ADMIN_SLUG, SUPER_ADMIN_SLUG
 from app.db.session import SessionLocal
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Address, AddressType, Contact, ContactType, Person
@@ -40,23 +51,74 @@ from app.domains.billing.models import Concept, PaymentProvider, Receipt, Remitt
 
 ph = PasswordHasher()
 
+# Unambiguous alphabet: no 0/O, 1/l/I. These passwords get read off a terminal
+# and typed into a browser, sometimes off a screen share during a demo call.
+_PASSWORD_ALPHABET = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+
+
+def generate_password(length: int = 20) -> str:
+    """A password nobody chose, for the demo accounts."""
+    return "".join(secrets.choice(_PASSWORD_ALPHABET) for _ in range(length))
+
+
+def prompt_yes_no(question: str, default: bool = False) -> bool:
+    suffix = "[Y/n]" if default else "[y/N]"
+    while True:
+        answer = input(f"{question} {suffix} ").strip().lower()
+        if not answer:
+            return default
+        if answer in ("y", "yes"):
+            return True
+        if answer in ("n", "no"):
+            return False
+        print("Please answer y or n.")
+
+
+def prompt_password(label: str = "Password") -> str:
+    while True:
+        password = getpass.getpass(f"{label} (min 8 chars): ")
+        if len(password) < 8:
+            print("Password must be at least 8 characters.")
+            continue
+        if password != getpass.getpass("Confirm password: "):
+            print("Passwords do not match.")
+            continue
+        return password
+
+
+def prompt_club_details() -> dict:
+    """The real club's details, for an installation that is not a demo.
+
+    Only `name` is required by the schema; the rest can be filled in later from
+    Settings, so anything left blank stays blank rather than being invented. An
+    invented tax ID or IBAN is worse than an empty one — it looks configured.
+    """
+    print("\n--- Your organization ---")
+    print("Only the name is required. Leave the rest blank to fill in later")
+    print("from Settings.\n")
+
+    while True:
+        name = input("Organization name: ").strip()
+        if name:
+            break
+        print("The organization name is required.")
+
+    return {
+        "name": name,
+        "legal_name": input("Legal name: ").strip() or None,
+        "email": input("Contact email: ").strip() or None,
+        "phone": input("Phone: ").strip() or None,
+        "website": input("Website: ").strip() or None,
+        "tax_id": input("Tax ID (NIF/CIF): ").strip() or None,
+    }
+
 
 def prompt_user_details(role_label: str) -> dict:
     print(f"\n--- {role_label} Account ---")
     first_name = input("First name: ").strip()
     last_name = input("Last name: ").strip()
     email = input("Email: ").strip()
-
-    while True:
-        password = getpass.getpass("Password (min 8 chars): ")
-        if len(password) < 8:
-            print("Password must be at least 8 characters.")
-            continue
-        confirm = getpass.getpass("Confirm password: ")
-        if password != confirm:
-            print("Passwords do not match.")
-            continue
-        break
+    password = prompt_password()
 
     return {
         "first_name": first_name,
@@ -105,7 +167,38 @@ def seed_contact_types(db) -> None:
     print(f"  Contact types: created {len(types)} types")
 
 
-def seed_org_settings(db) -> None:
+# Only ever applied to a demo club. A real installation gets what the operator
+# types at the prompt — before this was split, every client inherited the name,
+# tax ID and IBAN below and had to notice in order to correct them.
+DEMO_ORG = {
+    "name": "Club Esportiu Mediterrani",
+    "legal_name": "Club Esportiu Mediterrani S.L.",
+    "email": "info@cemediterrani.cat",
+    "phone": "+34 933 001 234",
+    "website": "https://cemediterrani.cat",
+    "tax_id": "B12345678",
+    "bank_name": "CaixaBank",
+    "bank_iban": "ES9121000418450200051332",
+    "bank_bic": "CAIXESBBXXX",
+}
+
+DEMO_ORG_ADDRESS = {
+    "address_line1": "Carrer de la Marina 22",
+    "address_line2": "Local 3",
+    "city": "Barcelona",
+    "state_province": "Barcelona",
+    "postal_code": "08005",
+    "country": "ES",
+}
+
+
+def create_org_settings(db, details: dict, address: dict | None = None) -> None:
+    """Create the single organization row from `details`.
+
+    Single-tenant: `CHECK (id = 1)`. Bank details and address are only supplied
+    for a demo club, so a real install starts with those fields empty rather
+    than plausible-looking and wrong.
+    """
     existing = db.query(OrganizationSettings).first()
     if existing:
         print(f"  Organization settings: already configured ({existing.name})")
@@ -113,20 +206,20 @@ def seed_org_settings(db) -> None:
 
     org = OrganizationSettings(
         id=1,
-        name="Club Esportiu Mediterrani",
-        legal_name="Club Esportiu Mediterrani S.L.",
-        email="info@cemediterrani.cat",
-        phone="+34 933 001 234",
-        website="https://cemediterrani.cat",
-        tax_id="B12345678",
+        name=details["name"],
+        legal_name=details.get("legal_name"),
+        email=details.get("email"),
+        phone=details.get("phone"),
+        website=details.get("website"),
+        tax_id=details.get("tax_id"),
+        bank_name=details.get("bank_name"),
+        bank_iban=details.get("bank_iban"),
+        bank_bic=details.get("bank_bic"),
         locale="es",
         timezone="Europe/Madrid",
         currency="EUR",
         date_format="DD/MM/YYYY",
         brand_color="#0083ad",
-        bank_name="CaixaBank",
-        bank_iban="ES9121000418450200051332",
-        bank_bic="CAIXESBBXXX",
         invoice_prefix="FAC",
         invoice_next_number=1,
         invoice_annual_reset=True,
@@ -148,24 +241,25 @@ def seed_org_settings(db) -> None:
     db.add(org)
     db.flush()
 
-    # Add organization address
-    legal_type = db.query(AddressType).filter(AddressType.code == "legal").first()
-    org_address = Address(
-        entity_type="organization",
-        entity_id=1,
-        address_type_id=legal_type.id if legal_type else None,
-        address_line1="Carrer de la Marina 22",
-        address_line2="Local 3",
-        city="Barcelona",
-        state_province="Barcelona",
-        postal_code="08005",
-        country="ES",
-        is_primary=True,
-    )
-    db.add(org_address)
-    db.flush()
+    if address:
+        legal_type = db.query(AddressType).filter(AddressType.code == "legal").first()
+        db.add(
+            Address(
+                entity_type="organization",
+                entity_id=1,
+                address_type_id=legal_type.id if legal_type else None,
+                is_primary=True,
+                **address,
+            )
+        )
+        db.flush()
 
-    print("  Organization settings: created 'Club Esportiu Mediterrani' (address + bank details)")
+    print(f"  Organization settings: created '{org.name}'")
+
+
+def seed_demo_org_settings(db) -> None:
+    """The demo club, with the address and bank details a demo needs to look real."""
+    create_org_settings(db, DEMO_ORG, DEMO_ORG_ADDRESS)
 
 
 def seed_groups(db) -> dict[str, Group]:
@@ -266,19 +360,21 @@ def seed_membership_types(db, groups: dict[str, Group]) -> MembershipType:
 
 
 def next_member_number(db) -> str:
-    last = (
-        db.query(Member)
-        .filter(Member.member_number.isnot(None))
-        .order_by(Member.id.desc())
-        .first()
-    )
-    if last and last.member_number:
-        try:
-            num = int(last.member_number.replace("M-", ""))
-            return f"M-{num + 1:04d}"
-        except ValueError:
-            pass
-    return "M-0001"
+    """The next free `M-` number.
+
+    Only `M-` numbers count. The demo cohort carries its own `D-` namespace, so
+    taking the highest id instead would land on a demo member, fail to parse it
+    and restart the counter at M-0001 — which then collides with the account
+    that already holds it.
+    """
+    numbers = [
+        int(value[2:])
+        for (value,) in db.query(Member.member_number).filter(
+            Member.member_number.like("M-%")
+        )
+        if value[2:].isdigit()
+    ]
+    return f"M-{max(numbers) + 1 if numbers else 1:04d}"
 
 
 def create_user_with_member(
@@ -1441,36 +1537,437 @@ def seed_sepa_data(db) -> None:
     print("  SEPA seed: complete — ready for manual SEPA workflow testing")
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Memship seed command")
+DEMO_CLUB_ADMIN_EMAIL = "admin@mediterrani.example"
+
+
+def any_admin_user_id(db) -> int | None:
+    """A user holding `admin` or `super_admin`, for `created_by` stamps.
+
+    Resolved by role rather than by a fixed address: the operator picks their
+    own super admin email, and the demo layer can be applied on top of any
+    account, so there is no address to look up.
+    """
+    user = (
+        db.query(User)
+        .join(User.roles)
+        .filter(Role.slug.in_((SUPER_ADMIN_SLUG, ADMIN_SLUG)))
+        .order_by(User.id)
+        .first()
+    )
+    return user.id if user else None
+
+
+def super_admin_users(db) -> list[User]:
+    return (
+        db.query(User)
+        .join(User.roles)
+        .filter(Role.slug == SUPER_ADMIN_SLUG)
+        .order_by(User.id)
+        .all()
+    )
+
+
+def restore_member_records(db, users: list[User], membership_type: MembershipType) -> None:
+    """Give the surviving super admins a member record again after a reset.
+
+    `members` is club data and goes with the rest of it, but every account the
+    setup creates has one — see `create_user_with_member`. Without this a super
+    admin comes out of a reset with a person record and no membership, which is
+    a shape nothing else in the app produces.
+    """
+    for user in users:
+        if db.query(Member).filter_by(person_id=user.person_id).first():
+            continue
+        db.add(
+            Member(
+                person_id=user.person_id,
+                user_id=user.id,
+                membership_type_id=membership_type.id,
+                member_number=next_member_number(db),
+                status="active",
+            )
+        )
+        db.flush()
+        print(f"  member record: restored for {user.email}")
+
+
+def set_password(db, user: User, password: str) -> None:
+    user.password_hash = ph.hash(password)
+    db.flush()
+
+
+def attach_login(db, member: Member, password: str) -> str:
+    """Give an existing demo member a login. Returns the email."""
+    person = db.query(Person).filter_by(id=member.person_id).one()
+    user = User(
+        person_id=person.id,
+        email=person.email,
+        password_hash=ph.hash(password),
+        is_active=True,
+        email_verified=True,
+    )
+    db.add(user)
+    db.flush()
+    assign_roles(db, user, "member")
+    member.user_id = user.id
+    db.flush()
+    return person.email
+
+
+def create_demo_accounts(db, membership_type: MembershipType) -> list[tuple[str, str, str]]:
+    """The club admin and two member logins for a demo club.
+
+    Passwords are generated, printed once, and stored only as argon2 hashes —
+    there is nothing here for a search engine to find, unlike the fixed
+    credentials this replaced.
+    """
+    accounts: list[tuple[str, str, str]] = []
+
+    admin_password = generate_password()
+    existing = db.query(User).filter_by(email=DEMO_CLUB_ADMIN_EMAIL).first()
+    if existing:
+        set_password(db, existing, admin_password)
+        print(f"  club admin: password reset ({DEMO_CLUB_ADMIN_EMAIL})")
+    else:
+        create_user_with_member(
+            db,
+            {
+                "first_name": "Club",
+                "last_name": "Admin",
+                "email": DEMO_CLUB_ADMIN_EMAIL,
+                "password": admin_password,
+            },
+            ADMIN_SLUG,
+            membership_type,
+        )
+    accounts.append(("club admin", DEMO_CLUB_ADMIN_EMAIL, admin_password))
+
+    # Two of the generated cohort get logins, so the member portal can be shown
+    # without handing out an admin account. The rest stay login-less: a demo
+    # needs a couple of working sign-ins, not sixty.
+    from app.cli.demo_data import demo_members
+
+    for member in [m for m in demo_members(db) if m.user_id is None][:2]:
+        password = generate_password()
+        email = attach_login(db, member, password)
+        accounts.append(("member", email, password))
+        print(f"  member login: created ({email})")
+
+    return accounts
+
+
+def run_test_mode(db, membership_type: MembershipType) -> None:
+    """Fixed-credential dataset for the e2e suite. Never runs outside CI/dev.
+
+    The addresses and passwords below are load-bearing: e2e/cypress hard-codes
+    them across the spec files, so they are a contract with the test suite
+    rather than a seeding choice. They are deliberately absent from every
+    user-facing document.
+    """
+    # Before the accounts: `assign_roles` resolves by slug, so the treasurer
+    # role has to exist by the time its holder is created.
+    print("\nSeeding custom roles...")
+    seed_narrow_role(db)
+
+    print("\nCreating test accounts...")
+    for account in TEST_ACCOUNTS:
+        create_user_with_member(db, account, account["role"], membership_type)
+
+    admin_id = any_admin_user_id(db)
+    if admin_id:
+        print("\nSeeding activities...")
+        seed_activities(db, admin_id)
+
+    for label, fn in (
+        ("extra members", lambda: seed_extra_members(db, membership_type)),
+        ("member contacts", lambda: seed_member_contacts(db)),
+        ("registrations", lambda: seed_registrations(db)),
+        ("discount codes", lambda: seed_discount_codes(db)),
+        ("activity consents", lambda: seed_consents(db)),
+        ("attachment types", lambda: seed_attachment_types(db)),
+        ("registration consents", lambda: seed_registration_consents(db)),
+        ("billing data", lambda: seed_billing_data(db)),
+        ("SEPA data", lambda: seed_sepa_data(db)),
+    ):
+        print(f"\nSeeding {label}...")
+        fn()
+
+
+def guard_test_mode() -> None:
+    """`--test` plants known passwords. Refuse anywhere they could matter."""
+    if os.environ.get("CI") or os.environ.get("APP_ENV") == "development":
+        return
+    print(
+        "\nERROR: --test creates accounts with fixed, publicly-known passwords and\n"
+        "is only for the automated test suite. It refuses to run unless APP_ENV=development\n"
+        "or CI is set.\n\n"
+        "To set this installation up, run the same command with no flags:\n\n"
+        "    python -m app.cli.seed\n",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+
+
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Memship setup — super admin, club data reset, and club setup.",
+        epilog=(
+            "Run with no arguments for the interactive setup. The flags below drive "
+            "the same three steps unattended, for automated deployments."
+        ),
+    )
     parser.add_argument(
-        "--test",
+        "--admin-email",
+        help="Create the super admin with this address, unattended. The password "
+        "is read from the MEMSHIP_ADMIN_PASSWORD environment variable, never from "
+        "the command line, where it would land in the shell history and `ps`.",
+    )
+    parser.add_argument(
+        "--reset-club-data",
         action="store_true",
-        help="Create test accounts with simple passwords instead of interactive prompts",
+        help="Delete all club data before setting up. Keeps the super admin "
+        "accounts, the system roles and the configured payment providers.",
+    )
+    parser.add_argument(
+        "--club-name",
+        help="Create the organization with this name, unattended.",
     )
     parser.add_argument(
         "--demo",
         action="store_true",
-        help="Layer a realistic year-spread demo dataset (members, billing, SEPA, reminders) for evaluation/screenshots",
+        help="Generate the demo club: organization, a year of members, billing, "
+        "SEPA and reminders, plus generated logins for a club admin and two members.",
     )
-    args = parser.parse_args()
+    # Fixed-credential mode for the e2e suite. Hidden: it is not something an
+    # operator should ever reach for, and `guard_test_mode` refuses it anyway.
+    parser.add_argument("--test", action="store_true", help=argparse.SUPPRESS)
+    return parser.parse_args()
 
-    print("\n=== Memship Seed ===\n")
-    print("This will set up initial data for a fresh installation.")
-    print("If data already exists, existing records will be skipped.\n")
+
+def _run_interactive(db, membership_type: MembershipType) -> list[tuple[str, str, str]]:
+    """Ask all three questions, then act on the answers.
+
+    Gathering first means the destructive step runs only once every question has
+    been answered — and since `main` commits once at the end, Ctrl-C at any
+    prompt rolls the whole thing back and leaves the instance untouched.
+    """
+    existing_supers = super_admin_users(db)
+    club_data = preview_club_data(db)
+
+    # --- 1. Super admin -----------------------------------------------------
+    print("\n--- 1/3  Super admin ---")
+    super_details = None
+    reset_target = None
+    if existing_supers:
+        listed = ", ".join(u.email for u in existing_supers)
+        print(f"This instance already has a super admin: {listed}")
+        if prompt_yes_no("Reset the password for one of them?"):
+            email = input("Which address? ").strip()
+            reset_target = next((u for u in existing_supers if u.email == email), None)
+            if reset_target is None:
+                print(f"  No super admin with address {email!r} — skipping.")
+            else:
+                reset_password = prompt_password("New password")
+    else:
+        print("No super admin exists yet. This is the account that owns the")
+        print("instance: it manages roles, credentials and custom fields.")
+        super_details = prompt_user_details("Super Admin")
+
+    # --- 2. Club data -------------------------------------------------------
+    print("\n--- 2/3  Club data ---")
+    do_reset = False
+    # The default groups and membership types are seeded on every install and
+    # would otherwise make a fresh database look like it holds club data. What
+    # makes a reset meaningful is an organization or actual members.
+    configured = (
+        db.query(OrganizationSettings).first() is not None
+        or db.query(Member).count() > 0
+    )
+    if configured and club_data:
+        total = sum(club_data.values())
+        print(f"This instance holds {total} rows of club data:")
+        for name, count in sorted(club_data.items(), key=lambda kv: -kv[1])[:8]:
+            print(f"    {count:>7,}  {name}")
+        if len(club_data) > 8:
+            print(f"    {'':>7}  ... and {len(club_data) - 8} more tables")
+        print(
+            "\nResetting deletes all of it. The super admin accounts, the system\n"
+            "roles and the configured payment providers are kept."
+        )
+        if prompt_yes_no("Reset club data?"):
+            org = db.query(OrganizationSettings).first()
+            expected = org.name if org else None
+            if expected:
+                typed = input(f'Type the organization name to confirm ("{expected}"): ').strip()
+                do_reset = typed == expected
+                if not do_reset:
+                    print("  Name did not match — club data will be kept.")
+            else:
+                do_reset = True
+    else:
+        print("Nothing to reset — this instance holds no club data yet.")
+
+    # --- 3. Club setup ------------------------------------------------------
+    print("\n--- 3/3  Club setup ---")
+    club_details = None
+    want_demo = False
+    org_exists = db.query(OrganizationSettings).first() is not None
+    if org_exists and not do_reset:
+        print("The organization is already configured — leaving it alone.")
+    else:
+        print("  1) Enter your organization's real details")
+        print("  2) Generate a demo club with sample data (evaluation, demos)")
+        print("  3) Skip for now")
+        while True:
+            choice = input("Choose [1/2/3]: ").strip()
+            if choice == "1":
+                club_details = prompt_club_details()
+                break
+            if choice == "2":
+                want_demo = True
+                break
+            if choice == "3":
+                break
+            print("Please choose 1, 2 or 3.")
+
+    # --- act ----------------------------------------------------------------
+    if do_reset:
+        print("\nResetting club data...")
+        deleted = reset_club_data(db)
+        print(f"  Deleted {sum(deleted.values()):,} rows across {len(deleted)} tables")
+        # The reset takes the base data with it; put it back before anything
+        # below tries to attach a member to a membership type.
+        seed_address_types(db)
+        seed_contact_types(db)
+        membership_type = seed_membership_types(db, seed_groups(db))
+        restore_member_records(db, super_admin_users(db), membership_type)
+
+    accounts: list[tuple[str, str, str]] = []
+    if super_details:
+        print("\nCreating super admin...")
+        create_user_with_member(db, super_details, SUPER_ADMIN_SLUG, membership_type)
+        accounts.append(("super admin", super_details["email"], "(the password you chose)"))
+    elif reset_target is not None:
+        set_password(db, reset_target, reset_password)
+        print(f"\n  super admin: password reset ({reset_target.email})")
+        accounts.append(("super admin", reset_target.email, "(the password you chose)"))
+    elif existing_supers:
+        accounts.append(("super admin", existing_supers[0].email, "(unchanged)"))
+
+    if club_details:
+        print("\nCreating organization...")
+        create_org_settings(db, club_details)
+    elif want_demo:
+        print("\nGenerating the demo club...")
+        seed_demo_org_settings(db)
+        from app.cli.demo_data import seed_demo_data
+
+        seed_demo_data(db, membership_type, any_admin_user_id(db))
+        accounts.extend(create_demo_accounts(db, membership_type))
+
+    return accounts
+
+
+def _run_unattended(db, membership_type: MembershipType, args) -> list[tuple[str, str, str]]:
+    if args.reset_club_data:
+        print("\nResetting club data...")
+        deleted = reset_club_data(db)
+        print(f"  Deleted {sum(deleted.values()):,} rows across {len(deleted)} tables")
+        seed_address_types(db)
+        seed_contact_types(db)
+        membership_type = seed_membership_types(db, seed_groups(db))
+        restore_member_records(db, super_admin_users(db), membership_type)
+
+    accounts: list[tuple[str, str, str]] = []
+    if args.admin_email:
+        password = os.environ.get("MEMSHIP_ADMIN_PASSWORD")
+        if not password:
+            print(
+                "\nERROR: --admin-email needs the password in MEMSHIP_ADMIN_PASSWORD.\n"
+                "Passing it as an argument would put it in the shell history and in `ps`.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        if len(password) < 8:
+            print("\nERROR: MEMSHIP_ADMIN_PASSWORD must be at least 8 characters.", file=sys.stderr)
+            sys.exit(1)
+
+        existing = db.query(User).filter_by(email=args.admin_email).first()
+        if existing:
+            set_password(db, existing, password)
+            print(f"\n  super admin: password reset ({args.admin_email})")
+        else:
+            print("\nCreating super admin...")
+            create_user_with_member(
+                db,
+                {
+                    "first_name": "Super",
+                    "last_name": "Admin",
+                    "email": args.admin_email,
+                    "password": password,
+                },
+                SUPER_ADMIN_SLUG,
+                membership_type,
+            )
+        accounts.append(("super admin", args.admin_email, "(from MEMSHIP_ADMIN_PASSWORD)"))
+
+    if args.club_name:
+        print("\nCreating organization...")
+        create_org_settings(db, {"name": args.club_name})
+    elif args.demo:
+        print("\nGenerating the demo club...")
+        seed_demo_org_settings(db)
+        from app.cli.demo_data import seed_demo_data
+
+        seed_demo_data(db, membership_type, any_admin_user_id(db))
+        accounts.extend(create_demo_accounts(db, membership_type))
+
+    return accounts
+
+
+def _print_accounts(accounts: list[tuple[str, str, str]], footer: str = "") -> None:
+    if not accounts:
+        return
+    width = max(len(email) for _, email, _ in accounts)
+    print("\n  Accounts:\n")
+    for role, email, password in accounts:
+        print(f"    {role:12s} {email:{width}s}  {password}")
+    if footer:
+        print(f"\n{footer}")
+
+
+# Shown once, because the plaintext exists nowhere else afterwards.
+GENERATED_FOOTER = (
+    "  Generated passwords are shown once — store them now.\n"
+    "  Demo accounts are for evaluation. Do not use them in production."
+)
+
+TEST_FOOTER = (
+    "  Fixed test accounts, published in this repository and shared by every\n"
+    "  developer. Never expose an instance seeded this way."
+)
+
+
+def main() -> None:
+    args = _parse_args()
+    if args.test:
+        guard_test_mode()
+
+    unattended = bool(
+        args.admin_email or args.reset_club_data or args.club_name or args.demo
+    )
+
+    print("\n=== Memship Setup ===\n")
 
     db = SessionLocal()
     try:
-        # Check database connectivity
         db.execute(text("SELECT 1"))
-        print("Database connection: OK\n")
+        print("Database connection: OK")
 
-        print("Seeding lookup tables...")
+        # Base data every installation needs, whatever the answers below.
+        print("\nSeeding lookup tables...")
         seed_address_types(db)
         seed_contact_types(db)
-
-        print("\nSeeding organization...")
-        seed_org_settings(db)
 
         print("\nSeeding groups...")
         groups = seed_groups(db)
@@ -1479,84 +1976,27 @@ def main() -> None:
         membership_type = seed_membership_types(db, groups)
 
         if args.test:
-            # Before the accounts: `assign_roles` resolves by slug, so the
-            # treasurer role has to exist by the time its holder is created.
-            print("\nSeeding custom roles...")
-            seed_narrow_role(db)
-
-            print("\nCreating test accounts...")
-            for account in TEST_ACCOUNTS:
-                create_user_with_member(
-                    db,
-                    account,
-                    account["role"],
-                    membership_type,
-                )
-            # Seed activities (need a user_id for created_by)
-            admin_user = db.query(User).filter_by(email="admin@test.com").first()
-            if admin_user:
-                print("\nSeeding activities...")
-                seed_activities(db, admin_user.id)
-
-            print("\nSeeding extra members...")
-            seed_extra_members(db, membership_type)
-
-            print("\nSeeding member contacts...")
-            seed_member_contacts(db)
-
-            print("\nSeeding registrations...")
-            seed_registrations(db)
-
-            print("\nSeeding discount codes...")
-            seed_discount_codes(db)
-
-            print("\nSeeding activity consents...")
-            seed_consents(db)
-
-            print("\nSeeding attachment types...")
-            seed_attachment_types(db)
-
-            print("\nSeeding registration consents...")
-            seed_registration_consents(db)
-
-            print("\nSeeding billing data...")
-            seed_billing_data(db)
-
-            print("\nSeeding SEPA data...")
-            seed_sepa_data(db)
-
-            print("\n  ⚠  TEST ACCOUNTS — do NOT use in production:")
-            for account in TEST_ACCOUNTS:
-                print(f"     {account['role']:15s} {account['email']:25s} / {account['password']}")
-            print(f"     {'member':15s} {'(+22 extra members)':25s} / TestMember1!")
-        elif args.demo:
-            # Non-interactive admin accounts so there's a login for the demo.
-            print("\nCreating admin accounts...")
-            for account in TEST_ACCOUNTS:
-                if account["role"] in ("super_admin", "admin"):
-                    create_user_with_member(db, account, account["role"], membership_type)
-            admin_user = db.query(User).filter_by(email="admin@test.com").first()
-
-            from app.cli.demo_data import seed_demo_data
-            seed_demo_data(db, membership_type, admin_user.id if admin_user else None)
-
-            print("\n  ⚠  DEMO ACCOUNTS — do NOT use in production:")
-            print(f"     {'admin':15s} {'admin@test.com':25s} / TestAdmin1!")
-            print(f"     {'super_admin':15s} {'super@test.com':25s} / TestSuper1!")
+            seed_demo_org_settings(db)
+            run_test_mode(db, membership_type)
+            accounts = [(a["role"], a["email"], a["password"]) for a in TEST_ACCOUNTS]
+            footer = TEST_FOOTER
         else:
-            # Interactive user creation
-            super_admin = prompt_user_details("Super Admin")
-            create_user_with_member(db, super_admin, "super_admin", membership_type)
-
-            org_admin = prompt_user_details("Organization Admin")
-            create_user_with_member(db, org_admin, "admin", membership_type)
+            if unattended:
+                accounts = _run_unattended(db, membership_type, args)
+            else:
+                accounts = _run_interactive(db, membership_type)
+            footer = GENERATED_FOOTER if any(
+                not password.startswith("(") for _, _, password in accounts
+            ) else ""
 
         db.commit()
-        print("\n=== Seed complete ===\n")
+        print("\n=== Setup complete ===")
+        _print_accounts(accounts, footer)
+        print()
 
     except KeyboardInterrupt:
         db.rollback()
-        print("\n\nSeed cancelled.")
+        print("\n\nCancelled — nothing was changed.")
         sys.exit(1)
     except Exception as e:
         db.rollback()

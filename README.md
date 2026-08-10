@@ -21,6 +21,12 @@ Most membership tools are either expensive SaaS platforms or outdated legacy sof
 
 ## Quick Start (Docker)
 
+> **For trying memship out, not for running it.** This is the fastest path to a
+> working instance on your own machine: published images, throwaway volumes, and
+> a secret key that is committed to this repository. To run memship for a real
+> organization, follow [Installation](docs/getting-started/installation.md)
+> instead — same product, set up so it can be backed up, upgraded and kept.
+
 Try memship with a single command — no cloning required:
 
 ```bash
@@ -29,39 +35,29 @@ docker compose pull        # fetch the latest published images
 PORT=8081 docker compose up -d
 ```
 
-Then run the initial setup:
-
-**Option A: Quick demo with test accounts (no prompts)**
+Then run the setup, which walks you through three questions:
 
 ```bash
-docker compose exec demo-memship-api python -m app.cli.seed --test
+docker compose exec -it demo-memship-api python -m app.cli.seed
 ```
 
-This creates pre-configured test accounts, sample members, activities, and registrations:
+1. **Super admin** — you choose the address and password. Nothing is preset.
+2. **Club data** — offered only if there is any, so it is a no-op on a fresh install.
+3. **Club setup** — enter your organization's real details, or generate a demo club.
 
-| Role | Email | Password |
-|------|-------|----------|
-| Super Admin | super@test.com | TestSuper1! |
-| Org Admin | admin@test.com | TestAdmin1! |
-| Member | member@test.com | TestMember1! |
+Choose the demo club to look around: it creates a full year of realistic sample
+data — ~60 members across all statuses, activities, receipts in every state
+spread across the months, SEPA mandates and dashboard reminders. It also
+generates logins for a club admin and two members and **prints those passwords
+once**, so keep the output. Safe to re-run (idempotent).
 
-**Option B: Custom setup (interactive)**
+Open http://localhost:8081 and log in as your super admin. Change `PORT=8081` to
+any port you prefer (default is 80).
 
-```bash
-docker compose exec demo-memship-api python -m app.cli.seed
-```
-
-Prompts you to create your own super admin and org admin accounts. No sample data is generated.
-
-**Option C: Realistic demo dataset**
-
-```bash
-docker compose exec demo-memship-api python -m app.cli.seed --demo
-```
-
-Creates the admin accounts above plus a full year of realistic sample data — ~60 members across all statuses, activities, receipts in every state spread across the months, SEPA mandates, and dashboard reminders — ideal for evaluating the finance dashboard and annual summary. Safe to re-run (idempotent).
-
-Open http://localhost:8081 and log in with your credentials. Change `PORT=8081` to any port you prefer (default is 80).
+Once you are done evaluating, re-run the same command and answer *yes* to the
+club-data question: it clears the demo club while keeping your super admin and
+any payment providers you configured. See
+[First-time setup](docs/getting-started/first-setup.md).
 
 ## Roadmap
 
@@ -279,24 +275,22 @@ Stop everything:
 
 ### First Time Setup
 
-After starting the services, run the seed command to create initial data:
+After starting the services, run the setup command to create initial data:
 
 ```bash
-./scripts/dev.sh seed          # Interactive — prompts for admin credentials
-./scripts/dev.sh seed test     # Quick — creates test accounts (no prompts)
+./scripts/dev.sh seed          # Interactive — the same setup every environment uses
+./scripts/dev.sh seed test     # Fixed test accounts + sample data, for the e2e suite
 ```
 
-The `seed test` option creates test accounts and sample data for development:
+`seed test` creates the accounts the Cypress suite signs in as, plus 4 sample activities with
+modalities and prices, sample registrations, and ~22 extra members. The addresses and passwords
+are a contract with the test suite rather than a seeding choice, so they live with it, in
+[`e2e/cypress/support/commands.ts`](e2e/cypress/support/commands.ts).
 
-| Role | Email | Password |
-|------|-------|----------|
-| Super Admin | super@test.com | TestSuper1! |
-| Org Admin | admin@test.com | TestAdmin1! |
-| Member | member@test.com | TestMember1! |
-
-Plus 5 extra member accounts (maria@test.com, joan@test.com, etc. / TestMember1!), 4 sample activities with modalities and prices, and sample registrations.
-
-> **Warning:** Do not use test accounts in production. Use `./scripts/dev.sh seed` (interactive) for real deployments.
+> **`seed test` refuses to run outside development.** It plants fixed, repository-visible
+> passwords, so it requires `APP_ENV=development` or `CI` and exits otherwise. For anything
+> real, use the interactive setup — see
+> [First-time setup](docs/getting-started/first-setup.md).
 
 ## Installation (Docker)
 
@@ -323,7 +317,7 @@ cp .env.example .env
 docker compose pull
 docker compose up -d
 
-# Run initial setup (creates admin accounts)
+# Run the setup: super admin, club data reset, club setup
 docker compose exec -it api python -m app.cli.seed
 
 # Open http://localhost

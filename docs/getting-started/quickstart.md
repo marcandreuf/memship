@@ -18,50 +18,60 @@ PORT=8081 docker compose up -d
 
 Change `PORT=8081` to any port you prefer (default is `80`).
 
-## 2. Load initial data
+## 2. Run the setup
 
-Pick one of the three seed modes:
-
-**Option A — Quick demo with test accounts (no prompts)**
-
-```bash
-docker compose exec demo-memship-api python -m app.cli.seed --test
-```
-
-Creates pre-configured test accounts plus sample members, activities, and registrations:
-
-| Role        | Email            | Password      |
-|-------------|------------------|---------------|
-| Super Admin | super@test.com   | TestSuper1!   |
-| Org Admin   | admin@test.com   | TestAdmin1!   |
-| Member      | member@test.com  | TestMember1!  |
-
-**Option B — Custom setup (interactive)**
+The same command sets Memship up on every environment. It is interactive, and asks
+three independent questions:
 
 ```bash
-docker compose exec demo-memship-api python -m app.cli.seed
+docker compose exec -it demo-memship-api python -m app.cli.seed
 ```
 
-Prompts you to create your own super admin and org admin. No sample data.
+1. **Super admin** — you choose the address and password. Nothing is preset, and no
+   credentials are published anywhere.
+2. **Club data** — offered only when there is some, so on a fresh install it is a no-op.
+3. **Club setup** — enter your organization's real details, or generate a demo club.
 
-**Option C — Realistic demo dataset**
+Answer **2) demo club** to look around with realistic data: ~60 members across all
+statuses, activities, receipts in every state, SEPA mandates and dashboard reminders.
+Ideal for evaluating the finance dashboard and annual summary. Safe to re-run
+(idempotent).
 
-```bash
-docker compose exec demo-memship-api python -m app.cli.seed --demo
+The demo club also creates logins for a **club admin** and **two members**, with
+generated passwords. They are printed once, at the end of the run:
+
+```
+  Accounts:
+
+    super admin  you@example.org             (the password you chose)
+    club admin   admin@mediterrani.example   4hVqTmXeb9PkscYRt2Nu
+    member       demo0@mediterrani.example   pQ7yKdRfw3TgLmXaB6ns
+    member       demo1@mediterrani.example   Zj5rWnEcx8VbHtPqM4dy
 ```
 
-Creates the admin accounts plus a full year of realistic data — ~60 members across all
-statuses, activities, receipts in every state, SEPA mandates, and dashboard reminders. Ideal
-for evaluating the finance dashboard and annual summary. Safe to re-run (idempotent).
+Keep that output — the passwords are stored only as hashes and cannot be shown again.
 
 ## 3. Open the app
 
-Go to **http://localhost:8081** and log in with your credentials.
+Go to **http://localhost:8081** and log in as the super admin you created.
 
-> **Do not use the test accounts in production.** The quick-start compose file uses insecure
-> default secrets (`SECRET_KEY`, database password) and is for local evaluation only. See
-> [Installation](installation.md) and the [Configuration reference](../self-hosting/configuration.md)
-> before exposing Memship to a network.
+> **The quick-start stack is for evaluation, not for running a club.** Its compose file
+> ships insecure defaults — a `SECRET_KEY` committed to this repository and a fixed database
+> password — and keeps data in throwaway Docker volumes. Follow
+> [Installation](installation.md) and the
+> [Configuration reference](../self-hosting/configuration.md) before putting Memship on a
+> network or entering real member data.
+
+## Moving from evaluation to real use
+
+Do not carry the quick-start stack into production — install it properly with
+[Installation](installation.md), which generates real secrets and puts your data
+somewhere you can back up.
+
+If you only want to clear the demo club out of an instance you are keeping, re-run the
+setup and answer *yes* to the club-data question. It deletes the demo club while keeping
+your super admin, the system roles and any payment providers you configured — see
+[First-time setup](first-setup.md).
 
 ## Stop and clean up
 
