@@ -121,7 +121,7 @@ Because features are built in parallel, **the number is claimed at release, not 
 
 The flow is **build once, promote**:
 
-1. A PR merges to `main`. CI runs, then the Build Images workflow pushes **release-candidate images** tagged `sha-<commit>` and `main` to GHCR.
+1. A PR merges to `main`. CI runs, then the Build Images workflow pushes **release-candidate images** tagged `sha-<commit>` and `main` to GHCR. **Every service is built on every commit**, even one it did not touch, so each commit on `main` has a complete RC set and any of them can be released.
 2. The staging environment deploys that RC image and it is validated there.
 3. To release the validated commit, a maintainer tags it and pushes the tag:
 
@@ -132,6 +132,8 @@ The flow is **build once, promote**:
 
    This creates an annotated `v1.3.0` tag and pushes it.
 4. The Release workflow **promotes the exact RC image** for that commit to `:1.3.0` and `:latest` — it does not rebuild, so staging and production ship identical bytes. It also checks that the released version has a row in the README roadmap's **Released** table.
+
+   If an RC image is missing for the tagged commit, the release **fails** instead of building one from the tag. A rebuild would look like it worked while quietly shipping bytes nobody validated, differing from staging by whatever moved in the base image or the dependency tree in the meantime. Build the missing RC first (Actions → **Build Images** → Run workflow on that commit), then re-run the release. `allow_rebuild` overrides this for tags old enough that their RC images have been cleaned up.
 
 The version the running app reports comes from the `APP_VERSION` environment variable (set from the image tag at deploy time); running from source, it falls back to `git describe`.
 

@@ -21,6 +21,12 @@ La mayoría de herramientas de gestión de socios son plataformas SaaS caras o s
 
 ## Inicio rápido (Docker)
 
+> **Para probar Memship, no para usarlo.** Es la vía más rápida a una instancia
+> funcionando en tu propia máquina: imágenes publicadas, volúmenes desechables y una
+> clave secreta que está en este repositorio. Para gestionar una organización real,
+> sigue la [Instalación](docs/getting-started/installation.md) — el mismo producto,
+> configurado para poder respaldarlo, actualizarlo y conservarlo.
+
 Prueba Memship con un solo comando, sin necesidad de clonar el repositorio:
 
 ```bash
@@ -29,39 +35,29 @@ docker compose pull        # descarga las últimas imágenes publicadas
 PORT=8081 docker compose up -d
 ```
 
-A continuación, ejecuta la configuración inicial:
-
-**Opción A: Demo rápida con cuentas de prueba (sin preguntas)**
+A continuación, ejecuta la configuración, que te hace tres preguntas:
 
 ```bash
-docker compose exec demo-memship-api python -m app.cli.seed --test
+docker compose exec -it demo-memship-api python -m app.cli.seed
 ```
 
-Esto crea cuentas de prueba preconfiguradas, socios de ejemplo, actividades e inscripciones:
+1. **Super admin** — eliges la dirección y la contraseña. No hay nada predefinido.
+2. **Datos del club** — solo se ofrece si los hay, así que en una instalación nueva no hace nada.
+3. **Configuración del club** — introduce los datos reales de tu organización, o genera un club de demostración.
 
-| Rol | Email | Contraseña |
-|-----|-------|------------|
-| Super Admin | super@test.com | TestSuper1! |
-| Admin de Org | admin@test.com | TestAdmin1! |
-| Socio | member@test.com | TestMember1! |
+Elige el club de demostración para explorar: crea un año completo de datos de ejemplo
+realistas — ~60 socios en todos los estados, actividades, recibos en todos los estados
+repartidos por los meses, mandatos SEPA y recordatorios del panel. También genera accesos
+para un administrador de club y dos socios, y **muestra esas contraseñas una sola vez**,
+así que guarda la salida. Se puede volver a ejecutar sin duplicar (idempotente).
 
-**Opción B: Configuración personalizada (interactiva)**
+Abre http://localhost:8081 e inicia sesión como super admin. Cambia `PORT=8081` por el
+puerto que prefieras (por defecto es el 80).
 
-```bash
-docker compose exec demo-memship-api python -m app.cli.seed
-```
-
-Te pedirá que crees tus propias cuentas de super admin y admin de organización. No se generan datos de ejemplo.
-
-**Opción C: Conjunto de datos demo realista**
-
-```bash
-docker compose exec demo-memship-api python -m app.cli.seed --demo
-```
-
-Crea las cuentas de administrador anteriores más un año completo de datos de ejemplo realistas — ~60 socios en todos los estados, actividades, recibos en todos los estados repartidos por los meses, mandatos SEPA y recordatorios del panel — ideal para evaluar el panel financiero y el resumen anual. Se puede volver a ejecutar sin duplicar (idempotente).
-
-Abre http://localhost:8081 e inicia sesión con tus credenciales. Cambia `PORT=8081` por el puerto que prefieras (por defecto es el 80).
+Cuando termines de evaluarlo, vuelve a ejecutar el mismo comando y responde *sí* a la
+pregunta sobre los datos del club: borra el club de demostración conservando tu super
+admin y las pasarelas de pago que hayas configurado. Consulta
+[Configuración inicial](docs/getting-started/first-setup.md).
 
 ## Hoja de ruta
 
@@ -112,6 +108,7 @@ Memship sigue el [versionado semántico](https://semver.org/) y **los números d
 | v1.3.0 | Reservas simples — reservas de socios en espacios compartidos mediante un calendario semanal, aforo por franja, lista de espera FIFO con promoción automática y correos de confirmación/lista de espera | Hecho |
 | v1.4.0 | Roles y permisos flexibles — asignación multi-rol y comprobaciones granulares por permiso en lugar de los cuatro roles fijos, con una API `/roles` de gestión y navegación y acceso a páginas guiados por permisos en todo el portal. También repara los stacks de despliegue publicados, que no ejecutaban ningún worker de Celery — por lo que todos los correos que envía el producto se perdían en silencio y las tareas nocturnas de facturación y de recordatorios de pago no se ejecutaban nunca — y no montaban ningún volumen en el servicio de API, de modo que una actualización destruía los archivos subidos y regeneraba la clave secreta que cifra las credenciales almacenadas de SSO y de los proveedores de pago | Hecho |
 | v2.0.0 | Revisión del autoalojamiento — los datos persistentes pasan a montajes de tipo bind visibles en el host bajo un único `MEMSHIP_DATA_ROOT`, los contenedores del backend se ejecutan con el uid del propio operador, un `install.sh` de un solo comando y `vps-bootstrap.sh` para preparar el servidor. **Seguridad:** PostgreSQL y la API dejan de publicarse en internet — Docker escribe sus reglas de iptables por delante de las del cortafuegos, así que ambos eran accesibles en cualquier host con IP pública en todas las versiones anteriores. **Cambio incompatible:** `uv run` ya no funciona dentro de los contenedores, y las instalaciones existentes necesitan un `sudo chown -R $(id -u):$(id -g) <data-root>/storage` una sola vez | Hecho |
+| v2.1.0 | Configuración inicial sin credenciales publicadas — la puesta en marcha es ahora el mismo proceso interactivo en todos los entornos: eres tú quien elige la dirección y la contraseña del superadministrador, y las cuentas fijas `super@test.com` / `admin@test.com` desaparecen de la guía rápida, donde eran un superadministrador cuya contraseña se publica en este mismo repositorio. Añade las opciones `--admin-email` y `--club-name` para instalaciones automatizadas sin preguntas, un borrado de los datos del club que conserva el superadministrador y los proveedores de pago configurados, y un generador de club de demostración que muestra sus credenciales una sola vez. Las publicaciones también son más seguras: ahora se construyen todos los servicios en cada commit de `main`, y una release se detiene si falta la imagen candidata validada en lugar de reconstruirla en silencio desde la etiqueta | Hecho |
 
 ### Planificado
 
@@ -278,24 +275,23 @@ Parar todo:
 
 ### Primera configuración
 
-Tras iniciar los servicios, ejecuta el comando seed para crear los datos iniciales:
+Tras iniciar los servicios, ejecuta el comando de configuración para crear los datos iniciales:
 
 ```bash
-./scripts/dev.sh seed          # Interactivo — te pide las credenciales de admin
-./scripts/dev.sh seed test     # Rápido — crea cuentas de prueba (sin preguntas)
+./scripts/dev.sh seed          # Interactivo — la misma configuración que usa cualquier entorno
+./scripts/dev.sh seed test     # Cuentas de prueba fijas + datos de ejemplo, para la suite e2e
 ```
 
-La opción `seed test` crea cuentas de prueba y datos de ejemplo para desarrollo:
+`seed test` crea las cuentas con las que inicia sesión la suite de Cypress, además de 4
+actividades de ejemplo con modalidades y precios, inscripciones de ejemplo y ~22 socios
+adicionales. Las direcciones y contraseñas son un contrato con la suite de pruebas, no una
+decisión de configuración, así que viven junto a ella, en
+[`e2e/cypress/support/commands.ts`](e2e/cypress/support/commands.ts).
 
-| Rol | Email | Contraseña |
-|-----|-------|------------|
-| Super Admin | super@test.com | TestSuper1! |
-| Admin de Org | admin@test.com | TestAdmin1! |
-| Socio | member@test.com | TestMember1! |
-
-Además, 5 cuentas de socio adicionales (maria@test.com, joan@test.com, etc. / TestMember1!), 4 actividades de ejemplo con modalidades y precios, e inscripciones de ejemplo.
-
-> **Aviso:** No utilices las cuentas de prueba en producción. Usa `./scripts/dev.sh seed` (interactivo) para despliegues reales.
+> **`seed test` se niega a ejecutarse fuera de desarrollo.** Crea contraseñas fijas y visibles
+> en el repositorio, así que exige `APP_ENV=development` o `CI` y termina en caso contrario.
+> Para cualquier uso real, usa la configuración interactiva — consulta
+> [Configuración inicial](docs/getting-started/first-setup.md).
 
 ## Instalación (Docker)
 

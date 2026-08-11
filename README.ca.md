@@ -21,6 +21,12 @@ La majoria d'eines de gestió de socis són plataformes SaaS cares o programari 
 
 ## Inici ràpid (Docker)
 
+> **Per provar Memship, no per fer-lo servir.** És la via més ràpida a una instància
+> funcionant a la vostra màquina: imatges publicades, volums llencívols i una clau
+> secreta que és en aquest repositori. Per gestionar una organització real, seguiu la
+> [Instal·lació](docs/getting-started/installation.md) — el mateix producte, configurat
+> per poder-lo copiar, actualitzar i conservar.
+
 Proveu Memship amb una sola comanda — sense necessitat de clonar el repositori:
 
 ```bash
@@ -29,39 +35,29 @@ docker compose pull        # descarrega les últimes imatges publicades
 PORT=8081 docker compose up -d
 ```
 
-A continuació, executeu la configuració inicial:
-
-**Opció A: Demostració ràpida amb comptes de prova (sense preguntes)**
+A continuació, executeu la configuració, que us fa tres preguntes:
 
 ```bash
-docker compose exec demo-memship-api python -m app.cli.seed --test
+docker compose exec -it demo-memship-api python -m app.cli.seed
 ```
 
-Això crea comptes de prova preconfigurats, socis d'exemple, activitats i inscripcions:
+1. **Superadministrador** — trieu l'adreça i la contrasenya. No hi ha res predefinit.
+2. **Dades del club** — només s'ofereix si n'hi ha, així que en una instal·lació nova no fa res.
+3. **Configuració del club** — introduïu les dades reals de la vostra organització, o genereu un club de demostració.
 
-| Rol | Correu electrònic | Contrasenya |
-|-----|-------------------|-------------|
-| Superadministrador | super@test.com | TestSuper1! |
-| Administrador | admin@test.com | TestAdmin1! |
-| Soci | member@test.com | TestMember1! |
+Trieu el club de demostració per explorar: crea un any complet de dades d'exemple
+realistes — ~60 socis en tots els estats, activitats, rebuts en tots els estats repartits
+pels mesos, mandats SEPA i recordatoris del tauler. També genera accessos per a un
+administrador de club i dos socis, i **mostra aquestes contrasenyes una sola vegada**, així
+que deseu la sortida. Es pot tornar a executar sense duplicar (idempotent).
 
-**Opció B: Configuració personalitzada (interactiva)**
+Obriu http://localhost:8081 i inicieu sessió com a superadministrador. Canvieu `PORT=8081`
+per qualsevol port que preferiu (per defecte és el 80).
 
-```bash
-docker compose exec demo-memship-api python -m app.cli.seed
-```
-
-Us demanarà que creeu els vostres propis comptes de superadministrador i administrador. No es generen dades d'exemple.
-
-**Opció C: Conjunt de dades demo realista**
-
-```bash
-docker compose exec demo-memship-api python -m app.cli.seed --demo
-```
-
-Crea els comptes d'administrador anteriors més un any complet de dades d'exemple realistes — ~60 socis en tots els estats, activitats, rebuts en tots els estats repartits pels mesos, mandats SEPA i recordatoris del tauler — ideal per avaluar el tauler financer i el resum anual. Es pot tornar a executar sense duplicar (idempotent).
-
-Obriu http://localhost:8081 i inicieu sessió amb les vostres credencials. Canvieu `PORT=8081` per qualsevol port que preferiu (per defecte és el 80).
+Quan acabeu d'avaluar-lo, torneu a executar la mateixa comanda i responeu *sí* a la
+pregunta sobre les dades del club: esborra el club de demostració conservant el vostre
+superadministrador i les passarel·les de pagament que hàgiu configurat. Consulteu
+[Configuració inicial](docs/getting-started/first-setup.md).
 
 ## Full de ruta
 
@@ -112,6 +108,7 @@ Memship segueix el [versionat semàntic](https://semver.org/) i **els números d
 | v1.3.0 | Reserves simples — reserves de socis en espais compartits mitjançant un calendari setmanal, aforament per franja, llista d'espera FIFO amb promoció automàtica i correus de confirmació/llista d'espera | Fet |
 | v1.4.0 | Rols i permisos flexibles — assignació multi-rol i comprovacions granulars per permís en lloc dels quatre rols fixos, amb una API `/roles` de gestió i navegació i accés a pàgines guiats per permisos a tot el portal. També repara els stacks de desplegament publicats, que no executaven cap worker de Celery — de manera que tots els correus que envia el producte es perdien en silenci i les tasques nocturnes de facturació i de recordatoris de pagament no s'executaven mai — i no muntaven cap volum al servei d'API, de manera que una actualització destruïa els fitxers pujats i regenerava la clau secreta que xifra les credencials emmagatzemades d'SSO i dels proveïdors de pagament | Fet |
 | v2.0.0 | Revisió de l'autoallotjament — les dades persistents passen a muntatges de tipus bind visibles a l'amfitrió sota un únic `MEMSHIP_DATA_ROOT`, els contenidors del backend s'executen amb l'uid del mateix operador, un `install.sh` d'una sola ordre i `vps-bootstrap.sh` per preparar el servidor. **Seguretat:** PostgreSQL i l'API deixen de publicar-se a internet — Docker escriu les seves regles d'iptables per davant de les del tallafocs, de manera que tots dos eren accessibles en qualsevol amfitrió amb IP pública en totes les versions anteriors. **Canvi incompatible:** `uv run` ja no funciona dins dels contenidors, i les instal·lacions existents necessiten un `sudo chown -R $(id -u):$(id -g) <data-root>/storage` una sola vegada | Fet |
+| v2.1.0 | Configuració inicial sense credencials publicades — la posada en marxa és ara el mateix procés interactiu a tots els entorns: ets tu qui tria l'adreça i la contrasenya del superadministrador, i els comptes fixos `super@test.com` / `admin@test.com` desapareixen de la guia ràpida, on eren un superadministrador amb una contrasenya publicada en aquest mateix repositori. Afegeix les opcions `--admin-email` i `--club-name` per a instal·lacions automatitzades sense preguntes, un esborrat de les dades del club que conserva el superadministrador i els proveïdors de pagament configurats, i un generador de club de demostració que mostra les seves credencials una sola vegada. Les publicacions també són més segures: ara es construeixen tots els serveis a cada commit de `main`, i una release s'atura si falta la imatge candidata validada en lloc de reconstruir-la en silenci des de l'etiqueta | Fet |
 
 ### Planificat
 
@@ -278,24 +275,23 @@ Atureu-ho tot:
 
 ### Primera configuració
 
-Després d'iniciar els serveis, executeu la comanda de seed per crear les dades inicials:
+Després d'iniciar els serveis, executeu la comanda de configuració per crear les dades inicials:
 
 ```bash
-./scripts/dev.sh seed          # Interactiu — demana les credencials d'administrador
-./scripts/dev.sh seed test     # Ràpid — crea comptes de prova (sense preguntes)
+./scripts/dev.sh seed          # Interactiu — la mateixa configuració que fa servir qualsevol entorn
+./scripts/dev.sh seed test     # Comptes de prova fixos + dades d'exemple, per a la suite e2e
 ```
 
-L'opció `seed test` crea comptes de prova i dades d'exemple per al desenvolupament:
+`seed test` crea els comptes amb què inicia sessió la suite de Cypress, a més de 4 activitats
+d'exemple amb modalitats i preus, inscripcions d'exemple i ~22 socis addicionals. Les adreces i
+contrasenyes són un contracte amb la suite de proves, no una decisió de configuració, així que
+viuen al seu costat, a
+[`e2e/cypress/support/commands.ts`](e2e/cypress/support/commands.ts).
 
-| Rol | Correu electrònic | Contrasenya |
-|-----|-------------------|-------------|
-| Superadministrador | super@test.com | TestSuper1! |
-| Administrador | admin@test.com | TestAdmin1! |
-| Soci | member@test.com | TestMember1! |
-
-A més, 5 comptes de soci addicionals (maria@test.com, joan@test.com, etc. / TestMember1!), 4 activitats d'exemple amb modalitats i preus, i inscripcions d'exemple.
-
-> **Avís:** No utilitzeu els comptes de prova en producció. Utilitzeu `./scripts/dev.sh seed` (interactiu) per a desplegaments reals.
+> **`seed test` es nega a executar-se fora de desenvolupament.** Crea contrasenyes fixes i
+> visibles al repositori, així que exigeix `APP_ENV=development` o `CI` i acaba en cas
+> contrari. Per a qualsevol ús real, feu servir la configuració interactiva — consulteu
+> [Configuració inicial](docs/getting-started/first-setup.md).
 
 ## Instal·lació (Docker)
 

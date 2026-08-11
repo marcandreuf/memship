@@ -246,9 +246,10 @@ cat <<EOF
   Config:     $ENV_FILE  (contains your secrets — back it up)
   Address:    ${SITE_NOW:-http://localhost}
 
-  Create the first admin account:
+  Run the setup — it creates your super admin and your organization.
+  It prompts, so keep the -it:
 
-    docker compose exec api python -m app.cli.seed
+    docker compose exec -it api python -m app.cli.seed
 
   Then:  docker compose ps       # check everything is up
          docker compose logs -f  # watch it start

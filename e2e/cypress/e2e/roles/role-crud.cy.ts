@@ -24,7 +24,10 @@ describe("Roles — authoring", { tags: ["@roles"] }, () => {
 
   it("renders each permission with its description", () => {
     cy.contains("button", "Create role").click();
-    cy.contains("Run bulk billing").should("be.visible");
+    // The catalog outgrew the dialog: `billing.runs.write` now sits below the
+    // fold in a scrollable, position-fixed panel, so it is present but not in
+    // view. Scroll to it rather than assert on where it happens to land.
+    cy.contains("Run bulk billing").scrollIntoView().should("be.visible");
     cy.contains("Generate fees across the whole club at once").should("be.visible");
   });
 
