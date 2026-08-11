@@ -108,7 +108,7 @@ export DEBIAN_FRONTEND=noninteractive
 
 step "Updating the package index"
 apt-get update -qq
-apt-get install -y -qq ca-certificates curl gnupg >/dev/null
+apt-get install -y -qq ca-certificates curl gnupg git >/dev/null
 
 # ---------------------------------------------------------------- deploy user
 
@@ -351,6 +351,7 @@ cat <<EOF
   2. INSTALL MEMSHIP as $DEPLOY_USER — not as root:
 
        su - $DEPLOY_USER          # or log in again over SSH, so the docker group applies
+       sudo install -d -o $DEPLOY_USER -g $DEPLOY_USER /srv/openmemship
        git clone https://github.com/marcandreuf/memship.git /srv/openmemship/app
        cd /srv/openmemship/app
        ./scripts/install.sh --data-root /srv/openmemship/data --domain <your-domain>

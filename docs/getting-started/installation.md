@@ -7,6 +7,8 @@ This guide covers a **production** self-hosted install. For a quick local evalua
 
 - A server running Docker Engine and the Compose plugin
 - An ordinary (non-root) user in the `docker` group — the stack is not installed as root
+- `git`, to clone this repository. Minimal server images often ship without it:
+  `sudo apt-get update && sudo apt-get install -y git`
 - A domain name, with a DNS A record already pointing at the server, if you want automatic HTTPS
 
 ### Starting from a bare server
@@ -14,10 +16,20 @@ This guide covers a **production** self-hosted install. For a quick local evalua
 `scripts/vps-bootstrap.sh` does the root half of the preparation. Run it **once, as root**, on a
 fresh Debian 12 or Ubuntu 24.04 box:
 
+Clone it somewhere you can already write — your own home directory. The final checkout lives
+under `/srv`, but nothing can write there until the bootstrap has run:
+
 ```bash
-git clone https://github.com/marcandreuf/memship.git /srv/openmemship/app
-sudo /srv/openmemship/app/scripts/vps-bootstrap.sh --ssh-key-file ~/id_ed25519.pub
+git clone https://github.com/marcandreuf/memship.git ~/memship-bootstrap
+sudo ~/memship-bootstrap/scripts/vps-bootstrap.sh --user deploy --ssh-key-file ~/.ssh/authorized_keys
 ```
+
+`--user` names the account that will own the install; pass the account you are already logged in
+as (`--user "$USER"`) to use it instead of creating a separate `deploy`. `--ssh-key-file` takes a
+file containing an SSH **public** key — your own `~/.ssh/authorized_keys` is the reliable choice,
+since a fresh server has no `.pub` file lying around. Without a key you cannot log in as the new
+user. Note that `~` expands to **root's** home under `sudo`, so give an absolute path if you are
+not root.
 
 It creates the deploy user, installs Docker from Docker's own repository, enables
 `unattended-upgrades`, `fail2ban` and `ufw`, sets the timezone, and adds a weekly image prune.
@@ -34,12 +46,18 @@ Log out and back in afterwards, so the deploy user's `docker` group membership t
 
 ## Install
 
-As the deploy user — **not** as root:
+As the deploy user — **not** as root. `/srv` belongs to root, so create the install directory and
+hand it to yourself before cloning into it; `install.sh` writes `.env` inside the checkout and
+needs to own it:
 
 ```bash
+sudo install -d -o "$USER" -g "$USER" /srv/openmemship
+git clone https://github.com/marcandreuf/memship.git /srv/openmemship/app
 cd /srv/openmemship/app
 ./scripts/install.sh --data-root /srv/openmemship/data --domain memship.example.com
 ```
+
+The bootstrap clone in your home directory has done its job now and can be deleted.
 
 That creates the data root, generates real secrets into `.env` (mode 600), pulls the published
 images and starts the stack.
@@ -51,6 +69,14 @@ an hour. Use `--skip-dns-check` only if you know why you are skipping it.
 
 The script is safe to re-run. It never overwrites an existing `.env`, and re-running is how you
 pick up a new `IMAGE_TAG` later.
+
+> **Reinstalling from scratch burns certificates.** The issued certificate lives in
+> `<data-root>/caddy/data`. Delete that directory — as a full teardown does — and the next start
+> requests a **new** certificate rather than renewing the old one. Let's Encrypt allows **5
+> certificates per week for the same set of hostnames**, so a handful of from-scratch reinstalls
+> against one domain will exhaust it and leave you without HTTPS until the window rolls forward.
+> When rehearsing an install, omit `--domain` and run on plain HTTP, then add the domain on the
+> final pass. Preserving `caddy/data` across a rebuild avoids the reissue entirely.
 
 Then run the setup — it creates your super admin and your organization:
 
@@ -157,9 +183,12 @@ The default Compose stack runs behind a Caddy reverse proxy:
 | API Direct | `http://localhost:8003`          | Backend API (direct)      |
 
 > **`ufw` does not constrain Docker.** Docker inserts its own iptables rules ahead of the
-> firewall's, so a port published with `ports:` stays reachable from the internet even while `ufw`
-> denies it — including the API on 8003 and Postgres on 5433. Verify from another machine with
-> `nmap -Pn -p 22,80,443,5433,8003 <your-host>` rather than trusting the firewall rules.
+> firewall's, so a port published to all interfaces stays reachable from the internet even while
+> `ufw` denies it. The shipped stack therefore publishes the API (8003) and Postgres (5433) on
+> **`127.0.0.1` only**, which is why they are reachable from the server itself and nowhere else.
+> Setting `API_BIND` or `DB_BIND` to `0.0.0.0` — or adding your own `ports:` entry — puts that
+> service on the public internet regardless of your firewall rules. Verify from another machine
+> with `nmap -Pn -p 22,80,443,5433,8003 <your-host>` rather than trusting `ufw status`.
 
 ## Next steps
 
