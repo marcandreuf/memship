@@ -288,6 +288,7 @@ EOF
 if docker compose exec -T db psql -U memship -d memship_db -tAc \
         'select 1 from users limit 1' 2>/dev/null | grep -q 1; then
     cat <<EOF
+
   This instance is already set up. To reset the super admin password:
 
     MEMSHIP_ADMIN_PASSWORD='...' docker compose exec -T -e MEMSHIP_ADMIN_PASSWORD \\
@@ -295,6 +296,7 @@ if docker compose exec -T db psql -U memship -d memship_db -tAc \
 EOF
 else
     cat <<EOF
+
   Run the setup — it creates your super admin and your organization.
   It prompts, so keep the -it:
 
