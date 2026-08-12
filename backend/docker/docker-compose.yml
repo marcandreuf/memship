@@ -66,7 +66,11 @@ services:
       context: ..
       dockerfile: docker/Dockerfile
     container_name: memship-celery-beat
-    command: celery -A app.core.celery_app beat --loglevel=info
+    # --schedule is not optional: without it beat writes `celerybeat-schedule`
+    # into the working directory, which is root-owned /app, and the container
+    # runs as uid 1001. That is a permission error on every start, not just on a
+    # clean volume. The production compose has always passed this path.
+    command: celery -A app.core.celery_app beat --loglevel=info --schedule=/var/lib/celery/celerybeat-schedule
     environment:
       - DATABASE_URL=postgresql://memship:memship@db:5432/memship_db
       - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
@@ -75,6 +79,8 @@ services:
     volumes:
       - ../app:/app/app
       - memship-storage:/app/storage
+      # Survives a restart, so beat does not re-fire a job it already ran.
+      - memship-celerybeat:/var/lib/celery
     depends_on:
       redis:
         condition: service_healthy
@@ -131,3 +137,4 @@ services:
 volumes:
   pgdata:
   memship-storage:
+  memship-celerybeat:
