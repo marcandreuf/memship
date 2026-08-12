@@ -252,13 +252,18 @@ if [ "$DO_FIREWALL" -eq 1 ]; then
     # Order matters: allow SSH BEFORE enabling, or enabling drops this session.
     # 22 goes in unconditionally as well — if sshd is being moved off it, the
     # old port is still how the current session got here.
+    ALLOWED="22"
     ufw allow 22/tcp >/dev/null
     for p in $SSH_PORTS; do
-        [ "$p" = "22" ] || ufw allow "$p"/tcp >/dev/null
+        [ "$p" = "22" ] && continue
+        ufw allow "$p"/tcp >/dev/null
+        ALLOWED="$ALLOWED, $p"
     done
     ufw allow 80/tcp >/dev/null
     ufw allow 443/tcp >/dev/null
-    info "allowed $(printf '%s, ' $SSH_PORTS | sed 's/, $//'), 80, 443/tcp"
+    # Report every port actually opened. Under-reporting the firewall's state is
+    # the same class of mistake as opening the wrong port in the first place.
+    info "allowed $ALLOWED, 80, 443/tcp"
 
     # "Status: inactive" contains "active" — match the whole field, not a substring.
     if ufw status | head -1 | grep -qi "^Status: active"; then
