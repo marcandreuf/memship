@@ -213,6 +213,38 @@ class TestPasswordReset:
         # Should not reveal whether email exists
         assert response.json()["reset_token"] is None
 
+    def test_super_admin_cannot_request_a_reset(self, client, db):
+        """Email must not stand in for the account that owns the instance.
+
+        The response has to be the same one an unknown address gets, or the
+        endpoint turns into a way to ask which accounts are super admins.
+        """
+        _create_test_user(db, email="owner@test.com", role="super_admin")
+
+        response = client.post(
+            "/api/v1/auth/password-reset-request",
+            json={"email": "owner@test.com"},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["reset_token"] is None
+
+    def test_super_admin_token_issued_before_the_rule_is_refused(self, client, db):
+        """A token already in flight when this shipped must stop working too."""
+        from datetime import datetime, timedelta, timezone
+
+        user = _create_test_user(db, email="owner2@test.com", role="super_admin")
+        user.reset_token = "still-inside-its-hour"
+        user.reset_token_expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+        db.flush()
+
+        response = client.post(
+            "/api/v1/auth/password-reset",
+            json={"token": "still-inside-its-hour", "new_password": "newpassword1"},
+        )
+
+        assert response.status_code == 400
+
 
 class TestLogout:
     def test_logout(self, client):

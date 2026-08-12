@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
 
+from app.core.permissions import SUPER_ADMIN_SLUG
 from app.core.security.password import hash_password, verify_password
 from app.domains.auth.models import User
 from app.domains.auth.roles import assign_roles
@@ -170,9 +171,26 @@ def resend_verification(db: Session, email: str) -> tuple[User, str] | None:
     return user, token
 
 
+def is_super_admin(user: User) -> bool:
+    return any(role.slug == SUPER_ADMIN_SLUG for role in user.roles)
+
+
 def request_password_reset(db: Session, email: str) -> str | None:
+    """Issue a reset token, or ``None`` when this address cannot use the flow.
+
+    Super admins are excluded. The account holds ``RESERVED_KEYS`` — roles and
+    credentials — so letting an email inbox stand in for it makes mailbox access
+    equivalent to owning the instance. Their password is reset from the host
+    instead, with `python -m app.cli.seed`, which needs shell access to the
+    machine running the containers. That also keeps recovery working on an
+    install where SMTP was never configured, which is every install on day one.
+    """
     user = db.query(User).filter(User.email == email, User.is_active == True).first()
     if not user:
+        return None
+    if is_super_admin(user):
+        # Same `None` as an unknown address, so the endpoint's generic response
+        # stays generic and the flow does not disclose who the super admins are.
         return None
 
     token = secrets.token_urlsafe(32)
@@ -193,6 +211,12 @@ def reset_password(db: Session, token: str, new_password: str) -> bool:
         .first()
     )
     if not user:
+        return False
+
+    # No token is ever issued for a super admin now, but one issued before that
+    # rule existed would still be live and inside its hour. Refusing here means
+    # the rule holds for tokens already in flight, not just future ones.
+    if is_super_admin(user):
         return False
 
     if (

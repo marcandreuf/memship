@@ -6,12 +6,15 @@ and the payment provider credentials that live in the database rather than in
 `.env` — the whole reason this exists instead of "delete the postgres volume".
 """
 
+import argparse
+
 import pytest
 
 from app.cli import reset as reset_module
 from app.cli.reset import KNOWN_TABLES, preview_club_data, reset_club_data
 from app.cli.seed import (
     DEMO_ORG,
+    _run_unattended,
     any_admin_user_id,
     create_org_settings,
     create_user_with_member,
@@ -22,9 +25,12 @@ from app.cli.seed import (
     seed_groups,
     seed_membership_types,
     seed_narrow_role,
+    set_password,
     super_admin_users,
 )
+from app.core.permissions import MEMBER_SLUG, SUPER_ADMIN_SLUG
 from app.db.base import Base
+from app.domains.audit.models import AuditLog
 from app.domains.auth.models import Role, User
 from app.domains.billing.models import PaymentProvider
 from app.domains.members.models import Member
@@ -36,6 +42,12 @@ def _base_install(db):
     seed_address_types(db)
     seed_contact_types(db)
     return seed_membership_types(db, seed_groups(db))
+
+
+def _args(**overrides):
+    """The parsed flags `_run_unattended` reads, defaulted to off."""
+    defaults = {"reset_club_data": False, "admin_email": None, "club_name": None, "demo": False}
+    return argparse.Namespace(**{**defaults, **overrides})
 
 
 def _account(email, role, membership_type, db):
@@ -224,6 +236,60 @@ class TestOrganizationDetails:
         create_org_settings(db, {"name": "Second"})
 
         assert db.query(OrganizationSettings).one().name == "First"
+
+
+class TestPasswordRecovery:
+    """The host-side recovery path — the only one a super admin has.
+
+    The web flow refuses them (see `domains/auth/service.request_password_reset`),
+    so these are not a convenience: they are how an operator gets back into an
+    instance whose SMTP was never configured.
+    """
+
+    def test_reset_is_recorded_in_the_audit_log(self, db):
+        membership_type = _base_install(db)
+        user = _account("owner@test.com", SUPER_ADMIN_SLUG, membership_type, db)
+
+        set_password(db, user, "a whole new password")
+
+        entry = (
+            db.query(AuditLog)
+            .filter(AuditLog.table_name == "users", AuditLog.record_id == user.id)
+            .one()
+        )
+        assert entry.action == "update"
+        assert entry.changed_fields == ["password_hash"]
+        # Nobody was signed in — the actor was whoever holds shell on the host.
+        assert entry.user_id is None
+        assert entry.user_agent == "app.cli.seed"
+
+    def test_unattended_resets_a_super_admin(self, db, monkeypatch):
+        membership_type = _base_install(db)
+        user = _account("owner@test.com", SUPER_ADMIN_SLUG, membership_type, db)
+        before = user.password_hash
+        monkeypatch.setenv("MEMSHIP_ADMIN_PASSWORD", "a whole new password")
+
+        _run_unattended(db, membership_type, _args(admin_email="owner@test.com"))
+
+        assert user.password_hash != before
+
+    def test_unattended_refuses_an_address_that_is_not_a_super_admin(self, db, monkeypatch):
+        """The flag would otherwise reset a stranger and report a super admin.
+
+        `--admin-email` on an ordinary member's address used to reset that
+        member's password, print "super admin: password reset", and not grant
+        the role — handing out somebody else's credentials while doing neither
+        of the two things the output claimed.
+        """
+        membership_type = _base_install(db)
+        member = _account("member@test.com", MEMBER_SLUG, membership_type, db)
+        before = member.password_hash
+        monkeypatch.setenv("MEMSHIP_ADMIN_PASSWORD", "a whole new password")
+
+        with pytest.raises(SystemExit):
+            _run_unattended(db, membership_type, _args(admin_email="member@test.com"))
+
+        assert member.password_hash == before
 
 
 class TestUnknownTableGuard:

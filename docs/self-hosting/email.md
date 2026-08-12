@@ -55,6 +55,11 @@ Trigger a real send to confirm delivery — for example, request a **password re
 login page, or create a member and check the welcome email arrives. Emails are localized
 (ES/CA/EN) based on the recipient's language.
 
+Use a member or club admin account for the reset test. Super admins are excluded from that
+flow by design — their password is reset from the host with `python -m app.cli.seed`, see
+[Recovering the super admin password](../getting-started/first-setup.md#recovering-the-super-admin-password)
+— so testing with one looks like mail that never arrives.
+
 ## Troubleshooting
 
 - **No email at all** — confirm `RESEND_API_KEY` or `SMTP_HOST` is set; if neither is set,

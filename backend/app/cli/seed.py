@@ -38,6 +38,7 @@ from sqlalchemy import text
 from app.cli.reset import preview_club_data, reset_club_data
 from app.core.permissions import ADMIN_SLUG, SUPER_ADMIN_SLUG
 from app.db.session import SessionLocal
+from app.domains.audit.models import AuditLog
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Address, AddressType, Contact, ContactType, Person
 from app.domains.auth.models import Role, RolePermission, User
@@ -1599,7 +1600,27 @@ def restore_member_records(db, users: list[User], membership_type: MembershipTyp
 
 
 def set_password(db, user: User, password: str) -> None:
+    """Replace a password, and record that it happened.
+
+    The audit row is the only trace this leaves. A reset run from the host is
+    indistinguishable afterwards from the password the account was created with,
+    so without it the log shows an account whose credentials silently changed.
+    `user_id` stays NULL because there is no logged-in actor — whoever ran this
+    had shell access to the machine, which the audit log has no way to name.
+    """
     user.password_hash = ph.hash(password)
+    db.flush()
+    db.add(
+        AuditLog(
+            table_name="users",
+            record_id=user.id,
+            action="update",
+            user_id=None,
+            changed_fields=["password_hash"],
+            # Provenance, in the absence of a request to attribute this to.
+            user_agent="app.cli.seed",
+        )
+    )
     db.flush()
 
 
@@ -1769,11 +1790,18 @@ def _run_interactive(db, membership_type: MembershipType) -> list[tuple[str, str
         listed = ", ".join(u.email for u in existing_supers)
         print(f"This instance already has a super admin: {listed}")
         if prompt_yes_no("Reset the password for one of them?"):
-            email = input("Which address? ").strip()
-            reset_target = next((u for u in existing_supers if u.email == email), None)
-            if reset_target is None:
-                print(f"  No super admin with address {email!r} — skipping.")
-            else:
+            # This is the recovery path for an operator who is locked out, so a
+            # typo asks again rather than dropping them back to a prompt that
+            # looks like it worked. Blank backs out.
+            while reset_target is None:
+                email = input("Which address? (blank to skip) ").strip()
+                if not email:
+                    print("  Skipping the password reset.")
+                    break
+                reset_target = next((u for u in existing_supers if u.email == email), None)
+                if reset_target is None:
+                    print(f"  No super admin with address {email!r}. Try again.")
+            if reset_target is not None:
                 reset_password = prompt_password("New password")
     else:
         print("No super admin exists yet. This is the account that owns the")
@@ -1901,6 +1929,19 @@ def _run_unattended(db, membership_type: MembershipType, args) -> list[tuple[str
 
         existing = db.query(User).filter_by(email=args.admin_email).first()
         if existing:
+            # An address already in use by an ordinary account is not a super
+            # admin to recover — it is somebody else. Resetting it here would
+            # hand out their password while reporting a super admin reset, and
+            # would not grant the role either, so the flag would silently do
+            # neither of the two things it looks like it does.
+            if not any(r.slug == SUPER_ADMIN_SLUG for r in existing.roles):
+                print(
+                    f"\nERROR: {args.admin_email} already belongs to an account that is not a\n"
+                    "super admin. Refusing to reset it — pass an address that is a super admin,\n"
+                    "or promote this account from Settings > Users while signed in as one.",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
             set_password(db, existing, password)
             print(f"\n  super admin: password reset ({args.admin_email})")
         else:
