@@ -114,6 +114,7 @@ Memship follows [semantic versioning](https://semver.org/), and **version number
 
 Priority-ordered, not yet versioned. Each becomes a versioned release when it ships, and the release claims the next semver number in order.
 
+- **User invitations** — invite a new super admin, club admin or member by email address and role; they set their own name and password. Sent by email where email is configured, and as a copyable link where it is not, so a freshly installed instance can add a second administrator without shell access
 - **Data backups** — download a full backup from the admin area, covering the database and the uploaded files, with a documented and tested restore
 - **Convocations** — formal General Assembly calls with token-based member RSVP
 - **Document library** — statutes, minutes, forms with per-group visibility

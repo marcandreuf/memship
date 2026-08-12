@@ -114,6 +114,7 @@ Memship segueix el [versionat semàntic](https://semver.org/) i **els números d
 
 Prioritzat, encara sense versió. Cada element esdevé un llançament versionat quan es publica, i el llançament pren el següent número semàntic per ordre.
 
+- **Invitacions d'usuaris** — convidar un nou superadministrador, administrador del club o soci indicant la seva adreça de correu i el seu rol; la persona tria el seu propi nom i contrasenya. S'envien per correu quan el correu està configurat, i com a enllaç copiable quan no ho està, de manera que una instal·lació acabada de crear pugui afegir un segon administrador sense accés per consola
 - **Còpies de seguretat** — descarregar una còpia completa des de l'àrea d'administració, amb la base de dades i els fitxers pujats, i una restauració documentada i provada
 - **Convocatòries** — convocatòries formals d'Assemblea General amb confirmació del soci mitjançant token
 - **Biblioteca de documents** — estatuts, actes, formularis amb visibilitat per grup
