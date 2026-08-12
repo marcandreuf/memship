@@ -114,6 +114,7 @@ Memship sigue el [versionado semántico](https://semver.org/) y **los números d
 
 Priorizado, aún sin versión. Cada elemento se convierte en un lanzamiento versionado cuando se publica, y el lanzamiento toma el siguiente número semántico por orden.
 
+- **Invitaciones de usuarios** — invitar a un nuevo superadministrador, administrador del club o socio indicando su dirección de correo y su rol; la persona elige su propio nombre y contraseña. Se envían por correo cuando el correo está configurado, y como enlace copiable cuando no lo está, de modo que una instalación recién creada pueda añadir un segundo administrador sin acceso por consola
 - **Copias de seguridad** — descargar una copia completa desde el área de administración, con la base de datos y los archivos subidos, y una restauración documentada y probada
 - **Convocatorias** — convocatorias formales de Asamblea General con confirmación del socio mediante token
 - **Biblioteca de documentos** — estatutos, actas, formularios con visibilidad por grupo
