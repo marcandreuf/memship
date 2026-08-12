@@ -13,12 +13,12 @@ from app.domains.persons.models import Person
 
 
 def _create_user(db, role="admin", suffix="rem"):
-    person = Person(first_name="Admin", last_name="User", email=f"{suffix}-{role}@test.com")
+    person = Person(first_name="Admin", last_name="User", email=f"{suffix}-{role}@examplee6e3b1.com")
     db.add(person)
     db.flush()
     user = User(
         person_id=person.id,
-        email=f"{suffix}-{role}@test.com",
+        email=f"{suffix}-{role}@examplee6e3b1.com",
         password_hash=hash_password("password123"),
         role=role,
         is_active=True,
@@ -63,7 +63,7 @@ def _ensure_org_settings(db):
 
 def _create_member_with_mandate(db, suffix="rem"):
     """Create a member with an active SEPA mandate and return (member, mandate)."""
-    person = Person(first_name="Test", last_name=f"Member-{suffix}", email=f"test-{suffix}@test.com")
+    person = Person(first_name="Test", last_name=f"Member-{suffix}", email=f"test-{suffix}@examplee6e3b1.com")
     db.add(person)
     db.flush()
     mtype = MembershipType(
@@ -169,7 +169,7 @@ class TestRemittanceCRUD:
         _ensure_org_settings(db)
         admin = _create_user(db, suffix="rem-c3")
         # Create member WITHOUT mandate
-        person = Person(first_name="No", last_name="Mandate", email="no-mandate-rem@test.com")
+        person = Person(first_name="No", last_name="Mandate", email="no-mandate-rem@examplee6e3b1.com")
         db.add(person)
         db.flush()
         mtype = MembershipType(name="NoMandate-rem", slug="nomandate-rem", base_price=50.00, billing_frequency="monthly")

@@ -19,12 +19,12 @@ def _auth_cookie(user):
 
 
 def _admin(db, suffix):
-    person = Person(first_name="Admin", last_name="User", email=f"admin-rep-{suffix}@test.com")
+    person = Person(first_name="Admin", last_name="User", email=f"admin-rep-{suffix}@examplee6e3b1.com")
     db.add(person)
     db.flush()
     user = User(
         person_id=person.id,
-        email=f"admin-rep-{suffix}@test.com",
+        email=f"admin-rep-{suffix}@examplee6e3b1.com",
         password_hash=hash_password("password123"),
         role="admin",
         is_active=True,
@@ -35,7 +35,7 @@ def _admin(db, suffix):
 
 
 def _member(db, suffix, *, status="active", joined_at=None, status_changed_at=None, with_user=False):
-    person = Person(first_name="Mem", last_name=f"Ber-{suffix}", email=f"m-rep-{suffix}@test.com")
+    person = Person(first_name="Mem", last_name=f"Ber-{suffix}", email=f"m-rep-{suffix}@examplee6e3b1.com")
     db.add(person)
     db.flush()
     uid = None
@@ -43,7 +43,7 @@ def _member(db, suffix, *, status="active", joined_at=None, status_changed_at=No
     if with_user:
         role_user = User(
             person_id=person.id,
-            email=f"m-rep-{suffix}@test.com",
+            email=f"m-rep-{suffix}@examplee6e3b1.com",
             password_hash=hash_password("password123"),
             role="member",
             is_active=True,

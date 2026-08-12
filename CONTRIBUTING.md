@@ -73,7 +73,7 @@ Then seed the database with test accounts:
 ./scripts/dev.sh seed test     # Creates test accounts and sample data, no prompts
 ```
 
-The app is at http://localhost:3000 and the API docs at http://localhost:8003/api/docs. Log in with `admin@test.com` / `TestAdmin1!`.
+The app is at http://localhost:3000 and the API docs at http://localhost:8003/api/docs. Log in with `admin@examplee6e3b1.com` / `TestAdmin1!`.
 
 Run the backend tests with `./scripts/dev.sh test`.
 

@@ -13,12 +13,12 @@ from app.domains.persons.models import Person
 
 
 def _create_user(db, role="admin", suffix="receipt"):
-    person = Person(first_name="Test", last_name="User", email=f"{suffix}-{role}@test.com")
+    person = Person(first_name="Test", last_name="User", email=f"{suffix}-{role}@examplee6e3b1.com")
     db.add(person)
     db.flush()
     user = User(
         person_id=person.id,
-        email=f"{suffix}-{role}@test.com",
+        email=f"{suffix}-{role}@examplee6e3b1.com",
         password_hash=hash_password("password123"),
         role=role,
         is_active=True,
@@ -53,7 +53,7 @@ def _ensure_org_settings(db):
 
 
 def _create_member(db, suffix="rcpt"):
-    person = Person(first_name="María", last_name="García", email=f"maria-{suffix}@test.com")
+    person = Person(first_name="María", last_name="García", email=f"maria-{suffix}@examplee6e3b1.com")
     db.add(person)
     db.flush()
     mtype = MembershipType(

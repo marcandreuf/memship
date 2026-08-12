@@ -34,7 +34,7 @@ APPLE_CALLBACK = "/api/v1/auth/oauth/apple/callback"
 
 CLAIMS = {
     "sub": "google-sub-1",
-    "email": "sso@test.com",
+    "email": "sso@examplee6e3b1.com",
     "email_verified": True,
     "given_name": "Sso",
     "family_name": "User",
@@ -92,7 +92,7 @@ def _set_features(db, **flags):
     db.flush()
 
 
-def _password_user(db, email="sso@test.com", **flags):
+def _password_user(db, email="sso@examplee6e3b1.com", **flags):
     person = Person(first_name="Existing", last_name="User", email=email)
     db.add(person)
     db.flush()
@@ -147,7 +147,7 @@ def test_token_exchange_failure_redirects_to_login(client, db, stub_provider):
 
 
 def test_claims_without_subject_are_refused(client, db, stub_provider):
-    stub_provider(claims={"email": "sso@test.com", "email_verified": True})
+    stub_provider(claims={"email": "sso@examplee6e3b1.com", "email_verified": True})
 
     response = client.get(GOOGLE_CALLBACK, follow_redirects=False)
 
@@ -259,7 +259,7 @@ def test_successful_signin_issues_a_session_cookie(client, db, stub_provider):
     assert "access_token=" in cookie
     assert "HttpOnly" in cookie
 
-    user = db.query(User).filter(User.email == "sso@test.com").one()
+    user = db.query(User).filter(User.email == "sso@examplee6e3b1.com").one()
     assert user.password_hash is None
     assert user.last_login_at is not None
 
@@ -273,7 +273,7 @@ def test_returning_user_signs_in_without_creating_a_second_account(
     client.get(GOOGLE_CALLBACK, follow_redirects=False)
     client.get(GOOGLE_CALLBACK, follow_redirects=False)
 
-    assert db.query(User).filter(User.email == "sso@test.com").count() == 1
+    assert db.query(User).filter(User.email == "sso@examplee6e3b1.com").count() == 1
     assert db.query(UserIdentity).count() == 1
 
 
@@ -288,7 +288,7 @@ def test_pending_member_still_gets_a_session(client, db, stub_provider):
     assert "/dashboard" in _location(response)
     assert "access_token=" in response.headers.get("set-cookie", "")
 
-    user = db.query(User).filter(User.email == "sso@test.com").one()
+    user = db.query(User).filter(User.email == "sso@examplee6e3b1.com").one()
     member = db.query(Member).filter(Member.user_id == user.id).one()
     assert member.status == "pending"
 
@@ -306,7 +306,7 @@ def test_apple_string_true_is_treated_as_verified(client, db, stub_provider):
     response = client.post(APPLE_CALLBACK, data={"code": "x"}, follow_redirects=False)
 
     assert "/dashboard" in _location(response)
-    assert db.query(User).filter(User.email == "sso@test.com").count() == 1
+    assert db.query(User).filter(User.email == "sso@examplee6e3b1.com").count() == 1
 
 
 def test_apple_string_false_is_not_truthy(client, db, stub_provider):

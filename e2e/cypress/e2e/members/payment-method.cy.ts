@@ -48,7 +48,7 @@ describe("Payment Method Tab", () => {
 
 describe("Payment Method — Member with Mandate", () => {
   it("shows mandate info for maria (has active mandate)", () => {
-    cy.login("maria@test.com", "TestMember1!");
+    cy.login("maria@examplee6e3b1.com", "TestMember1!");
     cy.visit("/en/payment-method");
     cy.contains(/direct debit/i).click();
     cy.contains("FAC-").should("be.visible");

@@ -12,7 +12,7 @@ def _auth_cookie(user):
     return {"access_token": create_access_token(user.id)}
 
 
-def _create_member_user(db, email="photo-member@test.com"):
+def _create_member_user(db, email="photo-member@examplee6e3b1.com"):
     person = Person(first_name="Photo", last_name="Tester", email=email)
     db.add(person)
     db.flush()
@@ -51,7 +51,7 @@ class TestMemberPhotoUpload:
         assert person.photo_url == photo_url
 
     def test_rejects_non_image_extension(self, client, db):
-        user, _ = _create_member_user(db, email="photo-bad@test.com")
+        user, _ = _create_member_user(db, email="photo-bad@examplee6e3b1.com")
         client.cookies.update(_auth_cookie(user))
 
         resp = client.post(
@@ -61,7 +61,7 @@ class TestMemberPhotoUpload:
         assert resp.status_code == 400
 
     def test_rejects_non_image_content_type(self, client, db):
-        user, _ = _create_member_user(db, email="photo-ct@test.com")
+        user, _ = _create_member_user(db, email="photo-ct@examplee6e3b1.com")
         client.cookies.update(_auth_cookie(user))
 
         resp = client.post(
@@ -71,7 +71,7 @@ class TestMemberPhotoUpload:
         assert resp.status_code == 400
 
     def test_delete_photo(self, client, db):
-        user, person = _create_member_user(db, email="photo-del@test.com")
+        user, person = _create_member_user(db, email="photo-del@examplee6e3b1.com")
         client.cookies.update(_auth_cookie(user))
 
         filename, file_obj, content_type = _fake_image("png")
@@ -87,7 +87,7 @@ class TestMemberPhotoUpload:
         assert person.photo_url is None
 
     def test_delete_when_no_photo_404(self, client, db):
-        user, _ = _create_member_user(db, email="photo-none@test.com")
+        user, _ = _create_member_user(db, email="photo-none@examplee6e3b1.com")
         client.cookies.update(_auth_cookie(user))
 
         resp = client.delete("/api/v1/members/me/photo/")

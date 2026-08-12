@@ -38,13 +38,13 @@ class TestSeededSystemRoles:
 
 class TestResolutionAgainstTheDatabase:
     def test_super_admin_resolves_to_the_whole_catalog(self, db):
-        user = _user(db, "super-roles@test.com", role="super_admin")
+        user = _user(db, "super-roles@examplee6e3b1.com", role="super_admin")
 
         assert resolve_permissions(user) == ALL_KEYS
         assert RESERVED_KEYS <= resolve_permissions(user)
 
     def test_admin_holds_the_seed_set_and_no_reserved_key(self, db):
-        user = _user(db, "admin-roles@test.com", role="admin")
+        user = _user(db, "admin-roles@examplee6e3b1.com", role="admin")
 
         held = resolve_permissions(user)
 
@@ -53,7 +53,7 @@ class TestResolutionAgainstTheDatabase:
         assert "settings.custom_fields.write" not in held
 
     def test_member_holds_only_the_self_namespace(self, db):
-        user = _user(db, "member-roles@test.com")
+        user = _user(db, "member-roles@examplee6e3b1.com")
 
         held = resolve_permissions(user)
 
@@ -62,23 +62,23 @@ class TestResolutionAgainstTheDatabase:
 
     def test_every_account_holds_member(self, db):
         for email, role in (
-            ("pin-super@test.com", "super_admin"),
-            ("pin-admin@test.com", "admin"),
-            ("pin-member@test.com", "member"),
+            ("pin-super@examplee6e3b1.com", "super_admin"),
+            ("pin-admin@examplee6e3b1.com", "admin"),
+            ("pin-member@examplee6e3b1.com", "member"),
         ):
             user = _user(db, email, role=role)
 
             assert "member" in {r.slug for r in user.roles}
 
     def test_staff_accounts_also_hold_the_self_namespace(self, db):
-        user = _user(db, "staff-self@test.com", role="admin")
+        user = _user(db, "staff-self@examplee6e3b1.com", role="admin")
 
         assert set(MEMBER_SEED_KEYS) <= resolve_permissions(user)
 
 
 class TestAssignRoles:
     def test_assigns_member_by_default(self, db):
-        user = _user(db, "assign-1@test.com")
+        user = _user(db, "assign-1@examplee6e3b1.com")
         db.query(UserRoleAssignment).filter_by(user_id=user.id).delete()
         db.expire(user)
 
@@ -89,7 +89,7 @@ class TestAssignRoles:
         assert {r.slug for r in user.roles} == {"member"}
 
     def test_is_idempotent(self, db):
-        user = _user(db, "assign-2@test.com", role="admin")
+        user = _user(db, "assign-2@examplee6e3b1.com", role="admin")
 
         assign_roles(db, user, "admin")
         db.flush()
@@ -102,7 +102,7 @@ class TestRoleDeletionIsRestricted:
     def test_deleting_an_assigned_role_is_refused_by_the_database(self, db):
         from sqlalchemy.exc import IntegrityError
 
-        _user(db, "restrict-del@test.com", role="admin")
+        _user(db, "restrict-del@examplee6e3b1.com", role="admin")
         admin_role = db.query(Role).filter_by(slug="admin").one()
 
         with pytest.raises(IntegrityError):

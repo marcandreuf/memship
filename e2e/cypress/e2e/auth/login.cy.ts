@@ -33,7 +33,7 @@ describe("Login @smoke", () => {
   });
 
   it("shows error with invalid credentials", () => {
-    cy.get('input[type="email"]').type("wrong@test.com");
+    cy.get('input[type="email"]').type("wrong@examplee6e3b1.com");
     cy.get('input[type="password"]').type("WrongPassword1!");
     cy.get('button[type="submit"]').click();
     cy.get('[class*="destructive"]').should("be.visible");

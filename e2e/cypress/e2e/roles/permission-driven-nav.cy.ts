@@ -2,7 +2,7 @@
 
 // The one place the whole chain runs as a single thing: catalog → role →
 // assignment → per-request resolution (no role claim in the JWT) → /auth/me →
-// has(key) → rendered sidebar. treasurer@test.com holds `billing.*` and the
+// has(key) → rendered sidebar. treasurer@examplee6e3b1.com holds `billing.*` and the
 // pinned `member` role, and nothing else.
 //
 // Assertions go through hrefs rather than labels: "Receipts" is a substring of
@@ -57,7 +57,7 @@ describe("Permission-driven nav", { tags: ["@roles"] }, () => {
 
   it("still reaches its own profile", () => {
     cy.visit("/en/profile");
-    cy.contains("treasurer@test.com").should("be.visible");
+    cy.contains("treasurer@examplee6e3b1.com").should("be.visible");
   });
 
   it("gets the member catalog on /activities, not the staff list", () => {

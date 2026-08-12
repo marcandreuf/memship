@@ -41,7 +41,7 @@ def _org(db, *, enabled=True, **features):
 
 
 def _user(db, role="admin", email=None):
-    email = email or f"{role}-bk@test.com"
+    email = email or f"{role}-bk@examplee6e3b1.com"
     person = Person(first_name=role.title(), last_name="Tester", email=email)
     db.add(person)
     db.flush()
@@ -110,7 +110,7 @@ class TestFeatureGate:
 
     def test_booking_404_when_disabled(self, client, db):
         _org(db, enabled=False)
-        user, _ = _member_user(db, "m404@test.com")
+        user, _ = _member_user(db, "m404@examplee6e3b1.com")
         r = client.post(
             "/api/v1/bookings",
             json={"space_slot_id": 1},
@@ -133,7 +133,7 @@ class TestSpacesRBAC:
 
     def test_member_cannot_create_space(self, client, db):
         _org(db)
-        user, _ = _member_user(db, "m-nope@test.com")
+        user, _ = _member_user(db, "m-nope@examplee6e3b1.com")
         r = client.post(
             "/api/v1/spaces",
             json={"name": "Pitch", "open_time": "08:00:00", "close_time": "22:00:00"},
@@ -242,8 +242,8 @@ class TestDeleteGuards:
         _org(db)
         admin = _user(db, "admin")
         space_id, slot_id = _make_space_and_slot(client, admin, capacity=2)
-        u1, _ = _member_user(db, "d1@test.com")
-        u2, _ = _member_user(db, "d2@test.com")
+        u1, _ = _member_user(db, "d1@examplee6e3b1.com")
+        u2, _ = _member_user(db, "d2@examplee6e3b1.com")
         for u in (u1, u2):
             client.post(
                 "/api/v1/bookings", json={"space_slot_id": slot_id}, cookies=_auth(u)
@@ -278,7 +278,7 @@ class TestDeleteGuards:
         _org(db)
         admin = _user(db, "admin")
         space_id, slot_id = _make_space_and_slot(client, admin)
-        u1, _ = _member_user(db, "d3@test.com")
+        u1, _ = _member_user(db, "d3@examplee6e3b1.com")
         client.post(
             "/api/v1/bookings", json={"space_slot_id": slot_id}, cookies=_auth(u1)
         )
@@ -302,7 +302,7 @@ class TestBooking:
         _org(db)
         admin = _user(db, "admin")
         _space_id, slot_id = _make_space_and_slot(client, admin)
-        user, _ = _member_user(db, "booker@test.com")
+        user, _ = _member_user(db, "booker@examplee6e3b1.com")
 
         r = client.post(
             "/api/v1/bookings",
@@ -316,8 +316,8 @@ class TestBooking:
         _org(db)
         admin = _user(db, "admin")
         _space_id, slot_id = _make_space_and_slot(client, admin, capacity=1)
-        u1, _ = _member_user(db, "b1@test.com")
-        u2, _ = _member_user(db, "b2@test.com")
+        u1, _ = _member_user(db, "b1@examplee6e3b1.com")
+        u2, _ = _member_user(db, "b2@examplee6e3b1.com")
 
         r1 = client.post(
             "/api/v1/bookings",
@@ -345,8 +345,8 @@ class TestBooking:
         _org(db, booking_waitlist_enabled=False)
         admin = _user(db, "admin")
         _space_id, slot_id = _make_space_and_slot(client, admin, capacity=1)
-        u1, _ = _member_user(db, "f1@test.com")
-        u2, _ = _member_user(db, "f2@test.com")
+        u1, _ = _member_user(db, "f1@examplee6e3b1.com")
+        u2, _ = _member_user(db, "f2@examplee6e3b1.com")
 
         client.post(
             "/api/v1/bookings",
@@ -364,8 +364,8 @@ class TestBooking:
         _org(db, booking_cancellation_deadline_hours=0)
         admin = _user(db, "admin")
         _space_id, slot_id = _make_space_and_slot(client, admin, capacity=1)
-        u1, _ = _member_user(db, "c1@test.com")
-        u2, m2 = _member_user(db, "c2@test.com")
+        u1, _ = _member_user(db, "c1@examplee6e3b1.com")
+        u2, m2 = _member_user(db, "c2@examplee6e3b1.com")
 
         r1 = client.post(
             "/api/v1/bookings",
@@ -390,8 +390,8 @@ class TestBooking:
         _org(db)
         admin = _user(db, "admin")
         _space_id, slot_id = _make_space_and_slot(client, admin, capacity=3)
-        u1, _ = _member_user(db, "occ1@test.com")
-        u2, _ = _member_user(db, "occ2@test.com")
+        u1, _ = _member_user(db, "occ1@examplee6e3b1.com")
+        u2, _ = _member_user(db, "occ2@examplee6e3b1.com")
         client.post(
             "/api/v1/bookings", json={"space_slot_id": slot_id}, cookies=_auth(u1)
         )
@@ -410,8 +410,8 @@ class TestBooking:
         _org(db, booking_cancellation_deadline_hours=0)
         admin = _user(db, "admin")
         _space_id, slot_id = _make_space_and_slot(client, admin, capacity=1)
-        u1, _ = _member_user(db, "own1@test.com")
-        u2, _ = _member_user(db, "own2@test.com")
+        u1, _ = _member_user(db, "own1@examplee6e3b1.com")
+        u2, _ = _member_user(db, "own2@examplee6e3b1.com")
 
         r1 = client.post(
             "/api/v1/bookings",
@@ -428,7 +428,7 @@ class TestAdminBookingsView:
         _org(db)
         admin = _user(db, "admin")
         space_id, slot_id = _make_space_and_slot(client, admin, capacity=2)
-        u1, _ = _member_user(db, "a1@test.com")
+        u1, _ = _member_user(db, "a1@examplee6e3b1.com")
         client.post(
             "/api/v1/bookings",
             json={"space_slot_id": slot_id},

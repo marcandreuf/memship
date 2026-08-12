@@ -37,12 +37,12 @@ class TestLegacyRoleParity:
     """What each pre-v1.4 role could reach, it still reaches — no more, no less."""
 
     def test_super_admin_reaches_everything(self, db):
-        user = _user(db, "parity-super@test.com", "super_admin")
+        user = _user(db, "parity-super@examplee6e3b1.com", "super_admin")
 
         assert resolve_permissions(user) == ALL_KEYS
 
     def test_admin_reaches_everything_except_the_super_admin_only_keys(self, db):
-        user = _user(db, "parity-admin@test.com", "admin")
+        user = _user(db, "parity-admin@examplee6e3b1.com", "admin")
 
         held = resolve_permissions(user)
 
@@ -51,7 +51,7 @@ class TestLegacyRoleParity:
         assert held == ALL_KEYS - RESERVED_KEYS - {"settings.custom_fields.write"}
 
     def test_member_reaches_only_self_service(self, db):
-        user = _user(db, "parity-member@test.com", "member")
+        user = _user(db, "parity-member@examplee6e3b1.com", "member")
 
         assert resolve_permissions(user) == set(MEMBER_SEED_KEYS)
 
@@ -59,7 +59,7 @@ class TestLegacyRoleParity:
         """The tier is gone; a hand-provisioned account backfills to `member`.
         Its two real capabilities — everyone's custom-field values, cancel any
         booking — are deliberately lost."""
-        user = _user(db, "parity-restricted@test.com", "restricted")
+        user = _user(db, "parity-restricted@examplee6e3b1.com", "restricted")
 
         held = resolve_permissions(user)
 
@@ -69,7 +69,7 @@ class TestLegacyRoleParity:
 
     def test_every_shape_holds_the_self_namespace(self, db):
         for i, role in enumerate(("super_admin", "admin", "member")):
-            user = _user(db, f"parity-self-{i}@test.com", role)
+            user = _user(db, f"parity-self-{i}@examplee6e3b1.com", role)
 
             assert set(MEMBER_SEED_KEYS) <= resolve_permissions(user)
 

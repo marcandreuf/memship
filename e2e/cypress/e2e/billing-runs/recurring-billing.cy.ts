@@ -46,7 +46,7 @@ describe("Billing Runs — list and run-now (admin)", () => {
     // Ensure at least one billing run exists so the history table (and its
     // column headers) renders — a fresh seed has zero runs, which shows the
     // empty state instead of the table.
-    cy.apiLogin("admin@test.com", "TestAdmin1!");
+    cy.apiLogin("admin@examplee6e3b1.com", "TestAdmin1!");
     cy.request({
       method: "POST",
       url: `${API_URL}/billing-runs/run-now`,

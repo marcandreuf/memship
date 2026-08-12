@@ -5,13 +5,13 @@
 // --- Test accounts (from seed --test) ---
 
 export const TEST_ACCOUNTS = {
-  superAdmin: { email: "super@test.com", password: "TestSuper1!" },
-  admin: { email: "admin@test.com", password: "TestAdmin1!" },
-  member: { email: "member@test.com", password: "TestMember1!" },
+  superAdmin: { email: "super@examplee6e3b1.com", password: "TestSuper1!" },
+  admin: { email: "admin@examplee6e3b1.com", password: "TestAdmin1!" },
+  member: { email: "member@examplee6e3b1.com", password: "TestMember1!" },
   // Holds the seeded `treasurer` custom role: billing.* and nothing else. The
   // three system roles cannot express a partial admin, so this is the only
   // account that exercises permission-driven nav.
-  treasurer: { email: "treasurer@test.com", password: "TestTreasurer1!" },
+  treasurer: { email: "treasurer@examplee6e3b1.com", password: "TestTreasurer1!" },
 };
 
 // --- Type declarations ---
@@ -21,13 +21,13 @@ declare global {
     interface Chainable {
       /** Login via the login form */
       login(email: string, password: string): Chainable<void>;
-      /** Login as admin (admin@test.com) */
+      /** Login as admin (admin@examplee6e3b1.com) */
       loginAsAdmin(): Chainable<void>;
-      /** Login as super admin (super@test.com) */
+      /** Login as super admin (super@examplee6e3b1.com) */
       loginAsSuperAdmin(): Chainable<void>;
-      /** Login as member (member@test.com) */
+      /** Login as member (member@examplee6e3b1.com) */
       loginAsMember(): Chainable<void>;
-      /** Login as the narrow custom role (treasurer@test.com) */
+      /** Login as the narrow custom role (treasurer@examplee6e3b1.com) */
       loginAsTreasurer(): Chainable<void>;
       /** Logout via the sidebar user dropdown */
       logout(): Chainable<void>;

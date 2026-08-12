@@ -12,12 +12,12 @@ from app.domains.persons.models import Person
 
 
 def _create_user(db, role="admin", suffix=""):
-    person = Person(first_name="Reg", last_name="User", email=f"reg-{role}{suffix}@test.com")
+    person = Person(first_name="Reg", last_name="User", email=f"reg-{role}{suffix}@examplee6e3b1.com")
     db.add(person)
     db.flush()
     user = User(
         person_id=person.id,
-        email=f"reg-{role}{suffix}@test.com",
+        email=f"reg-{role}{suffix}@examplee6e3b1.com",
         password_hash=hash_password("password123"),
         role=role,
         is_active=True,
@@ -30,14 +30,14 @@ def _create_user(db, role="admin", suffix=""):
 def _create_member_with_user(db, suffix="", status="active", membership_type_id=None, date_of_birth=None):
     person = Person(
         first_name="Member", last_name=f"Test{suffix}",
-        email=f"member-reg{suffix}@test.com",
+        email=f"member-reg{suffix}@examplee6e3b1.com",
         date_of_birth=date_of_birth,
     )
     db.add(person)
     db.flush()
     user = User(
         person_id=person.id,
-        email=f"member-reg{suffix}@test.com",
+        email=f"member-reg{suffix}@examplee6e3b1.com",
         password_hash=hash_password("password123"),
         role="member",
         is_active=True,

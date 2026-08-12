@@ -26,7 +26,7 @@ def _ensure_org(db, *, enabled=True):
 
 
 def _user(db, role="admin", email=None):
-    email = email or f"{role}-roles-api@test.com"
+    email = email or f"{role}-roles-api@examplee6e3b1.com"
     person = Person(first_name=role.title(), last_name="Tester", email=email)
     db.add(person)
     db.flush()
@@ -65,7 +65,7 @@ class TestPermissionCatalog:
 
     def test_an_admin_cannot_read_the_catalog_without_roles_read(self, client, db):
         _ensure_org(db)
-        member = _user(db, "member", email="cat-member@test.com")
+        member = _user(db, "member", email="cat-member@examplee6e3b1.com")
 
         r = client.get("/api/v1/permissions", cookies=_auth_cookie(member))
 
@@ -151,7 +151,7 @@ class TestRoleAuthoring:
             json={"name": "Coordinador", "permission_keys": ["activities.read"]},
             cookies=_auth_cookie(boss),
         ).json()
-        victim = _user(db, "member", email="coord@test.com")
+        victim = _user(db, "member", email="coord@examplee6e3b1.com")
         db.add(UserRoleAssignment(user_id=victim.id, role_id=created["id"]))
         db.flush()
 
@@ -167,7 +167,7 @@ class TestEscalationGuard:
         pass this trivially. It must be refused by an explicit rule."""
         _ensure_org(db)
         admin = _user(db, "admin")
-        target = _user(db, "member", email="escalate-target@test.com")
+        target = _user(db, "member", email="escalate-target@examplee6e3b1.com")
         super_role = db.query(Role).filter_by(slug="super_admin").one()
 
         r = client.put(
@@ -188,8 +188,8 @@ class TestEscalationGuard:
                   "permission_keys": ["settings.custom_fields.write"]},
             cookies=_auth_cookie(boss),
         ).json()
-        admin = _user(db, "admin", email="narrow-admin@test.com")
-        target = _user(db, "member", email="narrow-target@test.com")
+        admin = _user(db, "admin", email="narrow-admin@examplee6e3b1.com")
+        target = _user(db, "member", email="narrow-target@examplee6e3b1.com")
 
         r = client.put(
             f"/api/v1/users/{target.id}/roles",
@@ -203,7 +203,7 @@ class TestEscalationGuard:
     def test_a_super_admin_can_grant_anything(self, client, db):
         _ensure_org(db)
         boss = _user(db, "super_admin")
-        target = _user(db, "member", email="grantee@test.com")
+        target = _user(db, "member", email="grantee@examplee6e3b1.com")
         admin_role = db.query(Role).filter_by(slug="admin").one()
 
         r = client.put(
@@ -230,7 +230,7 @@ class TestMemberPinAndEmptySet:
     def test_an_empty_role_set_is_rejected(self, client, db):
         _ensure_org(db)
         boss = _user(db, "super_admin")
-        target = _user(db, "member", email="empty-set@test.com")
+        target = _user(db, "member", email="empty-set@examplee6e3b1.com")
 
         r = client.put(
             f"/api/v1/users/{target.id}/roles",
@@ -244,7 +244,7 @@ class TestMemberPinAndEmptySet:
     def test_member_is_re_added_when_the_payload_omits_it(self, client, db):
         _ensure_org(db)
         boss = _user(db, "super_admin")
-        target = _user(db, "member", email="pin-omitted@test.com")
+        target = _user(db, "member", email="pin-omitted@examplee6e3b1.com")
         admin_role = db.query(Role).filter_by(slug="admin").one()
 
         r = client.put(
@@ -274,7 +274,7 @@ class TestMemberPinAndEmptySet:
 class TestAuthMePayload:
     def test_me_carries_roles_and_permissions_and_no_role_string(self, client, db):
         _ensure_org(db)
-        admin = _user(db, "admin", email="me-payload@test.com")
+        admin = _user(db, "admin", email="me-payload@examplee6e3b1.com")
 
         body = client.get("/api/v1/auth/me", cookies=_auth_cookie(admin)).json()
 
@@ -285,7 +285,7 @@ class TestAuthMePayload:
 
     def test_a_super_admin_sees_the_whole_catalog(self, client, db):
         _ensure_org(db)
-        boss = _user(db, "super_admin", email="me-super@test.com")
+        boss = _user(db, "super_admin", email="me-super@examplee6e3b1.com")
 
         body = client.get("/api/v1/auth/me", cookies=_auth_cookie(boss)).json()
 
@@ -296,7 +296,7 @@ class TestAuthMePayload:
 class TestAuditTrail:
     def test_creating_a_role_records_the_granted_keys(self, client, db):
         _ensure_org(db)
-        boss = _user(db, "super_admin", email="audit-create@test.com")
+        boss = _user(db, "super_admin", email="audit-create@examplee6e3b1.com")
 
         created = client.post(
             "/api/v1/roles",
@@ -315,7 +315,7 @@ class TestAuditTrail:
 
     def test_editing_a_role_records_added_and_removed_keys(self, client, db):
         _ensure_org(db)
-        boss = _user(db, "super_admin", email="audit-update@test.com")
+        boss = _user(db, "super_admin", email="audit-update@examplee6e3b1.com")
         created = client.post(
             "/api/v1/roles",
             json={"name": "Shifting", "permission_keys": ["billing.read"]},
@@ -341,8 +341,8 @@ class TestAuditTrail:
 
     def test_assigning_roles_records_the_slug_delta(self, client, db):
         _ensure_org(db)
-        boss = _user(db, "super_admin", email="audit-assign@test.com")
-        target = _user(db, "member", email="audit-target@test.com")
+        boss = _user(db, "super_admin", email="audit-assign@examplee6e3b1.com")
+        target = _user(db, "member", email="audit-target@examplee6e3b1.com")
         admin_role = db.query(Role).filter_by(slug="admin").one()
 
         client.put(
@@ -361,8 +361,8 @@ class TestAuditTrail:
 
     def test_a_refused_assignment_records_nothing(self, client, db):
         _ensure_org(db)
-        admin = _user(db, "admin", email="audit-refused@test.com")
-        target = _user(db, "member", email="audit-refused-target@test.com")
+        admin = _user(db, "admin", email="audit-refused@examplee6e3b1.com")
+        target = _user(db, "member", email="audit-refused-target@examplee6e3b1.com")
         super_role = db.query(Role).filter_by(slug="super_admin").one()
 
         client.put(
