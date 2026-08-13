@@ -4,6 +4,7 @@ Signature crypto is delegated to python-redsys; a known-answer test pins the
 wiring so an accidental library swap won't break silently in production.
 """
 
+import re
 from decimal import ROUND_HALF_UP, Decimal
 from types import SimpleNamespace
 from urllib.parse import urlencode
@@ -18,6 +19,7 @@ from app.domains.billing.providers.redsys_provider import (
     RedsysAdapter,
     build_order_id,
     map_response_to_outcome,
+    receipt_id_from_order,
 )
 
 
@@ -93,18 +95,37 @@ def fake_person(email: str = "m@test.com"):
 
 
 class TestBuildOrderId:
-    def test_small_id_zero_padded_to_12(self):
-        assert build_order_id(1) == "000000000001"
+    def test_the_format_is_four_numeric_then_eight_alphanumeric(self):
+        assert re.match(r"^[0-9]{4}[a-zA-Z0-9]{8}$", build_order_id(42))
 
-    def test_larger_id(self):
-        assert build_order_id(123456) == "000000123456"
+    def test_the_nonce_can_be_pinned(self):
+        assert build_order_id(42, nonce=7905) == "790500000042"
 
-    def test_max_12_digit_id(self):
-        assert build_order_id(999999999999) == "999999999999"
+    def test_two_attempts_on_one_receipt_get_different_orders(self):
+        """The regression: Redsys rejects a repeated order (SIS0051), so a
+        receipt whose card was declined could never be paid online again."""
+        orders = {build_order_id(42) for _ in range(200)}
+
+        assert len(orders) > 1
+
+    def test_every_attempt_still_carries_the_receipt_id(self):
+        for _ in range(50):
+            assert receipt_id_from_order(build_order_id(4242)) == 4242
 
     def test_overflow_raises(self):
-        with pytest.raises(ValueError, match="too large"):
-            build_order_id(1_000_000_000_000)
+        with pytest.raises(ValueError, match="out of range"):
+            build_order_id(100_000_000)
+
+
+class TestReceiptIdFromOrder:
+    def test_an_order_from_the_old_format_still_resolves(self):
+        """Receipts paid before the nonce existed hold a zero-padded id, which
+        is the same layout with a 0000 nonce."""
+        assert receipt_id_from_order("000000000042") == 42
+
+    @pytest.mark.parametrize("value", ["", "short", "abcd00000042", "0000abcdefgh"])
+    def test_anything_that_is_not_one_of_our_orders_returns_none(self, value):
+        assert receipt_id_from_order(value) is None
 
 
 # --- map_response_to_outcome ---
@@ -181,7 +202,7 @@ class TestCreatePayment:
             merchant_url="https://example.test/api/v1/webhooks/redsys",
         )
         assert result["redirect_url"].startswith("https://sis-t.redsys.es")
-        assert result["ds_order"] == "000000000042"
+        assert receipt_id_from_order(result["ds_order"]) == 42
         assert set(result["form_params"].keys()) == {
             "Ds_SignatureVersion",
             "Ds_MerchantParameters",

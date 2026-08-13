@@ -2,8 +2,9 @@
 
 Three concerns, mirroring ``recurring_billing_service``:
 
-- ``mark_overdue`` flips unpaid ``emitted`` receipts past their ``due_date`` to
-  ``overdue`` so the rest of the app (stats, remittances) sees accurate status.
+- ``mark_overdue`` flips unpaid ``pending``/``emitted`` receipts past their
+  ``due_date`` to ``overdue`` so the rest of the app (stats, remittances) sees
+  accurate status.
 - ``reminders_due`` applies the configured schedule (first reminder X days after
   due, repeat every Y days, max N) to decide which overdue receipts need a
   reminder today.
@@ -26,9 +27,19 @@ from app.domains.persons.models import Person
 # Receipt statuses that still owe money and can be reminded.
 PAYABLE_STATUSES = ("emitted", "overdue")
 
+# Statuses ``mark_overdue`` transitions once the due date has passed.
+OVERDUE_ELIGIBLE_STATUSES = ("pending", "emitted")
+
 
 def mark_overdue(db: Session, today: date | None = None) -> int:
-    """Flip unpaid ``emitted`` receipts whose ``due_date`` has passed to ``overdue``.
+    """Flip unpaid receipts whose ``due_date`` has passed to ``overdue``.
+
+    Covers ``pending`` as well as ``emitted``. A ``pending`` receipt past its due
+    date is money owed just the same — that is the status ``create_receipt`` and
+    the manual fee generator produce — and ``VALID_TRANSITIONS`` already sanctions
+    ``pending → overdue``. Filtering on ``emitted`` alone left those receipts out
+    of the whole dunning pipeline, since ``reminders_due`` only looks at
+    ``overdue``.
 
     Returns the number of receipts transitioned. Does not commit.
     """
@@ -36,7 +47,7 @@ def mark_overdue(db: Session, today: date | None = None) -> int:
     rows = (
         db.query(Receipt)
         .filter(
-            Receipt.status == "emitted",
+            Receipt.status.in_(OVERDUE_ELIGIBLE_STATUSES),
             Receipt.is_active.is_(True),
             Receipt.payment_date.is_(None),
             Receipt.due_date.isnot(None),

@@ -9,6 +9,7 @@ import pytest
 
 from app.domains.billing.recurring_billing_service import (
     compute_period,
+    effective_billing_day,
     is_frequency_due,
 )
 
@@ -115,3 +116,47 @@ class TestIsFrequencyDue:
 
     def test_unknown_frequency_never_due(self):
         assert is_frequency_due("one_time", date(2026, 1, 1), billing_day=1) is False
+
+
+class TestShortMonths:
+    """A billing day past the end of a month used to skip that month in
+    silence: nothing was due, nothing was logged, nobody was billed."""
+
+    def test_the_31st_bills_february_on_its_last_day(self):
+        assert is_frequency_due("monthly", date(2026, 2, 28), billing_day=31) is True
+
+    def test_the_29th_bills_a_non_leap_february_on_the_28th(self):
+        assert is_frequency_due("monthly", date(2025, 2, 28), billing_day=29) is True
+
+    def test_a_leap_february_still_uses_the_29th(self):
+        assert is_frequency_due("monthly", date(2024, 2, 29), billing_day=29) is True
+        assert is_frequency_due("monthly", date(2024, 2, 28), billing_day=29) is False
+
+    def test_the_31st_bills_a_30_day_month_on_the_30th(self):
+        assert is_frequency_due("monthly", date(2026, 4, 30), billing_day=31) is True
+        assert is_frequency_due("monthly", date(2026, 4, 29), billing_day=31) is False
+
+    def test_a_long_month_is_unaffected(self):
+        assert is_frequency_due("monthly", date(2026, 3, 31), billing_day=31) is True
+        assert is_frequency_due("monthly", date(2026, 3, 30), billing_day=31) is False
+
+    def test_quarterly_and_annual_clamp_the_same_way(self):
+        # 2026-02 is not a quarter start, so only the annual/quarterly month
+        # rules decide; the day itself must still match after clamping.
+        assert is_frequency_due("quarterly", date(2026, 4, 30), billing_day=31) is True
+        assert is_frequency_due("annual", date(2026, 1, 31), billing_day=31) is True
+
+    @pytest.mark.parametrize(
+        "billing_day,today,expected",
+        [
+            (31, date(2026, 2, 10), 28),
+            (30, date(2026, 2, 10), 28),
+            (28, date(2026, 2, 10), 28),
+            (15, date(2026, 2, 10), 15),
+            (31, date(2026, 1, 10), 31),
+            (0, date(2026, 1, 10), 1),
+            (-5, date(2026, 1, 10), 1),
+        ],
+    )
+    def test_effective_day(self, billing_day, today, expected):
+        assert effective_billing_day(today, billing_day) == expected

@@ -18,6 +18,10 @@ from app.domains.billing.models import (
     Receipt,
     WebhookEvent,
 )
+from app.domains.billing.providers.redsys_provider import (
+    build_order_id,
+    receipt_id_from_order,
+)
 from app.domains.members.models import Member, MembershipType
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Person
@@ -218,7 +222,7 @@ class TestRedsysInitiate:
             "Ds_Signature",
         }
         assert data["form_params"]["Ds_SignatureVersion"] == "HMAC_SHA256_V1"
-        assert data["ds_order"] == str(receipt.id).zfill(12)
+        assert receipt_id_from_order(data["ds_order"]) == receipt.id
 
         db.refresh(receipt)
         assert receipt.redsys_ds_order == data["ds_order"]
@@ -240,6 +244,33 @@ class TestRedsysInitiate:
         db.refresh(receipt)
         assert receipt.payment_method == "bizum"
         assert receipt.redsys_ds_order is not None
+
+    def test_a_second_attempt_gets_a_fresh_order(self, client, db):
+        """Redsys rejects an order number it has already seen (SIS0051), so
+        reusing the receipt id meant one shot per receipt: after a decline or an
+        abandoned TPV page, that receipt could never be paid online again."""
+        _create_org(db)
+        person = _create_person(db, suffix="ini-retry")
+        user = _create_user(db, person=person, role="admin", suffix="ini-retry")
+        member = _create_member(db, person)
+        receipt = _create_receipt(db, member)
+        _create_redsys_provider(db)
+
+        first = client.post(
+            f"/api/v1/receipts/{receipt.id}/redsys/initiate",
+            cookies=_auth_cookie(user),
+            json={},
+        ).json()["ds_order"]
+        second = client.post(
+            f"/api/v1/receipts/{receipt.id}/redsys/initiate",
+            cookies=_auth_cookie(user),
+            json={},
+        ).json()["ds_order"]
+
+        assert first != second
+        assert receipt_id_from_order(second) == receipt.id
+        db.refresh(receipt)
+        assert receipt.redsys_ds_order == second
 
     def test_initiate_receipt_not_found(self, client, db):
         user = _create_user(db, suffix="ini-404")
@@ -442,6 +473,49 @@ class TestRedsysWebhookFlow:
             .count()
         )
         assert count == 1
+
+    def test_a_notification_for_a_superseded_attempt_still_pays(self, client, db):
+        """The receipt only stores its newest order, so an authorisation that
+        arrives for an earlier attempt no longer matches on it. Dropping it
+        would leave the member charged and the receipt unpaid — the id encoded
+        in the order resolves the receipt instead."""
+        _create_org(db)
+        person = _create_person(db, suffix="wh-late")
+        _create_user(db, person=person, suffix="wh-late")
+        member = _create_member(db, person)
+        receipt = _create_receipt(db, member)
+        receipt.redsys_ds_order = build_order_id(receipt.id, nonce=2222)
+        db.flush()
+        _create_redsys_provider(db)
+
+        envelope = _sign_notification(
+            ds_order=build_order_id(receipt.id, nonce=1111), ds_response="0000"
+        )
+        resp = _post_webhook(client, envelope)
+
+        assert resp.status_code == 200, resp.text
+        db.expire_all()
+        assert db.query(Receipt).filter(Receipt.id == receipt.id).first().status == "paid"
+
+    def test_an_order_from_the_old_format_still_pays(self, client, db):
+        """Receipts that already hold a zero-padded order predate the nonce."""
+        _create_org(db)
+        person = _create_person(db, suffix="wh-legacy")
+        _create_user(db, person=person, suffix="wh-legacy")
+        member = _create_member(db, person)
+        receipt = _create_receipt(db, member)
+        legacy_order = str(receipt.id).zfill(12)
+        receipt.redsys_ds_order = legacy_order
+        db.flush()
+        _create_redsys_provider(db)
+
+        resp = _post_webhook(
+            client, _sign_notification(ds_order=legacy_order, ds_response="0000")
+        )
+
+        assert resp.status_code == 200, resp.text
+        db.expire_all()
+        assert db.query(Receipt).filter(Receipt.id == receipt.id).first().status == "paid"
 
     def test_unknown_order_ignored(self, client, db):
         _create_org(db)

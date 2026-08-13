@@ -85,7 +85,9 @@
       "enabled": "Enable recurring billing",
       "enabledDesc": "Automatically generate membership-fee receipts on the configured schedule",
       "day": "Day of month",
-      "dayDesc": "Day (1–28) the billing runs. Quarterly and annual fees are only billed in the first month of their period.",
+      "dayDesc": "Day (1–31) the billing runs; a shorter month is billed on its last day. Quarterly and annual fees are only billed in the first month of their period.",
+      "dueDays": "Payment term (days)",
+      "dueDaysDesc": "Days from issue until a generated fee is due. Payment reminders start counting from that due date.",
       "notificationEmail": "Notification email",
       "notificationEmailDesc": "Optional address that receives a summary after each automatic run"
     },
