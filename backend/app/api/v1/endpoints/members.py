@@ -21,6 +21,7 @@ from app.domains.members.schemas import (
     MemberCreate,
     MemberRegistrationRejection,
     MemberResponse,
+    MemberSelfUpdate,
     MemberStatusChange,
     MemberUpdate,
     PersonResponse,
@@ -39,6 +40,8 @@ from app.domains.members.service import (
 from app.domains.persons.models import Contact, ContactType, Person
 
 router = APIRouter(prefix="/members", tags=["members"])
+
+SELF_EDITABLE_FIELDS = frozenset(MemberSelfUpdate.model_fields)
 
 
 def _to_response(member: Member) -> MemberResponse:
@@ -219,13 +222,23 @@ def update_member(
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
 
-    # Members can only edit themselves (limited fields)
+    # Members can only edit themselves, and only the self-serviceable fields.
     if not user_has(current_user, "members.write"):
         own_member = (
             db.query(Member).filter(Member.user_id == current_user.id).first()
         )
         if not own_member or own_member.id != member_id:
             raise HTTPException(status_code=403, detail="Insufficient permissions")
+
+        staff_only = set(data.model_dump(exclude_unset=True)) - SELF_EDITABLE_FIELDS
+        if staff_only:
+            raise HTTPException(
+                status_code=403,
+                detail=(
+                    "Not editable on your own record: "
+                    + ", ".join(sorted(staff_only))
+                ),
+            )
 
     update_data = data.model_dump(exclude_unset=True)
 

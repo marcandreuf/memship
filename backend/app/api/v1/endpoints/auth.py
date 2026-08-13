@@ -18,6 +18,17 @@ from app.core.security.dependencies import get_current_user
 from app.core.authorization import require_permission, resolve_permissions
 from app.core.security.jwt import create_access_token
 from app.core.security.oauth import get_provider, provider_redirect_uri
+from app.core.security.rate_limit import (
+    EMAIL_DISPATCH_BY_EMAIL,
+    EMAIL_DISPATCH_BY_IP,
+    LOGIN_BY_EMAIL,
+    LOGIN_BY_IP,
+    REGISTER_BY_IP,
+    client_ip,
+    enforce,
+    identity_key,
+    record,
+)
 from app.db.session import get_db
 from app.domains.auth.models import User
 from app.domains.auth.schemas import (
@@ -90,9 +101,21 @@ def _set_session_cookie(response: Response, user: User) -> None:
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(data: LoginRequest, response: Response, db: Session = Depends(get_db)):
+def login(
+    data: LoginRequest,
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db),
+):
+    ip = client_ip(request)
+    email = identity_key(data.email)
+    enforce((LOGIN_BY_EMAIL, email), (LOGIN_BY_IP, ip))
+
     user = authenticate_user(db, data.email, data.password)
     if not user:
+        # Counted after the check, and only on failure: the window bounds
+        # guessing, not ordinary sign-ins from several devices.
+        record((LOGIN_BY_EMAIL, email), (LOGIN_BY_IP, ip))
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
@@ -103,6 +126,10 @@ def login(data: LoginRequest, response: Response, db: Session = Depends(get_db))
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Account is locked",
         )
+
+    # The address is proven, so forget its failures. The source address keeps
+    # its count — holding one valid account must not reset a spray from there.
+    LOGIN_BY_EMAIL.clear(email)
 
     _set_session_cookie(response, user)
     db.commit()
@@ -117,7 +144,14 @@ def _verification_url(token: str) -> str:
 @router.post(
     "/register", response_model=RegisterResponse, status_code=status.HTTP_201_CREATED
 )
-def register(data: RegisterRequest, db: Session = Depends(get_db)):
+def register(data: RegisterRequest, request: Request, db: Session = Depends(get_db)):
+    # Every call writes a Person, a User and a Member row, and — once a
+    # transport is configured — sends mail. Counted per source only: keying on
+    # the submitted address would let a script pick a new one each time.
+    ip = client_ip(request)
+    enforce((REGISTER_BY_IP, ip))
+    record((REGISTER_BY_IP, ip))
+
     public_registration, requires_approval = get_registration_settings(db)
     if not public_registration:
         raise HTTPException(
@@ -190,10 +224,26 @@ def verify_email_endpoint(data: VerifyEmailRequest, db: Session = Depends(get_db
     return MessageResponse(message="Email verified")
 
 
+def _throttle_mail_to(request: Request, email: str) -> None:
+    """Bound the two endpoints that mail an address an anonymous caller chose.
+
+    Recorded whatever the outcome, unlike login: both endpoints answer the same
+    generic message for a known and an unknown address (so as not to disclose
+    which it was), so "did this attempt do anything" is not a distinction the
+    handler is allowed to make here either.
+    """
+    ip = client_ip(request)
+    identity = identity_key(email)
+    enforce((EMAIL_DISPATCH_BY_EMAIL, identity), (EMAIL_DISPATCH_BY_IP, ip))
+    record((EMAIL_DISPATCH_BY_EMAIL, identity), (EMAIL_DISPATCH_BY_IP, ip))
+
+
 @router.post("/resend-verification", response_model=MessageResponse)
 def resend_verification_endpoint(
-    data: ResendVerificationRequest, db: Session = Depends(get_db)
+    data: ResendVerificationRequest, request: Request, db: Session = Depends(get_db)
 ):
+    _throttle_mail_to(request, data.email)
+
     result = resend_verification(db, data.email)
     db.commit()
 
@@ -218,7 +268,11 @@ def resend_verification_endpoint(
 
 
 @router.post("/password-reset-request", response_model=MessageResponse)
-def password_reset_request(data: PasswordResetRequest, db: Session = Depends(get_db)):
+def password_reset_request(
+    data: PasswordResetRequest, request: Request, db: Session = Depends(get_db)
+):
+    _throttle_mail_to(request, data.email)
+
     token = request_password_reset(db, data.email)
     db.commit()
 

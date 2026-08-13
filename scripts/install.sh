@@ -150,13 +150,32 @@ CORS_ORIGINS=$PUBLIC_URL
 BACKEND_PUBLIC_URL=$PUBLIC_URL
 
 # Email is disabled until one of these is filled in. Without it, registration,
-# receipt and announcement emails are dropped silently.
+# receipt and announcement emails are dropped silently. Fill in EITHER the
+# Resend key OR the SMTP block — either transport sends every email.
+RESEND_API_KEY=
+RESEND_FROM_EMAIL=
+
 SMTP_HOST=
 SMTP_PORT=587
 SMTP_USER=
 SMTP_PASSWORD=
 SMTP_FROM=noreply@${DOMAIN:-memship.local}
 SMTP_TLS=true
+
+# Single sign-on (optional). A provider's button appears only once configured.
+# Settings > Single sign-on overrides these, so leave them blank if you would
+# rather configure SSO from the UI. The redirect URI to register with the
+# provider is \$BACKEND_PUBLIC_URL/api/v1/auth/oauth/<provider>/callback.
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+
+# APPLE_CLIENT_ID is the Services ID, not the App ID. APPLE_PRIVATE_KEY is the
+# .p8 file contents on one line, with \n for the line breaks. Apple rejects
+# localhost, so Sign in with Apple needs a real domain.
+APPLE_CLIENT_ID=
+APPLE_TEAM_ID=
+APPLE_KEY_ID=
+APPLE_PRIVATE_KEY=
 EOF
     umask 022
     chmod 600 "$ENV_FILE"

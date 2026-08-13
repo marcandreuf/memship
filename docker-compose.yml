@@ -27,6 +27,14 @@ x-backend-env: &backend-env
   # published key. scripts/install.sh generates a real one; unset, the backend
   # persists a per-install key to storage/session.key instead.
   SECRET_KEY: ${SECRET_KEY:-}
+  SESSION_KEY_FILE: ${SESSION_KEY_FILE:-}
+  COOKIE_SECURE: ${COOKIE_SECURE:-}
+  # Encrypts the SSO and payment-provider secrets held in the database. Unset,
+  # the app mints a per-install key under storage/ — which a restored database
+  # dump on a rebuilt host cannot decrypt, because the key lived on the old one.
+  # scripts/install.sh generates this precisely so that restore works.
+  MEMSHIP_SECRET_KEY: ${MEMSHIP_SECRET_KEY:-}
+  SECRETS_KEY_FILE: ${SECRETS_KEY_FILE:-}
   APP_ENV: ${APP_ENV:-production}
   DEFAULT_LOCALE: ${DEFAULT_LOCALE:-es}
   CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
@@ -40,7 +48,22 @@ x-backend-env: &backend-env
   SMTP_PASSWORD: ${SMTP_PASSWORD:-}
   SMTP_FROM: ${SMTP_FROM:-noreply@memship.local}
   SMTP_TLS: ${SMTP_TLS:-true}
+  RESEND_API_KEY: ${RESEND_API_KEY:-}
+  RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-}
   FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+  # The origin an external service reaches this API on. It builds the SSO
+  # callback URL, which must match the redirect URI registered with the
+  # provider exactly, and the Redsys `Ds_Merchant_MerchantURL` — so if it is
+  # wrong the gateway cannot notify us and paid receipts are never settled.
+  # Same default as FRONTEND_URL: Caddy serves both on one host.
+  BACKEND_PUBLIC_URL: ${BACKEND_PUBLIC_URL:-http://localhost}
+  # SSO fallbacks. Settings > Single sign-on overrides whatever is set here.
+  GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+  GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+  APPLE_CLIENT_ID: ${APPLE_CLIENT_ID:-}
+  APPLE_TEAM_ID: ${APPLE_TEAM_ID:-}
+  APPLE_KEY_ID: ${APPLE_KEY_ID:-}
+  APPLE_PRIVATE_KEY: ${APPLE_PRIVATE_KEY:-}
 
 services:
   caddy:

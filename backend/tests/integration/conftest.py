@@ -265,6 +265,22 @@ def _no_external_email(monkeypatch):
     monkeypatch.setattr(email_module, "_dispatch", lambda *args, **kwargs: True)
 
 
+@pytest.fixture(autouse=True)
+def _fresh_auth_throttles():
+    """Start every test with empty rate-limit windows.
+
+    The throttles in ``app.core.security.rate_limit`` are module-level and hold
+    their counts in process, so without this one test's failed logins would
+    spend another test's budget — and which tests those are would depend on
+    ordering. Tests that assert the limit still exercise the real throttle.
+    """
+    from app.core.security.rate_limit import reset_all
+
+    reset_all()
+    yield
+    reset_all()
+
+
 @pytest.fixture
 def db():
     """Provide a transactional database session that rolls back after each test."""

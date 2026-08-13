@@ -5,6 +5,14 @@ The input is HTML-escaped first, then a small whitelist of Markdown constructs
 Because escaping happens before any tag is emitted, authored HTML can never reach
 the output — this is the sanitization boundary. The same renderer feeds the
 member view and the email HTML.
+
+Escaping the quote characters is part of that boundary, not a detail: the link
+rule interpolates the captured URL *inside* a quoted ``href``, and the URL
+pattern excludes whitespace and ``)`` but not ``"``. Escaping with
+``quote=False`` therefore let an author close the attribute and open another
+one — ``[x](https://a.test/b"onmouseover="alert(1))`` emitted a live event
+handler. Authoring an announcement needs ``communications.write``, so that was
+a route from a limited staff role to script running in a super admin's session.
 """
 
 import html
@@ -26,7 +34,7 @@ def _inline(text: str) -> str:
 
 def render_markdown(text: str) -> str:
     """Render a small, safe subset of Markdown to HTML."""
-    escaped = html.escape(text or "", quote=False)
+    escaped = html.escape(text or "")
     blocks = re.split(r"\n\s*\n", escaped.strip())
     out: list[str] = []
     for block in blocks:

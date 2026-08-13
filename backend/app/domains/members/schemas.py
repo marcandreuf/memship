@@ -69,18 +69,23 @@ class MemberCreate(BaseModel):
         return v
 
 
-class MemberUpdate(BaseModel):
+class MemberSelfUpdate(BaseModel):
+    """The fields a member may write on their own record.
+
+    Deliberately excludes ``email`` (identity, and it would desynchronise the
+    Person row from ``User.email``), ``membership_type_id`` (it sets the
+    recurring fee and unlocks restricted activities), ``guardian_person_id`` and
+    ``internal_notes`` (admin-only). ``MemberUpdate`` adds those back for
+    callers holding ``members.write``.
+    """
+
     first_name: str | None = Field(default=None, min_length=1, max_length=100)
     last_name: str | None = Field(default=None, min_length=1, max_length=100)
-    email: Email | None = None
     date_of_birth: date | None = None
     gender: str | None = Field(default=None, max_length=20)
     national_id: str | None = Field(default=None, max_length=20)
     bank_iban: str | None = Field(default=None, max_length=34)
     bank_bic: str | None = Field(default=None, max_length=11)
-    membership_type_id: int | None = None
-    guardian_person_id: int | None = None
-    internal_notes: str | None = Field(default=None, max_length=2000)
 
     @field_validator("date_of_birth")
     @classmethod
@@ -88,6 +93,13 @@ class MemberUpdate(BaseModel):
         if v is not None and v > date.today():
             raise ValueError("Date of birth cannot be in the future")
         return v
+
+
+class MemberUpdate(MemberSelfUpdate):
+    email: Email | None = None
+    membership_type_id: int | None = None
+    guardian_person_id: int | None = None
+    internal_notes: str | None = Field(default=None, max_length=2000)
 
 
 class MemberStatusChange(BaseModel):

@@ -12,6 +12,36 @@
 # HTTP. scripts/install.sh checks both before starting the stack.
 
 {$SITE_ADDRESS::80} {
+	# Response headers for everything below — the frontend, the API and the
+	# uploads proxy alike. Set here rather than per-service because this is the
+	# one place every response passes through.
+	header {
+		# Stop the browser second-guessing Content-Type. The upload routes decide
+		# what a stored file is allowed to be served as, and an uploaded .html or
+		# .svg is deliberately handed back as application/octet-stream; without
+		# nosniff a browser is free to sniff the bytes, render it, and run its
+		# script on this origin.
+		X-Content-Type-Options nosniff
+
+		# Two spellings of the same rule. frame-ancestors is the one browsers
+		# honour now; X-Frame-Options is kept for the ones that do not read CSP.
+		Content-Security-Policy "frame-ancestors 'none'"
+		X-Frame-Options DENY
+
+		# Send the origin, not the path, off-site. Member and receipt URLs carry
+		# record ids, and reset links carry a token.
+		Referrer-Policy strict-origin-when-cross-origin
+
+		# Ignored over plain HTTP, so this is inert on a localhost install and
+		# active as soon as SITE_ADDRESS names a domain. Note the commitment:
+		# once a browser has seen this it will refuse plain HTTP to the host for
+		# a year, so moving the site back off TLS needs max-age=0 served first.
+		Strict-Transport-Security "max-age=31536000"
+
+		# Caddy advertises itself by default.
+		-Server
+	}
+
 	# Backend API requests
 	handle /api/v1/* {
 		reverse_proxy api:8000

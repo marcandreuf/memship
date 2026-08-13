@@ -37,6 +37,10 @@ dev = [
     "pytest-cov>=5.0",
     "pytest-xdist>=3.5",
     "factory-boy>=3.3",
+    # Parses the compose files in tests/unit/test_deployment_env.py. It arrives
+    # anyway via uvicorn[standard], but that is a transitive edge that a future
+    # uvicorn release is free to drop.
+    "PyYAML>=6.0",
 ]
 
 [build-system]

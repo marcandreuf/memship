@@ -979,6 +979,7 @@ dev = [
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "pytest-xdist" },
+    { name = "pyyaml" },
 ]
 
 [package.metadata]
@@ -1003,6 +1004,7 @@ requires-dist = [
     { name = "pytest-xdist", marker = "extra == 'dev'", specifier = ">=3.5" },
     { name = "python-multipart", specifier = ">=0.0.9" },
     { name = "python-redsys", specifier = ">=1.2" },
+    { name = "pyyaml", marker = "extra == 'dev'", specifier = ">=6.0" },
     { name = "resend", specifier = ">=2.0" },
     { name = "segno", specifier = ">=1.6" },
     { name = "sepaxml", specifier = ">=2.6" },
