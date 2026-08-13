@@ -34,7 +34,9 @@ warn() { printf '\n!!  %s\n' "$*" >&2; }
 skip() { printf '  - %s\n' "$*"; }
 
 usage() {
-    sed -n '2,20p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+    # Print the whole header block, stopping at the first non-comment line, so
+    # --help cannot silently truncate when the header grows.
+    awk 'NR == 1 { next } /^#/ { sub(/^# ?/, ""); print; next } { exit }' "${BASH_SOURCE[0]}"
     exit 0
 }
 
@@ -220,6 +222,26 @@ EOF
 systemctl enable --now fail2ban >/dev/null 2>&1 || true
 info "sshd jail enabled (5 attempts, 1h ban)"
 
+# ------------------------------------------------------------------ sshd port
+#
+# Read sshd's effective config once, here rather than at the end, because the
+# firewall step below needs the port: opening a hardcoded 22 and then enabling
+# ufw drops the session on any host whose sshd has been moved — which is exactly
+# what step 1 of this script's own closing instructions tells operators to do.
+#
+# Do NOT pipe `sshd -T` into an awk that exits early: awk closes the pipe, sshd
+# takes SIGPIPE, and under `set -o pipefail` that is a 141 which `set -e` turns
+# into an abort — with everything already done and none of the instructions
+# below printed.
+SSHD_CONF="$(sshd -T 2>/dev/null || true)"
+sshd_val() { printf '%s\n' "$SSHD_CONF" | awk -v k="$1" '$1==k {print $2}' | tail -1; }
+
+# Every port sshd listens on, not just the first: a host mid-migration between
+# ports is precisely when locking yourself out is unrecoverable.
+SSH_PORTS="$(printf '%s\n' "$SSHD_CONF" | awk '$1=="port" {print $2}' | sort -un)"
+[ -n "$SSH_PORTS" ] || SSH_PORTS=22
+SSH_PORT="$(printf '%s\n' "$SSH_PORTS" | head -1)"
+
 # ---------------------------------------------------------------- firewall
 
 if [ "$DO_FIREWALL" -eq 1 ]; then
@@ -228,10 +250,20 @@ if [ "$DO_FIREWALL" -eq 1 ]; then
     apt-get install -y -qq ufw >/dev/null
 
     # Order matters: allow SSH BEFORE enabling, or enabling drops this session.
+    # 22 goes in unconditionally as well — if sshd is being moved off it, the
+    # old port is still how the current session got here.
+    ALLOWED="22"
     ufw allow 22/tcp >/dev/null
+    for p in $SSH_PORTS; do
+        [ "$p" = "22" ] && continue
+        ufw allow "$p"/tcp >/dev/null
+        ALLOWED="$ALLOWED, $p"
+    done
     ufw allow 80/tcp >/dev/null
     ufw allow 443/tcp >/dev/null
-    info "allowed 22, 80, 443/tcp"
+    # Report every port actually opened. Under-reporting the firewall's state is
+    # the same class of mistake as opening the wrong port in the first place.
+    info "allowed $ALLOWED, 80, 443/tcp"
 
     # "Status: inactive" contains "active" — match the whole field, not a substring.
     if ufw status | head -1 | grep -qi "^Status: active"; then
@@ -297,15 +329,8 @@ step "Done"
 # Report sshd's actual state rather than assuming it needs hardening. Cloud
 # images increasingly ship with all three already set, and telling someone to
 # fix what is already correct is how the real instructions get skimmed past.
-# Read the effective config once. Do NOT pipe `sshd -T` into an awk that exits
-# early: awk closes the pipe, sshd takes SIGPIPE, and under `set -o pipefail`
-# that is a 141 which `set -e` turns into an abort right here — with everything
-# already done and none of the instructions below printed.
-SSHD_CONF="$(sshd -T 2>/dev/null || true)"
-sshd_val() { printf '%s\n' "$SSHD_CONF" | awk -v k="$1" '$1==k {print $2}' | tail -1; }
-
-SSH_PORT="$(sshd_val port)"
-SSH_PORT="${SSH_PORT:-22}"
+# SSHD_CONF, sshd_val and SSH_PORT were resolved before the firewall step, which
+# needs the port to avoid locking this session out.
 SSH_ROOT="$(sshd_val permitrootlogin)"
 SSH_PASSWD="$(sshd_val passwordauthentication)"
 

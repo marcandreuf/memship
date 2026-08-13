@@ -28,8 +28,8 @@ sudo ~/memship-bootstrap/scripts/vps-bootstrap.sh --user deploy --ssh-key-file ~
 as (`--user "$USER"`) to use it instead of creating a separate `deploy`. `--ssh-key-file` takes a
 file containing an SSH **public** key — your own `~/.ssh/authorized_keys` is the reliable choice,
 since a fresh server has no `.pub` file lying around. Without a key you cannot log in as the new
-user. Note that `~` expands to **root's** home under `sudo`, so give an absolute path if you are
-not root.
+user. The `~` above is expanded by your own shell before `sudo` runs, so it is your home
+directory; from a **root shell** (`sudo -i`) it would be root's, so pass an absolute path there.
 
 It creates the deploy user, installs Docker from Docker's own repository, enables
 `unattended-upgrades`, `fail2ban` and `ufw`, sets the timezone, and adds a weekly image prune.
@@ -62,6 +62,11 @@ The bootstrap clone in your home directory has done its job now and can be delet
 That creates the data root, generates real secrets into `.env` (mode 600), pulls the published
 images and starts the stack.
 
+**Your install is pinned to a version.** `install.sh` sets `IMAGE_TAG` to the most recent release
+tag in the checkout, so the deployment stays on that version until you move it deliberately, and
+`/api/v1/health` reports which one it runs. Pass `--tag 2.2.0` to pin a different one. To upgrade,
+edit `IMAGE_TAG` in `.env` and re-run the script — see [Upgrading](../self-hosting/upgrading.md).
+
 **Point DNS at the server first.** `install.sh` refuses to start when the hostname does not
 resolve to this host, because Caddy validates over HTTP-01 and Let's Encrypt rate-limits *failed*
 validations at 5 per hostname per hour — a premature start can lock you out of certificates for
@@ -87,12 +92,19 @@ docker compose exec -it api python -m app.cli.seed
 The `-it` matters: the command prompts. See [First-time setup](first-setup.md) for what it
 asks and for the unattended flags an automated deployment uses instead.
 
-Open your domain (or **http://localhost** if you installed without one).
+Open your domain — or, if you installed without one, **http://&lt;server-address&gt;**, the hostname or
+IP you reach the box on. `localhost` only works when you are installing on the machine in front of
+you.
 
 ### Without a domain
 
 Omit `--domain`. Caddy then serves plain HTTP on port 80, which is what you want for a local or
 internal install.
+
+This is also how to rehearse an install on a real server without spending certificates: install
+with no `--domain`, confirm the stack works, then re-run with `--domain` to add HTTPS. Re-running
+updates `SITE_ADDRESS` and the public URLs together, so nothing is left pointing at the old
+address.
 
 ## The data root
 
@@ -176,9 +188,12 @@ See the [Configuration reference](../self-hosting/configuration.md) for every av
 
 ## Services
 
-The default Compose stack runs behind a Caddy reverse proxy:
+The default Compose stack runs behind a Caddy reverse proxy. These URLs are **as seen from the
+server itself** — the API and database are bound to `127.0.0.1`, so `localhost` is the only way to
+reach them. From anywhere else, use your domain or the server's address, which reaches the first
+two rows only:
 
-| Service    | URL                              | Description               |
+| Service    | URL (on the server)              | Description               |
 |------------|----------------------------------|---------------------------|
 | Frontend   | `http://localhost`               | Member portal (via Caddy) |
 | API        | `http://localhost/api/v1/health` | Backend API (via Caddy)   |

@@ -10,6 +10,11 @@
 #   ./scripts/install.sh                                  # into ./data, plain HTTP
 #   ./scripts/install.sh --domain memship.example.com     # with automatic HTTPS
 #   ./scripts/install.sh --data-root /srv/openmemship --domain memship.example.com
+#   ./scripts/install.sh --tag 2.2.0                      # pin a specific version
+#
+# A new install pins IMAGE_TAG to this checkout's most recent release tag, so the
+# deployment states which version it runs instead of tracking a moving `latest`.
+# Pass --tag to choose another, or edit IMAGE_TAG in .env and re-run.
 #
 # Safe to re-run: it never overwrites an existing .env, and re-running is how you
 # pick up a new IMAGE_TAG. Everything it creates lives under one data root, so
@@ -29,7 +34,9 @@ step() { printf '\n==> %s\n' "$*"; }
 warn() { printf '\n!!  %s\n' "$*" >&2; }
 
 usage() {
-    sed -n '2,18p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+    # Print the whole header block, stopping at the first non-comment line, so
+    # --help cannot silently truncate when the header grows.
+    awk 'NR == 1 { next } /^#/ { sub(/^# ?/, ""); print; next } { exit }' "${BASH_SOURCE[0]}"
     exit 0
 }
 
@@ -110,6 +117,25 @@ gen_secret() { openssl rand -hex 32; }
 # Fernet needs urlsafe base64 of exactly 32 bytes — see backend/app/core/config.py.
 gen_fernet() { openssl rand -base64 32 | tr '+/' '-_'; }
 
+# An empty IMAGE_TAG resolves to `latest`, which leaves a production install
+# tracking a moving target and — because APP_VERSION is baked from the tag —
+# reporting its own version as the literal string "latest". Neither is what you
+# want on a box you have to reason about.
+#
+# So default to this checkout's most recent release tag. Image tags carry no
+# leading `v` (the repository tags v2.2.0, the registry publishes 2.2.0). No
+# tags reachable — a shallow clone, a source tarball, a fork — falls back to
+# `latest`, which is the old behaviour rather than a hard failure.
+default_image_tag() {
+    local t
+    t="$(git -C "$REPO_ROOT" describe --tags --abbrev=0 2>/dev/null || true)"
+    case "$t" in
+        v[0-9]*) printf '%s' "${t#v}" ;;
+        [0-9]*)  printf '%s' "$t" ;;
+        *)       printf 'latest' ;;
+    esac
+}
+
 if [ -f "$ENV_FILE" ]; then
     info ".env exists — leaving it alone (edit it by hand to change settings)"
 else
@@ -122,6 +148,11 @@ else
         PUBLIC_URL="http://localhost"
     fi
 
+    # Only a fresh .env gets the resolved default. Re-running must never
+    # overwrite a tag the operator pinned by hand — that is the documented
+    # upgrade path, and the sed below still applies an explicit --tag.
+    NEW_TAG="${IMAGE_TAG:-$(default_image_tag)}"
+
     umask 077
     cat > "$ENV_FILE" <<EOF
 # Written by scripts/install.sh. Secrets below are randomly generated —
@@ -129,7 +160,7 @@ else
 
 MEMSHIP_DATA_ROOT=$DATA_ROOT
 SITE_ADDRESS=$SITE
-IMAGE_TAG=$IMAGE_TAG
+IMAGE_TAG=$NEW_TAG
 
 # The backend containers run as this uid/gid, so uploads written to
 # \$MEMSHIP_DATA_ROOT/storage belong to you and need no sudo to read.
@@ -180,6 +211,7 @@ EOF
     umask 022
     chmod 600 "$ENV_FILE"
     info "wrote .env with generated secrets (mode 600)"
+    info "IMAGE_TAG=$NEW_TAG"
 fi
 
 # Applying --domain or --tag to an existing .env, in place.
@@ -264,11 +296,34 @@ cat <<EOF
   Data root:  $DATA_ROOT
   Config:     $ENV_FILE  (contains your secrets — back it up)
   Address:    ${SITE_NOW:-http://localhost}
+  Version:    $(grep -E '^IMAGE_TAG=' "$ENV_FILE" | tail -1 | cut -d= -f2-)
+EOF
+
+# Re-running is the documented way to add a domain or move IMAGE_TAG, so this is
+# the normal path on an install that was seeded long ago. Telling its operator to
+# "create your super admin" invites a password reset nobody asked for. Ask the
+# database instead. Anything unreadable — migrations still running, db not up
+# yet — falls through to printing the instructions, which is the safe default.
+if docker compose exec -T db psql -U memship -d memship_db -tAc \
+        'select 1 from users limit 1' 2>/dev/null | grep -q 1; then
+    cat <<EOF
+
+  This instance is already set up. To reset the super admin password:
+
+    MEMSHIP_ADMIN_PASSWORD='...' docker compose exec -T -e MEMSHIP_ADMIN_PASSWORD \\
+      api python -m app.cli.seed --admin-email you@example.org
+EOF
+else
+    cat <<EOF
 
   Run the setup — it creates your super admin and your organization.
   It prompts, so keep the -it:
 
     docker compose exec -it api python -m app.cli.seed
+EOF
+fi
+
+cat <<EOF
 
   Then:  docker compose ps       # check everything is up
          docker compose logs -f  # watch it start

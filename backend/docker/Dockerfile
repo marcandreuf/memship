@@ -53,10 +53,16 @@ ENV PATH="/app/.venv/bin:$PATH" \
 
 # Storage is normally a bind mount from the host; create it anyway so a bare
 # `docker run` with no mount still starts. The app writes subdirectories here.
+#
+# /var/lib/celery holds celery beat's schedule database. It has to exist in the
+# image, owned by the runtime user: Docker creates a mountpoint that is missing
+# from the image as root:root, which is exactly the permission error this
+# directory is here to avoid. /app itself stays root-owned, so beat cannot fall
+# back to the working directory.
 RUN groupadd -g 1001 memship \
     && useradd -u 1001 -g 1001 -m -d /home/memship memship \
-    && mkdir -p /app/storage \
-    && chown -R 1001:1001 /app/storage
+    && mkdir -p /app/storage /var/lib/celery \
+    && chown -R 1001:1001 /app/storage /var/lib/celery
 
 # Default to non-root. Compose overrides this with the host user's ids so files
 # written to the bind mount belong to the operator rather than to uid 1001.
