@@ -46,7 +46,7 @@ def membership_type(db):
 
 def _member(db, membership_type, suffix):
     person = Person(
-        first_name="Seat", last_name=suffix, email=f"seat-{suffix}@test.com"
+        first_name="Seat", last_name=suffix, email=f"seat-{suffix}@examplee6e3b1.com"
     )
     db.add(person)
     db.flush()

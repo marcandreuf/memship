@@ -115,10 +115,10 @@ class TestReceiptsResolveTheMemberThroughTheUserLink:
     ):
         """``persons.email`` is non-unique by design — a minor and their guardian
         share one — so it can never decide whose receipts these are."""
-        _, victim = _account(db, standard_type, "victim-guard@test.com")
+        _, victim = _account(db, standard_type, "victim-guard@examplee6e3b1.com")
         attacker_user, _ = _account(
-            db, standard_type, "attacker-guard@test.com",
-            person_email="victim-guard@test.com",
+            db, standard_type, "attacker-guard@examplee6e3b1.com",
+            person_email="victim-guard@examplee6e3b1.com",
         )
         receipt = _receipt(db, victim, "FAC-GUARD-1", "cs_guard_1")
 
@@ -135,8 +135,8 @@ class TestReceiptsResolveTheMemberThroughTheUserLink:
         """An admin correcting the Person record used to break self-service
         billing outright: the lookup matched on the login email and 404'd."""
         user, member = _account(
-            db, standard_type, "renamed-guard@test.com",
-            person_email="old-address-guard@test.com",
+            db, standard_type, "renamed-guard@examplee6e3b1.com",
+            person_email="old-address-guard@examplee6e3b1.com",
         )
         _receipt(db, member, "FAC-GUARD-2", "cs_guard_2")
 
@@ -150,9 +150,9 @@ class TestPaymentInitiationTakesTheWriteKey:
     def test_a_view_only_billing_role_cannot_start_a_payment_for_another_member(
         self, client, db, standard_type
     ):
-        viewer, _ = _account(db, standard_type, "billing-viewer@test.com")
+        viewer, _ = _account(db, standard_type, "billing-viewer@examplee6e3b1.com")
         _grant(db, viewer, "billing-viewer", {"billing.read"})
-        _, other = _account(db, standard_type, "billing-other@test.com")
+        _, other = _account(db, standard_type, "billing-other@examplee6e3b1.com")
         receipt = _receipt(db, other, "FAC-GUARD-3", "cs_guard_3")
 
         r = client.post(
@@ -166,9 +166,9 @@ class TestPaymentInitiationTakesTheWriteKey:
     def test_a_view_only_billing_role_still_reads_any_receipt(
         self, client, db, standard_type
     ):
-        viewer, _ = _account(db, standard_type, "billing-viewer-2@test.com")
+        viewer, _ = _account(db, standard_type, "billing-viewer-2@examplee6e3b1.com")
         _grant(db, viewer, "billing-viewer-2", {"billing.read"})
-        _, other = _account(db, standard_type, "billing-other-2@test.com")
+        _, other = _account(db, standard_type, "billing-other-2@examplee6e3b1.com")
         receipt = _receipt(db, other, "FAC-GUARD-4", "cs_guard_4")
 
         r = client.get(
@@ -185,7 +185,7 @@ class TestMemberSelfEditIsFieldLimited:
     ):
         """Membership type sets the recurring fee and unlocks restricted
         activities — a self-service downgrade to a €0 tier."""
-        user, member = _account(db, standard_type, "downgrade-guard@test.com")
+        user, member = _account(db, standard_type, "downgrade-guard@examplee6e3b1.com")
 
         r = client.put(
             f"/api/v1/members/{member.id}",
@@ -200,7 +200,7 @@ class TestMemberSelfEditIsFieldLimited:
     def test_a_member_cannot_write_internal_notes(
         self, client, db, standard_type
     ):
-        user, member = _account(db, standard_type, "notes-guard@test.com")
+        user, member = _account(db, standard_type, "notes-guard@examplee6e3b1.com")
 
         r = client.put(
             f"/api/v1/members/{member.id}",
@@ -217,22 +217,22 @@ class TestMemberSelfEditIsFieldLimited:
     ):
         """Which is what made the shared-email receipt lookup exploitable, and
         what desynchronises the Person row from ``users.email``."""
-        user, member = _account(db, standard_type, "email-guard@test.com")
+        user, member = _account(db, standard_type, "email-guard@examplee6e3b1.com")
 
         r = client.put(
             f"/api/v1/members/{member.id}",
-            json={"email": "someone-else-guard@test.com"},
+            json={"email": "someone-else-guard@examplee6e3b1.com"},
             cookies=_cookie(user),
         )
 
         assert r.status_code == 403
         db.refresh(member)
-        assert member.person.email == "email-guard@test.com"
+        assert member.person.email == "email-guard@examplee6e3b1.com"
 
     def test_a_member_may_still_edit_their_own_name(
         self, client, db, standard_type
     ):
-        user, member = _account(db, standard_type, "rename-guard@test.com")
+        user, member = _account(db, standard_type, "rename-guard@examplee6e3b1.com")
 
         r = client.put(
             f"/api/v1/members/{member.id}",
@@ -247,8 +247,8 @@ class TestMemberSelfEditIsFieldLimited:
     def test_staff_may_still_set_every_field(
         self, client, db, standard_type, cheap_type
     ):
-        staff, _ = _account(db, standard_type, "staff-guard@test.com", role="admin")
-        _, member = _account(db, standard_type, "target-guard@test.com")
+        staff, _ = _account(db, standard_type, "staff-guard@examplee6e3b1.com", role="admin")
+        _, member = _account(db, standard_type, "target-guard@examplee6e3b1.com")
 
         r = client.put(
             f"/api/v1/members/{member.id}",
@@ -285,9 +285,9 @@ class TestCancellationTakesTheWriteKey:
     def test_a_view_only_registrations_role_cannot_cancel_another_members_place(
         self, client, db, standard_type, activity
     ):
-        viewer, _ = _account(db, standard_type, "reg-viewer@test.com")
+        viewer, _ = _account(db, standard_type, "reg-viewer@examplee6e3b1.com")
         _grant(db, viewer, "registrations-viewer", {"registrations.read"})
-        _, other = _account(db, standard_type, "reg-other@test.com")
+        _, other = _account(db, standard_type, "reg-other@examplee6e3b1.com")
         registration = Registration(
             activity_id=activity.id, member_id=other.id, status="confirmed"
         )
@@ -305,9 +305,9 @@ class TestCancellationTakesTheWriteKey:
     def test_the_write_key_still_cancels_any_registration(
         self, client, db, standard_type, activity
     ):
-        editor, _ = _account(db, standard_type, "reg-editor@test.com")
+        editor, _ = _account(db, standard_type, "reg-editor@examplee6e3b1.com")
         _grant(db, editor, "registrations-editor", {"registrations.write"})
-        _, other = _account(db, standard_type, "reg-other-2@test.com")
+        _, other = _account(db, standard_type, "reg-other-2@examplee6e3b1.com")
         registration = Registration(
             activity_id=activity.id, member_id=other.id, status="confirmed"
         )

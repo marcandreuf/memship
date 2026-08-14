@@ -66,7 +66,7 @@ class TestSecretsAreNotServed:
         """The bank file has its own authenticated endpoint; the predictable
         filename must not be a second, anonymous way in."""
         storage("remittances/2026/REM-2026-0001.xml", b"<Document/>")
-        user, _, _ = _make_user(db, "rem@test.com", role="admin")
+        user, _, _ = _make_user(db, "rem@examplee6e3b1.com", role="admin")
         client.cookies.update(_auth_cookie(user))
 
         resp = client.get("/uploads/remittances/2026/REM-2026-0001.xml")
@@ -93,15 +93,15 @@ class TestMemberPhotos:
         assert client.get("/uploads/members/1/photo.png").status_code == 401
 
     def test_member_reads_own_photo(self, client, db, storage):
-        user, person, _ = _make_user(db, "own-photo@test.com")
+        user, person, _ = _make_user(db, "own-photo@examplee6e3b1.com")
         storage(f"members/{person.id}/photo.png", b"\x89PNG")
         client.cookies.update(_auth_cookie(user))
 
         assert client.get(f"/uploads/members/{person.id}/photo.png").status_code == 200
 
     def test_member_cannot_read_another_members_photo(self, client, db, storage):
-        _, other_person, _ = _make_user(db, "victim-photo@test.com")
-        attacker, _, _ = _make_user(db, "attacker-photo@test.com")
+        _, other_person, _ = _make_user(db, "victim-photo@examplee6e3b1.com")
+        attacker, _, _ = _make_user(db, "attacker-photo@examplee6e3b1.com")
         storage(f"members/{other_person.id}/photo.png", b"\x89PNG")
         client.cookies.update(_auth_cookie(attacker))
 
@@ -109,8 +109,8 @@ class TestMemberPhotos:
         assert resp.status_code == 404
 
     def test_staff_reads_any_photo(self, client, db, storage):
-        _, other_person, _ = _make_user(db, "scanned@test.com")
-        staff, _, _ = _make_user(db, "staff-photo@test.com", role="admin")
+        _, other_person, _ = _make_user(db, "scanned@examplee6e3b1.com")
+        staff, _, _ = _make_user(db, "staff-photo@examplee6e3b1.com", role="admin")
         storage(f"members/{other_person.id}/photo.png", b"\x89PNG")
         client.cookies.update(_auth_cookie(staff))
 
@@ -124,7 +124,7 @@ class TestMandates:
         assert client.get("/uploads/mandates/1/MEM-0001-001.pdf").status_code == 401
 
     def test_member_reads_own_mandate(self, client, db, storage):
-        user, _, member = _make_user(db, "own-mandate@test.com")
+        user, _, member = _make_user(db, "own-mandate@examplee6e3b1.com")
         storage(f"mandates/{member.id}/MEM-0001-001.pdf", b"%PDF-1.4")
         client.cookies.update(_auth_cookie(user))
 
@@ -132,8 +132,8 @@ class TestMandates:
         assert resp.status_code == 200
 
     def test_member_cannot_read_another_members_mandate(self, client, db, storage):
-        _, _, victim = _make_user(db, "victim-mandate@test.com")
-        attacker, _, _ = _make_user(db, "attacker-mandate@test.com")
+        _, _, victim = _make_user(db, "victim-mandate@examplee6e3b1.com")
+        attacker, _, _ = _make_user(db, "attacker-mandate@examplee6e3b1.com")
         storage(f"mandates/{victim.id}/MEM-0002-001.pdf", b"%PDF-1.4")
         client.cookies.update(_auth_cookie(attacker))
 
@@ -145,7 +145,7 @@ class TestExecutableUploadsAreNeutralised:
     def test_html_is_forced_to_download(self, client, db, storage):
         """C7 lets an attacker store .html under registrations/. It must not come
         back as a renderable page on the app's own origin."""
-        user, _, member = _make_user(db, "html-upload@test.com")
+        user, _, member = _make_user(db, "html-upload@examplee6e3b1.com")
         from app.domains.activities.models import Activity, Registration
 
         now = datetime.now(timezone.utc)

@@ -59,12 +59,12 @@ class TestLogin:
     ):
         from app.core.config import settings as app_settings
 
-        _create_test_user(db, email="secure-cookie@test.com", password="password123")
+        _create_test_user(db, email="secure-cookie@examplee6e3b1.com", password="password123")
         monkeypatch.setattr(app_settings, "FRONTEND_URL", "https://memship.example.com")
 
         response = client.post(
             "/api/v1/auth/login",
-            json={"email": "secure-cookie@test.com", "password": "password123"},
+            json={"email": "secure-cookie@examplee6e3b1.com", "password": "password123"},
         )
 
         set_cookie = response.headers["set-cookie"]
@@ -73,11 +73,11 @@ class TestLogin:
 
     def test_session_cookie_drops_secure_on_a_plain_http_deployment(self, client, db):
         """Otherwise a localhost / LAN install could never log in at all."""
-        _create_test_user(db, email="plain-cookie@test.com", password="password123")
+        _create_test_user(db, email="plain-cookie@examplee6e3b1.com", password="password123")
 
         response = client.post(
             "/api/v1/auth/login",
-            json={"email": "plain-cookie@test.com", "password": "password123"},
+            json={"email": "plain-cookie@examplee6e3b1.com", "password": "password123"},
         )
 
         assert "Secure" not in response.headers["set-cookie"]
@@ -253,7 +253,7 @@ class TestPasswordReset:
         from app.core.config import settings as app_settings
         import app.api.v1.endpoints.auth as auth_endpoints
 
-        _create_test_user(db, email="resend-reset@test.com")
+        _create_test_user(db, email="resend-reset@examplee6e3b1.com")
         monkeypatch.setattr(app_settings, "RESEND_API_KEY", "re_test_key")
 
         sent: list[tuple] = []
@@ -265,23 +265,23 @@ class TestPasswordReset:
 
         response = client.post(
             "/api/v1/auth/password-reset-request",
-            json={"email": "resend-reset@test.com"},
+            json={"email": "resend-reset@examplee6e3b1.com"},
         )
 
         assert response.status_code == 200
         assert response.json()["reset_token"] is None
         assert len(sent) == 1
-        assert sent[0][0] == "resend-reset@test.com"
+        assert sent[0][0] == "resend-reset@examplee6e3b1.com"
 
     def test_token_is_withheld_outside_development(self, client, db, monkeypatch):
         from app.core.config import settings as app_settings
 
-        _create_test_user(db, email="prod-reset@test.com")
+        _create_test_user(db, email="prod-reset@examplee6e3b1.com")
         monkeypatch.setattr(app_settings, "APP_ENV", "production")
 
         response = client.post(
             "/api/v1/auth/password-reset-request",
-            json={"email": "prod-reset@test.com"},
+            json={"email": "prod-reset@examplee6e3b1.com"},
         )
 
         assert response.status_code == 200

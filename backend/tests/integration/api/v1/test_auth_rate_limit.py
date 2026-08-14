@@ -46,12 +46,12 @@ def org(db):
 
 @pytest.fixture
 def account(db):
-    person = Person(first_name="Throttle", last_name="Target", email="throttle@test.com")
+    person = Person(first_name="Throttle", last_name="Target", email="throttle@examplee6e3b1.com")
     db.add(person)
     db.flush()
     user = User(
         person_id=person.id,
-        email="throttle@test.com",
+        email="throttle@examplee6e3b1.com",
         password_hash=hash_password(PASSWORD),
         is_active=True,
         email_verified=True,
@@ -110,13 +110,13 @@ class TestLoginIsBounded:
             variant = account.email.upper() if i % 2 else account.email
             assert _login(client, variant, WRONG).status_code == 401
 
-        assert _login(client, "THROTTLE@TEST.COM", WRONG).status_code == 429
+        assert _login(client, account.email.upper(), WRONG).status_code == 429
 
     def test_one_address_being_blocked_does_not_block_another(self, client, db, account):
         for _ in range(LOGIN_BY_EMAIL.limit):
             _login(client, account.email, WRONG)
 
-        r = _login(client, "someone-else@test.com", WRONG)
+        r = _login(client, "someone-else@examplee6e3b1.com", WRONG)
 
         assert r.status_code == 401
 
@@ -124,9 +124,9 @@ class TestLoginIsBounded:
         """Each address stays under its own limit, so only the per-source
         window catches this."""
         for i in range(LOGIN_BY_IP.limit):
-            assert _login(client, f"spray{i}@test.com", WRONG).status_code == 401
+            assert _login(client, f"spray{i}@examplee6e3b1.com", WRONG).status_code == 401
 
-        assert _login(client, "spray-last@test.com", WRONG).status_code == 429
+        assert _login(client, "spray-last@examplee6e3b1.com", WRONG).status_code == 429
 
     def test_the_source_is_read_from_the_rightmost_forwarded_hop(self, client, db):
         """Behind Caddy every request arrives from the same container address,
@@ -134,17 +134,17 @@ class TestLoginIsBounded:
         what gets keyed on."""
         for i in range(LOGIN_BY_IP.limit):
             r = _login(
-                client, f"fwd{i}@test.com", WRONG,
+                client, f"fwd{i}@examplee6e3b1.com", WRONG,
                 headers={"X-Forwarded-For": "198.51.100.7"},
             )
             assert r.status_code == 401
 
         blocked = _login(
-            client, "fwd-last@test.com", WRONG,
+            client, "fwd-last@examplee6e3b1.com", WRONG,
             headers={"X-Forwarded-For": "198.51.100.7"},
         )
         other = _login(
-            client, "fwd-other@test.com", WRONG,
+            client, "fwd-other@examplee6e3b1.com", WRONG,
             headers={"X-Forwarded-For": "198.51.100.8"},
         )
 
@@ -172,12 +172,12 @@ class TestMailDispatchIsBounded:
         response code into the disclosure the generic message avoids."""
         for _ in range(EMAIL_DISPATCH_BY_EMAIL.limit):
             r = client.post(
-                "/api/v1/auth/password-reset-request", json={"email": "nobody@test.com"}
+                "/api/v1/auth/password-reset-request", json={"email": "nobody@examplee6e3b1.com"}
             )
             assert r.status_code == 200
 
         r = client.post(
-            "/api/v1/auth/password-reset-request", json={"email": "nobody@test.com"}
+            "/api/v1/auth/password-reset-request", json={"email": "nobody@examplee6e3b1.com"}
         )
 
         assert r.status_code == 429
@@ -201,12 +201,12 @@ class TestMailDispatchIsBounded:
     def test_the_source_is_capped_across_different_addresses(self, client, db):
         for i in range(EMAIL_DISPATCH_BY_IP.limit):
             r = client.post(
-                "/api/v1/auth/password-reset-request", json={"email": f"m{i}@test.com"}
+                "/api/v1/auth/password-reset-request", json={"email": f"m{i}@examplee6e3b1.com"}
             )
             assert r.status_code == 200
 
         r = client.post(
-            "/api/v1/auth/password-reset-request", json={"email": "m-last@test.com"}
+            "/api/v1/auth/password-reset-request", json={"email": "m-last@examplee6e3b1.com"}
         )
 
         assert r.status_code == 429
@@ -219,7 +219,7 @@ class TestRegistrationIsBounded:
             json={
                 "first_name": "New",
                 "last_name": "Member",
-                "email": f"signup{i}@test.com",
+                "email": f"signup{i}@examplee6e3b1.com",
                 "password": "a-long-enough-password",
             },
         )

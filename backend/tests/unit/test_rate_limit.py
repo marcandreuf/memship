@@ -89,11 +89,11 @@ class TestTheWindow:
         must not accumulate for the life of the process."""
         throttle = Throttle("sweep", limit=5, window_seconds=1)
         for i in range(50):
-            throttle.record(f"user{i}@test.com")
+            throttle.record(f"user{i}@examplee6e3b1.com")
         assert len(throttle._hits) == 50
 
         time.sleep(1.05)
-        throttle.record("someone-else@test.com")
+        throttle.record("someone-else@examplee6e3b1.com")
 
         assert len(throttle._hits) == 1
 
@@ -124,9 +124,16 @@ class TestEnforce:
 
 
 class TestIdentityKey:
-    @pytest.mark.parametrize("raw", ["User@Test.com", " user@test.com ", "USER@TEST.COM"])
+    @pytest.mark.parametrize(
+        "raw",
+        [
+            "User@Examplee6e3b1.com",
+            " user@examplee6e3b1.com ",
+            "USER@EXAMPLEE6E3B1.COM",
+        ],
+    )
     def test_casing_and_padding_share_one_bucket(self, raw):
-        assert identity_key(raw) == "user@test.com"
+        assert identity_key(raw) == "user@examplee6e3b1.com"
 
 
 class TestClientIp:
