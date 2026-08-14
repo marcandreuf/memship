@@ -6,7 +6,7 @@ describe("Stripe Checkout — Failure / Cancel Path", () => {
     // Ensure an active Stripe provider so the "Pay Now" button renders. The
     // checkout call is stubbed via cy.intercept, so config values are irrelevant
     // — only an active/test status is required.
-    cy.apiLogin("super@test.com", "TestSuper1!");
+    cy.apiLogin("super@examplee6e3b1.com", "TestSuper1!");
     cy.request({
       method: "GET",
       url: `${API_URL}/payment-providers/`,
@@ -43,12 +43,12 @@ describe("Stripe Checkout — Failure / Cancel Path", () => {
     });
 
     // Login as admin via API and create an emitted receipt for the member test account
-    cy.apiLogin("admin@test.com", "TestAdmin1!");
+    cy.apiLogin("admin@examplee6e3b1.com", "TestAdmin1!");
 
-    // Find member ID for member@test.com
+    // Find member ID for member@examplee6e3b1.com
     cy.request({
       method: "GET",
-      url: `${API_URL}/members?search=member@test.com`,
+      url: `${API_URL}/members?search=member@examplee6e3b1.com`,
     }).then((membersResp) => {
       expect(membersResp.status).to.eq(200);
       const member = membersResp.body.items[0];
@@ -137,7 +137,7 @@ describe("Stripe Checkout — Failure / Cancel Path", () => {
       // Simulate what happens when checkout.session.expired webhook fires:
       // the webhook handler marks the receipt as returned.
       // We simulate this by calling the return endpoint as admin.
-      cy.apiLogin("admin@test.com", "TestAdmin1!");
+      cy.apiLogin("admin@examplee6e3b1.com", "TestAdmin1!");
       cy.request({
         method: "POST",
         url: `${API_URL}/receipts/${emittedReceiptId}/return`,

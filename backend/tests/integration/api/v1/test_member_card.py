@@ -35,7 +35,7 @@ def _ensure_org(db, *, member_card=True, prefix="", padding=4, next_num=1):
     return org
 
 
-def _create_admin(db, email="admin-card@test.com"):
+def _create_admin(db, email="admin-card@examplee6e3b1.com"):
     person = Person(first_name="Admin", last_name="Card", email=email)
     db.add(person)
     db.flush()
@@ -51,7 +51,7 @@ def _create_admin(db, email="admin-card@test.com"):
     return user
 
 
-def _create_member_user(db, email="member-card@test.com", status="active", number="SCB-0001"):
+def _create_member_user(db, email="member-card@examplee6e3b1.com", status="active", number="SCB-0001"):
     person = Person(first_name="Mika", last_name="Roig", email=email)
     db.add(person)
     db.flush()
@@ -338,7 +338,7 @@ class TestMemberNumbering:
     def test_allocation_skips_existing_collision(self, client, db):
         _ensure_org(db, prefix="SCB-", padding=4, next_num=1)
         # Pre-seed a member already holding SCB-0001.
-        _create_member_user(db, email="held@test.com", number="SCB-0001")
+        _create_member_user(db, email="held@examplee6e3b1.com", number="SCB-0001")
         admin = _create_admin(db)
         client.cookies.update(_auth_cookie(admin))
 
@@ -354,8 +354,8 @@ class TestMemberNumbering:
         admin = _create_admin(db)
 
         # Two members with NULL member_number, created in a known id order.
-        m1 = _create_member_user(db, email="m1@test.com", number=None)[1]
-        m2 = _create_member_user(db, email="m2@test.com", number=None)[1]
+        m1 = _create_member_user(db, email="m1@examplee6e3b1.com", number=None)[1]
+        m2 = _create_member_user(db, email="m2@examplee6e3b1.com", number=None)[1]
         client.cookies.update(_auth_cookie(admin))
 
         resp = client.post("/api/v1/members/assign-numbers")

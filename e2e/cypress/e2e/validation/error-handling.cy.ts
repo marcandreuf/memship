@@ -96,7 +96,7 @@ describe("Error Handling — Error Toasts on Invalid Data", () => {
   describe("Login — inline error display", () => {
     it("shows inline error on invalid credentials", () => {
       cy.visit("/en/login");
-      cy.get('input[type="email"]').type("wrong@test.com");
+      cy.get('input[type="email"]').type("wrong@examplee6e3b1.com");
       cy.get('input[type="password"]').type("WrongPassword1!");
       cy.get('button[type="submit"]').click();
       // Login uses inline error display (red box), not toast

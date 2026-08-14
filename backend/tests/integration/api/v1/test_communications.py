@@ -23,7 +23,7 @@ def _auth_cookie(user):
 
 
 def _create_user(db, role="admin", suffix="u"):
-    person = Person(first_name="Test", last_name="User", email=f"{suffix}-{role}@test.com")
+    person = Person(first_name="Test", last_name="User", email=f"{suffix}-{role}@examplee6e3b1.com")
     db.add(person)
     db.flush()
     user = User(
@@ -90,7 +90,7 @@ def _create_member(
     opted_out=False,
     mtype=None,
 ):
-    person = Person(first_name="Mem", last_name=suffix, email=f"mem-{suffix}@test.com")
+    person = Person(first_name="Mem", last_name=suffix, email=f"mem-{suffix}@examplee6e3b1.com")
     db.add(person)
     db.flush()
     user_id = None
@@ -168,7 +168,7 @@ class TestAudienceResolver:
         _create_member(db, "eo-out", opted_out=True)
         members = service.resolve_audience(db, "all", None)
         emails = {p.email for p in service.email_recipients(db, members)}
-        assert emails == {"mem-eo-in@test.com"}
+        assert emails == {"mem-eo-in@examplee6e3b1.com"}
         # Opted-out member is still part of the resolved audience (gets in-app).
         assert len(members) == 2
 

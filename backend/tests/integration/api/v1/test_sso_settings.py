@@ -74,12 +74,12 @@ def _org(db):
 
 
 def _create_user(db, role="super_admin", suffix="sso"):
-    person = Person(first_name="T", last_name="U", email=f"{suffix}-{role}@test.com")
+    person = Person(first_name="T", last_name="U", email=f"{suffix}-{role}@examplee6e3b1.com")
     db.add(person)
     db.flush()
     user = User(
         person_id=person.id,
-        email=f"{suffix}-{role}@test.com",
+        email=f"{suffix}-{role}@examplee6e3b1.com",
         password_hash=hash_password("password123"),
         role=role,
         is_active=True,

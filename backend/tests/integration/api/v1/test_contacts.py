@@ -7,12 +7,12 @@ from app.domains.persons.models import Contact, ContactType, Person
 
 
 def _create_user(db, role="admin", suffix=""):
-    person = Person(first_name="Contact", last_name=f"Test{suffix}", email=f"contact-{role}{suffix}@test.com")
+    person = Person(first_name="Contact", last_name=f"Test{suffix}", email=f"contact-{role}{suffix}@examplee6e3b1.com")
     db.add(person)
     db.flush()
     user = User(
         person_id=person.id,
-        email=f"contact-{role}{suffix}@test.com",
+        email=f"contact-{role}{suffix}@examplee6e3b1.com",
         password_hash=hash_password("password123"),
         role=role,
         is_active=True,

@@ -573,32 +573,44 @@ def _seed_sample_cover_image(db) -> None:
     print(f"  Cover image: set for '{soccer_camp.name}'")
 
 
+# The seeded addresses all sit on examplee6e3b1.com, which is deliberately a
+# domain nobody owns — checked unregistered when it was chosen, and the random
+# suffix is what keeps it that way.
+#
+# They used to be @test.com. That is a REAL registered domain, not a reserved
+# one: RFC 2606 reserves example.com/.org/.net and the .test TLD, but test.com
+# belongs to someone. Any environment with a working mail transport — a staging
+# box, a demo instance, an evaluation install someone left running — would send
+# welcome mail, payment reminders and announcements to a stranger's domain, and
+# burn the sender reputation of the domain doing it.
+#
+# Do not "tidy" these back to test.com or to a domain you have not checked.
 TEST_ACCOUNTS = [
     {
         "first_name": "Super",
         "last_name": "Admin",
-        "email": "super@test.com",
+        "email": "super@examplee6e3b1.com",
         "password": "TestSuper1!",
         "role": "super_admin",
     },
     {
         "first_name": "Org",
         "last_name": "Admin",
-        "email": "admin@test.com",
+        "email": "admin@examplee6e3b1.com",
         "password": "TestAdmin1!",
         "role": "admin",
     },
     {
         "first_name": "Test",
         "last_name": "Member",
-        "email": "member@test.com",
+        "email": "member@examplee6e3b1.com",
         "password": "TestMember1!",
         "role": "member",
     },
     {
         "first_name": "Club",
         "last_name": "Treasurer",
-        "email": "treasurer@test.com",
+        "email": "treasurer@examplee6e3b1.com",
         "password": "TestTreasurer1!",
         "role": "treasurer",
     },
@@ -637,28 +649,28 @@ def seed_narrow_role(db) -> None:
 
 # Extra members for realistic registration data (--test only)
 EXTRA_MEMBERS = [
-    {"first_name": "María", "last_name": "García", "email": "maria@test.com", "date_of_birth": "1990-05-12"},
-    {"first_name": "Joan", "last_name": "Puig", "email": "joan@test.com", "date_of_birth": "1985-11-03"},
-    {"first_name": "Laura", "last_name": "Martínez", "email": "laura@test.com", "date_of_birth": "2000-08-22"},
-    {"first_name": "Carlos", "last_name": "López", "email": "carlos@test.com", "date_of_birth": "1978-02-14"},
-    {"first_name": "Anna", "last_name": "Ferrer", "email": "anna@test.com", "date_of_birth": "1995-07-30"},
-    {"first_name": "Marta", "last_name": "Soler", "email": "marta@test.com", "date_of_birth": "1992-01-18"},
-    {"first_name": "Jordi", "last_name": "Vidal", "email": "jordi@test.com", "date_of_birth": "1988-09-25"},
-    {"first_name": "Elena", "last_name": "Ruiz", "email": "elena@test.com", "date_of_birth": "1997-03-07"},
-    {"first_name": "Àlex", "last_name": "Serra", "email": "alex@test.com", "date_of_birth": "2001-06-14"},
-    {"first_name": "Nuria", "last_name": "Blanch", "email": "nuria@test.com", "date_of_birth": "1983-12-02"},
-    {"first_name": "Marc", "last_name": "Roca", "email": "marc@test.com", "date_of_birth": "1975-04-19"},
-    {"first_name": "Carla", "last_name": "Pons", "email": "carla@test.com", "date_of_birth": "1999-10-08"},
-    {"first_name": "Pau", "last_name": "Mas", "email": "pau@test.com", "date_of_birth": "1991-07-21"},
-    {"first_name": "Laia", "last_name": "Font", "email": "laia@test.com", "date_of_birth": "1986-02-28"},
-    {"first_name": "Oriol", "last_name": "Casals", "email": "oriol@test.com", "date_of_birth": "1994-11-15"},
-    {"first_name": "Gemma", "last_name": "Rovira", "email": "gemma@test.com", "date_of_birth": "1980-08-04"},
-    {"first_name": "Arnau", "last_name": "Bosch", "email": "arnau@test.com", "date_of_birth": "2002-01-30"},
-    {"first_name": "Sílvia", "last_name": "Esteve", "email": "silvia@test.com", "date_of_birth": "1993-05-22"},
-    {"first_name": "David", "last_name": "Navarro", "email": "david@test.com", "date_of_birth": "1976-09-11"},
-    {"first_name": "Montse", "last_name": "Costa", "email": "montse@test.com", "date_of_birth": "1989-04-03"},
-    {"first_name": "Ferran", "last_name": "Aguilar", "email": "ferran@test.com", "date_of_birth": "1998-12-17"},
-    {"first_name": "Aina", "last_name": "Torrent", "email": "aina@test.com", "date_of_birth": "1984-06-09"},
+    {"first_name": "María", "last_name": "García", "email": "maria@examplee6e3b1.com", "date_of_birth": "1990-05-12"},
+    {"first_name": "Joan", "last_name": "Puig", "email": "joan@examplee6e3b1.com", "date_of_birth": "1985-11-03"},
+    {"first_name": "Laura", "last_name": "Martínez", "email": "laura@examplee6e3b1.com", "date_of_birth": "2000-08-22"},
+    {"first_name": "Carlos", "last_name": "López", "email": "carlos@examplee6e3b1.com", "date_of_birth": "1978-02-14"},
+    {"first_name": "Anna", "last_name": "Ferrer", "email": "anna@examplee6e3b1.com", "date_of_birth": "1995-07-30"},
+    {"first_name": "Marta", "last_name": "Soler", "email": "marta@examplee6e3b1.com", "date_of_birth": "1992-01-18"},
+    {"first_name": "Jordi", "last_name": "Vidal", "email": "jordi@examplee6e3b1.com", "date_of_birth": "1988-09-25"},
+    {"first_name": "Elena", "last_name": "Ruiz", "email": "elena@examplee6e3b1.com", "date_of_birth": "1997-03-07"},
+    {"first_name": "Àlex", "last_name": "Serra", "email": "alex@examplee6e3b1.com", "date_of_birth": "2001-06-14"},
+    {"first_name": "Nuria", "last_name": "Blanch", "email": "nuria@examplee6e3b1.com", "date_of_birth": "1983-12-02"},
+    {"first_name": "Marc", "last_name": "Roca", "email": "marc@examplee6e3b1.com", "date_of_birth": "1975-04-19"},
+    {"first_name": "Carla", "last_name": "Pons", "email": "carla@examplee6e3b1.com", "date_of_birth": "1999-10-08"},
+    {"first_name": "Pau", "last_name": "Mas", "email": "pau@examplee6e3b1.com", "date_of_birth": "1991-07-21"},
+    {"first_name": "Laia", "last_name": "Font", "email": "laia@examplee6e3b1.com", "date_of_birth": "1986-02-28"},
+    {"first_name": "Oriol", "last_name": "Casals", "email": "oriol@examplee6e3b1.com", "date_of_birth": "1994-11-15"},
+    {"first_name": "Gemma", "last_name": "Rovira", "email": "gemma@examplee6e3b1.com", "date_of_birth": "1980-08-04"},
+    {"first_name": "Arnau", "last_name": "Bosch", "email": "arnau@examplee6e3b1.com", "date_of_birth": "2002-01-30"},
+    {"first_name": "Sílvia", "last_name": "Esteve", "email": "silvia@examplee6e3b1.com", "date_of_birth": "1993-05-22"},
+    {"first_name": "David", "last_name": "Navarro", "email": "david@examplee6e3b1.com", "date_of_birth": "1976-09-11"},
+    {"first_name": "Montse", "last_name": "Costa", "email": "montse@examplee6e3b1.com", "date_of_birth": "1989-04-03"},
+    {"first_name": "Ferran", "last_name": "Aguilar", "email": "ferran@examplee6e3b1.com", "date_of_birth": "1998-12-17"},
+    {"first_name": "Aina", "last_name": "Torrent", "email": "aina@examplee6e3b1.com", "date_of_birth": "1984-06-09"},
 ]
 
 
@@ -731,12 +743,12 @@ def seed_member_contacts(db) -> None:
 
     # Sample contacts for a few members
     contact_data = [
-        ("maria@test.com", "+34 612 345 678", "phone_mobile", True),
-        ("maria@test.com", "maria.garcia@work.com", "email_work", False),
-        ("joan@test.com", "+34 623 456 789", "phone_mobile", True),
-        ("carlos@test.com", "+34 634 567 890", "phone_mobile", True),
-        ("laura@test.com", "+34 645 678 901", "phone_mobile", True),
-        ("david@test.com", "+34 656 789 012", "phone_mobile", True),
+        ("maria@examplee6e3b1.com", "+34 612 345 678", "phone_mobile", True),
+        ("maria@examplee6e3b1.com", "maria.garcia@work.com", "email_work", False),
+        ("joan@examplee6e3b1.com", "+34 623 456 789", "phone_mobile", True),
+        ("carlos@examplee6e3b1.com", "+34 634 567 890", "phone_mobile", True),
+        ("laura@examplee6e3b1.com", "+34 645 678 901", "phone_mobile", True),
+        ("david@examplee6e3b1.com", "+34 656 789 012", "phone_mobile", True),
     ]
 
     count = 0
@@ -763,9 +775,9 @@ def seed_member_contacts(db) -> None:
 
     # Add bank IBANs, payment method, holder name for a few members
     iban_data = [
-        ("maria@test.com", "ES6621000418401234567891", "CAIXESBBXXX", "María García"),
-        ("joan@test.com", "ES7920385778983000760236", "CAIXESBBXXX", "Joan Puig"),
-        ("carlos@test.com", "ES9121000418450200051332", "CAIXESBBXXX", "Carlos López"),
+        ("maria@examplee6e3b1.com", "ES6621000418401234567891", "CAIXESBBXXX", "María García"),
+        ("joan@examplee6e3b1.com", "ES7920385778983000760236", "CAIXESBBXXX", "Joan Puig"),
+        ("carlos@examplee6e3b1.com", "ES9121000418450200051332", "CAIXESBBXXX", "Carlos López"),
     ]
     for email, iban, bic, holder in iban_data:
         person = db.query(Person).filter(Person.email == email).first()
@@ -777,15 +789,15 @@ def seed_member_contacts(db) -> None:
 
     # Set gender for test members
     gender_data = [
-        ("maria@test.com", "female"),
-        ("joan@test.com", "male"),
-        ("carlos@test.com", "male"),
-        ("laura@test.com", "female"),
-        ("anna@test.com", "female"),
-        ("marta@test.com", "female"),
-        ("jordi@test.com", "male"),
-        ("elena@test.com", "female"),
-        ("alex@test.com", "non_binary"),
+        ("maria@examplee6e3b1.com", "female"),
+        ("joan@examplee6e3b1.com", "male"),
+        ("carlos@examplee6e3b1.com", "male"),
+        ("laura@examplee6e3b1.com", "female"),
+        ("anna@examplee6e3b1.com", "female"),
+        ("marta@examplee6e3b1.com", "female"),
+        ("jordi@examplee6e3b1.com", "male"),
+        ("elena@examplee6e3b1.com", "female"),
+        ("alex@examplee6e3b1.com", "non_binary"),
     ]
     for email, gender in gender_data:
         person = db.query(Person).filter(Person.email == email).first()
@@ -816,8 +828,8 @@ def seed_registrations(db) -> None:
     count = 0
     cancelled_one = False
 
-    # Find test member (member@test.com) — limit to 3 registrations so some activities remain unregistered for testing
-    test_member_user = db.query(User).filter(User.email == "member@test.com").first()
+    # Find test member (member@examplee6e3b1.com) — limit to 3 registrations so some activities remain unregistered for testing
+    test_member_user = db.query(User).filter(User.email == "member@examplee6e3b1.com").first()
     test_member = db.query(Member).filter(Member.user_id == test_member_user.id).first() if test_member_user else None
     test_member_reg_count = 0
     test_member_max_regs = 3
@@ -1303,8 +1315,8 @@ def seed_billing_data(db) -> None:
             db.add(receipt)
             receipt_count += 1
 
-    # Ensure member@test.com has an emitted receipt for Stripe Checkout testing
-    test_member_user = db.query(User).filter_by(email="member@test.com").first()
+    # Ensure member@examplee6e3b1.com has an emitted receipt for Stripe Checkout testing
+    test_member_user = db.query(User).filter_by(email="member@examplee6e3b1.com").first()
     if test_member_user:
         test_member = (
             db.query(Member)
@@ -1417,11 +1429,11 @@ def seed_sepa_data(db) -> None:
 
     # --- Add bank IBANs to more members (for mandate variety) ---
     extra_iban_data = [
-        ("anna@test.com", "ES8023100001180000012345", "CAIXESBBXXX", "Anna Ferrer"),
-        ("marta@test.com", "ES6000491500051234567892", "BSCHESMMXXX", "Marta Soler"),
-        ("jordi@test.com", "ES2100820532161234567890", "BSABESBBXXX", "Jordi Vidal"),
-        ("elena@test.com", "ES7100302053091234567895", "BARKESMMXXX", "Elena Ruiz"),
-        ("alex@test.com", "ES3801822200160201234567", "BBVAESMMXXX", "Àlex Serra"),
+        ("anna@examplee6e3b1.com", "ES8023100001180000012345", "CAIXESBBXXX", "Anna Ferrer"),
+        ("marta@examplee6e3b1.com", "ES6000491500051234567892", "BSCHESMMXXX", "Marta Soler"),
+        ("jordi@examplee6e3b1.com", "ES2100820532161234567890", "BSABESBBXXX", "Jordi Vidal"),
+        ("elena@examplee6e3b1.com", "ES7100302053091234567895", "BARKESMMXXX", "Elena Ruiz"),
+        ("alex@examplee6e3b1.com", "ES3801822200160201234567", "BBVAESMMXXX", "Àlex Serra"),
     ]
     for email, iban, bic, holder in extra_iban_data:
         person = db.query(Person).filter(Person.email == email).first()
@@ -1437,14 +1449,14 @@ def seed_sepa_data(db) -> None:
     # + anna, marta, jordi, elena, alex (added above)
     mandate_members = [
         # (email, status) — 6 active, 1 cancelled, 1 without mandate (for testing exclusion)
-        ("maria@test.com", "active"),
-        ("joan@test.com", "active"),
-        ("carlos@test.com", "active"),
-        ("anna@test.com", "active"),
-        ("marta@test.com", "active"),
-        ("jordi@test.com", "cancelled"),
-        ("elena@test.com", "active"),
-        # alex@test.com intentionally left without a mandate (for exclusion testing)
+        ("maria@examplee6e3b1.com", "active"),
+        ("joan@examplee6e3b1.com", "active"),
+        ("carlos@examplee6e3b1.com", "active"),
+        ("anna@examplee6e3b1.com", "active"),
+        ("marta@examplee6e3b1.com", "active"),
+        ("jordi@examplee6e3b1.com", "cancelled"),
+        ("elena@examplee6e3b1.com", "active"),
+        # alex@examplee6e3b1.com intentionally left without a mandate (for exclusion testing)
     ]
 
     today = date.today()

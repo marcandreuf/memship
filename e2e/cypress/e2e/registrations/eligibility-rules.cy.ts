@@ -3,11 +3,11 @@
 // =============================================================================
 //
 // Seed member statuses (verified from DB):
-//   nuria@test.com    — active, DOB 1983-12-02 (age ~42), 0 registrations
-//   member@test.com   — active, no DOB, 6 registrations
-//   david@test.com    — pending
-//   montse@test.com   — suspended
-//   ferran@test.com   — expired
+//   nuria@examplee6e3b1.com    — active, DOB 1983-12-02 (age ~42), 0 registrations
+//   member@examplee6e3b1.com   — active, no DOB, 6 registrations
+//   david@examplee6e3b1.com    — pending
+//   montse@examplee6e3b1.com   — suspended
+//   ferran@examplee6e3b1.com   — expired
 //
 // Seed activities with restrictions:
 //   Kids Dance Party          — max_age: 12
@@ -44,9 +44,9 @@ function visitActivityDetail(activityName: string) {
 }
 
 describe("8. Eligibility Rules — Age Restrictions", () => {
-  // Using nuria@test.com — active, DOB 1983, age ~42, 0 registrations
+  // Using nuria@examplee6e3b1.com — active, DOB 1983, age ~42, 0 registrations
   it("8.1 — adult rejected from kids-only activity (max_age=12)", () => {
-    cy.login("nuria@test.com", PASSWORD);
+    cy.login("nuria@examplee6e3b1.com", PASSWORD);
     visitRegisterPage("Kids Dance Party");
 
     cy.contains("You are not eligible").should("be.visible");
@@ -54,16 +54,16 @@ describe("8. Eligibility Rules — Age Restrictions", () => {
   });
 
   it("8.2 — adult rejected from youth activity (max_age=17)", () => {
-    cy.login("nuria@test.com", PASSWORD);
+    cy.login("nuria@examplee6e3b1.com", PASSWORD);
     visitRegisterPage("Summer Soccer Camp");
 
     cy.contains("You are not eligible").should("be.visible");
     cy.contains("Maximum age is 17").should("be.visible");
   });
 
-  // Using member@test.com — active, no DOB (age checks skipped), has available activities
+  // Using member@examplee6e3b1.com — active, no DOB (age checks skipped), has available activities
   it("8.3 — eligible member can access registration form", () => {
-    cy.login("member@test.com", PASSWORD);
+    cy.login("member@examplee6e3b1.com", PASSWORD);
     visitRegisterPage("Chess Club Tournament");
 
     cy.contains("You are eligible").should("be.visible");
@@ -78,10 +78,10 @@ describe("8. Eligibility Rules — Member Status", () => {
   // other cases. Asserted here to keep the pending status covered alongside
   // suspended and expired.
   it("8.7a — pending member is stopped by the approval gate", () => {
-    cy.login("david@test.com", PASSWORD);
+    cy.login("david@examplee6e3b1.com", PASSWORD);
 
     cy.contains("Awaiting approval").should("be.visible");
-    cy.contains("david@test.com").should("be.visible");
+    cy.contains("david@examplee6e3b1.com").should("be.visible");
 
     // The portal itself is unreachable — no sidebar, no activities list.
     cy.visit("/en/activities");
@@ -90,7 +90,7 @@ describe("8. Eligibility Rules — Member Status", () => {
   });
 
   it("8.7b — suspended member is not eligible", () => {
-    cy.login("montse@test.com", PASSWORD);
+    cy.login("montse@examplee6e3b1.com", PASSWORD);
     visitRegisterPage("Yoga Workshop");
 
     cy.contains("You are not eligible").should("be.visible");
@@ -98,7 +98,7 @@ describe("8. Eligibility Rules — Member Status", () => {
   });
 
   it("8.7c — expired member is not eligible", () => {
-    cy.login("ferran@test.com", PASSWORD);
+    cy.login("ferran@examplee6e3b1.com", PASSWORD);
     visitRegisterPage("Yoga Workshop");
 
     cy.contains("You are not eligible").should("be.visible");
@@ -108,14 +108,14 @@ describe("8. Eligibility Rules — Member Status", () => {
 
 describe("8. Eligibility Rules — Registration Window", () => {
   it("8.6a — closed registration shows Closed badge", () => {
-    cy.login("nuria@test.com", PASSWORD);
+    cy.login("nuria@examplee6e3b1.com", PASSWORD);
     visitActivityDetail("Spring Marathon 2026");
 
     cy.contains(/closed/i).should("be.visible");
   });
 
   it("8.6b — not-yet-open registration shows Not Yet Open badge", () => {
-    cy.login("nuria@test.com", PASSWORD);
+    cy.login("nuria@examplee6e3b1.com", PASSWORD);
     visitActivityDetail("New Year's Gala 2027");
 
     cy.contains(/not yet open/i).should("be.visible");
@@ -124,7 +124,7 @@ describe("8. Eligibility Rules — Registration Window", () => {
 
 describe("8. Eligibility Rules — Duplicate Registration", () => {
   it("8.5 — already registered member sees Registered status", () => {
-    cy.login("member@test.com", PASSWORD);
+    cy.login("member@examplee6e3b1.com", PASSWORD);
 
     cy.visit("/en/my-activities");
     cy.get("a[href*='/activities/']").should("have.length.greaterThan", 0);

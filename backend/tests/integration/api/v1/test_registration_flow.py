@@ -11,7 +11,7 @@ from app.domains.persons.models import Person
 REGISTER_PAYLOAD = {
     "first_name": "Nova",
     "last_name": "Aplicant",
-    "email": "nova@test.com",
+    "email": "nova@examplee6e3b1.com",
     "password": "password123",
 }
 
@@ -188,17 +188,17 @@ class TestEmailVerification:
 
     def test_resend_verification_is_silent_for_unknown_email(self, client, db):
         response = client.post(
-            "/api/v1/auth/resend-verification", json={"email": "ghost@test.com"}
+            "/api/v1/auth/resend-verification", json={"email": "ghost@examplee6e3b1.com"}
         )
 
         assert response.status_code == 200
         assert response.json()["verification_token"] is None
 
     def test_resend_verification_is_silent_for_already_verified_user(self, client, db):
-        _create_user(db, email="verified@test.com")
+        _create_user(db, email="verified@examplee6e3b1.com")
 
         response = client.post(
-            "/api/v1/auth/resend-verification", json={"email": "verified@test.com"}
+            "/api/v1/auth/resend-verification", json={"email": "verified@examplee6e3b1.com"}
         )
 
         assert response.status_code == 200
@@ -207,9 +207,9 @@ class TestEmailVerification:
 
 class TestAdminApproval:
     def test_approve_allocates_number_and_activates(self, client, db):
-        _create_user(db, email="admin@test.com", role="admin")
-        _, pending = _create_user(db, email="pending@test.com", status="pending")
-        _login(client, "admin@test.com")
+        _create_user(db, email="admin@examplee6e3b1.com", role="admin")
+        _, pending = _create_user(db, email="pending@examplee6e3b1.com", status="pending")
+        _login(client, "admin@examplee6e3b1.com")
 
         response = client.post(f"/api/v1/members/{pending.id}/approve")
 
@@ -223,18 +223,18 @@ class TestAdminApproval:
         assert pending.member_number is not None
 
     def test_approve_rejects_non_pending_member(self, client, db):
-        _create_user(db, email="admin@test.com", role="admin")
-        _, active = _create_user(db, email="active@test.com", status="active")
-        _login(client, "admin@test.com")
+        _create_user(db, email="admin@examplee6e3b1.com", role="admin")
+        _, active = _create_user(db, email="active@examplee6e3b1.com", status="active")
+        _login(client, "admin@examplee6e3b1.com")
 
         response = client.post(f"/api/v1/members/{active.id}/approve")
 
         assert response.status_code == 400
 
     def test_reject_cancels_member_and_disables_login(self, client, db):
-        _create_user(db, email="admin@test.com", role="admin")
-        rejected_user, pending = _create_user(db, email="pending@test.com", status="pending")
-        _login(client, "admin@test.com")
+        _create_user(db, email="admin@examplee6e3b1.com", role="admin")
+        rejected_user, pending = _create_user(db, email="pending@examplee6e3b1.com", status="pending")
+        _login(client, "admin@examplee6e3b1.com")
 
         response = client.post(
             f"/api/v1/members/{pending.id}/reject", json={"reason": "Not eligible"}
@@ -249,39 +249,39 @@ class TestAdminApproval:
         assert rejected_user.is_active is False
 
     def test_approve_requires_admin(self, client, db):
-        _create_user(db, email="member@test.com")
-        _, pending = _create_user(db, email="pending@test.com", status="pending")
-        _login(client, "member@test.com")
+        _create_user(db, email="member@examplee6e3b1.com")
+        _, pending = _create_user(db, email="pending@examplee6e3b1.com", status="pending")
+        _login(client, "member@examplee6e3b1.com")
 
         response = client.post(f"/api/v1/members/{pending.id}/approve")
 
         assert response.status_code == 403
 
     def test_pending_members_are_listable_by_status(self, client, db):
-        _create_user(db, email="admin@test.com", role="admin")
-        _create_user(db, email="pending@test.com", status="pending")
-        _login(client, "admin@test.com")
+        _create_user(db, email="admin@examplee6e3b1.com", role="admin")
+        _create_user(db, email="pending@examplee6e3b1.com", status="pending")
+        _login(client, "admin@examplee6e3b1.com")
 
         response = client.get("/api/v1/members/?status=pending")
 
         assert response.status_code == 200
         emails = [m["person"]["email"] for m in response.json()["items"]]
-        assert "pending@test.com" in emails
+        assert "pending@examplee6e3b1.com" in emails
 
 
 class TestPendingMemberGate:
     def test_pending_member_can_log_in_and_read_own_status(self, client, db):
-        _create_user(db, email="pending@test.com", status="pending")
+        _create_user(db, email="pending@examplee6e3b1.com", status="pending")
 
-        _login(client, "pending@test.com")
+        _login(client, "pending@examplee6e3b1.com")
         response = client.get("/api/v1/auth/me")
 
         assert response.status_code == 200
         assert response.json()["member_status"] == "pending"
 
     def test_pending_member_is_blocked_from_feature_routers(self, client, db):
-        _create_user(db, email="pending@test.com", status="pending")
-        _login(client, "pending@test.com")
+        _create_user(db, email="pending@examplee6e3b1.com", status="pending")
+        _login(client, "pending@examplee6e3b1.com")
 
         response = client.get("/api/v1/activities/")
 
@@ -289,29 +289,29 @@ class TestPendingMemberGate:
         assert response.json()["detail"]["code"] == "pending_approval"
 
     def test_active_member_passes_the_gate(self, client, db):
-        _create_user(db, email="active@test.com", status="active")
-        _login(client, "active@test.com")
+        _create_user(db, email="active@examplee6e3b1.com", status="active")
+        _login(client, "active@examplee6e3b1.com")
 
         response = client.get("/api/v1/activities/")
 
         assert response.status_code == 200
 
     def test_admin_passes_the_gate_regardless_of_member_status(self, client, db):
-        _create_user(db, email="admin@test.com", role="admin", status="pending")
-        _login(client, "admin@test.com")
+        _create_user(db, email="admin@examplee6e3b1.com", role="admin", status="pending")
+        _login(client, "admin@examplee6e3b1.com")
 
         response = client.get("/api/v1/activities/")
 
         assert response.status_code == 200
 
     def test_gate_opens_after_approval(self, client, db):
-        _create_user(db, email="admin@test.com", role="admin")
-        _, pending = _create_user(db, email="pending@test.com", status="pending")
+        _create_user(db, email="admin@examplee6e3b1.com", role="admin")
+        _, pending = _create_user(db, email="pending@examplee6e3b1.com", status="pending")
 
-        _login(client, "admin@test.com")
+        _login(client, "admin@examplee6e3b1.com")
         client.post(f"/api/v1/members/{pending.id}/approve")
 
-        _login(client, "pending@test.com")
+        _login(client, "pending@examplee6e3b1.com")
         response = client.get("/api/v1/activities/")
 
         assert response.status_code == 200

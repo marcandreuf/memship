@@ -48,7 +48,7 @@ describe("Roles — authoring", { tags: ["@roles"] }, () => {
   });
 
   it("refuses to delete a role that is still assigned", () => {
-    // `treasurer` is seeded and held by treasurer@test.com.
+    // `treasurer` is seeded and held by treasurer@examplee6e3b1.com.
     cy.get('[data-testid="role-row-treasurer"]')
       .contains("button", "Delete")
       .click();
