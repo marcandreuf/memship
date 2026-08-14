@@ -7,8 +7,15 @@ export async function GET(
   { params }: { params: Promise<{ path: string[] }> }
 ) {
   const { path } = await params;
-  const fullPath = path.join("/");
-  const res = await fetch(`${API_BASE_URL}/uploads/${fullPath}`);
+  const fullPath = path.map(encodeURIComponent).join("/");
+
+  // The session cookie has to travel with the request: the API decides per
+  // prefix who may read a stored file (member photos, mandates, registration
+  // attachments), and answers 401/404 without it.
+  const cookie = request.headers.get("cookie") || "";
+  const res = await fetch(`${API_BASE_URL}/uploads/${fullPath}`, {
+    headers: { Cookie: cookie },
+  });
 
   if (!res.ok) {
     return new NextResponse(null, { status: res.status });
@@ -21,7 +28,11 @@ export async function GET(
     status: 200,
     headers: {
       "Content-Type": contentType,
-      "Cache-Control": "public, max-age=3600",
+      "Content-Disposition": res.headers.get("content-disposition") || "attachment",
+      "X-Content-Type-Options": "nosniff",
+      // Private: most of what this proxies is one member's document, and a
+      // shared cache must not hand it to the next visitor.
+      "Cache-Control": res.headers.get("cache-control") || "private, max-age=3600",
     },
   });
 }

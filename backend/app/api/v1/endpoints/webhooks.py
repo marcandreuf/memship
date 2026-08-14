@@ -105,7 +105,9 @@ async def receive_webhook(
     external_event_id = adapter.extract_event_id(event_data)
     event_type = adapter.extract_event_type(event_data)
 
-    # 5. Dedup — log event, returns None if duplicate
+    # 5. Dedup — log event, returns None for an already-settled duplicate. A
+    #    redelivery of an event that previously failed comes back for another
+    #    attempt instead, since providers retry precisely so it can be applied.
     event = webhook_service.log_event(
         db, provider_type, external_event_id, event_type, event_data
     )

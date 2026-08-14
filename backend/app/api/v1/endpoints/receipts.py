@@ -43,6 +43,37 @@ router = APIRouter(prefix="/receipts", tags=["receipts"])
 member_router = APIRouter(tags=["receipts"])
 
 
+def _own_member(db: Session, user: User) -> Member | None:
+    """Resolve the caller's member record through the foreign key.
+
+    Never through ``Person.email``: that column carries a non-unique index and a
+    minor routinely shares their guardian's address, so an email match can
+    return somebody else's member row — and every "own receipts only" check in
+    this module then compares against the wrong member id.
+    """
+    return (
+        db.query(Member)
+        .filter(Member.user_id == user.id, Member.is_active.is_(True))
+        .first()
+    )
+
+
+def _require_own_receipt(
+    db: Session, user: User, receipt: Receipt, staff_permission: str
+) -> None:
+    """Allow staff holding ``staff_permission``, otherwise the receipt's owner.
+
+    ``staff_permission`` is ``billing.read`` for the routes that only disclose a
+    receipt and ``billing.write`` for the ones that start a payment against it —
+    a view-only billing role must not be able to charge an arbitrary member.
+    """
+    if user_has(user, staff_permission):
+        return
+    member = _own_member(db, user)
+    if not member or receipt.member_id != member.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+
 def _to_detail(receipt: Receipt) -> dict:
     """Convert a Receipt to a detail response dict with member/concept names."""
     data = {c.name: getattr(receipt, c.name) for c in receipt.__table__.columns}
@@ -245,15 +276,7 @@ def download_receipt_pdf(
         raise HTTPException(status_code=404, detail="Receipt not found")
 
     # Members can only download their own receipts
-    if not user_has(current_user, "billing.read"):
-        member = (
-            db.query(Member)
-            .join(Person, Member.person_id == Person.id)
-            .filter(Person.email == current_user.email, Member.is_active.is_(True))
-            .first()
-        )
-        if not member or receipt.member_id != member.id:
-            raise HTTPException(status_code=403, detail="Access denied")
+    _require_own_receipt(db, current_user, receipt, "billing.read")
 
     from app.domains.billing.pdf import generate_receipt_pdf
 
@@ -477,12 +500,7 @@ def list_my_receipts(
     current_user: User = Depends(require_permission("self.billing.read")),
 ):
     """List current user's receipts (member self-service)."""
-    member = (
-        db.query(Member)
-        .join(Person, Member.person_id == Person.id)
-        .filter(Person.email == current_user.email, Member.is_active.is_(True))
-        .first()
-    )
+    member = _own_member(db, current_user)
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
 
@@ -525,15 +543,7 @@ def create_stripe_checkout(
         raise HTTPException(status_code=404, detail="Receipt not found")
 
     # Auth: member can only pay own receipts
-    if not user_has(current_user, "billing.read"):
-        member = (
-            db.query(Member)
-            .join(Person, Member.person_id == Person.id)
-            .filter(Person.email == current_user.email, Member.is_active.is_(True))
-            .first()
-        )
-        if not member or receipt.member_id != member.id:
-            raise HTTPException(status_code=403, detail="Access denied")
+    _require_own_receipt(db, current_user, receipt, "billing.write")
 
     # Must be payable
     if receipt.status not in ("emitted", "overdue"):
@@ -632,15 +642,7 @@ def initiate_redsys_payment(
     if not receipt:
         raise HTTPException(status_code=404, detail="Receipt not found")
 
-    if not user_has(current_user, "billing.read"):
-        member = (
-            db.query(Member)
-            .join(Person, Member.person_id == Person.id)
-            .filter(Person.email == current_user.email, Member.is_active.is_(True))
-            .first()
-        )
-        if not member or receipt.member_id != member.id:
-            raise HTTPException(status_code=403, detail="Access denied")
+    _require_own_receipt(db, current_user, receipt, "billing.write")
 
     if receipt.status not in ("emitted", "overdue"):
         raise HTTPException(
@@ -717,15 +719,7 @@ def get_redsys_return_status(
     if not receipt:
         raise HTTPException(status_code=404, detail="Receipt not found")
 
-    if not user_has(current_user, "billing.read"):
-        member = (
-            db.query(Member)
-            .join(Person, Member.person_id == Person.id)
-            .filter(Person.email == current_user.email, Member.is_active.is_(True))
-            .first()
-        )
-        if not member or receipt.member_id != member.id:
-            raise HTTPException(status_code=403, detail="Access denied")
+    _require_own_receipt(db, current_user, receipt, "billing.read")
 
     return {
         "receipt_id": receipt.id,
@@ -768,15 +762,7 @@ def get_receipt_by_stripe_session(
         raise HTTPException(status_code=404, detail="Receipt not found")
 
     # Auth: member can only see own receipts
-    if not user_has(current_user, "billing.read"):
-        member = (
-            db.query(Member)
-            .join(Person, Member.person_id == Person.id)
-            .filter(Person.email == current_user.email, Member.is_active.is_(True))
-            .first()
-        )
-        if not member or receipt.member_id != member.id:
-            raise HTTPException(status_code=403, detail="Access denied")
+    _require_own_receipt(db, current_user, receipt, "billing.read")
 
     return _to_detail(receipt)
 

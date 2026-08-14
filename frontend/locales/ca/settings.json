@@ -85,7 +85,9 @@
       "enabled": "Activar facturació recurrent",
       "enabledDesc": "Genera automàticament els rebuts de quota de soci segons el calendari configurat",
       "day": "Dia del mes",
-      "dayDesc": "Dia (1–28) en què s'executa la facturació. Les quotes trimestrals i anuals només es facturen el primer mes del seu període.",
+      "dayDesc": "Dia (1–31) en què s'executa la facturació; els mesos més curts es facturen l'últim dia. Les quotes trimestrals i anuals només es facturen el primer mes del seu període.",
+      "dueDays": "Termini de pagament (dies)",
+      "dueDaysDesc": "Dies des de l'emissió fins al venciment de la quota generada. Els recordatoris de pagament es compten a partir d'aquesta data de venciment.",
       "notificationEmail": "Correu de notificació",
       "notificationEmailDesc": "Correu opcional que rep un resum després de cada execució automàtica"
     },

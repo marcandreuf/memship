@@ -15,6 +15,11 @@ from app.api.v1.endpoints.webhooks import register_adapter, _ADAPTER_REGISTRY
 # --- Mock adapter for testing ---
 
 
+TRANSIENT_FAILURES: set[str] = set()
+"""Event ids the mock handler raises on exactly once — a lock timeout, a
+transient DB error, the kind of thing a provider retries after a 5xx."""
+
+
 class MockAdapter(PaymentProviderAdapter):
     """Test adapter that verifies a simple signature and handles events."""
 
@@ -46,6 +51,10 @@ class MockAdapter(PaymentProviderAdapter):
 
     def handle_webhook(self, db, event_data: dict) -> dict:
         event_type = event_data.get("type")
+        event_id = event_data.get("id")
+        if event_id in TRANSIENT_FAILURES:
+            TRANSIENT_FAILURES.discard(event_id)
+            raise RuntimeError("Transient handler failure")
         if event_type == "test.ignored":
             return {"ignored": True, "reason": "Test ignored event"}
         if event_type == "test.error":
@@ -243,6 +252,107 @@ class TestWebhookIdempotency:
                 .count()
             )
             assert count == 2
+        finally:
+            _teardown_mock_adapter()
+
+
+class TestFailedEventsAreRetried:
+    """A provider retries after a 5xx precisely so the event can be applied.
+    Answering "Duplicate event" with 200 on that retry discarded it: a payment
+    that failed to apply once was never applied, and the receipt stayed unpaid
+    while the member had been charged."""
+
+    HEADERS = {
+        "content-type": "application/json",
+        "x-test-signature": MockAdapter.VALID_SIGNATURE,
+    }
+
+    def _post(self, client, payload):
+        return client.post(
+            "/api/v1/webhooks/mock_provider",
+            content=json.dumps(payload).encode(),
+            headers=self.HEADERS,
+        )
+
+    def _event(self, db, event_id):
+        return (
+            db.query(WebhookEvent)
+            .filter(WebhookEvent.external_event_id == event_id)
+            .one()
+        )
+
+    def test_a_redelivery_after_a_failure_is_processed(self, client, db):
+        _setup_mock_adapter()
+        try:
+            _create_provider(db)
+            payload = _webhook_payload(event_id="evt_retry_001")
+            TRANSIENT_FAILURES.add("evt_retry_001")
+
+            first = self._post(client, payload)
+            assert first.status_code == 500
+            assert self._event(db, "evt_retry_001").status == "failed"
+
+            second = self._post(client, payload)
+
+            assert second.status_code == 200
+            assert second.json()["detail"] == "OK"
+            event = self._event(db, "evt_retry_001")
+            assert event.status == "processed"
+            assert event.error_message is None
+        finally:
+            TRANSIENT_FAILURES.discard("evt_retry_001")
+            _teardown_mock_adapter()
+
+    def test_the_retry_reuses_the_one_event_row(self, client, db):
+        _setup_mock_adapter()
+        try:
+            _create_provider(db)
+            payload = _webhook_payload(event_id="evt_retry_002")
+            TRANSIENT_FAILURES.add("evt_retry_002")
+
+            self._post(client, payload)
+            self._post(client, payload)
+
+            count = (
+                db.query(WebhookEvent)
+                .filter(WebhookEvent.external_event_id == "evt_retry_002")
+                .count()
+            )
+            assert count == 1
+        finally:
+            TRANSIENT_FAILURES.discard("evt_retry_002")
+            _teardown_mock_adapter()
+
+    def test_a_retry_that_fails_again_keeps_asking_for_another(self, client, db):
+        _setup_mock_adapter()
+        try:
+            _create_provider(db)
+            payload = _webhook_payload(event_id="evt_retry_003", event_type="test.error")
+
+            assert self._post(client, payload).status_code == 500
+            assert self._post(client, payload).status_code == 500
+
+            event = self._event(db, "evt_retry_003")
+            assert event.status == "failed"
+            assert "Test handler error" in event.error_message
+        finally:
+            _teardown_mock_adapter()
+
+    def test_an_ignored_event_is_not_reprocessed(self, client, db):
+        """Only ``failed`` reopens. An event the handler deliberately ignored is
+        settled, and re-running it could apply a stale state change."""
+        _setup_mock_adapter()
+        try:
+            _create_provider(db)
+            payload = _webhook_payload(
+                event_id="evt_retry_004", event_type="test.ignored"
+            )
+
+            assert self._post(client, payload).status_code == 200
+            second = self._post(client, payload)
+
+            assert second.json()["detail"] == "Duplicate event"
+            assert self._event(db, "evt_retry_004").status == "ignored"
         finally:
             _teardown_mock_adapter()
 

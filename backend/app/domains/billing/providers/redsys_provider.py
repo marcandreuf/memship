@@ -16,6 +16,7 @@ Crypto (3DES key derivation + HMAC-SHA256) is delegated to `python-redsys`.
 
 import logging
 import re
+import secrets
 from datetime import date
 from decimal import Decimal
 from urllib.parse import parse_qs
@@ -39,20 +40,46 @@ LANGUAGE_MAP = {"es": "001", "en": "002", "ca": "003"}
 
 _ORDER_RE = re.compile(r"^[0-9]{4}[a-zA-Z0-9]{8}$")
 
+# The order carries the receipt id in its last 8 characters.
+MAX_ORDER_RECEIPT_ID = 99_999_999
 
-def build_order_id(receipt_id: int) -> str:
-    """Build a Redsys `Ds_Merchant_Order` from a receipt id.
 
-    Redsys requires exactly 12 chars: first 4 numeric, remaining 8
-    alphanumeric. Zero-padded decimal receipt id satisfies both.
+def build_order_id(receipt_id: int, nonce: int | None = None) -> str:
+    """Build a Redsys `Ds_Merchant_Order` for one payment attempt on a receipt.
+
+    Redsys requires exactly 12 chars — first 4 numeric, remaining 8 alphanumeric
+    — and rejects an order number it has already seen (`SIS0051 - Pedido
+    repetido`). An order derived from the receipt id alone therefore worked
+    exactly once per receipt: after a decline, a gateway timeout or a user
+    abandoning the TPV page, that receipt could never be paid online again.
+
+    So the first four digits are a per-attempt random nonce and the last eight
+    the zero-padded receipt id. Keeping the id in the order means a notification
+    for a superseded attempt still resolves to its receipt (see
+    ``receipt_id_from_order``) even though the receipt only stores the newest
+    order. Two attempts on one receipt drawing the same nonce (1 in 10,000) get
+    the same rejection as before; retrying issues a fresh one.
+
+    The old zero-padded format is a special case of this one — nonce 0000 — so
+    orders already stored on receipts still parse.
     """
-    s = str(receipt_id)
-    if len(s) > 12:
-        raise ValueError(f"Receipt id too large for Redsys order: {receipt_id}")
-    order = s.zfill(12)
+    if receipt_id < 0 or receipt_id > MAX_ORDER_RECEIPT_ID:
+        raise ValueError(f"Receipt id out of range for Redsys order: {receipt_id}")
+    nonce = secrets.randbelow(10000) if nonce is None else nonce % 10000
+    order = f"{nonce:04d}{receipt_id:08d}"
     if not _ORDER_RE.match(order):
         raise ValueError(f"Built order {order!r} does not match Redsys format")
     return order
+
+
+def receipt_id_from_order(ds_order: str) -> int | None:
+    """Recover the receipt id encoded in an order, or None if it is not one of ours."""
+    if not ds_order or not _ORDER_RE.match(ds_order):
+        return None
+    try:
+        return int(ds_order[4:])
+    except ValueError:
+        return None
 
 
 def map_response_to_outcome(ds_response: str) -> str:
@@ -214,6 +241,14 @@ class RedsysAdapter(PaymentProviderAdapter):
         receipt = (
             db.query(Receipt).filter(Receipt.redsys_ds_order == ds_order).first()
         )
+        if not receipt:
+            # The receipt only stores its newest order, so a notification for an
+            # earlier attempt no longer matches on it. The id encoded in the order
+            # still resolves it — a late authorisation must not be dropped, or the
+            # member is charged with the receipt left unpaid.
+            fallback_id = receipt_id_from_order(ds_order)
+            if fallback_id is not None:
+                receipt = db.query(Receipt).filter(Receipt.id == fallback_id).first()
         if not receipt:
             return {"ignored": True, "reason": f"No receipt for order {ds_order}"}
 

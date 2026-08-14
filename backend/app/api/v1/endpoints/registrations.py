@@ -251,7 +251,10 @@ def cancel_own_registration(
     if not registration:
         raise HTTPException(status_code=404, detail="Registration not found")
 
-    is_admin = user_has(current_user, "registrations.read")
+    # Cancelling somebody else's registration — and skipping the self-cancellation
+    # deadline — is a write action, so it takes the write key. A view-only
+    # registrations role must not have destructive power over them.
+    is_admin = user_has(current_user, "registrations.write")
 
     # Check ownership if not admin
     if not is_admin:

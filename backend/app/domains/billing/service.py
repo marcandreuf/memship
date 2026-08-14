@@ -296,6 +296,7 @@ def generate_membership_fees(
     data: GenerateMembershipFeesRequest,
     created_by_id: int | None,
     billing_frequency: str | None = None,
+    emit: bool = False,
 ) -> list[Receipt]:
     """Bulk generate membership fee receipts for active members.
 
@@ -306,6 +307,12 @@ def generate_membership_fees(
     membership type uses that frequency are billed — used by recurring billing to
     bill each frequency for its own period. When ``None`` (the manual ad-hoc
     endpoint), every active member is billed regardless of frequency.
+
+    ``emit`` decides whether the receipts land as ``emitted`` or ``pending``. The
+    unattended recurring run emits, because a ``pending`` fee is invisible to both
+    SEPA remittances and the dunning pipeline and nobody is there to emit it by
+    hand. The manual bulk endpoint leaves them ``pending`` so an admin can still
+    edit an amount before issuing them.
     """
     org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
     default_vat = Decimal(str(org.default_vat_rate or 21))
@@ -385,7 +392,7 @@ def generate_membership_fees(
             vat_rate=vat_rate,
             vat_amount=vat_amount,
             total_amount=total_amount,
-            status="pending",
+            status="emitted" if emit else "pending",
             emission_date=data.emission_date,
             due_date=data.due_date,
             billing_period_start=data.billing_period_start,

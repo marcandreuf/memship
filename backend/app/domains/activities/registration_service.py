@@ -173,24 +173,70 @@ def register_member(
         activity.waitlist_count = (activity.waitlist_count or 0) + 1
 
     # 11. Auto-generate activity receipt for confirmed registrations with amount
-    if status == "confirmed" and discounted_amount and discounted_amount > 0:
-        try:
-            from app.domains.billing.service import generate_activity_receipt
-            generate_activity_receipt(
-                db=db,
-                registration_id=registration.id,
-                member_id=member.id,
-                activity_name=activity.name,
-                amount=discounted_amount,
-                tax_rate=activity.tax_rate,
-            )
-        except Exception:
-            pass  # Don't fail registration if receipt generation fails
+    if status == "confirmed":
+        ensure_registration_receipt(db, registration, activity)
 
     # Dispatch email notification (async via Celery)
     _dispatch_registration_email(registration, activity, member)
 
     return registration
+
+
+def ensure_registration_receipt(
+    db: Session, registration: Registration, activity: Activity
+) -> None:
+    """Bill a confirmed registration, once.
+
+    Every path that confirms a registration goes through here — registering into
+    a free seat, a waitlist promotion, and an admin flipping the status — because
+    a confirmed place in a paid activity has to be invoiced whichever of them
+    produced it.
+
+    Idempotent: a registration that already has a live receipt keeps it, so a
+    re-confirmation does not bill twice. Cancellation cancels the receipt
+    (`cancel_registration`), and a cancelled one deliberately does not block a
+    new one — re-confirming after a cancellation owes money again.
+
+    Receipt generation never fails the registration; the error is logged instead,
+    because the seat has already been given and rolling it back here would be
+    worse than an invoice an admin has to raise by hand.
+    """
+    amount = registration.discounted_amount
+    if amount is None or Decimal(str(amount)) <= 0:
+        return
+
+    from app.domains.billing.models import Receipt
+
+    # The receipt a cancellation just voided may still be pending in the session
+    # (the app's sessions do not autoflush), and it must not read as a live one.
+    db.flush()
+    existing = (
+        db.query(Receipt)
+        .filter(
+            Receipt.registration_id == registration.id,
+            Receipt.is_active.is_(True),
+            Receipt.status != "cancelled",
+        )
+        .first()
+    )
+    if existing:
+        return
+
+    try:
+        from app.domains.billing.service import generate_activity_receipt
+
+        generate_activity_receipt(
+            db=db,
+            registration_id=registration.id,
+            member_id=registration.member_id,
+            activity_name=activity.name,
+            amount=Decimal(str(amount)),
+            tax_rate=activity.tax_rate,
+        )
+    except Exception as e:
+        logger.error(
+            "Failed to generate receipt for registration %s: %s", registration.id, e
+        )
 
 
 def cancel_registration(
@@ -314,6 +360,8 @@ def admin_change_status(
         registration.cancelled_at = datetime.now(timezone.utc)
 
     registration.status = new_status
+    if new_status == "confirmed" and old_status != "confirmed":
+        ensure_registration_receipt(db, registration, activity)
     if admin_notes:
         registration.admin_notes = admin_notes
 
@@ -402,6 +450,8 @@ def _promote_from_waitlist(
         next_in_line.price.current_registrations = (
             next_in_line.price.current_registrations or 0
         ) + 1
+
+    ensure_registration_receipt(db, next_in_line, activity)
 
     # Dispatch promotion email (async via Celery)
     _dispatch_promotion_email(next_in_line, activity)

@@ -295,6 +295,119 @@ class TestScheduledBilling:
         freqs = {r.frequency for r in runs}
         assert freqs == {"monthly", "quarterly"}
 
+    def test_a_short_month_is_still_billed(self, db):
+        """Billing day 31 used to skip February — and April, June, September
+        and November — without a run row, an error or a log line."""
+        _ensure_org_settings(
+            db, features={"recurring_billing_enabled": True, "recurring_billing_day": 31}
+        )
+        _create_member(db, "monthly", "sch-feb")
+
+        runs = run_scheduled_billing(db, today=date(2026, 2, 28))
+
+        assert [r.frequency for r in runs] == ["monthly"]
+        assert runs[0].receipts_generated == 1
+
+    def test_a_short_month_is_billed_once_not_on_every_late_day(self, db):
+        _ensure_org_settings(
+            db, features={"recurring_billing_enabled": True, "recurring_billing_day": 31}
+        )
+        _create_member(db, "monthly", "sch-feb-once")
+
+        assert run_scheduled_billing(db, today=date(2026, 2, 27)) == []
+        assert len(run_scheduled_billing(db, today=date(2026, 2, 28))) == 1
+
+
+# --- Generated fees reach the collection and dunning pipelines (H12) ---
+
+
+class TestGeneratedFeesArePayable:
+    """A ``pending`` fee with no due date is invisible to everything downstream:
+    remittances only batch ``emitted``/``overdue``, and ``mark_overdue`` skips a
+    receipt that has no due date, so no reminder is ever sent."""
+
+    def _run(self, db, today=date(2026, 6, 1), features=None):
+        _ensure_org_settings(
+            db,
+            features={
+                "recurring_billing_enabled": True,
+                "recurring_billing_day": 1,
+                **(features or {}),
+            },
+        )
+        return run_scheduled_billing(db, today=today)
+
+    def _fee(self, db):
+        return (
+            db.query(Receipt)
+            .filter(Receipt.origin == "membership", Receipt.is_active.is_(True))
+            .one()
+        )
+
+    def test_the_scheduled_run_emits_its_receipts(self, db):
+        _create_member(db, "monthly", "emit-1")
+
+        self._run(db)
+
+        assert self._fee(db).status == "emitted"
+
+    def test_the_scheduled_run_sets_a_due_date(self, db):
+        _create_member(db, "monthly", "due-1")
+
+        self._run(db)
+
+        assert self._fee(db).due_date == date(2026, 7, 1)
+
+    def test_the_due_term_is_configurable(self, db):
+        _create_member(db, "monthly", "due-2")
+
+        self._run(db, features={"recurring_billing_due_days": 7})
+
+        assert self._fee(db).due_date == date(2026, 6, 8)
+
+    def test_a_nonsense_due_term_falls_back_to_the_default(self, db):
+        _create_member(db, "monthly", "due-3")
+
+        self._run(db, features={"recurring_billing_due_days": "soon"})
+
+        assert self._fee(db).due_date == date(2026, 7, 1)
+
+    def test_the_fee_falls_overdue_and_earns_a_reminder(self, db):
+        """The end-to-end pipeline the audit found broken: generate → overdue →
+        reminder."""
+        from app.domains.billing.reminder_service import mark_overdue, reminders_due
+
+        _create_member(db, "monthly", "dun-1")
+        self._run(db)
+        later = date(2026, 7, 5)
+
+        assert mark_overdue(db, later) == 1
+        assert self._fee(db).status == "overdue"
+        assert reminders_due(db, later, days_after_due=3, repeat_days=7, max_count=3) == [
+            self._fee(db)
+        ]
+
+    def test_the_manual_bulk_endpoint_still_leaves_them_pending(self, client, db):
+        """An admin generating fees by hand reviews them first — and can only
+        edit a receipt while it is ``new`` or ``pending``."""
+        user = _create_user(db, "admin", "manual-pending")
+        _ensure_org_settings(db)
+        _create_member(db, "monthly", "manual-1")
+
+        resp = client.post(
+            "/api/v1/receipts/generate-membership-fees",
+            json={
+                "billing_period_start": "2026-06-01",
+                "billing_period_end": "2026-06-30",
+                "emission_date": "2026-06-01",
+                "due_date": "2026-07-01",
+            },
+            cookies=_auth_cookie(user),
+        )
+
+        assert resp.json()["generated"] == 1
+        assert self._fee(db).status == "pending"
+
 
 # --- Notification email ---
 

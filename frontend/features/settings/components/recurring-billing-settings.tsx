@@ -30,7 +30,9 @@ import { FormSkeleton } from "@/components/ui/skeletons";
 
 const recurringBillingSchema = z.object({
   recurring_billing_enabled: z.boolean(),
-  recurring_billing_day: z.coerce.number().int().min(1).max(28),
+  // 29–31 are allowed: the backend bills a shorter month on its last day.
+  recurring_billing_day: z.coerce.number().int().min(1).max(31),
+  recurring_billing_due_days: z.coerce.number().int().min(0).max(365),
   billing_notification_email: z
     .string()
     .email()
@@ -51,6 +53,7 @@ export function RecurringBillingSettings() {
     defaultValues: {
       recurring_billing_enabled: false,
       recurring_billing_day: 1,
+      recurring_billing_due_days: 30,
       billing_notification_email: "",
     },
   });
@@ -63,6 +66,9 @@ export function RecurringBillingSettings() {
           Boolean(features.recurring_billing_enabled) || false,
         recurring_billing_day:
           Number(features.recurring_billing_day) || 1,
+        recurring_billing_due_days: Number(
+          features.recurring_billing_due_days ?? 30,
+        ),
         billing_notification_email:
           (features.billing_notification_email as string | null) || "",
       });
@@ -79,6 +85,7 @@ export function RecurringBillingSettings() {
         ...(settings?.features ?? {}),
         recurring_billing_enabled: data.recurring_billing_enabled,
         recurring_billing_day: data.recurring_billing_day,
+        recurring_billing_due_days: data.recurring_billing_due_days,
         billing_notification_email: data.billing_notification_email || null,
       },
     };
@@ -138,12 +145,36 @@ export function RecurringBillingSettings() {
                       className="h-8"
                       type="number"
                       min={1}
-                      max={28}
+                      max={31}
                       {...field}
                     />
                   </FormControl>
                   <FormDescription className="text-xs">
                     {t("settings.recurringBilling.dayDesc")}
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="recurring_billing_due_days"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs">
+                    {t("settings.recurringBilling.dueDays")}
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      className="h-8"
+                      type="number"
+                      min={0}
+                      max={365}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription className="text-xs">
+                    {t("settings.recurringBilling.dueDaysDesc")}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

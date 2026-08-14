@@ -85,7 +85,9 @@
       "enabled": "Activar facturación recurrente",
       "enabledDesc": "Genera automáticamente los recibos de cuota de socio según el calendario configurado",
       "day": "Día del mes",
-      "dayDesc": "Día (1–28) en que se ejecuta la facturación. Las cuotas trimestrales y anuales solo se facturan en el primer mes de su periodo.",
+      "dayDesc": "Día (1–31) en que se ejecuta la facturación; en los meses más cortos se factura el último día. Las cuotas trimestrales y anuales solo se facturan en el primer mes de su periodo.",
+      "dueDays": "Plazo de pago (días)",
+      "dueDaysDesc": "Días desde la emisión hasta el vencimiento de la cuota generada. Los recordatorios de pago se cuentan a partir de esa fecha de vencimiento.",
       "notificationEmail": "Correo de notificación",
       "notificationEmailDesc": "Correo opcional que recibe un resumen tras cada ejecución automática"
     },

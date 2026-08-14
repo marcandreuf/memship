@@ -5,6 +5,12 @@
  * paragraphs / line breaks) is expanded — so authored HTML can never reach the
  * output. This is the sanitization boundary that makes the rendered output safe
  * to inject via dangerouslySetInnerHTML.
+ *
+ * The quote characters are part of that boundary: the link rule puts the
+ * captured URL inside a quoted href, and the URL pattern excludes whitespace
+ * and ")" but not '"'. While escapeHtml left quotes alone,
+ * [x](https://a.test/b"onmouseover="alert(1)) closed the attribute and opened
+ * an event handler instead.
  */
 
 const LINK = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
@@ -13,7 +19,12 @@ const ITALIC = /(?<!\*)\*([^*\n]+)\*(?!\*)/g;
 const LIST_ITEM = /^\s*[-*]\s+/;
 
 function escapeHtml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function inline(s: string): string {

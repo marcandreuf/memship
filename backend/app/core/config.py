@@ -44,7 +44,20 @@ class Settings(BaseSettings):
     DATABASE_TEST_URL: str = "postgresql://memship:memship@localhost:5434/memship_test_db"
 
     # Security
+    # Signs the session JWT, the member-card QR HMAC and the OAuth state cookie,
+    # and derives the key that encrypts stored payment-provider credentials.
+    # Leave it empty outside development and a per-install key is generated and
+    # persisted to SESSION_KEY_FILE — see _resolve_session_secret below. A known
+    # placeholder is treated as empty, so a copied compose file cannot ship a
+    # published signing key.
     SECRET_KEY: str = "change-me-in-production"
+    # Where the auto-generated signing key is persisted. Empty →
+    # "<STORAGE_LOCAL_PATH>/session.key". Must sit on a PERSISTENT volume: losing
+    # it logs everyone out AND makes stored payment-provider secrets unreadable.
+    SESSION_KEY_FILE: str = ""
+    # Force the Secure attribute on the session cookie on/off. Empty → derived
+    # from the FRONTEND_URL scheme (see session_cookie_secure).
+    COOKIE_SECURE: str = ""
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     # Fernet key (urlsafe base64, 32 bytes) used to encrypt provider secrets stored
     # in the DB via the SSO settings screen. Optional OVERRIDE: when set (e.g. from a
@@ -107,12 +120,19 @@ class Settings(BaseSettings):
     PORT: int = 8000
 
     @property
-    def smtp_enabled(self) -> bool:
-        return bool(self.SMTP_HOST)
+    def session_cookie_secure(self) -> bool:
+        """Whether the session cookie carries ``Secure``.
 
-    @property
-    def email_enabled(self) -> bool:
-        return bool(self.RESEND_API_KEY) or bool(self.SMTP_HOST)
+        Derived from ``FRONTEND_URL``: the cookie is only ever sent to that
+        origin, so its scheme is the authoritative answer — and it is already
+        correct on every install, because ``scripts/install.sh --domain`` writes
+        the https URL there. ``COOKIE_SECURE`` overrides it for a setup that
+        terminates TLS somewhere the app cannot see.
+        """
+        override = self.COOKIE_SECURE.strip().lower()
+        if override:
+            return override in ("1", "true", "yes", "on")
+        return self.FRONTEND_URL.strip().lower().startswith("https://")
 
     @property
     def google_sso_enabled(self) -> bool:
@@ -142,3 +162,79 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+
+# Every placeholder SECRET_KEY that has ever shipped in this repo. They are
+# public, so anything signed with one is forgeable: a session cookie for user 1
+# (super admin), a member-card QR, and the Fernet key over stored payment
+# credentials. Treated as "no key configured" rather than as a key.
+PLACEHOLDER_SECRET_KEYS = frozenset(
+    {
+        "change-me-in-production",
+        "dev-secret-key-change-in-production",
+        "change-me-in-production-use-a-random-64-char-string",
+    }
+)
+
+
+def _session_key_file() -> Path:
+    if settings.SESSION_KEY_FILE:
+        return Path(settings.SESSION_KEY_FILE)
+    return Path(settings.STORAGE_LOCAL_PATH) / "session.key"
+
+
+def _persisted_session_secret() -> str:
+    """Read the per-install signing key, minting it on first boot.
+
+    Created with O_CREAT|O_EXCL and then read back, so the API and the two Celery
+    processes racing on a cold start converge on whichever one won rather than
+    each keeping its own key.
+
+    Falls back to a process-local random key when the file can be neither read
+    nor written. That still beats a published constant, but sessions then break
+    on every restart — hence the error log.
+    """
+    import logging
+    import os
+    import secrets
+
+    path = _session_key_file()
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+        except FileExistsError:
+            pass
+        else:
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                f.write(secrets.token_hex(32))
+        existing = path.read_text(encoding="utf-8").strip()
+        if existing:
+            return existing
+    except OSError as e:
+        logging.getLogger(__name__).error(
+            "Cannot persist the session signing key to %s (%s). Falling back to a "
+            "process-local key: every restart will log all users out and stored "
+            "payment-provider credentials will not decrypt. Set SECRET_KEY "
+            "explicitly, or put SESSION_KEY_FILE on a writable volume.",
+            path,
+            e,
+        )
+    return secrets.token_hex(32)
+
+
+def _resolve_session_secret() -> None:
+    configured = settings.SECRET_KEY.strip()
+    if configured and configured not in PLACEHOLDER_SECRET_KEYS:
+        return
+
+    if settings.APP_ENV == "development":
+        # Keep the placeholder in dev: tests and fixtures want a stable key and
+        # nothing there is worth forging.
+        settings.SECRET_KEY = configured or "change-me-in-production"
+        return
+
+    settings.SECRET_KEY = _persisted_session_secret()
+
+
+_resolve_session_secret()

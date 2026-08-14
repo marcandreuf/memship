@@ -22,7 +22,9 @@ setting the backend reads.
 
 | Variable      | Default                 | Description                                                                 |
 |---------------|-------------------------|-----------------------------------------------------------------------------|
-| `SECRET_KEY`  | `change-me-in-production` | **Change this.** Signing key for auth tokens. Use a random 64-char string. |
+| `SECRET_KEY`  | _(generated into `storage/session.key`)_ | Signs session cookies and member-card QR codes, and derives the key encrypting stored payment-provider credentials. Leave blank and a per-install key is generated on first boot; **set it explicitly** if you want it to survive a lost data root. Generate with `openssl rand -hex 32`. The placeholder values shipped in the example files are recognised and ignored — anything signed with a published key is forgeable. |
+| `SESSION_KEY_FILE` | `<STORAGE_LOCAL_PATH>/session.key` | Where the auto-generated signing key is persisted when `SECRET_KEY` is blank. Must sit on persistent storage, or every restart logs all users out and stored payment credentials stop decrypting. |
+| `COOKIE_SECURE` | _(derived from `FRONTEND_URL`)_ | Forces the `Secure` attribute on the session cookie on/off. The default reads the `FRONTEND_URL` scheme, which is correct unless TLS is terminated by an upstream proxy that talks plain HTTP to Caddy — set `true` there. |
 | `MEMSHIP_SECRET_KEY` | _(generated into `storage/secret.key`)_ | Encrypts SSO and payment-provider credentials stored in the database. **Set it explicitly** — an auto-generated key lives only in the data root, so a rebuilt host cannot decrypt a restored backup without it. Rotating it makes existing stored credentials unreadable. |
 | `SECRETS_KEY_FILE` | `<STORAGE_LOCAL_PATH>/secret.key` | Where the auto-generated key is persisted when `MEMSHIP_SECRET_KEY` is unset. Must sit on persistent storage, or stored credentials become unreadable after a restart. |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | `30`      | Access token lifetime in minutes.                                          |

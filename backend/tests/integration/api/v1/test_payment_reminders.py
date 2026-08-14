@@ -169,6 +169,40 @@ class TestMarkOverdue:
         db.refresh(r)
         assert r.status == "emitted"
 
+    def test_flips_pending_past_due(self, db):
+        """Membership fees and manually created receipts are born ``pending``.
+        Filtering on ``emitted`` alone kept every one of them out of the dunning
+        pipeline, since reminders only look at ``overdue``."""
+        member = _create_member(db, "mo4")
+        r = _create_receipt(db, member, "mo4", "pending", due_date=TODAY - timedelta(days=1))
+
+        assert mark_overdue(db, TODAY) == 1
+
+        db.refresh(r)
+        assert r.status == "overdue"
+
+    def test_leaves_a_receipt_with_no_due_date_alone(self, db):
+        member = _create_member(db, "mo5")
+        r = _create_receipt(db, member, "mo5", "pending", due_date=None)
+
+        assert mark_overdue(db, TODAY) == 0
+
+        db.refresh(r)
+        assert r.status == "pending"
+
+    def test_ignores_cancelled_and_paid_statuses(self, db):
+        member = _create_member(db, "mo6")
+        past = TODAY - timedelta(days=30)
+        cancelled = _create_receipt(db, member, "mo6a", "cancelled", due_date=past)
+        returned = _create_receipt(db, member, "mo6b", "returned", due_date=past)
+
+        assert mark_overdue(db, TODAY) == 0
+
+        db.refresh(cancelled)
+        db.refresh(returned)
+        assert cancelled.status == "cancelled"
+        assert returned.status == "returned"
+
 
 # --- Schedule logic ---
 

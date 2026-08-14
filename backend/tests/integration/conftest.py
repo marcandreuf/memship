@@ -241,9 +241,10 @@ def create_test_tables():
 def _no_external_email(monkeypatch):
     """Never touch a real mail provider during integration tests.
 
-    The dev ``.env`` may set ``SMTP_HOST`` / ``RESEND_API_KEY``, which would make
-    ``settings.email_enabled`` true and send real email. Blank those so mail is
-    treated as disabled (deterministic dev-mode: endpoints hand tokens back
+    The dev ``.env`` may set ``SMTP_HOST`` / ``RESEND_API_KEY``, which the mailing
+    config resolves as an active env-only transport and sends real email. Blank
+    those so mail is treated as disabled (deterministic dev-mode: endpoints hand
+    tokens back
     instead of emailing), and stub the transport dispatch so no network call is
     possible even when a test configures a provider in the DB. Tests that want to
     assert a send still mock ``app.core.email.send_email`` themselves.
@@ -262,6 +263,22 @@ def _no_external_email(monkeypatch):
     import app.core.email as email_module
 
     monkeypatch.setattr(email_module, "_dispatch", lambda *args, **kwargs: True)
+
+
+@pytest.fixture(autouse=True)
+def _fresh_auth_throttles():
+    """Start every test with empty rate-limit windows.
+
+    The throttles in ``app.core.security.rate_limit`` are module-level and hold
+    their counts in process, so without this one test's failed logins would
+    spend another test's budget — and which tests those are would depend on
+    ordering. Tests that assert the limit still exercise the real throttle.
+    """
+    from app.core.security.rate_limit import reset_all
+
+    reset_all()
+    yield
+    reset_all()
 
 
 @pytest.fixture

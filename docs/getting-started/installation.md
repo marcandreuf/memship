@@ -167,7 +167,9 @@ cp .env.example .env
 Then set, at minimum:
 
 - **`MEMSHIP_DATA_ROOT`** — absolute path to the data root described above
-- **`SECRET_KEY`** and **`DB_PASSWORD`** — random values, never the defaults
+- **`SECRET_KEY`** and **`DB_PASSWORD`** — random values, never the placeholders. `SECRET_KEY` may
+  be left blank (the server generates one into `storage/session.key`), but setting it explicitly is
+  what lets a rebuilt host keep working sessions and readable payment credentials
 - **`MEMSHIP_SECRET_KEY`** — encrypts stored SSO and payment-provider credentials. Set it
   explicitly so a rebuilt host can still decrypt a restored backup
 - **`HOST_UID`** / **`HOST_GID`** — your `id -u` and `id -g`, so bind-mounted uploads belong to you

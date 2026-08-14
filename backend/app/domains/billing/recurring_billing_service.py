@@ -13,7 +13,7 @@ membership types are never billed here.
 """
 
 import calendar
-from datetime import date
+from datetime import date, timedelta
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -26,12 +26,27 @@ from app.domains.organizations.models import OrganizationSettings
 # Frequencies eligible for automatic recurring billing (one_time excluded).
 BILLABLE_FREQUENCIES = ("monthly", "quarterly", "annual")
 
+# Days between emission and the due date of an automatically generated fee.
+# Overridable per install with the ``recurring_billing_due_days`` feature key.
+# A fee generated without a due date can never fall overdue, so no reminder is
+# ever sent for it — the dunning pipeline keys entirely off ``due_date``.
+DEFAULT_DUE_DAYS = 30
+
 # First month (1-based) of each calendar quarter.
 QUARTER_START_MONTHS = (1, 4, 7, 10)
 
 
 def _last_day_of_month(year: int, month: int) -> int:
     return calendar.monthrange(year, month)[1]
+
+
+def _due_days(db: Session) -> int:
+    org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
+    features = (org.features if org else None) or {}
+    try:
+        return max(0, int(features.get("recurring_billing_due_days", DEFAULT_DUE_DAYS)))
+    except (TypeError, ValueError):
+        return DEFAULT_DUE_DAYS
 
 
 def compute_period(frequency: str, today: date) -> tuple[date, date]:
@@ -59,6 +74,17 @@ def compute_period(frequency: str, today: date) -> tuple[date, date]:
     return start, end
 
 
+def effective_billing_day(today: date, billing_day: int) -> int:
+    """The configured billing day, pulled back to the last day of a short month.
+
+    "Bill on the 31st" is a reasonable month-end choice, and 29/30/31 are all
+    reachable through the settings API. Taken literally they make the scheduled
+    task find nothing due in February (and, for 31, in four more months) — the
+    month is skipped in silence. Clamping bills those months on their last day.
+    """
+    return min(max(billing_day, 1), _last_day_of_month(today.year, today.month))
+
+
 def is_frequency_due(frequency: str, today: date, billing_day: int) -> bool:
     """Whether the scheduled task should bill ``frequency`` on ``today``.
 
@@ -66,7 +92,7 @@ def is_frequency_due(frequency: str, today: date, billing_day: int) -> bool:
     the first month of the frequency's period (quarterly → Jan/Apr/Jul/Oct, annual →
     January). Monthly is due every month on the configured day.
     """
-    if today.day != billing_day:
+    if today.day != effective_billing_day(today, billing_day):
         return False
     if frequency == "monthly":
         return True
@@ -86,6 +112,12 @@ def run_billing(
 ) -> BillingRun:
     """Generate membership fees for ``frequency``'s current period, logging a BillingRun.
 
+    Receipts are emitted, not left ``pending``: nobody is at the keyboard to press
+    "Emit" on an unattended run, and until a fee is emitted it is eligible for
+    neither a SEPA remittance nor the overdue/reminder pipeline. They also carry a
+    due date (``recurring_billing_due_days`` after emission, default 30) for the
+    same reason — ``mark_overdue`` skips receipts that have none.
+
     Idempotent per period: if a successful run already exists for
     ``(frequency, period_start, period_end)`` it is returned unchanged and no
     receipts are generated. A previously failed run for the same period is retried
@@ -94,6 +126,7 @@ def run_billing(
     """
     today = today or date.today()
     period_start, period_end = compute_period(frequency, today)
+    due_date = today + timedelta(days=_due_days(db))
 
     existing = (
         db.query(BillingRun)
@@ -121,9 +154,11 @@ def run_billing(
                     billing_period_start=period_start,
                     billing_period_end=period_end,
                     emission_date=today,
+                    due_date=due_date,
                 ),
                 created_by_id=user_id,
                 billing_frequency=frequency,
+                emit=True,
             )
             receipts_generated = len(receipts)
         status = "success"
