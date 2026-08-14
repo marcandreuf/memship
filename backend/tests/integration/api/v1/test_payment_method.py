@@ -32,13 +32,13 @@ def _setup(db, iban=None, payment_method=None):
         db.flush()
 
     person = Person(
-        first_name="Test", last_name="Member", email="pm-member@test.com",
+        first_name="Test", last_name="Member", email="pm-member@examplee6e3b1.com",
         bank_iban=iban, payment_method=payment_method,
     )
     db.add(person)
     db.flush()
     user = User(
-        person_id=person.id, email="pm-member@test.com",
+        person_id=person.id, email="pm-member@examplee6e3b1.com",
         password_hash=hash_password("password123"),
         role="member", is_active=True,
     )
@@ -177,11 +177,11 @@ class TestPaymentMethodAuth:
             )
             db.add(org)
             db.flush()
-        person = Person(first_name="Admin", last_name="User", email="pm-admin@test.com")
+        person = Person(first_name="Admin", last_name="User", email="pm-admin@examplee6e3b1.com")
         db.add(person)
         db.flush()
         user = User(
-            person_id=person.id, email="pm-admin@test.com",
+            person_id=person.id, email="pm-admin@examplee6e3b1.com",
             password_hash=hash_password("password123"),
             role="admin", is_active=True,
         )

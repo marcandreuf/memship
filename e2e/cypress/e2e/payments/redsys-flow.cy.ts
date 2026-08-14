@@ -5,7 +5,7 @@ describe("Redsys — Happy Path @smoke", () => {
 
   before(() => {
     // Ensure a Redsys test provider exists and is active; create an emitted receipt.
-    cy.apiLogin("super@test.com", "TestSuper1!");
+    cy.apiLogin("super@examplee6e3b1.com", "TestSuper1!");
 
     cy.request({
       method: "GET",
@@ -60,11 +60,11 @@ describe("Redsys — Happy Path @smoke", () => {
       }
     });
 
-    cy.apiLogin("admin@test.com", "TestAdmin1!");
+    cy.apiLogin("admin@examplee6e3b1.com", "TestAdmin1!");
 
     cy.request({
       method: "GET",
-      url: `${API_URL}/members?search=member@test.com`,
+      url: `${API_URL}/members?search=member@examplee6e3b1.com`,
     }).then((membersResp) => {
       expect(membersResp.status).to.eq(200);
       const member = membersResp.body.items[0];
@@ -150,7 +150,7 @@ describe("Redsys — Happy Path @smoke", () => {
     });
 
     // Receipt should now have payment_method='bizum' even before webhook
-    cy.apiLogin("admin@test.com", "TestAdmin1!");
+    cy.apiLogin("admin@examplee6e3b1.com", "TestAdmin1!");
     cy.request({
       method: "GET",
       url: `${API_URL}/receipts/${emittedReceiptId}`,
@@ -162,7 +162,7 @@ describe("Redsys — Happy Path @smoke", () => {
 
   it("return page shows paid state after backend marks the receipt paid", () => {
     // Simulate the async notification via admin pay endpoint.
-    cy.apiLogin("admin@test.com", "TestAdmin1!");
+    cy.apiLogin("admin@examplee6e3b1.com", "TestAdmin1!");
     cy.request({
       method: "POST",
       url: `${API_URL}/receipts/${emittedReceiptId}/pay`,
@@ -205,7 +205,7 @@ describe("Redsys — Visibility gate @smoke", () => {
 
   it("hides Redsys buttons when no active Redsys provider is configured", () => {
     // Ensure no active Redsys provider: disable if present.
-    cy.apiLogin("super@test.com", "TestSuper1!");
+    cy.apiLogin("super@examplee6e3b1.com", "TestSuper1!");
     cy.request({
       method: "GET",
       url: `${API_URL}/payment-providers/`,
@@ -236,7 +236,7 @@ describe("Redsys — Visibility gate @smoke", () => {
     });
 
     // Re-enable for subsequent runs
-    cy.apiLogin("super@test.com", "TestSuper1!");
+    cy.apiLogin("super@examplee6e3b1.com", "TestSuper1!");
     cy.request({
       method: "GET",
       url: `${API_URL}/payment-providers/`,

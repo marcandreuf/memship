@@ -8,12 +8,12 @@ from app.domains.persons.models import Person
 
 
 def _create_admin(db):
-    person = Person(first_name="Admin", last_name="User", email="admin-m@test.com")
+    person = Person(first_name="Admin", last_name="User", email="admin-m@examplee6e3b1.com")
     db.add(person)
     db.flush()
     user = User(
         person_id=person.id,
-        email="admin-m@test.com",
+        email="admin-m@examplee6e3b1.com",
         password_hash=hash_password("password123"),
         role="admin",
         is_active=True,
@@ -23,7 +23,7 @@ def _create_admin(db):
     return user
 
 
-def _create_member_user(db, email="member-m@test.com"):
+def _create_member_user(db, email="member-m@examplee6e3b1.com"):
     person = Person(first_name="Member", last_name="User", email=email)
     db.add(person)
     db.flush()
@@ -80,7 +80,7 @@ class TestMemberCRUD:
             json={
                 "first_name": "New",
                 "last_name": "Member",
-                "email": "new-member@test.com",
+                "email": "new-member@examplee6e3b1.com",
                 "membership_type_id": mt.id,
             },
         )
@@ -92,7 +92,7 @@ class TestMemberCRUD:
 
     def test_list_members(self, client, db):
         admin = _create_admin(db)
-        _create_member_user(db, "list-member@test.com")
+        _create_member_user(db, "list-member@examplee6e3b1.com")
         client.cookies.update(_auth_cookie(admin))
 
         response = client.get("/api/v1/members/")
@@ -104,7 +104,7 @@ class TestMemberCRUD:
 
     def test_search_members(self, client, db):
         admin = _create_admin(db)
-        _create_member_user(db, "searchable@test.com")
+        _create_member_user(db, "searchable@examplee6e3b1.com")
         client.cookies.update(_auth_cookie(admin))
 
         response = client.get("/api/v1/members/?search=searchable")
@@ -140,7 +140,7 @@ class TestMemberCRUD:
         db.flush()
 
         # Create member in group
-        person1 = Person(first_name="InGroup", last_name="User", email="ingroup@test.com")
+        person1 = Person(first_name="InGroup", last_name="User", email="ingroup@examplee6e3b1.com")
         db.add(person1)
         db.flush()
         member1 = Member(
@@ -152,7 +152,7 @@ class TestMemberCRUD:
         db.add(member1)
 
         # Create member NOT in group
-        person2 = Person(first_name="NoGroup", last_name="User", email="nogroup@test.com")
+        person2 = Person(first_name="NoGroup", last_name="User", email="nogroup@examplee6e3b1.com")
         db.add(person2)
         db.flush()
         member2 = Member(
@@ -175,7 +175,7 @@ class TestMemberCRUD:
 
     def test_filter_by_status(self, client, db):
         admin = _create_admin(db)
-        _create_member_user(db, "active-member@test.com")
+        _create_member_user(db, "active-member@examplee6e3b1.com")
         client.cookies.update(_auth_cookie(admin))
 
         response = client.get("/api/v1/members/?status=active")
@@ -186,7 +186,7 @@ class TestMemberCRUD:
 
     def test_get_member(self, client, db):
         admin = _create_admin(db)
-        _, member = _create_member_user(db, "get-member@test.com")
+        _, member = _create_member_user(db, "get-member@examplee6e3b1.com")
         client.cookies.update(_auth_cookie(admin))
 
         response = client.get(f"/api/v1/members/{member.id}")
@@ -195,7 +195,7 @@ class TestMemberCRUD:
 
     def test_update_member(self, client, db):
         admin = _create_admin(db)
-        _, member = _create_member_user(db, "update-member@test.com")
+        _, member = _create_member_user(db, "update-member@examplee6e3b1.com")
         client.cookies.update(_auth_cookie(admin))
 
         response = client.put(
@@ -206,7 +206,7 @@ class TestMemberCRUD:
         assert response.json()["person"]["first_name"] == "Updated"
 
     def test_member_cannot_list(self, client, db):
-        _, member = _create_member_user(db, "no-list@test.com")
+        _, member = _create_member_user(db, "no-list@examplee6e3b1.com")
         user = db.query(User).filter(User.id == member.user_id).first()
         client.cookies.update(_auth_cookie(user))
 
@@ -268,22 +268,22 @@ class TestMemberStatus:
 
 class TestMemberSelfService:
     def test_member_can_view_own_profile(self, client, db):
-        user, member = _create_member_user(db, "self-view@test.com")
+        user, member = _create_member_user(db, "self-view@examplee6e3b1.com")
         client.cookies.update(_auth_cookie(user))
 
         response = client.get(f"/api/v1/members/{member.id}")
         assert response.status_code == 200
 
     def test_member_cannot_view_other(self, client, db):
-        user, _ = _create_member_user(db, "self-only@test.com")
-        _, other_member = _create_member_user(db, "other@test.com")
+        user, _ = _create_member_user(db, "self-only@examplee6e3b1.com")
+        _, other_member = _create_member_user(db, "other@examplee6e3b1.com")
         client.cookies.update(_auth_cookie(user))
 
         response = client.get(f"/api/v1/members/{other_member.id}")
         assert response.status_code == 403
 
     def test_member_can_update_own(self, client, db):
-        user, member = _create_member_user(db, "self-update@test.com")
+        user, member = _create_member_user(db, "self-update@examplee6e3b1.com")
         client.cookies.update(_auth_cookie(user))
 
         response = client.put(
@@ -301,7 +301,7 @@ class TestGuardianMinor:
         client.cookies.update(_auth_cookie(admin))
 
         # Create guardian person
-        guardian = Person(first_name="Parent", last_name="García", email="parent@test.com")
+        guardian = Person(first_name="Parent", last_name="García", email="parent@examplee6e3b1.com")
         db.add(guardian)
         db.flush()
 
@@ -388,7 +388,7 @@ class TestGuardianMinor:
         mt = _ensure_membership_type(db)
         client.cookies.update(_auth_cookie(admin))
 
-        guardian = Person(first_name="Multi", last_name="Parent", email="multi-parent@test.com")
+        guardian = Person(first_name="Multi", last_name="Parent", email="multi-parent@examplee6e3b1.com")
         db.add(guardian)
         db.flush()
 

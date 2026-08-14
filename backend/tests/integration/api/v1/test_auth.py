@@ -44,11 +44,11 @@ def _create_test_user(db, email="test@example.com", password="password123", role
 
 class TestLogin:
     def test_login_success(self, client, db):
-        _create_test_user(db, email="login@test.com", password="password123")
+        _create_test_user(db, email="login@examplee6e3b1.com", password="password123")
 
         response = client.post(
             "/api/v1/auth/login",
-            json={"email": "login@test.com", "password": "password123"},
+            json={"email": "login@examplee6e3b1.com", "password": "password123"},
         )
         assert response.status_code == 200
         assert response.json()["message"] == "Login successful"
@@ -83,11 +83,11 @@ class TestLogin:
         assert "Secure" not in response.headers["set-cookie"]
 
     def test_login_wrong_password(self, client, db):
-        _create_test_user(db, email="wrong@test.com", password="password123")
+        _create_test_user(db, email="wrong@examplee6e3b1.com", password="password123")
 
         response = client.post(
             "/api/v1/auth/login",
-            json={"email": "wrong@test.com", "password": "wrongpassword"},
+            json={"email": "wrong@examplee6e3b1.com", "password": "wrongpassword"},
         )
         assert response.status_code == 401
         assert response.json()["detail"] == "Invalid email or password"
@@ -95,18 +95,18 @@ class TestLogin:
     def test_login_nonexistent_email(self, client):
         response = client.post(
             "/api/v1/auth/login",
-            json={"email": "nobody@test.com", "password": "password123"},
+            json={"email": "nobody@examplee6e3b1.com", "password": "password123"},
         )
         assert response.status_code == 401
 
     def test_login_locked_account(self, client, db):
-        user = _create_test_user(db, email="locked@test.com", password="password123")
+        user = _create_test_user(db, email="locked@examplee6e3b1.com", password="password123")
         user.is_locked = True
         db.flush()
 
         response = client.post(
             "/api/v1/auth/login",
-            json={"email": "locked@test.com", "password": "password123"},
+            json={"email": "locked@examplee6e3b1.com", "password": "password123"},
         )
         assert response.status_code == 403
         assert "locked" in response.json()["detail"].lower()
@@ -126,13 +126,13 @@ class TestRegister:
             json={
                 "first_name": "New",
                 "last_name": "User",
-                "email": "new@test.com",
+                "email": "new@examplee6e3b1.com",
                 "password": "password123",
             },
         )
         assert response.status_code == 201
         data = response.json()
-        assert data["email"] == "new@test.com"
+        assert data["email"] == "new@examplee6e3b1.com"
         assert data["member_status"] == "pending"
         assert data["requires_approval"] is True
         # Registration must NOT log the user in — approval is still pending.
@@ -141,21 +141,21 @@ class TestRegister:
         member = (
             db.query(Member)
             .join(Person, Member.person_id == Person.id)
-            .filter(Person.email == "new@test.com")
+            .filter(Person.email == "new@examplee6e3b1.com")
             .first()
         )
         # The member number is allocated on approval, not at sign-up.
         assert member.member_number is None
 
     def test_register_duplicate_email(self, client, db):
-        _create_test_user(db, email="dupe@test.com")
+        _create_test_user(db, email="dupe@examplee6e3b1.com")
 
         response = client.post(
             "/api/v1/auth/register",
             json={
                 "first_name": "Dup",
                 "last_name": "User",
-                "email": "dupe@test.com",
+                "email": "dupe@examplee6e3b1.com",
                 "password": "password123",
             },
         )
@@ -167,7 +167,7 @@ class TestRegister:
             json={
                 "first_name": "Short",
                 "last_name": "Pass",
-                "email": "short@test.com",
+                "email": "short@examplee6e3b1.com",
                 "password": "1234567",
             },
         )
@@ -176,12 +176,12 @@ class TestRegister:
 
 class TestMe:
     def test_me_authenticated(self, client, db):
-        _create_test_user(db, email="me@test.com", password="password123")
+        _create_test_user(db, email="me@examplee6e3b1.com", password="password123")
 
         # Login first
         login_response = client.post(
             "/api/v1/auth/login",
-            json={"email": "me@test.com", "password": "password123"},
+            json={"email": "me@examplee6e3b1.com", "password": "password123"},
         )
         assert login_response.status_code == 200
 
@@ -189,7 +189,7 @@ class TestMe:
         response = client.get("/api/v1/auth/me")
         assert response.status_code == 200
         data = response.json()
-        assert data["email"] == "me@test.com"
+        assert data["email"] == "me@examplee6e3b1.com"
         assert data["first_name"] == "Test"
 
     def test_me_unauthenticated(self, client):
@@ -199,12 +199,12 @@ class TestMe:
 
 class TestPasswordReset:
     def test_password_reset_flow(self, client, db):
-        _create_test_user(db, email="reset@test.com", password="oldpassword1")
+        _create_test_user(db, email="reset@examplee6e3b1.com", password="oldpassword1")
 
         # Request reset
         response = client.post(
             "/api/v1/auth/password-reset-request",
-            json={"email": "reset@test.com"},
+            json={"email": "reset@examplee6e3b1.com"},
         )
         assert response.status_code == 200
         data = response.json()
@@ -221,7 +221,7 @@ class TestPasswordReset:
         # Login with new password
         response = client.post(
             "/api/v1/auth/login",
-            json={"email": "reset@test.com", "password": "newpassword1"},
+            json={"email": "reset@examplee6e3b1.com", "password": "newpassword1"},
         )
         assert response.status_code == 200
 
@@ -235,7 +235,7 @@ class TestPasswordReset:
     def test_password_reset_nonexistent_email(self, client):
         response = client.post(
             "/api/v1/auth/password-reset-request",
-            json={"email": "nobody@test.com"},
+            json={"email": "nobody@examplee6e3b1.com"},
         )
         assert response.status_code == 200
         # Should not reveal whether email exists
@@ -293,11 +293,11 @@ class TestPasswordReset:
         The response has to be the same one an unknown address gets, or the
         endpoint turns into a way to ask which accounts are super admins.
         """
-        _create_test_user(db, email="owner@test.com", role="super_admin")
+        _create_test_user(db, email="owner@examplee6e3b1.com", role="super_admin")
 
         response = client.post(
             "/api/v1/auth/password-reset-request",
-            json={"email": "owner@test.com"},
+            json={"email": "owner@examplee6e3b1.com"},
         )
 
         assert response.status_code == 200
@@ -307,7 +307,7 @@ class TestPasswordReset:
         """A token already in flight when this shipped must stop working too."""
         from datetime import datetime, timedelta, timezone
 
-        user = _create_test_user(db, email="owner2@test.com", role="super_admin")
+        user = _create_test_user(db, email="owner2@examplee6e3b1.com", role="super_admin")
         user.reset_token = "still-inside-its-hour"
         user.reset_token_expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
         db.flush()

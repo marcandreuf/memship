@@ -87,7 +87,7 @@ def fake_receipt(receipt_id: int = 42, amount: str = "50.00", description: str =
     )
 
 
-def fake_person(email: str = "m@test.com"):
+def fake_person(email: str = "m@examplee6e3b1.com"):
     return SimpleNamespace(email=email)
 
 

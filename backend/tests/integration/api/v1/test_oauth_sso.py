@@ -19,7 +19,7 @@ def _profile(**overrides) -> OAuthProfile:
     base = dict(
         provider="google",
         subject="google-sub-1",
-        email="sso@test.com",
+        email="sso@examplee6e3b1.com",
         email_verified=True,
         first_name="Sso",
         last_name="User",
@@ -82,7 +82,7 @@ class TestFirstTimeSsoSignIn:
         user, created = find_or_create_from_oauth(db, _profile())
 
         assert created is True
-        assert user.email == "sso@test.com"
+        assert user.email == "sso@examplee6e3b1.com"
         assert user.email_verified is True
         # SSO-only account: nothing to log in with on the password path.
         assert user.password_hash is None
@@ -120,14 +120,14 @@ class TestFirstTimeSsoSignIn:
             find_or_create_from_oauth(db, _profile())
 
     def test_existing_user_can_still_sign_in_when_registration_is_closed(self, db):
-        _create_password_user(db, "sso@test.com")
+        _create_password_user(db, "sso@examplee6e3b1.com")
         _set_features(db, public_registration=False)
 
         # Closing sign-ups must not lock out members who already have accounts.
         user, created = find_or_create_from_oauth(db, _profile())
 
         assert created is False
-        assert user.email == "sso@test.com"
+        assert user.email == "sso@examplee6e3b1.com"
 
 
 class TestReturningSsoSignIn:
@@ -147,7 +147,7 @@ class TestReturningSsoSignIn:
 
         # Google account keeps its `sub` but the address changed.
         second, created = find_or_create_from_oauth(
-            db, _profile(email="renamed@test.com")
+            db, _profile(email="renamed@examplee6e3b1.com")
         )
 
         assert created is False
@@ -156,7 +156,7 @@ class TestReturningSsoSignIn:
 
 class TestLinkingToAnExistingAccount:
     def test_links_to_a_user_registered_with_a_password(self, db):
-        existing = _create_password_user(db, "sso@test.com")
+        existing = _create_password_user(db, "sso@examplee6e3b1.com")
 
         user, created = find_or_create_from_oauth(db, _profile())
 
@@ -168,7 +168,7 @@ class TestLinkingToAnExistingAccount:
         assert identity.provider_subject == "google-sub-1"
 
     def test_linking_confirms_a_previously_unverified_email(self, db):
-        existing = _create_password_user(db, "sso@test.com", email_verified=False)
+        existing = _create_password_user(db, "sso@examplee6e3b1.com", email_verified=False)
         existing.verification_token = "pending-token"
         db.flush()
 
@@ -179,7 +179,7 @@ class TestLinkingToAnExistingAccount:
 
     def test_unverified_provider_email_is_refused(self, db):
         """Guards the linking branch against account takeover."""
-        _create_password_user(db, "sso@test.com")
+        _create_password_user(db, "sso@examplee6e3b1.com")
 
         with pytest.raises(EmailNotVerifiedError):
             find_or_create_from_oauth(db, _profile(email_verified=False))

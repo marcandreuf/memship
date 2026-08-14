@@ -15,12 +15,12 @@ from app.domains.persons.models import Person
 
 
 def _create_user(db, role="admin", suffix="brun"):
-    person = Person(first_name="Test", last_name="User", email=f"{suffix}-{role}@test.com")
+    person = Person(first_name="Test", last_name="User", email=f"{suffix}-{role}@examplee6e3b1.com")
     db.add(person)
     db.flush()
     user = User(
         person_id=person.id,
-        email=f"{suffix}-{role}@test.com",
+        email=f"{suffix}-{role}@examplee6e3b1.com",
         password_hash=hash_password("password123"),
         role=role,
         is_active=True,
@@ -59,7 +59,7 @@ def _ensure_org_settings(db, features=None):
 
 def _create_member(db, frequency="monthly", suffix="m1", price=50.00):
     person = Person(
-        first_name="María", last_name="García", email=f"maria-{suffix}@test.com"
+        first_name="María", last_name="García", email=f"maria-{suffix}@examplee6e3b1.com"
     )
     db.add(person)
     db.flush()
@@ -415,7 +415,7 @@ class TestGeneratedFeesArePayable:
 class TestNotificationEmail:
     def test_notify_sends_when_configured(self, db, monkeypatch):
         _ensure_org_settings(
-            db, features={"billing_notification_email": "admin@test.com"}
+            db, features={"billing_notification_email": "admin@examplee6e3b1.com"}
         )
         sent = {}
 
@@ -430,7 +430,7 @@ class TestNotificationEmail:
 
         runs = [BillingRun(frequency="monthly", receipts_generated=3, status="success")]
         _notify_admin(db, runs)
-        assert sent.get("to") == "admin@test.com"
+        assert sent.get("to") == "admin@examplee6e3b1.com"
 
     def test_notify_noop_when_not_configured(self, db, monkeypatch):
         _ensure_org_settings(db, features={})

@@ -32,7 +32,7 @@ def _ensure_org(db, *, enabled=True):
 
 
 def _create_user(db, role="admin", email=None):
-    email = email or f"{role}-cf@test.com"
+    email = email or f"{role}-cf@examplee6e3b1.com"
     person = Person(first_name=role.title(), last_name="Tester", email=email)
     db.add(person)
     db.flush()
@@ -176,7 +176,7 @@ class TestDefinitions:
         _ensure_org(db)
         definition = _definition(db, key="shirt_size", admin_access="write")
         admin = _create_user(db, "admin")
-        target = _create_user(db, "member", email="target-archive@test.com")
+        target = _create_user(db, "member", email="target-archive@examplee6e3b1.com")
         client.put(
             f"/api/v1/persons/{target.person_id}/custom-fields/",
             json={"shirt_size": "M"},
@@ -212,7 +212,7 @@ class TestValues:
         _ensure_org(db)
         _definition(db, key="shirt_size")
         admin = _create_user(db, "admin")
-        target = _create_user(db, "member", email="target-round@test.com")
+        target = _create_user(db, "member", email="target-round@examplee6e3b1.com")
         url = f"/api/v1/persons/{target.person_id}/custom-fields/"
         cookies = _auth_cookie(admin)
 
@@ -231,7 +231,7 @@ class TestValues:
         _ensure_org(db)
         _definition(db, key="joined_on", field_type="date")
         admin = _create_user(db, "admin")
-        target = _create_user(db, "member", email="target-coerce@test.com")
+        target = _create_user(db, "member", email="target-coerce@examplee6e3b1.com")
         url = f"/api/v1/persons/{target.person_id}/custom-fields/"
         cookies = _auth_cookie(admin)
 
@@ -252,7 +252,7 @@ class TestValues:
             options=[{"value": "s", "label": "S"}],
         )
         admin = _create_user(db, "admin")
-        target = _create_user(db, "member", email="target-select@test.com")
+        target = _create_user(db, "member", email="target-select@examplee6e3b1.com")
 
         response = client.put(
             f"/api/v1/persons/{target.person_id}/custom-fields/",
@@ -265,7 +265,7 @@ class TestValues:
         _ensure_org(db)
         _definition(db, key="licence_no", required=True)
         admin = _create_user(db, "admin")
-        target = _create_user(db, "member", email="target-required@test.com")
+        target = _create_user(db, "member", email="target-required@examplee6e3b1.com")
 
         response = client.put(
             f"/api/v1/persons/{target.person_id}/custom-fields/",
@@ -278,7 +278,7 @@ class TestValues:
     def test_unknown_key_is_rejected(self, client, db):
         _ensure_org(db)
         admin = _create_user(db, "admin")
-        target = _create_user(db, "member", email="target-unknown@test.com")
+        target = _create_user(db, "member", email="target-unknown@examplee6e3b1.com")
 
         response = client.put(
             f"/api/v1/persons/{target.person_id}/custom-fields/",
@@ -292,7 +292,7 @@ class TestValues:
         _ensure_org(db)
         _definition(db, key="retired", active=False)
         admin = _create_user(db, "admin")
-        target = _create_user(db, "member", email="target-inactive@test.com")
+        target = _create_user(db, "member", email="target-inactive@examplee6e3b1.com")
 
         response = client.put(
             f"/api/v1/persons/{target.person_id}/custom-fields/",
@@ -306,7 +306,7 @@ class TestValues:
         _ensure_org(db)
         _definition(db, key="locked", admin_access="read")
         admin = _create_user(db, "admin")
-        target = _create_user(db, "member", email="target-locked@test.com")
+        target = _create_user(db, "member", email="target-locked@examplee6e3b1.com")
 
         response = client.put(
             f"/api/v1/persons/{target.person_id}/custom-fields/",
@@ -319,8 +319,8 @@ class TestValues:
     def test_member_cannot_reach_another_persons_values(self, client, db):
         _ensure_org(db)
         _definition(db, key="shirt_size")
-        member = _create_user(db, "member", email="nosy@test.com")
-        other = _create_user(db, "member", email="other@test.com")
+        member = _create_user(db, "member", email="nosy@examplee6e3b1.com")
+        other = _create_user(db, "member", email="other@examplee6e3b1.com")
 
         response = client.get(
             f"/api/v1/persons/{other.person_id}/custom-fields/",
@@ -341,7 +341,7 @@ class TestSelfService:
     def test_member_reads_and_writes_own_values(self, client, db):
         _ensure_org(db)
         _definition(db, key="shirt_size", member_access="write")
-        member = _create_user(db, "member", email="self-write@test.com")
+        member = _create_user(db, "member", email="self-write@examplee6e3b1.com")
         cookies = _auth_cookie(member)
 
         assert client.get("/api/v1/me/custom-fields/", cookies=cookies).json() == {
@@ -354,7 +354,7 @@ class TestSelfService:
     def test_member_cannot_write_a_read_only_field(self, client, db):
         _ensure_org(db)
         _definition(db, key="category", member_access="read")
-        member = _create_user(db, "member", email="self-read@test.com")
+        member = _create_user(db, "member", email="self-read@examplee6e3b1.com")
 
         response = client.put(
             "/api/v1/me/custom-fields/",
@@ -366,7 +366,7 @@ class TestSelfService:
     def test_hidden_field_is_unknown_to_a_member(self, client, db):
         _ensure_org(db)
         _definition(db, key="internal", member_access="hidden")
-        member = _create_user(db, "member", email="self-hidden@test.com")
+        member = _create_user(db, "member", email="self-hidden@examplee6e3b1.com")
         cookies = _auth_cookie(member)
 
         assert "internal" not in client.get(
@@ -385,7 +385,7 @@ class TestSelfService:
         _definition(db, key="shirt_size", member_access="write")
         _definition(db, key="category", member_access="read", admin_access="write")
         admin = _create_user(db, "admin")
-        member = _create_user(db, "member", email="preserve@test.com")
+        member = _create_user(db, "member", email="preserve@examplee6e3b1.com")
 
         client.put(
             f"/api/v1/persons/{member.person_id}/custom-fields/",
@@ -407,7 +407,7 @@ class TestSelfService:
         _definition(
             db, key="licence_no", member_access="read", admin_access="write", required=True
         )
-        member = _create_user(db, "member", email="required-admin@test.com")
+        member = _create_user(db, "member", email="required-admin@examplee6e3b1.com")
 
         response = client.put(
             "/api/v1/me/custom-fields/",

@@ -71,17 +71,17 @@ def _account(db, membership_type, email, role="member"):
 
 @pytest.fixture
 def mine(db, membership_type):
-    return _account(db, membership_type, "mine-filter@test.com")
+    return _account(db, membership_type, "mine-filter@examplee6e3b1.com")
 
 
 @pytest.fixture
 def theirs(db, membership_type):
-    return _account(db, membership_type, "theirs-filter@test.com")
+    return _account(db, membership_type, "theirs-filter@examplee6e3b1.com")
 
 
 @pytest.fixture
 def staff(db, membership_type):
-    return _account(db, membership_type, "staff-filter@test.com", role="admin")
+    return _account(db, membership_type, "staff-filter@examplee6e3b1.com", role="admin")
 
 
 class TestMembersDetailFilter:

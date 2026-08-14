@@ -102,12 +102,12 @@ def _account(db, membership_type, email, role="member"):
 
 @pytest.fixture
 def member(db, membership_type):
-    return _account(db, membership_type, "branding-member@test.com")
+    return _account(db, membership_type, "branding-member@examplee6e3b1.com")
 
 
 @pytest.fixture
 def staff(db, membership_type):
-    return _account(db, membership_type, "branding-staff@test.com", role="admin")
+    return _account(db, membership_type, "branding-staff@examplee6e3b1.com", role="admin")
 
 
 class TestBrandingIsPublic:

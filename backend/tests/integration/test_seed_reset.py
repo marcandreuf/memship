@@ -193,7 +193,7 @@ class TestResetClears:
 
 class TestCreatedByResolution:
     def test_resolves_by_role_not_by_address(self, db):
-        """The `--demo` layer used to look up a literal `admin@test.com`.
+        """The `--demo` layer used to look up a literal `admin@examplee6e3b1.com`.
 
         Applied on top of an operator-chosen super admin that returned None
         silently, and every demo record was stamped with no creator.
@@ -201,7 +201,7 @@ class TestCreatedByResolution:
         membership_type = _base_install(db)
         owner = _account("owner@example.org", "super_admin", membership_type, db)
 
-        assert db.query(User).filter_by(email="admin@test.com").first() is None
+        assert db.query(User).filter_by(email="admin@examplee6e3b1.com").first() is None
         assert any_admin_user_id(db) == owner.id
 
     def test_returns_none_when_no_admin_exists(self, db):
@@ -248,7 +248,7 @@ class TestPasswordRecovery:
 
     def test_reset_is_recorded_in_the_audit_log(self, db):
         membership_type = _base_install(db)
-        user = _account("owner@test.com", SUPER_ADMIN_SLUG, membership_type, db)
+        user = _account("owner@examplee6e3b1.com", SUPER_ADMIN_SLUG, membership_type, db)
 
         set_password(db, user, "a whole new password")
 
@@ -265,11 +265,11 @@ class TestPasswordRecovery:
 
     def test_unattended_resets_a_super_admin(self, db, monkeypatch):
         membership_type = _base_install(db)
-        user = _account("owner@test.com", SUPER_ADMIN_SLUG, membership_type, db)
+        user = _account("owner@examplee6e3b1.com", SUPER_ADMIN_SLUG, membership_type, db)
         before = user.password_hash
         monkeypatch.setenv("MEMSHIP_ADMIN_PASSWORD", "a whole new password")
 
-        _run_unattended(db, membership_type, _args(admin_email="owner@test.com"))
+        _run_unattended(db, membership_type, _args(admin_email="owner@examplee6e3b1.com"))
 
         assert user.password_hash != before
 
@@ -282,12 +282,12 @@ class TestPasswordRecovery:
         of the two things the output claimed.
         """
         membership_type = _base_install(db)
-        member = _account("member@test.com", MEMBER_SLUG, membership_type, db)
+        member = _account("member@examplee6e3b1.com", MEMBER_SLUG, membership_type, db)
         before = member.password_hash
         monkeypatch.setenv("MEMSHIP_ADMIN_PASSWORD", "a whole new password")
 
         with pytest.raises(SystemExit):
-            _run_unattended(db, membership_type, _args(admin_email="member@test.com"))
+            _run_unattended(db, membership_type, _args(admin_email="member@examplee6e3b1.com"))
 
         assert member.password_hash == before
 

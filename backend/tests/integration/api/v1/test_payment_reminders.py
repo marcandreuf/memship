@@ -22,12 +22,12 @@ _UNSET = object()
 
 
 def _create_user(db, role="admin", suffix="rem"):
-    person = Person(first_name="Test", last_name="User", email=f"{suffix}-{role}@test.com")
+    person = Person(first_name="Test", last_name="User", email=f"{suffix}-{role}@examplee6e3b1.com")
     db.add(person)
     db.flush()
     user = User(
         person_id=person.id,
-        email=f"{suffix}-{role}@test.com",
+        email=f"{suffix}-{role}@examplee6e3b1.com",
         password_hash=hash_password("password123"),
         role=role,
         is_active=True,
@@ -68,7 +68,7 @@ def _create_member(db, suffix="m1", email=_UNSET):
     person = Person(
         first_name="María",
         last_name="García",
-        email=f"maria-{suffix}@test.com" if email is _UNSET else email,
+        email=f"maria-{suffix}@examplee6e3b1.com" if email is _UNSET else email,
     )
     db.add(person)
     db.flush()
@@ -112,7 +112,7 @@ def _add_reminder(db, receipt, sent_at, status="sent", number=1):
         reminder_number=number,
         channel="email",
         status=status,
-        to_email="x@test.com",
+        to_email="x@examplee6e3b1.com",
         triggered_by="scheduled",
         sent_at=sent_at,
     )
@@ -265,7 +265,7 @@ class TestSendReminder:
         reminder = send_reminder(db, r, "manual", user_id=None, today=TODAY)
         assert reminder.status == "sent"
         assert reminder.reminder_number == 1
-        assert reminder.to_email == "maria-sr1@test.com"
+        assert reminder.to_email == "maria-sr1@examplee6e3b1.com"
 
     def test_records_failed_when_no_transport(self, db, monkeypatch):
         _patch_email_sent(monkeypatch, ok=False)

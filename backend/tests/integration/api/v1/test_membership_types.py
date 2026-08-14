@@ -8,12 +8,12 @@ from app.domains.persons.models import Person
 
 
 def _create_user(db, role="admin"):
-    person = Person(first_name="Admin", last_name="User", email=f"{role}@test.com")
+    person = Person(first_name="Admin", last_name="User", email=f"{role}@examplee6e3b1.com")
     db.add(person)
     db.flush()
     user = User(
         person_id=person.id,
-        email=f"{role}@test.com",
+        email=f"{role}@examplee6e3b1.com",
         password_hash=hash_password("password123"),
         role=role,
         is_active=True,

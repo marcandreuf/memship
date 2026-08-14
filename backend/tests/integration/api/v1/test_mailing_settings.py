@@ -67,12 +67,12 @@ def _org(db):
 
 
 def _create_user(db, role="super_admin", suffix="mail"):
-    person = Person(first_name="T", last_name="U", email=f"{suffix}-{role}@test.com")
+    person = Person(first_name="T", last_name="U", email=f"{suffix}-{role}@examplee6e3b1.com")
     db.add(person)
     db.flush()
     user = User(
         person_id=person.id,
-        email=f"{suffix}-{role}@test.com",
+        email=f"{suffix}-{role}@examplee6e3b1.com",
         password_hash=hash_password("password123"),
         role=role,
         is_active=True,
@@ -408,7 +408,7 @@ class TestMailingTestEndpoint:
         assert resp.status_code == 200
         assert resp.json() == {"ok": True, "error": None}
         assert calls["provider"] == "resend"
-        assert calls["to"] == "test-send-super_admin@test.com"  # defaults to caller email
+        assert calls["to"] == "test-send-super_admin@examplee6e3b1.com"  # defaults to caller email
 
     def test_reports_transport_failure(self, client, db, monkeypatch):
         _clear_env(monkeypatch)
