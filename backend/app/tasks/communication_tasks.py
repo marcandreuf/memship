@@ -17,6 +17,7 @@ def send_announcement_task(self, announcement_id: int) -> int:
     """
     try:
         from app.core.email import send_announcement_email
+        from app.core.email_branding import get_email_branding
         from app.db.session import SessionLocal
         from app.domains.communications.markdown import render_markdown
         from app.domains.communications.models import Announcement
@@ -44,7 +45,11 @@ def send_announcement_task(self, announcement_id: int) -> int:
             )
             locale = (org.locale if org else None) or "es"
             org_name = (org.name if org else None) or "Memship"
-            body_html = render_markdown(ann.body)
+            # The email rendering carries inline styles — mail clients do not
+            # cascade from the layout the way the member view's page CSS does.
+            body_html = render_markdown(
+                ann.body, link_color=get_email_branding().color
+            )
 
             members = resolve_audience(db, ann.target_type, ann.target_id)
             sent = 0

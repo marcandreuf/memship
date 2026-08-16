@@ -44,6 +44,9 @@ htmlcov/
 .pytest_cache/
 coverage.xml
 
+# Rendered email previews (scripts/preview_emails.py)
+.preview/
+
 # Docker
 docker-compose.override.yml
 

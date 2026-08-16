@@ -9,7 +9,7 @@ from app.core.email import (
     send_booking_promoted_email,
     send_booking_waitlisted_email,
     send_email,
-    send_email_with_attachment,
+    send_receipt_delivery_email,
     send_registration_confirmation_email,
     send_registration_cancellation_email,
     send_waitlist_promotion_email,
@@ -158,32 +158,17 @@ def send_receipt_email_task(self, receipt_id: int) -> bool:
             org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
             locale = org.locale or "es"
 
-            # Generate PDF
             pdf_bytes = generate_receipt_pdf(db, receipt)
 
-            # Build subject
-            subjects = {
-                "es": f"Recibo {receipt.receipt_number} — {org.name}",
-                "ca": f"Rebut {receipt.receipt_number} — {org.name}",
-                "en": f"Receipt {receipt.receipt_number} — {org.name}",
-            }
-            subject = subjects.get(locale, subjects["es"])
-
-            # Build simple HTML body
-            bodies = {
-                "es": f"<p>Adjunto el recibo <strong>{receipt.receipt_number}</strong> por importe de <strong>{receipt.total_amount:.2f} {org.currency or 'EUR'}</strong>.</p>",
-                "ca": f"<p>Adjunt el rebut <strong>{receipt.receipt_number}</strong> per import de <strong>{receipt.total_amount:.2f} {org.currency or 'EUR'}</strong>.</p>",
-                "en": f"<p>Please find attached receipt <strong>{receipt.receipt_number}</strong> for <strong>{receipt.total_amount:.2f} {org.currency or 'EUR'}</strong>.</p>",
-            }
-            html_body = bodies.get(locale, bodies["es"])
-
-            return send_email_with_attachment(
+            return send_receipt_delivery_email(
                 to=person.email,
-                subject=subject,
-                html_body=html_body,
-                attachment=pdf_bytes,
-                attachment_filename=f"{receipt.receipt_number}.pdf",
-                attachment_mime="application/pdf",
+                member_name=person.first_name,
+                receipt_number=receipt.receipt_number,
+                amount=f"{receipt.total_amount:.2f}",
+                currency=org.currency or "EUR",
+                org_name=org.name,
+                pdf_bytes=pdf_bytes,
+                locale=locale,
             )
         finally:
             db.close()

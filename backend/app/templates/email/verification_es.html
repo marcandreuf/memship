@@ -1,4 +1,11 @@
-<h2>Hola, {{ first_name }}</h2>
-<p>Confirma tu dirección de correo electrónico para completar tu alta.</p>
-<p><a href="{{ verification_url }}">Confirmar mi correo</a></p>
-<p>Este enlace caduca en 24 horas.</p>
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}Confirma tu correo para completar el alta.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Hola, {{ first_name }}</h1>
+<p style="{{ s.p }}">Confirma tu dirección de correo electrónico para completar tu alta.</p>
+{{ c.button(verification_url, "Confirmar mi correo") }}
+<p style="{{ s.note_last }}">Este enlace caduca en 24 horas.</p>
+{% endblock %}

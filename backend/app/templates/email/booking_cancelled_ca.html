@@ -1,6 +1,15 @@
-<h2>Reserva cancel·lada</h2>
-<p>Hola {{ member_name }},</p>
-<p>El club ha cancel·lat la teva reserva de <strong>{{ space_name }}</strong>.</p>
-<p><strong>Data:</strong> {{ booking_date }}</p>
-<p><strong>Horari:</strong> {{ booking_time }}</p>
-<p>Lamentem les molèsties. Pots consultar la disponibilitat actual i fer una nova reserva des del teu portal de soci.</p>
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}La teva reserva de {{ space_name }} ha estat cancel·lada.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Reserva cancel·lada</h1>
+<p style="{{ s.p }}">Hola {{ member_name }},</p>
+<p style="{{ s.p }}">El club ha cancel·lat la teva reserva de <strong>{{ space_name }}</strong>.</p>
+{% call c.panel() %}
+{{ c.data_row("Data", booking_date) }}
+{{ c.data_row("Horari", booking_time) }}
+{% endcall %}
+<p style="{{ s.p_last }}">Lamentem les molèsties. Pots consultar la disponibilitat actual i fer una nova reserva des del teu portal de soci.</p>
+{% endblock %}

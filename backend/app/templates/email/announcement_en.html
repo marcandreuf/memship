@@ -1,3 +1,10 @@
-<h2>{{ subject }}</h2>
+{% extends "_base.html" %}
+
+{% block preheader %}{{ subject }}{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">{{ subject }}</h1>
+{#- The body is pre-rendered by app.domains.communications.markdown with
+    inline styles, so it drops straight into the layout. -#}
 {{ body_html | safe }}
-<p>— {{ org_name }}</p>
+{% endblock %}

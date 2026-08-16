@@ -1,6 +1,17 @@
-<h2>En llista d'espera</h2>
-<p>Hola {{ member_name }},</p>
-<p>La teva inscripció a <strong>{{ activity_name }}</strong> ha estat registrada, però actualment l'activitat està completa.</p>
-<p>Estàs a la <strong>llista d'espera</strong>. T'avisarem si es lliura una plaça.</p>
-{% if activity_date %}<p><strong>Data:</strong> {{ activity_date }}</p>{% endif %}
-{% if location %}<p><strong>Lloc:</strong> {{ location }}</p>{% endif %}
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}{{ activity_name }} està completa; ets a la llista d'espera.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">En llista d'espera</h1>
+<p style="{{ s.p }}">Hola {{ member_name }},</p>
+<p style="{{ s.p }}">La teva inscripció a <strong>{{ activity_name }}</strong> ha estat registrada, però actualment l'activitat està completa.</p>
+{%- if activity_date or location %}
+{% call c.panel() %}
+{% if activity_date %}{{ c.data_row("Data", activity_date) }}{% endif %}
+{% if location %}{{ c.data_row("Lloc", location) }}{% endif %}
+{% endcall %}
+{%- endif %}
+<p style="{{ s.p_last }}">Estàs a la <strong>llista d'espera</strong>. T'avisarem si s'allibera una plaça.</p>
+{% endblock %}

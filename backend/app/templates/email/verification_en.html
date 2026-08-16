@@ -1,4 +1,11 @@
-<h2>Hi {{ first_name }},</h2>
-<p>Confirm your email address to complete your registration.</p>
-<p><a href="{{ verification_url }}">Confirm my email</a></p>
-<p>This link expires in 24 hours.</p>
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}Confirm your email to complete your registration.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Hi {{ first_name }},</h1>
+<p style="{{ s.p }}">Confirm your email address to complete your registration.</p>
+{{ c.button(verification_url, "Confirm my email") }}
+<p style="{{ s.note_last }}">This link expires in 24 hours.</p>
+{% endblock %}

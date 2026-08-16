@@ -1,0 +1,80 @@
+{#
+  Reusable blocks for email content templates.
+
+  Import with context so the macros can read `s` (shared inline styles), `brand`
+  (organisation colours) and `t` (localized chrome strings) without every call
+  site passing them:
+
+      {% import "_components.html" as c with context %}
+
+  Vertical rhythm is spacer rows, not `margin` — the Outlook/Word engine drops
+  margins on tables and most block elements.
+#}
+
+{% macro spacer(height) -%}
+<tr><td style="height:{{ height }}px; line-height:{{ height }}px; font-size:0;">&nbsp;</td></tr>
+{%- endmacro %}
+
+{#- A call-to-action button, plus the copy-this-link fallback for the clients
+    and recipients that strip or cannot follow the button. -#}
+{% macro button(url, label) -%}
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;">
+<tr><td align="left">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0">
+<tr><td align="center" style="background-color:{{ brand.color }}; border-radius:6px;">
+<a href="{{ url }}" style="display:inline-block; padding:13px 28px; font-family:Helvetica,Arial,sans-serif; font-size:16px; line-height:20px; mso-line-height-rule:exactly; font-weight:bold; color:{{ brand.on_color }}; text-decoration:none; border-radius:6px;">{{ label }}</a>
+</td></tr>
+</table>
+</td></tr>
+{{ spacer(16) }}
+<tr><td class="ms-muted" style="font-family:Helvetica,Arial,sans-serif; font-size:13px; line-height:19px; mso-line-height-rule:exactly; color:#6b7480; word-break:break-all;">
+{{ t.button_fallback }}<br>
+<a href="{{ url }}" style="color:{{ brand.color }}; text-decoration:underline; word-break:break-all;">{{ url }}</a>
+</td></tr>
+{{ spacer(20) }}
+</table>
+{%- endmacro %}
+
+{#- Inset block for key/value detail. Use with {% call %}:
+
+      {% call c.panel() %}
+        {{ c.data_row("Fecha", activity_date) }}
+      {% endcall %}
+-#}
+{% macro panel() -%}
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;">
+<tr><td class="ms-panel" style="background-color:#f4f6f8; border-radius:6px; padding:16px 20px;">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;">
+{{ caller() }}
+</table>
+</td></tr>
+{{ spacer(20) }}
+</table>
+{%- endmacro %}
+
+{#- One label/value line inside a panel. -#}
+{% macro data_row(label, value) -%}
+<tr>
+<td width="40%" class="ms-muted" style="width:40%; padding:3px 12px 3px 0; font-family:Helvetica,Arial,sans-serif; font-size:13px; line-height:20px; mso-line-height-rule:exactly; color:#6b7480; vertical-align:top;">{{ label }}</td>
+<td class="ms-text" style="padding:3px 0; font-family:Helvetica,Arial,sans-serif; font-size:15px; line-height:20px; mso-line-height-rule:exactly; font-weight:bold; color:#1f2328; vertical-align:top;">{{ value }}</td>
+</tr>
+{%- endmacro %}
+
+{#- A single value that needs prominence without a label (member number, amount). -#}
+{% macro highlight(label, value) -%}
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;">
+<tr><td class="ms-panel" align="center" style="background-color:#f4f6f8; border-radius:6px; padding:18px 20px;">
+<p class="ms-muted" style="margin:0 0 4px 0; font-family:Helvetica,Arial,sans-serif; font-size:13px; line-height:18px; mso-line-height-rule:exactly; color:#6b7480;">{{ label }}</p>
+<p class="ms-text" style="margin:0; font-family:Helvetica,Arial,sans-serif; font-size:24px; line-height:30px; mso-line-height-rule:exactly; font-weight:bold; letter-spacing:1px; color:#1f2328;">{{ value }}</p>
+</td></tr>
+{{ spacer(20) }}
+</table>
+{%- endmacro %}
+
+{#- Hairline rule between the message and a secondary note. -#}
+{% macro divider() -%}
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;">
+<tr><td class="ms-divider" style="border-top:1px solid #e3e7ea; font-size:0; line-height:0; height:1px;">&nbsp;</td></tr>
+{{ spacer(16) }}
+</table>
+{%- endmacro %}

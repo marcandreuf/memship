@@ -1,0 +1,16 @@
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}{{ total }} rebuts generats a la facturació recurrent.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Facturació recurrent</h1>
+<p style="{{ s.p }}">Resum de la darrera execució de facturació recurrent.</p>
+{% call c.panel() %}
+{% for row in rows %}{{ c.data_row(row.frequency, row.count ~ " (" ~ row.status ~ ")") }}{% endfor %}
+{{ c.data_row("Total", total) }}
+{% endcall %}
+{%- if any_failed %}
+<p style="{{ s.p_last }}"><strong>Algunes execucions han fallat — revisa l'historial.</strong></p>
+{%- endif %}
+{% endblock %}

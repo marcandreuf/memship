@@ -13,7 +13,7 @@ def _notify_admin(db, runs) -> None:
     No-op when ``billing_notification_email`` is unset. Best-effort: a failure to
     send must not fail the billing run itself.
     """
-    from app.core.email import send_email
+    from app.core.email import send_billing_summary_email
     from app.domains.organizations.models import OrganizationSettings
 
     org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
@@ -25,31 +25,13 @@ def _notify_admin(db, runs) -> None:
     total = sum(r.receipts_generated for r in runs)
     any_failed = any(r.status != "success" for r in runs)
     locale = (org.locale if org else None) or "es"
-
-    subjects = {
-        "es": f"Facturación recurrente — {total} recibos generados",
-        "ca": f"Facturació recurrent — {total} rebuts generats",
-        "en": f"Recurring billing — {total} receipts generated",
-    }
-    lines = "".join(
-        f"<li>{r.frequency}: {r.receipts_generated} ({r.status})</li>" for r in runs
-    )
-    intro = {
-        "es": "<p>Resumen de la facturación recurrente:</p>",
-        "ca": "<p>Resum de la facturació recurrent:</p>",
-        "en": "<p>Recurring billing summary:</p>",
-    }
-    html_body = f"{intro.get(locale, intro['es'])}<ul>{lines}</ul>"
-    if any_failed:
-        warn = {
-            "es": "<p><strong>Algunas ejecuciones fallaron — revisa el historial.</strong></p>",
-            "ca": "<p><strong>Algunes execucions han fallat — revisa l'historial.</strong></p>",
-            "en": "<p><strong>Some runs failed — check the run history.</strong></p>",
-        }
-        html_body += warn.get(locale, warn["es"])
+    rows = [
+        {"frequency": r.frequency, "count": r.receipts_generated, "status": r.status}
+        for r in runs
+    ]
 
     try:
-        send_email(to, subjects.get(locale, subjects["es"]), html_body)
+        send_billing_summary_email(to, rows, total, any_failed, locale)
     except Exception as exc:  # noqa: BLE001 — notification is best-effort
         logger.error(f"Billing notification email failed: to={to}, error={exc}")
 

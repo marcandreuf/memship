@@ -1,0 +1,98 @@
+{#
+  Shared email layout: header (logo + organisation name), body slot, footer.
+
+  Every content template extends this file, so the chrome is written once and
+  every current and future email inherits it. Rules this markup is built to,
+  because mail clients are not browsers:
+
+    * layout is nested <table role="presentation">, never flex/grid/float;
+    * every style that matters is an inline `style` attribute — the <style>
+      block below is progressive enhancement only (dark mode + one media
+      query) and the email is complete without it;
+    * no CSS shorthand the Outlook/Word engine mishandles (`background-color`,
+      not `background`) and no reliance on `margin`;
+    * explicit px `line-height` + `mso-line-height-rule:exactly` on text cells;
+    * images are blocked by default for unknown senders, so the organisation
+      name is always rendered as text as well as in the logo.
+
+  Reusable pieces live in `_components.html`; shared inline styles arrive as the
+  `s` mapping and localized chrome strings as `t`, both injected by
+  `app.core.email.render_template`.
+#}<!DOCTYPE html>
+<html lang="{{ locale }}">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="x-apple-disable-message-reformatting">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark">
+<title>{% block title %}{{ brand.name }}{% endblock %}</title>
+<style>
+  @media only screen and (max-width: 620px) {
+    .ms-wrap { width: 100% !important; }
+    .ms-pad { padding-left: 20px !important; padding-right: 20px !important; }
+  }
+  @media (prefers-color-scheme: dark) {
+    .ms-body { background-color: #14171a !important; }
+    .ms-card { background-color: #1e2227 !important; }
+    .ms-panel { background-color: #262b31 !important; }
+    .ms-text { color: #e6e8ea !important; }
+    .ms-muted { color: #9aa1a8 !important; }
+    .ms-divider { border-color: #343a41 !important; }
+  }
+</style>
+</head>
+<body class="ms-body" style="margin:0; padding:0; width:100%; background-color:#f4f6f8;">
+
+<div class="ms-preheader" style="display:none; max-height:0; max-width:0; overflow:hidden; opacity:0; visibility:hidden; mso-hide:all;">{% block preheader %}{{ t.default_preheader }}{% endblock %}&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;</div>
+
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" class="ms-body" style="width:100%; background-color:#f4f6f8;">
+<tr>
+<td align="center" style="padding:24px 12px;">
+
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" class="ms-wrap" style="width:600px; max-width:600px;">
+
+<tr>
+<td class="ms-pad" align="left" style="background-color:{{ brand.color }}; border-radius:8px 8px 0 0; padding:24px 32px;">
+{%- if brand.logo_url %}
+<img src="{{ brand.logo_url }}" alt="{{ brand.name }}" height="40" style="display:block; border:0; outline:none; text-decoration:none; height:40px; width:auto; max-width:240px; margin-bottom:12px;">
+{%- endif %}
+<span style="font-family:Helvetica,Arial,sans-serif; font-size:18px; line-height:24px; mso-line-height-rule:exactly; font-weight:bold; color:{{ brand.on_color }};">{{ brand.name }}</span>
+</td>
+</tr>
+
+<tr>
+<td class="ms-card ms-pad ms-text" style="background-color:#ffffff; padding:32px; font-family:Helvetica,Arial,sans-serif; font-size:16px; line-height:24px; mso-line-height-rule:exactly; color:#1f2328;">
+{% block content %}{% endblock %}
+</td>
+</tr>
+
+<tr>
+<td class="ms-card ms-pad" style="background-color:#ffffff; border-radius:0 0 8px 8px; padding:0 32px 28px 32px;">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;">
+<tr><td class="ms-divider" style="border-top:1px solid #e3e7ea; font-size:0; line-height:0; height:1px;">&nbsp;</td></tr>
+<tr><td style="padding-top:18px; font-family:Helvetica,Arial,sans-serif; font-size:12px; line-height:18px; mso-line-height-rule:exactly; color:#6b7480;">
+<p class="ms-muted" style="margin:0 0 6px 0; font-size:12px; line-height:18px; mso-line-height-rule:exactly; color:#6b7480;">
+<strong>{{ brand.name }}</strong>{% if brand.website %} &middot; <a href="{{ brand.website }}" style="color:#6b7480; text-decoration:underline;">{{ brand.website_label }}</a>{% endif %}
+</p>
+{%- if brand.email or brand.phone %}
+<p class="ms-muted" style="margin:0 0 6px 0; font-size:12px; line-height:18px; mso-line-height-rule:exactly; color:#6b7480;">
+{%- if brand.email %}<a href="mailto:{{ brand.email }}" style="color:#6b7480; text-decoration:underline;">{{ brand.email }}</a>{% endif %}
+{%- if brand.email and brand.phone %} &middot; {% endif %}
+{%- if brand.phone %}{{ brand.phone }}{% endif %}
+</p>
+{%- endif %}
+<p class="ms-muted" style="margin:0; font-size:12px; line-height:18px; mso-line-height-rule:exactly; color:#6b7480;">{{ t.automated_notice }}</p>
+</td></tr>
+</table>
+</td>
+</tr>
+
+</table>
+
+</td>
+</tr>
+</table>
+
+</body>
+</html>

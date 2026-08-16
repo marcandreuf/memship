@@ -1,4 +1,15 @@
-<h2>Inscripción cancelada</h2>
-<p>Hola {{ member_name }},</p>
-<p>Tu inscripción en <strong>{{ activity_name }}</strong> ha sido cancelada.</p>
-{% if cancelled_by %}<p>Cancelada por: {{ cancelled_by }}</p>{% endif %}
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}Tu inscripción en {{ activity_name }} ha sido cancelada.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Inscripción cancelada</h1>
+<p style="{{ s.p }}">Hola {{ member_name }},</p>
+<p style="{{ s.p }}">Tu inscripción en <strong>{{ activity_name }}</strong> ha sido cancelada.</p>
+{%- if cancelled_by %}
+{% call c.panel() %}
+{{ c.data_row("Cancelada por", cancelled_by) }}
+{% endcall %}
+{%- endif %}
+{% endblock %}

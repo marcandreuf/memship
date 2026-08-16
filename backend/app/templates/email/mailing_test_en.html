@@ -1,3 +1,13 @@
-<h2>Test email</h2>
-<p>This is a test email sent from Memship through the <strong>{{ provider }}</strong> provider.</p>
-<p>If you received it, your mail configuration is working correctly.</p>
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}Mail configuration check.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Test email</h1>
+<p style="{{ s.p }}">This is a test email sent from Memship.</p>
+{% call c.panel() %}
+{{ c.data_row("Provider", provider) }}
+{% endcall %}
+<p style="{{ s.p_last }}">If you received it, your mail configuration is working correctly.</p>
+{% endblock %}

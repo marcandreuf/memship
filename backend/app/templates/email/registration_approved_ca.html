@@ -1,4 +1,11 @@
-<h2>Bones notícies, {{ first_name }}!</h2>
-<p>La teva sol·licitud d'alta ha estat aprovada.</p>
-<p>El teu número de soci és: <strong>{{ member_number }}</strong></p>
-<p><a href="{{ login_url }}">Accedir al portal</a></p>
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}La teva sol·licitud d'alta ha estat aprovada.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Bones notícies, {{ first_name }}!</h1>
+<p style="{{ s.p }}">La teva sol·licitud d'alta ha estat aprovada.</p>
+{{ c.highlight("Número de soci", member_number) }}
+{{ c.button(login_url, "Accedir al portal") }}
+{% endblock %}

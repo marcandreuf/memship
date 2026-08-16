@@ -1,6 +1,15 @@
-<h2>You're in!</h2>
-<p>Hi {{ member_name }},</p>
-<p>A spot opened up and your booking of <strong>{{ space_name }}</strong> is now confirmed.</p>
-<p><strong>Date:</strong> {{ booking_date }}</p>
-<p><strong>Time:</strong> {{ booking_time }}</p>
-<p>See you soon!</p>
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}A spot opened up in {{ space_name }}.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">You're in!</h1>
+<p style="{{ s.p }}">Hi {{ member_name }},</p>
+<p style="{{ s.p }}">A spot opened up and your booking of <strong>{{ space_name }}</strong> is now confirmed.</p>
+{% call c.panel() %}
+{{ c.data_row("Date", booking_date) }}
+{{ c.data_row("Time", booking_time) }}
+{% endcall %}
+<p style="{{ s.p_last }}">See you soon!</p>
+{% endblock %}

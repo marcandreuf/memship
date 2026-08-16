@@ -1,6 +1,17 @@
-<h2>Registration Confirmed!</h2>
-<p>Hi {{ member_name }},</p>
-<p>Your registration for <strong>{{ activity_name }}</strong> has been confirmed.</p>
-{% if activity_date %}<p><strong>Date:</strong> {{ activity_date }}</p>{% endif %}
-{% if location %}<p><strong>Location:</strong> {{ location }}</p>{% endif %}
-<p>See you there!</p>
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}Your place at {{ activity_name }} is confirmed.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Registration confirmed!</h1>
+<p style="{{ s.p }}">Hi {{ member_name }},</p>
+<p style="{{ s.p }}">Your registration for <strong>{{ activity_name }}</strong> has been confirmed.</p>
+{%- if activity_date or location %}
+{% call c.panel() %}
+{% if activity_date %}{{ c.data_row("Date", activity_date) }}{% endif %}
+{% if location %}{{ c.data_row("Location", location) }}{% endif %}
+{% endcall %}
+{%- endif %}
+<p style="{{ s.p_last }}">See you there!</p>
+{% endblock %}

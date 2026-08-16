@@ -1,6 +1,17 @@
-<h2>Inscripció confirmada!</h2>
-<p>Hola {{ member_name }},</p>
-<p>La teva inscripció a <strong>{{ activity_name }}</strong> ha estat confirmada.</p>
-{% if activity_date %}<p><strong>Data:</strong> {{ activity_date }}</p>{% endif %}
-{% if location %}<p><strong>Lloc:</strong> {{ location }}</p>{% endif %}
-<p>Ens veiem aviat!</p>
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}La teva plaça a {{ activity_name }} està confirmada.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Inscripció confirmada!</h1>
+<p style="{{ s.p }}">Hola {{ member_name }},</p>
+<p style="{{ s.p }}">La teva inscripció a <strong>{{ activity_name }}</strong> ha estat confirmada.</p>
+{%- if activity_date or location %}
+{% call c.panel() %}
+{% if activity_date %}{{ c.data_row("Data", activity_date) }}{% endif %}
+{% if location %}{{ c.data_row("Lloc", location) }}{% endif %}
+{% endcall %}
+{%- endif %}
+<p style="{{ s.p_last }}">Ens veiem aviat!</p>
+{% endblock %}

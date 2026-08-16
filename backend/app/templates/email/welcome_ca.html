@@ -1,3 +1,10 @@
-<h2>Benvingut, {{ first_name }}!</h2>
-<p>El teu compte ha estat creat correctament.</p>
-<p>El teu número de soci és: <strong>{{ member_number }}</strong></p>
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}El teu compte de soci ja està actiu.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Benvingut, {{ first_name }}!</h1>
+<p style="{{ s.p }}">El teu compte ha estat creat correctament.</p>
+{{ c.highlight("Número de soci", member_number) }}
+{% endblock %}
