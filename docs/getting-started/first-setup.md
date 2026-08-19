@@ -99,7 +99,7 @@ club setup — a reset changes nothing else.
 Unattended, for a scripted recovery:
 
 ```bash
-MEMSHIP_ADMIN_PASSWORD='...' docker compose exec -T api \
+MEMSHIP_ADMIN_PASSWORD='...' docker compose exec -T -e MEMSHIP_ADMIN_PASSWORD api \
   python -m app.cli.seed --admin-email you@example.org
 ```
 
@@ -117,9 +117,15 @@ read from the environment, never from the command line, where it would land in t
 history and in `ps`:
 
 ```bash
-MEMSHIP_ADMIN_PASSWORD='...' docker compose exec -T api \
+MEMSHIP_ADMIN_PASSWORD='...' docker compose exec -T -e MEMSHIP_ADMIN_PASSWORD api \
   python -m app.cli.seed --admin-email you@example.org --club-name "Your Club"
 ```
+
+**The `-e MEMSHIP_ADMIN_PASSWORD` is not optional.** `docker compose exec` does not pass the
+calling shell's environment into the container, so without it the variable is set on your host
+and unset where the command runs — and setup stops with
+`--admin-email needs the password in MEMSHIP_ADMIN_PASSWORD`. Naming the variable after `-e`,
+with no `=value`, is what forwards it without putting the password in `ps` output.
 
 | Flag | Effect |
 |------|--------|

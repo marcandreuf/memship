@@ -35,8 +35,9 @@ protecting its own files, not a misconfiguration.
 ./scripts/db-backup.sh
 ```
 
-The dump is written to `$MEMSHIP_DATA_ROOT/backups/` as a timestamped `.sql.gz`. Dumps older than
-10 days are removed automatically.
+The dump is written to `$MEMSHIP_DATA_ROOT/backups/` as a timestamped `.sql.gz`, mode `600` and
+owned by the account that runs the script — it is a complete copy of your members' data, so it is
+not left world-readable. Dumps older than 10 days are removed automatically.
 
 For unattended backups, schedule it — nightly at 03:30, for example:
 
@@ -55,11 +56,29 @@ default**, so you can confirm the target before anything changes:
 
 ```bash
 ./scripts/db-restore.sh            # dry-run: shows what would happen
-./scripts/db-restore.sh --confirm  # actually restore
+./scripts/db-restore.sh --confirm  # actually restore, asking you to type a confirmation
 ```
 
-> **Restoring overwrites the current database.** Take a fresh backup first, and check you are
-> pointed at the environment you think you are.
+Both of those need a terminal — the picker and the confirmation both read from one. For a restore
+run from a script, a cron job or a non-interactive `ssh host '…'`, name the dump and pass `--yes`:
+
+```bash
+./scripts/db-restore.sh --confirm --yes memship_20260819_141405.sql.gz
+```
+
+> **Restoring overwrites the current database.** Check you are pointed at the environment you
+> think you are.
+
+Before it drops anything the script checks that the archive is readable and looks like a
+`pg_dump` file, and dumps the current database to `memship_pre-restore_<timestamp>.sql.gz` in the
+same directory. If the restore then fails part-way it says so, exits non-zero, and **leaves the API
+stopped on purpose** — starting it would run migrations against the half-restored database and
+leave you with an instance that answers "healthy" and contains nothing. Put back what you had with
+the pre-restore dump it names.
+
+> When several restores fail in a row, each one writes its own pre-restore dump — and the newest is
+> the one taken from the already-damaged database. Restore the file the failure message named, not
+> whichever is most recent.
 
 ## Restoring onto a new server
 

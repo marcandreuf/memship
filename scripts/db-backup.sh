@@ -49,11 +49,26 @@ if ! docker compose -f "$COMPOSE_FILE" ps --status running 2>/dev/null | grep -q
     exit 1
 fi
 
+# The db container runs as postgres, not as the deploy user, so anything it
+# writes into the bind mount lands root-owned and world-readable — a full copy of
+# the database that only the directory's mode is protecting. Hand each dump to
+# the account that owns the install, and take the read bit off the world.
+HOST_UID_VAL="${HOST_UID:-}"
+HOST_GID_VAL="${HOST_GID:-}"
+if [[ -f "$REPO_ROOT/.env" ]]; then
+    HOST_UID_VAL="${HOST_UID_VAL:-$(grep -E '^HOST_UID=' "$REPO_ROOT/.env" | tail -1 | cut -d= -f2- || true)}"
+    HOST_GID_VAL="${HOST_GID_VAL:-$(grep -E '^HOST_GID=' "$REPO_ROOT/.env" | tail -1 | cut -d= -f2- || true)}"
+fi
+HOST_UID_VAL="${HOST_UID_VAL:-$(id -u)}"
+HOST_GID_VAL="${HOST_GID_VAL:-$(id -g)}"
+
 # Run pg_dump inside the container and write to the bind-mounted /backups dir
 BACKUP_NAME="memship_${TIMESTAMP}.sql.gz"
 echo -e "${BLUE}i${NC} Creating backup..."
 docker compose -f "$COMPOSE_FILE" exec -T db \
-    sh -c "pg_dump -U memship -d memship_db --clean --if-exists | gzip > /backups/${BACKUP_NAME}"
+    sh -c "pg_dump -U memship -d memship_db --clean --if-exists | gzip > /backups/${BACKUP_NAME} \
+           && chown ${HOST_UID_VAL}:${HOST_GID_VAL} /backups/${BACKUP_NAME} \
+           && chmod 600 /backups/${BACKUP_NAME}"
 BACKUP_FILE="$BACKUP_DIR/$BACKUP_NAME"
 
 # Verify backup was created and has content
