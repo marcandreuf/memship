@@ -10,8 +10,25 @@ locally with pnpm, so you get Next.js hot reload without a container in the way.
 | Tool | Why |
 |---|---|
 | Docker Engine + Compose plugin | The backend stack |
-| Node.js and **pnpm** | The frontend dev server |
+| **Node 22** and **pnpm** | The frontend dev server |
 | **uv** | Backend dependencies and the test run, which happen on the host rather than in a container |
+
+The Node major is pinned in `frontend/.nvmrc` and enforced as a warning by `engines` in
+`frontend/package.json`. **Use 22** — it is what CI runs and what the production image is built on,
+and a different major is the kind of difference that only shows up as a build that works on one
+machine and not another. With `nvm`, `cd frontend && nvm use` picks it up.
+
+A mismatch prints `WARN Unsupported engine` and carries on, which is deliberate — it should tell
+you, not stop you mid-session. `pnpm install --engine-strict` turns the same check into a hard
+failure if you ever want it enforced.
+
+pnpm's version is pinned by `packageManager` in the same file, so `corepack enable` gets you the
+right one without installing it yourself.
+
+> **You do not need Node at all just to run memship.** The frontend ships as a container, and the
+> [Quick start](../getting-started/quickstart.md) runs the whole app from published images in one
+> command. Install the toolchain when you want to *work on* the frontend — the local dev server
+> exists for hot reload, which is the one thing a container cannot do as well.
 
 ## Start
 
