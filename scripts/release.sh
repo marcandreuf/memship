@@ -48,9 +48,9 @@ if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
   exit 1
 fi
 
-# Mirror the CI roadmap guard locally so failures surface before the push, not after.
+# Mirror the CI release-table guard locally so failures surface before the push, not after.
 if ! grep -qF "| v$VERSION " README.md; then
-  echo -e "${YELLOW}Warning: v$VERSION is not in the README.md roadmap table.${NC}"
+  echo -e "${YELLOW}Warning: v$VERSION is not in the README.md release table.${NC}"
   echo -e "${YELLOW}The Release workflow enforces this and will fail. Add the row first.${NC}"
   read -r -p "Continue anyway? [y/N]: " ok
   [[ "$ok" =~ ^[Yy]$ ]] || { echo "Aborted."; exit 1; }

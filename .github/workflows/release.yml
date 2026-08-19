@@ -72,15 +72,15 @@ jobs:
         run: echo "short_sha=$(git rev-parse HEAD | cut -c1-12)" >> "$GITHUB_OUTPUT"
 
       # The one genuinely useful check the old pre-commit hook did, moved server-side
-      # so it is enforced for everyone: the released version must be in the roadmap.
+      # so it is enforced for everyone: the released version must be in the release table.
       - name: Roadmap guard
         env:
           VERSION: ${{ steps.ver.outputs.version }}
         run: |
           if grep -qF "| v$VERSION " README.md; then
-            echo "v$VERSION found in the README roadmap."
+            echo "v$VERSION found in the README release table."
           else
-            echo "::error::v$VERSION is not in the README.md roadmap table. Add its row before releasing."
+            echo "::error::v$VERSION is not in the README.md release table. Add its row before releasing."
             exit 1
           fi
 
@@ -170,7 +170,7 @@ jobs:
       # manual one that got forgotten — only 3 of the first 18 tags have any.
       #
       # This drafts the release rather than publishing it, and seeds it from the
-      # version's Released row in README.md, which the roadmap guard above has
+      # version's row in the README release table, which the release guard above has
       # already proved exists and which a human wrote and reviewed. Deliberately
       # NOT --generate-notes: the value in the existing notes is prose a
       # generator cannot produce — why an exposure mattered, what a default used
@@ -200,7 +200,7 @@ jobs:
           ROW="$(grep -F "| v$VERSION " README.md | head -1)"
           SUMMARY="$(printf '%s' "$ROW" | sed -E "s/^\| v${VERSION} \| //; s/ \| [^|]*\|[[:space:]]*$//")"
           if [[ -z "$SUMMARY" || "$SUMMARY" == "$ROW" ]]; then
-            echo "::error::Could not parse the v$VERSION row out of README.md. The roadmap guard found the row, so the table's shape has changed — fix the parsing here rather than releasing without notes."
+            echo "::error::Could not parse the v$VERSION row out of README.md. The release guard found the row, so the table's shape has changed — fix the parsing here rather than releasing without notes."
             exit 1
           fi
 
@@ -219,7 +219,7 @@ jobs:
           HIGHEST="$(git tag -l 'v*.*.*' --sort=v:refname | tail -1)"
 
           {
-            echo "<!-- Draft seeded from the README roadmap row. Replace this summary with the"
+            echo "<!-- Draft seeded from the README release table row. Replace this summary with the"
             echo "     real notes before publishing: lead on why the change matters, not what"
             echo "     changed. Body starts at ##, no H1. Delete the commit list below. -->"
             echo ""
