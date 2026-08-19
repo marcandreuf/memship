@@ -40,6 +40,8 @@ Full reference: [docs/development/local-environment.md](docs/development/local-e
 ./scripts/dev.sh logs backend    # View API logs
 ./scripts/dev.sh logs frontend   # View frontend logs
 ./scripts/dev.sh seed            # Run initial setup (interactive)
+./scripts/dev.sh seed demo       # Demo club with generated credentials (prefer this)
+./scripts/dev.sh passwd          # Replace the super admin password with a generated one
 ./scripts/dev.sh test            # Run backend tests
 ./scripts/dev.sh start backend   # Start only backend (Docker)
 ./scripts/dev.sh start frontend  # Start only frontend (local)
