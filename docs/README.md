@@ -30,6 +30,14 @@ Running Memship on your own server.
   [Configuration reference](self-hosting/configuration.md)
 - Payment providers (Stripe, Redsys/Bizum) — _planned_
 
+## Development (contributors)
+
+Working on Memship itself.
+
+- [Local development environment](development/local-environment.md) — the dev stack, commands,
+  seeding and the test suites _(EN)_
+- [Contributing](../CONTRIBUTING.md) — branching, versioning and how a release is cut _(EN)_
+
 ## Guía del administrador (admin guide)
 
 Para el personal que gestiona la organización desde el panel de administración.

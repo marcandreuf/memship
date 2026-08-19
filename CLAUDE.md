@@ -16,7 +16,7 @@ When scoping any feature before v1.0.0:
 - Per-provider depth is sugar when another path already covers the same user need. Defer.
 - Don't add edge-case hardening that doesn't block normal flows.
 
-Full strategic context lives in `memship-definition/CLAUDE.md` and `docs/STATUS.md`.
+Full strategic context lives in the private `memship-context` repo (`docs/`, `STATUS.md`).
 
 **Tech stack:**
 - Backend: Python 3.12+ / FastAPI / SQLAlchemy 2.0 / Alembic
@@ -30,6 +30,9 @@ Full strategic context lives in `memship-definition/CLAUDE.md` and `docs/STATUS.
 ## Commands
 
 ### Dev Environment (recommended)
+
+Full reference: [docs/development/local-environment.md](docs/development/local-environment.md).
+
 ```bash
 ./scripts/dev.sh start all       # Start backend (Docker) + frontend (local)
 ./scripts/dev.sh stop all        # Stop everything
@@ -78,13 +81,18 @@ pnpm cypress:run --spec 'cypress/e2e/auth/login.cy.ts'   # Single spec
 route on first request; with 4 workers sharing one dev server that stall pushes
 navigations past their timeouts, so specs fail — or pass only on retry — and
 which ones fail changes between runs. `test:parallel:prod` builds, serves, runs
-and tears down. Measured on the same commit: 167/167 with no retries in 15m
-against a production build, versus 165–166/167 with ~12 retry-only passes in
-68m against the dev server.
+and tears down. Measured on one commit when the suite was 167 tests: a clean
+run with no retries in 15m against a production build, versus ~12 retry-only
+passes in 68m against the dev server. The suite has grown since, so treat the
+counts as historical and the conclusion as current.
 
 Retries mask this, so read the failure screenshots in `cypress/screenshots/`
 (gitignored, overwritten each run) — a screenshot with no "attempt N" suffix
 means a test failed once and passed on retry. A clean run leaves none.
+
+Intermittent retry-only passes under parallel load are a known open problem —
+see issue #58. Treat a run that only passes on retry as a failure to explain,
+not a pass.
 
 ### Docker (backend services)
 ```bash

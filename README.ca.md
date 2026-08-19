@@ -214,85 +214,20 @@ Les variacions complexes es construeixen sota demanda, quan una implementació r
 
 ## Desenvolupament
 
-### Inici ràpid
-
-Inicieu els serveis del backend (Docker) i el servidor de desenvolupament del frontend (local):
-
-```bash
-./scripts/dev.sh start all
-```
-
-Comproveu l'estat:
+El backend en Docker i el frontend en local amb recàrrega en calent de pnpm, governats per
+`scripts/dev.sh`:
 
 ```bash
+./scripts/dev.sh start all      # backend (Docker) + frontend (local)
 ./scripts/dev.sh status
+./scripts/dev.sh test           # tests del backend
 ```
 
-Atureu-ho tot:
+La instal·lació completa, totes les ordres, les URL dels serveis, la càrrega de dades inicial i les
+suites de tests són a
+**[Entorn de desenvolupament local](docs/development/local-environment.md)** _(en anglès)_.
 
-```bash
-./scripts/dev.sh stop all
-```
-
-### Comandes de desenvolupament
-
-| Comanda | Descripció |
-|---------|-----------|
-| `./scripts/dev.sh start all` | Iniciar backend (Docker) + frontend (local) |
-| `./scripts/dev.sh start backend` | Iniciar només el backend (API + BD en Docker) |
-| `./scripts/dev.sh start frontend` | Iniciar només el frontend (Next.js local) |
-| `./scripts/dev.sh stop all` | Aturar tots els serveis |
-| `./scripts/dev.sh restart all` | Reiniciar tots els serveis |
-| `./scripts/dev.sh status` | Mostrar l'estat de tots els serveis |
-| `./scripts/dev.sh logs backend` | Veure els registres de l'API |
-| `./scripts/dev.sh logs frontend` | Veure els registres del frontend (tail -f) |
-| `./scripts/dev.sh logs worker` | Veure els registres del worker de Celery |
-| `./scripts/dev.sh logs beat` | Veure els registres de Celery beat (planificador) |
-| `./scripts/dev.sh seed` | Executar la configuració inicial de la base de dades (interactiva) |
-| `./scripts/dev.sh seed test` | Inicialitzar amb comptes de prova (sense preguntes) |
-| `./scripts/dev.sh test` | Executar les proves del backend |
-
-`start all` aixeca el worker i el beat de Celery juntament amb l'API i la base de dades. `worker` i `beat` també són destinacions vàlides per a `start`, `stop` i `restart` si els necessites controlar per separat.
-
-> **Afegeixes una dependència del backend?** Les dependències de Python estan integrades a la imatge de Docker — `pyproject.toml` no es munta com a volum — així que una dependència nova no hi serà al contenidor en execució fins que el reconstrueixis:
->
-> ```bash
-> docker compose -f backend/docker/docker-compose.yml build --no-cache api
-> docker compose -f backend/docker/docker-compose.yml up -d --force-recreate api
-> ```
-
-### URLs dels serveis
-
-- **Frontend**: http://localhost:3000
-- **API del backend**: http://localhost:8003
-- **Documentació de l'API (Swagger)**: http://localhost:8003/api/docs
-- **Base de dades**: localhost:5433
-- **Adminer** (UI de BD): http://localhost:8181 (iniciar amb `--profile tools`)
-
-### Fitxers de registre
-
-- Frontend: `frontend/logs/dev-server.log`
-- Backend: `docker compose -f backend/docker/docker-compose.yml logs -f api`
-
-### Primera configuració
-
-Després d'iniciar els serveis, executeu la comanda de configuració per crear les dades inicials:
-
-```bash
-./scripts/dev.sh seed          # Interactiu — la mateixa configuració que fa servir qualsevol entorn
-./scripts/dev.sh seed test     # Comptes de prova fixos + dades d'exemple, per a la suite e2e
-```
-
-`seed test` crea els comptes amb què inicia sessió la suite de Cypress, a més de 4 activitats
-d'exemple amb modalitats i preus, inscripcions d'exemple i ~22 socis addicionals. Les adreces i
-contrasenyes són un contracte amb la suite de proves, no una decisió de configuració, així que
-viuen al seu costat, a
-[`e2e/cypress/support/commands.ts`](e2e/cypress/support/commands.ts).
-
-> **`seed test` es nega a executar-se fora de desenvolupament.** Crea contrasenyes fixes i
-> visibles al repositori, així que exigeix `APP_ENV=development` o `CI` i acaba en cas
-> contrari. Per a qualsevol ús real, feu servir la configuració interactiva — consulteu
-> [Configuració inicial](docs/getting-started/first-setup.md).
+Consulta [CONTRIBUTING](CONTRIBUTING.md) per a branques, versionat i com es publica una versió.
 
 ## Instal·lació (Docker)
 

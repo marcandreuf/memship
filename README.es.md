@@ -214,85 +214,20 @@ Las variaciones complejas se construyen bajo demanda, cuando una implementación
 
 ## Desarrollo
 
-### Inicio rápido
-
-Arranca los servicios backend (Docker) y el servidor de desarrollo frontend (local):
-
-```bash
-./scripts/dev.sh start all
-```
-
-Comprobar estado:
+El backend en Docker y el frontend en local con recarga en caliente de pnpm, gobernados por
+`scripts/dev.sh`:
 
 ```bash
+./scripts/dev.sh start all      # backend (Docker) + frontend (local)
 ./scripts/dev.sh status
+./scripts/dev.sh test           # tests del backend
 ```
 
-Parar todo:
+La instalación completa, todos los comandos, las URL de los servicios, la carga de datos inicial y
+las suites de tests están en
+**[Entorno de desarrollo local](docs/development/local-environment.md)** _(en inglés)_.
 
-```bash
-./scripts/dev.sh stop all
-```
-
-### Comandos de desarrollo
-
-| Comando | Descripción |
-|---------|-------------|
-| `./scripts/dev.sh start all` | Iniciar backend (Docker) + frontend (local) |
-| `./scripts/dev.sh start backend` | Iniciar solo backend (API + BD en Docker) |
-| `./scripts/dev.sh start frontend` | Iniciar solo frontend (Next.js local) |
-| `./scripts/dev.sh stop all` | Parar todos los servicios |
-| `./scripts/dev.sh restart all` | Reiniciar todos los servicios |
-| `./scripts/dev.sh status` | Ver estado de todos los servicios |
-| `./scripts/dev.sh logs backend` | Ver logs de la API |
-| `./scripts/dev.sh logs frontend` | Ver logs del frontend (tail -f) |
-| `./scripts/dev.sh logs worker` | Ver logs del worker de Celery |
-| `./scripts/dev.sh logs beat` | Ver logs de Celery beat (planificador) |
-| `./scripts/dev.sh seed` | Ejecutar configuración inicial de la BD (interactivo) |
-| `./scripts/dev.sh seed test` | Seed con cuentas de prueba (sin preguntas) |
-| `./scripts/dev.sh test` | Ejecutar tests del backend |
-
-`start all` levanta el worker y el beat de Celery junto con la API y la base de datos. `worker` y `beat` también son destinos válidos para `start`, `stop` y `restart` si necesitas controlarlos por separado.
-
-> **¿Añades una dependencia del backend?** Las dependencias de Python están integradas en la imagen de Docker — `pyproject.toml` no se monta como volumen — así que una dependencia nueva no estará en el contenedor en ejecución hasta que lo reconstruyas:
->
-> ```bash
-> docker compose -f backend/docker/docker-compose.yml build --no-cache api
-> docker compose -f backend/docker/docker-compose.yml up -d --force-recreate api
-> ```
-
-### URLs de los servicios
-
-- **Frontend**: http://localhost:3000
-- **API Backend**: http://localhost:8003
-- **Documentación API (Swagger)**: http://localhost:8003/api/docs
-- **Base de datos**: localhost:5433
-- **Adminer** (UI de BD): http://localhost:8181 (iniciar con `--profile tools`)
-
-### Archivos de log
-
-- Frontend: `frontend/logs/dev-server.log`
-- Backend: `docker compose -f backend/docker/docker-compose.yml logs -f api`
-
-### Primera configuración
-
-Tras iniciar los servicios, ejecuta el comando de configuración para crear los datos iniciales:
-
-```bash
-./scripts/dev.sh seed          # Interactivo — la misma configuración que usa cualquier entorno
-./scripts/dev.sh seed test     # Cuentas de prueba fijas + datos de ejemplo, para la suite e2e
-```
-
-`seed test` crea las cuentas con las que inicia sesión la suite de Cypress, además de 4
-actividades de ejemplo con modalidades y precios, inscripciones de ejemplo y ~22 socios
-adicionales. Las direcciones y contraseñas son un contrato con la suite de pruebas, no una
-decisión de configuración, así que viven junto a ella, en
-[`e2e/cypress/support/commands.ts`](e2e/cypress/support/commands.ts).
-
-> **`seed test` se niega a ejecutarse fuera de desarrollo.** Crea contraseñas fijas y visibles
-> en el repositorio, así que exige `APP_ENV=development` o `CI` y termina en caso contrario.
-> Para cualquier uso real, usa la configuración interactiva — consulta
-> [Configuración inicial](docs/getting-started/first-setup.md).
+Consulta [CONTRIBUTING](CONTRIBUTING.md) para ramas, versionado y cómo se publica una versión.
 
 ## Instalación (Docker)
 
