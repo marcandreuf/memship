@@ -59,62 +59,60 @@ club-data question: it clears the demo club while keeping your super admin and
 any payment providers you configured. See
 [First-time setup](docs/getting-started/first-setup.md).
 
+## Releases
+
+Memship follows [semantic versioning](https://semver.org/), and **version numbers are assigned at release time — never reserved in advance.** One line per version below; the full notes for each are on the [releases page](https://github.com/marcandreuf/memship/releases). What is coming next is under [Roadmap](#roadmap), and [Choosing a version](CONTRIBUTING.md#choosing-a-version) covers how a number is picked.
+
+| Version | Milestone | Status |
+|---------|-----------|--------|
+| v0.1.0 | Member Management MVP — auth, RBAC, member CRUD, membership types, i18n, Docker, CI | Done |
+| v0.1.1 | Email sending (SMTP) — welcome emails, password reset emails | Done |
+| v0.1.2 | Groups, guardian/minor support, restricted role (schema) | Done |
+| v0.1.3 | Caddy reverse proxy, backup/restore scripts, self-hosted polish | Done |
+| v0.1.4 | Organization settings management (API + frontend) | Done |
+| v0.1.5 | Activity CRUD — models, modalities, pricing, admin frontend | Done |
+| v0.1.6 | Strong entity pattern — unified list/detail/tabs across all entities | Done |
+| v0.2.0 | Activity Management — registration, eligibility, waitlist, discounts, consents, attachments | Done |
+| v0.2.1 | UX refactor — Shadcn sidebar, dark mode, brand colors, compact tables, quick start | Done |
+| v0.2.2 | E2E test foundation (Cypress) — auth, members, activities, registrations | Done |
+| v0.2.3 | Error handling & validation hardening — toast notifications, global error handler, backend schema validation, StrEnum, 76 validation tests, 16 E2E tests | Done |
+| v0.2.4 | Bug fixes — dark mode sidebar, form error display, route guards, member list cancelled visibility, member delete removed | Done |
+| v0.2.5 | Activity UX — member activity card redesign, cover image upload, registration status badges, activity list thumbnails, My Activities grid, Docker storage volume | Done |
+| v0.2.6 | Bug fixes & testing — Shadcn confirm dialogs (replaced 13 browser alerts), seed discount code fix, self-cancellation deadline check, re-registration after cancel, 21 new API tests, 9 new E2E eligibility tests | Done |
+| v0.2.7 | Activity polish — loading skeletons, nuqs URL state | Done |
+| v0.2.9 | Payment prerequisites — org address & banking, logo upload, contact info tab, member IBAN, Celery/Redis, email notifications (Jinja2 + SMTP/Resend) | Done |
+| v0.3.0 | Basic Payments & Invoicing — receipts, PDF generation, VAT, fee generation, member payment history | Done |
+| v0.3.1 | Bug fixes — failing tests and translated readme files | Done |
+| v0.3.2 | Bug fixes — frontend build pipeline fix | Done |
+| v0.3.3 | CI improvements — faster test execution | Done |
+| v0.3.4 | Bug fixes — warning cleanup and integration test optimizations | Done |
+| v0.3.5 | Bug fixes — failing integration tests | Done |
+| v0.3.6 | CI optimization — setup-uv v7, cached password hashing, pytest-xdist parallel workers, automated version hooks | Done |
+| v0.4.0 | SEPA Direct Debit — mandate management, remittance batches, pain.008 XML, member payment method | Done |
+| v0.4.1 | Payment provider settings — super admin configurable payment gateway management | Done |
+| v0.4.2 | Webhook infrastructure + Stripe Checkout — provider webhooks, real-time payment status, member "Pay Now" flow | Done |
+| v0.4.3 | Redsys integration — Spanish bank gateway with 3D Secure + Bizum | Done |
+| v0.4.4 | Recurring billing — scheduled fee generation | Done |
+| v0.4.5 | Payment reminders — overdue email notifications | Done |
+| v0.5.0 | Simple Communications — admin announcements to all/group/membership type | Done |
+| v0.5.1 | Communications sent view — recipient tracking + in-app "Seen" | Done |
+| v0.7.0 | Digital Member Card + QR Check-in — PDF card, auto member numbers | Done |
+| v0.7.1 | Member card polish — admin card view on member page, member profile photo upload, profile page redesign | Done |
+| v1.0.0 | Stabilization & Release — CSV exports, finance dashboard, notes & reminders, annual summary, demo seed, docs polish | Done |
+| v1.0.1 | Patch — fix Celery scheduled billing/reminder task registration; CI guard against image tag overwrite | Done |
+| v1.1.0 | Custom profile fields — org-configurable member data (text, number, date, select, …) with per-field validation and per-field visibility/editability | Done |
+| v1.1.1 | Patch — settings navigation reorganised: payment and member settings grouped under Payments and Members tabs | Done |
+| v1.2.2 | SSO and mailing configuration — public registration with email verification and an admin approval flow, Google / Apple sign-in, and Resend / Google SMTP setup from an Integrations tab | Done |
+| v1.3.0 | Simple Bookings — member reservations of shared spaces on a week calendar, with per-slot capacity and a FIFO waitlist | Done |
+| v1.4.0 | Flexible roles & permissions — multi-role assignment and granular per-permission checks in place of the four fixed roles. Also repairs deployment stacks that ran no Celery worker and mounted no volume on the API service | Done |
+| v2.0.0 | Self-hosting overhaul — host-visible bind mounts under one `MEMSHIP_DATA_ROOT`, backend containers running as the operator's uid, and a one-command `install.sh`. **Security:** PostgreSQL and the API are no longer published to the internet. **Breaking:** `uv run` no longer works in the containers, and existing installs need a one-off `chown` | Done |
+| v2.1.0 | Setup without published credentials — the same interactive setup on every environment, with no accounts whose passwords ship in this repository, plus unattended flags for scripted installs | Done |
+| v2.2.0 | Super admin recovery from the host — a super admin's password is reset with `python -m app.cli.seed` on the server rather than by email. **Security:** mailbox access was equivalent to owning the instance | Done |
+| v2.3.0 | Uploaded files behind authentication, and sign-in that cannot be guessed at forever — **Security:** the storage directory was served by a static-file mount, reset tokens came back in API responses, and the published placeholder signing key was the Compose default. **Breaking:** installs on that placeholder key get a fresh one, signing everyone out | Done |
+
 ## Roadmap
 
-Memship follows [semantic versioning](https://semver.org/), and **version numbers are assigned at release time — never reserved on the roadmap in advance.** Below, the **Released** table is the shipped history; **Planned** is a priority-ordered list of what's next. A planned item is given a version only when it ships — see [Choosing a version](CONTRIBUTING.md#choosing-a-version) for how the number is picked.
-
-### Released
-
-| Version | Milestone                                                                                                                                                                                                        | Status |
-|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------|
-| v0.1.0 | Member Management MVP — auth, RBAC, member CRUD, membership types, i18n, Docker, CI                                                                                                                              | Done   |
-| v0.1.1 | Email sending (SMTP) — welcome emails, password reset emails                                                                                                                                                     | Done   |
-| v0.1.2 | Groups, guardian/minor support, restricted role (schema)                                                                                                                                                         | Done   |
-| v0.1.3 | Caddy reverse proxy, backup/restore scripts, self-hosted polish                                                                                                                                                  | Done   |
-| v0.1.4 | Organization settings management (API + frontend)                                                                                                                                                                | Done   |
-| v0.1.5 | Activity CRUD — models, modalities, pricing, admin frontend                                                                                                                                                      | Done   |
-| v0.1.6 | Strong entity pattern — unified list/detail/tabs across all entities                                                                                                                                             | Done   |
-| v0.2.0 | Activity Management — registration, eligibility, waitlist, discounts, consents, attachments                                                                                                                      | Done   |
-| v0.2.1 | UX refactor — Shadcn sidebar, dark mode, brand colors, compact tables, quick start                                                                                                                               | Done   |
-| v0.2.2 | E2E test foundation (Cypress) — auth, members, activities, registrations                                                                                                                                         | Done   |
-| v0.2.3 | Error handling & validation hardening — toast notifications, global error handler, backend schema validation, StrEnum, 76 validation tests, 16 E2E tests                                                         | Done   |
-| v0.2.4 | Bug fixes — dark mode sidebar, form error display, route guards, member list cancelled visibility, member delete removed                                                                                         | Done   |
-| v0.2.5 | Activity UX — member activity card redesign, cover image upload, registration status badges, activity list thumbnails, My Activities grid, Docker storage volume                                                 | Done   |
-| v0.2.6 | Bug fixes & testing — Shadcn confirm dialogs (replaced 13 browser alerts), seed discount code fix, self-cancellation deadline check, re-registration after cancel, 21 new API tests, 9 new E2E eligibility tests | Done   |
-| v0.2.7 | Activity polish — loading skeletons, nuqs URL state                                                                                                                                                              | Done   |
-| v0.2.9 | Payment prerequisites — org address & banking, logo upload, contact info tab, member IBAN, Celery/Redis, email notifications (Jinja2 + SMTP/Resend)                                                              | Done   |
-| v0.3.0 | Basic Payments & Invoicing — receipts, PDF generation, VAT, fee generation, member payment history                                                                                                               | Done   |
-| v0.3.1 | Bug fixes — failing tests and translated readme files                                                                                                                                                            | Done   |
-| v0.3.2 | Bug fixes — frontend build pipeline fix                                                                                                                                                                          | Done   |
-| v0.3.3 | CI improvements — faster test execution                                                                                                                                                                          | Done   |
-| v0.3.4 | Bug fixes — warning cleanup and integration test optimizations                                                                                                                                                   | Done   |
-| v0.3.5 | Bug fixes — failing integration tests                                                                                                                                                                            | Done   |
-| v0.3.6 | CI optimization — setup-uv v7, cached password hashing, pytest-xdist parallel workers, automated version hooks                                                                                                   | Done   |
-| v0.4.0 | SEPA Direct Debit — mandate management, remittance batches, pain.008 XML, member payment method                                                                                                                  | Done   |
-| v0.4.1 | Payment provider settings — super admin configurable payment gateway management                                                                                                                                  | Done   |
-| v0.4.2 | Webhook infrastructure + Stripe Checkout — provider webhooks, real-time payment status, member "Pay Now" flow                                                                                                    | Done   |
-| v0.4.3 | Redsys integration — Spanish bank gateway with 3D Secure + Bizum                                                                                                                                                 | Done   |
-| v0.4.4 | Recurring billing — scheduled fee generation                                                                                                                                                                     | Done   |
-| v0.4.5 | Payment reminders — overdue email notifications                                                                                                                                                                  | Done   |
-| v0.5.0 | Simple Communications — admin announcements to all/group/membership type                                                                                                                                         | Done   |
-| v0.5.1 | Communications sent view — recipient tracking + in-app "Seen"                                                                                                                                                    | Done   |
-| v0.7.0 | Digital Member Card + QR Check-in — PDF card, auto member numbers                                                                                                                                                | Done   |
-| v0.7.1 | Member card polish — admin card view on member page, member profile photo upload, profile page redesign                                                                                                          | Done   |
-| v1.0.0 | Stabilization & Release — CSV exports, finance dashboard, notes & reminders, annual summary, demo seed, docs polish                                                                                              | Done   |
-| v1.0.1 | Patch — fix Celery scheduled billing/reminder task registration; CI guard against image tag overwrite                                                                                                            | Done   |
-| v1.1.0 | Custom profile fields — org-configurable member data (text, number, date, select, …) with per-field validation and per-field visibility/editability                                                              | Done   |
-| v1.1.1 | Patch — settings navigation reorganised: payment and member settings grouped under Payments and Members tabs                                                                                                     | Done   |
-| v1.2.2 | SSO / identity integration and mailing configuration — public registration + email-verification onboarding, admin approval flow, Google / Apple sign-in, superadmin SSO provider configuration and Resend / Google SMTP setup from an Integrations tab. Also drops a duplicate mailing-config migration whose revision id collided with an existing one, which made `alembic upgrade head` fail on startup | Done   |
-| v1.3.0 | Simple Bookings — member reservations of shared spaces on a week calendar, per-slot capacity, FIFO waitlist with auto-promotion, and confirmation/waitlist emails | Done   |
-| v1.4.0 | Flexible roles & permissions — multi-role assignment and granular per-permission checks in place of the four fixed roles, with a `/roles` management API and permission-driven navigation and page access across the portal. Also repairs the shipped deployment stacks, which ran no Celery worker — so every email the product sends was dropped silently, and the nightly billing and payment-reminder jobs never ran at all — and mounted no volume on the API service, so an upgrade destroyed uploaded files and regenerated the secret key that encrypts stored SSO and payment-provider credentials | Done   |
-| v2.0.0 | Self-hosting overhaul — persistent data on host-visible bind mounts under a single `MEMSHIP_DATA_ROOT`, backend containers running as the operator's own uid, a one-command `install.sh`, and `vps-bootstrap.sh` for host preparation. **Security:** PostgreSQL and the API are no longer published to the internet — Docker writes its iptables rules ahead of the firewall's, so both were reachable on any host with a public IP in every earlier release. **Breaking:** `uv run` no longer works inside the containers, and existing installs need a one-off `sudo chown -R $(id -u):$(id -g) <data-root>/storage` | Done   |
-| v2.1.0 | Setup without published credentials — initial setup is now the same interactive flow on every environment: you choose the super admin's address and password, and the fixed `super@examplee6e3b1.com` / `admin@examplee6e3b1.com` accounts are gone from the quickstart, where they were a super admin whose password ships in this repository. Adds unattended `--admin-email` and `--club-name` flags for scripted installs, a club-data reset that clears the club while keeping the super admin and any configured payment providers, and a demo-club generator that prints its logins once. Releases are safer too: every service is now built on every commit on `main`, and a release refuses to run when the validated release-candidate image is missing rather than quietly rebuilding from the tag | Done   |
-| v2.2.0 | Super admin recovery from the host — the browser's forgot-password flow no longer accepts super admins, and their password is reset with `python -m app.cli.seed` on the machine running the containers. **Security:** that account holds the roles and credential permissions, so letting an email inbox reset it made mailbox access equivalent to owning the instance; the flow also silently dropped the mail on any install without SMTP, which is every install on day one. Password resets from the host are now written to the audit log, and the unattended `--admin-email` flag refuses an address belonging to an account that is not a super admin instead of resetting a stranger's password and reporting a super admin reset. Documents the recovery path and how to promote a second super admin, and fixes the install guide's first two commands, which could not work as written | Done   |
-| v2.3.0 | Uploaded files behind authentication, and sign-in that cannot be guessed at forever — **Security:** uploaded files were served by a static-file mount over the whole storage directory, so the encryption key, generated SEPA files and scanned mandates were readable by anyone who guessed a path; they are now served by an authenticated route that checks ownership per folder. Password-reset and verification tokens were returned in the API response, so anyone could request a reset for someone's address and read the token straight back; that now happens only in development. The placeholder signing key published in this repository was the compose file's default, which made session cookies and member-card QR codes forgeable; known placeholders are now refused and each install generates and stores its own key. The announcement renderer let an author break out of a link and attach an event handler, turning permission to write communications into script running in a super admin's session. Sign-in, registration and the two endpoints that email an address chosen by an anonymous caller are now rate limited, so password guessing and mailbox flooding are bounded. Adds security response headers, derives the session cookie's `Secure` attribute from the site URL, and passes the Resend credentials through to the backend — the compose file never did, so configuring Resend in `.env` silently did nothing. Also: a payment term for recurring billing, release notes drafted automatically when a tag is pushed, five install-guide defects found by walking it on a real server, and seeded addresses moved off a domain someone else owns. **Breaking:** an install that relied on the placeholder signing key gets a fresh one on first start, which signs everyone out and invalidates member-card QR codes already issued | Done   |
-
-### Planned
-
-Priority-ordered, not yet versioned. Each becomes a versioned release when it ships, and the release claims the next semver number in order.
+Priority-ordered, not yet versioned. Each becomes a versioned release when it ships, and the release claims the next semver number in order. Each item has an issue carrying its summary and current thinking — see the [`roadmap` issues](https://github.com/marcandreuf/memship/labels/roadmap).
 
 - **User invitations** — invite a new super admin, club admin or member by email address and role; they set their own name and password. Sent by email where email is configured, and as a copyable link where it is not, so a freshly installed instance can add a second administrator without shell access
 - **Data backups** — download a full backup from the admin area, covering the database and the uploaded files, with a documented and tested restore
