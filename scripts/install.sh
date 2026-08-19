@@ -290,6 +290,14 @@ docker compose pull
 step "Starting"
 docker compose up -d
 
+# Caddy's configuration is a bind-mounted file, not part of its image, so Compose
+# sees nothing to change when the Caddyfile's contents change and leaves the
+# container running the old one. That makes re-running this script — the
+# documented way to upgrade — silently skip any proxy change a release ships,
+# which is how a 2.3.0 upgrade could end up serving no security headers.
+step "Reloading the proxy"
+docker compose up -d --force-recreate caddy
+
 step "Done"
 cat <<EOF
 
@@ -328,7 +336,8 @@ cat <<EOF
   Then:  docker compose ps       # check everything is up
          docker compose logs -f  # watch it start
 
-  Upgrading later: set IMAGE_TAG in .env and re-run this script.
+  Upgrading later: git pull, set IMAGE_TAG in .env, re-run this script.
+                   Full procedure: docs/self-hosting/upgrading.md
   Backups: docs/self-hosting/backups-and-restore.md
 
 EOF

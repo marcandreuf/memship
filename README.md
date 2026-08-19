@@ -298,70 +298,21 @@ are a contract with the test suite rather than a seeding choice, so they live wi
 
 ## Installation (Docker)
 
-### Prerequisites
+Production self-hosting lives in the docs, so there is one copy of it to keep correct:
 
-- Docker and Docker Compose installed
-- Git (to clone the repo)
+- **[Installation](docs/getting-started/installation.md)** — `vps-bootstrap.sh` on a bare server,
+  then `install.sh`, which generates real secrets, pins a version and puts your data under one
+  backed-up directory
+- **[First-time setup](docs/getting-started/first-setup.md)** — create the super admin and the
+  organization
+- **[Configuration reference](docs/self-hosting/configuration.md)** — every environment variable
+- **[Backups & restore](docs/self-hosting/backups-and-restore.md)** — set this up before going live
+- **[Upgrading](docs/self-hosting/upgrading.md)** — moving to a new release
+- **[Troubleshooting](docs/self-hosting/troubleshooting.md)** — when something will not start
 
-### Option A: Pre-built images (recommended)
+The [Quick Start](#quick-start-docker) above is for evaluation only: it ships a signing key that is
+published in this repository and keeps data in throwaway volumes.
 
-Uses published images from [GitHub Container Registry](https://github.com/marcandreuf/memship/pkgs/container/memship-backend).
-
-```bash
-git clone https://github.com/marcandreuf/memship.git
-cd memship
-
-# Configure
-cp .env.example .env
-# Edit .env — at minimum change SECRET_KEY and DB_PASSWORD
-# Set the image version:
-#   IMAGE_TAG=0.1.3
-
-# Pull and start all services (Caddy + API + Frontend + PostgreSQL)
-docker compose pull
-docker compose up -d
-
-# Run the setup: super admin, club data reset, club setup
-docker compose exec -it api python -m app.cli.seed
-
-# Open http://localhost
-```
-
-### Option B: Build from source
-
-Builds the Docker images locally from the repo source code.
-
-```bash
-git clone https://github.com/marcandreuf/memship.git
-cd memship
-cp .env.example .env
-docker compose up -d --build
-docker compose exec -it api python -m app.cli.seed
-```
-
-### Services
-
-| Service | URL | Description |
-|---------|-----|-------------|
-| Frontend | http://localhost | Member portal (via Caddy) |
-| API | http://localhost/api/v1/health | Backend API (via Caddy) |
-| API Direct | http://localhost:8003 | Backend API (direct) |
-| API Docs | http://localhost:8003/api/docs | Swagger UI (dev mode only) |
-
-### Backups
-
-```bash
-# Create a backup
-./scripts/db-backup.sh
-
-# List and restore from a backup (dry-run by default)
-./scripts/db-restore.sh
-
-# Restore with confirmation
-./scripts/db-restore.sh --confirm
-```
-
-Backups are stored in the `backups/` directory. Old backups are cleaned up after 10 days.
 
 ## Contributing
 
