@@ -43,7 +43,9 @@ locally with pnpm, so you get Next.js hot reload without a container in the way.
 | `./scripts/dev.sh logs worker` | Celery worker logs |
 | `./scripts/dev.sh logs beat` | Celery beat (scheduler) logs |
 | `./scripts/dev.sh seed` | Interactive setup — the same one every environment uses |
-| `./scripts/dev.sh seed test` | Fixed e2e test accounts and sample data |
+| `./scripts/dev.sh seed demo` | Demo club with **generated** credentials — prefer this |
+| `./scripts/dev.sh seed test` | Fixed e2e test accounts, whose passwords are public |
+| `./scripts/dev.sh passwd [email]` | Replace the super admin password with a generated one |
 | `./scripts/dev.sh test` | Backend test suite |
 | `./scripts/dev.sh e2e` | Cypress, headless |
 | `./scripts/dev.sh e2e:open` | Cypress GUI |
@@ -77,29 +79,63 @@ Adminer sits behind a Compose profile and has no `dev.sh` command:
 docker compose -f backend/docker/docker-compose.yml --profile tools up -d adminer
 ```
 
-## The dev stack is not hardened, and by default it is only on localhost
+## The dev stack is not hardened — everything binds to localhost
 
 The dev stack ships deliberately weak settings: a fixed database password (`memship`), Redis with
 no authentication, and — after `seed test` — **super admin credentials that are published in this
-repository**. That is fine for a laptop and disastrous on a shared network, so the published ports
-bind to `127.0.0.1` only.
+repository**. That is fine on a laptop and disastrous on a shared network, so **nothing is exposed
+beyond loopback by default**: the API, database, Redis and Adminer bind to `127.0.0.1`, and the
+Next.js dev server does too.
 
-If you need to reach the stack from another device — a phone testing the mobile layout, a VM —
-override the bind address for that session:
+Binding the containers is not enough on its own. Next.js binds `0.0.0.0` out of the box, and the
+frontend proxies to the API server-side — so a dev server on every interface is a complete path
+into the app, login included, even when every container is on loopback. Both halves are pinned.
+
+### Working on a public network
+
+Loopback binding is what makes a café or a co-working network safe, and it is the whole defence.
+Layer the rest on top of it:
+
+- **Prefer `./scripts/dev.sh seed demo`** over `seed test` for ordinary work. It seeds the same
+  sample data but generates the super admin password and the demo logins, printing them once.
+  `seed test` exists for the Cypress suite, whose credentials are a contract and therefore public.
+- **If you have already run `seed test`**, `./scripts/dev.sh passwd` replaces the super admin
+  password with a generated one. Re-running `seed test` puts the fixed ones back when you next
+  need the suite.
+- **Never combine `DEV_BIND=0.0.0.0` with `seed test` data.** Anyone on the network can then read
+  the password out of this repository and sign in as super admin. `dev.sh start` checks for those
+  accounts and warns you.
+
+### Reaching the stack from another device
+
+To test on a phone or from a VM, opt in for that session:
 
 ```bash
-DEV_BIND=0.0.0.0 ./scripts/dev.sh start backend
+DEV_BIND=0.0.0.0 ./scripts/dev.sh start all
 ```
 
-Do that only on a network you trust, and never on a stack seeded with `seed test`: those accounts
-are in this repository, so anyone who can reach port 8003 can sign in as a super admin. The
-frontend dev server binds to all interfaces on its own — that is Next.js's default and it serves no
-data without the API.
+That publishes the containers on every interface and starts Next.js with `-H 0.0.0.0`. Do it only
+on a network you control, and reseed with `seed demo` first.
+
+### Platform notes
+
+The `DEV_BIND` mechanism is Docker's own `HOST:PORT:PORT` syntax plus a Next.js flag, so it behaves
+the same on all three platforms. What differs is what surrounds it:
+
+| Platform | What to know |
+|---|---|
+| **Linux (Ubuntu 24.04+)** | Docker inserts its iptables rules **ahead of `ufw`**, so a published port is reachable even while the firewall denies it. `ufw` will not save you from `DEV_BIND=0.0.0.0` — the bind address is the control that works. |
+| **macOS (Docker Desktop)** | Ports are forwarded by the VM to the host and the bind address is honoured, so loopback stays loopback. macOS may prompt for incoming connections the first time you use `dev:lan`. |
+| **Windows (Docker Desktop + WSL2)** | Loopback binding works through WSL2's localhost forwarding. In **mirrored** networking mode (Windows 11, `networkingMode=mirrored` in `.wslconfig`) the WSL instance shares the host's interfaces, so `0.0.0.0` inside WSL is genuinely on the LAN — and Windows Firewall, not `ufw`, is what prompts. Run `dev.sh` from WSL or Git Bash; it is a bash script. |
+
+`0.0.0.0` means *every* interface, which includes VPN and Tailscale adapters — those reach further
+than the café's wifi.
 
 ## First-time setup
 
 ```bash
 ./scripts/dev.sh seed          # interactive, the same setup every environment uses
+./scripts/dev.sh seed demo     # demo club, generated credentials — the everyday choice
 ./scripts/dev.sh seed test     # fixed test accounts + sample data, for the e2e suite
 ```
 
