@@ -23,18 +23,34 @@ IMAGE_TAG=1.2.0
 2. **Review the release notes** for the target version (breaking changes, new required
    settings) on the [releases page](https://github.com/marcandreuf/memship/releases).
 
-3. **Bump the tag** in `.env`:
+3. **Pull the repository, not only the image tag:**
+
+   ```bash
+   cd /path/to/memship
+   git pull
+   ```
+
+   Part of a release ships in the git checkout rather than in the images — `docker-compose.yml`,
+   the `Caddyfile`, `scripts/install.sh`. Bumping `IMAGE_TAG` alone leaves an install
+   half-upgraded: the new backend running behind the old proxy configuration.
+
+4. **Bump the tag** in `.env`:
 
    ```bash
    IMAGE_TAG=1.3.0
    ```
 
-4. **Pull and recreate:**
+5. **Pull and recreate:**
 
    ```bash
    docker compose pull
    docker compose up -d
+   docker compose up -d --force-recreate caddy
    ```
+
+   The last line matters. The `Caddyfile` is bind-mounted, so changing its contents does not
+   change the container's configuration — `docker compose up -d` sees no reason to recreate
+   Caddy and leaves it serving the old one.
 
 ## Upgrading from a release before the non-root backend
 
