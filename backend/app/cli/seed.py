@@ -383,7 +383,15 @@ def create_user_with_member(
 ) -> None:
     existing = db.query(User).filter_by(email=details["email"]).first()
     if existing:
-        print(f"  {role} user: already exists ({details['email']})")
+        # These accounts and their passwords are a contract with the Cypress
+        # suite, so this has to converge on the known state rather than merely
+        # leave the row alone. Skipping meant that once the password had been
+        # changed — by `dev.sh passwd`, or by hand — reseeding never put it back
+        # and the suite failed on a login it had no reason to doubt. Development
+        # and CI only: the caller already refuses to run anywhere else.
+        existing.password_hash = ph.hash(details["password"])
+        db.flush()
+        print(f"  {role} user: exists, password set to the fixed test one")
         return
 
     person = Person(

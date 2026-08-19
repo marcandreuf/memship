@@ -66,7 +66,14 @@ start_server() {
 
     echo -e "${GREEN}+${NC} Starting $SERVER_NAME..."
 
-    pnpm run dev > "$LOG_FILE" 2>&1 &
+    # Next.js binds 0.0.0.0 by default, which put the whole app — login included —
+    # on the local network. `dev` pins it to loopback; `dev:lan` is the opt-in.
+    if [ "${DEV_BIND:-127.0.0.1}" = "127.0.0.1" ]; then
+        pnpm run dev > "$LOG_FILE" 2>&1 &
+    else
+        echo "!! DEV_BIND=${DEV_BIND} — serving the app on every interface."
+        pnpm run dev:lan > "$LOG_FILE" 2>&1 &
+    fi
     local pid=$!
     echo "$pid" > "$PID_FILE"
 
@@ -128,8 +135,16 @@ stop_server() {
 # Function to clean Next.js cache
 clean_cache() {
     echo -e "${BLUE}i${NC} Cleaning Next.js cache..."
-    rm -rf .next
-    echo -e "${GREEN}+${NC} Cache cleaned"
+    # The server we just stopped may still be flushing into .next, and rm then
+    # exits non-zero on a directory that refilled under it. With `set -e` that
+    # aborted the restart before it ever started the server again, leaving
+    # nothing running. A stale cache is not worth failing a restart over.
+    rm -rf .next 2>/dev/null || true
+    if [ -d .next ]; then
+        echo -e "${YELLOW}!${NC} Cache partly in use — continuing with what remains"
+    else
+        echo -e "${GREEN}+${NC} Cache cleaned"
+    fi
 }
 
 # Function to restart server

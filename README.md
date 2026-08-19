@@ -215,84 +215,18 @@ Complex variations are built on demand, when a real deployment needs them: GoCar
 
 ## Development
 
-### Quick Start
-
-Start backend services (Docker) and frontend dev server (local):
+Backend in Docker, frontend locally with pnpm hot reload — driven by `scripts/dev.sh`:
 
 ```bash
-./scripts/dev.sh start all
-```
-
-Check status:
-
-```bash
+./scripts/dev.sh start all      # backend (Docker) + frontend (local)
 ./scripts/dev.sh status
+./scripts/dev.sh test           # backend suite
 ```
 
-Stop everything:
+Full setup, every command, service URLs, seeding and the test suites are in
+**[Local development environment](docs/development/local-environment.md)**.
 
-```bash
-./scripts/dev.sh stop all
-```
-
-### Dev Commands
-
-| Command | Description |
-|---------|-------------|
-| `./scripts/dev.sh start all` | Start backend (Docker) + frontend (local) |
-| `./scripts/dev.sh start backend` | Start only backend (API + DB in Docker) |
-| `./scripts/dev.sh start frontend` | Start only frontend (Next.js local) |
-| `./scripts/dev.sh stop all` | Stop all services |
-| `./scripts/dev.sh restart all` | Restart all services |
-| `./scripts/dev.sh status` | Show status of all services |
-| `./scripts/dev.sh logs backend` | View API logs |
-| `./scripts/dev.sh logs frontend` | View frontend logs (tail -f) |
-| `./scripts/dev.sh logs worker` | View Celery worker logs |
-| `./scripts/dev.sh logs beat` | View Celery beat (scheduler) logs |
-| `./scripts/dev.sh seed` | Run initial database setup (interactive) |
-| `./scripts/dev.sh seed test` | Seed with test accounts (no prompts) |
-| `./scripts/dev.sh test` | Run backend tests |
-
-`start all` brings up the Celery worker and beat along with the API and database. `worker` and `beat` are also valid targets for `start`, `stop` and `restart` if you need to control them on their own.
-
-> **Adding a backend dependency?** Python dependencies are baked into the Docker image — `pyproject.toml` is not bind-mounted — so a new dependency will be missing from the running container until you rebuild it:
->
-> ```bash
-> docker compose -f backend/docker/docker-compose.yml build --no-cache api
-> docker compose -f backend/docker/docker-compose.yml up -d --force-recreate api
-> ```
-
-### Service URLs
-
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:8003
-- **API Docs (Swagger)**: http://localhost:8003/api/docs
-- **Database**: localhost:5433
-- **Adminer** (DB UI): http://localhost:8181 (start with `--profile tools`)
-
-### Log Files
-
-- Frontend: `frontend/logs/dev-server.log`
-- Backend: `docker compose -f backend/docker/docker-compose.yml logs -f api`
-
-### First Time Setup
-
-After starting the services, run the setup command to create initial data:
-
-```bash
-./scripts/dev.sh seed          # Interactive — the same setup every environment uses
-./scripts/dev.sh seed test     # Fixed test accounts + sample data, for the e2e suite
-```
-
-`seed test` creates the accounts the Cypress suite signs in as, plus 4 sample activities with
-modalities and prices, sample registrations, and ~22 extra members. The addresses and passwords
-are a contract with the test suite rather than a seeding choice, so they live with it, in
-[`e2e/cypress/support/commands.ts`](e2e/cypress/support/commands.ts).
-
-> **`seed test` refuses to run outside development.** It plants fixed, repository-visible
-> passwords, so it requires `APP_ENV=development` or `CI` and exits otherwise. For anything
-> real, use the interactive setup — see
-> [First-time setup](docs/getting-started/first-setup.md).
+See [CONTRIBUTING](CONTRIBUTING.md) for branching, versioning and how a release is cut.
 
 ## Installation (Docker)
 
