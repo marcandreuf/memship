@@ -7,6 +7,7 @@ wiring so an accidental library swap won't break silently in production.
 import re
 from decimal import ROUND_HALF_UP, Decimal
 from types import SimpleNamespace
+from unittest.mock import MagicMock
 from urllib.parse import urlencode
 
 import pytest
@@ -326,3 +327,69 @@ class TestEventExtraction:
     def test_event_type_denied(self):
         adapter = RedsysAdapter(VALID_CONFIG)
         assert adapter.extract_event_type({"ds_response": "0180"}) == "payment.denied"
+
+
+class TestAmountVerification:
+    """A valid signature proves the message is genuine, not that the sum is right.
+
+    Redsys returns the amount in euros — the same unit `create_payment` sends —
+    so the two compare directly.
+    """
+
+    def _adapter(self):
+        return RedsysAdapter(VALID_CONFIG)
+
+    def _db_returning(self, receipt):
+        db = MagicMock()
+        db.query.return_value.filter.return_value.first.return_value = receipt
+        return db
+
+    def _notify(self, adapter, db, amount, order="000000000042"):
+        return adapter.handle_webhook(
+            db,
+            {
+                "ds_order": order,
+                "ds_response": "0000",
+                "ds_auth_code": "123456",
+                "ds_amount": amount,
+            },
+        )
+
+    def test_short_payment_does_not_mark_paid(self):
+        receipt = fake_receipt(amount="50.00")
+        result = self._notify(self._adapter(), self._db_returning(receipt), "10.00")
+
+        assert result["ignored"] is True
+        assert "mismatch" in result["reason"].lower()
+        assert receipt.status == "emitted", "a short payment was recorded as paid"
+
+    def test_matching_amount_still_pays(self):
+        receipt = fake_receipt(amount="50.00")
+        result = self._notify(self._adapter(), self._db_returning(receipt), "50.00")
+
+        assert result.get("ignored") is not True
+        assert receipt.status == "paid"
+
+    def test_absent_amount_is_not_a_mismatch(self):
+        """Nothing to compare must not become a new way to reject a payment."""
+        receipt = fake_receipt(amount="50.00")
+        result = self._notify(self._adapter(), self._db_returning(receipt), None)
+
+        assert result.get("ignored") is not True
+        assert receipt.status == "paid"
+
+    def test_unparseable_amount_is_not_a_mismatch(self):
+        """A field we could not read must not hold up a real payment."""
+        receipt = fake_receipt(amount="50.00")
+        result = self._notify(self._adapter(), self._db_returning(receipt), "not-a-number")
+
+        assert result.get("ignored") is not True
+        assert receipt.status == "paid"
+
+    def test_trailing_zeros_are_not_a_mismatch(self):
+        """Decimal("50.0") == Decimal("50.00") — compare values, not strings."""
+        receipt = fake_receipt(amount="50.00")
+        result = self._notify(self._adapter(), self._db_returning(receipt), "50.0")
+
+        assert result.get("ignored") is not True
+        assert receipt.status == "paid"

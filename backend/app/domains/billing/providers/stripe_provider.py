@@ -177,6 +177,37 @@ class StripeAdapter(PaymentProviderAdapter):
                 "receipt_id": receipt.id,
             }
 
+        # Paid, but for how much? A partial capture or an amount that does not
+        # match is otherwise recorded as payment in full. The webhook signature
+        # proves Stripe sent this, not that the sum is the one we asked for.
+        # Left unpaid and logged so a person decides; a retry cannot change the
+        # amount, so this is reported as handled rather than failed.
+        notified_minor = session_obj.get("amount_total")
+        currency = (session_obj.get("currency") or "eur").lower()
+        expected_minor = (
+            to_minor_units(Decimal(str(receipt.total_amount)), currency)
+            if notified_minor is not None
+            else None
+        )
+        if notified_minor is not None and int(notified_minor) != expected_minor:
+            logger.error(
+                "Stripe notified %s %s minor units for receipt %s, which totals "
+                "%s (%s minor units). Receipt left unpaid for manual review.",
+                notified_minor,
+                currency,
+                receipt.id,
+                receipt.total_amount,
+                expected_minor,
+            )
+            return {
+                "ignored": True,
+                "reason": (
+                    f"Amount mismatch: notified {notified_minor}, "
+                    f"expected {expected_minor} ({currency} minor units)"
+                ),
+                "receipt_id": receipt.id,
+            }
+
         try:
             validate_status_transition(receipt.status, "paid")
         except Exception:

@@ -152,7 +152,12 @@ def send_reminder(
     pay_now_url = None
     bank_details = None
     if _has_active_online_provider(db):
-        pay_now_url = f"{settings.FRONTEND_URL}/{locale}/receipts"
+        # The member's own page, not /receipts — that one is the admin list,
+        # gated on `billing.read`, so the portal layout bounced the recipient of
+        # every reminder we sent straight to /dashboard. See
+        # frontend/lib/route-permissions.ts: /my-receipts wants
+        # `self.billing.read`, which is what a member actually holds.
+        pay_now_url = f"{settings.FRONTEND_URL}/{locale}/my-receipts"
     elif org and org.bank_iban:
         bank_details = " — ".join(filter(None, [org.bank_name, org.bank_iban]))
 

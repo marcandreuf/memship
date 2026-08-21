@@ -315,6 +315,16 @@ def generate_membership_fees(
     edit an amount before issuing them.
     """
     org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
+    if not org:
+        # Stated rather than dereferenced. Without this the run died on an
+        # AttributeError halfway through — a 500 from the endpoint, and a task
+        # traceback from the scheduled run, neither of which names the actual
+        # problem. Matches generate_receipt_number, which is called from this
+        # same path and already guards this way.
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Organization settings not found",
+        )
     default_vat = Decimal(str(org.default_vat_rate or 21))
 
     # Get all active members with their membership type
