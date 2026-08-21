@@ -127,6 +127,27 @@ def login(
             detail="Account is locked",
         )
 
+    # Proving the password is not proving the address. Without this, anyone could
+    # register with a mailbox they do not own and hold a working session on it —
+    # which is what /register already refuses to do by not issuing a cookie of its
+    # own ("the account is not usable until the email is confirmed"). Login was
+    # handing out the session that endpoint declined to.
+    #
+    # 403 rather than 401: the credentials were right. The message has to say what
+    # to do, because the login form shows it verbatim.
+    #
+    # Awaiting *approval* is deliberately not checked here. That address is
+    # verified, the session is what lets the portal explain the wait, and
+    # require_approved_member already closes every feature router behind it.
+    if not user.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=(
+                "Confirm your email address before signing in. Check your inbox "
+                "for the confirmation link, or request a new one."
+            ),
+        )
+
     # The address is proven, so forget its failures. The source address keeps
     # its count — holding one valid account must not reset a spray from there.
     LOGIN_BY_EMAIL.clear(email)
