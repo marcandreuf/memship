@@ -110,6 +110,7 @@ Memship follows [semantic versioning](https://semver.org/), and **version number
 | v2.2.0 | Super admin recovery from the host — a super admin's password is reset with `python -m app.cli.seed` on the server rather than by email. **Security:** mailbox access was equivalent to owning the instance | Done |
 | v2.3.0 | Uploaded files behind authentication, and sign-in that cannot be guessed at forever — **Security:** the storage directory was served by a static-file mount, reset tokens came back in API responses, and the published placeholder signing key was the Compose default. **Breaking:** installs on that placeholder key get a fresh one, signing everyone out | Done |
 | v2.3.1 | Money paths that were wrong quietly — a SEPA file no longer drops receipts whose mandate was cancelled, a payment webhook no longer records a mismatched amount as paid in full, and an activity can no longer be over-booked by two people registering at once. **Behaviour:** a remittance whose mandate vanished now fails with an error instead of producing a short file, and a payment for the wrong amount leaves the receipt unpaid for review | Done |
+| v2.4.0 | Sign-in requires a confirmed email address, and invoice numbers are sequential and unbroken. **Breaking:** an account that never confirmed its address can no longer sign in — `python -m app.cli.verify_email` confirms one from the host when the confirmation email is what is broken. **Migration:** receipt numbering moves to a counter per year, seeded from the numbers already issued | Done |
 
 ## Roadmap
 
