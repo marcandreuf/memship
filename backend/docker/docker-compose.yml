@@ -25,6 +25,12 @@ services:
       - ../alembic:/app/alembic
       - ../start.py:/app/start.py
       - ../alembic.ini:/app/alembic.ini
+      # Three services mount this volume. Docker copies the image's
+      # /app/storage into a named volume the first time one is mounted empty,
+      # and concurrent copies collide — "failed to mkdir .../registrations:
+      # file exists" — failing the first `dev.sh start all` on a clean machine
+      # (#72). The API goes first and the celery services wait on it, so only
+      # one container ever populates the volume.
       - memship-storage:/app/storage
     depends_on:
       db:
@@ -60,6 +66,9 @@ services:
       - ../app:/app/app
       - memship-storage:/app/storage
     depends_on:
+      # The API populates memship-storage — see the note in the api service.
+      api:
+        condition: service_started
       redis:
         condition: service_healthy
       db:
@@ -87,6 +96,9 @@ services:
       # Survives a restart, so beat does not re-fire a job it already ran.
       - memship-celerybeat:/var/lib/celery
     depends_on:
+      # The API populates memship-storage — see the note in the api service.
+      api:
+        condition: service_started
       redis:
         condition: service_healthy
       db:
