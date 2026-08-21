@@ -23,8 +23,8 @@ La mayoría de herramientas de gestión de socios son plataformas SaaS caras o s
 
 > **Para probar Memship, no para usarlo.** Es la vía más rápida a una instancia
 > funcionando en tu propia máquina: imágenes publicadas, volúmenes desechables y una
-> clave secreta que está en este repositorio. Para gestionar una organización real,
-> sigue la [Instalación](docs/getting-started/installation.md) — el mismo producto,
+> contraseña de base de datos fija. Para gestionar una organización real, sigue
+> la [Instalación](docs/getting-started/installation.md) — el mismo producto,
 > configurado para poder respaldarlo, actualizarlo y conservarlo.
 
 Prueba Memship con un solo comando, sin necesidad de clonar el repositorio:

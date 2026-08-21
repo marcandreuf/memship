@@ -23,9 +23,9 @@ Most membership tools are either expensive SaaS platforms or outdated legacy sof
 
 > **For trying memship out, not for running it.** This is the fastest path to a
 > working instance on your own machine: published images, throwaway volumes, and
-> a secret key that is committed to this repository. To run memship for a real
-> organization, follow [Installation](docs/getting-started/installation.md)
-> instead — same product, set up so it can be backed up, upgraded and kept.
+> a fixed database password. To run memship for a real organization, follow
+> [Installation](docs/getting-started/installation.md) instead — same product,
+> set up so it can be backed up, upgraded and kept.
 
 Try memship with a single command — no cloning required:
 

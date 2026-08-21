@@ -22,8 +22,8 @@ La majoria d'eines de gestió de socis són plataformes SaaS cares o programari 
 ## Inici ràpid (Docker)
 
 > **Per provar Memship, no per fer-lo servir.** És la via més ràpida a una instància
-> funcionant a la vostra màquina: imatges publicades, volums llencívols i una clau
-> secreta que és en aquest repositori. Per gestionar una organització real, seguiu la
+> funcionant a la vostra màquina: imatges publicades, volums llencívols i una
+> contrasenya de base de dades fixa. Per gestionar una organització real, seguiu la
 > [Instal·lació](docs/getting-started/installation.md) — el mateix producte, configurat
 > per poder-lo copiar, actualitzar i conservar.
 
