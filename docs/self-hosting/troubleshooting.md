@@ -126,6 +126,34 @@ Reset it from the host with the same command. It is deliberately the only way in
 recovery through the web interface for a super admin, and every reset is written to the audit log
 with no acting user, since whoever ran it had shell access.
 
+### A member cannot sign in: "Confirm your email address before signing in"
+
+Signing in requires a confirmed address, so an account that never followed its confirmation link
+is locked out. Normally they request a new link from the sign-in page — but that needs a working
+mail transport, and a mail transport that had been failing silently is the usual reason the
+address was never confirmed in the first place.
+
+Confirm it from the host instead, once you know who the person is:
+
+```bash
+docker compose exec -T api python -m app.cli.verify_email --list
+docker compose exec -T api python -m app.cli.verify_email --email member@example.org
+```
+
+`--list` shows every account in this state, which is also the quickest way to tell whether your
+email delivery has been broken for a while. After fixing delivery you can clear the backlog in one
+go:
+
+```bash
+docker compose exec -T api python -m app.cli.verify_email --all-unverified --yes
+```
+
+That confirms addresses **without anyone proving they own them**, which is why it insists on
+`--yes`. Use it when you know the accounts are genuine and the mail was the problem; use `--email`
+one at a time when you are not sure.
+
+The command never sends anything — it is for the case where sending is what is broken.
+
 ### The API refuses to start, complaining about `SECRET_KEY`
 
 The placeholder key shipped in `.env.example` and the Compose default are published in this
