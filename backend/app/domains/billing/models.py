@@ -386,3 +386,33 @@ class ReceiptReminder(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     receipt = relationship("Receipt", backref="reminders")
+
+class InvoiceSequence(Base):
+    """The next receipt number for one year, held as a counter.
+
+    Spanish invoicing practice expects a document series to be sequential and
+    unbroken. The number used to be derived from ``COUNT(receipts in year) + 1``
+    filtered on ``is_active``, which breaks that three ways: deactivating a
+    receipt shifted the number for every one issued afterwards, the sequence was
+    not monotonic, and the collision loop that guarded it skipped numbers —
+    manufacturing the gaps it was meant to prevent.
+
+    A counter only ever moves forward. One row per year, so a receipt backdated
+    into a closed year draws from that year's series instead of clobbering the
+    current one, and the row is locked FOR UPDATE while it is read and bumped.
+
+    Allocated numbers are not returned to the pool. A cancelled receipt keeps
+    its number and stays in the series, which is what makes the series auditable
+    — a missing number is a question, not a tidy-up.
+    """
+
+    __tablename__ = "invoice_sequences"
+
+    # autoincrement=False: this is a calendar year, not a surrogate key. An
+    # integer primary key is autoincrementing by default, which would hand a
+    # row inserted without one the year 1.
+    year = Column(Integer, primary_key=True, autoincrement=False)
+    next_number = Column(Integer, nullable=False, default=1)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
