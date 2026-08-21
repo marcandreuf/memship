@@ -19,6 +19,14 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 BACKEND_COMPOSE="$REPO_ROOT/backend/docker/docker-compose.yml"
 FRONTEND_DIR="$REPO_ROOT/frontend"
 
+# The super admin that `seed demo` and `passwd` act on. It has to satisfy the
+# login schema's email pattern — ^[^@\s]+@[^@\s]+\.[^@\s]+$ in
+# backend/app/domains/auth/schemas.py — which needs a dot in the domain.
+# `dev@localhost` has none, so the account seeded fine and then rejected every
+# login with a 422 before the password was even checked (#77). Override it if
+# you want a different address.
+DEV_ADMIN_EMAIL="${DEV_ADMIN_EMAIL:-dev@memship.local}"
+
 # --- Backend (Docker) ---
 
 backend_start() {
@@ -32,7 +40,10 @@ backend_start() {
 
 backend_stop() {
     echo -e "${YELLOW}x${NC} Stopping backend services..."
-    docker compose -f "$BACKEND_COMPOSE" down
+    # The profiles matter: `dev.sh test` starts db-test under `test` and adminer
+    # runs under `tools`. Without them "stop all" leaves those containers up and
+    # the network attached, which surfaces as "Resource is still in use".
+    docker compose -f "$BACKEND_COMPOSE" --profile test --profile tools down
     echo -e "${GREEN}+${NC} Backend services stopped"
 }
 
@@ -233,7 +244,9 @@ case "$ACTION" in
     passwd)
         # Thin wrapper over the same CLI every environment uses. The password goes
         # in on the environment, never in argv, so it stays out of `ps` and history.
-        EMAIL="${2:-dev@localhost}"
+        # Must satisfy the login schema's pattern (a dot in the domain), or the
+        # account is created and can never sign in — see the note in `seed demo`.
+        EMAIL="${2:-$DEV_ADMIN_EMAIL}"
         NEWPW="$(gen_password)"
         echo -e "${BLUE}i${NC} Setting the super admin password for $EMAIL..."
         if MEMSHIP_ADMIN_PASSWORD="$NEWPW" docker compose -f "$BACKEND_COMPOSE" \
@@ -260,9 +273,9 @@ case "$ACTION" in
             echo -e "${BLUE}i${NC} Seeding a demo club with generated credentials..."
             MEMSHIP_ADMIN_PASSWORD="$DEMOPW" docker compose -f "$BACKEND_COMPOSE" \
                 exec -T -e MEMSHIP_ADMIN_PASSWORD api \
-                python -m app.cli.seed --admin-email dev@localhost --demo
+                python -m app.cli.seed --admin-email "$DEV_ADMIN_EMAIL" --demo
             echo ""
-            echo -e "${GREEN}+${NC} Super admin: dev@localhost"
+            echo -e "${GREEN}+${NC} Super admin: $DEV_ADMIN_EMAIL"
             echo -e "${GREEN}+${NC} Password:    $DEMOPW"
             echo -e "${YELLOW}i${NC} Shown once — it is stored only as a hash."
         else

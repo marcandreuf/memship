@@ -16,7 +16,13 @@ locally with pnpm, so you get Next.js hot reload without a container in the way.
 The Node major is pinned in `frontend/.nvmrc` and enforced as a warning by `engines` in
 `frontend/package.json`. **Use 22** — it is what CI runs and what the production image is built on,
 and a different major is the kind of difference that only shows up as a build that works on one
-machine and not another. With `nvm`, `cd frontend && nvm use` picks it up.
+machine and not another. With `nvm`:
+
+```bash
+cd frontend
+nvm install       # reads .nvmrc; `nvm use` on its own only switches to an already-installed major
+corepack enable   # re-run this after every version switch — see below
+```
 
 A mismatch prints `WARN Unsupported engine` and carries on, which is deliberate — it should tell
 you, not stop you mid-session. `pnpm install --engine-strict` turns the same check into a hard
@@ -24,6 +30,11 @@ failure if you ever want it enforced.
 
 pnpm's version is pinned by `packageManager` in the same file, so `corepack enable` gets you the
 right one without installing it yourself.
+
+> **corepack shims live under each Node install**, so switching majors takes pnpm with it. If you
+> arrive on 22 from another version, `./scripts/dev.sh start all` brings the backend up and then
+> fails the frontend with `pnpm: command not found` in `frontend/logs/dev-server.log`. Running
+> `corepack enable` once on the new major fixes it for good.
 
 > **You do not need Node at all just to run memship.** The frontend ships as a container, and the
 > [Quick start](../getting-started/quickstart.md) runs the whole app from published images in one
