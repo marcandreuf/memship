@@ -109,6 +109,14 @@ services:
     volumes:
       - demo-memship-storage:/app/storage
     depends_on:
+      # The API populates demo-memship-storage. Docker copies the image's
+      # /app/storage into a named volume the first time one is mounted empty,
+      # and two containers doing that concurrently collide — "failed to mkdir
+      # .../registrations: file exists" — failing `up` on roughly one clean
+      # start in ten (#72). Waiting for the API means the volume is already
+      # populated, so this container's mount is a no-op.
+      demo-memship-api:
+        condition: service_started
       demo-memship-db:
         condition: service_healthy
       demo-memship-redis:

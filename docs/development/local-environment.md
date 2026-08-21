@@ -38,13 +38,6 @@ right one without installing it yourself.
 ./scripts/dev.sh stop all       # stop everything
 ```
 
-> **The first `start all` on a clean machine can fail** with
-> `failed to mkdir /var/lib/docker/volumes/docker_memship-storage/_data/<dir>: file exists`.
-> The API, the Celery worker and beat all mount the same `memship-storage` volume and are created
-> at the same time, so Docker's own volume setup races with itself. It is not a memship error and
-> nothing is broken — **run the command again** and it starts cleanly. Only the first start on a
-> given volume is affected.
-
 ## Commands
 
 | Command | Description |
