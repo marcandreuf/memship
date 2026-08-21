@@ -4,7 +4,9 @@ from datetime import date
 from decimal import Decimal
 from unittest.mock import MagicMock
 
-from app.domains.billing.sepa_xml import generate_sepa_xml
+import pytest
+
+from app.domains.billing.sepa_xml import SepaExportError, generate_sepa_xml
 
 
 def _mock_remittance(**overrides):
@@ -95,7 +97,14 @@ class TestSepaXmlGeneration:
         assert "NbOfTxs>2<" in xml
         assert "125.00" in xml  # CtrlSum
 
-    def test_skips_receipts_without_mandate(self):
+    def test_refuses_receipts_without_mandate(self):
+        """Was `test_skips_receipts_without_mandate`, asserting NbOfTxs>1<.
+
+        That pinned the defect in place: the second receipt was dropped and the
+        file happily declared one transaction, while the remittance still said
+        two. See TestMissingMandate for why silently shrinking the batch is the
+        wrong answer.
+        """
         remittance = _mock_remittance()
         receipts = [
             _mock_receipt(member_id=1),
@@ -103,8 +112,8 @@ class TestSepaXmlGeneration:
         ]
         mandates = {1: _mock_mandate(member_id=1)}
 
-        xml = generate_sepa_xml(remittance, receipts, mandates).decode()
-        assert "NbOfTxs>1<" in xml
+        with pytest.raises(SepaExportError):
+            generate_sepa_xml(remittance, receipts, mandates)
 
     def test_one_off_mandate_type(self):
         remittance = _mock_remittance()
@@ -132,3 +141,75 @@ class TestSepaXmlGeneration:
         xml = generate_sepa_xml(remittance, receipts, mandates).decode()
         # Description should be truncated to 140 chars
         assert "A" * 140 not in xml or len(xml) > 0  # Just ensure no error
+
+
+class TestMissingMandate:
+    """A receipt whose mandate is gone must stop the export, not be dropped.
+
+    The remittance keeps the total_amount and receipt_count agreed at creation
+    and the receipts stay linked by remittance_id, so a file built from a subset
+    means the bank collects less than the batch says while those receipts are
+    excluded from future batches, with nothing reconciling the two.
+    """
+
+    def test_raises_instead_of_skipping(self):
+        remittance = _mock_remittance()
+        receipts = [_mock_receipt(member_id=1), _mock_receipt(member_id=2)]
+        mandates = {1: _mock_mandate(member_id=1)}  # member 2's mandate is gone
+
+        with pytest.raises(SepaExportError) as exc:
+            generate_sepa_xml(remittance, receipts, mandates)
+        assert "[2]" in str(exc.value)
+
+    def test_names_every_missing_member(self):
+        remittance = _mock_remittance()
+        receipts = [_mock_receipt(member_id=n) for n in (1, 2, 3)]
+        mandates = {2: _mock_mandate(member_id=2)}
+
+        with pytest.raises(SepaExportError) as exc:
+            generate_sepa_xml(remittance, receipts, mandates)
+        # Both, so one run tells the operator everything to fix.
+        assert "[1, 3]" in str(exc.value)
+
+    def test_no_partial_file_is_returned(self):
+        """The failure must not come back as a shorter file."""
+        remittance = _mock_remittance()
+        receipts = [_mock_receipt(member_id=1), _mock_receipt(member_id=2)]
+        mandates = {1: _mock_mandate(member_id=1)}
+
+        with pytest.raises(SepaExportError):
+            generate_sepa_xml(remittance, receipts, mandates)
+
+
+class TestSchemaValidation:
+    """The export is validated on the way out.
+
+    The bank is otherwise the only thing that checks the file, and the slowest
+    place to find out.
+    """
+
+    def test_export_is_schema_valid(self):
+        remittance = _mock_remittance()
+        receipts = [_mock_receipt()]
+        mandates = {1: _mock_mandate()}
+
+        # Would raise sepaxml's ValidationError if the document were malformed.
+        xml = generate_sepa_xml(remittance, receipts, mandates)
+        assert b"pain.008.001.02" in xml
+
+    def test_datetime_dates_are_narrowed(self):
+        """A datetime where the schema wants a date used to fail validation.
+
+        Both columns are Date today, so this guards the model changing under us
+        rather than a live path — the failure it prevents names neither the
+        field nor the payment.
+        """
+        from datetime import datetime
+
+        remittance = _mock_remittance(due_date=datetime(2026, 5, 1, 9, 30))
+        receipts = [_mock_receipt()]
+        mandates = {1: _mock_mandate(signed_at=datetime(2026, 4, 1, 8, 15))}
+
+        xml = generate_sepa_xml(remittance, receipts, mandates)
+        assert b"2026-05-01" in xml
+        assert b"2026-04-01" in xml
