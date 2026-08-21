@@ -305,6 +305,32 @@ class TestPayNowLink:
         assert captured["pay_now_url"] is not None
         assert captured["bank_details"] is None
 
+    def test_pay_now_points_at_the_member_page(self, db, monkeypatch):
+        """It used to link /receipts — the admin list, gated on `billing.read`.
+
+        The portal layout bounced the recipient of every reminder we sent to
+        /dashboard, so the only call to action in a dunning email went nowhere
+        for the person it was addressed to. /my-receipts wants
+        `self.billing.read`, which is what a member holds.
+        """
+        captured = _capture_reminder_email(monkeypatch)
+        _ensure_org_settings(db)
+        db.add(
+            PaymentProvider(
+                provider_type="stripe", display_name="Stripe", status="active"
+            )
+        )
+        db.flush()
+        member = _create_member(db, "pn3")
+        r = _create_receipt(
+            db, member, "pn3", "overdue", due_date=TODAY - timedelta(days=5)
+        )
+        send_reminder(db, r, "manual", today=TODAY)
+
+        url = captured["pay_now_url"]
+        assert url.endswith("/my-receipts"), url
+        assert not url.endswith("/receipts") or "/my-receipts" in url
+
     def test_bank_fallback_when_no_provider(self, db, monkeypatch):
         captured = _capture_reminder_email(monkeypatch)
         org = _ensure_org_settings(db)

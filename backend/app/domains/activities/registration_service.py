@@ -295,7 +295,17 @@ def cancel_registration(
         for receipt in unpaid_receipts:
             receipt.status = "cancelled"
     except Exception:
-        pass  # Don't fail cancellation if receipt update fails
+        # The seat is already released, so failing the cancellation here would be
+        # worse than an invoice left open — but it must not be invisible. A
+        # receipt still standing against a cancelled registration is money the
+        # member is asked for and does not owe, and nothing else reconciles the
+        # two. Same reasoning as ensure_registration_receipt, which logs for the
+        # mirror case.
+        logger.exception(
+            "Failed to cancel receipts for registration %s; a receipt may still "
+            "stand against a cancelled registration",
+            registration.id,
+        )
 
     # Dispatch cancellation email (async via Celery)
     _dispatch_cancellation_email(registration, activity)

@@ -168,3 +168,91 @@ class TestHandleWebhook:
         })
 
         assert result["ignored"] is True
+
+
+class TestAmountVerification:
+    """An authorised session is not proof it paid what we asked.
+
+    The signature proves Stripe sent the message, not that the sum is right, so
+    a partial capture or a mismatched amount used to be recorded as payment in
+    full.
+    """
+
+    def _adapter(self):
+        return StripeAdapter({"secret_key": "sk_test", "webhook_secret": "whsec_test"})
+
+    def _receipt(self, total="50.00", status="emitted"):
+        receipt = MagicMock()
+        receipt.id = 42
+        receipt.status = status
+        receipt.total_amount = Decimal(total)
+        return receipt
+
+    def _completed(self, adapter, db, **obj):
+        return adapter.handle_webhook(
+            db,
+            {
+                "type": "checkout.session.completed",
+                "data": {"object": {"metadata": {"receipt_id": "42"}, **obj}},
+            },
+        )
+
+    def test_short_payment_does_not_mark_paid(self):
+        adapter, db = self._adapter(), MagicMock()
+        receipt = self._receipt(total="50.00")
+        db.query.return_value.filter.return_value.first.return_value = receipt
+
+        result = self._completed(
+            adapter, db, amount_total=1000, currency="eur"  # 10.00, not 50.00
+        )
+
+        assert result["ignored"] is True
+        assert "mismatch" in result["reason"].lower()
+        assert receipt.status == "emitted", "a short payment was recorded as paid"
+
+    def test_matching_amount_still_pays(self):
+        adapter, db = self._adapter(), MagicMock()
+        receipt = self._receipt(total="50.00")
+        db.query.return_value.filter.return_value.first.return_value = receipt
+
+        result = self._completed(
+            adapter, db, amount_total=5000, currency="eur", payment_intent="pi_ok"
+        )
+
+        assert result.get("ignored") is not True
+        assert receipt.status == "paid"
+
+    def test_overpayment_is_also_a_mismatch(self):
+        """Not just a shortfall — any disagreement needs a person."""
+        adapter, db = self._adapter(), MagicMock()
+        receipt = self._receipt(total="50.00")
+        db.query.return_value.filter.return_value.first.return_value = receipt
+
+        result = self._completed(adapter, db, amount_total=9900, currency="eur")
+
+        assert result["ignored"] is True
+        assert receipt.status == "emitted"
+
+    def test_absent_amount_is_not_a_mismatch(self):
+        """Nothing to compare must not become a new way to reject a payment."""
+        adapter, db = self._adapter(), MagicMock()
+        receipt = self._receipt(total="50.00")
+        db.query.return_value.filter.return_value.first.return_value = receipt
+
+        result = self._completed(adapter, db, payment_intent="pi_ok")
+
+        assert result.get("ignored") is not True
+        assert receipt.status == "paid"
+
+    def test_zero_decimal_currency_is_not_scaled(self):
+        """JPY has no minor unit, so 5000 yen is amount_total 5000."""
+        adapter, db = self._adapter(), MagicMock()
+        receipt = self._receipt(total="5000")
+        db.query.return_value.filter.return_value.first.return_value = receipt
+
+        result = self._completed(
+            adapter, db, amount_total=5000, currency="jpy", payment_intent="pi_ok"
+        )
+
+        assert result.get("ignored") is not True
+        assert receipt.status == "paid"
