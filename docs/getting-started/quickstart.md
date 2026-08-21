@@ -71,8 +71,7 @@ Keep that output — the passwords are stored only as hashes and cannot be shown
 Go to **http://localhost:8081** and log in as the super admin you created.
 
 > **The quick-start stack is for evaluation, not for running a club.** Its compose file
-> ships a fixed database password, serves the API without the security headers a real
-> install gets, and keeps data in throwaway Docker volumes. Follow
+> ships a fixed database password and keeps data in throwaway Docker volumes. Follow
 > [Installation](installation.md) and the
 > [Configuration reference](../self-hosting/configuration.md) before putting Memship on a
 > network or entering real member data.

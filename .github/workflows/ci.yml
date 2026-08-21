@@ -32,6 +32,7 @@ jobs:
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
+      caddy: ${{ steps.filter.outputs.caddy }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -45,6 +46,22 @@ jobs:
               - 'backend/**'
             frontend:
               - 'frontend/**'
+            caddy:
+              - 'Caddyfile'
+              - 'docker-compose.quickstart.yml'
+              - 'scripts/check-caddy-headers.sh'
+
+  caddy-headers:
+    name: Caddy Header Parity
+    needs: changes
+    if: ${{ needs.changes.outputs.caddy == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Compare the two Caddy header blocks
+        run: ./scripts/check-caddy-headers.sh
 
   unit:
     name: Unit Tests

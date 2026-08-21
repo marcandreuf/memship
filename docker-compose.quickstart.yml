@@ -44,6 +44,24 @@ services:
       - |
         cat > /etc/caddy/Caddyfile <<'CADDYEOF'
         :80 {
+          # Kept identical to the header block in ./Caddyfile, which is what a
+          # real install serves. Without it the frontend still sets four of
+          # these itself, so a spot-check of the homepage passes while every
+          # /api/v1/* response goes out bare — that is exactly how this was
+          # missed until a walkthrough curled the API directly.
+          # scripts/check-caddy-headers.sh fails CI if the two lists drift.
+          header {
+            X-Content-Type-Options nosniff
+            Content-Security-Policy "frame-ancestors 'none'"
+            X-Frame-Options DENY
+            Referrer-Policy strict-origin-when-cross-origin
+            # Inert over plain HTTP, which is all this stack ever serves. Kept
+            # so the two files can be compared directive for directive.
+            Strict-Transport-Security "max-age=31536000"
+            # Caddy advertises itself, and the API answers with Server: uvicorn.
+            -Server
+          }
+
           handle /api/v1/* {
             reverse_proxy demo-memship-api:8000
           }
