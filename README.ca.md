@@ -109,6 +109,7 @@ Memship segueix el [versionat semàntic](https://semver.org/) i **els números d
 | v2.1.0 | Configuració inicial sense credencials publicades — el mateix procés interactiu a tots els entorns, sense comptes amb contrasenyes publicades en aquest repositori, més opcions desateses per a instal·lacions automatitzades | Fet |
 | v2.2.0 | Recuperació del superadministrador des del servidor — la seva contrasenya es restableix amb `python -m app.cli.seed` a la màquina, no per correu. **Seguretat:** l'accés a la bústia equivalia a controlar tota la instància | Fet |
 | v2.3.0 | Fitxers pujats darrere d'autenticació, i un inici de sessió que no es pot endevinar indefinidament — **Seguretat:** el directori d'emmagatzematge es servia com a fitxers estàtics, els tokens de restabliment tornaven en la resposta de l'API i la clau de signatura d'exemple publicada era el valor per defecte de compose. **Canvi incompatible:** les instal·lacions que feien servir aquesta clau en reben una de nova i tanquen totes les sessions | Fet |
+| v2.3.1 | Camins de diners que fallaven en silenci — un fitxer SEPA ja no descarta rebuts amb el mandat cancel·lat, un webhook de pagament ja no registra un import diferent com a pagament complet, i una activitat ja no pot superar l'aforament si dues persones s'hi inscriuen alhora. **Comportament:** una remesa amb el mandat desaparegut ara falla amb un error en lloc de generar un fitxer incomplet, i un pagament per un import diferent deixa el rebut pendent de revisió | Fet |
 
 ## Full de ruta
 

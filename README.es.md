@@ -109,6 +109,7 @@ Memship sigue el [versionado semántico](https://semver.org/) y **los números d
 | v2.1.0 | Configuración inicial sin credenciales publicadas — el mismo proceso interactivo en todos los entornos, sin cuentas cuyas contraseñas se publiquen en este repositorio, más opciones desatendidas para instalaciones automatizadas | Hecho |
 | v2.2.0 | Recuperación del superadministrador desde el servidor — su contraseña se restablece con `python -m app.cli.seed` en la máquina, no por correo. **Seguridad:** el acceso al buzón equivalía a controlar toda la instancia | Hecho |
 | v2.3.0 | Archivos subidos tras autenticación, y un inicio de sesión que no se puede adivinar indefinidamente — **Seguridad:** el directorio de almacenamiento se servía como archivos estáticos, los tokens de restablecimiento volvían en la respuesta de la API y la clave de firma de ejemplo publicada era el valor por defecto de compose. **Cambio incompatible:** las instalaciones que usaban esa clave reciben una nueva y cierran todas las sesiones | Hecho |
+| v2.3.1 | Rutas de dinero que fallaban en silencio — un fichero SEPA ya no descarta recibos cuyo mandato se canceló, un webhook de pago ya no registra un importe distinto como pago completo, y una actividad ya no puede sobrepasar su aforo si dos personas se inscriben a la vez. **Comportamiento:** una remesa cuyo mandato ha desaparecido ahora falla con un error en lugar de generar un fichero incompleto, y un pago por un importe distinto deja el recibo pendiente de revisión | Hecho |
 
 ## Hoja de ruta
 
