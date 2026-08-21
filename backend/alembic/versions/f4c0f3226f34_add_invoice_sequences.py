@@ -48,9 +48,14 @@ def upgrade() -> None:
     #
     # Read from the receipt_number rather than counting rows: the count is the
     # very thing that was wrong, and it excludes deactivated receipts whose
-    # numbers are still spent. Numbers are `{prefix}-{year}-{NNNN}`, so the last
-    # dash-separated field is the sequence; the regex filter keeps any
-    # hand-edited number that does not end in digits out of the MAX.
+    # numbers are still spent. Numbers are `{prefix}-{year}-{NNNN}`, and both
+    # fields are read from the END of the string rather than by dash position:
+    # the prefix is free text with no pattern on it, so it can contain dashes
+    # itself. `FAC-A-2026-0007` put "A" where the year was expected and the cast
+    # aborted the migration, which would have blocked the upgrade outright for
+    # that install. Anchoring on the end is indifferent to how many dashes come
+    # before. The filter keeps a hand-edited number that does not end in
+    # `<year>-<digits>` out of the MAX.
     #
     # Grouped by the year in the number, not by emission_date, because that is
     # the year the number was drawn against — a receipt backdated across a year
@@ -59,10 +64,11 @@ def upgrade() -> None:
         """
         INSERT INTO invoice_sequences (year, next_number)
         SELECT
-            CAST(split_part(receipt_number, '-', 2) AS INTEGER) AS series_year,
-            MAX(CAST(split_part(receipt_number, '-', -1) AS INTEGER)) + 1
+            CAST(substring(receipt_number from '([0-9]{4})-[0-9]+$') AS INTEGER)
+                AS series_year,
+            MAX(CAST(substring(receipt_number from '([0-9]+)$') AS INTEGER)) + 1
         FROM receipts
-        WHERE receipt_number ~ '^.*-[0-9]{4}-[0-9]+$'
+        WHERE receipt_number ~ '[0-9]{4}-[0-9]+$'
         GROUP BY 1
         """
     )
