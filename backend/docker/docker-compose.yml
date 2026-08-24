@@ -1,3 +1,8 @@
+# The dev stack ships weak-on-purpose settings: a fixed database password, Redis
+# with no auth, and — after `dev.sh seed test` — super admin credentials that are
+# published in this repository. Publishing those ports on 0.0.0.0 put all of it on
+# the local network. They bind to loopback instead; set DEV_BIND=0.0.0.0 for the
+# session when you deliberately need another device to reach the stack.
 services:
   api:
     build:
@@ -5,7 +10,7 @@ services:
       dockerfile: docker/Dockerfile
     container_name: memship-api
     ports:
-      - "8003:8000"
+      - "${DEV_BIND:-127.0.0.1}:8003:8000"
     environment:
       - DATABASE_URL=postgresql://memship:memship@db:5432/memship_db
       - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
@@ -20,6 +25,12 @@ services:
       - ../alembic:/app/alembic
       - ../start.py:/app/start.py
       - ../alembic.ini:/app/alembic.ini
+      # Three services mount this volume. Docker copies the image's
+      # /app/storage into a named volume the first time one is mounted empty,
+      # and concurrent copies collide — "failed to mkdir .../registrations:
+      # file exists" — failing the first `dev.sh start all` on a clean machine
+      # (#72). The API goes first and the celery services wait on it, so only
+      # one container ever populates the volume.
       - memship-storage:/app/storage
     depends_on:
       db:
@@ -32,7 +43,7 @@ services:
     image: redis:7-alpine
     container_name: memship-redis
     ports:
-      - "6379:6379"
+      - "${DEV_BIND:-127.0.0.1}:6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -55,6 +66,9 @@ services:
       - ../app:/app/app
       - memship-storage:/app/storage
     depends_on:
+      # The API populates memship-storage — see the note in the api service.
+      api:
+        condition: service_started
       redis:
         condition: service_healthy
       db:
@@ -82,6 +96,9 @@ services:
       # Survives a restart, so beat does not re-fire a job it already ran.
       - memship-celerybeat:/var/lib/celery
     depends_on:
+      # The API populates memship-storage — see the note in the api service.
+      api:
+        condition: service_started
       redis:
         condition: service_healthy
       db:
@@ -92,7 +109,7 @@ services:
     image: postgres:15-alpine
     container_name: memship-db
     ports:
-      - "5433:5432"
+      - "${DEV_BIND:-127.0.0.1}:5433:5432"
     environment:
       - POSTGRES_USER=memship
       - POSTGRES_PASSWORD=memship
@@ -110,7 +127,7 @@ services:
     image: postgres:15-alpine
     container_name: memship-db-test
     ports:
-      - "5434:5432"
+      - "${DEV_BIND:-127.0.0.1}:5434:5432"
     environment:
       - POSTGRES_USER=memship
       - POSTGRES_PASSWORD=memship
@@ -129,7 +146,7 @@ services:
     image: adminer
     container_name: memship-adminer
     ports:
-      - "8181:8080"
+      - "${DEV_BIND:-127.0.0.1}:8181:8080"
     profiles:
       - tools
     restart: unless-stopped

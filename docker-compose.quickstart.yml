@@ -6,8 +6,8 @@
 #   docker compose exec -it demo-memship-api python -m app.cli.seed
 #   Open http://localhost:8081
 #
-# EVALUATION ONLY. SECRET_KEY below is committed to the repository and the data
-# lives in throwaway Docker volumes. To run memship for a real organization use
+# EVALUATION ONLY. The database password below is fixed and the data lives in
+# throwaway Docker volumes. To run memship for a real organization use
 # scripts/install.sh and the root docker-compose.yml — see
 # docs/getting-started/installation.md.
 #
@@ -24,10 +24,12 @@ x-backend-env: &backend-env
   # on the shared volume. Set SECRET_KEY in the environment to supply your own.
   SECRET_KEY: ${SECRET_KEY:-}
   APP_ENV: production
-  APP_VERSION: ${IMAGE_TAG:-latest}
   DEFAULT_LOCALE: es
-  CORS_ORIGINS: http://localhost
-  FRONTEND_URL: http://localhost
+  # Both must follow PORT, or every link the backend builds (password reset,
+  # email verification, receipt payment) points at port 80 and 404s. A browser
+  # omits the port from Origin when it is 80, so the bare form is listed too.
+  CORS_ORIGINS: http://localhost:${PORT:-80},http://localhost
+  FRONTEND_URL: http://localhost:${PORT:-80}
   CELERY_BROKER_URL: redis://demo-memship-redis:6379/0
 
 services:
@@ -42,6 +44,24 @@ services:
       - |
         cat > /etc/caddy/Caddyfile <<'CADDYEOF'
         :80 {
+          # Kept identical to the header block in ./Caddyfile, which is what a
+          # real install serves. Without it the frontend still sets four of
+          # these itself, so a spot-check of the homepage passes while every
+          # /api/v1/* response goes out bare — that is exactly how this was
+          # missed until a walkthrough curled the API directly.
+          # scripts/check-caddy-headers.sh fails CI if the two lists drift.
+          header {
+            X-Content-Type-Options nosniff
+            Content-Security-Policy "frame-ancestors 'none'"
+            X-Frame-Options DENY
+            Referrer-Policy strict-origin-when-cross-origin
+            # Inert over plain HTTP, which is all this stack ever serves. Kept
+            # so the two files can be compared directive for directive.
+            Strict-Transport-Security "max-age=31536000"
+            # Caddy advertises itself, and the API answers with Server: uvicorn.
+            -Server
+          }
+
           handle /api/v1/* {
             reverse_proxy demo-memship-api:8000
           }
@@ -89,6 +109,14 @@ services:
     volumes:
       - demo-memship-storage:/app/storage
     depends_on:
+      # The API populates demo-memship-storage. Docker copies the image's
+      # /app/storage into a named volume the first time one is mounted empty,
+      # and two containers doing that concurrently collide — "failed to mkdir
+      # .../registrations: file exists" — failing `up` on roughly one clean
+      # start in ten (#72). Waiting for the API means the volume is already
+      # populated, so this container's mount is a no-op.
+      demo-memship-api:
+        condition: service_started
       demo-memship-db:
         condition: service_healthy
       demo-memship-redis:

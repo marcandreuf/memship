@@ -24,9 +24,19 @@ Running Memship on your own server.
 - [Email delivery](self-hosting/email.md) — SMTP or Resend _(EN)_
 - [Backups & restore](self-hosting/backups-and-restore.md) _(EN)_
 - [Upgrading](self-hosting/upgrading.md) — image tags and migrations _(EN)_
-- Reverse proxy & TLS — _planned_
+- [Troubleshooting](self-hosting/troubleshooting.md) — when something will not start _(EN)_
+- Reverse proxy & TLS — the stack ships a Caddy that obtains and renews certificates on its own.
+  Set up in [Installation](getting-started/installation.md), tuned via `SITE_ADDRESS` in the
+  [Configuration reference](self-hosting/configuration.md)
 - Payment providers (Stripe, Redsys/Bizum) — _planned_
-- Troubleshooting — _planned_
+
+## Development (contributors)
+
+Working on Memship itself.
+
+- [Local development environment](development/local-environment.md) — the dev stack, commands,
+  seeding and the test suites _(EN)_
+- [Contributing](../CONTRIBUTING.md) — branching, versioning and how a release is cut _(EN)_
 
 ## Guía del administrador (admin guide)
 
@@ -58,9 +68,9 @@ Para las personas socias que usan el portal.
 - FAQ — _planned_
 - Glossary — _planned_
 
-> **Simple Bookings** (reserva de espacios) is not yet part of a released version — it ships on
-> its own feature branch. Its admin and member pages will be added **with that feature's PR**,
-> per the "docs live with the code" rule below.
+> **Simple Bookings** (reserva de espacios) ships in the released images — `/api/v1/bookings` is
+> in the API and the setup command seeds spaces, slots and a waitlist — but it has **no admin or
+> member guide page yet**. That is a documentation gap, not a missing feature.
 
 ---
 

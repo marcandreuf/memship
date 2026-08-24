@@ -11,6 +11,12 @@ This guide covers a **production** self-hosted install. For a quick local evalua
   `sudo apt-get update && sudo apt-get install -y git`
 - A domain name, with a DNS A record already pointing at the server, if you want automatic HTTPS
 
+> **One memship instance per host.** The Compose file names its containers explicitly
+> (`memship-db`, `memship-api`, …), which is what makes the scripts and the docs able to refer to
+> them. Names are global to the Docker daemon, so a second instance — even from another directory,
+> with its own data root and its own Compose project — fails part-way with
+> `Conflict. The container name "/memship-db" is already in use`. Use a second host, or a VM.
+
 ### Starting from a bare server
 
 `scripts/vps-bootstrap.sh` does the root half of the preparation. Run it **once, as root**, on a
@@ -64,8 +70,11 @@ images and starts the stack.
 
 **Your install is pinned to a version.** `install.sh` sets `IMAGE_TAG` to the most recent release
 tag in the checkout, so the deployment stays on that version until you move it deliberately, and
-`/api/v1/health` reports which one it runs. Pass `--tag 2.2.0` to pin a different one. To upgrade,
-edit `IMAGE_TAG` in `.env` and re-run the script — see [Upgrading](../self-hosting/upgrading.md).
+`/api/v1/health` reports which one it runs. Pass `--tag 2.2.0` to pin a different one.
+
+**To upgrade later, follow [Upgrading](../self-hosting/upgrading.md).** Moving `IMAGE_TAG` on its
+own is not enough — part of a release ships in the git checkout rather than in the images, so an
+upgrade starts with `git pull`.
 
 **Point DNS at the server first.** `install.sh` refuses to start when the hostname does not
 resolve to this host, because Caddy validates over HTTP-01 and Let's Encrypt rate-limits *failed*
@@ -131,9 +140,11 @@ Three things worth knowing about it:
 - `postgres/` is mode `0700` owned by uid 70 — visible as a path but not readable by you. That is
   correct and expected. Read the database with `scripts/db-backup.sh`, not with `ls`.
 
-> **Do not put the data root inside a `0700` home directory.** Containers running as other users
-> (Postgres uses uid 70) cannot traverse into it, and Postgres will refuse to start. `/srv` is the
-> FHS location for service data and survives deleting the user.
+> **Put the data root in `/srv`, not in a home directory.** `/srv` is the FHS location for service
+> data, it survives deleting the user, and it stays reachable when a home directory's permissions
+> change. A data root under `$HOME` does work with ordinary Docker — the daemon resolves bind-mount
+> sources as root, so a `0700` home does not stop Postgres from starting — but it does break under
+> **rootless Docker and Podman**, where the container's own uid has to traverse the path.
 
 ### SELinux hosts (RHEL, Fedora, Rocky, AlmaLinux)
 
@@ -176,13 +187,18 @@ Then set, at minimum:
 - **`SITE_ADDRESS`** — your hostname for automatic HTTPS, or leave empty for plain HTTP
 - **`IMAGE_TAG`** — pin a released version; see [Upgrading](../self-hosting/upgrading.md)
 
-Create the directory tree, then start the stack:
+Create the directory tree, then start the stack. `.env` is read by Compose, not by your shell, so
+export the path here too — or write it out in full:
 
 ```bash
+export MEMSHIP_DATA_ROOT=/srv/openmemship/data
 mkdir -p "$MEMSHIP_DATA_ROOT"/{postgres,storage,celerybeat,caddy/data,caddy/config,backups}
 docker compose pull
 docker compose up -d
 ```
+
+Do not skip the `mkdir`. Docker creates a missing bind-mount source itself, but as **root** — and
+the backend runs as your uid, so it then cannot write its own uploads.
 
 See the [Configuration reference](../self-hosting/configuration.md) for every available setting.
 

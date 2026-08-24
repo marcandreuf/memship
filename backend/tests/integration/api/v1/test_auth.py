@@ -325,3 +325,73 @@ class TestLogout:
         response = client.post("/api/v1/auth/logout")
         assert response.status_code == 200
         assert response.json()["message"] == "Logged out"
+
+
+class TestUnverifiedEmailCannotSignIn:
+    """Proving the password is not proving the address.
+
+    /register deliberately issues no session — "the account is not usable until
+    the email is confirmed" — but login handed out the session that endpoint had
+    declined to, so anyone could register with a mailbox they do not own and hold
+    a working session on it.
+    """
+
+    def _unverified(self, db, email="unverified@examplee6e3b1.com", password="Sup3rSecret!"):
+        person = Person(first_name="Un", last_name="Verified", email=email)
+        db.add(person)
+        db.flush()
+        user = User(
+            person_id=person.id,
+            email=email,
+            password_hash=hash_password(password),
+            role="member",
+            is_active=True,
+            email_verified=False,
+        )
+        db.add(user)
+        db.flush()
+        return user, password
+
+    def test_correct_password_is_still_refused(self, client, db):
+        user, password = self._unverified(db)
+
+        r = client.post(
+            "/api/v1/auth/login", json={"email": user.email, "password": password}
+        )
+
+        assert r.status_code == 403, r.text
+        assert "auth" not in r.cookies, "a session was issued to an unverified address"
+
+    def test_the_message_says_what_to_do(self, client, db):
+        """The login form renders this string verbatim."""
+        user, password = self._unverified(db)
+
+        r = client.post(
+            "/api/v1/auth/login", json={"email": user.email, "password": password}
+        )
+
+        detail = r.json()["detail"].lower()
+        assert "confirm your email" in detail
+        assert "link" in detail
+
+    def test_a_wrong_password_still_reads_as_wrong_credentials(self, client, db):
+        """403 must not become a way to enumerate which addresses exist."""
+        user, _ = self._unverified(db)
+
+        r = client.post(
+            "/api/v1/auth/login",
+            json={"email": user.email, "password": "not-the-password"},
+        )
+
+        assert r.status_code == 401, r.text
+
+    def test_verifying_lets_them_in(self, client, db):
+        user, password = self._unverified(db)
+        user.email_verified = True
+        db.flush()
+
+        r = client.post(
+            "/api/v1/auth/login", json={"email": user.email, "password": password}
+        )
+
+        assert r.status_code == 200, r.text

@@ -130,7 +130,9 @@ def register_member(
     # 5. Validate consents
     _validate_consents(db, activity.id, consents or [])
 
-    # 6. Check capacity
+    # 6. Check capacity, under a row lock so the decision and the increment in
+    #    step 10 cannot interleave with another registration.
+    _lock_capacity_rows(db, activity, modality)
     waiting_list_enabled = activity.features.get("waiting_list", False) if activity.features else False
     status = _determine_registration_status(activity, modality, waiting_list_enabled)
 
@@ -293,7 +295,17 @@ def cancel_registration(
         for receipt in unpaid_receipts:
             receipt.status = "cancelled"
     except Exception:
-        pass  # Don't fail cancellation if receipt update fails
+        # The seat is already released, so failing the cancellation here would be
+        # worse than an invoice left open — but it must not be invisible. A
+        # receipt still standing against a cancelled registration is money the
+        # member is asked for and does not owe, and nothing else reconciles the
+        # two. Same reasoning as ensure_registration_receipt, which logs for the
+        # mirror case.
+        logger.exception(
+            "Failed to cancel receipts for registration %s; a receipt may still "
+            "stand against a cancelled registration",
+            registration.id,
+        )
 
     # Dispatch cancellation email (async via Celery)
     _dispatch_cancellation_email(registration, activity)
@@ -397,45 +409,114 @@ def _validate_consents(db: Session, activity_id: int, consents: list) -> None:
         raise RegistrationError(f"Mandatory consents not accepted: {names}")
 
 
+def _lock_capacity_rows(
+    db: Session, activity: Activity, modality: "ActivityModality | None"
+) -> None:
+    """Serialize the read-modify-write on the capacity counters.
+
+    ``current_participants`` is a cached column incremented in Python, so two
+    registrations arriving together both read ``max - 1``, both take the
+    confirmed branch and both increment: the activity ends up over capacity and
+    the counter drifts from the ``registrations`` rows. Locking the row the
+    decision reads makes the second caller wait for the first to commit.
+
+    ``populate_existing()`` is not optional. The activity is already in the
+    session — the endpoint loaded it to return a 404 — and without it SQLAlchemy
+    hands back the identity-mapped instance with the *stale* counter still
+    attached, so the lock would be taken and then the old value read straight
+    through it.
+
+    Rows are always locked activity-then-modality so two callers cannot take
+    them in opposite orders and deadlock.
+
+    This is the pattern ``domains/bookings/service.py`` already uses on
+    ``space_slots``.
+    """
+    db.query(Activity).filter(Activity.id == activity.id).populate_existing().with_for_update().first()
+    if modality is not None:
+        (
+            db.query(ActivityModality)
+            .filter(ActivityModality.id == modality.id)
+            .populate_existing()
+            .with_for_update()
+            .first()
+        )
+
+
+def _full_level(activity: Activity, modality: "ActivityModality | None") -> str | None:
+    """Which capacity level is full, or None if a confirmed seat fits.
+
+    The single place the capacity rule lives. Both the new-registration path and
+    waitlist promotion ask this, so the two cannot drift apart — promotion used
+    to skip the check entirely. Modality is tested first because it is the
+    narrower cap. ``Activity.max_participants`` is NOT NULL; a modality's is
+    optional and means "no cap of its own".
+    """
+    if modality is not None and modality.max_participants is not None:
+        if (modality.current_participants or 0) >= modality.max_participants:
+            return "modality"
+    if (activity.current_participants or 0) >= activity.max_participants:
+        return "activity"
+    return None
+
+
+def _has_capacity(activity: Activity, modality: "ActivityModality | None") -> bool:
+    """Whether one more confirmed seat fits, at both levels."""
+    return _full_level(activity, modality) is None
+
+
 def _determine_registration_status(
     activity: Activity,
     modality: ActivityModality | None,
     waiting_list_enabled: bool,
 ) -> str:
     """Determine whether a new registration should be confirmed or waitlisted."""
-    # Check modality-level capacity first
-    if modality and modality.max_participants is not None:
-        if (modality.current_participants or 0) >= modality.max_participants:
-            if waiting_list_enabled:
-                return "waitlist"
-            raise RegistrationError("This modality is full")
-
-    # Check activity-level capacity
-    if (activity.current_participants or 0) >= activity.max_participants:
-        if waiting_list_enabled:
-            return "waitlist"
-        raise RegistrationError("Activity is full")
-
-    return "confirmed"
+    full = _full_level(activity, modality)
+    if full is None:
+        return "confirmed"
+    if waiting_list_enabled:
+        return "waitlist"
+    raise RegistrationError(
+        "This modality is full" if full == "modality" else "Activity is full"
+    )
 
 
 def _promote_from_waitlist(
     db: Session, activity: Activity, modality_id: int | None = None
 ) -> Registration | None:
-    """Promote the oldest waitlisted registration to confirmed."""
+    """Promote the oldest waitlisted registration to confirmed.
+
+    Only ever fills the seat that was actually freed. ``modality_id`` is the
+    modality of the cancelled registration, and a promotion must match it: with
+    an unfiltered query, cancelling a registration that had no modality promoted
+    the oldest waitlister in the whole activity — possibly one waiting on a
+    different modality that is still full — and then incremented that modality
+    past its own cap. ``None`` means the freed seat had no modality, so the
+    candidates are the waitlisters that also have none.
+
+    Capacity is re-checked rather than assumed. A freed seat is not proof there
+    is room: an admin may have lowered the cap while people were waiting.
+    """
+    modality_filter = (
+        Registration.modality_id == modality_id
+        if modality_id is not None
+        else Registration.modality_id.is_(None)
+    )
     query = (
         db.query(Registration)
         .filter(
             Registration.activity_id == activity.id,
             Registration.status == "waitlist",
+            modality_filter,
         )
         .order_by(Registration.created_at.asc())
     )
-    if modality_id:
-        query = query.filter(Registration.modality_id == modality_id)
 
     next_in_line = query.first()
     if not next_in_line:
+        return None
+
+    if not _has_capacity(activity, next_in_line.modality):
         return None
 
     next_in_line.status = "confirmed"

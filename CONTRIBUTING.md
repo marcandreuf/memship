@@ -4,7 +4,7 @@ Thank you for your interest in contributing to Memship!
 
 ## Current Status
 
-Memship is in active development. The foundation — infrastructure, CI/CD, and core architecture — is in place, and **code contributions are welcome**. See the [roadmap](README.md#roadmap) for what is shipped and what is planned.
+Memship is in active development. The foundation — infrastructure, CI/CD, and core architecture — is in place, and **code contributions are welcome**. See [Releases](README.md#releases) for what has shipped and the [roadmap](README.md#roadmap) for what is planned.
 
 ## How You Can Help
 
@@ -117,7 +117,7 @@ Version numbers follow [semantic versioning](https://semver.org/) and are **chos
 - **Patch** (`x.y.Z`) — bug fixes and small polish, no new feature.
 - **Major** (`X.0.0`) — a breaking change to the API, data model, or deployment/upgrade contract.
 
-Because features are built in parallel, **the number is claimed at release, not when you branch.** Whoever releases first takes the next number; the next feature to ship takes the one after — so don't hard-code a target version into your branch, commits, or the roadmap while the work is in flight. When your feature is ready, add its row to the **Released** table in the [roadmap](README.md#roadmap) *in the same PR as the feature code*, then tag. That is also what satisfies the roadmap guard (step 4 below): the tagged commit must already carry the released version's README row.
+Because features are built in parallel, **the number is claimed at release, not when you branch.** Whoever releases first takes the next number; the next feature to ship takes the one after — so don't hard-code a target version into your branch, commits, or the roadmap while the work is in flight. When your feature is ready, add its row to the [release table](README.md#releases) *in the same PR as the feature code*, then tag. That is also what satisfies the release guard (step 4 below): the tagged commit must already carry the released version's README row.
 
 The flow is **build once, promote**:
 
@@ -131,7 +131,7 @@ The flow is **build once, promote**:
    ```
 
    This creates an annotated `v1.3.0` tag and pushes it.
-4. The Release workflow **promotes the exact RC image** for that commit to `:1.3.0` and `:latest` — it does not rebuild, so staging and production ship identical bytes. It also checks that the released version has a row in the README roadmap's **Released** table.
+4. The Release workflow **promotes the exact RC image** for that commit to `:1.3.0` and `:latest` — it does not rebuild, so staging and production ship identical bytes. It also checks that the released version has a row in the README's [release table](README.md#releases).
 
    If an RC image is missing for the tagged commit, the release **fails** instead of building one from the tag. A rebuild would look like it worked while quietly shipping bytes nobody validated, differing from staging by whatever moved in the base image or the dependency tree in the meantime. Build the missing RC first (Actions → **Build Images** → Run workflow on that commit), then re-run the release. `allow_rebuild` overrides this for tags old enough that their RC images have been cleaned up.
 

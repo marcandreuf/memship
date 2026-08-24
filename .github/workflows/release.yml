@@ -72,15 +72,15 @@ jobs:
         run: echo "short_sha=$(git rev-parse HEAD | cut -c1-12)" >> "$GITHUB_OUTPUT"
 
       # The one genuinely useful check the old pre-commit hook did, moved server-side
-      # so it is enforced for everyone: the released version must be in the roadmap.
+      # so it is enforced for everyone: the released version must be in the release table.
       - name: Roadmap guard
         env:
           VERSION: ${{ steps.ver.outputs.version }}
         run: |
           if grep -qF "| v$VERSION " README.md; then
-            echo "v$VERSION found in the README roadmap."
+            echo "v$VERSION found in the README release table."
           else
-            echo "::error::v$VERSION is not in the README.md roadmap table. Add its row before releasing."
+            echo "::error::v$VERSION is not in the README.md release table. Add its row before releasing."
             exit 1
           fi
 
@@ -170,7 +170,7 @@ jobs:
       # manual one that got forgotten — only 3 of the first 18 tags have any.
       #
       # This drafts the release rather than publishing it, and seeds it from the
-      # version's Released row in README.md, which the roadmap guard above has
+      # version's row in the README release table, which the release guard above has
       # already proved exists and which a human wrote and reviewed. Deliberately
       # NOT --generate-notes: the value in the existing notes is prose a
       # generator cannot produce — why an exposure mattered, what a default used
@@ -191,6 +191,10 @@ jobs:
           # Re-promotion via workflow_dispatch must never touch notes that already
           # exist — overwriting a published release with a seeded draft would lose
           # the prose this whole step exists to protect.
+          #
+          # This lookup is by tag, so it also depended on the binding below being
+          # right: a release carrying the `untagged-<sha>` placeholder is invisible
+          # here, and a re-run would have drafted a second one alongside it (#88).
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "::notice::$TAG already has a release. Left untouched."
             echo "created=false" >> "$GITHUB_OUTPUT"
@@ -200,7 +204,7 @@ jobs:
           ROW="$(grep -F "| v$VERSION " README.md | head -1)"
           SUMMARY="$(printf '%s' "$ROW" | sed -E "s/^\| v${VERSION} \| //; s/ \| [^|]*\|[[:space:]]*$//")"
           if [[ -z "$SUMMARY" || "$SUMMARY" == "$ROW" ]]; then
-            echo "::error::Could not parse the v$VERSION row out of README.md. The roadmap guard found the row, so the table's shape has changed — fix the parsing here rather than releasing without notes."
+            echo "::error::Could not parse the v$VERSION row out of README.md. The release guard found the row, so the table's shape has changed — fix the parsing here rather than releasing without notes."
             exit 1
           fi
 
@@ -218,30 +222,48 @@ jobs:
           # Newest line, or a patch to an older one? Only the former claims Latest.
           HIGHEST="$(git tag -l 'v*.*.*' --sort=v:refname | tail -1)"
 
+          # Everything here has to read sensibly if it is published untouched.
+          # The seed used to carry "delete this before publishing" instructions
+          # and every commit subject in the range, which is fine as raw material
+          # and wrong as a release note — and one keystroke away from being the
+          # published one. A summary and a compare link are useful either way.
           {
-            echo "<!-- Draft seeded from the README roadmap row. Replace this summary with the"
-            echo "     real notes before publishing: lead on why the change matters, not what"
-            echo "     changed. Body starts at ##, no H1. Delete the commit list below. -->"
+            echo "<!-- Seeded from the README release table row. Replace this with real notes:"
+            echo "     lead on why the change matters, not what changed. Body starts at ##, no H1."
+            echo "     Publishing it unedited is not a disaster, but it is not the story either. -->"
             echo ""
             echo "## Summary"
             echo ""
             echo "$SUMMARY"
             echo ""
-            echo "---"
-            echo ""
-            echo "### Commits in $RANGE — raw material, delete before publishing"
-            echo ""
-            git log --no-merges --format='- %s' "$RANGE"
+            if [[ "$RANGE" == *".."* ]]; then
+              echo "**What changed:** [\`$RANGE\`](https://github.com/${{ github.repository }}/compare/${RANGE/../...})"
+            fi
           } > release-notes.md
 
-          LATEST_FLAG="--latest=false"
-          if [[ "$HIGHEST" == "$TAG" ]]; then LATEST_FLAG="--latest"; fi
+          if [[ "$HIGHEST" == "$TAG" ]]; then MAKE_LATEST=true; else MAKE_LATEST=false; fi
 
-          gh release create "$TAG" \
-            --draft \
-            $LATEST_FLAG \
-            --title "$TAG — $HEADLINE" \
-            --notes-file release-notes.md
+          # Created through the REST API rather than `gh release create` because
+          # that produced a release carrying the `untagged-<sha>` placeholder
+          # instead of the tag (#88): a published release bound to no tag, and a
+          # tag with no release, discovered only when someone opened it. tag_name
+          # is explicit here, and checked below — the tag already exists, since
+          # pushing it is what triggered this workflow.
+          RELEASE_ID="$(gh api --method POST "repos/${{ github.repository }}/releases" \
+            -f tag_name="$TAG" \
+            -f name="$TAG — $HEADLINE" \
+            -f body="$(cat release-notes.md)" \
+            -F draft=true \
+            -f make_latest="$MAKE_LATEST" \
+            --jq .id)"
+
+          # A mis-bound release must fail here, not be found by whoever publishes it.
+          BOUND="$(gh api "repos/${{ github.repository }}/releases/$RELEASE_ID" --jq .tag_name)"
+          if [[ "$BOUND" != "$TAG" ]]; then
+            echo "::error::Drafted release $RELEASE_ID is bound to '$BOUND', not '$TAG'. Fix it with: gh api --method PATCH repos/${{ github.repository }}/releases/$RELEASE_ID -f tag_name=$TAG"
+            exit 1
+          fi
+          echo "Draft $RELEASE_ID bound to $BOUND."
 
           echo "created=true" >> "$GITHUB_OUTPUT"
           echo "::notice::Drafted $TAG — $HEADLINE. Finish the notes and publish it."

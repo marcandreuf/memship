@@ -18,7 +18,7 @@ import logging
 import re
 import secrets
 from datetime import date
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from urllib.parse import parse_qs
 
 from redsys.client import RedirectClient
@@ -96,6 +96,29 @@ def map_response_to_outcome(ds_response: str) -> str:
     if 0 <= code <= 99:
         return "paid"
     return "denied"
+
+
+def _amount_mismatch(notified: str | None, expected) -> Decimal | None:
+    """The notified amount when it differs from the receipt total, else None.
+
+    python-redsys hands back a Decimal in euros — the same unit ``create_payment``
+    passes in — so the two compare directly.
+
+    Returns None when there is nothing to check: no amount on the notification,
+    or one that will not parse. A real payment must not be held up by a field we
+    failed to read; this check exists to catch a wrong number, not to add a new
+    way for a correct payment to be rejected.
+    """
+    if notified is None:
+        return None
+    try:
+        got = Decimal(str(notified))
+    except (InvalidOperation, TypeError, ValueError):
+        logger.warning(
+            "Could not parse Redsys Ds_Amount %r; amount not checked", notified
+        )
+        return None
+    return got if got != Decimal(str(expected)) else None
 
 
 class RedsysAdapter(PaymentProviderAdapter):
@@ -251,6 +274,29 @@ class RedsysAdapter(PaymentProviderAdapter):
                 receipt = db.query(Receipt).filter(Receipt.id == fallback_id).first()
         if not receipt:
             return {"ignored": True, "reason": f"No receipt for order {ds_order}"}
+
+        mismatch = _amount_mismatch(event_data.get("ds_amount"), receipt.total_amount)
+        if mismatch is not None:
+            # Authorised, but not for what we asked. Marking it paid in full
+            # would write off the difference silently; the signature proves the
+            # message is genuine, not that the sum is right. Left unpaid and
+            # logged so a person decides — a retry cannot change the amount, so
+            # this is reported as handled rather than failed.
+            logger.error(
+                "Redsys notified %s for receipt %s, which totals %s. Receipt "
+                "left unpaid for manual review.",
+                mismatch,
+                receipt.id,
+                receipt.total_amount,
+            )
+            return {
+                "ignored": True,
+                "reason": (
+                    f"Amount mismatch: notified {mismatch}, "
+                    f"expected {receipt.total_amount}"
+                ),
+                "receipt_id": receipt.id,
+            }
 
         outcome = map_response_to_outcome(ds_response)
         if outcome != "paid":

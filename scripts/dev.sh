@@ -19,6 +19,14 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 BACKEND_COMPOSE="$REPO_ROOT/backend/docker/docker-compose.yml"
 FRONTEND_DIR="$REPO_ROOT/frontend"
 
+# The super admin that `seed demo` and `passwd` act on. It has to satisfy the
+# login schema's email pattern — ^[^@\s]+@[^@\s]+\.[^@\s]+$ in
+# backend/app/domains/auth/schemas.py — which needs a dot in the domain.
+# `dev@localhost` has none, so the account seeded fine and then rejected every
+# login with a 422 before the password was even checked (#77). Override it if
+# you want a different address.
+DEV_ADMIN_EMAIL="${DEV_ADMIN_EMAIL:-dev@memship.local}"
+
 # --- Backend (Docker) ---
 
 backend_start() {
@@ -32,7 +40,10 @@ backend_start() {
 
 backend_stop() {
     echo -e "${YELLOW}x${NC} Stopping backend services..."
-    docker compose -f "$BACKEND_COMPOSE" down
+    # The profiles matter: `dev.sh test` starts db-test under `test` and adminer
+    # runs under `tools`. Without them "stop all" leaves those containers up and
+    # the network attached, which surfaces as "Resource is still in use".
+    docker compose -f "$BACKEND_COMPOSE" --profile test --profile tools down
     echo -e "${GREEN}+${NC} Backend services stopped"
 }
 
@@ -161,6 +172,37 @@ show_overall_status() {
     echo "  ./scripts/dev.sh logs frontend  - View frontend logs"
 }
 
+
+# --- Credentials & exposure ---
+
+# The dev stack is weak on purpose. That is fine on loopback and dangerous the
+# moment anything is published wider, so say so rather than assume the developer
+# remembers which network they joined.
+warn_if_exposed() {
+    local bind="${DEV_BIND:-127.0.0.1}"
+    [ "$bind" = "127.0.0.1" ] && return 0
+    echo -e "${RED}${BOLD}!! DEV_BIND=$bind — the dev stack is on every interface.${NC}"
+    echo -e "${YELLOW}   Fixed database password, Redis without auth, and any seeded accounts"
+    echo -e "   are reachable by anyone on this network. Do not do this on a network"
+    echo -e "   you do not control.${NC}"
+    if has_test_accounts; then
+        echo -e "${RED}${BOLD}   This database holds the e2e test accounts, whose passwords are"
+        echo -e "   published in this repository. Anyone here can sign in as super admin."
+        echo -e "   Run './scripts/dev.sh passwd' or reseed with 'seed demo'.${NC}"
+    fi
+}
+
+has_test_accounts() {
+    docker compose -f "$BACKEND_COMPOSE" exec -T db \
+        psql -U memship -d memship_db -tAc \
+        "select 1 from users where email = 'super@examplee6e3b1.com' limit 1" 2>/dev/null | grep -q 1
+}
+
+gen_password() {
+    # Avoid characters that need quoting when a developer pastes this around.
+    LC_ALL=C tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 24
+}
+
 # --- Main ---
 
 ACTION="${1:-status}"
@@ -168,6 +210,7 @@ TARGET="${2:-all}"
 
 case "$ACTION" in
     start|stop|restart|logs)
+        [ "$ACTION" = "start" ] && warn_if_exposed
         case "$TARGET" in
             backend)  run_backend "$ACTION" ;;
             frontend) run_frontend "$ACTION" ;;
@@ -198,10 +241,43 @@ case "$ACTION" in
     status)
         show_overall_status
         ;;
+    passwd)
+        # Thin wrapper over the same CLI every environment uses. The password goes
+        # in on the environment, never in argv, so it stays out of `ps` and history.
+        # Must satisfy the login schema's pattern (a dot in the domain), or the
+        # account is created and can never sign in — see the note in `seed demo`.
+        EMAIL="${2:-$DEV_ADMIN_EMAIL}"
+        NEWPW="$(gen_password)"
+        echo -e "${BLUE}i${NC} Setting the super admin password for $EMAIL..."
+        if MEMSHIP_ADMIN_PASSWORD="$NEWPW" docker compose -f "$BACKEND_COMPOSE" \
+                exec -T -e MEMSHIP_ADMIN_PASSWORD api \
+                python -m app.cli.seed --admin-email "$EMAIL" >/dev/null; then
+            echo -e "${GREEN}+${NC} Super admin: $EMAIL"
+            echo -e "${GREEN}+${NC} Password:    $NEWPW"
+            echo -e "${YELLOW}i${NC} Shown once — it is stored only as a hash."
+        else
+            echo -e "${RED}x${NC} Could not set the password. Is the API up?"
+            exit 1
+        fi
+        ;;
     seed)
         if [ "$TARGET" = "test" ]; then
             echo -e "${BLUE}i${NC} Running setup with the fixed e2e test accounts..."
+            warn_if_exposed
             docker compose -f "$BACKEND_COMPOSE" exec -it api python -m app.cli.seed --test
+        elif [ "$TARGET" = "demo" ]; then
+            # Same sample data as `seed test`, but nothing a stranger could look up:
+            # the super admin password is generated here and the demo club generates
+            # the rest. Use this unless you are running the Cypress suite.
+            DEMOPW="$(gen_password)"
+            echo -e "${BLUE}i${NC} Seeding a demo club with generated credentials..."
+            MEMSHIP_ADMIN_PASSWORD="$DEMOPW" docker compose -f "$BACKEND_COMPOSE" \
+                exec -T -e MEMSHIP_ADMIN_PASSWORD api \
+                python -m app.cli.seed --admin-email "$DEV_ADMIN_EMAIL" --demo
+            echo ""
+            echo -e "${GREEN}+${NC} Super admin: $DEV_ADMIN_EMAIL"
+            echo -e "${GREEN}+${NC} Password:    $DEMOPW"
+            echo -e "${YELLOW}i${NC} Shown once — it is stored only as a hash."
         else
             echo -e "${BLUE}i${NC} Running the interactive setup..."
             docker compose -f "$BACKEND_COMPOSE" exec -it api python -m app.cli.seed
@@ -246,7 +322,7 @@ case "$ACTION" in
     *)
         echo -e "${BOLD}Memship Dev Environment Manager${NC}"
         echo ""
-        echo "Usage: $0 {start|stop|restart|status|logs|seed|test} [backend|frontend|all]"
+        echo "Usage: $0 {start|stop|restart|status|logs|seed|passwd|test|e2e} [backend|frontend|worker|beat|all]"
         echo ""
         echo -e "${BOLD}Commands:${NC}"
         echo "  start [target]    - Start services"
@@ -255,14 +331,18 @@ case "$ACTION" in
         echo "  status            - Show status of all services"
         echo "  logs [target]     - View logs (requires specific target)"
         echo "  seed              - Run the interactive setup (same on every environment)"
-        echo "  seed test         - Seed the fixed e2e test accounts (development only)"
+        echo "  seed demo         - Seed a demo club with generated credentials (prefer this)"
+        echo "  seed test         - Seed the fixed e2e test accounts, published in this repo"
+        echo "  passwd [email]    - Set the super admin password to a fresh generated one"
         echo "  reset             - Wipe DB, restart backend, and re-seed with test data"
         echo "  test              - Run backend tests"
         echo "  e2e               - Run Cypress E2E tests (headless)"
         echo "  e2e:open          - Open Cypress GUI (interactive)"
         echo ""
         echo -e "${BOLD}Targets:${NC}"
-        echo "  backend    - API + DB (Docker, port 8003)"
+        echo "  backend    - API + DB + Redis + worker + beat (Docker, port 8003)"
+        echo "  worker     - Celery worker only"
+        echo "  beat       - Celery beat scheduler only"
         echo "  frontend   - Next.js dev server (local, port 3000)"
         echo "  all        - Both services (default)"
         echo ""
@@ -271,7 +351,9 @@ case "$ACTION" in
         echo "  $0 stop frontend      # Stop only frontend"
         echo "  $0 logs backend       # View API logs"
         echo "  $0 seed               # Run initial setup (interactive)"
-        echo "  $0 seed test          # Seed with test accounts"
+        echo "  $0 seed demo          # Seed with generated credentials"
+        echo "  $0 seed test          # Seed with the fixed e2e accounts"
+        echo "  $0 passwd             # Rotate the super admin password"
         echo "  $0 reset              # Wipe DB and re-seed with test data"
         echo "  $0 test               # Run backend tests"
         echo ""

@@ -23,8 +23,8 @@ La mayoría de herramientas de gestión de socios son plataformas SaaS caras o s
 
 > **Para probar Memship, no para usarlo.** Es la vía más rápida a una instancia
 > funcionando en tu propia máquina: imágenes publicadas, volúmenes desechables y una
-> clave secreta que está en este repositorio. Para gestionar una organización real,
-> sigue la [Instalación](docs/getting-started/installation.md) — el mismo producto,
+> contraseña de base de datos fija. Para gestionar una organización real, sigue
+> la [Instalación](docs/getting-started/installation.md) — el mismo producto,
 > configurado para poder respaldarlo, actualizarlo y conservarlo.
 
 Prueba Memship con un solo comando, sin necesidad de clonar el repositorio:
@@ -59,11 +59,9 @@ pregunta sobre los datos del club: borra el club de demostración conservando tu
 admin y las pasarelas de pago que hayas configurado. Consulta
 [Configuración inicial](docs/getting-started/first-setup.md).
 
-## Hoja de ruta
+## Lanzamientos
 
-Memship sigue el [versionado semántico](https://semver.org/) y **los números de versión se asignan en el momento del lanzamiento, nunca se reservan en la hoja de ruta por adelantado.** A continuación, la tabla **Publicado** es el historial lanzado; **Planificado** es una lista priorizada de lo siguiente. Un elemento planificado recibe versión solo cuando se lanza — consulta [Elegir una versión](CONTRIBUTING.md#choosing-a-version) para saber cómo se escoge el número.
-
-### Publicado
+Memship sigue el [versionado semántico](https://semver.org/) y **los números de versión se asignan en el momento del lanzamiento, nunca se reservan por adelantado.** Una línea por versión; las notas completas de cada una están en la [página de lanzamientos](https://github.com/marcandreuf/memship/releases). Lo que viene a continuación está en la [Hoja de ruta](#hoja-de-ruta), y [Elegir una versión](CONTRIBUTING.md#choosing-a-version) explica cómo se escoge el número.
 
 | Versión | Hito | Estado |
 |---------|------|--------|
@@ -104,17 +102,19 @@ Memship sigue el [versionado semántico](https://semver.org/) y **los números d
 | v1.0.1 | Parche — corrige el registro de tareas programadas de facturación/recordatorios en Celery; protección de CI contra la sobrescritura de etiquetas de imagen | Hecho |
 | v1.1.0 | Campos de perfil personalizados — datos de socio configurables por la organización (texto, número, fecha, selección, …) con validación por campo y visibilidad/edición por campo | Hecho |
 | v1.1.1 | Parche — reorganización de la navegación de configuración: ajustes de pagos y de socios agrupados en las pestañas Pagos y Socios | Hecho |
-| v1.2.2 | Integración SSO / identidad y configuración de correo — alta pública con verificación por correo, flujo de aprobación por la directiva, inicio de sesión con Google / Apple, configuración de proveedores SSO por el superadministrador y ajuste de Resend / Google SMTP desde una pestaña de Integraciones. También elimina una migración duplicada de configuración de correo cuyo identificador de revisión chocaba con otro existente, lo que hacía fallar `alembic upgrade head` al arrancar | Hecho |
-| v1.3.0 | Reservas simples — reservas de socios en espacios compartidos mediante un calendario semanal, aforo por franja, lista de espera FIFO con promoción automática y correos de confirmación/lista de espera | Hecho |
-| v1.4.0 | Roles y permisos flexibles — asignación multi-rol y comprobaciones granulares por permiso en lugar de los cuatro roles fijos, con una API `/roles` de gestión y navegación y acceso a páginas guiados por permisos en todo el portal. También repara los stacks de despliegue publicados, que no ejecutaban ningún worker de Celery — por lo que todos los correos que envía el producto se perdían en silencio y las tareas nocturnas de facturación y de recordatorios de pago no se ejecutaban nunca — y no montaban ningún volumen en el servicio de API, de modo que una actualización destruía los archivos subidos y regeneraba la clave secreta que cifra las credenciales almacenadas de SSO y de los proveedores de pago | Hecho |
-| v2.0.0 | Revisión del autoalojamiento — los datos persistentes pasan a montajes de tipo bind visibles en el host bajo un único `MEMSHIP_DATA_ROOT`, los contenedores del backend se ejecutan con el uid del propio operador, un `install.sh` de un solo comando y `vps-bootstrap.sh` para preparar el servidor. **Seguridad:** PostgreSQL y la API dejan de publicarse en internet — Docker escribe sus reglas de iptables por delante de las del cortafuegos, así que ambos eran accesibles en cualquier host con IP pública en todas las versiones anteriores. **Cambio incompatible:** `uv run` ya no funciona dentro de los contenedores, y las instalaciones existentes necesitan un `sudo chown -R $(id -u):$(id -g) <data-root>/storage` una sola vez | Hecho |
-| v2.1.0 | Configuración inicial sin credenciales publicadas — la puesta en marcha es ahora el mismo proceso interactivo en todos los entornos: eres tú quien elige la dirección y la contraseña del superadministrador, y las cuentas fijas `super@examplee6e3b1.com` / `admin@examplee6e3b1.com` desaparecen de la guía rápida, donde eran un superadministrador cuya contraseña se publica en este mismo repositorio. Añade las opciones `--admin-email` y `--club-name` para instalaciones automatizadas sin preguntas, un borrado de los datos del club que conserva el superadministrador y los proveedores de pago configurados, y un generador de club de demostración que muestra sus credenciales una sola vez. Las publicaciones también son más seguras: ahora se construyen todos los servicios en cada commit de `main`, y una release se detiene si falta la imagen candidata validada en lugar de reconstruirla en silencio desde la etiqueta | Hecho |
-| v2.2.0 | Recuperación del superadministrador desde el servidor — el proceso de «he olvidado mi contraseña» del navegador ya no acepta superadministradores: su contraseña se restablece con `python -m app.cli.seed` en la máquina que ejecuta los contenedores. **Seguridad:** esa cuenta posee los permisos de roles y credenciales, así que permitir que un buzón de correo la restableciera equivalía a que el acceso al correo fuera acceso a toda la instancia; además el envío se descartaba en silencio en cualquier instalación sin SMTP, que son todas el primer día. Los restablecimientos hechos desde el servidor quedan registrados en el historial de auditoría, y la opción `--admin-email` para instalaciones automatizadas rechaza una dirección que pertenece a una cuenta que no es superadministradora, en lugar de cambiar la contraseña de otra persona e informar de un restablecimiento de superadministrador. Documenta la vía de recuperación y cómo nombrar a un segundo superadministrador, y corrige las dos primeras órdenes de la guía de instalación, que no podían funcionar tal y como estaban escritas | Hecho |
-| v2.3.0 | Archivos subidos tras autenticación, y un inicio de sesión que no se puede adivinar indefinidamente — **Seguridad:** los archivos subidos se servían mediante un montaje de archivos estáticos sobre todo el directorio de almacenamiento, de modo que la clave de cifrado, los ficheros SEPA generados y los mandatos escaneados quedaban al alcance de cualquiera que acertara una ruta; ahora los sirve una ruta autenticada que comprueba la propiedad carpeta por carpeta. Los tokens de restablecimiento y de verificación se devolvían en la respuesta de la API, así que cualquiera podía pedir un restablecimiento para la dirección de otra persona y leer el token directamente; eso ahora solo ocurre en desarrollo. La clave de firma de ejemplo publicada en este repositorio era el valor por defecto del fichero compose, lo que permitía falsificar cookies de sesión y códigos QR del carné; ahora se rechazan los valores de ejemplo conocidos y cada instalación genera y guarda su propia clave. El renderizador de comunicaciones permitía salir de un enlace y añadir un manejador de eventos, convirtiendo el permiso de redactar comunicaciones en código ejecutándose en la sesión de un superadministrador. El inicio de sesión, el registro y los dos endpoints que envían correo a una dirección elegida por quien llama de forma anónima ahora tienen límite de frecuencia, de modo que adivinar contraseñas e inundar buzones queda acotado. Añade cabeceras de seguridad en las respuestas, deriva el atributo `Secure` de la cookie de sesión de la URL del sitio y pasa las credenciales de Resend al backend — el fichero compose nunca lo hacía, así que configurar Resend en `.env` no surtía efecto alguno. Además: un plazo de pago para la facturación recurrente, notas de versión redactadas automáticamente al publicar una etiqueta, cinco defectos de la guía de instalación encontrados recorriéndola en un servidor real, y las direcciones de ejemplo trasladadas fuera de un dominio que pertenece a otra persona. **Cambio incompatible:** una instalación que dependiera de la clave de firma de ejemplo recibirá una nueva al arrancar, lo que cierra todas las sesiones e invalida los códigos QR del carné ya emitidos | Hecho  |
+| v1.2.2 | SSO y configuración de correo — alta pública con verificación por correo y aprobación por la directiva, inicio de sesión con Google / Apple, y ajuste de Resend / Google SMTP desde una pestaña de Integraciones | Hecho |
+| v1.3.0 | Reservas simples — reservas de socios en espacios compartidos mediante un calendario semanal, con aforo por franja y lista de espera FIFO | Hecho |
+| v1.4.0 | Roles y permisos flexibles — asignación multi-rol y comprobaciones granulares por permiso en lugar de los cuatro roles fijos. También repara los stacks de despliegue que no ejecutaban ningún worker de Celery ni montaban volumen en el servicio de API | Hecho |
+| v2.0.0 | Revisión del autoalojamiento — montajes bind visibles en el host bajo un único `MEMSHIP_DATA_ROOT`, contenedores del backend con el uid del operador y un `install.sh` de un solo comando. **Seguridad:** PostgreSQL y la API dejan de publicarse en internet. **Cambio incompatible:** `uv run` ya no funciona en los contenedores y las instalaciones existentes necesitan un `chown` una sola vez | Hecho |
+| v2.1.0 | Configuración inicial sin credenciales publicadas — el mismo proceso interactivo en todos los entornos, sin cuentas cuyas contraseñas se publiquen en este repositorio, más opciones desatendidas para instalaciones automatizadas | Hecho |
+| v2.2.0 | Recuperación del superadministrador desde el servidor — su contraseña se restablece con `python -m app.cli.seed` en la máquina, no por correo. **Seguridad:** el acceso al buzón equivalía a controlar toda la instancia | Hecho |
+| v2.3.0 | Archivos subidos tras autenticación, y un inicio de sesión que no se puede adivinar indefinidamente — **Seguridad:** el directorio de almacenamiento se servía como archivos estáticos, los tokens de restablecimiento volvían en la respuesta de la API y la clave de firma de ejemplo publicada era el valor por defecto de compose. **Cambio incompatible:** las instalaciones que usaban esa clave reciben una nueva y cierran todas las sesiones | Hecho |
+| v2.3.1 | Rutas de dinero que fallaban en silencio — un fichero SEPA ya no descarta recibos cuyo mandato se canceló, un webhook de pago ya no registra un importe distinto como pago completo, y una actividad ya no puede sobrepasar su aforo si dos personas se inscriben a la vez. **Comportamiento:** una remesa cuyo mandato ha desaparecido ahora falla con un error en lugar de generar un fichero incompleto, y un pago por un importe distinto deja el recibo pendiente de revisión | Hecho |
+| v2.4.0 | El inicio de sesión exige una dirección de correo confirmada, y la numeración de recibos es correlativa y sin huecos. **Cambio incompatible:** una cuenta que nunca confirmó su dirección ya no puede entrar — `python -m app.cli.verify_email` la confirma desde el servidor cuando el correo de confirmación es lo que falla. **Migración:** la numeración pasa a un contador por año, inicializado con los números ya emitidos | Hecho |
 
-### Planificado
+## Hoja de ruta
 
-Priorizado, aún sin versión. Cada elemento se convierte en un lanzamiento versionado cuando se publica, y el lanzamiento toma el siguiente número semántico por orden.
+Priorizado, aún sin versión. Cada elemento se convierte en un lanzamiento versionado cuando se publica, y el lanzamiento toma el siguiente número semántico por orden. Cada elemento tiene una incidencia con su resumen y las ideas actuales — consulta las [incidencias con la etiqueta `roadmap`](https://github.com/marcandreuf/memship/labels/roadmap).
 
 - **Invitaciones de usuarios** — invitar a un nuevo superadministrador, administrador del club o socio indicando su dirección de correo y su rol; la persona elige su propio nombre y contraseña. Se envían por correo cuando el correo está configurado, y como enlace copiable cuando no lo está, de modo que una instalación recién creada pueda añadir un segundo administrador sin acceso por consola
 - **Copias de seguridad** — descargar una copia completa desde el área de administración, con la base de datos y los archivos subidos, y una restauración documentada y probada
@@ -216,85 +216,20 @@ Las variaciones complejas se construyen bajo demanda, cuando una implementación
 
 ## Desarrollo
 
-### Inicio rápido
-
-Arranca los servicios backend (Docker) y el servidor de desarrollo frontend (local):
-
-```bash
-./scripts/dev.sh start all
-```
-
-Comprobar estado:
+El backend en Docker y el frontend en local con recarga en caliente de pnpm, gobernados por
+`scripts/dev.sh`:
 
 ```bash
+./scripts/dev.sh start all      # backend (Docker) + frontend (local)
 ./scripts/dev.sh status
+./scripts/dev.sh test           # tests del backend
 ```
 
-Parar todo:
+La instalación completa, todos los comandos, las URL de los servicios, la carga de datos inicial y
+las suites de tests están en
+**[Entorno de desarrollo local](docs/development/local-environment.md)** _(en inglés)_.
 
-```bash
-./scripts/dev.sh stop all
-```
-
-### Comandos de desarrollo
-
-| Comando | Descripción |
-|---------|-------------|
-| `./scripts/dev.sh start all` | Iniciar backend (Docker) + frontend (local) |
-| `./scripts/dev.sh start backend` | Iniciar solo backend (API + BD en Docker) |
-| `./scripts/dev.sh start frontend` | Iniciar solo frontend (Next.js local) |
-| `./scripts/dev.sh stop all` | Parar todos los servicios |
-| `./scripts/dev.sh restart all` | Reiniciar todos los servicios |
-| `./scripts/dev.sh status` | Ver estado de todos los servicios |
-| `./scripts/dev.sh logs backend` | Ver logs de la API |
-| `./scripts/dev.sh logs frontend` | Ver logs del frontend (tail -f) |
-| `./scripts/dev.sh logs worker` | Ver logs del worker de Celery |
-| `./scripts/dev.sh logs beat` | Ver logs de Celery beat (planificador) |
-| `./scripts/dev.sh seed` | Ejecutar configuración inicial de la BD (interactivo) |
-| `./scripts/dev.sh seed test` | Seed con cuentas de prueba (sin preguntas) |
-| `./scripts/dev.sh test` | Ejecutar tests del backend |
-
-`start all` levanta el worker y el beat de Celery junto con la API y la base de datos. `worker` y `beat` también son destinos válidos para `start`, `stop` y `restart` si necesitas controlarlos por separado.
-
-> **¿Añades una dependencia del backend?** Las dependencias de Python están integradas en la imagen de Docker — `pyproject.toml` no se monta como volumen — así que una dependencia nueva no estará en el contenedor en ejecución hasta que lo reconstruyas:
->
-> ```bash
-> docker compose -f backend/docker/docker-compose.yml build --no-cache api
-> docker compose -f backend/docker/docker-compose.yml up -d --force-recreate api
-> ```
-
-### URLs de los servicios
-
-- **Frontend**: http://localhost:3000
-- **API Backend**: http://localhost:8003
-- **Documentación API (Swagger)**: http://localhost:8003/api/docs
-- **Base de datos**: localhost:5433
-- **Adminer** (UI de BD): http://localhost:8181 (iniciar con `--profile tools`)
-
-### Archivos de log
-
-- Frontend: `frontend/logs/dev-server.log`
-- Backend: `docker compose -f backend/docker/docker-compose.yml logs -f api`
-
-### Primera configuración
-
-Tras iniciar los servicios, ejecuta el comando de configuración para crear los datos iniciales:
-
-```bash
-./scripts/dev.sh seed          # Interactivo — la misma configuración que usa cualquier entorno
-./scripts/dev.sh seed test     # Cuentas de prueba fijas + datos de ejemplo, para la suite e2e
-```
-
-`seed test` crea las cuentas con las que inicia sesión la suite de Cypress, además de 4
-actividades de ejemplo con modalidades y precios, inscripciones de ejemplo y ~22 socios
-adicionales. Las direcciones y contraseñas son un contrato con la suite de pruebas, no una
-decisión de configuración, así que viven junto a ella, en
-[`e2e/cypress/support/commands.ts`](e2e/cypress/support/commands.ts).
-
-> **`seed test` se niega a ejecutarse fuera de desarrollo.** Crea contraseñas fijas y visibles
-> en el repositorio, así que exige `APP_ENV=development` o `CI` y termina en caso contrario.
-> Para cualquier uso real, usa la configuración interactiva — consulta
-> [Configuración inicial](docs/getting-started/first-setup.md).
+Consulta [CONTRIBUTING](CONTRIBUTING.md) para ramas, versionado y cómo se publica una versión.
 
 ## Instalación (Docker)
 

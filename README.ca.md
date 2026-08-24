@@ -22,8 +22,8 @@ La majoria d'eines de gestió de socis són plataformes SaaS cares o programari 
 ## Inici ràpid (Docker)
 
 > **Per provar Memship, no per fer-lo servir.** És la via més ràpida a una instància
-> funcionant a la vostra màquina: imatges publicades, volums llencívols i una clau
-> secreta que és en aquest repositori. Per gestionar una organització real, seguiu la
+> funcionant a la vostra màquina: imatges publicades, volums llencívols i una
+> contrasenya de base de dades fixa. Per gestionar una organització real, seguiu la
 > [Instal·lació](docs/getting-started/installation.md) — el mateix producte, configurat
 > per poder-lo copiar, actualitzar i conservar.
 
@@ -59,11 +59,9 @@ pregunta sobre les dades del club: esborra el club de demostració conservant el
 superadministrador i les passarel·les de pagament que hàgiu configurat. Consulteu
 [Configuració inicial](docs/getting-started/first-setup.md).
 
-## Full de ruta
+## Llançaments
 
-Memship segueix el [versionat semàntic](https://semver.org/) i **els números de versió s'assignen en el moment del llançament, mai es reserven al full de ruta per avançat.** A continuació, la taula **Publicat** és l'historial llançat; **Planificat** és una llista prioritzada del que ve. Un element planificat rep versió només quan es publica — consulta [Triar una versió](CONTRIBUTING.md#choosing-a-version) per saber com s'escull el número.
-
-### Publicat
+Memship segueix el [versionat semàntic](https://semver.org/) i **els números de versió s'assignen en el moment del llançament, mai es reserven per endavant.** Una línia per versió; les notes completes de cadascuna són a la [pàgina de llançaments](https://github.com/marcandreuf/memship/releases). El que vindrà després és al [Full de ruta](#full-de-ruta), i [Escollir una versió](CONTRIBUTING.md#choosing-a-version) explica com es tria el número.
 
 | Versió | Fita | Estat |
 |--------|------|-------|
@@ -104,17 +102,19 @@ Memship segueix el [versionat semàntic](https://semver.org/) i **els números d
 | v1.0.1 | Pedaç — corregeix el registre de tasques programades de facturació/recordatoris a Celery; protecció de CI contra la sobreescriptura d'etiquetes d'imatge | Fet |
 | v1.1.0 | Camps de perfil personalitzats — dades de soci configurables per l'organització (text, número, data, selecció, …) amb validació per camp i visibilitat/edició per camp | Fet |
 | v1.1.1 | Pedaç — reorganització de la navegació de configuració: ajustos de pagaments i de socis agrupats a les pestanyes Pagaments i Socis | Fet |
-| v1.2.2 | Integració SSO / identitat i configuració de correu — alta pública amb verificació per correu, flux d'aprovació per la junta, inici de sessió amb Google / Apple, configuració de proveïdors SSO pel superadministrador i ajust de Resend / Google SMTP des d'una pestanya d'Integracions. També elimina una migració duplicada de configuració de correu amb un identificador de revisió que xocava amb un altre existent, cosa que feia fallar `alembic upgrade head` en arrencar | Fet |
-| v1.3.0 | Reserves simples — reserves de socis en espais compartits mitjançant un calendari setmanal, aforament per franja, llista d'espera FIFO amb promoció automàtica i correus de confirmació/llista d'espera | Fet |
-| v1.4.0 | Rols i permisos flexibles — assignació multi-rol i comprovacions granulars per permís en lloc dels quatre rols fixos, amb una API `/roles` de gestió i navegació i accés a pàgines guiats per permisos a tot el portal. També repara els stacks de desplegament publicats, que no executaven cap worker de Celery — de manera que tots els correus que envia el producte es perdien en silenci i les tasques nocturnes de facturació i de recordatoris de pagament no s'executaven mai — i no muntaven cap volum al servei d'API, de manera que una actualització destruïa els fitxers pujats i regenerava la clau secreta que xifra les credencials emmagatzemades d'SSO i dels proveïdors de pagament | Fet |
-| v2.0.0 | Revisió de l'autoallotjament — les dades persistents passen a muntatges de tipus bind visibles a l'amfitrió sota un únic `MEMSHIP_DATA_ROOT`, els contenidors del backend s'executen amb l'uid del mateix operador, un `install.sh` d'una sola ordre i `vps-bootstrap.sh` per preparar el servidor. **Seguretat:** PostgreSQL i l'API deixen de publicar-se a internet — Docker escriu les seves regles d'iptables per davant de les del tallafocs, de manera que tots dos eren accessibles en qualsevol amfitrió amb IP pública en totes les versions anteriors. **Canvi incompatible:** `uv run` ja no funciona dins dels contenidors, i les instal·lacions existents necessiten un `sudo chown -R $(id -u):$(id -g) <data-root>/storage` una sola vegada | Fet |
-| v2.1.0 | Configuració inicial sense credencials publicades — la posada en marxa és ara el mateix procés interactiu a tots els entorns: ets tu qui tria l'adreça i la contrasenya del superadministrador, i els comptes fixos `super@examplee6e3b1.com` / `admin@examplee6e3b1.com` desapareixen de la guia ràpida, on eren un superadministrador amb una contrasenya publicada en aquest mateix repositori. Afegeix les opcions `--admin-email` i `--club-name` per a instal·lacions automatitzades sense preguntes, un esborrat de les dades del club que conserva el superadministrador i els proveïdors de pagament configurats, i un generador de club de demostració que mostra les seves credencials una sola vegada. Les publicacions també són més segures: ara es construeixen tots els serveis a cada commit de `main`, i una release s'atura si falta la imatge candidata validada en lloc de reconstruir-la en silenci des de l'etiqueta | Fet |
-| v2.2.0 | Recuperació del superadministrador des del servidor — el procés de «he oblidat la contrasenya» del navegador ja no accepta superadministradors: la seva contrasenya es restableix amb `python -m app.cli.seed` a la màquina que executa els contenidors. **Seguretat:** aquest compte té els permisos de rols i credencials, de manera que permetre que una bústia de correu el restablís equivalia a convertir l'accés al correu en accés a tota la instància; a més, l'enviament es descartava en silenci en qualsevol instal·lació sense SMTP, que són totes el primer dia. Els restabliments fets des del servidor queden registrats a l'historial d'auditoria, i l'opció `--admin-email` per a instal·lacions automatitzades rebutja una adreça que pertany a un compte que no és superadministrador, en lloc de canviar la contrasenya d'una altra persona i informar d'un restabliment de superadministrador. Documenta la via de recuperació i com nomenar un segon superadministrador, i corregeix les dues primeres ordres de la guia d'instal·lació, que no podien funcionar tal com estaven escrites | Fet |
-| v2.3.0 | Fitxers pujats darrere d'autenticació, i un inici de sessió que no es pot endevinar indefinidament — **Seguretat:** els fitxers pujats es servien mitjançant un muntatge de fitxers estàtics sobre tot el directori d'emmagatzematge, de manera que la clau de xifratge, els fitxers SEPA generats i els mandats escanejats quedaven a l'abast de qualsevol que encertés una ruta; ara els serveix una ruta autenticada que comprova la propietat carpeta per carpeta. Els tokens de restabliment i de verificació es retornaven a la resposta de l'API, així que qualsevol podia demanar un restabliment per a l'adreça d'una altra persona i llegir-ne el token directament; això ara només passa en desenvolupament. La clau de signatura d'exemple publicada en aquest repositori era el valor per defecte del fitxer compose, cosa que permetia falsificar galetes de sessió i codis QR del carnet; ara es rebutgen els valors d'exemple coneguts i cada instal·lació genera i desa la seva pròpia clau. El renderitzador de comunicacions permetia sortir d'un enllaç i afegir-hi un gestor d'esdeveniments, convertint el permís de redactar comunicacions en codi executant-se a la sessió d'un superadministrador. L'inici de sessió, el registre i els dos endpoints que envien correu a una adreça triada per qui truca de manera anònima ara tenen límit de freqüència, de manera que endevinar contrasenyes i inundar bústies queda acotat. Afegeix capçaleres de seguretat a les respostes, deriva l'atribut `Secure` de la galeta de sessió de l'URL del lloc i passa les credencials de Resend al backend — el fitxer compose no ho feia mai, així que configurar Resend a `.env` no tenia cap efecte. També: un termini de pagament per a la facturació recurrent, notes de versió redactades automàticament en publicar una etiqueta, cinc defectes de la guia d'instal·lació trobats recorrent-la en un servidor real, i les adreces d'exemple traslladades fora d'un domini que pertany a algú altre. **Canvi incompatible:** una instal·lació que depengués de la clau de signatura d'exemple en rebrà una de nova en arrencar, cosa que tanca totes les sessions i invalida els codis QR del carnet ja emesos | Fet    |
+| v1.2.2 | SSO i configuració de correu — alta pública amb verificació per correu i aprovació per la junta, inici de sessió amb Google / Apple, i configuració de Resend / Google SMTP des d'una pestanya d'Integracions | Fet |
+| v1.3.0 | Reserves simples — reserves de socis en espais compartits mitjançant un calendari setmanal, amb aforament per franja i llista d'espera FIFO | Fet |
+| v1.4.0 | Rols i permisos flexibles — assignació multi-rol i comprovacions granulars per permís en lloc dels quatre rols fixos. També repara els stacks de desplegament que no executaven cap worker de Celery ni muntaven volum al servei d'API | Fet |
+| v2.0.0 | Revisió de l'autoallotjament — muntatges bind visibles a l'amfitrió sota un únic `MEMSHIP_DATA_ROOT`, contenidors del backend amb l'uid de l'operador i un `install.sh` d'una sola ordre. **Seguretat:** PostgreSQL i l'API deixen de publicar-se a internet. **Canvi incompatible:** `uv run` ja no funciona als contenidors i les instal·lacions existents necessiten un `chown` una sola vegada | Fet |
+| v2.1.0 | Configuració inicial sense credencials publicades — el mateix procés interactiu a tots els entorns, sense comptes amb contrasenyes publicades en aquest repositori, més opcions desateses per a instal·lacions automatitzades | Fet |
+| v2.2.0 | Recuperació del superadministrador des del servidor — la seva contrasenya es restableix amb `python -m app.cli.seed` a la màquina, no per correu. **Seguretat:** l'accés a la bústia equivalia a controlar tota la instància | Fet |
+| v2.3.0 | Fitxers pujats darrere d'autenticació, i un inici de sessió que no es pot endevinar indefinidament — **Seguretat:** el directori d'emmagatzematge es servia com a fitxers estàtics, els tokens de restabliment tornaven en la resposta de l'API i la clau de signatura d'exemple publicada era el valor per defecte de compose. **Canvi incompatible:** les instal·lacions que feien servir aquesta clau en reben una de nova i tanquen totes les sessions | Fet |
+| v2.3.1 | Camins de diners que fallaven en silenci — un fitxer SEPA ja no descarta rebuts amb el mandat cancel·lat, un webhook de pagament ja no registra un import diferent com a pagament complet, i una activitat ja no pot superar l'aforament si dues persones s'hi inscriuen alhora. **Comportament:** una remesa amb el mandat desaparegut ara falla amb un error en lloc de generar un fitxer incomplet, i un pagament per un import diferent deixa el rebut pendent de revisió | Fet |
+| v2.4.0 | L'inici de sessió exigeix una adreça de correu confirmada, i la numeració de rebuts és correlativa i sense buits. **Canvi incompatible:** un compte que mai no va confirmar l'adreça ja no pot entrar — `python -m app.cli.verify_email` la confirma des del servidor quan el correu de confirmació és el que falla. **Migració:** la numeració passa a un comptador per any, inicialitzat amb els números ja emesos | Fet |
 
-### Planificat
+## Full de ruta
 
-Prioritzat, encara sense versió. Cada element esdevé un llançament versionat quan es publica, i el llançament pren el següent número semàntic per ordre.
+Prioritzat, encara sense versió. Cada element esdevé un llançament versionat quan es publica, i el llançament pren el següent número semàntic per ordre. Cada element té una incidència amb el seu resum i les idees actuals — consulta les [incidències amb l'etiqueta `roadmap`](https://github.com/marcandreuf/memship/labels/roadmap).
 
 - **Invitacions d'usuaris** — convidar un nou superadministrador, administrador del club o soci indicant la seva adreça de correu i el seu rol; la persona tria el seu propi nom i contrasenya. S'envien per correu quan el correu està configurat, i com a enllaç copiable quan no ho està, de manera que una instal·lació acabada de crear pugui afegir un segon administrador sense accés per consola
 - **Còpies de seguretat** — descarregar una còpia completa des de l'àrea d'administració, amb la base de dades i els fitxers pujats, i una restauració documentada i provada
@@ -216,85 +216,20 @@ Les variacions complexes es construeixen sota demanda, quan una implementació r
 
 ## Desenvolupament
 
-### Inici ràpid
-
-Inicieu els serveis del backend (Docker) i el servidor de desenvolupament del frontend (local):
-
-```bash
-./scripts/dev.sh start all
-```
-
-Comproveu l'estat:
+El backend en Docker i el frontend en local amb recàrrega en calent de pnpm, governats per
+`scripts/dev.sh`:
 
 ```bash
+./scripts/dev.sh start all      # backend (Docker) + frontend (local)
 ./scripts/dev.sh status
+./scripts/dev.sh test           # tests del backend
 ```
 
-Atureu-ho tot:
+La instal·lació completa, totes les ordres, les URL dels serveis, la càrrega de dades inicial i les
+suites de tests són a
+**[Entorn de desenvolupament local](docs/development/local-environment.md)** _(en anglès)_.
 
-```bash
-./scripts/dev.sh stop all
-```
-
-### Comandes de desenvolupament
-
-| Comanda | Descripció |
-|---------|-----------|
-| `./scripts/dev.sh start all` | Iniciar backend (Docker) + frontend (local) |
-| `./scripts/dev.sh start backend` | Iniciar només el backend (API + BD en Docker) |
-| `./scripts/dev.sh start frontend` | Iniciar només el frontend (Next.js local) |
-| `./scripts/dev.sh stop all` | Aturar tots els serveis |
-| `./scripts/dev.sh restart all` | Reiniciar tots els serveis |
-| `./scripts/dev.sh status` | Mostrar l'estat de tots els serveis |
-| `./scripts/dev.sh logs backend` | Veure els registres de l'API |
-| `./scripts/dev.sh logs frontend` | Veure els registres del frontend (tail -f) |
-| `./scripts/dev.sh logs worker` | Veure els registres del worker de Celery |
-| `./scripts/dev.sh logs beat` | Veure els registres de Celery beat (planificador) |
-| `./scripts/dev.sh seed` | Executar la configuració inicial de la base de dades (interactiva) |
-| `./scripts/dev.sh seed test` | Inicialitzar amb comptes de prova (sense preguntes) |
-| `./scripts/dev.sh test` | Executar les proves del backend |
-
-`start all` aixeca el worker i el beat de Celery juntament amb l'API i la base de dades. `worker` i `beat` també són destinacions vàlides per a `start`, `stop` i `restart` si els necessites controlar per separat.
-
-> **Afegeixes una dependència del backend?** Les dependències de Python estan integrades a la imatge de Docker — `pyproject.toml` no es munta com a volum — així que una dependència nova no hi serà al contenidor en execució fins que el reconstrueixis:
->
-> ```bash
-> docker compose -f backend/docker/docker-compose.yml build --no-cache api
-> docker compose -f backend/docker/docker-compose.yml up -d --force-recreate api
-> ```
-
-### URLs dels serveis
-
-- **Frontend**: http://localhost:3000
-- **API del backend**: http://localhost:8003
-- **Documentació de l'API (Swagger)**: http://localhost:8003/api/docs
-- **Base de dades**: localhost:5433
-- **Adminer** (UI de BD): http://localhost:8181 (iniciar amb `--profile tools`)
-
-### Fitxers de registre
-
-- Frontend: `frontend/logs/dev-server.log`
-- Backend: `docker compose -f backend/docker/docker-compose.yml logs -f api`
-
-### Primera configuració
-
-Després d'iniciar els serveis, executeu la comanda de configuració per crear les dades inicials:
-
-```bash
-./scripts/dev.sh seed          # Interactiu — la mateixa configuració que fa servir qualsevol entorn
-./scripts/dev.sh seed test     # Comptes de prova fixos + dades d'exemple, per a la suite e2e
-```
-
-`seed test` crea els comptes amb què inicia sessió la suite de Cypress, a més de 4 activitats
-d'exemple amb modalitats i preus, inscripcions d'exemple i ~22 socis addicionals. Les adreces i
-contrasenyes són un contracte amb la suite de proves, no una decisió de configuració, així que
-viuen al seu costat, a
-[`e2e/cypress/support/commands.ts`](e2e/cypress/support/commands.ts).
-
-> **`seed test` es nega a executar-se fora de desenvolupament.** Crea contrasenyes fixes i
-> visibles al repositori, així que exigeix `APP_ENV=development` o `CI` i acaba en cas
-> contrari. Per a qualsevol ús real, feu servir la configuració interactiva — consulteu
-> [Configuració inicial](docs/getting-started/first-setup.md).
+Consulta [CONTRIBUTING](CONTRIBUTING.md) per a branques, versionat i com es publica una versió.
 
 ## Instal·lació (Docker)
 

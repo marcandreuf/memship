@@ -7,7 +7,9 @@ from fastapi import HTTPException, status
 from sqlalchemy import extract, func, or_
 from sqlalchemy.orm import Query, Session, joinedload
 
-from app.domains.billing.models import Concept, Receipt
+from sqlalchemy.exc import IntegrityError
+
+from app.domains.billing.models import Concept, InvoiceSequence, Receipt
 from app.domains.billing.schemas import (
     GenerateMembershipFeesRequest,
     ReceiptCreate,
@@ -113,16 +115,36 @@ def generate_receipt_number(db: Session, emission_date: date) -> str:
     annual_reset = org.invoice_annual_reset if org.invoice_annual_reset is not None else True
 
     if annual_reset:
-        # Count existing receipts for this year to determine next number
-        count = (
-            db.query(func.count(Receipt.id))
-            .filter(
-                extract("year", Receipt.emission_date) == year,
-                Receipt.is_active.is_(True),
-            )
-            .scalar()
+        # A counter per year, not COUNT(receipts). The count was filtered on
+        # is_active, so deactivating one receipt shifted the number of every
+        # receipt issued after it — an invoice series has to be sequential and
+        # unbroken, and that made it neither. See InvoiceSequence.
+        #
+        # Its own row lock, taken after the org lock and always in that order.
+        seq_row = (
+            db.query(InvoiceSequence)
+            .filter(InvoiceSequence.year == year)
+            .with_for_update()
+            .first()
         )
-        sequence = count + 1
+        if seq_row is None:
+            # First receipt of this year. Two callers can reach this at once, so
+            # the loser of the insert re-reads the winner's row under the lock
+            # rather than both starting at 1.
+            try:
+                with db.begin_nested():
+                    seq_row = InvoiceSequence(year=year, next_number=1)
+                    db.add(seq_row)
+                    db.flush()
+            except IntegrityError:
+                seq_row = (
+                    db.query(InvoiceSequence)
+                    .filter(InvoiceSequence.year == year)
+                    .with_for_update()
+                    .one()
+                )
+        sequence = seq_row.next_number or 1
+        seq_row.next_number = sequence + 1
     else:
         # Global sequential — use org counter
         sequence = org.invoice_next_number or 1
@@ -130,10 +152,19 @@ def generate_receipt_number(db: Session, emission_date: date) -> str:
 
     receipt_number = f"{prefix}-{year}-{sequence:04d}"
 
-    # Ensure uniqueness (safety net)
-    while db.query(Receipt).filter(Receipt.receipt_number == receipt_number).first():
-        sequence += 1
-        receipt_number = f"{prefix}-{year}-{sequence:04d}"
+    # This used to increment past a collision, which quietly produced the gap it
+    # was guarding against. Under the locks above a collision means the counter
+    # disagrees with the receipts — usually a number issued outside this function
+    # — and that is a question for a person, not something to paper over.
+    if db.query(Receipt).filter(Receipt.receipt_number == receipt_number).first():
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=(
+                f"Receipt number {receipt_number} already exists. The invoice "
+                f"sequence for {year} is behind the receipts already issued and "
+                "must be corrected before more are created."
+            ),
+        )
 
     return receipt_number
 
@@ -315,6 +346,16 @@ def generate_membership_fees(
     edit an amount before issuing them.
     """
     org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
+    if not org:
+        # Stated rather than dereferenced. Without this the run died on an
+        # AttributeError halfway through — a 500 from the endpoint, and a task
+        # traceback from the scheduled run, neither of which names the actual
+        # problem. Matches generate_receipt_number, which is called from this
+        # same path and already guards this way.
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Organization settings not found",
+        )
     default_vat = Decimal(str(org.default_vat_rate or 21))
 
     # Get all active members with their membership type

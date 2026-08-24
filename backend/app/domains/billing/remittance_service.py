@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.domains.billing.models import Receipt, Remittance, SepaMandate
 from app.domains.billing.schemas import RemittanceCreate
-from app.domains.billing.sepa_xml import generate_sepa_xml
+from app.domains.billing.sepa_xml import SepaExportError, generate_sepa_xml
 from app.domains.organizations.models import OrganizationSettings
 
 
@@ -215,8 +215,17 @@ def generate_remittance_xml(db: Session, remittance: Remittance) -> bytes:
         if m.member_id not in mandate_map or m.created_at > mandate_map[m.member_id].created_at:
             mandate_map[m.member_id] = m
 
-    # Generate XML
-    xml_bytes = generate_sepa_xml(remittance, receipts, mandate_map)
+    # Generate XML. Mandates are re-read above, so one cancelled between
+    # create_remittance and now is missing here even though creation checked for
+    # it. Refuse rather than write a file that collects less than the remittance
+    # says it does — see SepaExportError.
+    try:
+        xml_bytes = generate_sepa_xml(remittance, receipts, mandate_map)
+    except SepaExportError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
 
     # Save to storage
     year = remittance.emission_date.year

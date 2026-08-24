@@ -34,13 +34,20 @@ KNOWN_TABLES = frozenset({
     "announcement_recipients", "announcements", "audit_logs", "billing_runs",
     "bookings", "concepts", "contacts", "contact_types",
     "custom_field_definitions", "custom_field_values", "discount_codes",
-    "groups", "members", "membership_types", "notifications",
-    "organization_settings", "payment_providers", "persons",
+    "groups", "invoice_sequences", "members", "membership_types",
+    "notifications", "organization_settings", "payment_providers", "persons",
     "receipt_reminders", "receipts", "registration_attachments",
     "registration_consents", "registrations", "reminders", "remittances",
     "role_permissions", "roles", "sepa_mandates", "spaces", "space_slots",
     "user_identities", "user_roles", "users", "webhook_events",
 })
+
+# `invoice_sequences` is club data and goes with the receipts. Preserving it
+# would leave a counter with nothing behind it, so the first invoice of the new
+# club would be numbered as though dozens had already been issued. Nothing is
+# reused either, because the receipts those numbers belonged to are gone in the
+# same operation — the series restarts because the series it continued no longer
+# exists.
 
 # Instance-level configuration and lookups. A club reset never touches these.
 PRESERVED_TABLES = frozenset({
