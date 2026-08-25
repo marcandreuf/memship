@@ -161,6 +161,18 @@ class TestBrandingReachesTheChrome:
         assert f">{url}</a>" in html
         assert _LAYOUT_STRINGS["es"]["button_fallback"] in html
 
+    def test_outbound_links_open_in_a_new_tab(self, branded):
+        """Webmail clients honour target; a member clicking through should keep
+        their inbox tab. mailto: is left alone — target means nothing there."""
+        html = render_template(
+            "password_reset",
+            "es",
+            {"first_name": "María", "reset_url": "https://club.test/reset?token=abc"},
+        )
+
+        assert html.count('target="_blank" rel="noopener noreferrer"') == 4
+        assert 'href="mailto:hola@club.test" style=' in html
+
     def test_every_template_stays_well_under_the_gmail_clip(self, branded):
         """Gmail clips around 102 KB and hides the footer behind a link."""
         html = render_template(
