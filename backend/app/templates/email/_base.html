@@ -1,5 +1,6 @@
 {#
-  Shared email layout: header (logo + organisation name), body slot, footer.
+  Shared email layout: header (logo + organisation name), body slot, footer,
+  and the platform signature below the card.
 
   Every content template extends this file, so the chrome is written once and
   every current and future email inherits it. Rules this markup is built to,
@@ -85,6 +86,14 @@
 <p class="ms-muted" style="margin:0; font-size:12px; line-height:18px; mso-line-height-rule:exactly; color:#6b7480;">{{ t.automated_notice }}</p>
 </td></tr>
 </table>
+</td>
+</tr>
+
+<tr>
+<td class="ms-pad" align="center" style="padding:16px 32px 0 32px; font-family:Helvetica,Arial,sans-serif; font-size:11px; line-height:16px; mso-line-height-rule:exactly; color:#8a929b;">
+{%- block powered_by %}
+<span class="ms-muted" style="font-size:11px; line-height:16px; mso-line-height-rule:exactly; color:#8a929b;">Powered by <a href="https://openmemship.com/" style="color:#8a929b; font-weight:600; text-decoration:underline;">Memship</a></span>
+{%- endblock %}
 </td>
 </tr>
 

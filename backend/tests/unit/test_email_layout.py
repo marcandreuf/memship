@@ -93,6 +93,17 @@ class TestTheRenderedEmailIsACompleteDocument:
         assert 'name="color-scheme" content="light dark"' in html
         assert "prefers-color-scheme: dark" in html
 
+    @pytest.mark.parametrize("locale", ["es", "ca", "en"])
+    def test_it_signs_off_with_the_platform_name_in_english(self, branded, locale):
+        """The signature is a product name, never translated."""
+        html = render_template("welcome", locale, dict(WELCOME))
+
+        assert "Powered by " in html
+        assert 'href="https://openmemship.com/"' in html
+        assert html.index("Powered by ") > html.index(
+            _LAYOUT_STRINGS[locale]["automated_notice"]
+        )
+
     def test_the_layout_falls_back_to_es_with_the_content(self, branded):
         """An unknown locale must not lose the chrome along with the copy."""
         html = render_template("welcome", "fr", dict(WELCOME))
