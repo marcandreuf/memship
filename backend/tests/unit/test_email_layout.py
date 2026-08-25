@@ -100,6 +100,7 @@ class TestTheRenderedEmailIsACompleteDocument:
 
         assert "Powered by " in html
         assert 'href="https://openmemship.com/"' in html
+        assert 'target="_blank" rel="noopener noreferrer"' in html
         assert html.index("Powered by ") > html.index(
             _LAYOUT_STRINGS[locale]["automated_notice"]
         )
