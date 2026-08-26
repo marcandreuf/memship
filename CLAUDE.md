@@ -18,6 +18,8 @@ When scoping any feature before v1.0.0:
 
 Full strategic context lives in the private `memship-context` repo (`docs/`, `STATUS.md`).
 
+Meeting notes, idea and proposal documents, and strategy material belong there too — never in this repo. `docs/` here is **functional and setup documentation only**: how memship works and how to run it. This repo is public; that one is not.
+
 **Tech stack:**
 - Backend: Python 3.12+ / FastAPI / SQLAlchemy 2.0 / Alembic
 - Frontend: Next.js 16 / React 19 / Tailwind 4 / Shadcn/ui / next-intl / next-themes
