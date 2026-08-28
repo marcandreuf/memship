@@ -57,6 +57,12 @@ services:
       dockerfile: docker/Dockerfile
     container_name: memship-celery-worker
     command: celery -A app.core.celery_app worker --loglevel=info
+    # The image deliberately excludes .env (.dockerignore), so SMTP_*/RESEND_*
+    # never reached the worker and every queued email hit the log-and-skip path.
+    # The `environment:` keys below still win over the file, so the localhost
+    # DATABASE_URL / CELERY_BROKER_URL in .env cannot leak into the container.
+    env_file:
+      - ../.env
     environment:
       - DATABASE_URL=postgresql://memship:memship@db:5432/memship_db
       - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
