@@ -1,0 +1,5 @@
+# Scripts that run inside the Linux containers must keep LF endings. A Windows
+# checkout with core.autocrlf=true otherwise bakes `#!/bin/bash\r` into the
+# image, and every container dies with "exec /entrypoint.sh: no such file or
+# directory".
+*.sh text eol=lf

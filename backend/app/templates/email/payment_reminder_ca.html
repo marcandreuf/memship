@@ -1,11 +1,27 @@
-<h2>Recordatori de pagament</h2>
-<p>Hola {{ member_name }},</p>
-<p>Et recordem que el rebut <strong>{{ receipt_number }}</strong> per import de <strong>{{ amount }} {{ currency }}</strong> va vèncer el <strong>{{ due_date }}</strong> ({{ days_overdue }} {{ 'dia' if days_overdue == 1 else 'dies' }} de retard) i consta com a pendent de pagament.</p>
-{% if pay_now_url %}
-<p><a href="{{ pay_now_url }}">Pagar ara</a></p>
-{% elif bank_details %}
-<p>Pots fer el pagament mitjançant transferència bancària:</p>
-<p>{{ bank_details }}</p>
-{% endif %}
-<p>Si ja has fet el pagament, pots ignorar aquest missatge.</p>
-<p>{{ org_name }}</p>
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}El rebut {{ receipt_number }} consta com a pendent de pagament.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Recordatori de pagament</h1>
+<p style="{{ s.p }}">Hola {{ member_name }},</p>
+<p style="{{ s.p }}">Et recordem que el rebut següent va vèncer i consta com a pendent de pagament.</p>
+{% call c.panel() %}
+{{ c.data_row("Rebut", receipt_number) }}
+{{ c.data_row("Import", amount ~ " " ~ currency) }}
+{{ c.data_row("Venciment", due_date) }}
+{{ c.data_row("Retard", days_overdue ~ (" dia" if days_overdue == 1 else " dies")) }}
+{% endcall %}
+{%- if pay_now_url %}
+{{ c.button(pay_now_url, "Pagar ara") }}
+{%- elif bank_details %}
+<p style="{{ s.p }}">Pots fer el pagament mitjançant transferència bancària:</p>
+{% call c.panel() %}
+<tr><td colspan="2" class="ms-text" style="padding:3px 0; font-family:Helvetica,Arial,sans-serif; font-size:15px; line-height:22px; mso-line-height-rule:exactly; color:#1f2328;">
+{%- for line in bank_details.split("\n") %}{{ line }}<br>{% endfor -%}
+</td></tr>
+{% endcall %}
+{%- endif %}
+<p style="{{ s.note_last }}">Si ja has fet el pagament, pots ignorar aquest missatge.</p>
+{% endblock %}

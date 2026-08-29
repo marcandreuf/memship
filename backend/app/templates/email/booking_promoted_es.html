@@ -1,6 +1,15 @@
-<h2>¡Plaza confirmada!</h2>
-<p>Hola {{ member_name }},</p>
-<p>Se ha liberado una plaza y tu reserva de <strong>{{ space_name }}</strong> está ahora confirmada.</p>
-<p><strong>Fecha:</strong> {{ booking_date }}</p>
-<p><strong>Horario:</strong> {{ booking_time }}</p>
-<p>¡Nos vemos pronto!</p>
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}Se ha liberado una plaza en {{ space_name }}.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">¡Plaza confirmada!</h1>
+<p style="{{ s.p }}">Hola {{ member_name }},</p>
+<p style="{{ s.p }}">Se ha liberado una plaza y tu reserva de <strong>{{ space_name }}</strong> está ahora confirmada.</p>
+{% call c.panel() %}
+{{ c.data_row("Fecha", booking_date) }}
+{{ c.data_row("Horario", booking_time) }}
+{% endcall %}
+<p style="{{ s.p_last }}">¡Nos vemos pronto!</p>
+{% endblock %}

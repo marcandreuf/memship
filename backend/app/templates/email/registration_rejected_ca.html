@@ -1,4 +1,15 @@
-<h2>Hola, {{ first_name }}</h2>
-<p>Lamentem informar-te que la teva sol·licitud d'alta no ha estat acceptada.</p>
-{% if reason %}<p>Motiu: {{ reason }}</p>{% endif %}
-<p>Si creus que es tracta d'un error, posa't en contacte amb l'organització.</p>
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}Sobre la teva sol·licitud d'alta.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Hola, {{ first_name }}</h1>
+<p style="{{ s.p }}">Lamentem informar-te que la teva sol·licitud d'alta no ha estat acceptada.</p>
+{%- if reason %}
+{% call c.panel() %}
+{{ c.data_row("Motiu", reason) }}
+{% endcall %}
+{%- endif %}
+<p style="{{ s.p_last }}">Si creus que es tracta d'un error, posa't en contacte amb l'organització.</p>
+{% endblock %}

@@ -227,14 +227,17 @@ def ensure_registration_receipt(
     try:
         from app.domains.billing.service import generate_activity_receipt
 
-        generate_activity_receipt(
-            db=db,
-            registration_id=registration.id,
-            member_id=registration.member_id,
-            activity_name=activity.name,
-            amount=Decimal(str(amount)),
-            tax_rate=activity.tax_rate,
-        )
+        # Receipt generation is best-effort: keep it in a SAVEPOINT so a failure
+        # rolls back only the receipt, leaving the registration's transaction usable.
+        with db.begin_nested():
+            generate_activity_receipt(
+                db=db,
+                registration_id=registration.id,
+                member_id=registration.member_id,
+                activity_name=activity.name,
+                amount=Decimal(str(amount)),
+                tax_rate=activity.tax_rate,
+            )
     except Exception as e:
         logger.error(
             "Failed to generate receipt for registration %s: %s", registration.id, e

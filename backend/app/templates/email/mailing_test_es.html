@@ -1,3 +1,13 @@
-<h2>Correo de prueba</h2>
-<p>Este es un correo de prueba enviado desde Memship a través del proveedor <strong>{{ provider }}</strong>.</p>
-<p>Si lo has recibido, la configuración de correo funciona correctamente.</p>
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}Comprobación de la configuración de correo.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Correo de prueba</h1>
+<p style="{{ s.p }}">Este es un correo de prueba enviado desde Memship.</p>
+{% call c.panel() %}
+{{ c.data_row("Proveedor", provider) }}
+{% endcall %}
+<p style="{{ s.p_last }}">Si lo has recibido, la configuración de correo funciona correctamente.</p>
+{% endblock %}

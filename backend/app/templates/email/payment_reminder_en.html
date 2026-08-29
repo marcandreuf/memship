@@ -1,11 +1,27 @@
-<h2>Payment reminder</h2>
-<p>Hi {{ member_name }},</p>
-<p>This is a reminder that receipt <strong>{{ receipt_number }}</strong> for <strong>{{ amount }} {{ currency }}</strong> was due on <strong>{{ due_date }}</strong> ({{ days_overdue }} {{ 'day' if days_overdue == 1 else 'days' }} overdue) and is still outstanding.</p>
-{% if pay_now_url %}
-<p><a href="{{ pay_now_url }}">Pay now</a></p>
-{% elif bank_details %}
-<p>You can pay by bank transfer:</p>
-<p>{{ bank_details }}</p>
-{% endif %}
-<p>If you have already paid, please disregard this message.</p>
-<p>{{ org_name }}</p>
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}Receipt {{ receipt_number }} is still outstanding.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Payment reminder</h1>
+<p style="{{ s.p }}">Hi {{ member_name }},</p>
+<p style="{{ s.p }}">This is a reminder that the following receipt is past due and still outstanding.</p>
+{% call c.panel() %}
+{{ c.data_row("Receipt", receipt_number) }}
+{{ c.data_row("Amount", amount ~ " " ~ currency) }}
+{{ c.data_row("Due date", due_date) }}
+{{ c.data_row("Overdue", days_overdue ~ (" day" if days_overdue == 1 else " days")) }}
+{% endcall %}
+{%- if pay_now_url %}
+{{ c.button(pay_now_url, "Pay now") }}
+{%- elif bank_details %}
+<p style="{{ s.p }}">You can pay by bank transfer:</p>
+{% call c.panel() %}
+<tr><td colspan="2" class="ms-text" style="padding:3px 0; font-family:Helvetica,Arial,sans-serif; font-size:15px; line-height:22px; mso-line-height-rule:exactly; color:#1f2328;">
+{%- for line in bank_details.split("\n") %}{{ line }}<br>{% endfor -%}
+</td></tr>
+{% endcall %}
+{%- endif %}
+<p style="{{ s.note_last }}">If you have already paid, please disregard this message.</p>
+{% endblock %}

@@ -1,6 +1,15 @@
-<h2>Booking cancelled</h2>
-<p>Hello {{ member_name }},</p>
-<p>The club has cancelled your booking of <strong>{{ space_name }}</strong>.</p>
-<p><strong>Date:</strong> {{ booking_date }}</p>
-<p><strong>Time:</strong> {{ booking_time }}</p>
-<p>Sorry for the inconvenience. You can check current availability and make a new booking from your member portal.</p>
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}Your booking of {{ space_name }} has been cancelled.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Booking cancelled</h1>
+<p style="{{ s.p }}">Hello {{ member_name }},</p>
+<p style="{{ s.p }}">The club has cancelled your booking of <strong>{{ space_name }}</strong>.</p>
+{% call c.panel() %}
+{{ c.data_row("Date", booking_date) }}
+{{ c.data_row("Time", booking_time) }}
+{% endcall %}
+<p style="{{ s.p_last }}">Sorry for the inconvenience. You can check current availability and make a new booking from your member portal.</p>
+{% endblock %}

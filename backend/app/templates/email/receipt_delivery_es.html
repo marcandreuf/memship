@@ -1,0 +1,15 @@
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}Adjuntamos el recibo {{ receipt_number }} en PDF.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Recibo {{ receipt_number }}</h1>
+<p style="{{ s.p }}">Hola {{ member_name }},</p>
+<p style="{{ s.p }}">Adjuntamos el recibo correspondiente.</p>
+{% call c.panel() %}
+{{ c.data_row("Recibo", receipt_number) }}
+{{ c.data_row("Importe", amount ~ " " ~ currency) }}
+{% endcall %}
+<p style="{{ s.note_last }}">El recibo va adjunto a este correo en formato PDF.</p>
+{% endblock %}

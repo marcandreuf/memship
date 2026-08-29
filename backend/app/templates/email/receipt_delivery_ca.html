@@ -1,0 +1,15 @@
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}Adjuntem el rebut {{ receipt_number }} en PDF.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Rebut {{ receipt_number }}</h1>
+<p style="{{ s.p }}">Hola {{ member_name }},</p>
+<p style="{{ s.p }}">Adjuntem el rebut corresponent.</p>
+{% call c.panel() %}
+{{ c.data_row("Rebut", receipt_number) }}
+{{ c.data_row("Import", amount ~ " " ~ currency) }}
+{% endcall %}
+<p style="{{ s.note_last }}">El rebut va adjunt a aquest correu en format PDF.</p>
+{% endblock %}

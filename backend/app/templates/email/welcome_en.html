@@ -1,3 +1,10 @@
-<h2>Welcome, {{ first_name }}!</h2>
-<p>Your account has been created successfully.</p>
-<p>Your member number is: <strong>{{ member_number }}</strong></p>
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}Your member account is now active.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Welcome, {{ first_name }}!</h1>
+<p style="{{ s.p }}">Your account has been created successfully.</p>
+{{ c.highlight("Member number", member_number) }}
+{% endblock %}

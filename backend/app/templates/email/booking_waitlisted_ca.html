@@ -1,7 +1,16 @@
-<h2>Ets a la llista d'espera</h2>
-<p>Hola {{ member_name }},</p>
-<p>La reserva de <strong>{{ space_name }}</strong> està completa, així que t'hem afegit a la llista d'espera.</p>
-<p><strong>Data:</strong> {{ booking_date }}</p>
-<p><strong>Horari:</strong> {{ booking_time }}</p>
-{% if position %}<p><strong>La teva posició:</strong> {{ position }}</p>{% endif %}
-<p>T'avisarem si s'allibera una plaça.</p>
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}{{ space_name }} està complet; ets a la llista d'espera.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Ets a la llista d'espera</h1>
+<p style="{{ s.p }}">Hola {{ member_name }},</p>
+<p style="{{ s.p }}">La reserva de <strong>{{ space_name }}</strong> està completa, així que t'hem afegit a la llista d'espera.</p>
+{% call c.panel() %}
+{{ c.data_row("Data", booking_date) }}
+{{ c.data_row("Horari", booking_time) }}
+{% if position %}{{ c.data_row("La teva posició", position) }}{% endif %}
+{% endcall %}
+<p style="{{ s.p_last }}">T'avisarem si s'allibera una plaça.</p>
+{% endblock %}

@@ -1,7 +1,16 @@
-<h2>You're on the waitlist</h2>
-<p>Hi {{ member_name }},</p>
-<p><strong>{{ space_name }}</strong> is full, so we've added you to the waitlist.</p>
-<p><strong>Date:</strong> {{ booking_date }}</p>
-<p><strong>Time:</strong> {{ booking_time }}</p>
-{% if position %}<p><strong>Your position:</strong> {{ position }}</p>{% endif %}
-<p>We'll let you know if a spot opens up.</p>
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}{{ space_name }} is full; you are on the waitlist.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">You're on the waitlist</h1>
+<p style="{{ s.p }}">Hi {{ member_name }},</p>
+<p style="{{ s.p }}"><strong>{{ space_name }}</strong> is full, so we've added you to the waitlist.</p>
+{% call c.panel() %}
+{{ c.data_row("Date", booking_date) }}
+{{ c.data_row("Time", booking_time) }}
+{% if position %}{{ c.data_row("Your position", position) }}{% endif %}
+{% endcall %}
+<p style="{{ s.p_last }}">We'll let you know if a spot opens up.</p>
+{% endblock %}

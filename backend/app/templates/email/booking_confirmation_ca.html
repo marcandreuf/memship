@@ -1,7 +1,18 @@
-<h2>Reserva confirmada!</h2>
-<p>Hola {{ member_name }},</p>
-<p>La teva reserva de <strong>{{ space_name }}</strong> ha estat confirmada.</p>
-<p><strong>Data:</strong> {{ booking_date }}</p>
-<p><strong>Horari:</strong> {{ booking_time }}</p>
-{% if cancellation_deadline_hours %}<p>Pots cancel·lar fins a {{ cancellation_deadline_hours }} hores abans de l'inici.</p>{% endif %}
-<p>Ens veiem aviat!</p>
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}La teva reserva de {{ space_name }} està confirmada.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Reserva confirmada!</h1>
+<p style="{{ s.p }}">Hola {{ member_name }},</p>
+<p style="{{ s.p }}">La teva reserva de <strong>{{ space_name }}</strong> ha estat confirmada.</p>
+{% call c.panel() %}
+{{ c.data_row("Data", booking_date) }}
+{{ c.data_row("Horari", booking_time) }}
+{% endcall %}
+{%- if cancellation_deadline_hours %}
+<p style="{{ s.note }}">Pots cancel·lar fins a {{ cancellation_deadline_hours }} hores abans de l'inici.</p>
+{%- endif %}
+<p style="{{ s.p_last }}">Ens veiem aviat!</p>
+{% endblock %}

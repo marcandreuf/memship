@@ -1,0 +1,16 @@
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}{{ total }} recibos generados en la facturación recurrente.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Facturación recurrente</h1>
+<p style="{{ s.p }}">Resumen de la última ejecución de facturación recurrente.</p>
+{% call c.panel() %}
+{% for row in rows %}{{ c.data_row(row.frequency, row.count ~ " (" ~ row.status ~ ")") }}{% endfor %}
+{{ c.data_row("Total", total) }}
+{% endcall %}
+{%- if any_failed %}
+<p style="{{ s.p_last }}"><strong>Algunas ejecuciones fallaron — revisa el historial.</strong></p>
+{%- endif %}
+{% endblock %}

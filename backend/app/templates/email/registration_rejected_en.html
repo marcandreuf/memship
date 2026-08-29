@@ -1,4 +1,15 @@
-<h2>Hi {{ first_name }},</h2>
-<p>We're sorry to let you know that your registration request was not accepted.</p>
-{% if reason %}<p>Reason: {{ reason }}</p>{% endif %}
-<p>If you believe this is a mistake, please contact the organization.</p>
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}About your registration request.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Hi {{ first_name }},</h1>
+<p style="{{ s.p }}">We're sorry to let you know that your registration request was not accepted.</p>
+{%- if reason %}
+{% call c.panel() %}
+{{ c.data_row("Reason", reason) }}
+{% endcall %}
+{%- endif %}
+<p style="{{ s.p_last }}">If you believe this is a mistake, please contact the organization.</p>
+{% endblock %}
