@@ -201,6 +201,95 @@
       "encryptionActive": "Encryption active: secrets are stored encrypted.",
       "encryptionKeyMissing": "Set MEMSHIP_SECRET_KEY to store provider secrets.",
       "encryptionKeyRequired": "Secrets cannot be saved without an encryption key."
+    },
+    "emailTemplates": {
+      "title": "Member emails",
+      "description": "Choose which emails the system sends. Account-access emails cannot be switched off.",
+      "groups": {
+        "auth": "Account and access",
+        "members": "Member sign-ups",
+        "activities": "Activities",
+        "bookings": "Bookings",
+        "billing": "Billing",
+        "broadcasts": "Announcements"
+      },
+      "tiers": {
+        "mandatory": "Mandatory"
+      },
+      "confirmDisableTitle": "Switch off “{name}”?",
+      "confirmDisable": "Switch off",
+      "templates": {
+        "verification": {
+          "name": "Email verification",
+          "locked": "Without this email a new account cannot be activated."
+        },
+        "password_reset": {
+          "name": "Password reset",
+          "locked": "The only way to recover access to an account."
+        },
+        "registration_approved": {
+          "name": "Registration approved",
+          "description": "Tells the member their registration was approved and they can log in.",
+          "warning": "The member has no other signal that their registration was approved."
+        },
+        "registration_rejected": {
+          "name": "Registration rejected",
+          "description": "Tells the applicant their registration was not accepted."
+        },
+        "registration_confirmed": {
+          "name": "Registration confirmed",
+          "description": "Confirms a registration for an activity."
+        },
+        "registration_waitlisted": {
+          "name": "Registration waitlisted",
+          "description": "Says the registration went onto the waitlist."
+        },
+        "registration_cancelled": {
+          "name": "Registration cancelled",
+          "description": "Confirms a registration was cancelled."
+        },
+        "waitlist_promoted": {
+          "name": "Activity place freed up",
+          "description": "Tells the member they moved off the activity waitlist.",
+          "warning": "The member gained a place and must act on it. Without the email they will not turn up."
+        },
+        "booking_confirmation": {
+          "name": "Booking confirmed",
+          "description": "Confirms a booking of a space."
+        },
+        "booking_waitlisted": {
+          "name": "Booking waitlisted",
+          "description": "Says the booking went onto the waitlist."
+        },
+        "booking_promoted": {
+          "name": "Booking place freed up",
+          "description": "Tells the member their booking is now confirmed.",
+          "warning": "The member gained a place and must act on it. Without the email they will not turn up."
+        },
+        "booking_cancelled": {
+          "name": "Booking cancelled by the club",
+          "description": "Tells the member the club cancelled their booking.",
+          "warning": "The member will turn up for a booking that no longer exists."
+        },
+        "receipt_delivery": {
+          "name": "Receipt delivery",
+          "description": "Sends the receipt PDF to the member when it is issued.",
+          "warning": "Members stop receiving their receipts by email."
+        },
+        "payment_reminder": {
+          "name": "Payment reminder",
+          "description": "Chases overdue receipts on the configured schedule.",
+          "warning": "Overdue receipts stop being chased by email."
+        },
+        "billing_summary": {
+          "name": "Billing summary",
+          "description": "Internal summary of each billing run, to the admin address."
+        },
+        "announcement": {
+          "name": "Announcements",
+          "description": "Delivery of the announcements admins broadcast."
+        }
+      }
     }
   }
 }

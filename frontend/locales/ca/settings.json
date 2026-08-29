@@ -201,6 +201,95 @@
       "encryptionActive": "Xifratge actiu: els secrets es desen xifrats.",
       "encryptionKeyMissing": "Configura MEMSHIP_SECRET_KEY per poder desar secrets del proveïdor.",
       "encryptionKeyRequired": "No es poden desar secrets sense una clau de xifratge."
+    },
+    "emailTemplates": {
+      "title": "Correus als membres",
+      "description": "Tria quins correus envia el sistema. Els correus d'accés al compte no es poden desactivar.",
+      "groups": {
+        "auth": "Compte i accés",
+        "members": "Altes de socis",
+        "activities": "Activitats",
+        "bookings": "Reserves",
+        "billing": "Facturació",
+        "broadcasts": "Anuncis"
+      },
+      "tiers": {
+        "mandatory": "Obligatori"
+      },
+      "confirmDisableTitle": "Voleu desactivar «{name}»?",
+      "confirmDisable": "Desactiva",
+      "templates": {
+        "verification": {
+          "name": "Verificació de correu",
+          "locked": "Sense aquest correu no es pot activar un compte nou."
+        },
+        "password_reset": {
+          "name": "Restablir la contrasenya",
+          "locked": "Única manera de recuperar l'accés a un compte."
+        },
+        "registration_approved": {
+          "name": "Alta aprovada",
+          "description": "Avisa el soci que la seva alta s'ha aprovat i ja pot entrar.",
+          "warning": "El soci no tindrà cap altre senyal que la seva alta s'ha aprovat."
+        },
+        "registration_rejected": {
+          "name": "Alta rebutjada",
+          "description": "Comunica al sol·licitant que la seva alta no s'ha acceptat."
+        },
+        "registration_confirmed": {
+          "name": "Inscripció confirmada",
+          "description": "Confirma la inscripció a una activitat."
+        },
+        "registration_waitlisted": {
+          "name": "Inscripció en llista d'espera",
+          "description": "Avisa que la inscripció ha quedat en llista d'espera."
+        },
+        "registration_cancelled": {
+          "name": "Inscripció cancel·lada",
+          "description": "Confirma la cancel·lació d'una inscripció."
+        },
+        "waitlist_promoted": {
+          "name": "Plaça alliberada en activitat",
+          "description": "Avisa el soci que ha entrat des de la llista d'espera.",
+          "warning": "El soci ha guanyat una plaça i ha d'actuar. Sense avís, no s'hi presentarà."
+        },
+        "booking_confirmation": {
+          "name": "Reserva confirmada",
+          "description": "Confirma la reserva d'un espai."
+        },
+        "booking_waitlisted": {
+          "name": "Reserva en llista d'espera",
+          "description": "Avisa que la reserva ha quedat en llista d'espera."
+        },
+        "booking_promoted": {
+          "name": "Plaça alliberada en reserva",
+          "description": "Avisa el soci que la seva reserva ja està confirmada.",
+          "warning": "El soci ha guanyat una plaça i ha d'actuar. Sense avís, no s'hi presentarà."
+        },
+        "booking_cancelled": {
+          "name": "Reserva cancel·lada pel club",
+          "description": "Avisa el soci que el club ha cancel·lat la seva reserva.",
+          "warning": "El soci es presentarà a una reserva que ja no existeix."
+        },
+        "receipt_delivery": {
+          "name": "Enviament de rebut",
+          "description": "Envia el PDF del rebut al soci en emetre'l.",
+          "warning": "El soci deixarà de rebre els seus rebuts per correu."
+        },
+        "payment_reminder": {
+          "name": "Recordatori de pagament",
+          "description": "Reclama els rebuts vençuts segons la pauta configurada.",
+          "warning": "Els rebuts vençuts deixaran de reclamar-se per correu."
+        },
+        "billing_summary": {
+          "name": "Resum de facturació",
+          "description": "Resum intern de cada remesa, a l'adreça d'administració."
+        },
+        "announcement": {
+          "name": "Anuncis",
+          "description": "Difusió dels anuncis que envien els administradors."
+        }
+      }
     }
   }
 }

@@ -64,6 +64,12 @@ class OrganizationSettings(Base):
     # provider is active at a time. Secret field values are Fernet ciphertext;
     # empty fields fall back to the matching mail env var at resolve time.
     mailing_config = Column(JSONB, nullable=False, server_default="{}", default=dict)
+    # Which outbound email templates are switched on, editable from the settings
+    # screen. Shape: {"templates": {"<template_key>": {"enabled": bool}}}. A key
+    # that is absent counts as enabled, so an untouched install keeps sending
+    # everything. Mandatory templates (see app.domains.mailing.policy) are never
+    # stored here — they always send.
+    communications_config = Column(JSONB, nullable=False, server_default="{}", default=dict)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()

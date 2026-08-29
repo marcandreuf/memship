@@ -25,6 +25,7 @@ def send_announcement_task(self, announcement_id: int) -> int:
             email_recipients,
             resolve_audience,
         )
+        from app.domains.mailing.policy import is_enabled as is_template_enabled
         from app.domains.organizations.models import OrganizationSettings
 
         db = SessionLocal()
@@ -36,6 +37,15 @@ def send_announcement_task(self, announcement_id: int) -> int:
             )
             if not ann:
                 logger.warning(f"Announcement {announcement_id} not found for email")
+                return 0
+
+            # The per-send gate in ``_send_templated`` would suppress each mail
+            # individually; checking once here also skips rendering and the
+            # audience walk, and reuses the session already open.
+            if not is_template_enabled(db, "announcement"):
+                logger.info(
+                    f"Announcement {announcement_id}: email delivery disabled in settings"
+                )
                 return 0
 
             org = (

@@ -48,6 +48,7 @@ import { PaymentProvidersSettings } from "@/features/settings/components/payment
 import { RecurringBillingSettings } from "@/features/settings/components/recurring-billing-settings";
 import { PaymentRemindersSettings } from "@/features/settings/components/payment-reminders-settings";
 import { CommunicationsSettings } from "@/features/settings/components/communications-settings";
+import { EmailTemplatesSettings } from "@/features/settings/components/email-templates-settings";
 import { MemberCardSettings } from "@/features/settings/components/member-card-settings";
 import { SsoSettings } from "@/features/settings/components/sso-settings";
 import { MailingSettings } from "@/features/settings/components/mailing-settings";
@@ -477,8 +478,9 @@ export default function SettingsPage() {
           </Tabs>
         </TabsContent>}
 
-        {isSuperAdmin && <TabsContent value="communications">
+        {isSuperAdmin && <TabsContent value="communications" className="space-y-3">
           <CommunicationsSettings />
+          <EmailTemplatesSettings />
         </TabsContent>}
 
         {isSuperAdmin && <TabsContent value="member-card">
@@ -518,8 +520,9 @@ export default function SettingsPage() {
               <TabsTrigger value="membership-types" className={SUBTAB_TRIGGER}>{t("nav.membershipTypes")}</TabsTrigger>
             </TabsList>
 
-            {isSuperAdmin && <TabsContent value="communications">
+            {isSuperAdmin && <TabsContent value="communications" className="space-y-3">
               <CommunicationsSettings />
+              <EmailTemplatesSettings />
             </TabsContent>}
             {isSuperAdmin && <TabsContent value="member-card">
               <MemberCardSettings />

@@ -53,6 +53,26 @@ Envía correos automáticos a los socios con recibos vencidos:
 - **Repetir cada (días)** entre recordatorios sucesivos.
 - **Recordatorios máximos** por recibo (1–10).
 
+## Correos a los miembros
+
+En **Socios → Comunicaciones**, bajo el interruptor de anuncios, se elige **qué correos envía
+el sistema**. Cada correo tiene su propio interruptor, agrupado por área (cuenta y acceso,
+altas, actividades, reservas, facturación, anuncios).
+
+Tres tipos:
+
+- **Obligatorios** — verificación de correo y restablecimiento de contraseña. Aparecen
+  bloqueados y no se pueden desactivar: sin ellos no se puede activar una cuenta nueva ni
+  recuperar el acceso a una existente.
+- **Operativos** — el socio gana o pierde algo y no tiene otro aviso (plaza liberada, reserva
+  cancelada por el club, envío de recibo, recordatorio de pago). Se pueden desactivar, pero
+  la pantalla avisa antes de qué deja de recibir el socio.
+- **Opcionales** — confirmaciones que el socio también ve en el portal, el resumen interno de
+  facturación y la difusión de anuncios.
+
+Un correo desactivado deja de enviarse en el siguiente intento; no hace falta reiniciar. Una
+instalación que nunca visite esta pantalla envía todos los correos, como hasta ahora.
+
 ## Otras opciones
 
 - **Comunicaciones** — activa el envío de [anuncios](communications.es.md).
