@@ -1,7 +1,7 @@
 """Tests for the superadmin communications configuration screen.
 
 Covers the three tiers (mandatory templates always send and cannot be switched
-off), the default-on resolution for an untouched install, the gate applied at
+off), the default-off resolution for an untouched install, the gate applied at
 send time in ``app.core.email``, and the masked GET / sparse PUT endpoints.
 """
 
@@ -69,19 +69,28 @@ class TestCatalog:
 
 
 class TestResolution:
-    def test_untouched_install_has_everything_enabled(self, db):
+    def test_untouched_install_sends_only_the_mandatory_templates(self, db):
+        """Nothing optional leaves a fresh install until someone opts in."""
         _org(db)
         resolved = enabled_map(db)
         assert set(resolved) == {spec.key for spec in CATALOG}
-        assert all(resolved.values())
+        assert {key for key, on in resolved.items() if on} == MANDATORY
 
-    def test_disabled_key_resolves_false(self, db):
+    def test_enabled_key_resolves_true(self, db):
+        org = _org(db)
+        org.communications_config = {"templates": {"booking_confirmation": {"enabled": True}}}
+        db.flush()
+
+        assert is_enabled(db, "booking_confirmation") is True
+        # Untouched siblings stay off — enabling one is not enabling the group.
+        assert is_enabled(db, "booking_promoted") is False
+
+    def test_explicit_false_resolves_false(self, db):
         org = _org(db)
         org.communications_config = {"templates": {"booking_confirmation": {"enabled": False}}}
         db.flush()
 
         assert is_enabled(db, "booking_confirmation") is False
-        assert is_enabled(db, "booking_promoted") is True
 
     def test_mandatory_ignores_a_stored_false(self, db):
         """Even if a row is written directly, a mandatory template still sends."""
@@ -164,11 +173,32 @@ class TestEndpoints:
         assert by_key["password_reset"]["tier"] == "mandatory"
         assert by_key["receipt_delivery"]["tier"] == "operational"
         assert by_key["announcement"]["tier"] == "optional"
-        assert all(t["enabled"] for t in templates)
+        assert {t["key"] for t in templates if t["enabled"]} == MANDATORY
 
-    def test_put_disables_a_template(self, client, db):
+    def test_put_enables_a_template(self, client, db):
         _org(db)
         admin = _create_user(db, suffix="comms-put")
+        db.commit()
+        client.cookies.update(_auth_cookie(admin))
+
+        resp = client.put(
+            "/api/v1/settings/communications",
+            json={"templates": {"booking_confirmation": True}},
+        )
+        assert resp.status_code == 200
+        by_key = {t["key"]: t for t in resp.json()["templates"]}
+        assert by_key["booking_confirmation"]["enabled"] is True
+        assert by_key["booking_waitlisted"]["enabled"] is False
+
+        org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
+        db.refresh(org)
+        assert org.communications_config["templates"]["booking_confirmation"]["enabled"] is True
+
+    def test_put_disables_a_template(self, client, db):
+        org = _org(db)
+        org.communications_config = {"templates": {"booking_confirmation": {"enabled": True}}}
+        db.flush()
+        admin = _create_user(db, suffix="comms-put-off")
         db.commit()
         client.cookies.update(_auth_cookie(admin))
 
@@ -179,7 +209,6 @@ class TestEndpoints:
         assert resp.status_code == 200
         by_key = {t["key"]: t for t in resp.json()["templates"]}
         assert by_key["booking_confirmation"]["enabled"] is False
-        assert by_key["booking_waitlisted"]["enabled"] is True
 
         org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
         db.refresh(org)
@@ -187,7 +216,7 @@ class TestEndpoints:
 
     def test_put_is_sparse(self, client, db):
         org = _org(db)
-        org.communications_config = {"templates": {"announcement": {"enabled": False}}}
+        org.communications_config = {"templates": {"announcement": {"enabled": True}}}
         db.flush()
         admin = _create_user(db, suffix="comms-sparse")
         db.commit()
@@ -195,11 +224,11 @@ class TestEndpoints:
 
         resp = client.put(
             "/api/v1/settings/communications",
-            json={"templates": {"billing_summary": False}},
+            json={"templates": {"billing_summary": True}},
         )
         by_key = {t["key"]: t for t in resp.json()["templates"]}
-        assert by_key["announcement"]["enabled"] is False
-        assert by_key["billing_summary"]["enabled"] is False
+        assert by_key["announcement"]["enabled"] is True
+        assert by_key["billing_summary"]["enabled"] is True
 
     def test_put_rejects_disabling_a_mandatory_template(self, client, db):
         _org(db)
@@ -250,7 +279,7 @@ class TestEndpoints:
 
         client.put(
             "/api/v1/settings/communications",
-            json={"templates": {"registration_rejected": False}},
+            json={"templates": {"registration_rejected": True}},
         )
 
         entry = (
@@ -263,6 +292,7 @@ class TestEndpoints:
         assert "communications_config.registration_rejected" in entry.changed_fields
 
     def test_unchanged_put_writes_no_audit_row(self, client, db):
+        """Switching off what is already off by default changes nothing."""
         _org(db)
         admin = _create_user(db, suffix="comms-noop")
         db.commit()
@@ -273,7 +303,7 @@ class TestEndpoints:
         ).count()
         client.put(
             "/api/v1/settings/communications",
-            json={"templates": {"announcement": True}},
+            json={"templates": {"announcement": False}},
         )
         after = db.query(AuditLog).filter(
             AuditLog.table_name == "organization_settings"

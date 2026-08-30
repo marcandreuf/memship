@@ -187,7 +187,7 @@ export function EmailTemplatesSettings() {
                       </p>
                     </div>
                     <Switch
-                      checked={mandatory ? true : (draft[template.key] ?? true)}
+                      checked={mandatory ? true : (draft[template.key] ?? false)}
                       disabled={mandatory || featureOff !== null}
                       onCheckedChange={(next) => applyToggle(template, next)}
                       aria-label={t(

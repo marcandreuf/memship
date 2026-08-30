@@ -509,7 +509,7 @@ def update_communications_config(
         if key in MANDATORY_TEMPLATES:
             continue  # always on; nothing to store
         node = templates.setdefault(key, {})
-        if node.get("enabled", True) is not enabled:
+        if node.get("enabled", False) is not enabled:
             node["enabled"] = enabled
             changed.append(key)
 

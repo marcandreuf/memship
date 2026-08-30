@@ -12,14 +12,16 @@ Three tiers, mirroring how much freedom the organization has:
   rejects an attempt to disable one. A member-level opt-out must not apply to
   these either (they rest on contract, not consent).
 - ``operational`` — the member gained or lost something and has no other signal
-  (a seat opened, the club cancelled their booking, a receipt was issued).
-  Default on; the UI warns before switching one off.
+  (a seat opened, the club cancelled their booking, a receipt was issued). The
+  UI warns before switching one off.
 - ``optional`` — confirmations whose state is visible in the portal anyway, plus
   the admin-facing summary and the broadcast channel.
 
-Resolution is DB-with-default: a key absent from ``communications_config``
-counts as enabled, so an install that never visits the screen behaves exactly as
-it did before the column existed.
+Resolution is DB-with-default, and the default is **off**: a key absent from
+``communications_config`` does not send. Nothing but the two mandatory mails
+leaves a fresh install until someone switches it on, so an organization opts
+into each channel rather than discovering it after members have been mailed. A
+key with no catalogue entry is not configurable and always sends.
 """
 
 from dataclasses import dataclass
@@ -73,8 +75,8 @@ def is_enabled(db: Session, template_key: str) -> bool:
     """Whether ``template_key`` may be sent, per the stored configuration.
 
     Mandatory templates always send. An unknown key (a template with no
-    catalogue entry) also sends — the gate only ever suppresses what the
-    organization explicitly turned off.
+    catalogue entry) also sends — it has no switch to consult. Everything else
+    sends only once the organization has explicitly turned it on.
     """
     if template_key in MANDATORY or template_key not in BY_KEY:
         return True
@@ -82,7 +84,7 @@ def is_enabled(db: Session, template_key: str) -> bool:
     row = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
     config = (row.communications_config if row and row.communications_config else {}) or {}
     node = (config.get("templates") or {}).get(template_key) or {}
-    return node.get("enabled", True) is not False
+    return node.get("enabled", False) is True
 
 
 def enabled_map(db: Session) -> dict[str, bool]:
@@ -94,7 +96,7 @@ def enabled_map(db: Session) -> dict[str, bool]:
         spec.key: (
             True
             if spec.tier == "mandatory"
-            else (templates.get(spec.key) or {}).get("enabled", True) is not False
+            else (templates.get(spec.key) or {}).get("enabled", False) is True
         )
         for spec in CATALOG
     }
