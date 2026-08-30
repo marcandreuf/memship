@@ -128,14 +128,36 @@ class TestSendGate:
         mock_send.assert_called_once()
 
     @patch("app.core.email.send_email", return_value=True)
-    def test_gate_failure_sends_anyway(self, mock_send):
-        """A broken policy lookup must not silently suppress mail."""
+    def test_gate_failure_suppresses_a_configurable_template(self, mock_send):
+        """An unreadable policy is not consent — templates are off by default."""
         with patch(
             "app.core.email.is_template_enabled", side_effect=RuntimeError("db down")
         ):
             ok = email_module.send_booking_confirmation_email(
                 "m@example.com", "Ana", "Court 1", "01/09/2026", "10:00"
             )
+        assert ok is False
+        mock_send.assert_not_called()
+
+    @patch("app.core.email.send_email", return_value=True)
+    def test_gate_failure_still_sends_account_access_mail(self, mock_send):
+        """A database problem must not lock anyone out of their own account."""
+        with patch(
+            "app.core.email.is_template_enabled", side_effect=RuntimeError("db down")
+        ):
+            ok = email_module.send_password_reset_email(
+                "u@example.com", "Ana", "https://example.com/reset?t=x"
+            )
+        assert ok is True
+        mock_send.assert_called_once()
+
+    @patch("app.core.email.send_email", return_value=True)
+    def test_gate_failure_still_sends_an_uncatalogued_template(self, mock_send):
+        """``welcome`` has no switch, so there is no policy to be broken."""
+        with patch(
+            "app.db.session.SessionLocal", side_effect=RuntimeError("db down")
+        ):
+            ok = email_module.send_welcome_email("u@example.com", "Ana", "M-0001")
         assert ok is True
         mock_send.assert_called_once()
 

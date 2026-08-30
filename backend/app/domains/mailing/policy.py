@@ -71,14 +71,23 @@ MANDATORY: frozenset[str] = frozenset(
 # credential check, not a member communication, and must send regardless.
 
 
+def always_sends(template_key: str) -> bool:
+    """Whether ``template_key`` bypasses the configuration entirely.
+
+    True for the mandatory account-access mails and for any key with no
+    catalogue entry — neither has a switch to consult. Answerable without a
+    session, so a caller can settle these before touching the database.
+    """
+    return template_key in MANDATORY or template_key not in BY_KEY
+
+
 def is_enabled(db: Session, template_key: str) -> bool:
     """Whether ``template_key`` may be sent, per the stored configuration.
 
-    Mandatory templates always send. An unknown key (a template with no
-    catalogue entry) also sends — it has no switch to consult. Everything else
+    Templates that ``always_sends`` covers need no lookup. Everything else
     sends only once the organization has explicitly turned it on.
     """
-    if template_key in MANDATORY or template_key not in BY_KEY:
+    if always_sends(template_key):
         return True
 
     row = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()

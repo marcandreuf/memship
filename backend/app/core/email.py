@@ -23,6 +23,7 @@ from app.domains.mailing.mailing_config import (
     env_only_mailing_config,
     resolve_mailing_config,
 )
+from app.domains.mailing.policy import always_sends as template_always_sends
 from app.domains.mailing.policy import is_enabled as is_template_enabled
 
 logger = logging.getLogger(__name__)
@@ -449,25 +450,29 @@ def _template_enabled(template_key: str) -> bool:
     does — Celery tasks, request handlers and the reminder service do not all
     carry one — so a settings save applies to the next email with no restart.
 
-    Fails **open**: if the lookup itself breaks, the mail goes out. A transient
-    database problem must not silently suppress a member's receipt.
+    Fails **closed**: templates are off until someone switches them on, so a
+    broken lookup must not mail members who were never opted in. Account-access
+    mail is settled before the session is opened, which keeps a database problem
+    from locking anyone out of their own account.
     """
+    if template_always_sends(template_key):
+        return True
     try:
         db = db_session.SessionLocal()
-    except Exception as e:  # noqa: BLE001 — never let policy resolution block a send
+    except Exception as e:  # noqa: BLE001 — an unreadable policy is not consent
         logger.warning(
-            f"Communications policy unavailable (no session), sending anyway: "
+            f"Communications policy unavailable (no session), not sending: "
             f"template={template_key}, error={e}"
         )
-        return True
+        return False
     try:
         return is_template_enabled(db, template_key)
-    except Exception as e:  # noqa: BLE001 — degrade to sending rather than dropping mail
+    except Exception as e:  # noqa: BLE001 — suppress rather than mail unasked
         logger.warning(
-            f"Communications policy lookup failed, sending anyway: "
+            f"Communications policy lookup failed, not sending: "
             f"template={template_key}, error={e}"
         )
-        return True
+        return False
     finally:
         db.close()
 
