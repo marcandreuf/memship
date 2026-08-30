@@ -105,9 +105,10 @@
     },
     "communications": {
       "tab": "Communications",
-      "title": "Communications",
-      "enabled": "Enable communications",
-      "enabledDesc": "Let admins send announcements to members by email and in-app."
+      "title": "Announcements module",
+      "enabled": "Enable announcements",
+      "enabledDesc": "On: staff get the Communications screen to write and broadcast announcements, and members get the notification bell and their Announcements page. Off: all three disappear and the announcement emails stop. Existing announcements are kept and come back if you switch it on again.",
+      "description": "Master switch for the announcements feature. It does not affect the member emails below, which keep sending either way."
     },
     "memberCard": {
       "tab": "Member Card",
@@ -204,7 +205,7 @@
     },
     "emailTemplates": {
       "title": "Member emails",
-      "description": "Choose which emails the system sends. Account-access emails cannot be switched off.",
+      "description": "Which emails the system sends out. These control email only — in-app notifications and the portal are unaffected, and a member who has opted out of email never receives any of them. Account-access emails cannot be switched off.",
       "groups": {
         "auth": "Account and access",
         "members": "Member sign-ups",
@@ -213,11 +214,22 @@
         "billing": "Billing",
         "broadcasts": "Announcements"
       },
+      "groupDescriptions": {
+        "auth": "Sent when someone activates an account or recovers a password. Always on — there is no other way in.",
+        "members": "Sent when an admin approves or rejects a sign-up request.",
+        "activities": "Sent when a member's place in an activity changes — confirmed, waitlisted, cancelled, or promoted off the waitlist.",
+        "bookings": "Sent when a member's booking of a space changes — confirmed, waitlisted, cancelled by the club, or promoted off the waitlist.",
+        "billing": "Sent when a receipt is issued or falls overdue, plus the internal summary of each billing run.",
+        "broadcasts": "Email delivery of announcements. Switch it off and announcements still appear in the app — they just stop going out by email."
+      },
       "tiers": {
         "mandatory": "Mandatory"
       },
       "confirmDisableTitle": "Switch off “{name}”?",
       "confirmDisable": "Switch off",
+      "featureOff": {
+        "communications": "The announcements module is switched off above, so nothing is sent either way."
+      },
       "templates": {
         "verification": {
           "name": "Email verification",

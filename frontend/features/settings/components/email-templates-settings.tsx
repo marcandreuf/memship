@@ -20,7 +20,15 @@ import {
   useCommunicationsConfig,
   useUpdateCommunicationsConfig,
 } from "../hooks/use-communications-config";
+import { useSettings } from "../hooks/use-settings";
 import type { CommunicationTemplateView } from "../services/communications-api";
+
+// Templates whose feature can be switched off wholesale elsewhere in Settings.
+// With the feature off the endpoint behind it 404s, so the row is inert — show
+// it disabled rather than letting it read as a live choice.
+const TEMPLATE_FEATURES: Record<string, string> = {
+  announcement: "communications",
+};
 
 // The order groups are rendered in. A group the backend adds later still shows,
 // appended after these.
@@ -50,6 +58,7 @@ function groupTemplates(templates: CommunicationTemplateView[]) {
 export function EmailTemplatesSettings() {
   const t = useTranslations();
   const { data, isLoading } = useCommunicationsConfig();
+  const { data: settings } = useSettings();
   const updateMutation = useUpdateCommunicationsConfig();
   const [confirmDialog, confirmAction] = useConfirmDialog();
 
@@ -76,6 +85,14 @@ export function EmailTemplatesSettings() {
   }, [data, draft]);
 
   if (isLoading) return <FormSkeleton fields={6} />;
+
+  // Undefined settings means the fetch is still in flight — treat the feature
+  // as on so a live row never flashes disabled.
+  function disablingFeature(template: CommunicationTemplateView) {
+    const feature = TEMPLATE_FEATURES[template.key];
+    if (!feature || !settings) return null;
+    return settings.features?.[feature] ? null : feature;
+  }
 
   function applyToggle(template: CommunicationTemplateView, next: boolean) {
     // Switching an operational template off means a member stops hearing about
@@ -127,11 +144,17 @@ export function EmailTemplatesSettings() {
         <CardContent className="px-4 pb-3 pt-0 space-y-4">
           {grouped.map(([group, templates]) => (
             <div key={group} className="space-y-2">
-              <h3 className="text-xs font-medium text-muted-foreground">
-                {t(`settings.emailTemplates.groups.${group}`)}
-              </h3>
+              <div>
+                <h3 className="text-xs font-medium">
+                  {t(`settings.emailTemplates.groups.${group}`)}
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  {t(`settings.emailTemplates.groupDescriptions.${group}`)}
+                </p>
+              </div>
               {templates.map((template) => {
                 const mandatory = template.tier === "mandatory";
+                const featureOff = disablingFeature(template);
                 return (
                   <div
                     key={template.key}
@@ -152,18 +175,20 @@ export function EmailTemplatesSettings() {
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        {mandatory
-                          ? t(
-                              `settings.emailTemplates.templates.${template.key}.locked`
-                            )
-                          : t(
-                              `settings.emailTemplates.templates.${template.key}.description`
-                            )}
+                        {featureOff
+                          ? t(`settings.emailTemplates.featureOff.${featureOff}`)
+                          : mandatory
+                            ? t(
+                                `settings.emailTemplates.templates.${template.key}.locked`
+                              )
+                            : t(
+                                `settings.emailTemplates.templates.${template.key}.description`
+                              )}
                       </p>
                     </div>
                     <Switch
                       checked={mandatory ? true : (draft[template.key] ?? true)}
-                      disabled={mandatory}
+                      disabled={mandatory || featureOff !== null}
                       onCheckedChange={(next) => applyToggle(template, next)}
                       aria-label={t(
                         `settings.emailTemplates.templates.${template.key}.name`

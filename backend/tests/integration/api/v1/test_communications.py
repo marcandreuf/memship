@@ -55,9 +55,8 @@ def _ensure_org(db, features=None):
         )
         db.add(org)
         db.flush()
-    if features is not None:
-        org.features = features
-        db.flush()
+    org.features = {"communications": True} if features is None else features
+    db.flush()
     return org
 
 
@@ -572,5 +571,51 @@ class TestRecipients:
         _ensure_org(db)
         resp = client.get(
             "/api/v1/announcements/999999/recipients", cookies=_auth_cookie(admin)
+        )
+        assert resp.status_code == 404
+
+
+class TestFeatureDisabled:
+    """`features.communications` off closes the whole surface, admin and member."""
+
+    def test_admin_list_404_when_disabled(self, client, db):
+        _ensure_org(db, features={})
+        admin = _create_user(db, "admin", "fd-a")
+        resp = client.get("/api/v1/announcements", cookies=_auth_cookie(admin))
+        assert resp.status_code == 404
+
+    def test_create_404_when_disabled(self, client, db):
+        _ensure_org(db, features={})
+        admin = _create_user(db, "admin", "fd-c")
+        resp = client.post(
+            "/api/v1/announcements",
+            json={"subject": "T", "body": "B", "target_type": "all"},
+            cookies=_auth_cookie(admin),
+        )
+        assert resp.status_code == 404
+
+    def test_send_404_when_disabled(self, client, db):
+        _ensure_org(db)
+        admin = _create_user(db, "admin", "fd-s")
+        ann = _draft(db, admin, target_type="all")
+        _ensure_org(db, features={})
+        resp = client.post(
+            f"/api/v1/announcements/{ann.id}/send", cookies=_auth_cookie(admin)
+        )
+        assert resp.status_code == 404
+
+    def test_member_notifications_404_when_disabled(self, client, db):
+        _ensure_org(db, features={})
+        member_user = _create_user(db, "member", "fd-m")
+        resp = client.get(
+            "/api/v1/me/notifications", cookies=_auth_cookie(member_user)
+        )
+        assert resp.status_code == 404
+
+    def test_member_unread_count_404_when_disabled(self, client, db):
+        _ensure_org(db, features={})
+        member_user = _create_user(db, "member", "fd-u")
+        resp = client.get(
+            "/api/v1/me/notifications/unread-count", cookies=_auth_cookie(member_user)
         )
         assert resp.status_code == 404

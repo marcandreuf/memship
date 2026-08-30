@@ -105,9 +105,10 @@
     },
     "communications": {
       "tab": "Comunicaciones",
-      "title": "Comunicaciones",
-      "enabled": "Activar comunicaciones",
-      "enabledDesc": "Permite a los administradores enviar anuncios a los miembros por correo y en la app."
+      "title": "Módulo de anuncios",
+      "enabled": "Activar anuncios",
+      "enabledDesc": "Activado: los administradores disponen de la pantalla Comunicaciones para redactar y difundir anuncios, y los miembros ven la campana de notificaciones y su página de Anuncios. Desactivado: los tres desaparecen y dejan de enviarse los correos de anuncios. Los anuncios existentes se conservan y vuelven a aparecer si lo activas de nuevo.",
+      "description": "Interruptor general de la función de anuncios. No afecta a los correos a los miembros de abajo, que se siguen enviando igualmente."
     },
     "memberCard": {
       "tab": "Tarjeta de socio",
@@ -204,7 +205,7 @@
     },
     "emailTemplates": {
       "title": "Correos a los miembros",
-      "description": "Elige qué correos envía el sistema. Los correos de acceso a la cuenta no se pueden desactivar.",
+      "description": "Qué correos envía el sistema. Solo afectan al correo: las notificaciones en la app y el portal no cambian, y un miembro que haya rechazado el correo no recibe ninguno. Los correos de acceso a la cuenta no se pueden desactivar.",
       "groups": {
         "auth": "Cuenta y acceso",
         "members": "Altas de socios",
@@ -213,11 +214,22 @@
         "billing": "Facturación",
         "broadcasts": "Anuncios"
       },
+      "groupDescriptions": {
+        "auth": "Se envían cuando alguien activa una cuenta o recupera la contraseña. Siempre activos: no hay otra forma de entrar.",
+        "members": "Se envían cuando un administrador aprueba o rechaza una solicitud de alta.",
+        "activities": "Se envían cuando cambia la plaza de un miembro en una actividad: confirmada, en lista de espera, cancelada o liberada desde la lista de espera.",
+        "bookings": "Se envían cuando cambia la reserva de un espacio: confirmada, en lista de espera, cancelada por el club o liberada desde la lista de espera.",
+        "billing": "Se envían al emitir un recibo o cuando vence, más el resumen interno de cada remesa de facturación.",
+        "broadcasts": "Envío de los anuncios por correo. Si lo desactivas, los anuncios siguen apareciendo en la app; solo dejan de enviarse por correo."
+      },
       "tiers": {
         "mandatory": "Obligatorio"
       },
       "confirmDisableTitle": "¿Desactivar «{name}»?",
       "confirmDisable": "Desactivar",
+      "featureOff": {
+        "communications": "El módulo de anuncios está desactivado arriba, así que no se envía nada de todos modos."
+      },
       "templates": {
         "verification": {
           "name": "Verificación de correo",

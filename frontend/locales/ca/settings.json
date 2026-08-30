@@ -105,9 +105,10 @@
     },
     "communications": {
       "tab": "Comunicacions",
-      "title": "Comunicacions",
-      "enabled": "Activa les comunicacions",
-      "enabledDesc": "Permet als administradors enviar anuncis als membres per correu i a l'app."
+      "title": "Mòdul d'anuncis",
+      "enabled": "Activa els anuncis",
+      "enabledDesc": "Activat: els administradors tenen la pantalla Comunicacions per redactar i difondre anuncis, i els membres veuen la campana de notificacions i la seva pàgina d'Anuncis. Desactivat: els tres desapareixen i deixen d'enviar-se els correus d'anuncis. Els anuncis existents es conserven i tornen a aparèixer si el tornes a activar.",
+      "description": "Interruptor general de la funció d'anuncis. No afecta els correus als membres de sota, que es continuen enviant igualment."
     },
     "memberCard": {
       "tab": "Targeta de soci",
@@ -204,7 +205,7 @@
     },
     "emailTemplates": {
       "title": "Correus als membres",
-      "description": "Tria quins correus envia el sistema. Els correus d'accés al compte no es poden desactivar.",
+      "description": "Quins correus envia el sistema. Només afecten el correu: les notificacions a l'app i el portal no canvien, i un membre que hagi rebutjat el correu no en rep cap. Els correus d'accés al compte no es poden desactivar.",
       "groups": {
         "auth": "Compte i accés",
         "members": "Altes de socis",
@@ -213,11 +214,22 @@
         "billing": "Facturació",
         "broadcasts": "Anuncis"
       },
+      "groupDescriptions": {
+        "auth": "S'envien quan algú activa un compte o recupera la contrasenya. Sempre actius: no hi ha cap altra manera d'entrar.",
+        "members": "S'envien quan un administrador aprova o rebutja una sol·licitud d'alta.",
+        "activities": "S'envien quan canvia la plaça d'un membre en una activitat: confirmada, en llista d'espera, cancel·lada o alliberada des de la llista d'espera.",
+        "bookings": "S'envien quan canvia la reserva d'un espai: confirmada, en llista d'espera, cancel·lada pel club o alliberada des de la llista d'espera.",
+        "billing": "S'envien en emetre un rebut o quan venç, més el resum intern de cada remesa de facturació.",
+        "broadcasts": "Enviament dels anuncis per correu. Si el desactives, els anuncis continuen apareixent a l'app; només deixen d'enviar-se per correu."
+      },
       "tiers": {
         "mandatory": "Obligatori"
       },
       "confirmDisableTitle": "Voleu desactivar «{name}»?",
       "confirmDisable": "Desactiva",
+      "featureOff": {
+        "communications": "El mòdul d'anuncis està desactivat a dalt, així que no s'envia res de tota manera."
+      },
       "templates": {
         "verification": {
           "name": "Verificació de correu",

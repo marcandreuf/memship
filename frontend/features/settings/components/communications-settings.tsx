@@ -7,7 +7,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -71,6 +77,9 @@ export function CommunicationsSettings() {
             <CardTitle className="text-base">
               {t("settings.communications.title")}
             </CardTitle>
+            <CardDescription className="text-xs">
+              {t("settings.communications.description")}
+            </CardDescription>
           </CardHeader>
           <CardContent className="px-4 pb-3 pt-0">
             <FormField

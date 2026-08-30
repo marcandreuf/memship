@@ -51,6 +51,17 @@ export const ROUTE_PERMISSIONS: ReadonlyArray<readonly [string, readonly string[
   ["/profile", ["self.profile.read"]],
 ];
 
+/**
+ * Routes that also need an org `features` flag switched on.
+ *
+ * Same longest-prefix rule. A feature switched off 404s its endpoints, so
+ * without this the page renders a shell over a dead API instead of redirecting.
+ */
+export const ROUTE_FEATURES: ReadonlyArray<readonly [string, string]> = [
+  ["/communications", "communications"],
+  ["/announcements", "communications"],
+];
+
 /** The keys that open `pathname`, or `null` when the route is unrestricted. */
 export function requiredPermissions(pathname: string): readonly string[] | null {
   let match: readonly string[] | null = null;
@@ -60,6 +71,22 @@ export function requiredPermissions(pathname: string): readonly string[] | null 
     const hit = pathname === prefix || pathname.startsWith(prefix + "/");
     if (hit && prefix.length > matchedPrefix.length) {
       match = keys;
+      matchedPrefix = prefix;
+    }
+  }
+
+  return match;
+}
+
+/** The `features` key `pathname` needs, or `null` when it is not feature-gated. */
+export function requiredFeature(pathname: string): string | null {
+  let match: string | null = null;
+  let matchedPrefix = "";
+
+  for (const [prefix, key] of ROUTE_FEATURES) {
+    const hit = pathname === prefix || pathname.startsWith(prefix + "/");
+    if (hit && prefix.length > matchedPrefix.length) {
+      match = key;
       matchedPrefix = prefix;
     }
   }
