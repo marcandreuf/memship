@@ -61,8 +61,14 @@ services:
     # never reached the worker and every queued email hit the log-and-skip path.
     # The `environment:` keys below still win over the file, so the localhost
     # DATABASE_URL / CELERY_BROKER_URL in .env cannot leak into the container.
+    #
+    # `required: false` is not optional here: backend/.env is optional and no
+    # setup step creates it, while a missing env_file is a hard Compose error —
+    # so without the flag every `dev.sh start backend` on a fresh checkout died
+    # before a container was created.
     env_file:
-      - ../.env
+      - path: ../.env
+        required: false
     environment:
       - DATABASE_URL=postgresql://memship:memship@db:5432/memship_db
       - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
@@ -147,6 +153,65 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  # The backend test suite, in a container. It is the only service that builds
+  # the Dockerfile's `dev` stage, so api/worker/beat keep running the production
+  # image and the dev stack still validates what ships.
+  #
+  # Nothing is baked in: the suite runs out of the bind-mounted checkout, so a
+  # test edited on the host is the test that runs, with no rebuild. (tests/ is
+  # in .dockerignore and reaches no image at all.)
+  tests:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: dev
+    container_name: memship-tests
+    # The WHOLE repository, not just backend/. Two unit suites deliberately read
+    # across the repo — test_permission_i18n.py compares the permission registry
+    # against frontend/locales, and test_deployment_env.py parses the root
+    # docker-compose.yml, .env.example and scripts/install.sh. Both resolve those
+    # paths as `Path(__file__).parents[3]`, so backend/ has to sit one level
+    # under the mount or they cannot see the files they exist to check.
+    working_dir: /workspace/backend
+    volumes:
+      - ../..:/workspace
+    # Run as the host operator so anything written into the mounted checkout
+    # belongs to you rather than to the image's uid 1001. Only this service can:
+    # api/worker/beat mount the memship-storage named volume, which Docker
+    # initialises from the image, owned by 1001.
+    user: "${HOST_UID:-1001}:${HOST_GID:-1001}"
+    environment:
+      # The venv on PATH stays at /app; only the code moves. Dependencies are
+      # installed with --no-install-project, so the `app` package is found here
+      # and nowhere else.
+      - PYTHONPATH=/workspace/backend
+      # tests/integration/conftest.py reads this before falling back to the
+      # settings default, which names localhost:5434 — the host's view of
+      # db-test, and unreachable from inside a container.
+      - DATABASE_TEST_URL=postgresql://memship:memship@db-test:5432/memship_test_db
+      # A reachable broker, on a Redis database the dev worker never consumes.
+      # The suite enqueues Celery tasks (registration triggers verification and
+      # confirmation email tasks), and the default broker URL is localhost:6379
+      # — which on the host happens to be the dev Redis, but inside a container
+      # is nothing. Kombu then retries the publish for ~19s before giving up, on
+      # every enqueue: one integration file went from 3s to 9m53s, with the
+      # slowest tests landing on exact multiples of that stall.
+      #
+      # Database 15 rather than the worker's 0 so a task enqueued by a test is
+      # never picked up and run against the dev database.
+      - CELERY_BROKER_URL=redis://redis:6379/15
+      - APP_ENV=development
+      # A cache directory in a container that is removed after every run buys
+      # nothing, and the host user may not be able to create one.
+      - PYTEST_ADDOPTS=-p no:cacheprovider
+    depends_on:
+      db-test:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    profiles:
+      - test
 
   adminer:
     image: adminer

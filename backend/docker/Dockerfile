@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.12-slim AS base
 
 WORKDIR /app
 
@@ -12,6 +12,46 @@ RUN apt-get update && \
 
 # Install uv for fast dependency management
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+
+# --- Development image -------------------------------------------------------
+#
+# The production dependency set plus the `dev` extra (pytest and friends), and
+# nothing else. Only the `tests` service in docker/docker-compose.yml builds
+# this: api, worker and beat deliberately build the production stage below, so
+# the dev stack keeps exercising the image that actually ships.
+#
+# No application code is copied in. The compose service bind-mounts app/ and
+# tests/ from the checkout, which is the point — edit on the host, run in here.
+# That also means tests/ can stay in .dockerignore, out of the shipped image.
+#
+# Defined before the production stage so it is not the default build target: a
+# plain `docker build` still produces the runtime image, and CI stays unchanged.
+FROM base AS dev
+
+COPY pyproject.toml ./
+RUN uv sync --extra dev --no-install-project
+
+# Same reasoning as the production stage below: venv on PATH rather than
+# `uv run`, and PYTHONPATH because dependencies are installed with
+# --no-install-project, so the `app` package is not in the venv.
+ENV PATH="/app/.venv/bin:$PATH" \
+    PYTHONPATH=/app \
+    PYTHONDONTWRITEBYTECODE=1
+
+# The compose service runs as the host user's uid so that anything written to a
+# bind mount belongs to the operator. That uid owns nothing in the image, so
+# /app is opened up here — otherwise pytest cannot even read the venv it runs
+# from. Safe: this stage never reaches a registry.
+RUN chmod -R a+rX /app
+
+# No ENTRYPOINT and no CMD: compose supplies the command, and `docker compose
+# run --rm tests pytest ...` should reach pytest directly rather than the
+# production entrypoint, which waits for the app database and runs migrations.
+
+
+# --- Production image (default build target) ----------------------------------
+FROM base AS runtime
 
 # Version comes from the git tag at build time (there is no VERSION file). CI passes
 # --build-arg APP_VERSION=<tag>; the app reads it from the environment at runtime.

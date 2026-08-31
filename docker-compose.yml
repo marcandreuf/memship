@@ -37,6 +37,7 @@ x-backend-env: &backend-env
   SECRETS_KEY_FILE: ${SECRETS_KEY_FILE:-}
   APP_ENV: ${APP_ENV:-production}
   DEFAULT_LOCALE: ${DEFAULT_LOCALE:-es}
+  SEED_EMAIL_DOMAIN: ${SEED_EMAIL_DOMAIN:-mediterrani.example}
   CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
   # Report the deployed image tag as the app version (no VERSION file; images
   # are promoted, not rebuilt, so the version is supplied at deploy time).

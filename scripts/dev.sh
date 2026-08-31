@@ -27,6 +27,11 @@ FRONTEND_DIR="$REPO_ROOT/frontend"
 # you want a different address.
 DEV_ADMIN_EMAIL="${DEV_ADMIN_EMAIL:-dev@memship.local}"
 
+# Passed to the `tests` service so anything it writes into the bind-mounted
+# checkout belongs to you rather than to the image's built-in uid 1001.
+export HOST_UID="${HOST_UID:-$(id -u)}"
+export HOST_GID="${HOST_GID:-$(id -g)}"
+
 # --- Backend (Docker) ---
 
 backend_start() {
@@ -302,10 +307,29 @@ case "$ACTION" in
         echo -e "${GREEN}+${NC} Reset complete"
         ;;
     test)
-        echo -e "${BLUE}i${NC} Running backend tests..."
-        docker compose -f "$BACKEND_COMPOSE" --profile test up -d db-test
-        sleep 2
-        (cd "$REPO_ROOT/backend" && uv run pytest tests/ -v)
+        # In the container, not on the host: the backend has no host-side
+        # install step any more. `run --rm` starts db-test through depends_on
+        # and builds the dev image on first use.
+        echo -e "${BLUE}i${NC} Running backend tests (container)..."
+        shift
+        docker compose -f "$BACKEND_COMPOSE" --profile test run --rm tests \
+            pytest "${@:-tests/}"
+        ;;
+    shell)
+        docker compose -f "$BACKEND_COMPOSE" exec api bash
+        ;;
+    migration)
+        # Autogenerate against the running dev database. --user is the point:
+        # the file lands in the bind-mounted backend/alembic/versions, and the
+        # container's own uid is the image's 1001, which is not the operator on
+        # every machine.
+        shift
+        if [ -z "$*" ]; then
+            echo -e "${RED}x${NC} A message is required: $0 migration \"add foo table\""
+            exit 1
+        fi
+        docker compose -f "$BACKEND_COMPOSE" exec --user "$(id -u):$(id -g)" api \
+            alembic revision --autogenerate -m "$*"
         ;;
     e2e)
         echo -e "${BLUE}i${NC} Running Cypress E2E tests..."
@@ -322,7 +346,7 @@ case "$ACTION" in
     *)
         echo -e "${BOLD}Memship Dev Environment Manager${NC}"
         echo ""
-        echo "Usage: $0 {start|stop|restart|status|logs|seed|passwd|test|e2e} [backend|frontend|worker|beat|all]"
+        echo "Usage: $0 {start|stop|restart|status|logs|seed|passwd|test|shell|migration|e2e} [backend|frontend|worker|beat|all]"
         echo ""
         echo -e "${BOLD}Commands:${NC}"
         echo "  start [target]    - Start services"
@@ -335,7 +359,9 @@ case "$ACTION" in
         echo "  seed test         - Seed the fixed e2e test accounts, published in this repo"
         echo "  passwd [email]    - Set the super admin password to a fresh generated one"
         echo "  reset             - Wipe DB, restart backend, and re-seed with test data"
-        echo "  test              - Run backend tests"
+        echo "  test [args]       - Run backend tests in the container (args go to pytest)"
+        echo "  shell             - Open a shell in the API container"
+        echo "  migration \"msg\"   - Autogenerate an Alembic revision from the model changes"
         echo "  e2e               - Run Cypress E2E tests (headless)"
         echo "  e2e:open          - Open Cypress GUI (interactive)"
         echo ""
@@ -356,6 +382,8 @@ case "$ACTION" in
         echo "  $0 passwd             # Rotate the super admin password"
         echo "  $0 reset              # Wipe DB and re-seed with test data"
         echo "  $0 test               # Run backend tests"
+        echo "  $0 test tests/unit    # Run one directory"
+        echo "  $0 shell              # Shell into the API container"
         echo ""
         exit 1
         ;;

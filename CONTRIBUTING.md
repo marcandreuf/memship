@@ -57,7 +57,7 @@ So there is nothing to "prepare" as a `preproduction` branch — a pre-productio
 
 ### Development Setup
 
-**Prerequisites:** Docker + Docker Compose, Node.js 22+ with [pnpm](https://pnpm.io), and [uv](https://github.com/astral-sh/uv) for Python.
+**Prerequisites:** Docker + Docker Compose, and Node.js 22+ with [pnpm](https://pnpm.io) for the frontend. The backend — including its test suite — runs entirely in containers, so there is no host Python to install.
 
 The backend (API, PostgreSQL, Redis, Celery worker and beat) runs in Docker; the frontend runs locally with pnpm. One script manages all of it:
 
@@ -65,6 +65,12 @@ The backend (API, PostgreSQL, Redis, Celery worker and beat) runs in Docker; the
 ./scripts/dev.sh start all     # Start backend (Docker) + frontend (local)
 ./scripts/dev.sh status        # Show what is running
 ./scripts/dev.sh stop all      # Stop everything
+```
+
+Enable the repository's hooks once per clone (git does not distribute them):
+
+```bash
+git config core.hooksPath .githooks
 ```
 
 Then seed the database with test accounts:
@@ -75,15 +81,16 @@ Then seed the database with test accounts:
 
 The app is at http://localhost:3000 and the API docs at http://localhost:8003/api/docs. Log in with `admin@examplee6e3b1.com` / `TestAdmin1!`.
 
-Run the backend tests with `./scripts/dev.sh test`.
+Run the backend tests with `./scripts/dev.sh test` — they run in a throwaway container against a tmpfs database, and anything after `test` is passed straight to pytest (`./scripts/dev.sh test tests/unit -x`).
 
 See the [Development section of the README](README.md#development) for the full command reference, service URLs, and the rest of the seeded test accounts.
 
-> **Note:** Python dependencies are baked into the backend Docker image — `pyproject.toml` is not bind-mounted. After adding or upgrading a backend dependency, rebuild the image or the running container will not have it:
+> **Note:** Python dependencies are installed into the image's virtualenv at build time. After adding or upgrading a backend dependency, rebuild or the running containers will not have it — the test container builds a different stage, so it needs its own:
 >
 > ```bash
 > docker compose -f backend/docker/docker-compose.yml build --no-cache api
-> docker compose -f backend/docker/docker-compose.yml up -d --force-recreate api
+> docker compose -f backend/docker/docker-compose.yml up -d --force-recreate api celery-worker celery-beat
+> docker compose -f backend/docker/docker-compose.yml --profile test build tests
 > ```
 
 ### Commit Messages
@@ -91,6 +98,17 @@ See the [Development section of the README](README.md#development) for the full 
 - Use clear, descriptive commit messages
 - Start with a verb in imperative mood (e.g., "Add member search endpoint")
 - Keep the first line under 72 characters
+- **Every commit is authored by a human maintainer.** If an AI assistant helped, record it with a
+  plain `Assisted-by:` line — never `Co-Authored-By:`, which GitHub reads as a real contributor and
+  lists in the repository's Insights graph beside the maintainers:
+
+  ```
+  Assisted-by: Claude Code (claude-opus-5)
+  ```
+
+  The `commit-msg` hook in `.githooks/` enforces this: it strips an assistant `Co-Authored-By:` (and
+  the `Claude-Session:` URL some tools add) and substitutes the `Assisted-by:` line. A human
+  co-author is never touched — keep crediting people that way.
 
 ### Pull Requests
 

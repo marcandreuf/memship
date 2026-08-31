@@ -9,9 +9,18 @@ locally with pnpm, so you get Next.js hot reload without a container in the way.
 
 | Tool | Why |
 |---|---|
-| Docker Engine + Compose plugin | The backend stack |
+| Docker Engine + Compose plugin | The whole backend — API, database, Redis, worker, beat, migrations and the test suite |
 | **Node 22** and **pnpm** | The frontend dev server |
-| **uv** | Backend dependencies and the test run, which happen on the host rather than in a container |
+
+That is the complete list. **The backend never runs on the host**: no `uv sync`, no virtualenv, no
+Python version to match, so the same checkout behaves the same on any machine with Docker.
+`backend/app`, `backend/tests` and `backend/alembic` are bind-mounted into the containers — you
+edit them in your editor and the running code changes. The container is where the code executes,
+not where it lives.
+
+Only the frontend stays on the host, and deliberately: the Next.js dev server is there for hot
+reload, which is the one thing a container does not do as well. Cypress needs a real browser, so
+the e2e suite is on the host too.
 
 The Node major is pinned in `frontend/.nvmrc` and enforced as a warning by `engines` in
 `frontend/package.json`. **Use 22** — it is what CI runs and what the production image is built on,
@@ -67,7 +76,9 @@ right one without installing it yourself.
 | `./scripts/dev.sh seed demo` | Demo club with **generated** credentials — prefer this |
 | `./scripts/dev.sh seed test` | Fixed e2e test accounts, whose passwords are public |
 | `./scripts/dev.sh passwd [email]` | Replace the super admin password with a generated one |
-| `./scripts/dev.sh test` | Backend test suite |
+| `./scripts/dev.sh test [args]` | Backend test suite, in a container — extra arguments go to pytest |
+| `./scripts/dev.sh shell` | A shell inside the API container |
+| `./scripts/dev.sh migration "msg"` | Autogenerate an Alembic revision from your model changes |
 | `./scripts/dev.sh e2e` | Cypress, headless |
 | `./scripts/dev.sh e2e:open` | Cypress GUI |
 | `./scripts/dev.sh e2e:parallel` | Cypress, 4 workers |
@@ -169,15 +180,49 @@ are a contract with the test suite rather than a seeding choice, so they live wi
 > passwords, so it requires `APP_ENV=development` or `CI`. For anything real, use the interactive
 > setup — see [First-time setup](../getting-started/first-setup.md).
 
+## Email in dev
+
+The dev stack dispatches nothing until a provider is configured — every send is logged and
+skipped. Two ways in, and the first wins:
+
+1. **Settings > Mailing** in the running app. It is stored in the database, so the API and the
+   Celery worker both pick it up without a restart. Prefer it: it is the same path a self-hosting
+   operator uses, and it is the only one the API container reads.
+2. **`backend/.env`** — copy `backend/.env.example` and fill in `RESEND_API_KEY` or the `SMTP_*`
+   block. The file is optional, no setup step creates it, and the worker reads it only if it is
+   there. Its `DATABASE_URL` and `CELERY_BROKER_URL` are ignored inside the containers — the
+   Compose `environment:` keys win — so the localhost values it ships with cannot break the stack.
+
+Mind the asymmetry: mail sent straight from a request — password reset, email verification, the
+Mailing screen's own test send — leaves the `api` container, which does not read `backend/.env`.
+Only queued mail goes through the worker. Configure through the Mailing screen to exercise both.
+
 ## Tests
 
 ```bash
-./scripts/dev.sh test     # backend suite: starts the test database, then pytest on the host
+./scripts/dev.sh test                                # the whole backend suite
+./scripts/dev.sh test tests/unit                     # one directory
+./scripts/dev.sh test tests/unit/test_email.py -k layout   # anything else is passed to pytest
 ```
 
-Roughly 1,270 tests, well under a minute. It runs `uv run pytest` from `backend/` against the
-test database on port 5434, so backend dependencies must be installed on the host — `uv sync` in
-`backend/` if it is a fresh checkout.
+1,368 tests in about 40 seconds. They run in a throwaway `tests` container against `db-test`,
+whose data directory is a tmpfs, so a run leaves nothing behind. Everything after `test` goes
+straight to pytest.
+
+The container points Celery at `redis://redis:6379/15` rather than the default. The suite enqueues
+tasks — registering a member fires verification and confirmation emails — and the default broker
+URL is `localhost:6379`, which on a host machine happens to be the dev Redis. So a host run was
+publishing test-triggered tasks into the *dev* broker on database 0, where the dev worker picked
+them up and ran them against the dev database. Database 15 has no consumer, so a task an assertion
+provokes goes nowhere. (It is also what keeps the suite fast: with no listener at all, kombu retries
+each publish for ~19 seconds — that alone took one file from 3s to 9m53s.)
+
+That container is the only place the `dev` stage of `backend/docker/Dockerfile` is built. It
+carries the `dev` extra — pytest, xdist, factory-boy — that the shipped image deliberately leaves
+out, while the API, worker and beat containers keep building the production stage. So the stack
+you develop against stays the one that ships, and the test dependencies never reach a registry.
+`backend/tests` is bind-mounted, so an edited test runs immediately; only a dependency change
+needs a rebuild.
 
 For end-to-end tests, **run the full suite against a production build**:
 
@@ -196,13 +241,18 @@ open problem — see [issue #58](https://github.com/marcandreuf/memship/issues/5
 
 ## Adding a backend dependency
 
-Python dependencies are baked into the image — `pyproject.toml` is **not** bind-mounted — so a new
-dependency is missing from the running container until you rebuild:
+Dependencies are installed into the image's virtualenv at build time, so a new one is missing from
+the running containers until you rebuild. The test container is a separate build of a separate
+stage, so it needs its own:
 
 ```bash
 docker compose -f backend/docker/docker-compose.yml build --no-cache api
-docker compose -f backend/docker/docker-compose.yml up -d --force-recreate api
+docker compose -f backend/docker/docker-compose.yml up -d --force-recreate api celery-worker celery-beat
+docker compose -f backend/docker/docker-compose.yml --profile test build tests
 ```
+
+`backend/pyproject.toml` *is* mounted into the test container, but only so pytest's own settings
+follow the checkout. A mounted manifest installs nothing.
 
 ## Logs
 
@@ -215,17 +265,32 @@ docker compose -f backend/docker/docker-compose.yml up -d --force-recreate api
 Celery is the component that fails quietly. If scheduled billing or reminder emails stop, look
 there before anywhere else.
 
-## Working on the backend without Docker
+## Migrations
+
+The API container applies `alembic upgrade head` on every start, so a pulled migration is already
+in your database by the time the container is up. Creating one:
 
 ```bash
-cd backend
-uv sync
-uv run pytest -v
-python start.py                                    # dev server, hot reload
-python -m app.cli.seed                             # setup
-alembic upgrade head                               # migrations
-alembic revision --autogenerate -m "description"   # new migration
+./scripts/dev.sh migration "add attachment type allowlist"
 ```
+
+It autogenerates against the running dev database and writes the revision into
+`backend/alembic/versions` on the host. The command runs as **your** uid rather than the image's,
+which is what makes the new file yours to edit — the container's built-in user is uid 1001, and
+that is not the operator on every machine.
+
+## Editor tooling
+
+The backend runs in a container; your editor does not. Autocomplete, go-to-definition and inline
+type checking need an interpreter that can resolve `fastapi`, `sqlalchemy` and the rest, and this
+is the one reason a Python toolchain might still touch your machine:
+
+- **Point the editor at the container** — VS Code Dev Containers or a JetBrains remote interpreter,
+  against the `api` service. Nothing is installed on the host.
+- **Keep a host virtualenv purely as a language-server target** — `cd backend && uv sync --extra dev`.
+  Nothing ever runs from it: `dev.sh` does not read it, and neither do the tests.
+
+Both are optional. The stack, the suite and the migrations all work with neither installed.
 
 ## Frontend directly
 
