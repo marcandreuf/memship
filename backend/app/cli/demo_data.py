@@ -8,9 +8,16 @@ summary have real monthly revenue, outstanding, and membership-growth curves.
 Everything is idempotent: each generator early-returns if its data is already
 present, so re-running ``--demo`` adds nothing.
 
-Demo records are namespaced (member emails ``demo{n}@mediterrani.example``,
+Demo records are namespaced (member emails ``demo{n}@<SEED_EMAIL_DOMAIN>``,
 receipt numbers ``DEMO-{year}-{seq}``) so they never collide with ``--test``
 fixtures. Randomness is seeded for reproducible screenshots.
+
+The mail domain defaults to ``mediterrani.example`` — a reserved TLD, so nothing
+seeded here can receive mail. An environment that deliberately sends real mail
+sets ``SEED_EMAIL_DOMAIN`` to a domain it owns, so the demo club's members are
+reachable and the messages can be read. Every lookup below matches on the same
+setting, so changing it seeds a fresh demo set rather than colliding with one
+already there.
 """
 
 from __future__ import annotations
@@ -19,6 +26,7 @@ import random
 from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 
+from app.core.config import settings
 from app.domains.billing.models import Concept, PaymentProvider, Receipt, SepaMandate
 from app.domains.members.models import Member, MembershipType
 from app.domains.organizations.models import OrganizationSettings
@@ -77,7 +85,7 @@ def generate_members(
     carry their own ``D-`` member-number namespace so they never collide with
     base-install / ``--test`` numbering.
     """
-    if db.query(Person).filter(Person.email.like("demo%@mediterrani.example")).first():
+    if db.query(Person).filter(Person.email.like(f"demo%@{settings.SEED_EMAIL_DOMAIN}")).first():
         print("  Demo members: already seeded")
         return demo_members(db)
 
@@ -110,7 +118,7 @@ def generate_members(
         person = Person(
             first_name=first,
             last_name=last,
-            email=f"demo{i}@mediterrani.example",
+            email=f"demo{i}@{settings.SEED_EMAIL_DOMAIN}",
             gender=_rng.choice(GENDERS),
             date_of_birth=date(_rng.randint(1965, 2010), _rng.randint(1, 12), _rng.randint(1, 28)),
         )
@@ -150,7 +158,7 @@ def demo_members(db) -> list[Member]:
     return (
         db.query(Member)
         .join(Person, Member.person_id == Person.id)
-        .filter(Person.email.like("demo%@mediterrani.example"))
+        .filter(Person.email.like(f"demo%@{settings.SEED_EMAIL_DOMAIN}"))
         .all()
     )
 
@@ -290,7 +298,7 @@ def generate_sepa(db) -> None:
         db.query(Member, Person)
         .join(Person, Member.person_id == Person.id)
         .filter(
-            Person.email.like("demo%@mediterrani.example"),
+            Person.email.like(f"demo%@{settings.SEED_EMAIL_DOMAIN}"),
             Person.bank_iban.isnot(None),
         )
         .all()

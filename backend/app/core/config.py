@@ -75,6 +75,12 @@ class Settings(BaseSettings):
     APP_ENV: str = "development"
     APP_VERSION: str = _read_version()
     DEFAULT_LOCALE: str = "es"
+    # Mail domain for the members `seed --demo` creates. The default is an
+    # RFC 2606 reserved TLD, so nothing it generates can ever be delivered —
+    # which is what you want everywhere except an environment that deliberately
+    # sends real mail. Point it at a domain you own with catch-all receiving to
+    # make the demo club's members reachable.
+    SEED_EMAIL_DOMAIN: str = "mediterrani.example"
     CORS_ORIGINS: str = "http://localhost:3000"
     LOG_LEVEL: str = "info"
 

@@ -36,6 +36,7 @@ from argon2 import PasswordHasher
 from sqlalchemy import text
 
 from app.cli.reset import preview_club_data, reset_club_data
+from app.core.config import settings as app_settings
 from app.core.permissions import ADMIN_SLUG, SUPER_ADMIN_SLUG
 from app.db.session import SessionLocal
 from app.domains.audit.models import AuditLog
@@ -1565,7 +1566,10 @@ def seed_sepa_data(db) -> None:
     print("  SEPA seed: complete — ready for manual SEPA workflow testing")
 
 
-DEMO_CLUB_ADMIN_EMAIL = "admin@mediterrani.example"
+# Follows SEED_EMAIL_DOMAIN like the demo members do — an environment that
+# points the members at a domain it owns needs the admin reachable too, or the
+# one account that receives password resets is the one that cannot.
+DEMO_CLUB_ADMIN_EMAIL = f"admin@{app_settings.SEED_EMAIL_DOMAIN}"
 
 
 def any_admin_user_id(db) -> int | None:
