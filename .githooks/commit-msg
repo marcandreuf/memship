@@ -1,0 +1,47 @@
+#!/bin/bash
+#
+# Keeps AI-assistant attribution out of the commit trailers.
+#
+# GitHub parses `Co-authored-by:` as a real contributor: the co-author gets an
+# avatar on the commit and its own row in the repository's Insights contributors
+# graph, next to the people who actually maintain memship. An assistant listed
+# there reads as a maintainer, which is not what it is. This hook removes that
+# line before the commit is written.
+#
+# It also drops `Claude-Session:`, which publishes a session URL in a public
+# repository and tells a reader nothing useful.
+#
+# Transparency about the tooling is deliberate and stays. Rather than deleting
+# the attribution outright, a stripped commit gets `Assisted-by: Claude Code`,
+# which records that an assistant was involved without claiming authorship. An
+# `Assisted-by:` line that is already there is left exactly as written, model
+# name and all.
+#
+# Enable once per clone — git does not distribute hooks:
+#
+#     git config core.hooksPath .githooks
+#
+set -euo pipefail
+
+MSG_FILE="$1"
+
+# Case-insensitive on purpose: tools emit both `Co-Authored-By:` and
+# `Co-authored-by:`, and the trailer name varies with the model.
+STRIP='^[[:space:]]*(co-authored-by:.*claude|claude-session:)'
+
+grep -qiE "$STRIP" "$MSG_FILE" || exit 0
+
+TMP="$(mktemp)"
+trap 'rm -f "$TMP"' EXIT
+
+grep -viE "$STRIP" "$MSG_FILE" > "$TMP" || true
+
+# Leave one trailing newline rather than the blank block the removed trailers
+# leave behind.
+printf '%s\n' "$(cat "$TMP")" > "$TMP"
+
+if ! grep -qiE '^[[:space:]]*assisted-by:' "$TMP"; then
+    printf '\nAssisted-by: Claude Code\n' >> "$TMP"
+fi
+
+cat "$TMP" > "$MSG_FILE"

@@ -49,17 +49,22 @@ Full reference: [docs/development/local-environment.md](docs/development/local-e
 ./scripts/dev.sh start frontend  # Start only frontend (local)
 ```
 
-### Backend (manual)
+### Backend (containers only)
+
+The backend never runs on the host — no `uv sync`, no virtualenv, no host Python. `backend/app`,
+`backend/tests` and `backend/alembic` are bind-mounted into the containers, so edit locally and the
+running code changes.
+
 ```bash
-cd backend
-uv sync                          # Install dependencies
-uv run pytest -v                 # Run tests
-uv run pytest -v --tb=short      # Run tests (short traceback)
-python start.py                  # Start dev server (hot reload)
-python -m app.cli.seed           # Run seed command (initial setup)
-alembic upgrade head             # Run migrations
-alembic revision --autogenerate -m "description"  # Create migration
+./scripts/dev.sh test                     # Full backend suite (throwaway container, tmpfs db)
+./scripts/dev.sh test tests/unit -x       # Everything after `test` is passed to pytest
+./scripts/dev.sh shell                    # Shell in the API container
+./scripts/dev.sh migration "description"  # Autogenerate an Alembic revision
 ```
+
+The API container runs `alembic upgrade head` on start, so pulled migrations apply themselves.
+Inside a container use `python` / `pytest` / `alembic` directly — **never `uv run`**, which needs
+write access to `/app/.venv` and fails as the non-root runtime user.
 
 ### Frontend (manual)
 ```bash
@@ -182,6 +187,13 @@ memship/
 - No Makefiles — use scripts in `scripts/`
 - Version: git tags are the single source of truth (no VERSION file). Images bake the tag in as the `APP_VERSION` build-arg/env; running from source falls back to `git describe`. Release by tagging a validated commit with `scripts/release.sh`
 - Container naming: `memship-` prefix
+- **Commits are authored by a human maintainer, always.** AI-assisted work ends with a plain
+  `Assisted-by: Claude Code (claude-opus-5)` line — **never** `Co-Authored-By:`, which GitHub
+  parses as a real contributor and lists in the repository's Insights next to the maintainers, and
+  no `Claude-Session:` URL, which publishes a session link in a public repo. Transparency about the
+  tooling is wanted; attribution that reads as authorship is not. The `commit-msg` hook in
+  `.githooks/` enforces it (`git config core.hooksPath .githooks`, once per clone) — a human
+  co-author is never stripped.
 
 ### Backend
 - Database naming: `snake_case`, plural tables (e.g., `members`, `activities`)
