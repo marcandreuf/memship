@@ -105,9 +105,10 @@
     },
     "communications": {
       "tab": "Communications",
-      "title": "Communications",
-      "enabled": "Enable communications",
-      "enabledDesc": "Let admins send announcements to members by email and in-app."
+      "title": "Announcements module",
+      "enabled": "Enable announcements",
+      "enabledDesc": "On: staff get the Communications screen to write and broadcast announcements, and members get the notification bell and their Announcements page. Off: all three disappear and the announcement emails stop. Existing announcements are kept and come back if you switch it on again.",
+      "description": "Master switch for the announcements feature. It does not affect the member emails below, which keep sending either way."
     },
     "memberCard": {
       "tab": "Member Card",
@@ -201,6 +202,106 @@
       "encryptionActive": "Encryption active: secrets are stored encrypted.",
       "encryptionKeyMissing": "Set MEMSHIP_SECRET_KEY to store provider secrets.",
       "encryptionKeyRequired": "Secrets cannot be saved without an encryption key."
+    },
+    "emailTemplates": {
+      "title": "Member emails",
+      "description": "Which emails the system sends out. These control email only — in-app notifications and the portal are unaffected, and a member who has opted out of email never receives any of them. Account-access emails cannot be switched off.",
+      "groups": {
+        "auth": "Account and access",
+        "members": "Member sign-ups",
+        "activities": "Activities",
+        "bookings": "Bookings",
+        "billing": "Billing",
+        "broadcasts": "Announcements"
+      },
+      "groupDescriptions": {
+        "auth": "Sent when someone activates an account or recovers a password. Always on — there is no other way in.",
+        "members": "Sent when an admin approves or rejects a sign-up request.",
+        "activities": "Sent when a member's place in an activity changes — confirmed, waitlisted, cancelled, or promoted off the waitlist.",
+        "bookings": "Sent when a member's booking of a space changes — confirmed, waitlisted, cancelled by the club, or promoted off the waitlist.",
+        "billing": "Sent when a receipt is issued or falls overdue, plus the internal summary of each billing run.",
+        "broadcasts": "Email delivery of announcements. Switch it off and announcements still appear in the app — they just stop going out by email."
+      },
+      "tiers": {
+        "mandatory": "Mandatory"
+      },
+      "confirmDisableTitle": "Switch off “{name}”?",
+      "confirmDisable": "Switch off",
+      "featureOff": {
+        "communications": "The announcements module is switched off above, so nothing is sent either way."
+      },
+      "templates": {
+        "verification": {
+          "name": "Email verification",
+          "locked": "Without this email a new account cannot be activated."
+        },
+        "password_reset": {
+          "name": "Password reset",
+          "locked": "The only way to recover access to an account."
+        },
+        "registration_approved": {
+          "name": "Registration approved",
+          "description": "Tells the member their registration was approved and they can log in.",
+          "warning": "The member has no other signal that their registration was approved."
+        },
+        "registration_rejected": {
+          "name": "Registration rejected",
+          "description": "Tells the applicant their registration was not accepted."
+        },
+        "registration_confirmed": {
+          "name": "Registration confirmed",
+          "description": "Confirms a registration for an activity."
+        },
+        "registration_waitlisted": {
+          "name": "Registration waitlisted",
+          "description": "Says the registration went onto the waitlist."
+        },
+        "registration_cancelled": {
+          "name": "Registration cancelled",
+          "description": "Confirms a registration was cancelled."
+        },
+        "waitlist_promoted": {
+          "name": "Activity place freed up",
+          "description": "Tells the member they moved off the activity waitlist.",
+          "warning": "The member gained a place and must act on it. Without the email they will not turn up."
+        },
+        "booking_confirmation": {
+          "name": "Booking confirmed",
+          "description": "Confirms a booking of a space."
+        },
+        "booking_waitlisted": {
+          "name": "Booking waitlisted",
+          "description": "Says the booking went onto the waitlist."
+        },
+        "booking_promoted": {
+          "name": "Booking place freed up",
+          "description": "Tells the member their booking is now confirmed.",
+          "warning": "The member gained a place and must act on it. Without the email they will not turn up."
+        },
+        "booking_cancelled": {
+          "name": "Booking cancelled by the club",
+          "description": "Tells the member the club cancelled their booking.",
+          "warning": "The member will turn up for a booking that no longer exists."
+        },
+        "receipt_delivery": {
+          "name": "Receipt delivery",
+          "description": "Sends the receipt PDF to the member when it is issued.",
+          "warning": "Members stop receiving their receipts by email."
+        },
+        "payment_reminder": {
+          "name": "Payment reminder",
+          "description": "Chases overdue receipts on the configured schedule.",
+          "warning": "Overdue receipts stop being chased by email."
+        },
+        "billing_summary": {
+          "name": "Billing summary",
+          "description": "Internal summary of each billing run, to the admin address."
+        },
+        "announcement": {
+          "name": "Announcements",
+          "description": "Delivery of the announcements admins broadcast."
+        }
+      }
     }
   }
 }

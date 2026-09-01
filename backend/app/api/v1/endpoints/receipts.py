@@ -1,5 +1,6 @@
 """Receipt management endpoints."""
 
+import logging
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -38,6 +39,8 @@ from app.domains.billing.service import (
 from app.domains.members.models import Member
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Person
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/receipts", tags=["receipts"])
 member_router = APIRouter(tags=["receipts"])
@@ -345,12 +348,18 @@ def emit_receipt_endpoint(
     db.commit()
     db.refresh(receipt)
 
-    # Send receipt PDF by email asynchronously
+    # Send receipt PDF by email asynchronously. Dispatch must not fail the emit
+    # — the receipt is issued either way — but a broker that is down has to
+    # leave a trace, or an undelivered receipt is indistinguishable from one the
+    # organization switched off in Settings.
     try:
         from app.tasks.email_tasks import send_receipt_email_task
         send_receipt_email_task.delay(receipt.id)
-    except Exception:
-        pass  # Don't fail the emit if email dispatch fails
+    except Exception as exc:  # noqa: BLE001 — dispatch is best-effort
+        logger.error(
+            f"Failed to dispatch receipt delivery email: template=receipt_delivery, "
+            f"receipt_id={receipt.id}, error={exc}"
+        )
 
     return receipt
 

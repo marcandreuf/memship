@@ -83,3 +83,24 @@ class MailingTestRequest(BaseModel):
 class MailingTestResult(BaseModel):
     ok: bool
     error: str | None = None
+
+# --- Communications (which templates are switched on) ---
+
+
+class CommunicationTemplateView(BaseModel):
+    # ``key`` matches the email template and its ``_SUBJECTS`` entry; the UI
+    # translates it rather than receiving a rendered label.
+    key: str
+    group: str
+    tier: Literal["mandatory", "operational", "optional"]
+    enabled: bool
+
+
+class CommunicationsConfigView(BaseModel):
+    templates: list[CommunicationTemplateView]
+
+
+class CommunicationsConfigUpdate(BaseModel):
+    # Sparse: only the keys present are changed. A mandatory key, or one absent
+    # from the catalog, is rejected rather than silently ignored.
+    templates: dict[str, bool]

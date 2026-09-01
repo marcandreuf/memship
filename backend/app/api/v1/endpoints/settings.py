@@ -32,6 +32,9 @@ from app.domains.mailing.mailing_config import (
     resolve_mailing_config,
 )
 from app.domains.mailing.mailing_schemas import (
+    CommunicationsConfigUpdate,
+    CommunicationsConfigView,
+    CommunicationTemplateView,
     MailGmailView,
     MailingConfigUpdate,
     MailingConfigView,
@@ -40,6 +43,12 @@ from app.domains.mailing.mailing_schemas import (
     MailResendView,
     MailSecretStatus,
     MailSecretUpdate,
+)
+from app.domains.mailing.policy import (
+    BY_KEY as COMMUNICATION_TEMPLATES,
+    CATALOG as COMMUNICATION_CATALOG,
+    MANDATORY as MANDATORY_TEMPLATES,
+    enabled_map as communications_enabled_map,
 )
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.organizations.schemas import (
@@ -430,3 +439,92 @@ def test_mailing_provider(
     locale = getattr(current_user, "preferred_locale", None) or app_settings.DEFAULT_LOCALE
     ok, error = send_test_email(resolved, data.provider, to, locale)
     return MailingTestResult(ok=ok, error=error)
+
+
+# --- Communications (which email templates are switched on) ---
+
+
+def _build_communications_view(db: Session) -> CommunicationsConfigView:
+    enabled = communications_enabled_map(db)
+    return CommunicationsConfigView(
+        templates=[
+            CommunicationTemplateView(
+                key=spec.key,
+                group=spec.group,
+                tier=spec.tier,
+                enabled=enabled[spec.key],
+            )
+            for spec in COMMUNICATION_CATALOG
+        ]
+    )
+
+
+@router.get("/communications", response_model=CommunicationsConfigView)
+def get_communications_config(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("settings.integrations.write")),
+):
+    """Every configurable email template with its group, tier and current state."""
+    return _build_communications_view(db)
+
+
+@router.put("/communications", response_model=CommunicationsConfigView)
+def update_communications_config(
+    data: CommunicationsConfigUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("settings.integrations.write")),
+):
+    """Switch email templates on or off.
+
+    Sparse update — only the keys present are touched. Disabling a mandatory
+    template is refused with 422 rather than ignored: ``verification`` and
+    ``password_reset`` are the only paths to activating an account and to
+    recovering a lost password.
+    """
+    unknown = sorted(set(data.templates) - set(COMMUNICATION_TEMPLATES))
+    if unknown:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"code": "unknown_template", "keys": unknown},
+        )
+
+    forbidden = sorted(
+        key for key, enabled in data.templates.items()
+        if key in MANDATORY_TEMPLATES and not enabled
+    )
+    if forbidden:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"code": "template_mandatory", "keys": forbidden},
+        )
+
+    settings_obj = (
+        db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
+    )
+    config = copy.deepcopy(settings_obj.communications_config or {})
+    templates = config.setdefault("templates", {})
+    changed: list[str] = []
+
+    for key, enabled in data.templates.items():
+        if key in MANDATORY_TEMPLATES:
+            continue  # always on; nothing to store
+        node = templates.setdefault(key, {})
+        if node.get("enabled", False) is not enabled:
+            node["enabled"] = enabled
+            changed.append(key)
+
+    settings_obj.communications_config = config
+
+    if changed:
+        db.add(
+            AuditLog(
+                table_name="organization_settings",
+                record_id=1,
+                action="update",
+                user_id=current_user.id,
+                changed_fields=[f"communications_config.{c}" for c in changed],
+            )
+        )
+
+    db.commit()
+    return _build_communications_view(db)

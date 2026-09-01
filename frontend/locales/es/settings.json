@@ -105,9 +105,10 @@
     },
     "communications": {
       "tab": "Comunicaciones",
-      "title": "Comunicaciones",
-      "enabled": "Activar comunicaciones",
-      "enabledDesc": "Permite a los administradores enviar anuncios a los miembros por correo y en la app."
+      "title": "Módulo de anuncios",
+      "enabled": "Activar anuncios",
+      "enabledDesc": "Activado: los administradores disponen de la pantalla Comunicaciones para redactar y difundir anuncios, y los miembros ven la campana de notificaciones y su página de Anuncios. Desactivado: los tres desaparecen y dejan de enviarse los correos de anuncios. Los anuncios existentes se conservan y vuelven a aparecer si lo activas de nuevo.",
+      "description": "Interruptor general de la función de anuncios. No afecta a los correos a los miembros de abajo, que se siguen enviando igualmente."
     },
     "memberCard": {
       "tab": "Tarjeta de socio",
@@ -201,6 +202,106 @@
       "encryptionActive": "Cifrado activo: los secretos se guardan cifrados.",
       "encryptionKeyMissing": "Configura MEMSHIP_SECRET_KEY para poder guardar secretos del proveedor.",
       "encryptionKeyRequired": "No se pueden guardar secretos sin una clave de cifrado."
+    },
+    "emailTemplates": {
+      "title": "Correos a los miembros",
+      "description": "Qué correos envía el sistema. Solo afectan al correo: las notificaciones en la app y el portal no cambian, y un miembro que haya rechazado el correo no recibe ninguno. Los correos de acceso a la cuenta no se pueden desactivar.",
+      "groups": {
+        "auth": "Cuenta y acceso",
+        "members": "Altas de socios",
+        "activities": "Actividades",
+        "bookings": "Reservas",
+        "billing": "Facturación",
+        "broadcasts": "Anuncios"
+      },
+      "groupDescriptions": {
+        "auth": "Se envían cuando alguien activa una cuenta o recupera la contraseña. Siempre activos: no hay otra forma de entrar.",
+        "members": "Se envían cuando un administrador aprueba o rechaza una solicitud de alta.",
+        "activities": "Se envían cuando cambia la plaza de un miembro en una actividad: confirmada, en lista de espera, cancelada o liberada desde la lista de espera.",
+        "bookings": "Se envían cuando cambia la reserva de un espacio: confirmada, en lista de espera, cancelada por el club o liberada desde la lista de espera.",
+        "billing": "Se envían al emitir un recibo o cuando vence, más el resumen interno de cada remesa de facturación.",
+        "broadcasts": "Envío de los anuncios por correo. Si lo desactivas, los anuncios siguen apareciendo en la app; solo dejan de enviarse por correo."
+      },
+      "tiers": {
+        "mandatory": "Obligatorio"
+      },
+      "confirmDisableTitle": "¿Desactivar «{name}»?",
+      "confirmDisable": "Desactivar",
+      "featureOff": {
+        "communications": "El módulo de anuncios está desactivado arriba, así que no se envía nada de todos modos."
+      },
+      "templates": {
+        "verification": {
+          "name": "Verificación de correo",
+          "locked": "Sin este correo no se puede activar una cuenta nueva."
+        },
+        "password_reset": {
+          "name": "Restablecer contraseña",
+          "locked": "Única forma de recuperar el acceso a una cuenta."
+        },
+        "registration_approved": {
+          "name": "Alta aprobada",
+          "description": "Avisa al socio de que su alta ha sido aprobada y ya puede entrar.",
+          "warning": "El socio no tendrá ninguna otra señal de que su alta ha sido aprobada."
+        },
+        "registration_rejected": {
+          "name": "Alta rechazada",
+          "description": "Comunica al solicitante que su alta no ha sido aceptada."
+        },
+        "registration_confirmed": {
+          "name": "Inscripción confirmada",
+          "description": "Confirma la inscripción a una actividad."
+        },
+        "registration_waitlisted": {
+          "name": "Inscripción en lista de espera",
+          "description": "Avisa de que la inscripción ha quedado en lista de espera."
+        },
+        "registration_cancelled": {
+          "name": "Inscripción cancelada",
+          "description": "Confirma la cancelación de una inscripción."
+        },
+        "waitlist_promoted": {
+          "name": "Plaza liberada en actividad",
+          "description": "Avisa al socio de que ha entrado desde la lista de espera.",
+          "warning": "El socio ha ganado una plaza y tiene que actuar. Sin aviso, no se presentará."
+        },
+        "booking_confirmation": {
+          "name": "Reserva confirmada",
+          "description": "Confirma la reserva de un espacio."
+        },
+        "booking_waitlisted": {
+          "name": "Reserva en lista de espera",
+          "description": "Avisa de que la reserva ha quedado en lista de espera."
+        },
+        "booking_promoted": {
+          "name": "Plaza liberada en reserva",
+          "description": "Avisa al socio de que su reserva ya está confirmada.",
+          "warning": "El socio ha ganado una plaza y tiene que actuar. Sin aviso, no se presentará."
+        },
+        "booking_cancelled": {
+          "name": "Reserva cancelada por el club",
+          "description": "Avisa al socio de que el club ha cancelado su reserva.",
+          "warning": "El socio se presentará a una reserva que ya no existe."
+        },
+        "receipt_delivery": {
+          "name": "Envío de recibo",
+          "description": "Envía el PDF del recibo al socio al emitirlo.",
+          "warning": "El socio dejará de recibir sus recibos por correo."
+        },
+        "payment_reminder": {
+          "name": "Recordatorio de pago",
+          "description": "Reclama los recibos vencidos según la pauta configurada.",
+          "warning": "Los recibos vencidos dejarán de reclamarse por correo."
+        },
+        "billing_summary": {
+          "name": "Resumen de facturación",
+          "description": "Resumen interno de cada remesa, a la dirección de administración."
+        },
+        "announcement": {
+          "name": "Anuncios",
+          "description": "Difusión de los anuncios que envían los administradores."
+        }
+      }
     }
   }
 }

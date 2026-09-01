@@ -8,10 +8,11 @@ import { Header } from "@/components/layout/header";
 import { AppFooter } from "@/components/layout/footer";
 import { BrandTheme } from "@/components/layout/brand-theme";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { useSettings } from "@/features/settings/hooks/use-settings";
 import { useRouter, usePathname } from "@/lib/i18n/routing";
 import { useEffect } from "react";
 
-import { requiredPermissions } from "@/lib/route-permissions";
+import { requiredFeature, requiredPermissions } from "@/lib/route-permissions";
 
 export default function PortalLayout({
   children,
@@ -20,6 +21,7 @@ export default function PortalLayout({
 }) {
   const { user, isLoading, isAuthenticated } = useAuth();
   const { isStaff: isAdmin, hasAny } = usePermissions();
+  const { data: settings } = useSettings();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -41,6 +43,18 @@ export default function PortalLayout({
       }
     }
   }, [isLoading, user, hasAny, pathname, router]);
+
+  // A switched-off feature 404s its endpoints, so land on the dashboard rather
+  // than on a shell whose every request fails. Waits for settings: acting on
+  // the undefined first render would bounce anyone who deep-links here.
+  useEffect(() => {
+    if (!isLoading && user && settings) {
+      const feature = requiredFeature(pathname);
+      if (feature && !settings.features?.[feature]) {
+        router.push("/dashboard");
+      }
+    }
+  }, [isLoading, user, settings, pathname, router]);
 
   if (isLoading) {
     return (

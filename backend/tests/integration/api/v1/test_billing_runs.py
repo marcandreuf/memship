@@ -1,6 +1,9 @@
 """Integration tests for recurring billing — run-now, run history, scheduling."""
 
 from datetime import date
+from unittest.mock import patch
+
+import pytest
 
 from app.core.security.jwt import create_access_token
 from app.core.security.password import hash_password
@@ -28,6 +31,15 @@ def _create_user(db, role="admin", suffix="brun"):
     db.add(user)
     db.flush()
     return user
+
+
+@pytest.fixture(autouse=True)
+def _templates_enabled():
+    """Outbound templates default to off. These tests cover the summary send
+    path rather than the gate, so stub it open — the gate opens its own session
+    and would not see a value this suite has not committed."""
+    with patch("app.core.email._template_enabled", return_value=True):
+        yield
 
 
 def _auth_cookie(user):

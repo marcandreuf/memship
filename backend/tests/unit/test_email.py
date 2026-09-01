@@ -2,6 +2,8 @@
 
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from app.core.email import (
     render_template,
     send_email,
@@ -159,6 +161,15 @@ class TestTemplateRendering:
 
 
 class TestHighLevelEmails:
+    """Subject and body rendering. The on/off gate is covered separately, so
+    stub it open — these tests carry no organization row to switch anything on.
+    """
+
+    @pytest.fixture(autouse=True)
+    def _templates_enabled(self):
+        with patch("app.core.email._template_enabled", return_value=True):
+            yield
+
     @patch("app.core.email.send_email", return_value=True)
     def test_send_welcome_email(self, mock_send):
         result = send_welcome_email("user@example.com", "Maria", "M-0001")

@@ -23,6 +23,8 @@ from app.domains.mailing.mailing_config import (
     env_only_mailing_config,
     resolve_mailing_config,
 )
+from app.domains.mailing.policy import always_sends as template_always_sends
+from app.domains.mailing.policy import is_enabled as is_template_enabled
 
 logger = logging.getLogger(__name__)
 
@@ -441,35 +443,112 @@ def send_test_email(resolved: ResolvedMailing, provider: str, to: str, locale: s
         return False, str(e)
 
 
+def _template_enabled(template_key: str) -> bool:
+    """Whether the organization has this template switched on.
+
+    Opens its own short-lived session for the same reason ``_resolve_transport``
+    does — Celery tasks, request handlers and the reminder service do not all
+    carry one — so a settings save applies to the next email with no restart.
+
+    Fails **closed**: templates are off until someone switches them on, so a
+    broken lookup must not mail members who were never opted in. Account-access
+    mail is settled before the session is opened, which keeps a database problem
+    from locking anyone out of their own account.
+    """
+    if template_always_sends(template_key):
+        return True
+    try:
+        db = db_session.SessionLocal()
+    except Exception as e:  # noqa: BLE001 — an unreadable policy is not consent
+        logger.warning(
+            f"Communications policy unavailable (no session), not sending: "
+            f"template={template_key}, error={e}"
+        )
+        return False
+    try:
+        return is_template_enabled(db, template_key)
+    except Exception as e:  # noqa: BLE001 — suppress rather than mail unasked
+        logger.warning(
+            f"Communications policy lookup failed, not sending: "
+            f"template={template_key}, error={e}"
+        )
+        return False
+    finally:
+        db.close()
+
+
+def _send_templated(
+    template_key: str,
+    to: str,
+    locale: str,
+    context: dict,
+    subject_args: dict | None = None,
+    subject: str | None = None,
+    attachment: bytes | None = None,
+    attachment_filename: str = "document.pdf",
+    attachment_mime: str = "application/pdf",
+) -> bool:
+    """Render and send one catalogued template, honouring the org's switches.
+
+    The single place that decides whether a templated email happens. Every
+    ``send_*_email`` below routes through here, so the on/off gate, the
+    suppression log line and the not-delivered warning exist once rather than at
+    seventeen call sites.
+
+    ``subject`` overrides the catalogue subject (announcements carry their own).
+    Passing ``attachment`` routes through the attachment transport.
+    """
+    if not _template_enabled(template_key):
+        logger.info(
+            f"Email suppressed (template disabled in settings): "
+            f"template={template_key}, to={to}"
+        )
+        return False
+
+    if subject is None:
+        subject = _get_subject(template_key, locale, **(subject_args or {}))
+    html_body = render_template(template_key, locale, context)
+
+    if attachment is not None:
+        ok = send_email_with_attachment(
+            to,
+            subject,
+            html_body,
+            attachment=attachment,
+            attachment_filename=attachment_filename,
+            attachment_mime=attachment_mime,
+        )
+    else:
+        ok = send_email(to, subject, html_body)
+
+    if not ok:
+        logger.warning(f"Email not delivered: template={template_key}, to={to}")
+    return ok
+
+
 # --- High-level email functions ---
 
 def send_welcome_email(to: str, first_name: str, member_number: str, locale: str = "es") -> bool:
-    subject = _get_subject("welcome", locale)
-    html_body = render_template("welcome", locale, {
+    return _send_templated("welcome", to, locale, {
         "first_name": first_name,
         "member_number": member_number,
     })
-    return send_email(to, subject, html_body)
 
 
 def send_password_reset_email(to: str, first_name: str, reset_url: str, locale: str = "es") -> bool:
-    subject = _get_subject("password_reset", locale)
-    html_body = render_template("password_reset", locale, {
+    return _send_templated("password_reset", to, locale, {
         "first_name": first_name,
         "reset_url": reset_url,
     })
-    return send_email(to, subject, html_body)
 
 
 def send_verification_email(
     to: str, first_name: str, verification_url: str, locale: str = "es"
 ) -> bool:
-    subject = _get_subject("verification", locale)
-    html_body = render_template("verification", locale, {
+    return _send_templated("verification", to, locale, {
         "first_name": first_name,
         "verification_url": verification_url,
     })
-    return send_email(to, subject, html_body)
 
 
 def send_registration_approved_email(
@@ -479,24 +558,20 @@ def send_registration_approved_email(
     login_url: str,
     locale: str = "es",
 ) -> bool:
-    subject = _get_subject("registration_approved", locale)
-    html_body = render_template("registration_approved", locale, {
+    return _send_templated("registration_approved", to, locale, {
         "first_name": first_name,
         "member_number": member_number,
         "login_url": login_url,
     })
-    return send_email(to, subject, html_body)
 
 
 def send_registration_rejected_email(
     to: str, first_name: str, reason: str | None = None, locale: str = "es"
 ) -> bool:
-    subject = _get_subject("registration_rejected", locale)
-    html_body = render_template("registration_rejected", locale, {
+    return _send_templated("registration_rejected", to, locale, {
         "first_name": first_name,
         "reason": reason,
     })
-    return send_email(to, subject, html_body)
 
 
 def send_registration_confirmation_email(
@@ -509,14 +584,18 @@ def send_registration_confirmation_email(
     locale: str = "es",
 ) -> bool:
     template = "registration_confirmed" if status == "confirmed" else "registration_waitlisted"
-    subject = _get_subject(template, locale, activity=activity_name)
-    html_body = render_template(template, locale, {
-        "member_name": member_name,
-        "activity_name": activity_name,
-        "activity_date": activity_date,
-        "location": location,
-    })
-    return send_email(to, subject, html_body)
+    return _send_templated(
+        template,
+        to,
+        locale,
+        {
+            "member_name": member_name,
+            "activity_name": activity_name,
+            "activity_date": activity_date,
+            "location": location,
+        },
+        subject_args={"activity": activity_name},
+    )
 
 
 def send_registration_cancellation_email(
@@ -526,13 +605,17 @@ def send_registration_cancellation_email(
     cancelled_by: str | None = None,
     locale: str = "es",
 ) -> bool:
-    subject = _get_subject("registration_cancelled", locale, activity=activity_name)
-    html_body = render_template("registration_cancelled", locale, {
-        "member_name": member_name,
-        "activity_name": activity_name,
-        "cancelled_by": cancelled_by,
-    })
-    return send_email(to, subject, html_body)
+    return _send_templated(
+        "registration_cancelled",
+        to,
+        locale,
+        {
+            "member_name": member_name,
+            "activity_name": activity_name,
+            "cancelled_by": cancelled_by,
+        },
+        subject_args={"activity": activity_name},
+    )
 
 
 def send_waitlist_promotion_email(
@@ -543,14 +626,18 @@ def send_waitlist_promotion_email(
     location: str | None = None,
     locale: str = "es",
 ) -> bool:
-    subject = _get_subject("waitlist_promoted", locale, activity=activity_name)
-    html_body = render_template("waitlist_promoted", locale, {
-        "member_name": member_name,
-        "activity_name": activity_name,
-        "activity_date": activity_date,
-        "location": location,
-    })
-    return send_email(to, subject, html_body)
+    return _send_templated(
+        "waitlist_promoted",
+        to,
+        locale,
+        {
+            "member_name": member_name,
+            "activity_name": activity_name,
+            "activity_date": activity_date,
+            "location": location,
+        },
+        subject_args={"activity": activity_name},
+    )
 
 
 def send_payment_reminder_email(
@@ -567,19 +654,23 @@ def send_payment_reminder_email(
     locale: str = "es",
 ) -> bool:
     """Send a payment reminder for an overdue receipt."""
-    subject = _get_subject("payment_reminder", locale, receipt_number=receipt_number)
-    html_body = render_template("payment_reminder", locale, {
-        "member_name": member_name,
-        "receipt_number": receipt_number,
-        "amount": amount,
-        "currency": currency,
-        "due_date": due_date,
-        "days_overdue": days_overdue,
-        "org_name": org_name,
-        "pay_now_url": pay_now_url,
-        "bank_details": bank_details,
-    })
-    return send_email(to, subject, html_body)
+    return _send_templated(
+        "payment_reminder",
+        to,
+        locale,
+        {
+            "member_name": member_name,
+            "receipt_number": receipt_number,
+            "amount": amount,
+            "currency": currency,
+            "due_date": due_date,
+            "days_overdue": days_overdue,
+            "org_name": org_name,
+            "pay_now_url": pay_now_url,
+            "bank_details": bank_details,
+        },
+        subject_args={"receipt_number": receipt_number},
+    )
 
 
 def send_booking_confirmation_email(
@@ -592,15 +683,19 @@ def send_booking_confirmation_email(
     locale: str = "es",
 ) -> bool:
     """Confirm a member's booking of a slot-instance."""
-    subject = _get_subject("booking_confirmation", locale, space=space_name)
-    html_body = render_template("booking_confirmation", locale, {
-        "member_name": member_name,
-        "space_name": space_name,
-        "booking_date": booking_date,
-        "booking_time": booking_time,
-        "cancellation_deadline_hours": cancellation_deadline_hours,
-    })
-    return send_email(to, subject, html_body)
+    return _send_templated(
+        "booking_confirmation",
+        to,
+        locale,
+        {
+            "member_name": member_name,
+            "space_name": space_name,
+            "booking_date": booking_date,
+            "booking_time": booking_time,
+            "cancellation_deadline_hours": cancellation_deadline_hours,
+        },
+        subject_args={"space": space_name},
+    )
 
 
 def send_booking_waitlisted_email(
@@ -609,19 +704,21 @@ def send_booking_waitlisted_email(
     space_name: str,
     booking_date: str,
     booking_time: str,
-    position: int | None = None,
     locale: str = "es",
 ) -> bool:
     """Tell a member their booking is on the waitlist."""
-    subject = _get_subject("booking_waitlisted", locale, space=space_name)
-    html_body = render_template("booking_waitlisted", locale, {
-        "member_name": member_name,
-        "space_name": space_name,
-        "booking_date": booking_date,
-        "booking_time": booking_time,
-        "position": position,
-    })
-    return send_email(to, subject, html_body)
+    return _send_templated(
+        "booking_waitlisted",
+        to,
+        locale,
+        {
+            "member_name": member_name,
+            "space_name": space_name,
+            "booking_date": booking_date,
+            "booking_time": booking_time,
+        },
+        subject_args={"space": space_name},
+    )
 
 
 def send_booking_promoted_email(
@@ -633,14 +730,18 @@ def send_booking_promoted_email(
     locale: str = "es",
 ) -> bool:
     """Tell a member a spot opened and they are now booked."""
-    subject = _get_subject("booking_promoted", locale, space=space_name)
-    html_body = render_template("booking_promoted", locale, {
-        "member_name": member_name,
-        "space_name": space_name,
-        "booking_date": booking_date,
-        "booking_time": booking_time,
-    })
-    return send_email(to, subject, html_body)
+    return _send_templated(
+        "booking_promoted",
+        to,
+        locale,
+        {
+            "member_name": member_name,
+            "space_name": space_name,
+            "booking_date": booking_date,
+            "booking_time": booking_time,
+        },
+        subject_args={"space": space_name},
+    )
 
 
 def send_booking_cancelled_email(
@@ -653,14 +754,18 @@ def send_booking_cancelled_email(
 ) -> bool:
     """Tell a member the club cancelled their booking (admin cancel, or the
     slot/space was removed)."""
-    subject = _get_subject("booking_cancelled", locale, space=space_name)
-    html_body = render_template("booking_cancelled", locale, {
-        "member_name": member_name,
-        "space_name": space_name,
-        "booking_date": booking_date,
-        "booking_time": booking_time,
-    })
-    return send_email(to, subject, html_body)
+    return _send_templated(
+        "booking_cancelled",
+        to,
+        locale,
+        {
+            "member_name": member_name,
+            "space_name": space_name,
+            "booking_date": booking_date,
+            "booking_time": booking_time,
+        },
+        subject_args={"space": space_name},
+    )
 
 
 def send_announcement_email(
@@ -675,12 +780,17 @@ def send_announcement_email(
     The email subject is the announcement's own subject. ``body_html`` is the
     pre-rendered, sanitized markdown body (see ``communications.markdown``).
     """
-    html_body = render_template("announcement", locale, {
-        "subject": subject,
-        "body_html": body_html,
-        "org_name": org_name,
-    })
-    return send_email(to, subject, html_body)
+    return _send_templated(
+        "announcement",
+        to,
+        locale,
+        {
+            "subject": subject,
+            "body_html": body_html,
+            "org_name": org_name,
+        },
+        subject=subject,
+    )
 
 
 def send_receipt_delivery_email(
@@ -694,20 +804,18 @@ def send_receipt_delivery_email(
     locale: str = "es",
 ) -> bool:
     """Deliver a generated receipt PDF to the member it belongs to."""
-    subject = _get_subject(
-        "receipt_delivery", locale, receipt_number=receipt_number, org_name=org_name
-    )
-    html_body = render_template("receipt_delivery", locale, {
-        "member_name": member_name,
-        "receipt_number": receipt_number,
-        "amount": amount,
-        "currency": currency,
-        "org_name": org_name,
-    })
-    return send_email_with_attachment(
+    return _send_templated(
+        "receipt_delivery",
         to,
-        subject,
-        html_body,
+        locale,
+        {
+            "member_name": member_name,
+            "receipt_number": receipt_number,
+            "amount": amount,
+            "currency": currency,
+            "org_name": org_name,
+        },
+        subject_args={"receipt_number": receipt_number, "org_name": org_name},
         attachment=pdf_bytes,
         attachment_filename=f"{receipt_number}.pdf",
         attachment_mime="application/pdf",
@@ -727,10 +835,14 @@ def send_billing_summary_email(
     "status": str}``. Plain dicts rather than ORM objects keep the template
     layer free of billing models.
     """
-    subject = _get_subject("billing_summary", locale, total=total)
-    html_body = render_template("billing_summary", locale, {
-        "rows": rows,
-        "total": total,
-        "any_failed": any_failed,
-    })
-    return send_email(to, subject, html_body)
+    return _send_templated(
+        "billing_summary",
+        to,
+        locale,
+        {
+            "rows": rows,
+            "total": total,
+            "any_failed": any_failed,
+        },
+        subject_args={"total": total},
+    )
