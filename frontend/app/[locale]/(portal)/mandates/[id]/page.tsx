@@ -46,7 +46,7 @@ export default function MandateDetailPage() {
   const { formatDate } = useFormatters();
 
   if (isLoading) return <DetailSkeleton />;
-  if (!mandate) return <p className="text-center py-8">Mandate not found</p>;
+  if (!mandate) return <p className="text-center py-8">{t("mandates.notFound")}</p>;
 
   const statusLabel = t(`mandates.status${mandate.status.charAt(0).toUpperCase() + mandate.status.slice(1)}`);
   const isActive = mandate.status === "active";

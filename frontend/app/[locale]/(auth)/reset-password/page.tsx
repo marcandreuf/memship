@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useZodResolver } from "@/hooks/use-zod-resolver";
 import { z } from "zod";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -32,7 +32,7 @@ const resetSchema = z
     confirm_password: z.string(),
   })
   .refine((data) => data.new_password === data.confirm_password, {
-    message: "Passwords don't match",
+    message: "validation.passwordMismatch",
     path: ["confirm_password"],
   });
 
@@ -47,7 +47,7 @@ export default function ResetPasswordPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<ResetFormValues>({
-    resolver: zodResolver(resetSchema),
+    resolver: useZodResolver(resetSchema),
     defaultValues: { new_password: "", confirm_password: "" },
   });
 

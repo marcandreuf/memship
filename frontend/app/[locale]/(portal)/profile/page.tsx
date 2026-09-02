@@ -28,6 +28,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { GenderOption } from "@/features/settings/components/gender-options-settings";
 import { MyCustomFields } from "@/features/custom-fields/components/my-custom-fields-card";
+import { useFormatters } from "@/hooks/use-formatters";
 
 function Field({ label, value }: { label: string; value: string | null | undefined }) {
   if (!value) return null;
@@ -68,6 +69,7 @@ function useUpdateMyProfile() {
 
 export default function ProfilePage() {
   const t = useTranslations();
+  const { formatDate } = useFormatters();
   const locale = useLocale();
   const pathname = usePathname();
   const router = useRouter();
@@ -224,9 +226,9 @@ export default function ProfilePage() {
               <Field label={t("profile.memberNumber")} value={member.member_number} />
               <Field label={t("profile.membershipType")} value={member.membership_type_name} />
               <Field label={t("profile.status")} value={t(`status.${member.status}`)} />
-              <Field label={t("profile.dateOfBirth")} value={person.date_of_birth ? new Date(person.date_of_birth).toLocaleDateString() : null} />
+              <Field label={t("profile.dateOfBirth")} value={person.date_of_birth ? formatDate(person.date_of_birth) : null} />
               <Field label={t("profile.nationalId")} value={person.national_id} />
-              <Field label={t("profile.joinedAt")} value={new Date(member.joined_at).toLocaleDateString()} />
+              <Field label={t("profile.joinedAt")} value={formatDate(member.joined_at)} />
             </dl>
           </div>
         </CardContent>

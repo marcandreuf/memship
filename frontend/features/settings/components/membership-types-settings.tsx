@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useZodResolver } from "@/hooks/use-zod-resolver";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -52,7 +52,7 @@ import { usePermissions } from "@/features/auth/hooks/use-permissions";
 
 const createSchema = z.object({
   name: z.string().min(1).max(255),
-  slug: z.string().min(1).max(100).regex(/^[a-z0-9-]+$/),
+  slug: z.string().min(1).max(100).regex(/^[a-z0-9-]+$/, "validation.invalidSlug"),
   description: z.string().max(2000).optional(),
   base_price: z.coerce.number().min(0),
   group_id: z.coerce.number().optional(),
@@ -75,7 +75,7 @@ export function MembershipTypesSettings() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<CreateFormValues>({
-    resolver: zodResolver(createSchema),
+    resolver: useZodResolver(createSchema),
     defaultValues: { name: "", slug: "", description: "", base_price: 0 },
   });
 

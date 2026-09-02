@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useFieldArray, useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useZodResolver } from "@/hooks/use-zod-resolver";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -73,7 +73,7 @@ const definitionSchema = z
       .string()
       .min(1)
       .max(50)
-      .regex(/^[a-z][a-z0-9_]*$/, "lowercase letters, digits and underscores"),
+      .regex(/^[a-z][a-z0-9_]*$/, "validation.invalidKey"),
     field_type: z.enum(["text", "textarea", "number", "date", "boolean", "select"]),
     label: z.string().min(1).max(100),
     label_es: z.string().max(100),
@@ -98,7 +98,7 @@ const definitionSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["options"],
-        message: "A select field needs at least one option",
+        message: "validation.selectNeedsOption",
       });
       return;
     }
@@ -107,7 +107,7 @@ const definitionSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["options"],
-        message: "Option values must be unique",
+        message: "validation.optionValuesUnique",
       });
     }
   });
@@ -326,7 +326,7 @@ function DefinitionForm({
   const updateMutation = useUpdateCustomField();
 
   const form = useForm<DefinitionFormValues>({
-    resolver: zodResolver(definitionSchema),
+    resolver: useZodResolver(definitionSchema),
     defaultValues: {
       key: definition?.key ?? "",
       field_type: definition?.field_type ?? "text",

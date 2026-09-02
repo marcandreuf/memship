@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useZodResolver } from "@/hooks/use-zod-resolver";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -39,7 +39,7 @@ export function CommunicationsSettings() {
   const updateMutation = useUpdateSettings();
 
   const form = useForm<CommunicationsFormValues>({
-    resolver: zodResolver(communicationsSchema),
+    resolver: useZodResolver(communicationsSchema),
     defaultValues: { communications: false },
   });
 

@@ -3,7 +3,7 @@
 import { useEffect, useMemo } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useZodResolver } from "@/hooks/use-zod-resolver";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -126,7 +126,7 @@ export function CustomFieldsForm({
   }, [writable, values]);
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(schema),
+    resolver: useZodResolver(schema),
     defaultValues,
   });
 

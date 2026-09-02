@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useZodResolver } from "@/hooks/use-zod-resolver";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -124,7 +124,7 @@ function ContactForm({
   const { data: contactTypes = [] } = useContactTypes();
 
   const form = useForm<ContactFormValues>({
-    resolver: zodResolver(contactSchema),
+    resolver: useZodResolver(contactSchema),
     defaultValues: {
       contact_type_id: contact?.contact_type_id?.toString() || "",
       value: contact?.value || "",

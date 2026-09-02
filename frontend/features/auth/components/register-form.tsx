@@ -1,7 +1,7 @@
 "use client";
 
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useZodResolver } from "@/hooks/use-zod-resolver";
 import { z } from "zod";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -36,7 +36,7 @@ const registerSchema = z
     confirm_password: z.string(),
   })
   .refine((data) => data.password === data.confirm_password, {
-    message: "Passwords don't match",
+    message: "validation.passwordMismatch",
     path: ["confirm_password"],
   });
 
@@ -48,7 +48,7 @@ export function RegisterForm() {
   const [result, setResult] = useState<RegisterResult | null>(null);
 
   const form = useForm<RegisterFormValues>({
-    resolver: zodResolver(registerSchema),
+    resolver: useZodResolver(registerSchema),
     defaultValues: {
       first_name: "",
       last_name: "",

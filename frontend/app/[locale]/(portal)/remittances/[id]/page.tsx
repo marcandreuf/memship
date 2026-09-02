@@ -67,7 +67,7 @@ export default function RemittanceDetailPage() {
   const { formatCurrency, formatDate } = useFormatters();
 
   if (isLoading) return <DetailSkeleton />;
-  if (!remittance) return <p className="text-center py-8">Remittance not found</p>;
+  if (!remittance) return <p className="text-center py-8">{t("remittances.notFound")}</p>;
 
   const statusLabel = t(`remittances.status${remittance.status.charAt(0).toUpperCase() + remittance.status.slice(1)}`);
 

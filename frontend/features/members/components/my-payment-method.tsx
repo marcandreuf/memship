@@ -14,6 +14,7 @@ import { FormSkeleton } from "@/components/ui/skeletons";
 import { apiClient } from "@/lib/client-api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useFormatters } from "@/hooks/use-formatters";
 
 interface PaymentMethodData {
   payment_method: string | null;
@@ -52,6 +53,7 @@ function useUpdatePaymentMethod() {
 // (it used to be the standalone /payment-method page).
 export function MyPaymentMethod() {
   const t = useTranslations();
+  const { formatDate } = useFormatters();
   const { data, isLoading } = usePaymentMethod();
   const mutation = useUpdatePaymentMethod();
 
@@ -215,7 +217,7 @@ export function MyPaymentMethod() {
               {data.mandate_signed_at && (
                 <div className="flex flex-col gap-0.5">
                   <dt className="text-xs text-muted-foreground">{t("paymentMethod.mandateSignedAt")}</dt>
-                  <dd className="text-sm">{new Date(data.mandate_signed_at).toLocaleDateString()}</dd>
+                  <dd className="text-sm">{formatDate(data.mandate_signed_at)}</dd>
                 </div>
               )}
             </dl>

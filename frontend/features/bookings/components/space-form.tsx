@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useZodResolver } from "@/hooks/use-zod-resolver";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -27,8 +27,8 @@ const spaceSchema = z
     name: z.string().min(1).max(200),
     space_type: z.string().max(50),
     description: z.string().max(2000),
-    open_time: z.string().regex(/^\d{2}:\d{2}$/, "HH:MM"),
-    close_time: z.string().regex(/^\d{2}:\d{2}$/, "HH:MM"),
+    open_time: z.string().regex(/^\d{2}:\d{2}$/, "validation.invalidTime"),
+    close_time: z.string().regex(/^\d{2}:\d{2}$/, "validation.invalidTime"),
     is_active: z.boolean(),
   })
   .superRefine((data, ctx) => {
@@ -36,7 +36,7 @@ const spaceSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["close_time"],
-        message: "close after open",
+        message: "validation.closeTimeBeforeOpen",
       });
     }
   });
@@ -62,7 +62,7 @@ export function SpaceForm({
   const updateMutation = useUpdateSpace();
 
   const form = useForm<SpaceFormValues>({
-    resolver: zodResolver(spaceSchema),
+    resolver: useZodResolver(spaceSchema),
     defaultValues: {
       name: space?.name ?? "",
       space_type: space?.space_type ?? "",
@@ -120,7 +120,7 @@ export function SpaceForm({
             <FormItem>
               <FormLabel>{t("bookings.spaces.type")}</FormLabel>
               <FormControl>
-                <Input placeholder="pitch, court, room…" {...field} />
+                <Input placeholder={t("bookings.spaces.typePlaceholder")} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

@@ -73,7 +73,7 @@ export default function RegisterPage({
       const result = await validateDiscount(activityId, discountCode.trim(), selectedPriceId || undefined);
       setDiscountResult(result);
     } catch {
-      setDiscountResult({ valid: false, error: "Failed to validate", discount_type: null, discount_value: null, original_amount: null, discounted_amount: null });
+      setDiscountResult({ valid: false, error: t("activities.discounts.validationFailed"), discount_type: null, discount_value: null, original_amount: null, discounted_amount: null });
     }
     setDiscountChecking(false);
   }

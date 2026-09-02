@@ -12,6 +12,7 @@ import { useAttachmentTypes } from "../hooks/use-activities";
 import { useRegistrationAttachments, useUploadAttachment } from "../hooks/use-registrations";
 import type { RegistrationData } from "../services/registrations-api";
 import type { ActivityData } from "../services/activities-api";
+import { useFormatters } from "@/hooks/use-formatters";
 
 interface MemberRegistrationCardProps {
   registration: RegistrationData;
@@ -20,6 +21,7 @@ interface MemberRegistrationCardProps {
 
 export function MemberRegistrationCard({ registration, activity }: MemberRegistrationCardProps) {
   const t = useTranslations();
+  const { formatDateTime } = useFormatters();
   const isActive = registration.status !== "cancelled";
   const isCancelled = registration.status === "cancelled";
 
@@ -41,7 +43,7 @@ export function MemberRegistrationCard({ registration, activity }: MemberRegistr
         {/* Registration details grid */}
         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
           <span className="text-muted-foreground">{t("activities.registration.date")}</span>
-          <span>{new Date(registration.created_at).toLocaleString()}</span>
+          <span>{formatDateTime(registration.created_at)}</span>
 
           {registration.modality_id && (
             <>
@@ -88,7 +90,7 @@ export function MemberRegistrationCard({ registration, activity }: MemberRegistr
           {isCancelled && registration.cancelled_at && (
             <>
               <span className="text-muted-foreground">{t("activities.registration.cancelledOn")}</span>
-              <span>{new Date(registration.cancelled_at).toLocaleString()}</span>
+              <span>{formatDateTime(registration.cancelled_at)}</span>
             </>
           )}
           {isCancelled && registration.cancelled_by_name && (

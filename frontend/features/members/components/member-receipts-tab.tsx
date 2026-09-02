@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/lib/i18n/routing";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useZodResolver } from "@/hooks/use-zod-resolver";
 import { z } from "zod";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -144,7 +144,7 @@ function CreateMemberReceiptForm({
   const createMutation = useCreateReceipt();
 
   const form = useForm({
-    resolver: zodResolver(createSchema),
+    resolver: useZodResolver(createSchema),
     defaultValues: {
       origin: "manual",
       description: "",

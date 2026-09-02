@@ -31,6 +31,39 @@ export function formatCurrency(
   }).format(num);
 }
 
+const NAMED_DATE_OPTIONS: Record<NamedDateStyle, Intl.DateTimeFormatOptions> = {
+  short: { year: "numeric", month: "short", day: "numeric" },
+  long: { year: "numeric", month: "long", day: "numeric" },
+};
+
+const TIME_OPTIONS: Intl.DateTimeFormatOptions = { hour: "2-digit", minute: "2-digit" };
+
+export type NamedDateStyle = "short" | "long";
+
+/**
+ * A date with the month spelled out, in the given locale.
+ *
+ * Separate from `formatDate`, which renders the all-numeric form the org picked
+ * in its `date_format` setting. Use this where the UI wants "15 mar 2026".
+ */
+export function formatNamedDate(
+  dateStr: string | null | undefined,
+  locale: string = "es",
+  style: NamedDateStyle = "short",
+  withTime: boolean = false
+): string {
+  if (!dateStr) return "—";
+
+  const d = new Date(dateStr.includes("T") ? dateStr : `${dateStr}T00:00:00`);
+  if (isNaN(d.getTime())) return dateStr;
+
+  const intlLocale = LOCALE_MAP[locale] || LOCALE_MAP.es;
+  return d.toLocaleDateString(intlLocale, {
+    ...NAMED_DATE_OPTIONS[style],
+    ...(withTime ? TIME_OPTIONS : {}),
+  });
+}
+
 export function formatDate(
   dateStr: string | null | undefined,
   dateFormat: string = "DD/MM/YYYY"

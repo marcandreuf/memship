@@ -1,6 +1,7 @@
 {
   "mandates": {
     "title": "SEPA Mandates",
+    "notFound": "Mandate not found",
     "info": "A SEPA mandate is the member's signed authorisation to charge their bank account. A receipt can only be collected by direct debit if its member has an active mandate.",
     "createMandate": "New Mandate",
     "mandateReference": "Reference",

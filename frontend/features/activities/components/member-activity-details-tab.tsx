@@ -3,22 +3,14 @@
 import { useTranslations } from "next-intl";
 import { DetailSection } from "@/components/entity/detail-section";
 import type { ActivityData } from "../services/activities-api";
-
-function formatDateTime(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
+import { useLocaleDate } from "@/hooks/use-locale-date";
 
 interface MemberActivityDetailsTabProps {
   activity: ActivityData;
 }
 
 export function MemberActivityDetailsTab({ activity }: MemberActivityDetailsTabProps) {
+  const { shortDateTime: formatDateTime } = useLocaleDate();
   const t = useTranslations();
 
   const fields = [

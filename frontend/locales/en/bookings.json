@@ -33,6 +33,7 @@
       "edit": "Edit space",
       "name": "Name",
       "type": "Type",
+      "typePlaceholder": "pitch, court, room…",
       "description": "Description",
       "openTime": "Opens",
       "closeTime": "Closes",

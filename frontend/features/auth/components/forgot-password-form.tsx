@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useZodResolver } from "@/hooks/use-zod-resolver";
 import { z } from "zod";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -39,7 +39,7 @@ export function ForgotPasswordForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<ForgotPasswordFormValues>({
-    resolver: zodResolver(forgotPasswordSchema),
+    resolver: useZodResolver(forgotPasswordSchema),
     defaultValues: { email: "" },
   });
 

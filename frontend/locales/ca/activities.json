@@ -102,7 +102,8 @@
       "noDiscounts": "No hi ha codis de descompte configurats",
       "enterCode": "Introdueix el codi",
       "apply": "Aplicar",
-      "discountApplied": "descompte aplicat"
+      "discountApplied": "descompte aplicat",
+      "validationFailed": "No s'ha pogut validar el codi"
     },
     "consents": {
       "title": "Consentiments",
@@ -133,6 +134,7 @@
       "upload": "Canviar imatge",
       "remove": "Eliminar",
       "dragOrClick": "Fes clic per pujar una imatge de portada",
+      "maxSize": "La imatge supera el límit de {size}MB",
       "maxSizeHint": "Max {size}MB. JPG, PNG, WebP o GIF.",
       "uploading": "Pujant...",
       "confirmRemove": "Eliminar la imatge de portada?",

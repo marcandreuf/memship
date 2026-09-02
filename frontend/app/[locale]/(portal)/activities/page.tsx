@@ -30,14 +30,7 @@ import { useSearchParam, usePageParam, useStatusParam } from "@/hooks/use-url-st
 import { useActivities } from "@/features/activities/hooks/use-activities";
 import { useMyRegistrations } from "@/features/activities/hooks/use-registrations";
 import type { ActivityListData } from "@/features/activities/services/activities-api";
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
+import { useLocaleDate } from "@/hooks/use-locale-date";
 
 function getRegistrationStatus(
   activity: ActivityListData,
@@ -59,6 +52,7 @@ function getRegistrationStatus(
 
 export default function ActivitiesPage() {
   const t = useTranslations();
+  const { shortDate: formatDate } = useLocaleDate();
   const router = useRouter();
   const { user } = useAuth();
   // The page has two shapes. Which one you get is `activities.read` — the

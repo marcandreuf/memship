@@ -102,7 +102,8 @@
       "noDiscounts": "No hay codigos de descuento configurados",
       "enterCode": "Introduce el codigo",
       "apply": "Aplicar",
-      "discountApplied": "descuento aplicado"
+      "discountApplied": "descuento aplicado",
+      "validationFailed": "No se pudo validar el código"
     },
     "consents": {
       "title": "Consentimientos",
@@ -133,6 +134,7 @@
       "upload": "Cambiar imagen",
       "remove": "Eliminar",
       "dragOrClick": "Haz clic para subir una imagen de portada",
+      "maxSize": "La imagen supera el límite de {size}MB",
       "maxSizeHint": "Max {size}MB. JPG, PNG, WebP o GIF.",
       "uploading": "Subiendo...",
       "confirmRemove": "Eliminar la imagen de portada?",

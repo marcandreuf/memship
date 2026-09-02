@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/lib/i18n/routing";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useZodResolver } from "@/hooks/use-zod-resolver";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,10 +42,10 @@ import { usePermissions } from "@/features/auth/hooks/use-permissions";
 
 const groupSchema = z.object({
   name: z.string().min(1).max(255),
-  slug: z.string().min(1).max(100).regex(/^[a-z0-9-]+$/),
+  slug: z.string().min(1).max(100).regex(/^[a-z0-9-]+$/, "validation.invalidSlug"),
   description: z.string().max(2000).optional(),
   is_billable: z.boolean().optional(),
-  color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional().or(z.literal("")),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/, "validation.invalidColor").optional().or(z.literal("")),
 });
 
 type GroupFormValues = z.infer<typeof groupSchema>;
@@ -61,7 +61,7 @@ export default function GroupsPage() {
   const [search, setSearch] = useSearchParam();
 
   const form = useForm<GroupFormValues>({
-    resolver: zodResolver(groupSchema),
+    resolver: useZodResolver(groupSchema),
     defaultValues: { name: "", slug: "", description: "", is_billable: true, color: "" },
   });
 

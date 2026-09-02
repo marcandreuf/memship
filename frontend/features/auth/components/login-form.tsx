@@ -1,7 +1,7 @@
 "use client";
 
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useZodResolver } from "@/hooks/use-zod-resolver";
 import { z } from "zod";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -49,7 +49,7 @@ export function LoginForm() {
   const searchParams = useSearchParams();
 
   const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
+    resolver: useZodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
   });
 

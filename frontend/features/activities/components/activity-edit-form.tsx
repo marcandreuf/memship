@@ -1,7 +1,7 @@
 "use client";
 
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useZodResolver } from "@/hooks/use-zod-resolver";
 import { z } from "zod";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -38,19 +38,19 @@ const editActivitySchema = z.object({
   allow_self_cancellation: z.boolean(),
   self_cancellation_deadline_hours: z.coerce.number().int().min(0).optional().or(z.literal("")),
 }).refine((data) => new Date(data.ends_at) > new Date(data.starts_at), {
-  message: "End date must be after start date",
+  message: "validation.endBeforeStart",
   path: ["ends_at"],
 }).refine((data) => new Date(data.registration_ends_at) > new Date(data.registration_starts_at), {
-  message: "Registration close must be after registration open",
+  message: "validation.regCloseBeforeOpen",
   path: ["registration_ends_at"],
 }).refine((data) => new Date(data.registration_ends_at) <= new Date(data.starts_at), {
-  message: "Registration must close before the activity starts",
+  message: "validation.regCloseBeforeStart",
   path: ["registration_ends_at"],
 }).refine((data) => !data.min_age || !data.max_age || Number(data.max_age) >= Number(data.min_age), {
-  message: "Max age must be greater than or equal to min age",
+  message: "validation.maxLessThanMin",
   path: ["max_age"],
 }).refine((data) => data.max_participants >= data.min_participants, {
-  message: "Max participants must be greater than or equal to min participants",
+  message: "validation.maxLessThanMin",
   path: ["max_participants"],
 });
 
@@ -78,7 +78,7 @@ export function ActivityEditForm({
   const t = useTranslations();
 
   const form = useForm<EditActivityFormValues>({
-    resolver: zodResolver(editActivitySchema),
+    resolver: useZodResolver(editActivitySchema),
     defaultValues: {
       name: activity.name,
       short_description: activity.short_description || "",
