@@ -306,7 +306,6 @@ function SlotRow({
           <Button
             variant="outline"
             size="sm"
-            className="text-destructive"
             disabled={deleteMutation.isPending}
             onClick={() =>
               confirmAction({

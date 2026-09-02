@@ -1,6 +1,7 @@
 {
   "billingRuns": {
     "title": "Ejecuciones de facturación",
+    "info": "La facturación recurrente emite automáticamente los recibos de cuota según un calendario. Cada ejecución registra el periodo cubierto y los recibos generados, de modo que un periodo nunca se factura dos veces.",
     "subtitle": "Historial de la facturación recurrente, automática y manual",
     "runNow": "Ejecutar ahora",
     "runNowTitle": "Ejecutar facturación ahora",

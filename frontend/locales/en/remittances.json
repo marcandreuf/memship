@@ -1,6 +1,7 @@
 {
   "remittances": {
     "title": "Remittances",
+    "info": "A remittance groups pending receipts into a single SEPA file to send to the bank. Once processed, returned receipts can be imported back to mark the ones the bank could not collect.",
     "createRemittance": "New Remittance",
     "remittanceNumber": "Remittance #",
     "receiptCount": "Receipts",

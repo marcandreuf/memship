@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
+import { Link, useRouter } from "@/lib/i18n/routing";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -15,6 +15,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Pagination } from "@/components/entity/pagination";
+import { PageInfo } from "@/components/page-info";
 import { TableSkeleton } from "@/components/ui/skeletons";
 import { toast } from "sonner";
 import { useBillingRuns, useRunBillingNow } from "@/features/settings/hooks/use-billing-runs";
@@ -58,7 +59,10 @@ export default function BillingRunsPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">{t("billingRuns.title")}</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold">{t("billingRuns.title")}</h1>
+            <PageInfo text={t("billingRuns.info")} />
+          </div>
           <p className="text-sm text-muted-foreground">{t("billingRuns.subtitle")}</p>
         </div>
         <RunNowButton t={t} />
@@ -92,8 +96,10 @@ export default function BillingRunsPage() {
       {isLoading ? (
         <TableSkeleton />
       ) : items.length === 0 ? (
-        <p className="text-sm text-muted-foreground py-8 text-center">{t("billingRuns.empty")}</p>
+        <div className="py-8 text-center text-muted-foreground">{t("billingRuns.empty")}</div>
       ) : (
+        <>
+        <div className="hidden md:block rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -122,6 +128,35 @@ export default function BillingRunsPage() {
             ))}
           </TableBody>
         </Table>
+        </div>
+
+        <div className="space-y-3 md:hidden">
+          {items.map((run: BillingRun) => (
+            <Link
+              key={run.id}
+              href={`/billing-runs/${run.id}`}
+              className="block rounded-lg border p-4 hover:bg-accent transition-colors"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="font-medium">{formatDate(run.started_at)}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {formatDate(run.period_start)} — {formatDate(run.period_end)}
+                  </p>
+                </div>
+                <StatusBadge status={run.status} t={t} />
+              </div>
+              <div className="mt-1 flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">
+                  {t(`billingRuns.frequencyValue.${run.frequency}`)} ·{" "}
+                  {t(`billingRuns.triggeredByValue.${run.triggered_by}`)}
+                </span>
+                <span className="font-mono text-sm">{run.receipts_generated}</span>
+              </div>
+            </Link>
+          ))}
+        </div>
+        </>
       )}
 
       <Pagination

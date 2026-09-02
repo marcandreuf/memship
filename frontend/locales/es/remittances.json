@@ -1,6 +1,7 @@
 {
   "remittances": {
     "title": "Remesas",
+    "info": "Una remesa agrupa recibos pendientes en un único fichero SEPA para enviar al banco. Una vez procesada, se pueden importar las devoluciones para marcar los recibos que el banco no ha podido cobrar.",
     "createRemittance": "Nueva remesa",
     "remittanceNumber": "Remesa #",
     "receiptCount": "Recibos",

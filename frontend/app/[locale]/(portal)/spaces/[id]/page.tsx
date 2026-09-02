@@ -4,23 +4,19 @@ import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Link, useRouter } from "@/lib/i18n/routing";
+import { useRouter } from "@/lib/i18n/routing";
 import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FormSkeleton } from "@/components/ui/skeletons";
+import { DetailHeader } from "@/components/entity/detail-header";
+import { InlineEditWrapper } from "@/components/entity/inline-edit-wrapper";
+import { EntityTabs } from "@/components/entity/entity-tabs";
+import { DetailSkeleton } from "@/components/ui/skeletons";
 import { useQueryClient } from "@tanstack/react-query";
 import { ClientApiError } from "@/lib/client-api";
-import { useDeleteSpace, useSpace } from "@/features/bookings/hooks/use-bookings";
+import { useDeleteSpace, useSlots, useSpace } from "@/features/bookings/hooks/use-bookings";
 import { deleteSpace as deleteSpaceApi } from "@/features/bookings/services/bookings-api";
 import { SpaceForm } from "@/features/bookings/components/space-form";
+import { SpaceDetailSection } from "@/features/bookings/components/space-detail-section";
 import { SlotsTab } from "@/features/bookings/components/slots-tab";
 import { SpaceBookingsTab } from "@/features/bookings/components/space-bookings-tab";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
@@ -33,7 +29,10 @@ export default function SpaceDetailPage() {
   const router = useRouter();
   const id = Number(params.id);
   const { data: space, isLoading } = useSpace(id);
-  const [editOpen, setEditOpen] = useState(false);
+  // Read from the same cache the slots tab fills, purely for the tab's count
+  // badge — the tab itself owns the fetch.
+  const { data: slots } = useSlots(id);
+  const [isEditing, setIsEditing] = useState(false);
   const qc = useQueryClient();
   const deleteMutation = useDeleteSpace();
   const [confirmDialog, confirmAction] = useConfirmDialog();
@@ -72,80 +71,84 @@ export default function SpaceDetailPage() {
     }
   }
 
-  if (isLoading) return <FormSkeleton fields={3} />;
+  if (isLoading) return <DetailSkeleton />;
   if (!space)
     return (
-      <p className="text-sm text-muted-foreground">
+      <div className="py-8 text-center text-muted-foreground">
         {t("bookings.spaces.notFound")}
-      </p>
+      </div>
     );
 
   return (
     <div className="space-y-4">
-      <div className="flex items-start justify-between">
-        <div>
-          <Link
-            href="/spaces"
-            className="text-xs text-muted-foreground hover:underline"
-          >
-            ← {t("bookings.spaces.title")}
-          </Link>
-          <h1 className="text-2xl font-bold">{space.name}</h1>
-          <p className="text-sm text-muted-foreground">
-            {space.open_time.slice(0, 5)}–{space.close_time.slice(0, 5)}
-            {space.space_type ? ` · ${space.space_type}` : ""}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          {confirmDialog}
-          {canWrite && (<>
-          <Dialog open={editOpen} onOpenChange={setEditOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
-                {t("common.edit")}
+      <DetailHeader
+        breadcrumbs={[
+          { label: t("bookings.spaces.title"), href: "/spaces" },
+          { label: space.name },
+        ]}
+        title={space.name}
+        badge={{
+          label: space.is_active
+            ? t("bookings.spaces.active")
+            : t("bookings.spaces.inactive"),
+          variant: space.is_active ? "default" : "secondary",
+        }}
+        actions={
+          canWrite ? (
+            <>
+              {confirmDialog}
+              <Button
+                variant="destructive"
+                size="sm"
+                disabled={deleteMutation.isPending}
+                onClick={() =>
+                  confirmAction({
+                    title: t("bookings.spaces.confirmDelete"),
+                    cancelLabel: t("common.cancel"),
+                    confirmLabel: t("common.delete"),
+                    onConfirm: onDelete,
+                  })
+                }
+              >
+                {t("common.delete")}
               </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>{t("bookings.spaces.edit")}</DialogTitle>
-              </DialogHeader>
-              <SpaceForm space={space} onSuccess={() => setEditOpen(false)} />
-            </DialogContent>
-          </Dialog>
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-destructive"
-            disabled={deleteMutation.isPending}
-            onClick={() =>
-              confirmAction({
-                title: t("bookings.spaces.confirmDelete"),
-                cancelLabel: t("common.cancel"),
-                confirmLabel: t("common.delete"),
-                onConfirm: onDelete,
-              })
-            }
-          >
-            {t("common.delete")}
-          </Button>
-          </>)}
-        </div>
-      </div>
+            </>
+          ) : undefined
+        }
+      />
 
-      <Tabs defaultValue="slots">
-        <TabsList>
-          <TabsTrigger value="slots">{t("bookings.slots.tab")}</TabsTrigger>
-          <TabsTrigger value="bookings">
-            {t("bookings.adminBookings.tab")}
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="slots">
-          <SlotsTab spaceId={id} />
-        </TabsContent>
-        <TabsContent value="bookings">
-          <SpaceBookingsTab spaceId={id} />
-        </TabsContent>
-      </Tabs>
+      <InlineEditWrapper
+        title={t("common.details")}
+        isEditing={isEditing}
+        onEdit={() => setIsEditing(true)}
+        onCancel={() => setIsEditing(false)}
+        canEdit={canWrite}
+        readContent={<SpaceDetailSection space={space} />}
+        editContent={
+          <SpaceForm
+            space={space}
+            onSuccess={() => setIsEditing(false)}
+            onCancel={() => setIsEditing(false)}
+          />
+        }
+      />
+
+      <EntityTabs
+        lazy
+        tabs={[
+          {
+            id: "slots",
+            label: t("bookings.slots.tab"),
+            badge: slots?.length,
+            content: <SlotsTab spaceId={id} />,
+          },
+          {
+            id: "bookings",
+            label: t("bookings.adminBookings.tab"),
+            content: <SpaceBookingsTab spaceId={id} />,
+          },
+        ]}
+      />
     </div>
   );
 }

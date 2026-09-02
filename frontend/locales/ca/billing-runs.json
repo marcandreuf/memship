@@ -1,6 +1,7 @@
 {
   "billingRuns": {
     "title": "Execucions de facturació",
+    "info": "La facturació recurrent emet automàticament els rebuts de quota segons un calendari. Cada execució registra el període cobert i els rebuts generats, de manera que un període mai es factura dues vegades.",
     "subtitle": "Historial de la facturació recurrent, automàtica i manual",
     "runNow": "Executar ara",
     "runNowTitle": "Executar facturació ara",

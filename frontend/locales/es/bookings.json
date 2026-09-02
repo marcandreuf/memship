@@ -28,6 +28,7 @@
     },
     "spaces": {
       "title": "Espacios",
+      "info": "Los espacios son las pistas, salas y campos que los socios pueden reservar. Cada espacio tiene un horario de apertura y sus propias franjas; desactiva un espacio para dejar de aceptar reservas sin borrar su historial.",
       "create": "Nuevo espacio",
       "edit": "Editar espacio",
       "name": "Nombre",
@@ -37,10 +38,10 @@
       "closeTime": "Cierre",
       "hours": "Horario",
       "status": "Estado",
+      "allStatuses": "Todos los estados",
       "active": "Activo",
       "inactive": "Inactivo",
       "noSpaces": "Aún no hay espacios. Crea uno para empezar a aceptar reservas.",
-      "manage": "Gestionar",
       "notFound": "Espacio no encontrado.",
       "confirmDelete": "¿Eliminar este espacio? Se eliminarán sus franjas y reservas. Para dejar de aceptar reservas sin borrar nada, desactívalo desde Editar.",
       "deleteAffected": "{count, plural, one {# socio tiene reservas activas que se cancelarán y se le avisará por correo.} other {# socios tienen reservas activas que se cancelarán y se les avisará por correo.}}"

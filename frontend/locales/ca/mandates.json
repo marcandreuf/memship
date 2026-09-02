@@ -1,6 +1,7 @@
 {
   "mandates": {
     "title": "Mandats SEPA",
+    "info": "Un mandat SEPA és l'autorització signada pel soci per carregar al seu compte bancari. Un rebut només es pot cobrar per domiciliació si el seu soci té un mandat actiu.",
     "createMandate": "Nou mandat",
     "mandateReference": "Referencia",
     "member": "Soci",

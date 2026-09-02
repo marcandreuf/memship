@@ -1,6 +1,7 @@
 {
   "communications": {
     "title": "Comunicaciones",
+    "info": "Las comunicaciones son avisos que se envían a los socios por correo, opcionalmente limitados a un grupo o a un tipo de socio. Un borrador se puede previsualizar y comprobar su audiencia antes de enviarlo.",
     "subtitle": "Envía anuncios a tus miembros",
     "new": "Nuevo anuncio",
     "empty": "Aún no hay anuncios.",

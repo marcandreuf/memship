@@ -1,6 +1,7 @@
 {
   "mandates": {
     "title": "Mandatos SEPA",
+    "info": "Un mandato SEPA es la autorización firmada por el socio para cargar en su cuenta bancaria. Un recibo solo se puede cobrar por domiciliación si su socio tiene un mandato activo.",
     "createMandate": "Nuevo mandato",
     "mandateReference": "Referencia",
     "member": "Socio",

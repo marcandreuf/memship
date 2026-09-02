@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Pagination } from "@/components/entity/pagination";
+import { PageInfo } from "@/components/page-info";
 import { TableSkeleton } from "@/components/ui/skeletons";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
@@ -46,7 +47,10 @@ export default function CommunicationsPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">{t("communications.title")}</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold">{t("communications.title")}</h1>
+            <PageInfo text={t("communications.info")} />
+          </div>
           <p className="text-sm text-muted-foreground">
             {t("communications.subtitle")}
           </p>
@@ -59,10 +63,12 @@ export default function CommunicationsPage() {
       {isLoading ? (
         <TableSkeleton />
       ) : items.length === 0 ? (
-        <p className="text-sm text-muted-foreground py-8 text-center">
+        <div className="py-8 text-center text-muted-foreground">
           {t("communications.empty")}
-        </p>
+        </div>
       ) : (
+        <>
+        <div className="hidden md:block rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -99,6 +105,36 @@ export default function CommunicationsPage() {
             ))}
           </TableBody>
         </Table>
+        </div>
+
+        <div className="space-y-3 md:hidden">
+          {items.map((a: AnnouncementData) => (
+            <Link
+              key={a.id}
+              href={`/communications/${a.id}`}
+              className="block rounded-lg border p-4 hover:bg-accent transition-colors"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{a.subject}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {t(`communications.target.${a.target_type}`)}
+                  </p>
+                </div>
+                <Badge variant={a.status === "sent" ? "default" : "secondary"}>
+                  {t(`communications.status.${a.status}`)}
+                </Badge>
+              </div>
+              <div className="mt-1 flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">
+                  {a.sent_at ? formatDate(a.sent_at) : "—"}
+                </span>
+                <span className="font-mono text-sm">{a.recipient_count ?? "—"}</span>
+              </div>
+            </Link>
+          ))}
+        </div>
+        </>
       )}
 
       <Pagination
