@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useZodResolver } from "@/hooks/use-zod-resolver";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Repeat } from "lucide-react";
@@ -76,7 +76,7 @@ function todayStr(): string {
 
 const slotSchema = z
   .object({
-    slot_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD"),
+    slot_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "validation.invalidDateFormat"),
     all_day: z.boolean(),
     start_time: z.string(),
     end_time: z.string(),
@@ -91,16 +91,16 @@ const slotSchema = z
   .superRefine((data, ctx) => {
     if (!data.all_day) {
       if (!/^\d{2}:\d{2}$/.test(data.start_time)) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["start_time"], message: "HH:MM" });
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["start_time"], message: "validation.invalidTime" });
       }
       if (!/^\d{2}:\d{2}$/.test(data.end_time)) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["end_time"], message: "HH:MM" });
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["end_time"], message: "validation.invalidTime" });
       }
       if (data.end_time && data.start_time && data.end_time <= data.start_time) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["end_time"],
-          message: "end after start",
+          message: "validation.endTimeBeforeStart",
         });
       }
     }
@@ -110,7 +110,7 @@ const slotSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["slot_date"],
-        message: "past",
+        message: "validation.dateInPast",
       });
     } else if (!data.all_day && data.slot_date === today) {
       const now = new Date();
@@ -119,7 +119,7 @@ const slotSchema = z
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["start_time"],
-          message: "past",
+          message: "validation.dateInPast",
         });
       }
     }
@@ -340,7 +340,7 @@ function SlotForm({
   const isSeriesEdit = Boolean(slot && slot.series_id && slot.series_size_upcoming > 1);
 
   const form = useForm<SlotFormValues>({
-    resolver: zodResolver(slotSchema),
+    resolver: useZodResolver(slotSchema),
     defaultValues: {
       slot_date: slot?.slot_date ?? todayStr(),
       all_day: false,

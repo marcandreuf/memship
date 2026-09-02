@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useZodResolver } from "@/hooks/use-zod-resolver";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -115,7 +115,7 @@ function ConsentForm({
   const updateMutation = useUpdateConsent(activityId);
 
   const form = useForm<ConsentFormValues>({
-    resolver: zodResolver(consentSchema),
+    resolver: useZodResolver(consentSchema),
     defaultValues: {
       title: consent?.title || "",
       content: consent?.content || "",

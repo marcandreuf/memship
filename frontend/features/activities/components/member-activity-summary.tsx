@@ -4,30 +4,14 @@ import { useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { ActivityData } from "../services/activities-api";
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-}
-
-function formatDateTime(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
+import { useLocaleDate } from "@/hooks/use-locale-date";
 
 interface MemberActivitySummaryProps {
   activity: ActivityData;
 }
 
 export function MemberActivitySummary({ activity }: MemberActivitySummaryProps) {
+  const { longDate: formatDate, longDateTime: formatDateTime } = useLocaleDate();
   const t = useTranslations();
 
   const now = new Date();

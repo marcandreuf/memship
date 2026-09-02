@@ -202,7 +202,7 @@ function CreateMandateForm({ t, onSuccess }: { t: (key: string) => string; onSuc
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label className="text-sm font-medium">{t("mandates.member")} (ID)</label>
-        <Input type="number" value={memberId} onChange={(e) => setMemberId(e.target.value)} placeholder="Member ID" />
+        <Input type="number" value={memberId} onChange={(e) => setMemberId(e.target.value)} placeholder={t("mandates.member")} />
       </div>
       <div>
         <label className="text-sm font-medium">{t("mandates.debtorName")}</label>

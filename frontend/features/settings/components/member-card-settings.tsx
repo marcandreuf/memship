@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useZodResolver } from "@/hooks/use-zod-resolver";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,7 +39,7 @@ export function MemberCardSettings() {
   const assignMutation = useAssignMemberNumbers();
 
   const form = useForm<MemberCardFormValues>({
-    resolver: zodResolver(memberCardSchema),
+    resolver: useZodResolver(memberCardSchema),
     defaultValues: {
       member_card: false,
       member_number_prefix: "",

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useZodResolver } from "@/hooks/use-zod-resolver";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -41,6 +41,7 @@ import {
   useDeletePrice,
 } from "../hooks/use-activities";
 import type { ActivityData, ActivityModalityData, ActivityPriceData } from "../services/activities-api";
+import { useLocaleDate } from "@/hooks/use-locale-date";
 
 const priceSchema = z.object({
   name: z.string().min(1).max(255),
@@ -59,16 +60,6 @@ function toLocalDatetime(iso: string) {
   const d = new Date(iso);
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }
 
 function formatAmount(amount: number) {
@@ -178,7 +169,7 @@ function PriceForm({
   const updateMutation = useUpdatePrice(activityId);
 
   const form = useForm<PriceFormValues>({
-    resolver: zodResolver(priceSchema),
+    resolver: useZodResolver(priceSchema),
     defaultValues: {
       name: price?.name || "",
       description: price?.description || "",
@@ -292,6 +283,7 @@ function PriceRow({
   onEdit: () => void;
 }) {
   const t = useTranslations();
+  const { shortDateTime: formatDate } = useLocaleDate();
   const deleteMutation = useDeletePrice(activityId);
   const [confirmDialog, confirmAction] = useConfirmDialog();
   const modalityName = price.modality_id

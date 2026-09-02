@@ -1,6 +1,7 @@
 {
   "receipts": {
     "title": "Receipts",
+    "notFound": "Receipt not found",
     "info": "Receipts are the individual charges issued to members — membership fees, activity registrations and manual charges. They are grouped into remittances for collection by direct debit.",
     "createReceipt": "New Receipt",
     "editReceipt": "Edit Receipt",

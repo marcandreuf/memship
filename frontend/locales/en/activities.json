@@ -102,7 +102,8 @@
       "noDiscounts": "No discount codes configured",
       "enterCode": "Enter code",
       "apply": "Apply",
-      "discountApplied": "discount applied"
+      "discountApplied": "discount applied",
+      "validationFailed": "Could not validate the code"
     },
     "consents": {
       "title": "Consents",
@@ -133,6 +134,7 @@
       "upload": "Change Image",
       "remove": "Remove",
       "dragOrClick": "Click to upload a cover image",
+      "maxSize": "The image exceeds the {size}MB limit",
       "maxSizeHint": "Max {size}MB. JPG, PNG, WebP, or GIF.",
       "uploading": "Uploading...",
       "confirmRemove": "Remove the cover image?",

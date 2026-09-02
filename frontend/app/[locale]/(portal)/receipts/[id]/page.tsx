@@ -73,7 +73,7 @@ export default function ReceiptDetailPage() {
   const sendReminderMutation = useSendReceiptReminder();
 
   if (isLoading) return <DetailSkeleton />;
-  if (!receipt) return <p className="text-center py-8">Receipt not found</p>;
+  if (!receipt) return <p className="text-center py-8">{t("receipts.notFound")}</p>;
 
   const statusLabel = t(`receipts.status${receipt.status.charAt(0).toUpperCase() + receipt.status.slice(1)}`);
 

@@ -9,21 +9,15 @@ import {
 import { REGISTRATION_STATUS_VARIANTS } from "@/lib/status-variants";
 import { TabContentSkeleton } from "@/components/ui/skeletons";
 import { useMemberRegistrations } from "../hooks/use-members";
+import { useLocaleDate } from "@/hooks/use-locale-date";
 
 interface MemberActivitiesTabProps {
   memberId: number;
 }
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
-
 export function MemberActivitiesTab({ memberId }: MemberActivitiesTabProps) {
   const t = useTranslations();
+  const { shortDate: formatDate } = useLocaleDate();
   const { data, isLoading } = useMemberRegistrations(memberId);
 
   if (isLoading) return <TabContentSkeleton />;

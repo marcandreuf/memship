@@ -33,6 +33,7 @@
       "edit": "Edita l'espai",
       "name": "Nom",
       "type": "Tipus",
+      "typePlaceholder": "pista, sala, camp…",
       "description": "Descripció",
       "openTime": "Obertura",
       "closeTime": "Tancament",

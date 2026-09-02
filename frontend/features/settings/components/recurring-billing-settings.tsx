@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useZodResolver } from "@/hooks/use-zod-resolver";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,7 +49,7 @@ export function RecurringBillingSettings() {
   const updateMutation = useUpdateSettings();
 
   const form = useForm<RecurringBillingFormValues>({
-    resolver: zodResolver(recurringBillingSchema),
+    resolver: useZodResolver(recurringBillingSchema),
     defaultValues: {
       recurring_billing_enabled: false,
       recurring_billing_day: 1,

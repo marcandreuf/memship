@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useZodResolver } from "@/hooks/use-zod-resolver";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -117,7 +117,7 @@ function AttachmentTypeForm({
   const updateMutation = useUpdateAttachmentType(activityId);
 
   const form = useForm<AttachmentTypeFormValues>({
-    resolver: zodResolver(attachmentTypeSchema),
+    resolver: useZodResolver(attachmentTypeSchema),
     defaultValues: {
       name: attachmentType?.name || "",
       description: attachmentType?.description || "",

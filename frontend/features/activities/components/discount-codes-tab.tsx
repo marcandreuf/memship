@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useZodResolver } from "@/hooks/use-zod-resolver";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -27,6 +27,7 @@ import {
 } from "../hooks/use-activities";
 import type { DiscountCodeData } from "../services/activities-api";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
+import { useLocaleDate } from "@/hooks/use-locale-date";
 
 const discountSchema = z.object({
   code: z.string().min(1).max(50),
@@ -43,12 +44,6 @@ function toLocalDatetime(iso: string) {
   const d = new Date(iso);
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, {
-    year: "numeric", month: "short", day: "numeric",
-  });
 }
 
 interface DiscountCodesTabProps {
@@ -132,7 +127,7 @@ function DiscountForm({
   const updateMutation = useUpdateDiscountCode(activityId);
 
   const form = useForm<DiscountFormValues>({
-    resolver: zodResolver(discountSchema),
+    resolver: useZodResolver(discountSchema),
     defaultValues: {
       code: discount?.code || "",
       description: discount?.description || "",
@@ -223,6 +218,7 @@ function DiscountRow({
   onEdit: () => void;
 }) {
   const t = useTranslations();
+  const { shortDate: formatDate } = useLocaleDate();
   const { has } = usePermissions();
   const canWrite = has("activities.write");
   const deleteMutation = useDeleteDiscountCode(activityId);

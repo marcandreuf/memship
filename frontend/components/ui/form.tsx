@@ -15,6 +15,7 @@ import {
 
 import { cn } from "@/lib/utils"
 import { Label } from "@/components/ui/label"
+import { useTranslateFormError } from "@/hooks/use-translate-form-error"
 
 const Form = FormProvider
 
@@ -137,7 +138,8 @@ function FormDescription({ className, ...props }: React.ComponentProps<"p">) {
 
 function FormMessage({ className, ...props }: React.ComponentProps<"p">) {
   const { error, formMessageId } = useFormField()
-  const body = error ? String(error?.message ?? "") : props.children
+  const translateError = useTranslateFormError()
+  const body = error ? translateError(error?.message) : props.children
 
   if (!body) {
     return null

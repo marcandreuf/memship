@@ -28,6 +28,7 @@ import {
 } from "../hooks/use-registrations";
 import { TabContentSkeleton } from "@/components/ui/skeletons";
 import type { RegistrationData } from "../services/registrations-api";
+import { useLocaleDate } from "@/hooks/use-locale-date";
 
 const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   confirmed: "default",
@@ -35,16 +36,6 @@ const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | 
   cancelled: "destructive",
   pending: "outline",
 };
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 interface RegistrationsTabProps {
   activityId: number;
@@ -127,6 +118,7 @@ export function RegistrationsTab({ activityId }: RegistrationsTabProps) {
 
 function RegistrationRow({ registration }: { registration: RegistrationData }) {
   const t = useTranslations();
+  const { shortDateTime: formatDate } = useLocaleDate();
   const changeMutation = useChangeRegistrationStatus();
   const memberName = registration.member
     ? `${registration.member.first_name} ${registration.member.last_name}`

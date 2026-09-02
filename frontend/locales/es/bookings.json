@@ -33,6 +33,7 @@
       "edit": "Editar espacio",
       "name": "Nombre",
       "type": "Tipo",
+      "typePlaceholder": "pista, sala, campo…",
       "description": "Descripción",
       "openTime": "Apertura",
       "closeTime": "Cierre",

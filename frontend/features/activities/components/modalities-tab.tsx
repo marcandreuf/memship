@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useZodResolver } from "@/hooks/use-zod-resolver";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -40,6 +40,7 @@ import {
 } from "../hooks/use-activities";
 import type { ActivityData, ActivityModalityData } from "../services/activities-api";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
+import { useLocaleDate } from "@/hooks/use-locale-date";
 
 const modalitySchema = z.object({
   name: z.string().min(1).max(255),
@@ -54,16 +55,6 @@ function toLocalDatetime(iso: string) {
   const d = new Date(iso);
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }
 
 interface ModalitiesTabProps {
@@ -146,7 +137,7 @@ function ModalityForm({
   const updateMutation = useUpdateModality(activityId);
 
   const form = useForm<ModalityFormValues>({
-    resolver: zodResolver(modalitySchema),
+    resolver: useZodResolver(modalitySchema),
     defaultValues: {
       name: modality?.name || "",
       description: modality?.description || "",
@@ -213,6 +204,7 @@ function ModalityRow({
   onEdit: () => void;
 }) {
   const t = useTranslations();
+  const { shortDateTime: formatDate } = useLocaleDate();
   const { has } = usePermissions();
   const canWrite = has("activities.write");
   const deleteMutation = useDeleteModality(activityId);

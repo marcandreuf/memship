@@ -1,7 +1,7 @@
 "use client";
 
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useZodResolver } from "@/hooks/use-zod-resolver";
 import { z } from "zod";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -56,7 +56,7 @@ export function MemberForm({ member, onSubmit, isSubmitting, onCancel }: MemberF
   const genderOptions = (settings?.features?.gender_options as GenderOption[] | undefined) || [];
 
   const form = useForm<MemberFormValues>({
-    resolver: zodResolver(memberSchema),
+    resolver: useZodResolver(memberSchema),
     defaultValues: {
       first_name: member?.person.first_name || "",
       last_name: member?.person.last_name || "",

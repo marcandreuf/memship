@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useZodResolver } from "@/hooks/use-zod-resolver";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -77,7 +77,7 @@ const settingsSchema = z.object({
   timezone: z.string(),
   currency: z.string(),
   date_format: z.string(),
-  brand_color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional().or(z.literal("")),
+  brand_color: z.string().regex(/^#[0-9a-fA-F]{6}$/, "validation.invalidColor").optional().or(z.literal("")),
   logo_url: z.string().max(500).optional().or(z.literal("")),
 });
 
@@ -118,7 +118,7 @@ export default function SettingsPage() {
   const updateAddressMutation = useUpdateAddress();
 
   const form = useForm<SettingsFormValues>({
-    resolver: zodResolver(settingsSchema),
+    resolver: useZodResolver(settingsSchema),
     defaultValues: {
       name: "", legal_name: "", email: "", phone: "", website: "",
       tax_id: "", address_line1: "", address_line2: "", city: "",

@@ -1,6 +1,7 @@
 {
   "receipts": {
     "title": "Rebuts",
+    "notFound": "Rebut no trobat",
     "info": "Els rebuts són els càrrecs individuals emesos als socis: quotes, inscripcions a activitats i càrrecs manuals. S'agrupen en remeses per cobrar-los per domiciliació.",
     "createReceipt": "Nou rebut",
     "editReceipt": "Editar rebut",

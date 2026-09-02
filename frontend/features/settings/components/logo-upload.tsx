@@ -101,7 +101,7 @@ export function LogoUpload({ logoUrl }: LogoUploadProps) {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={imageUrl}
-            alt="Logo"
+            alt={t("common.logoAlt")}
             className="h-16 w-auto max-w-48 object-contain rounded border"
           />
           <div className="flex gap-2">

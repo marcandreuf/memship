@@ -1,13 +1,15 @@
 "use client";
 
 import type { FieldErrors, FieldValues } from "react-hook-form";
+import { useTranslateFormError } from "@/hooks/use-translate-form-error";
 
 interface FormErrorSummaryProps {
   errors: FieldErrors<FieldValues>;
 }
 
 export function FormErrorSummary({ errors }: FormErrorSummaryProps) {
-  const messages = collectErrors(errors);
+  const translateError = useTranslateFormError();
+  const messages = collectErrors(errors).map(translateError).filter(Boolean);
   if (messages.length === 0) return null;
 
   return (

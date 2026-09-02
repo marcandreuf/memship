@@ -14,6 +14,7 @@ import {
   useCancelRegistration,
 } from "@/features/activities/hooks/use-registrations";
 import { useActivity } from "@/features/activities/hooks/use-activities";
+import { useLocaleDate } from "@/hooks/use-locale-date";
 import type { RegistrationData } from "@/features/activities/services/registrations-api";
 
 const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -23,16 +24,9 @@ const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | 
   pending: "outline",
 };
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
-
 function RegistrationCard({ registration }: { registration: RegistrationData }) {
   const t = useTranslations();
+  const { shortDate: formatDate } = useLocaleDate();
   const { data: activity } = useActivity(registration.activity_id);
   const cancelMutation = useCancelRegistration();
   const [confirmDialog, confirmAction] = useConfirmDialog();

@@ -1,6 +1,7 @@
 {
   "remittances": {
     "title": "Remeses",
+    "notFound": "Remesa no trobada",
     "info": "Una remesa agrupa rebuts pendents en un únic fitxer SEPA per enviar al banc. Un cop processada, es poden importar les devolucions per marcar els rebuts que el banc no ha pogut cobrar.",
     "createRemittance": "Nova remesa",
     "remittanceNumber": "Remesa #",

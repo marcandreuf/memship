@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useZodResolver } from "@/hooks/use-zod-resolver";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,7 +43,7 @@ export function PaymentRemindersSettings() {
   const updateMutation = useUpdateSettings();
 
   const form = useForm<PaymentRemindersFormValues>({
-    resolver: zodResolver(paymentRemindersSchema),
+    resolver: useZodResolver(paymentRemindersSchema),
     defaultValues: {
       payment_reminders_enabled: false,
       reminder_days_after_due: 3,
