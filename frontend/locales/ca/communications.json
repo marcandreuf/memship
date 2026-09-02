@@ -1,6 +1,7 @@
 {
   "communications": {
     "title": "Comunicacions",
+    "info": "Les comunicacions són avisos que s'envien als socis per correu, opcionalment limitats a un grup o a un tipus de soci. Un esborrany es pot previsualitzar i comprovar-ne l'audiència abans d'enviar-lo.",
     "subtitle": "Envia anuncis als teus membres",
     "new": "Nou anunci",
     "empty": "Encara no hi ha anuncis.",

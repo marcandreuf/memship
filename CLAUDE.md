@@ -213,6 +213,36 @@ memship/
 - Dark mode: next-themes (ThemeProvider, attribute="class", system default)
 - Styling: Tailwind CSS 4 with OKLCH CSS variables (teal brand palette)
 - Tables: use `table-compact` CSS class for tab/supporting data tables
+- Navigation: `Link` and `useRouter` always come from `@/lib/i18n/routing`, never from
+  `next/navigation` — the plain ones drop the locale prefix and bounce through middleware
+
+### Entity views
+
+Every entity in the app — members, activities, groups, spaces — is rendered by the same
+two shells, assembled from `components/entity/`. A new list or detail page reuses them
+rather than inventing chrome; Activities is the reference implementation.
+
+**List** (`activities/page.tsx`):
+- `h1.text-2xl.font-bold` + `<PageInfo>` + the primary action, on one row
+- `<SearchInput>`, plus a status `<Select>` when the entity has states
+- `<TableSkeleton>` while loading; an empty state as `div.py-8.text-center.text-muted-foreground`
+- desktop `<div className="hidden md:block rounded-md border">` around the `<Table>`,
+  rows `cursor-pointer` with `onClick={() => router.push(detail)}` — never an action column
+  whose only job is to open the row
+- mobile `<div className="space-y-3 md:hidden">` of `<Link>` cards
+- `<Pagination>` when the endpoint paginates, `<ExportButton>` when an export exists
+
+**Detail** (`activities/[id]/page.tsx`):
+- `<DetailHeader>` — breadcrumbs, title, status badge, and the page-level actions.
+  Destructive page-level actions are `variant="destructive"`
+- `<InlineEditWrapper>` — the basic-info card. The edit form replaces the read view in
+  place; an entity's own fields are never edited in a modal
+- `<EntityTabs>` — everything that extends the entity. Tab tables use `table-compact`, an
+  `Añadir X` button, and row-level `Editar` buttons that *do* open a `Dialog`. Pass `lazy`
+  so a tab's queries wait until it is opened
+
+Modals belong inside tabs, not on the entity itself. Lists whose endpoint returns every
+row unpaginated (groups, spaces) filter client-side rather than growing a backend param.
 
 ### Code Style
 - Python: follow existing patterns, type hints on function signatures

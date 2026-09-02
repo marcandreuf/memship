@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
+import { Link, useRouter } from "@/lib/i18n/routing";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Pagination } from "@/components/entity/pagination";
+import { PageInfo } from "@/components/page-info";
 import { TableSkeleton } from "@/components/ui/skeletons";
 import { toast } from "sonner";
 import { useRemittances, useCreateRemittance } from "@/features/remittances/hooks/use-remittances";
@@ -67,7 +68,10 @@ export default function RemittancesPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{t("remittances.title")}</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold">{t("remittances.title")}</h1>
+          <PageInfo text={t("remittances.info")} />
+        </div>
         {canWrite && (
           <Dialog open={createOpen} onOpenChange={setCreateOpen}>
             <DialogTrigger asChild>
@@ -101,8 +105,10 @@ export default function RemittancesPage() {
       </div>
 
       {items.length === 0 ? (
-        <p className="text-sm text-muted-foreground py-8 text-center">{t("remittances.noRemittances")}</p>
+        <div className="py-8 text-center text-muted-foreground">{t("remittances.noRemittances")}</div>
       ) : (
+        <>
+        <div className="hidden md:block rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -131,6 +137,34 @@ export default function RemittancesPage() {
             ))}
           </TableBody>
         </Table>
+        </div>
+
+        <div className="space-y-3 md:hidden">
+          {items.map((r) => (
+            <Link
+              key={r.id}
+              href={`/remittances/${r.id}`}
+              className="block rounded-lg border p-4 hover:bg-accent transition-colors"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="font-mono text-sm">{r.remittance_number}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {formatDate(r.emission_date)} → {formatDate(r.due_date)}
+                  </p>
+                </div>
+                <StatusBadge status={r.status} t={t} />
+              </div>
+              <div className="mt-1 flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">
+                  {t("remittances.receiptCount")}: {r.receipt_count}
+                </span>
+                <span className="font-mono">{formatCurrency(r.total_amount)}</span>
+              </div>
+            </Link>
+          ))}
+        </div>
+        </>
       )}
 
       <Pagination

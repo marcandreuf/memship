@@ -31,7 +31,7 @@ export function DetailHeader({
       <Breadcrumbs items={breadcrumbs} />
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2 min-w-0">
-          <h1 className="text-lg font-bold truncate">{title}</h1>
+          <h1 className="text-2xl font-bold truncate">{title}</h1>
           {badge && (
             <Badge variant={badge.variant || "default"}>{badge.label}</Badge>
           )}

@@ -28,6 +28,7 @@
     },
     "spaces": {
       "title": "Spaces",
+      "info": "Spaces are the courts, rooms and pitches members can book. Each space has opening hours and its own slots; deactivate a space to stop taking bookings without deleting its history.",
       "create": "New space",
       "edit": "Edit space",
       "name": "Name",
@@ -37,10 +38,10 @@
       "closeTime": "Closes",
       "hours": "Hours",
       "status": "Status",
+      "allStatuses": "All statuses",
       "active": "Active",
       "inactive": "Inactive",
       "noSpaces": "No spaces yet. Create one to start taking bookings.",
-      "manage": "Manage",
       "notFound": "Space not found.",
       "confirmDelete": "Delete this space? Its slots and bookings will be removed. To stop taking bookings without deleting anything, deactivate it from Edit.",
       "deleteAffected": "{count, plural, one {# member has active bookings that will be cancelled and notified by email.} other {# members have active bookings that will be cancelled and notified by email.}}"

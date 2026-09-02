@@ -28,6 +28,7 @@
     },
     "spaces": {
       "title": "Espais",
+      "info": "Els espais són les pistes, sales i camps que els socis poden reservar. Cada espai té un horari d'obertura i les seves pròpies franges; desactiva un espai per deixar d'acceptar reserves sense esborrar-ne l'historial.",
       "create": "Nou espai",
       "edit": "Edita l'espai",
       "name": "Nom",
@@ -37,10 +38,10 @@
       "closeTime": "Tancament",
       "hours": "Horari",
       "status": "Estat",
+      "allStatuses": "Tots els estats",
       "active": "Actiu",
       "inactive": "Inactiu",
       "noSpaces": "Encara no hi ha espais. Crea'n un per començar a acceptar reserves.",
-      "manage": "Gestiona",
       "notFound": "Espai no trobat.",
       "confirmDelete": "Vols eliminar aquest espai? Se n'eliminaran les franges i les reserves. Per deixar d'acceptar reserves sense esborrar res, desactiva'l des d'Edita.",
       "deleteAffected": "{count, plural, one {# soci té reserves actives que es cancel·laran i se l'avisarà per correu.} other {# socis tenen reserves actives que es cancel·laran i se'ls avisarà per correu.}}"

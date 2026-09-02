@@ -46,9 +46,16 @@ type SpaceFormValues = z.infer<typeof spaceSchema>;
 export function SpaceForm({
   space,
   onSuccess,
+  onCancel,
 }: {
   space: Space | null;
   onSuccess: () => void;
+  /**
+   * Present when the form edits in place inside a card, where the read view it
+   * replaced has to be reachable again. The create dialog has its own dismiss,
+   * so it passes nothing and keeps the single full-width save button.
+   */
+  onCancel?: () => void;
 }) {
   const t = useTranslations();
   const createMutation = useCreateSpace();
@@ -177,9 +184,20 @@ export function SpaceForm({
             </FormItem>
           )}
         />
-        <Button type="submit" disabled={isPending} className="w-full">
-          {isPending ? t("common.loading") : t("common.save")}
-        </Button>
+        {onCancel ? (
+          <div className="flex gap-3">
+            <Button type="submit" disabled={isPending}>
+              {isPending ? t("common.loading") : t("common.save")}
+            </Button>
+            <Button type="button" variant="outline" onClick={onCancel}>
+              {t("common.cancel")}
+            </Button>
+          </div>
+        ) : (
+          <Button type="submit" disabled={isPending} className="w-full">
+            {isPending ? t("common.loading") : t("common.save")}
+          </Button>
+        )}
       </form>
     </Form>
   );

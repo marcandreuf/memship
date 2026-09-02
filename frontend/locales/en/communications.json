@@ -1,6 +1,7 @@
 {
   "communications": {
     "title": "Communications",
+    "info": "Communications are announcements sent to members by email, optionally narrowed to a group or a membership type. A draft can be previewed and its audience checked before it is sent.",
     "subtitle": "Send announcements to your members",
     "new": "New announcement",
     "empty": "No announcements yet.",

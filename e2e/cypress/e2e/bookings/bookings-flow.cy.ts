@@ -111,7 +111,7 @@ describe("Simple Bookings", () => {
     cy.loginAsAdmin();
     cy.visit("/en/spaces");
     cy.contains(SPACE).should("be.visible");
-    cy.contains("tr", SPACE).contains("a", "Manage").click();
+    cy.contains("tr", SPACE).click();
     cy.url().should("match", /\/spaces\/\d+/);
     cy.contains("10:00").should("be.visible");
   });

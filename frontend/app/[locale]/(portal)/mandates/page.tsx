@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
+import { Link, useRouter } from "@/lib/i18n/routing";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { SearchInput } from "@/components/entity/search-input";
+import { PageInfo } from "@/components/page-info";
 import { Pagination } from "@/components/entity/pagination";
 import { TableSkeleton } from "@/components/ui/skeletons";
 import { toast } from "sonner";
@@ -65,7 +66,10 @@ export default function MandatesPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{t("mandates.title")}</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold">{t("mandates.title")}</h1>
+          <PageInfo text={t("mandates.info")} />
+        </div>
         {canWrite && (
           <Dialog open={createOpen} onOpenChange={setCreateOpen}>
             <DialogTrigger asChild>
@@ -97,8 +101,10 @@ export default function MandatesPage() {
       </div>
 
       {items.length === 0 ? (
-        <p className="text-sm text-muted-foreground py-8 text-center">{t("mandates.noMandates")}</p>
+        <div className="py-8 text-center text-muted-foreground">{t("mandates.noMandates")}</div>
       ) : (
+        <>
+        <div className="hidden md:block rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -125,6 +131,34 @@ export default function MandatesPage() {
             ))}
           </TableBody>
         </Table>
+        </div>
+
+        <div className="space-y-3 md:hidden">
+          {items.map((m) => (
+            <Link
+              key={m.id}
+              href={`/mandates/${m.id}`}
+              className="block rounded-lg border p-4 hover:bg-accent transition-colors"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="font-mono text-sm">{m.mandate_reference}</p>
+                  <p className="truncate font-medium">{m.debtor_name}</p>
+                </div>
+                <StatusBadge status={m.status} t={t} />
+              </div>
+              <div className="mt-1 flex items-center justify-between gap-2">
+                <span className="truncate font-mono text-sm text-muted-foreground">
+                  {m.debtor_iban}
+                </span>
+                <span className="shrink-0 text-sm text-muted-foreground">
+                  {formatDate(m.signed_at)}
+                </span>
+              </div>
+            </Link>
+          ))}
+        </div>
+        </>
       )}
 
       <Pagination

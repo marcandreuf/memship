@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DecimalInput } from "@/components/ui/decimal-input";
@@ -51,7 +51,6 @@ export default function ReceiptDetailPage() {
   const t = useTranslations();
   const { has } = usePermissions();
   const canWrite = has("billing.write");
-  const router = useRouter();
   const { id } = useParams<{ id: string }>();
   const { data: receipt, isLoading } = useReceipt(Number(id));
   const [editOpen, setEditOpen] = useState(false);

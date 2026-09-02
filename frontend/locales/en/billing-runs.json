@@ -1,6 +1,7 @@
 {
   "billingRuns": {
     "title": "Billing runs",
+    "info": "Recurring billing issues membership-fee receipts automatically on a schedule. Each run records the period it covered and the receipts it generated, so a period is never billed twice.",
     "subtitle": "History of recurring billing, both automatic and manual",
     "runNow": "Run now",
     "runNowTitle": "Run billing now",

@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
+import { Link, useRouter } from "@/lib/i18n/routing";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { SearchInput } from "@/components/entity/search-input";
+import { PageInfo } from "@/components/page-info";
 import { Pagination } from "@/components/entity/pagination";
 import { ExportButton } from "@/components/entity/export-button";
 import { TableSkeleton } from "@/components/ui/skeletons";
@@ -76,7 +77,10 @@ export default function ReceiptsPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{t("receipts.title")}</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold">{t("receipts.title")}</h1>
+          <PageInfo text={t("receipts.info")} />
+        </div>
         <div className="flex items-center gap-2">
           <ExportButton
             path="/api/receipts/export.csv"
@@ -105,8 +109,10 @@ export default function ReceiptsPage() {
       </div>
 
       {items.length === 0 ? (
-        <p className="text-sm text-muted-foreground py-8 text-center">{t("receipts.noReceipts")}</p>
+        <div className="py-8 text-center text-muted-foreground">{t("receipts.noReceipts")}</div>
       ) : (
+        <>
+        <div className="hidden md:block rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -137,6 +143,31 @@ export default function ReceiptsPage() {
             ))}
           </TableBody>
         </Table>
+        </div>
+
+        <div className="space-y-3 md:hidden">
+          {items.map((r: ReceiptData) => (
+            <Link
+              key={r.id}
+              href={`/receipts/${r.id}`}
+              className="block rounded-lg border p-4 hover:bg-accent transition-colors"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="font-mono text-sm">{r.receipt_number}</p>
+                  <p className="truncate font-medium">{r.member_name || "—"}</p>
+                </div>
+                <StatusBadge status={r.status} t={t} />
+              </div>
+              <p className="mt-1 truncate text-sm text-muted-foreground">{r.description}</p>
+              <div className="mt-1 flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">{formatDate(r.emission_date)}</span>
+                <span className="font-mono">{formatCurrency(r.total_amount)}</span>
+              </div>
+            </Link>
+          ))}
+        </div>
+        </>
       )}
 
       <Pagination

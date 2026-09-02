@@ -1,6 +1,7 @@
 {
   "receipts": {
     "title": "Recibos",
+    "info": "Los recibos son los cargos individuales emitidos a los socios: cuotas, inscripciones a actividades y cargos manuales. Se agrupan en remesas para cobrarlos por domiciliación.",
     "createReceipt": "Nuevo recibo",
     "editReceipt": "Editar recibo",
     "receiptNumber": "N.º recibo",
