@@ -196,6 +196,95 @@ class TestMe:
         response = client.get("/api/v1/auth/me")
         assert response.status_code == 401
 
+    def test_me_reports_the_session_window(self, client, db, monkeypatch):
+        """The frontend schedules its renewal off these, rather than
+        re-deriving ACCESS_TOKEN_EXPIRE_MINUTES on its own."""
+        from app.core.config import settings as app_settings
+
+        _create_test_user(db, email="window@examplee6e3b1.com", password="password123")
+        monkeypatch.setattr(app_settings, "ACCESS_TOKEN_EXPIRE_MINUTES", 40)
+        monkeypatch.setattr(app_settings, "SESSION_REFRESH_PERCENT", 50)
+
+        client.post(
+            "/api/v1/auth/login",
+            json={"email": "window@examplee6e3b1.com", "password": "password123"},
+        )
+        data = client.get("/api/v1/auth/me").json()
+
+        assert data["session_expires_in"] == 40 * 60
+        assert data["session_refresh_after"] == 20 * 60
+
+
+class TestSessionRefresh:
+    def test_refresh_reissues_the_cookie(self, client, db):
+        _create_test_user(db, email="refresh@examplee6e3b1.com", password="password123")
+        client.post(
+            "/api/v1/auth/login",
+            json={"email": "refresh@examplee6e3b1.com", "password": "password123"},
+        )
+
+        response = client.post("/api/v1/auth/refresh")
+
+        assert response.status_code == 200, response.text
+        assert "access_token" in response.headers["set-cookie"]
+
+    def test_refresh_slides_the_cookie_deadline(self, client, db, monkeypatch):
+        """The renewed cookie carries a full window, not the remainder of the
+        old one — otherwise the session would still die on its original
+        schedule."""
+        from app.core.config import settings as app_settings
+
+        _create_test_user(db, email="slide@examplee6e3b1.com", password="password123")
+        monkeypatch.setattr(app_settings, "ACCESS_TOKEN_EXPIRE_MINUTES", 45)
+        client.post(
+            "/api/v1/auth/login",
+            json={"email": "slide@examplee6e3b1.com", "password": "password123"},
+        )
+
+        response = client.post("/api/v1/auth/refresh")
+
+        assert "Max-Age=2700" in response.headers["set-cookie"]
+        assert response.json() == {"expires_in": 2700, "refresh_after": 1350}
+
+    def test_refresh_requires_a_live_session(self, client):
+        """An idle client past the window gets the usual 401, so the timeout
+        still means something."""
+        response = client.post("/api/v1/auth/refresh")
+
+        assert response.status_code == 401
+
+
+class TestSessionWindowConfig:
+    def test_cookie_max_age_follows_the_configured_lifetime(
+        self, client, db, monkeypatch
+    ):
+        """These were set independently, so raising the token lifetime left the
+        browser dropping the cookie on the old 30 minute schedule."""
+        from app.core.config import settings as app_settings
+
+        _create_test_user(db, email="maxage@examplee6e3b1.com", password="password123")
+        monkeypatch.setattr(app_settings, "ACCESS_TOKEN_EXPIRE_MINUTES", 120)
+
+        response = client.post(
+            "/api/v1/auth/login",
+            json={"email": "maxage@examplee6e3b1.com", "password": "password123"},
+        )
+
+        assert "Max-Age=7200" in response.headers["set-cookie"]
+
+    def test_refresh_percent_is_clamped(self, monkeypatch):
+        """A misconfigured install must not hammer the endpoint, nor renew so
+        late that one dropped request logs the user out."""
+        from app.core.config import settings as app_settings
+
+        monkeypatch.setattr(app_settings, "ACCESS_TOKEN_EXPIRE_MINUTES", 60)
+
+        monkeypatch.setattr(app_settings, "SESSION_REFRESH_PERCENT", 0)
+        assert app_settings.session_refresh_after == 6 * 60
+
+        monkeypatch.setattr(app_settings, "SESSION_REFRESH_PERCENT", 500)
+        assert app_settings.session_refresh_after == 54 * 60
+
 
 class TestPasswordReset:
     def test_password_reset_flow(self, client, db):

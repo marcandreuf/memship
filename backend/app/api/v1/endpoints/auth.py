@@ -39,6 +39,7 @@ from app.domains.auth.schemas import (
     RegisterRequest,
     RoleSummary,
     RegisterResponse,
+    SessionRefreshResponse,
     ResendVerificationRequest,
     SsoProvidersResponse,
     TokenResponse,
@@ -67,8 +68,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-SESSION_MAX_AGE = 60 * 30  # 30 minutes, matching ACCESS_TOKEN_EXPIRE_MINUTES
-
 
 def _dev_tokens_allowed() -> bool:
     """Whether a verification / reset token may be returned in the response body.
@@ -95,7 +94,7 @@ def _set_session_cookie(response: Response, user: User) -> None:
         httponly=True,
         secure=settings.session_cookie_secure,
         samesite="lax",
-        max_age=SESSION_MAX_AGE,
+        max_age=settings.session_max_age,
         path="/",
     )
 
@@ -361,6 +360,28 @@ def get_me(current_user: User = Depends(require_permission("self.profile.read"))
         photo_url=current_user.person.photo_url,
         email_verified=bool(current_user.email_verified),
         member_status=member.status if member else None,
+        session_expires_in=settings.session_max_age,
+        session_refresh_after=settings.session_refresh_after,
+    )
+
+
+@router.post("/refresh", response_model=SessionRefreshResponse)
+def refresh_session(
+    response: Response,
+    current_user: User = Depends(get_current_user),
+):
+    """Slide the session window forward for a client that is still working.
+
+    The cookie is only otherwise issued at login, so a session was an absolute
+    window from sign-in: someone mid-form at minute 31 was logged out with no
+    warning. This re-issues it — same flags, a fresh token — but only for a
+    caller whose current token is still valid, so an idle client past the window
+    gets the usual 401 and the timeout still means something.
+    """
+    _set_session_cookie(response, current_user)
+    return SessionRefreshResponse(
+        expires_in=settings.session_max_age,
+        refresh_after=settings.session_refresh_after,
     )
 
 

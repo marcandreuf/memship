@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@/lib/i18n/routing";
 import {
+  ClientApiError,
   getMe,
   login,
   logout,
@@ -57,10 +58,17 @@ export function useAuth() {
     },
   });
 
+  // React Query keeps the last successful data when a refetch fails, so an
+  // expired session left `user` populated and every consumer believing the
+  // visitor was still signed in — the portal kept rendering a shell whose every
+  // request 401ed, until a manual reload finally emptied the cache.
+  const sessionExpired =
+    error instanceof ClientApiError && error.status === 401;
+
   return {
-    user: user ?? null,
+    user: sessionExpired ? null : (user ?? null),
     isLoading,
-    isAuthenticated: !!user,
+    isAuthenticated: !!user && !sessionExpired,
     error,
     login: loginMutation.mutateAsync,
     loginError: loginMutation.error,

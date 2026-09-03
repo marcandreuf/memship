@@ -61,12 +61,24 @@ class UserResponse(BaseModel):
     # Drives the portal's "awaiting approval" gate — None for staff accounts
     # that have no member record.
     member_status: str | None = None
+    # Session window, in seconds, and how far into it an active client renews.
+    # Resolved here so the frontend never has to duplicate the arithmetic behind
+    # ACCESS_TOKEN_EXPIRE_MINUTES / SESSION_REFRESH_PERCENT.
+    session_expires_in: int = 0
+    session_refresh_after: int = 0
 
     model_config = {"from_attributes": True}
 
 
 class TokenResponse(BaseModel):
     message: str = "Login successful"
+
+
+class SessionRefreshResponse(BaseModel):
+    """What the renewed session is good for, so the client can reschedule."""
+
+    expires_in: int
+    refresh_after: int
 
 
 class MessageResponse(BaseModel):

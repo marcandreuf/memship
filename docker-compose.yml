@@ -29,6 +29,8 @@ x-backend-env: &backend-env
   SECRET_KEY: ${SECRET_KEY:-}
   SESSION_KEY_FILE: ${SESSION_KEY_FILE:-}
   COOKIE_SECURE: ${COOKIE_SECURE:-}
+  ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+  SESSION_REFRESH_PERCENT: ${SESSION_REFRESH_PERCENT:-50}
   # Encrypts the SSO and payment-provider secrets held in the database. Unset,
   # the app mints a per-install key under storage/ — which a restored database
   # dump on a rebuilt host cannot decrypt, because the key lived on the old one.

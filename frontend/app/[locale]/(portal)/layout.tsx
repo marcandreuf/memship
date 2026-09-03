@@ -3,6 +3,7 @@
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
 import { PendingApproval } from "@/features/auth/components/pending-approval";
+import { SessionGuard } from "@/features/auth/components/session-guard";
 import { AppSidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 import { AppFooter } from "@/components/layout/footer";
@@ -73,6 +74,7 @@ export default function PortalLayout({
   if (!isAdmin && user.member_status === "pending") {
     return (
       <>
+        <SessionGuard refreshAfterSeconds={user.session_refresh_after} />
         <BrandTheme />
         <PendingApproval user={user} />
       </>
@@ -81,6 +83,7 @@ export default function PortalLayout({
 
   return (
     <SidebarProvider>
+      <SessionGuard refreshAfterSeconds={user.session_refresh_after} />
       <BrandTheme />
       <AppSidebar user={user} />
       <SidebarInset>
