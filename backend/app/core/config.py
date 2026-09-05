@@ -58,7 +58,16 @@ class Settings(BaseSettings):
     # Force the Secure attribute on the session cookie on/off. Empty → derived
     # from the FRONTEND_URL scheme (see session_cookie_secure).
     COOKIE_SECURE: str = ""
+    # How long a session lasts. Drives the JWT's own expiry AND the session
+    # cookie's Max-Age — see session_max_age below, which must never diverge
+    # from this or the browser drops a cookie the token still considers valid.
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    # How far into that window an *active* session renews itself, as a
+    # percentage. 50 → a 30 minute session refreshes after 15 minutes, leaving
+    # the other half as margin to retry a failed refresh. Lower means more
+    # refresh calls for no benefit; higher leaves no room to recover from one
+    # dropped request before the cookie dies. Clamped to 10-90 on read.
+    SESSION_REFRESH_PERCENT: int = 50
     # Fernet key (urlsafe base64, 32 bytes) used to encrypt provider secrets stored
     # in the DB via the SSO settings screen. Optional OVERRIDE: when set (e.g. from a
     # secrets manager) it wins. When empty, the app auto-generates a per-install key
@@ -139,6 +148,27 @@ class Settings(BaseSettings):
         if override:
             return override in ("1", "true", "yes", "on")
         return self.FRONTEND_URL.strip().lower().startswith("https://")
+
+    @property
+    def session_max_age(self) -> int:
+        """The session cookie's Max-Age, in seconds.
+
+        Derived from ``ACCESS_TOKEN_EXPIRE_MINUTES`` rather than hardcoded: the
+        two used to be set independently, so raising the token lifetime left the
+        browser still dropping the cookie on the old schedule.
+        """
+        return self.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+
+    @property
+    def session_refresh_after(self) -> int:
+        """Seconds of session life after which an active client renews it.
+
+        The percentage is clamped to 10-90 so a misconfigured install cannot
+        either hammer the refresh endpoint or push renewal so close to expiry
+        that a single dropped request logs the user out.
+        """
+        percent = min(90, max(10, self.SESSION_REFRESH_PERCENT))
+        return max(1, self.session_max_age * percent // 100)
 
     @property
     def google_sso_enabled(self) -> bool:

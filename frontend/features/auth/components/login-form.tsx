@@ -62,6 +62,10 @@ export function LoginForm() {
   }
 
   const ssoErrorKey = SSO_ERROR_KEYS[searchParams.get("error") ?? ""];
+  // SessionGuard sends an expired portal session here. Without saying so, being
+  // dropped onto the login screen mid-task reads as the app logging you out at
+  // random.
+  const sessionExpired = searchParams.get("expired") === "1";
 
   const errorMessage =
     loginError instanceof ClientApiError
@@ -70,7 +74,9 @@ export function LoginForm() {
         ? t("auth.loginError")
         : ssoErrorKey
           ? t(ssoErrorKey)
-          : null;
+          : sessionExpired
+            ? t("auth.sessionExpired")
+            : null;
 
   return (
     <Card className="w-full max-w-md">

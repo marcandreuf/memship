@@ -30,6 +30,20 @@ export interface User {
   email_verified: boolean;
   /** null for staff accounts that have no member record */
   member_status: MemberStatus | null;
+  /** Session window in seconds, as configured by ACCESS_TOKEN_EXPIRE_MINUTES. */
+  session_expires_in: number;
+  /** Seconds into that window at which an active client renews the session. */
+  session_refresh_after: number;
+}
+
+export interface SessionRefreshResult {
+  expires_in: number;
+  refresh_after: number;
+}
+
+/** Slides the session window forward. 401 when the current token already died. */
+export async function refreshSession(): Promise<SessionRefreshResult> {
+  return apiClient("/auth/refresh", { method: "POST" });
 }
 
 export interface LoginData {
