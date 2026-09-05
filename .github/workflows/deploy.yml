@@ -22,6 +22,13 @@
 # Environment secrets are never exposed to workflows triggered from forks, so
 # this is safe in a public repository. Add required reviewers to an Environment
 # to gate deploys to it behind an approval.
+#
+# There is deliberately no `github.repository ==` guard here. Someone who forks
+# memship to self-host it deploys with this same workflow, to their own VPS,
+# using their own Environment and their own secrets — that is the supported
+# path, not an accident to be blocked. The trigger is workflow_dispatch only,
+# so a run can be started only by someone who already has write access to the
+# repository it runs in.
 name: Deploy
 
 on:
@@ -46,7 +53,6 @@ concurrency:
 
 jobs:
   deploy:
-    if: github.repository == 'marcandreuf/memship'
     runs-on: ubuntu-latest
     environment:
       name: ${{ inputs.target }}
