@@ -1,0 +1,194 @@
+# Deploy
+#
+# Deploys a released version of memship to an instance on a VPS. The instance
+# holds no source checkout and no git: the application arrives as images pulled
+# from the registry, and the handful of files a deployment needs outside the
+# images — the Compose file, the Caddy configuration, the operational scripts —
+# are delivered here over rsync.
+#
+# Each instance is a GitHub Environment, so adding one is configuration rather
+# than a change to this file.
+#
+# Environment VARIABLES — addressing, not credentials. These are readable in
+# the Environment's settings, which is the point: a wrong one is diagnosable
+# instead of invisible, and two instances can be compared side by side.
+#
+#   DEPLOY_HOST        hostname or IP
+#   DEPLOY_USER        the user that owns the deployment, in the docker group
+#   DEPLOY_PATH        directory to deploy into, e.g. /home/ubuntu/memship
+#   DEPLOY_DATA_ROOT   where persistent data lives. MUST be outside DEPLOY_PATH
+#   DEPLOY_DOMAIN      the hostname the instance serves
+#
+# DEPLOY_USER in particular must NOT be a secret. GitHub masks every occurrence
+# of a secret's value in the logs, so a user named `ubuntu` turns `ubuntu-latest`
+# and half of apt's output into `***` — on precisely the failed run you need to
+# read.
+#
+# Environment SECRETS — the things that grant access, plus the SSH port.
+#
+#   DEPLOY_PORT        SSH port. Not a credential, but a non-standard port keeps
+#                      background scanners off the box, and this repository is
+#                      public: an unmasked value would sit in the run log
+#                      forever. Masking costs nothing here, so it stays a secret.
+#   SSH_PRIVATE_KEY    private key for DEPLOY_USER, dedicated to this workflow
+#   SSH_KNOWN_HOSTS    `ssh-keyscan -p <port> <host>` output, so the host key is
+#                      pinned rather than trusted on first use
+#
+# Neither Environment secrets nor Environment variables are exposed to workflows
+# triggered from forks, so this is safe in a public repository. Add required
+# reviewers to an Environment to gate deploys to it behind an approval.
+#
+# There is deliberately no `github.repository ==` guard here. Someone who forks
+# memship to self-host it deploys with this same workflow, to their own VPS,
+# using their own Environment and their own secrets — that is the supported
+# path, not an accident to be blocked. The trigger is workflow_dispatch only,
+# so a run can be started only by someone who already has write access to the
+# repository it runs in.
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Instance to deploy to"
+        type: environment
+        required: true
+      version:
+        description: "Released version to deploy, e.g. 2.6.0"
+        required: false
+      ref:
+        description: "Commit SHA to rehearse instead of a release. Leave empty for a normal deploy."
+        required: false
+
+# One deploy at a time per instance, and never cancel one midway: a cancelled
+# deploy can leave the stack half-updated.
+concurrency:
+  group: deploy-${{ inputs.target }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.target }}
+
+    steps:
+      - name: Resolve what to deploy
+        id: what
+        env:
+          VERSION: ${{ inputs.version }}
+          REF: ${{ inputs.ref }}
+        run: |
+          set -euo pipefail
+          if [ -n "$VERSION" ] && [ -n "$REF" ]; then
+            echo "::error::Set version or ref, not both."
+            exit 1
+          fi
+          if [ -z "$VERSION" ] && [ -z "$REF" ]; then
+            echo "::error::Set one of: version (a release, e.g. 2.6.0) or ref (a commit SHA to rehearse)."
+            exit 1
+          fi
+
+          if [ -n "$VERSION" ]; then
+            # Repository tags carry a leading v; image tags do not.
+            checkout="v${VERSION#v}"
+            image_tag="${VERSION#v}"
+          else
+            checkout="$REF"
+            image_tag="sha-${REF:0:12}"
+          fi
+
+          # APP_VERSION is baked from IMAGE_TAG, so this is also what the
+          # running instance will report back as its version.
+          {
+            echo "checkout=${checkout}"
+            echo "image_tag=${image_tag}"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "Deploying ${image_tag} from ${checkout}"
+
+      - name: Check out what is being deployed
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.what.outputs.checkout }}
+
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Deliver the deployment files
+        env:
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+        run: |
+          set -euo pipefail
+          SSH_CMD="ssh -i ~/.ssh/deploy_key -p ${DEPLOY_PORT} -o BatchMode=yes"
+          TARGET="${DEPLOY_USER}@${DEPLOY_HOST}"
+
+          $SSH_CMD "$TARGET" "mkdir -p '${DEPLOY_PATH}'"
+
+          # scripts/ belongs entirely to the release, so --delete is right here:
+          # a script an older version shipped and this one dropped should go.
+          #
+          # Three are excluded because they have no business on a server. dev.sh
+          # drives a local development environment; release.sh creates and
+          # pushes git tags — on an instance with no git and no source that is
+          # at best dead weight and at worst a footgun; and pull-backup.sh runs
+          # on an administrator's workstation, pulling state OFF an instance,
+          # so a copy sitting on the instance is pointed the wrong way round.
+          rsync -az --delete -e "$SSH_CMD" \
+            --exclude 'dev.sh' \
+            --exclude 'release.sh' \
+            --exclude 'pull-backup.sh' \
+            ./scripts/ "${TARGET}:${DEPLOY_PATH}/scripts/"
+
+          # Never --delete at the top level. .env lives here and is not in the
+          # repository — it holds generated secrets, and losing it means losing
+          # access to everything encrypted with them. So do the top-level files
+          # one by one rather than mirroring the directory.
+          rsync -az -e "$SSH_CMD" \
+            ./docker-compose.yml \
+            ./Caddyfile \
+            "${TARGET}:${DEPLOY_PATH}/"
+
+      - name: Deploy and verify
+        env:
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+          DEPLOY_DATA_ROOT: ${{ vars.DEPLOY_DATA_ROOT }}
+          DEPLOY_DOMAIN: ${{ vars.DEPLOY_DOMAIN }}
+          IMAGE_TAG: ${{ steps.what.outputs.image_tag }}
+        run: |
+          set -euo pipefail
+          # scripts/upgrade.sh backs up, applies the version and verifies the
+          # result. It is the same command an operator runs by hand, which is
+          # deliberate: the automated path and the documented one are one path.
+          ssh -i ~/.ssh/deploy_key -p "${DEPLOY_PORT}" -o BatchMode=yes \
+            "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "cd '${DEPLOY_PATH}' && DATA_ROOT='${DEPLOY_DATA_ROOT}' DOMAIN='${DEPLOY_DOMAIN}' ./scripts/upgrade.sh '${IMAGE_TAG}'"
+
+      - name: Summary
+        if: always()
+        env:
+          IMAGE_TAG: ${{ steps.what.outputs.image_tag }}
+          CHECKOUT: ${{ steps.what.outputs.checkout }}
+        run: |
+          {
+            echo "### Deploy to \`${{ inputs.target }}\`"
+            echo ""
+            echo "- version: \`${IMAGE_TAG}\`"
+            echo "- files from: \`${CHECKOUT}\`"
+            echo "- result: \`${{ job.status }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"

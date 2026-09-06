@@ -23,16 +23,21 @@ IMAGE_TAG=1.2.0
 2. **Review the release notes** for the target version (breaking changes, new required
    settings) on the [releases page](https://github.com/marcandreuf/memship/releases).
 
-3. **Pull the repository, not only the image tag:**
+3. **Refresh the deployment files, not only the image tag:**
 
    ```bash
-   cd /path/to/memship
-   git pull
+   MEMSHIP_VERSION=1.3.0
+   cd /srv/openmemship/app
+   curl -fsSL "https://github.com/marcandreuf/memship/archive/refs/tags/v${MEMSHIP_VERSION}.tar.gz" \
+     | tar -xz --strip-components=1
    ```
 
-   Part of a release ships in the git checkout rather than in the images — `docker-compose.yml`,
-   the `Caddyfile`, `scripts/install.sh`. Bumping `IMAGE_TAG` alone leaves an install
-   half-upgraded: the new backend running behind the old proxy configuration.
+   Part of a release ships alongside the images rather than inside them —
+   `docker-compose.yml`, the `Caddyfile`, `scripts/`. Bumping `IMAGE_TAG` alone leaves an
+   install half-upgraded: the new backend running behind the old proxy configuration.
+
+   Unpacking over the directory replaces those files and leaves `.env` untouched — it is not in
+   the archive. The server needs no git and no source checkout for this.
 
 4. **Bump the tag** in `.env`:
 
