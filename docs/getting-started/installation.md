@@ -79,6 +79,13 @@ The bootstrap script in your home directory has done its job now and can be dele
 That creates the data root, generates real secrets into `.env` (mode 600), pulls the published
 images and starts the stack.
 
+**Copy `.env` off the server now, before you put real data in.** `SECRET_KEY` and
+`MEMSHIP_SECRET_KEY` were just generated here, are never regenerated, and exist in no other
+place. They decrypt the payment-provider, SSO and mail credentials stored in the database, so
+without this file a perfect database dump restores those as unreadable ciphertext. Put it in a
+password manager a second administrator can reach — see
+[Backups & restore](../self-hosting/backups-and-restore.md#do-this-on-the-day-you-install).
+
 **Your install is pinned to a version.** `--tag` becomes `IMAGE_TAG`, so the deployment stays on
 that version until you move it deliberately, and `/api/v1/health` reports which one it runs.
 

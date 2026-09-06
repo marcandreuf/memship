@@ -7,21 +7,36 @@
 # are delivered here over rsync.
 #
 # Each instance is a GitHub Environment, so adding one is configuration rather
-# than a change to this file. Every value below is an Environment secret:
+# than a change to this file.
+#
+# Environment VARIABLES — addressing, not credentials. These are readable in
+# the Environment's settings, which is the point: a wrong one is diagnosable
+# instead of invisible, and two instances can be compared side by side.
 #
 #   DEPLOY_HOST        hostname or IP
 #   DEPLOY_USER        the user that owns the deployment, in the docker group
-#   DEPLOY_PORT        SSH port
 #   DEPLOY_PATH        directory to deploy into, e.g. /home/ubuntu/memship
 #   DEPLOY_DATA_ROOT   where persistent data lives. MUST be outside DEPLOY_PATH
 #   DEPLOY_DOMAIN      the hostname the instance serves
+#
+# DEPLOY_USER in particular must NOT be a secret. GitHub masks every occurrence
+# of a secret's value in the logs, so a user named `ubuntu` turns `ubuntu-latest`
+# and half of apt's output into `***` — on precisely the failed run you need to
+# read.
+#
+# Environment SECRETS — the things that grant access, plus the SSH port.
+#
+#   DEPLOY_PORT        SSH port. Not a credential, but a non-standard port keeps
+#                      background scanners off the box, and this repository is
+#                      public: an unmasked value would sit in the run log
+#                      forever. Masking costs nothing here, so it stays a secret.
 #   SSH_PRIVATE_KEY    private key for DEPLOY_USER, dedicated to this workflow
 #   SSH_KNOWN_HOSTS    `ssh-keyscan -p <port> <host>` output, so the host key is
 #                      pinned rather than trusted on first use
 #
-# Environment secrets are never exposed to workflows triggered from forks, so
-# this is safe in a public repository. Add required reviewers to an Environment
-# to gate deploys to it behind an approval.
+# Neither Environment secrets nor Environment variables are exposed to workflows
+# triggered from forks, so this is safe in a public repository. Add required
+# reviewers to an Environment to gate deploys to it behind an approval.
 #
 # There is deliberately no `github.repository ==` guard here. Someone who forks
 # memship to self-host it deploys with this same workflow, to their own VPS,
@@ -111,10 +126,10 @@ jobs:
 
       - name: Deliver the deployment files
         env:
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ vars.DEPLOY_USER }}
           DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
-          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
         run: |
           set -euo pipefail
           SSH_CMD="ssh -i ~/.ssh/deploy_key -p ${DEPLOY_PORT} -o BatchMode=yes"
@@ -125,13 +140,16 @@ jobs:
           # scripts/ belongs entirely to the release, so --delete is right here:
           # a script an older version shipped and this one dropped should go.
           #
-          # Two are excluded because they have no business on a server. dev.sh
-          # drives a local development environment, and release.sh creates and
+          # Three are excluded because they have no business on a server. dev.sh
+          # drives a local development environment; release.sh creates and
           # pushes git tags — on an instance with no git and no source that is
-          # at best dead weight and at worst a footgun.
+          # at best dead weight and at worst a footgun; and pull-backup.sh runs
+          # on an administrator's workstation, pulling state OFF an instance,
+          # so a copy sitting on the instance is pointed the wrong way round.
           rsync -az --delete -e "$SSH_CMD" \
             --exclude 'dev.sh' \
             --exclude 'release.sh' \
+            --exclude 'pull-backup.sh' \
             ./scripts/ "${TARGET}:${DEPLOY_PATH}/scripts/"
 
           # Never --delete at the top level. .env lives here and is not in the
@@ -145,12 +163,12 @@ jobs:
 
       - name: Deploy and verify
         env:
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ vars.DEPLOY_USER }}
           DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
-          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
-          DEPLOY_DATA_ROOT: ${{ secrets.DEPLOY_DATA_ROOT }}
-          DEPLOY_DOMAIN: ${{ secrets.DEPLOY_DOMAIN }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+          DEPLOY_DATA_ROOT: ${{ vars.DEPLOY_DATA_ROOT }}
+          DEPLOY_DOMAIN: ${{ vars.DEPLOY_DOMAIN }}
           IMAGE_TAG: ${{ steps.what.outputs.image_tag }}
         run: |
           set -euo pipefail

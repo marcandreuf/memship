@@ -213,6 +213,30 @@ EOF
     info "wrote .env with generated secrets (mode 600)"
     info "IMAGE_TAG=$NEW_TAG"
 
+    # First install is the only moment this can be said usefully: the keys were
+    # generated seconds ago, they are never regenerated, and no copy exists
+    # anywhere else. A database backup restored without them comes back with the
+    # payment-provider, SSO and mail credentials unreadable.
+    #
+    # The values are NOT printed. This script also runs unattended from a deploy
+    # pipeline, and that pipeline's log is public on a public repository —
+    # printing them once would publish them permanently.
+    warn "Copy $ENV_FILE off this host now, before going further.
+
+    It holds SECRET_KEY and MEMSHIP_SECRET_KEY, just generated and never
+    regenerated. They decrypt the payment-provider, SSO and mail credentials
+    stored in the database. Nothing else holds a copy: lose this host without
+    a copy of this file and a perfect database dump still restores those
+    credentials as unreadable ciphertext.
+
+    Store it in a password manager or a secret store that does NOT live on
+    this host. The values are not printed here on purpose — this script also
+    runs from a deploy pipeline whose log may be public.
+
+      scp this file to somewhere safe, or open it on the host to copy the two
+      keys out by hand.
+
+    Full procedure: docs/self-hosting/backups-and-restore.md"
 fi
 
 # Applying --domain or --tag to an existing .env, in place.

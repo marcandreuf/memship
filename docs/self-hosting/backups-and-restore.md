@@ -24,6 +24,26 @@ sudo tar czf memship-$(date +%F).tar.gz \
 `sudo` is needed because `data/postgres` is owned by uid 70 and mode `0700` — that is Postgres
 protecting its own files, not a misconfiguration.
 
+### Do this on the day you install
+
+`install.sh` generates `SECRET_KEY` and `MEMSHIP_SECRET_KEY` on the server, once, at first
+install. They are never regenerated and no copy exists anywhere else — not in the repository,
+not in your CI secrets, not in any dump. The install prints a warning saying so; it does not
+print the values, because the same script runs from a deploy pipeline whose log may be public.
+
+So before you put real data in, take `.env` off the server and put it somewhere that survives
+the server:
+
+```bash
+scp -P <ssh-port> <user>@<host>:/srv/openmemship/app/.env  ~/memship-env-backup
+```
+
+Store it in a password manager, not only on your laptop, and give a second administrator
+access. A recovery that depends on one person's machine stalls exactly when you need it.
+
+This applies to a first deploy through the pipeline too — the pipeline creates `.env` on the
+server the same way, and copies nothing back.
+
 > **A file-level copy of `data/postgres` while the database is running is not
 > crash-consistent.** For a dependable database backup use `db-backup.sh` below, which runs
 > `pg_dump` inside the container. Use the `tar` copy for uploads, certificates and config — or
@@ -97,3 +117,26 @@ The `backups/` directory sits on the same disk as the database it protects, so o
 survives nothing worse than a bad migration. Copy the dumps somewhere else on a schedule —
 object storage, another host, anywhere with a different failure mode — or a single server loss
 takes your only copy with it.
+
+The same is true of the pre-upgrade snapshot the deploy pipeline takes: `upgrade.sh` runs
+`db-backup.sh` before applying a release, but that dump lands in `backups/` on the instance.
+It covers a failed migration. It does not cover losing the machine, and a green deploy log is
+not evidence that anything left the building.
+
+`scripts/pull-backup.sh` is a starting point you run from your own machine, not from the
+server:
+
+```bash
+./scripts/pull-backup.sh <ssh-host> --dump              # fresh dump, then fetch .env + dumps
+./scripts/pull-backup.sh <ssh-host> --with-data         # also uploads and TLS certificates
+```
+
+It needs root on neither machine, and it skips `data/postgres` on purpose — those files need
+sudo and a file-level copy of a running database is not crash-consistent. The `pg_dump` in
+`backups/` is the consistent copy.
+
+It is deliberately not a backup system: no schedule, no retention, no verification, no
+encryption at rest. Run it from cron on a machine that stays on, and point `--dest` at storage
+that is itself backed up. A fuller system — S3 and other object stores, push to another host
+over SSH or rsync, retention and restore testing — is tracked in
+[#137](https://github.com/marcandreuf/memship/issues/137).
