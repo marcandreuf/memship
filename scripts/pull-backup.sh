@@ -4,9 +4,9 @@
 # machine you run this from. This is the ONLY script here that runs on an
 # administrator's workstation rather than on the instance.
 #
-#   ./scripts/pull-backup.sh ovh-vps-memship
-#   ./scripts/pull-backup.sh ubuntu@203.0.113.10 --port 51337 --dump
-#   ./scripts/pull-backup.sh ovh-vps-memship --with-data --dest ~/memship-backups
+#   ./scripts/pull-backup.sh my-instance          # an ssh config Host entry
+#   ./scripts/pull-backup.sh deploy@203.0.113.10 --port 2222 --dump
+#   ./scripts/pull-backup.sh my-instance --with-data --dest ~/memship-backups
 #
 # It fetches, in this order:
 #
