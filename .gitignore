@@ -78,3 +78,6 @@ e2e/runner-results/
 # Per-repo config for personal agent skills (local, never committed)
 # The skills read these from the working tree; contributors do not need them.
 docs/agents/
+
+# Written on the server by scripts/install.sh at first install
+POST-INSTALL.md

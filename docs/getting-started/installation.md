@@ -86,6 +86,10 @@ without this file a perfect database dump restores those as unreadable ciphertex
 password manager a second administrator can reach — see
 [Backups & restore](../self-hosting/backups-and-restore.md#do-this-on-the-day-you-install).
 
+`install.sh` also writes **`POST-INSTALL.md`** next to `.env` on a first install: this step
+plus creating your organization, scheduling backups and configuring email, with the paths
+already filled in. Work through it and delete it.
+
 **Your install is pinned to a version.** `--tag` becomes `IMAGE_TAG`, so the deployment stays on
 that version until you move it deliberately, and `/api/v1/health` reports which one it runs.
 

@@ -161,6 +161,27 @@ jobs:
             ./Caddyfile \
             "${TARGET}:${DEPLOY_PATH}/"
 
+      # Whether .env already exists decides what the summary has to say. Asked
+      # before the deploy, because afterwards it always exists — install.sh has
+      # just written it — and a first install is precisely the run whose one
+      # irreversible follow-up nobody can be allowed to miss.
+      - name: Is this a first install?
+        id: state
+        env:
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+        run: |
+          set -euo pipefail
+          if ssh -i ~/.ssh/deploy_key -p "${DEPLOY_PORT}" -o BatchMode=yes \
+               "${DEPLOY_USER}@${DEPLOY_HOST}" "test -f '${DEPLOY_PATH}/.env'"; then
+            echo "first_install=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "first_install=true" >> "$GITHUB_OUTPUT"
+            echo "No .env on the instance — this is a first install."
+          fi
+
       - name: Deploy and verify
         env:
           DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
@@ -184,6 +205,9 @@ jobs:
         env:
           IMAGE_TAG: ${{ steps.what.outputs.image_tag }}
           CHECKOUT: ${{ steps.what.outputs.checkout }}
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
         run: |
           {
             echo "### Deploy to \`${{ inputs.target }}\`"
@@ -192,3 +216,30 @@ jobs:
             echo "- files from: \`${CHECKOUT}\`"
             echo "- result: \`${{ job.status }}\`"
           } >> "$GITHUB_STEP_SUMMARY"
+
+          # install.sh writes the same list to POST-INSTALL.md on the server and
+          # warns on stderr, but that warning lands mid-step among hundreds of
+          # lines of image pulls, where nobody reads it. The summary is the top
+          # of the run page. DEPLOY_PORT is a secret, so it masks to *** here —
+          # the placeholder is deliberate rather than an oversight.
+          if [ "${{ steps.state.outputs.first_install }}" = "true" ] && [ "${{ job.status }}" = "success" ]; then
+            {
+              echo ""
+              echo "> [!WARNING]"
+              echo "> **First install — finish it.** \`${DEPLOY_PATH}/POST-INSTALL.md\` on the"
+              echo "> instance lists what the installer could not do for you."
+              echo ">"
+              echo "> \`.env\` now holds \`SECRET_KEY\` and \`MEMSHIP_SECRET_KEY\`, generated on the"
+              echo "> host just now and copied nowhere. Lose the host without them and a perfect"
+              echo "> database dump restores your payment, SSO and mail credentials as unreadable"
+              echo "> ciphertext. Copy it off, from your own machine:"
+              echo ">"
+              echo "> \`\`\`"
+              echo "> scp -P <ssh-port> ${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/.env ~/memship-env-backup"
+              echo "> \`\`\`"
+              echo ">"
+              echo "> Then create the organization and super admin, and set up backups —"
+              echo "> both are in POST-INSTALL.md."
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning::First install — copy ${DEPLOY_PATH}/.env off ${DEPLOY_HOST} now. See POST-INSTALL.md on the instance."
+          fi

@@ -213,30 +213,96 @@ EOF
     info "wrote .env with generated secrets (mode 600)"
     info "IMAGE_TAG=$NEW_TAG"
 
-    # First install is the only moment this can be said usefully: the keys were
-    # generated seconds ago, they are never regenerated, and no copy exists
-    # anywhere else. A database backup restored without them comes back with the
-    # payment-provider, SSO and mail credentials unreadable.
+    # First install is the only moment these can be said usefully, and a log
+    # line is the wrong place to say them: this script runs unattended from a
+    # deploy pipeline, where its output is one collapsed step among hundreds of
+    # lines of image pulls. So the list goes in a file on the server, which sits
+    # there until somebody deals with it, and the warning below only points at it.
     #
-    # The values are NOT printed. This script also runs unattended from a deploy
-    # pipeline, and that pipeline's log is public on a public repository —
-    # printing them once would publish them permanently.
-    warn "Copy $ENV_FILE off this host now, before going further.
+    # No secret values here or in the file. This output can reach a public CI log.
+    cat > "$REPO_ROOT/POST-INSTALL.md" <<POSTINSTALL
+# memship — before this instance is really yours
 
-    It holds SECRET_KEY and MEMSHIP_SECRET_KEY, just generated and never
-    regenerated. They decrypt the payment-provider, SSO and mail credentials
-    stored in the database. Nothing else holds a copy: lose this host without
-    a copy of this file and a perfect database dump still restores those
-    credentials as unreadable ciphertext.
+Written by \`scripts/install.sh\` at first install. Nothing below can be done
+for you by the installer. **Delete this file once you have worked through it.**
 
-    Store it in a password manager or a secret store that does NOT live on
-    this host. The values are not printed here on purpose — this script also
-    runs from a deploy pipeline whose log may be public.
+## 1. Copy \`.env\` off this server — do this before anything else
 
-      scp this file to somewhere safe, or open it on the host to copy the two
-      keys out by hand.
+\`$ENV_FILE\` holds \`SECRET_KEY\` and \`MEMSHIP_SECRET_KEY\`. They were generated
+here, they are never regenerated, and no other copy exists. They decrypt the
+payment-provider, SSO and mail credentials stored in your database, so a
+perfect database dump restored without them gives those back as unreadable
+ciphertext. Uploads are in no database dump at all.
 
-    Full procedure: docs/self-hosting/backups-and-restore.md"
+From your own machine, not from this server:
+
+\`\`\`bash
+scp -P <ssh-port> $USER@<this-host>:$ENV_FILE ~/memship-env-backup
+chmod 600 ~/memship-env-backup
+\`\`\`
+
+Then put it in a password manager a second administrator can also reach. A
+recovery that depends on one person's laptop stalls exactly when you need it.
+
+## 2. Create your organization and super admin
+
+\`\`\`bash
+cd $REPO_ROOT
+docker compose exec -it api python -m app.cli.seed
+\`\`\`
+
+It prompts, so it needs a terminal — keep the \`-it\`.
+
+## 3. Set up backups, and get them off this machine
+
+\`scripts/db-backup.sh\` dumps the database into \`$DATA_ROOT/backups\`, which is
+the same disk as the database it protects. That covers a bad migration and
+nothing worse. Schedule it, then copy the dumps somewhere with a different
+failure mode:
+
+\`\`\`cron
+30 3 * * *  cd $REPO_ROOT && ./scripts/db-backup.sh
+\`\`\`
+
+\`scripts/pull-backup.sh\` runs on **your** machine and pulls \`.env\`, the dumps
+and optionally uploads and certificates off this one. It is a starting point,
+not a backup system.
+
+Read \`docs/self-hosting/backups-and-restore.md\` before you go live, and test a
+restore once. A backup you have never restored is a guess.
+
+## 4. Configure email
+
+Until a transport is set, registration, password-reset and receipt emails are
+**dropped silently**. Fill in either the Resend key or the SMTP block in
+\`.env\`, or configure it from Settings. See \`docs/self-hosting/email.md\`.
+
+## Where things are
+
+| | |
+|---|---|
+| Deployment | \`$REPO_ROOT\` |
+| Secrets | \`$ENV_FILE\` (mode 600) |
+| Data root | \`$DATA_ROOT\` |
+| Address | \`${SITE:-http://localhost}\` |
+| Version | \`$NEW_TAG\` |
+
+Upgrading: refresh this directory from the release you want, then
+\`./scripts/upgrade.sh <version>\`. See \`docs/self-hosting/upgrading.md\`.
+POSTINSTALL
+    chmod 644 "$REPO_ROOT/POST-INSTALL.md"
+
+    warn "Not finished yet — read $REPO_ROOT/POST-INSTALL.md
+
+    It lists what this installer cannot do for you, starting with the one that
+    cannot be recovered later: $ENV_FILE holds SECRET_KEY and
+    MEMSHIP_SECRET_KEY, generated just now, never regenerated, copied nowhere.
+    Lose this host without a copy of that file and a perfect database dump
+    still restores your payment-provider, SSO and mail credentials as
+    unreadable ciphertext.
+
+    The values are not printed here on purpose — this script also runs from a
+    deploy pipeline whose log may be public."
 fi
 
 # Applying --domain or --tag to an existing .env, in place.
