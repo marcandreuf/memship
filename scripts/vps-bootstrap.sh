@@ -110,7 +110,11 @@ export DEBIAN_FRONTEND=noninteractive
 
 step "Updating the package index"
 apt-get update -qq
-apt-get install -y -qq ca-certificates curl gnupg git >/dev/null
+# No git. An instance holds no source checkout: the deployment files arrive
+# as a release tarball over curl, or over rsync from the deploy workflow.
+# Installing git here would put a tool on the box that nothing uses and that
+# invites someone to clone a working copy next to a production deployment.
+apt-get install -y -qq ca-certificates curl gnupg >/dev/null
 
 # ---------------------------------------------------------------- deploy user
 
@@ -376,12 +380,23 @@ cat <<EOF
   2. INSTALL MEMSHIP as $DEPLOY_USER — not as root:
 
        su - $DEPLOY_USER          # or log in again over SSH, so the docker group applies
-       sudo install -d -o $DEPLOY_USER -g $DEPLOY_USER /srv/openmemship
-       git clone https://github.com/marcandreuf/memship.git /srv/openmemship/app
+       sudo install -d -o $DEPLOY_USER -g $DEPLOY_USER /srv/openmemship/app
+       curl -fsSL https://github.com/marcandreuf/memship/archive/refs/tags/v<version>.tar.gz \\
+         | tar -xz -C /srv/openmemship/app --strip-components=1
        cd /srv/openmemship/app
-       ./scripts/install.sh --data-root /srv/openmemship/data --domain <your-domain>
+       ./scripts/install.sh --data-root /srv/openmemship/data --domain <your-domain> --tag <version>
+
+     Pass --tag explicitly. It is the version you just downloaded, without the
+     leading v. Without git the script cannot read a tag from the checkout, and
+     it falls back to 'latest' — a moving target, and an instance that reports
+     its own version as the literal string "latest".
 
      Point the DNS A record at this host before running it. install.sh checks,
      because failed Let's Encrypt validations are rate-limited at 5 per hour.
+
+  3. UPGRADING later: repeat step 2 with the new version over the same
+     directory, then re-run install.sh with the new --tag. Releases ship part
+     of a deployment outside the images — the Compose file, the Caddyfile, the
+     scripts — so pulling images alone applies an upgrade only halfway.
 
 EOF

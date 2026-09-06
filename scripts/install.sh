@@ -212,6 +212,7 @@ EOF
     chmod 600 "$ENV_FILE"
     info "wrote .env with generated secrets (mode 600)"
     info "IMAGE_TAG=$NEW_TAG"
+
 fi
 
 # Applying --domain or --tag to an existing .env, in place.
@@ -336,7 +337,11 @@ cat <<EOF
   Then:  docker compose ps       # check everything is up
          docker compose logs -f  # watch it start
 
-  Upgrading later: git pull, set IMAGE_TAG in .env, re-run this script.
+  Upgrading later: refresh this directory from the release you want, then
+                   ./scripts/upgrade.sh <version>
+                   Pulling images alone is a half-upgrade: part of a release
+                   ships here, beside the images — this Compose file, the
+                   Caddyfile, these scripts.
                    Full procedure: docs/self-hosting/upgrading.md
   Backups: docs/self-hosting/backups-and-restore.md
 

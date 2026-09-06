@@ -7,8 +7,10 @@ This guide covers a **production** self-hosted install. For a quick local evalua
 
 - A server running Docker Engine and the Compose plugin
 - An ordinary (non-root) user in the `docker` group — the stack is not installed as root
-- `git`, to clone this repository. Minimal server images often ship without it:
-  `sudo apt-get update && sudo apt-get install -y git`
+- `curl` and `tar`, to fetch a release. `tar` is on every Debian/Ubuntu server; minimal images
+  sometimes lack `curl`: `sudo apt-get update && sudo apt-get install -y curl`
+- **Not `git`.** A release is fetched as a tarball, and the server holds no source checkout —
+  nothing in a running instance uses git, so there is no reason to install it
 - A domain name, with a DNS A record already pointing at the server, if you want automatic HTTPS
 
 > **One memship instance per host.** The Compose file names its containers explicitly
@@ -22,13 +24,20 @@ This guide covers a **production** self-hosted install. For a quick local evalua
 `scripts/vps-bootstrap.sh` does the root half of the preparation. Run it **once, as root**, on a
 fresh Debian 12 or Ubuntu 24.04 box:
 
-Clone it somewhere you can already write — your own home directory. The final checkout lives
-under `/srv`, but nothing can write there until the bootstrap has run:
+Download it somewhere you can already write — your own home directory. The install itself lives
+under `/srv`, but nothing can write there until the bootstrap has run. Pick a release from the
+[releases page](https://github.com/marcandreuf/memship/releases) and use it throughout:
 
 ```bash
-git clone https://github.com/marcandreuf/memship.git ~/memship-bootstrap
-sudo ~/memship-bootstrap/scripts/vps-bootstrap.sh --user deploy --ssh-key-file ~/.ssh/authorized_keys
+MEMSHIP_VERSION=2.6.0
+
+curl -fsSLO "https://raw.githubusercontent.com/marcandreuf/memship/v${MEMSHIP_VERSION}/scripts/vps-bootstrap.sh"
+chmod +x vps-bootstrap.sh
+sudo ./vps-bootstrap.sh --user deploy --ssh-key-file ~/.ssh/authorized_keys
 ```
+
+The script is self-contained — it needs no other file from the repository, which is why one
+`curl` is enough.
 
 `--user` names the account that will own the install; pass the account you are already logged in
 as (`--user "$USER"`) to use it instead of creating a separate `deploy`. `--ssh-key-file` takes a
@@ -53,28 +62,33 @@ Log out and back in afterwards, so the deploy user's `docker` group membership t
 ## Install
 
 As the deploy user — **not** as root. `/srv` belongs to root, so create the install directory and
-hand it to yourself before cloning into it; `install.sh` writes `.env` inside the checkout and
-needs to own it:
+hand it to yourself before unpacking into it; `install.sh` writes `.env` inside that directory
+and needs to own it:
 
 ```bash
-sudo install -d -o "$USER" -g "$USER" /srv/openmemship
-git clone https://github.com/marcandreuf/memship.git /srv/openmemship/app
+sudo install -d -o "$USER" -g "$USER" /srv/openmemship/app
+curl -fsSL "https://github.com/marcandreuf/memship/archive/refs/tags/v${MEMSHIP_VERSION}.tar.gz" \
+  | tar -xz -C /srv/openmemship/app --strip-components=1
 cd /srv/openmemship/app
-./scripts/install.sh --data-root /srv/openmemship/data --domain memship.example.com
+./scripts/install.sh --data-root /srv/openmemship/data --domain memship.example.com \
+                     --tag "$MEMSHIP_VERSION"
 ```
 
-The bootstrap clone in your home directory has done its job now and can be deleted.
+The bootstrap script in your home directory has done its job now and can be deleted.
 
 That creates the data root, generates real secrets into `.env` (mode 600), pulls the published
 images and starts the stack.
 
-**Your install is pinned to a version.** `install.sh` sets `IMAGE_TAG` to the most recent release
-tag in the checkout, so the deployment stays on that version until you move it deliberately, and
-`/api/v1/health` reports which one it runs. Pass `--tag 2.2.0` to pin a different one.
+**Your install is pinned to a version.** `--tag` becomes `IMAGE_TAG`, so the deployment stays on
+that version until you move it deliberately, and `/api/v1/health` reports which one it runs.
+
+**Pass `--tag` explicitly.** With no git checkout to read a release tag from, omitting it falls
+back to `latest` — a moving target, and an instance that reports its own version as the literal
+string `latest`.
 
 **To upgrade later, follow [Upgrading](../self-hosting/upgrading.md).** Moving `IMAGE_TAG` on its
-own is not enough — part of a release ships in the git checkout rather than in the images, so an
-upgrade starts with `git pull`.
+own is not enough — `docker-compose.yml`, the `Caddyfile` and `scripts/` ship alongside the images
+rather than inside them, so an upgrade starts by refreshing those files from the new release.
 
 **Point DNS at the server first.** `install.sh` refuses to start when the hostname does not
 resolve to this host, because Caddy validates over HTTP-01 and Let's Encrypt rate-limits *failed*
@@ -170,7 +184,11 @@ Debian and Ubuntu hosts are unaffected.
 If you would rather not use `install.sh`, the equivalent manual steps are:
 
 ```bash
-git clone https://github.com/marcandreuf/memship.git
+MEMSHIP_VERSION=2.6.0
+
+mkdir -p memship
+curl -fsSL "https://github.com/marcandreuf/memship/archive/refs/tags/v${MEMSHIP_VERSION}.tar.gz" \
+  | tar -xz -C memship --strip-components=1
 cd memship
 cp .env.example .env
 ```
