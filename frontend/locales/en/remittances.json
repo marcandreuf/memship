@@ -24,6 +24,7 @@
     "cancelRemittance": "Cancel",
     "confirmSubmit": "Mark this remittance as submitted to the bank?",
     "confirmClose": "Close this remittance? This finalizes the batch.",
+    "confirmCloseDescription": "{count} receipts will be marked as paid. Once the remittance is closed, returns can no longer be imported.",
     "confirmCancel": "Cancel this remittance? All receipts will be unlinked.",
     "noRemittances": "No remittances found",
     "detail": "Remittance Detail",

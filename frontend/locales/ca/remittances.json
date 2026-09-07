@@ -24,6 +24,7 @@
     "cancelRemittance": "Cancel\u00b7lar",
     "confirmSubmit": "Marcar aquesta remesa com a enviada al banc?",
     "confirmClose": "Tancar aquesta remesa? Es finalitzara el lot.",
+    "confirmCloseDescription": "Es marcaran com a cobrats {count} rebuts. Un cop tancada la remesa ja no es podran importar devolucions.",
     "confirmCancel": "Cancel\u00b7lar aquesta remesa? Es desvincularan tots els rebuts.",
     "noRemittances": "No s'han trobat remeses",
     "detail": "Detall de la remesa",

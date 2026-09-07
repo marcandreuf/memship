@@ -24,6 +24,7 @@
     "cancelRemittance": "Cancelar",
     "confirmSubmit": "Marcar esta remesa como enviada al banco?",
     "confirmClose": "Cerrar esta remesa? Se finalizara el lote.",
+    "confirmCloseDescription": "Se marcarán como cobrados {count} recibos. Una vez cerrada la remesa ya no se podrán importar devoluciones.",
     "confirmCancel": "Cancelar esta remesa? Se desvincularan todos los recibos.",
     "noRemittances": "No se encontraron remesas",
     "detail": "Detalle de la remesa",

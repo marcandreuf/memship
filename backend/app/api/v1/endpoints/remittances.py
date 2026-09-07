@@ -25,6 +25,7 @@ from app.domains.billing.remittance_service import (
     import_returns,
     mark_submitted,
 )
+from app.domains.billing.service import dispatch_payment_notifications
 
 router = APIRouter(prefix="/remittances", tags=["remittances"])
 
@@ -200,15 +201,20 @@ def close_remittance_endpoint(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("billing.write")),
 ):
-    """Close a remittance — finalize the batch."""
+    """Close a remittance — the settlement window has passed.
+
+    Every receipt still awaiting settlement is marked paid: SEPA reports only
+    the collections that failed. Returns can no longer be imported afterwards.
+    """
     remittance = db.query(Remittance).filter(
         Remittance.id == remittance_id, Remittance.is_active.is_(True)
     ).first()
     if not remittance:
         raise HTTPException(status_code=404, detail="Remittance not found")
 
-    remittance = close_remittance(db, remittance)
+    remittance, pending = close_remittance(db, remittance)
     db.commit()
+    dispatch_payment_notifications(pending)
     db.refresh(remittance)
     return remittance
 

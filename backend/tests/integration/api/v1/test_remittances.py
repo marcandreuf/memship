@@ -2,11 +2,12 @@
 
 from datetime import date, timedelta
 from decimal import Decimal
+from unittest.mock import patch
 
 from app.core.security.jwt import create_access_token
 from app.core.security.password import hash_password
 from app.domains.auth.models import User
-from app.domains.billing.models import Concept, Receipt, SepaMandate
+from app.domains.billing.models import Concept, Receipt, Remittance, SepaMandate
 from app.domains.members.models import Member, MembershipType
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Person
@@ -475,3 +476,158 @@ class TestRemittanceAuth:
         member_user = _create_user(db, role="member", suffix="rem-auth2")
         resp = client.get("/api/v1/remittances/", cookies=_auth_cookie(member_user))
         assert resp.status_code == 403
+
+
+class TestCloseReconcilesPayments:
+    """SEPA reports only failures, so closing settles everything still in flight."""
+
+    FANOUT = "app.tasks.billing_tasks.payment_notifications_fanout.delay"
+
+    def _submitted_remittance(self, client, admin, receipt_ids, due_date="2026-05-01"):
+        create_resp = client.post(
+            "/api/v1/remittances/",
+            json={"receipt_ids": receipt_ids, "due_date": due_date},
+            cookies=_auth_cookie(admin),
+        )
+        rem_id = create_resp.json()["id"]
+        client.post(f"/api/v1/remittances/{rem_id}/generate-xml", cookies=_auth_cookie(admin))
+        client.post(f"/api/v1/remittances/{rem_id}/mark-submitted", cookies=_auth_cookie(admin))
+        return rem_id
+
+    def test_a_clean_batch_closes_straight_from_submitted(self, client, db):
+        """Nothing to import means nothing ever set 'processed'."""
+        _ensure_org_settings(db)
+        admin = _create_user(db, suffix="rem-cl1")
+        m1, _ = _create_member_with_mandate(db, suffix="rem-cl1")
+        r1 = _create_receipt(db, m1.id, admin.id, suffix="rem-cl1-01")
+        r2 = _create_receipt(db, m1.id, admin.id, suffix="rem-cl1-02")
+        rem_id = self._submitted_remittance(client, admin, [r1.id, r2.id])
+
+        resp = client.post(f"/api/v1/remittances/{rem_id}/close", cookies=_auth_cookie(admin))
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "closed"
+
+        db.expire_all()
+        for receipt_id in (r1.id, r2.id):
+            receipt = db.query(Receipt).filter(Receipt.id == receipt_id).first()
+            assert receipt.status == "paid"
+            assert receipt.payment_method == "direct_debit"
+            assert receipt.payment_date == date(2026, 5, 1)
+
+    def test_returned_receipts_are_left_alone(self, client, db):
+        _ensure_org_settings(db)
+        admin = _create_user(db, suffix="rem-cl2")
+        m1, _ = _create_member_with_mandate(db, suffix="rem-cl2")
+        settled = _create_receipt(db, m1.id, admin.id, suffix="rem-cl2-01")
+        bounced = _create_receipt(db, m1.id, admin.id, suffix="rem-cl2-02")
+        bounced_number = bounced.receipt_number
+        rem_id = self._submitted_remittance(client, admin, [settled.id, bounced.id])
+
+        client.post(
+            f"/api/v1/remittances/{rem_id}/import-returns",
+            json=[{"receipt_number": bounced_number, "reason": "Insufficient funds"}],
+            cookies=_auth_cookie(admin),
+        )
+        client.post(f"/api/v1/remittances/{rem_id}/close", cookies=_auth_cookie(admin))
+
+        db.expire_all()
+        assert db.query(Receipt).filter(Receipt.id == settled.id).first().status == "paid"
+        returned = db.query(Receipt).filter(Receipt.id == bounced.id).first()
+        assert returned.status == "returned"
+        assert returned.payment_date is None
+
+    def test_cancelled_and_inactive_receipts_are_left_alone(self, client, db):
+        _ensure_org_settings(db)
+        admin = _create_user(db, suffix="rem-cl3")
+        m1, _ = _create_member_with_mandate(db, suffix="rem-cl3")
+        settled = _create_receipt(db, m1.id, admin.id, suffix="rem-cl3-01")
+        gone = _create_receipt(db, m1.id, admin.id, suffix="rem-cl3-02")
+        rem_id = self._submitted_remittance(client, admin, [settled.id, gone.id])
+
+        gone.status = "cancelled"
+        gone.is_active = False
+        db.flush()
+
+        client.post(f"/api/v1/remittances/{rem_id}/close", cookies=_auth_cookie(admin))
+
+        db.expire_all()
+        assert db.query(Receipt).filter(Receipt.id == settled.id).first().status == "paid"
+        assert db.query(Receipt).filter(Receipt.id == gone.id).first().status == "cancelled"
+
+    def test_an_overdue_receipt_settles_too(self, client, db):
+        """A batched receipt past its due date is still collected by the bank."""
+        _ensure_org_settings(db)
+        admin = _create_user(db, suffix="rem-cl4")
+        m1, _ = _create_member_with_mandate(db, suffix="rem-cl4")
+        late = _create_receipt(db, m1.id, admin.id, suffix="rem-cl4-01", status="overdue")
+        rem_id = self._submitted_remittance(client, admin, [late.id])
+
+        client.post(f"/api/v1/remittances/{rem_id}/close", cookies=_auth_cookie(admin))
+
+        db.expire_all()
+        assert db.query(Receipt).filter(Receipt.id == late.id).first().status == "paid"
+
+    def test_a_second_close_changes_nothing(self, client, db):
+        _ensure_org_settings(db)
+        admin = _create_user(db, suffix="rem-cl5")
+        m1, _ = _create_member_with_mandate(db, suffix="rem-cl5")
+        r1 = _create_receipt(db, m1.id, admin.id, suffix="rem-cl5-01")
+        rem_id = self._submitted_remittance(client, admin, [r1.id])
+
+        client.post(f"/api/v1/remittances/{rem_id}/close", cookies=_auth_cookie(admin))
+        db.expire_all()
+        first_payment_date = (
+            db.query(Receipt).filter(Receipt.id == r1.id).first().payment_date
+        )
+
+        with patch(self.FANOUT) as delay:
+            resp = client.post(
+                f"/api/v1/remittances/{rem_id}/close", cookies=_auth_cookie(admin)
+            )
+
+        assert resp.status_code == 400
+        delay.assert_not_called()
+        db.expire_all()
+        receipt = db.query(Receipt).filter(Receipt.id == r1.id).first()
+        assert receipt.status == "paid"
+        assert receipt.payment_date == first_payment_date
+        remittance = db.query(Remittance).filter(Remittance.id == rem_id).first()
+        assert remittance.status == "closed"
+
+    def test_closing_queues_one_fanout_job_for_the_batch(self, client, db):
+        _ensure_org_settings(db)
+        admin = _create_user(db, suffix="rem-cl6")
+        m1, _ = _create_member_with_mandate(db, suffix="rem-cl6")
+        r1 = _create_receipt(db, m1.id, admin.id, suffix="rem-cl6-01")
+        r2 = _create_receipt(db, m1.id, admin.id, suffix="rem-cl6-02")
+        rem_id = self._submitted_remittance(client, admin, [r1.id, r2.id])
+
+        with patch(self.FANOUT) as delay:
+            resp = client.post(
+                f"/api/v1/remittances/{rem_id}/close", cookies=_auth_cookie(admin)
+            )
+
+        assert resp.status_code == 200
+        delay.assert_called_once_with([r1.id, r2.id])
+
+    def test_a_batch_with_nothing_left_to_settle_notifies_nothing(self, client, db):
+        _ensure_org_settings(db)
+        admin = _create_user(db, suffix="rem-cl7")
+        m1, _ = _create_member_with_mandate(db, suffix="rem-cl7")
+        r1 = _create_receipt(db, m1.id, admin.id, suffix="rem-cl7-01")
+        receipt_number = r1.receipt_number
+        rem_id = self._submitted_remittance(client, admin, [r1.id])
+
+        client.post(
+            f"/api/v1/remittances/{rem_id}/import-returns",
+            json=[{"receipt_number": receipt_number, "reason": "No account"}],
+            cookies=_auth_cookie(admin),
+        )
+
+        with patch(self.FANOUT) as delay:
+            resp = client.post(
+                f"/api/v1/remittances/{rem_id}/close", cookies=_auth_cookie(admin)
+            )
+
+        assert resp.status_code == 200
+        delay.assert_not_called()

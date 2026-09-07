@@ -32,8 +32,15 @@ Una **remesa** agrupa recibos domiciliados en un lote para enviarlo al banco.
 3. **Marcar enviada** cuando lo hayas presentado al banco.
 4. **Importar devoluciones** — sube el fichero de devoluciones para actualizar el estado de los
    recibos afectados (se marcan como **Devuelto**). El resultado indica los recibos
-   *procesados*, *devueltos* y *no encontrados*.
-5. **Cerrar** la remesa para finalizar el lote.
+   *procesados*, *devueltos* y *no encontrados*. Si el banco no ha devuelto nada, sáltate
+   este paso.
+5. **Cerrar** la remesa cuando haya pasado el plazo de devoluciones. SEPA solo informa de los
+   cobros que fallan, así que al cerrar se marcan como **Cobrados** todos los recibos del lote
+   que sigan pendientes, con la fecha de cobro de la remesa. Antes de confirmar verás cuántos
+   recibos se van a marcar: **una vez cerrada la remesa ya no se pueden importar devoluciones**,
+   así que no la cierres antes de que venza el plazo de tu banco.
 
 Estados de una remesa: **Borrador → Lista → Enviada → Procesada → Cerrada** (o **Cancelada**;
-al cancelar se desvinculan todos los recibos).
+al cancelar se desvinculan todos los recibos). Una remesa **Enviada** se puede cerrar
+directamente, sin pasar por **Procesada**: el lote en el que ha pagado todo el mundo no tiene
+devoluciones que importar.
