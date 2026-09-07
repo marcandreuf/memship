@@ -107,6 +107,11 @@ _SUBJECTS = {
         "ca": "Recordatori de pagament: rebut {receipt_number}",
         "en": "Payment reminder: receipt {receipt_number}",
     },
+    "payment_confirmation": {
+        "es": "Pago recibido: recibo {receipt_number}",
+        "ca": "Pagament confirmat: rebut {receipt_number}",
+        "en": "Payment received: receipt {receipt_number}",
+    },
     "mailing_test": {
         "es": "Correo de prueba de Memship",
         "ca": "Correu de prova de Memship",
@@ -668,6 +673,42 @@ def send_payment_reminder_email(
             "org_name": org_name,
             "pay_now_url": pay_now_url,
             "bank_details": bank_details,
+        },
+        subject_args={"receipt_number": receipt_number},
+    )
+
+
+def send_payment_confirmation_email(
+    to: str,
+    member_name: str,
+    receipt_number: str,
+    description: str,
+    amount: str,
+    currency: str,
+    payment_date: str,
+    org_name: str,
+    payment_method_label: str | None = None,
+    locale: str = "es",
+) -> bool:
+    """Tell a member the payment against one of their receipts has landed.
+
+    ``payment_method_label`` is optional and already localized: a member who
+    paid at a checkout watched it succeed, so the row is only worth showing for
+    the methods that settle out of sight.
+    """
+    return _send_templated(
+        "payment_confirmation",
+        to,
+        locale,
+        {
+            "member_name": member_name,
+            "receipt_number": receipt_number,
+            "description": description,
+            "amount": amount,
+            "currency": currency,
+            "payment_date": payment_date,
+            "org_name": org_name,
+            "payment_method_label": payment_method_label,
         },
         subject_args={"receipt_number": receipt_number},
     )

@@ -1,0 +1,20 @@
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}We have recorded the payment of receipt {{ receipt_number }}.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Payment received</h1>
+<p style="{{ s.p }}">Hi {{ member_name }},</p>
+<p style="{{ s.p }}">We have recorded the payment of the following receipt. There is nothing else for you to do.</p>
+{% call c.panel() %}
+{{ c.data_row("Receipt", receipt_number) }}
+{{ c.data_row("Description", description) }}
+{{ c.data_row("Amount", amount ~ " " ~ currency) }}
+{{ c.data_row("Payment date", payment_date) }}
+{%- if payment_method_label %}
+{{ c.data_row("Payment method", payment_method_label) }}
+{%- endif %}
+{% endcall %}
+<p style="{{ s.note_last }}">If anything looks wrong, please get in touch with us.</p>
+{% endblock %}

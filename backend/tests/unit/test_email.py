@@ -8,6 +8,7 @@ from app.core.email import (
     render_template,
     send_email,
     send_password_reset_email,
+    send_payment_confirmation_email,
     send_registration_cancellation_email,
     send_registration_confirmation_email,
     send_waitlist_promotion_email,
@@ -233,3 +234,100 @@ class TestHighLevelEmails:
         assert result is True
         subject = mock_send.call_args[0][1]
         assert "Chess Club" in subject
+
+
+PAYMENT_CONFIRMATION = {
+    "member_name": "María Puig",
+    "receipt_number": "FAC-2026-0117",
+    "description": "Cuota anual 2026",
+    "amount": "121.00",
+    "currency": "EUR",
+    "payment_date": "2026-04-15",
+    "org_name": "Club Sant Jordi",
+    "payment_method_label": "Domiciliación bancaria",
+}
+
+
+class TestPaymentConfirmationTemplate:
+    """What a member is told when a payment lands, in all three locales."""
+
+    @pytest.mark.parametrize(
+        "locale,heading",
+        [
+            ("es", "Pago recibido"),
+            # "Pagament rebut: rebut X" collides; Catalan says "confirmat".
+            ("ca", "Pagament confirmat"),
+            ("en", "Payment received"),
+        ],
+    )
+    def test_it_leads_with_the_payment_having_arrived(self, locale, heading):
+        html = render_template("payment_confirmation", locale, dict(PAYMENT_CONFIRMATION))
+        assert heading in html
+
+    @pytest.mark.parametrize("locale", ["es", "ca", "en"])
+    def test_it_carries_the_receipt_the_concept_the_amount_and_the_date(self, locale):
+        html = render_template("payment_confirmation", locale, dict(PAYMENT_CONFIRMATION))
+
+        assert "FAC-2026-0117" in html
+        assert "Cuota anual 2026" in html
+        assert "121.00 EUR" in html
+        assert "2026-04-15" in html
+
+    def test_a_labelled_payment_method_is_shown(self):
+        html = render_template("payment_confirmation", "es", dict(PAYMENT_CONFIRMATION))
+        assert "Domiciliación bancaria" in html
+
+    def test_an_unlabelled_method_drops_the_row(self):
+        """A checkout payer already watched it succeed, and a raw provider name
+        is not something to show a member."""
+        context = dict(PAYMENT_CONFIRMATION, payment_method_label=None)
+        html = render_template("payment_confirmation", "es", context)
+
+        assert "Forma de pago" not in html
+        assert "121.00 EUR" in html
+
+
+class TestPaymentConfirmationSend:
+    @pytest.fixture(autouse=True)
+    def _templates_enabled(self):
+        with patch("app.core.email._template_enabled", return_value=True):
+            yield
+
+    @patch("app.core.email.send_email", return_value=True)
+    def test_the_subject_names_the_receipt(self, mock_send):
+        result = send_payment_confirmation_email("m@example.com", **PAYMENT_CONFIRMATION)
+
+        assert result is True
+        subject = mock_send.call_args[0][1]
+        assert "FAC-2026-0117" in subject
+        assert "Pago recibido" in subject
+
+    @patch("app.core.email.send_email", return_value=True)
+    def test_the_subject_is_localized(self, mock_send):
+        send_payment_confirmation_email(
+            "m@example.com", **PAYMENT_CONFIRMATION, locale="en"
+        )
+
+        assert "Payment received" in mock_send.call_args[0][1]
+
+    @patch("app.core.email.send_email", return_value=True)
+    def test_the_body_reaches_the_member(self, mock_send):
+        send_payment_confirmation_email("m@example.com", **PAYMENT_CONFIRMATION)
+
+        to, _, html = mock_send.call_args[0]
+        assert to == "m@example.com"
+        assert "María Puig" in html
+        assert "121.00 EUR" in html
+
+    def test_it_is_off_until_the_club_switches_it_on(self):
+        """Catalogued and default-off: adding it mails nobody by itself."""
+        with (
+            patch("app.core.email._template_enabled", return_value=False),
+            patch("app.core.email.send_email") as mock_send,
+        ):
+            result = send_payment_confirmation_email(
+                "m@example.com", **PAYMENT_CONFIRMATION
+            )
+
+        assert result is False
+        mock_send.assert_not_called()

@@ -282,6 +282,91 @@ class TestDispatchPaymentNotifications:
         assert [call.args[0] for call in delay.call_args_list] == [7, 8]
 
 
+class TestThePaymentConfirmation:
+    """What the fanned-out task actually sends, once a club has switched it on."""
+
+    def _paid(self, db, suffix, method="direct_debit"):
+        member = _create_member(db, suffix)
+        receipt = _create_receipt(db, member, suffix)
+        mark_receipt_paid(
+            db, receipt, payment_method=method, payment_date=date(2026, 4, 15)
+        )
+        return receipt
+
+    def test_it_tells_the_member_the_amount_the_concept_and_the_date(self, db):
+        from app.tasks.billing_tasks import _send_payment_confirmation
+
+        receipt = self._paid(db, "conf-body")
+
+        with patch("app.core.email._template_enabled", return_value=True), patch(
+            "app.core.email.send_email", return_value=True
+        ) as send:
+            assert _send_payment_confirmation(db, receipt.id) is True
+
+        to, subject, html = send.call_args[0]
+        assert to == "conf-body@pay-test.example"
+        assert receipt.receipt_number in subject
+        assert "Membership fee" in html
+        assert "121.00 EUR" in html
+        assert "2026-04-15" in html
+
+    def test_a_direct_debit_says_so(self, db):
+        """The case with no other signal: the label is the reassurance."""
+        from app.tasks.billing_tasks import _send_payment_confirmation
+
+        receipt = self._paid(db, "conf-sepa")
+
+        with patch("app.core.email._template_enabled", return_value=True), patch(
+            "app.core.email.send_email", return_value=True
+        ) as send:
+            _send_payment_confirmation(db, receipt.id)
+
+        assert "Domiciliación bancaria" in send.call_args[0][2]
+
+    def test_a_checkout_payment_leaves_the_method_row_out(self, db):
+        from app.tasks.billing_tasks import _send_payment_confirmation
+
+        receipt = self._paid(db, "conf-stripe", method="stripe_checkout")
+
+        with patch("app.core.email._template_enabled", return_value=True), patch(
+            "app.core.email.send_email", return_value=True
+        ) as send:
+            _send_payment_confirmation(db, receipt.id)
+
+        html = send.call_args[0][2]
+        assert "stripe_checkout" not in html
+        assert "Forma de pago" not in html
+
+    def test_nothing_is_sent_without_an_address(self, db):
+        from app.tasks.billing_tasks import _send_payment_confirmation
+
+        receipt = self._paid(db, "conf-noaddr")
+        member = db.query(Member).filter(Member.id == receipt.member_id).first()
+        db.query(Person).filter(Person.id == member.person_id).first().email = None
+        db.flush()
+
+        with patch("app.core.email.send_email") as send:
+            assert _send_payment_confirmation(db, receipt.id) is False
+        send.assert_not_called()
+
+    def test_an_unknown_receipt_is_not_a_failure(self, db):
+        from app.tasks.billing_tasks import _send_payment_confirmation
+
+        with patch("app.core.email.send_email") as send:
+            assert _send_payment_confirmation(db, 999_999) is False
+        send.assert_not_called()
+
+    def test_an_untouched_install_sends_nothing(self, db):
+        """Default-off: the catalogue entry alone mails nobody."""
+        from app.tasks.billing_tasks import _send_payment_confirmation
+
+        receipt = self._paid(db, "conf-off")
+
+        with patch("app.core.email.send_email") as send:
+            assert _send_payment_confirmation(db, receipt.id) is False
+        send.assert_not_called()
+
+
 # --- The three write sites ---
 
 

@@ -2,6 +2,8 @@
 
 import logging
 
+from sqlalchemy.orm import Session
+
 from app.core.celery_app import celery
 
 logger = logging.getLogger(__name__)
@@ -104,15 +106,76 @@ def payment_notifications_fanout(receipt_ids: list[int]) -> int:
     return len(receipt_ids)
 
 
+def _send_payment_confirmation(db: Session, receipt_id: int) -> bool:
+    """Compose and send the confirmation for one receipt that has been paid.
+
+    Only what the receipt itself carries reaches the member: number, concept,
+    amount, payment date and — when the method settles out of sight — how it was
+    paid. Nothing about the mandate or the account it was collected from; a
+    member does not expect their bank details in an inbox.
+    """
+    from app.core.email import send_payment_confirmation_email
+    from app.domains.billing.models import Receipt
+    from app.domains.billing.pdf import PAYMENT_METHOD_LABELS
+    from app.domains.members.models import Member
+    from app.domains.organizations.models import OrganizationSettings
+    from app.domains.persons.models import Person
+
+    receipt = db.query(Receipt).filter(Receipt.id == receipt_id).first()
+    if not receipt:
+        logger.warning(f"Receipt {receipt_id} not found for payment notification")
+        return False
+
+    member = db.query(Member).filter(Member.id == receipt.member_id).first()
+    person = (
+        db.query(Person).filter(Person.id == member.person_id).first() if member else None
+    )
+    if not person or not person.email:
+        logger.warning(f"No email for the payer of receipt {receipt_id}")
+        return False
+
+    org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
+    locale = (org.locale if org else None) or "es"
+    labels = PAYMENT_METHOD_LABELS.get(locale, PAYMENT_METHOD_LABELS["es"])
+
+    return send_payment_confirmation_email(
+        to=person.email,
+        member_name=" ".join(filter(None, [person.first_name, person.last_name]))
+        or person.email,
+        receipt_number=receipt.receipt_number,
+        description=receipt.description,
+        amount=f"{receipt.total_amount:.2f}",
+        currency=(org.currency if org else None) or "EUR",
+        payment_date=receipt.payment_date.isoformat() if receipt.payment_date else "",
+        org_name=(org.name if org else None) or "Memship",
+        payment_method_label=labels.get(receipt.payment_method),
+        locale=locale,
+    )
+
+
 @celery.task(bind=True, max_retries=3, default_retry_delay=60)
 def send_payment_notification(self, receipt_id: int) -> bool:
     """Send the outbound notifications owed for one paid receipt.
 
     The seam for anything that must be *sent* after a payment, as opposed to
     written: those effects run inline in ``mark_receipt_paid``, inside the
-    transaction that records the payment. Nothing is sent today — the club has
-    no payment-confirmation mail configured — so this is the place to add one
-    rather than a fourth call site to wire up.
+    transaction that records the payment.
+
+    Today that is the payment confirmation, which matters most for the methods
+    that settle out of the member's sight — a SEPA collection reconciled days
+    later, cash or a transfer marked paid by an admin. Off until the club
+    switches it on, like every catalogued template.
     """
-    logger.debug(f"No payment notification configured for receipt {receipt_id}")
-    return False
+    from app.db.session import SessionLocal
+
+    try:
+        db = SessionLocal()
+        try:
+            return _send_payment_confirmation(db, receipt_id)
+        finally:
+            db.close()
+    except Exception as exc:
+        logger.error(
+            f"Payment notification failed: receipt_id={receipt_id}, error={exc}"
+        )
+        raise self.retry(exc=exc)
