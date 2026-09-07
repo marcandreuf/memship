@@ -8,10 +8,12 @@ export async function POST(
 ) {
   const { id } = await params;
   const cookie = request.headers.get("cookie") || "";
+  const body = await request.json().catch(() => ({}));
 
   const res = await fetch(`${API_BASE_URL}/api/v1/members/${id}/approve`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Cookie: cookie },
+    body: JSON.stringify(body),
   });
 
   const data = await res.json();

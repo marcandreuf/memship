@@ -116,7 +116,13 @@ export function useChangeMemberStatus() {
 export function useApproveMember() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: number) => approveMember(id),
+    mutationFn: ({
+      id,
+      membershipTypeId,
+    }: {
+      id: number;
+      membershipTypeId?: number;
+    }) => approveMember(id, membershipTypeId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: MEMBERS_KEY });
     },
