@@ -28,7 +28,10 @@ def _to_response(mt: MembershipType) -> MembershipTypeResponse:
         group_name=mt.group.name if mt.group else None,
         base_price=mt.base_price,
         billing_frequency=mt.billing_frequency,
+        min_age=mt.min_age,
+        max_age=mt.max_age,
         is_active=mt.is_active,
+        is_default=mt.is_default,
         created_at=mt.created_at,
     )
 

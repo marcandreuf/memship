@@ -200,14 +200,43 @@ def change_member_status(
     return member
 
 
-def approve_registration(db: Session, member: Member) -> Member:
+def approve_registration(
+    db: Session, member: Member, membership_type_id: int | None = None
+) -> Member:
     """Approve a pending self-registration: allocate a member number, activate.
 
     The member number is deliberately allocated here rather than at sign-up, so
     rejected/abandoned registrations never burn a number.
+
+    ``membership_type_id`` is where a paid tier legitimately enters the system:
+    a human looked at the applicant and chose it. Any active tier is accepted,
+    priced or not; age limits are not checked here on purpose, because the rule
+    is warn-not-block and the browser already holds everything the warning
+    needs. Omitting it leaves the applicant on whatever the sign-up assigned —
+    the free default — and only fills that in when the row somehow has no tier
+    at all, since a NULL one bars the member from every activity that restricts
+    membership types.
     """
     if member.status != "pending":
         raise ValueError(f"Only pending registrations can be approved (is '{member.status}')")
+
+    if membership_type_id is not None:
+        membership_type = (
+            db.query(MembershipType)
+            .filter(MembershipType.id == membership_type_id)
+            .first()
+        )
+        if membership_type is None:
+            raise ValueError(f"Membership type {membership_type_id} does not exist")
+        if not membership_type.is_active:
+            raise ValueError(
+                f"Membership type '{membership_type.name}' is not active"
+            )
+        member.membership_type_id = membership_type.id
+    elif member.membership_type_id is None:
+        default_type = get_default_membership_type(db)
+        if default_type is not None:
+            member.membership_type_id = default_type.id
 
     if not member.member_number:
         member.member_number = allocate_member_number(db)
