@@ -51,8 +51,9 @@
       {% if org.email %}<p>{{ org.email }}{% if org.phone %} | {{ org.phone }}{% endif %}</p>{% endif %}
     </div>
     <div class="receipt-title">
-      <h2>REBUT</h2>
+      <h2>{{ document_labels[receipt.document_type] }}</h2>
       <div class="number">{{ receipt.receipt_number }}</div>
+      {% if receipt.rectifies_receipt_number %}<div class="date">{{ document_labels.rectifies }}: {{ receipt.rectifies_receipt_number }}</div>{% endif %}
       <div class="date">Data d'emissió: {{ receipt.emission_date }}</div>
       {% if receipt.due_date %}<div class="date">Venciment: {{ receipt.due_date }}</div>{% endif %}
       <div style="margin-top:6px;"><span class="status-badge status-{{ receipt.status }}">{{ status_label }}</span></div>
@@ -119,7 +120,7 @@
   <div class="notes">{{ receipt.notes }}</div>
   {% endif %}
 
-  {% if org.bank_iban %}
+  {% if org.bank_iban and receipt.document_type != "credit_note" %}
   <div class="banking">
     <h3>Dades bancàries per a transferència</h3>
     <p>{{ org.bank_name }}</p>

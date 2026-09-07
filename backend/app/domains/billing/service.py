@@ -7,13 +7,14 @@ from decimal import Decimal
 
 from fastapi import HTTPException, status
 from sqlalchemy import extract, func, or_
-from sqlalchemy.orm import Query, Session, joinedload
+from sqlalchemy.orm import Query, Session, joinedload, selectinload
 
 from sqlalchemy.exc import IntegrityError
 
 from app.core.money import round_money
 from app.domains.billing.models import Concept, InvoiceSequence, Receipt
 from app.domains.billing.schemas import (
+    CreditNoteCreate,
     GenerateMembershipFeesRequest,
     ReceiptCreate,
     ReceiptReturnRequest,
@@ -34,6 +35,7 @@ def build_receipts_query(
     *,
     status: str | None = None,
     origin: str | None = None,
+    document_type: str | None = None,
     member_id: int | None = None,
     search: str | None = None,
     emission_date_from: date | None = None,
@@ -50,6 +52,10 @@ def build_receipts_query(
         .options(
             joinedload(Receipt.member).joinedload(Member.person),
             joinedload(Receipt.concept),
+            # The list renders the rectification link on both ends, so both are
+            # loaded up front rather than one query per row.
+            joinedload(Receipt.rectifies),
+            selectinload(Receipt.credit_notes),
         )
     )
 
@@ -57,6 +63,8 @@ def build_receipts_query(
         query = query.filter(Receipt.status == status)
     if origin:
         query = query.filter(Receipt.origin == origin)
+    if document_type:
+        query = query.filter(Receipt.document_type == document_type)
     if member_id:
         query = query.filter(Receipt.member_id == member_id)
     if emission_date_from is not None:
@@ -415,6 +423,14 @@ def return_receipt(
 
 def cancel_receipt(db: Session, receipt: Receipt) -> Receipt:
     """Cancel a receipt."""
+    if receipt.document_type == "credit_note":
+        # A rectifying document is as final as the one it rectifies. Withdrawing
+        # it would leave the original credited by a document that no longer says
+        # so, which is the untraceable state credit notes exist to prevent.
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A credit note cannot be cancelled",
+        )
     validate_status_transition(receipt.status, "cancelled")
     receipt.status = "cancelled"
     db.flush()
@@ -429,6 +445,127 @@ def reemit_receipt(db: Session, receipt: Receipt) -> Receipt:
     receipt.return_reason = None
     db.flush()
     return receipt
+
+
+# --- Credit Notes ---
+
+# The statuses an invoice can be rectified from. A 'new' or 'pending' receipt is
+# still editable, so it is corrected by editing it — issuing a credit note
+# against a document nobody has been sent yet only makes paperwork. A 'cancelled'
+# one has already been withdrawn in full and has nothing left to credit.
+CREDIT_NOTE_ELIGIBLE_STATUSES = ("emitted", "overdue", "returned", "paid")
+
+
+def credited_amount(receipt: Receipt) -> Decimal:
+    """How much of ``receipt`` its credit notes have already given back.
+
+    Positive, though the notes themselves are stored negative — this is an
+    amount credited, not a balance.
+    """
+    return -sum(
+        (Decimal(str(note.total_amount)) for note in receipt.credit_notes),
+        Decimal("0"),
+    )
+
+
+def create_credit_note(
+    db: Session, receipt: Receipt, data: CreditNoteCreate, created_by_id: int
+) -> Receipt:
+    """Issue a credit note (*factura rectificativa*) against an issued receipt.
+
+    An issued invoice is not amended — it is rectified by a further document.
+    So this creates a **new** receipt rather than touching the one it corrects:
+    the original keeps its number, its amounts and its status, and the credit
+    note carries the negative of what is being given back plus a link back to
+    the document it rectifies. The pair nets to what the member actually owes.
+
+    The credit note draws the next number from the same series as everything
+    else, which is what keeps that series unbroken — the gap left by "cancel and
+    reissue" is the problem this exists to remove.
+
+    It is born ``emitted`` and never batchable: the money moves back to the
+    member, and a SEPA remittance only collects. Returning it is done by hand,
+    through the bank, as the refund paths are.
+
+    ``amount`` is the gross total to credit, defaulting to everything not yet
+    credited, so a partial credit and a full one are the same call.
+    """
+    if receipt.document_type != "invoice":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A credit note can only rectify an invoice, not another credit note",
+        )
+    if receipt.status not in CREDIT_NOTE_ELIGIBLE_STATUSES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                f"Cannot issue a credit note against a receipt in '{receipt.status}' "
+                f"status (must be one of {', '.join(CREDIT_NOTE_ELIGIBLE_STATUSES)})"
+            ),
+        )
+
+    total = Decimal(str(receipt.total_amount))
+    already_credited = credited_amount(receipt)
+    remaining = total - already_credited
+    if remaining <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Receipt {receipt.receipt_number} has already been credited in full",
+        )
+
+    amount = round_money(Decimal(str(data.amount))) if data.amount is not None else remaining
+    if amount <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Credit note amount must be greater than zero",
+        )
+    if amount > remaining:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                f"Cannot credit {amount} against receipt {receipt.receipt_number}: "
+                f"only {remaining} is left to credit"
+            ),
+        )
+
+    vat_rate = Decimal(str(receipt.vat_rate))
+    if amount == total and already_credited == 0:
+        # Crediting the whole thing mirrors the original exactly, rather than
+        # re-deriving the split and risking a cent of drift against the document
+        # it is meant to cancel out.
+        base_amount = Decimal(str(receipt.base_amount))
+        vat_amount = Decimal(str(receipt.vat_amount))
+    else:
+        base_amount = round_money(amount / (Decimal("1") + vat_rate / Decimal("100")))
+        vat_amount = amount - base_amount
+
+    credit_note = Receipt(
+        receipt_number=generate_receipt_number(db, date.today()),
+        document_type="credit_note",
+        rectifies_receipt_id=receipt.id,
+        member_id=receipt.member_id,
+        concept_id=receipt.concept_id,
+        registration_id=receipt.registration_id,
+        booking_id=receipt.booking_id,
+        origin=receipt.origin,
+        description=data.reason,
+        base_amount=-base_amount,
+        vat_rate=vat_rate,
+        vat_amount=-vat_amount,
+        total_amount=-amount,
+        discount_amount=Decimal("0"),
+        status="emitted",
+        emission_date=date.today(),
+        # No due date: nobody is being asked to pay this, so the dunning sweeps
+        # and the lapse check — all of which key off a due date — leave it alone.
+        due_date=None,
+        is_batchable=False,
+        notes=data.notes,
+        created_by=created_by_id,
+    )
+    db.add(credit_note)
+    db.flush()
+    return credit_note
 
 
 # --- Fee Generation ---

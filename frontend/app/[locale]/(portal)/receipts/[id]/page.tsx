@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useParams } from "next/navigation";
+import { useRouter } from "@/lib/i18n/routing";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DecimalInput } from "@/components/ui/decimal-input";
@@ -29,6 +30,7 @@ import {
   useCancelReceipt,
   useReturnReceipt,
   useReemitReceipt,
+  useCreateCreditNote,
 } from "@/features/receipts/hooks/use-receipts";
 import {
   useReceiptReminders,
@@ -52,13 +54,17 @@ export default function ReceiptDetailPage() {
   const { has } = usePermissions();
   const canWrite = has("billing.write");
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const { data: receipt, isLoading } = useReceipt(Number(id));
   const [editOpen, setEditOpen] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
   const [returnOpen, setReturnOpen] = useState(false);
+  const [creditOpen, setCreditOpen] = useState(false);
   const [payMethod, setPayMethod] = useState("");
   const [payDate, setPayDate] = useState(new Date().toISOString().split("T")[0]);
   const [returnReason, setReturnReason] = useState("");
+  const [creditReason, setCreditReason] = useState("");
+  const [creditAmount, setCreditAmount] = useState("");
   const [confirmDialog, confirmAction] = useConfirmDialog();
 
   const { formatCurrency, formatDate } = useFormatters();
@@ -68,6 +74,7 @@ export default function ReceiptDetailPage() {
   const cancelMutation = useCancelReceipt();
   const returnMutation = useReturnReceipt();
   const reemitMutation = useReemitReceipt();
+  const creditNoteMutation = useCreateCreditNote();
   const { data: reminders } = useReceiptReminders(Number(id));
   const { data: settings } = useSettings();
   const sendReminderMutation = useSendReceiptReminder();
@@ -131,6 +138,25 @@ export default function ReceiptDetailPage() {
     } catch { /* global handler */ }
   }
 
+  async function handleCreditNote() {
+    if (!creditReason.trim()) return;
+    try {
+      const note = await creditNoteMutation.mutateAsync({
+        id: receipt!.id,
+        data: {
+          reason: creditReason,
+          amount: creditAmount ? parseFloat(creditAmount) : undefined,
+        },
+      });
+      toast.success(t("toast.success.saved"));
+      setCreditOpen(false);
+      setCreditReason("");
+      setCreditAmount("");
+      // The rectifying document is the new record — take the admin to it.
+      router.push(`/receipts/${note.id}`);
+    } catch { /* global handler */ }
+  }
+
   async function handleSendReminder() {
     try {
       await sendReminderMutation.mutateAsync(receipt!.id);
@@ -141,19 +167,34 @@ export default function ReceiptDetailPage() {
   // Status says whether the action is possible; `billing.write` says whether
   // this account may take it. Both, always — a read-only billing role sees
   // the receipt and none of the buttons.
+  const isCreditNote = receipt.document_type === "credit_note";
+  const credited = Number(receipt.credited_amount ?? 0);
+  // An issued document is rectified, never edited — and only up to what is
+  // left uncredited. A credit note is not itself rectifiable.
+  const canCreditNote =
+    canWrite &&
+    !isCreditNote &&
+    ["emitted", "overdue", "returned", "paid"].includes(receipt.status) &&
+    credited < Number(receipt.total_amount);
   const canEdit = canWrite && ["new", "pending"].includes(receipt.status);
   const canEmit = canWrite && ["new", "pending"].includes(receipt.status);
-  const canPay = canWrite && ["emitted", "overdue"].includes(receipt.status);
-  const canReturn = canWrite && ["emitted", "overdue"].includes(receipt.status);
-  const canCancel = canWrite && !["paid", "cancelled"].includes(receipt.status);
+  // Nothing is collected against a credit note — the money moves the other
+  // way — so the whole collection side of the page is off for one.
+  const canPay = canWrite && !isCreditNote && ["emitted", "overdue"].includes(receipt.status);
+  const canReturn = canWrite && !isCreditNote && ["emitted", "overdue"].includes(receipt.status);
+  const canCancel = canWrite && !isCreditNote && !["paid", "cancelled"].includes(receipt.status);
   const canReemit = canWrite && receipt.status === "returned";
-  const canRemind = canWrite && ["emitted", "overdue"].includes(receipt.status);
+  const canRemind = canWrite && !isCreditNote && ["emitted", "overdue"].includes(receipt.status);
   const sentReminderCount = (reminders ?? []).filter((r) => r.status === "sent").length;
   const maxReminders = Number(settings?.features?.reminder_max_count ?? 3);
   const remindersExhausted = sentReminderCount >= maxReminders;
 
   const fields = [
     { label: t("receipts.receiptNumber"), value: receipt.receipt_number },
+    {
+      label: t("receipts.documentType"),
+      value: t(isCreditNote ? "receipts.documentTypeCreditNote" : "receipts.documentTypeInvoice"),
+    },
     { label: t("receipts.member"), value: receipt.member_name || "—" },
     { label: t("receipts.description"), value: receipt.description },
     { label: t("receipts.origin"), value: t(`receipts.origin${receipt.origin.charAt(0).toUpperCase() + receipt.origin.slice(1)}`) },
@@ -177,6 +218,14 @@ export default function ReceiptDetailPage() {
 
   if (receipt.billing_period_start) {
     fields.push({ label: t("receipts.billingPeriod"), value: `${formatDate(receipt.billing_period_start)} — ${formatDate(receipt.billing_period_end)}` });
+  }
+
+  if (receipt.rectifies_receipt_number) {
+    fields.push({ label: t("receipts.rectifies"), value: receipt.rectifies_receipt_number });
+  }
+
+  if (credited > 0) {
+    fields.push({ label: t("receipts.creditedAmount"), value: formatCurrency(credited) });
   }
 
   if (receipt.notes) {
@@ -212,6 +261,11 @@ export default function ReceiptDetailPage() {
               </Button>
             )}
             {canReemit && <Button size="sm" onClick={handleReemit}>{t("receipts.reemit")}</Button>}
+            {canCreditNote && (
+              <Button size="sm" variant="outline" onClick={() => setCreditOpen(true)}>
+                {t("receipts.issueCreditNote")}
+              </Button>
+            )}
             {canCancel && <Button size="sm" variant="destructive" onClick={handleCancel}>{t("receipts.cancel")}</Button>}
             <Button size="sm" variant="outline" asChild>
               <a href={`/api/receipts/${receipt.id}/pdf`} target="_blank" rel="noopener noreferrer">
@@ -312,6 +366,47 @@ export default function ReceiptDetailPage() {
             </div>
             <Button onClick={handleReturn} disabled={!returnReason.trim() || returnMutation.isPending} className="w-full">
               {returnMutation.isPending ? t("common.loading") : t("receipts.markReturned")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Credit Note Dialog */}
+      <Dialog open={creditOpen} onOpenChange={setCreditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("receipts.issueCreditNote")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              {t("receipts.creditNoteExplainer", { number: receipt.receipt_number })}
+            </p>
+            <div>
+              <label className="text-sm font-medium">{t("receipts.creditNoteReason")}</label>
+              <Input
+                value={creditReason}
+                onChange={(e) => setCreditReason(e.target.value)}
+                placeholder={t("receipts.enterCreditNoteReason")}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">{t("receipts.creditNoteAmount")} (€)</label>
+              <DecimalInput
+                value={creditAmount}
+                onChange={(e) => setCreditAmount(e.target.value)}
+                onBlur={(e) => setCreditAmount(e.target.value)}
+                placeholder={String(Number(receipt.total_amount) - credited)}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                {t("receipts.creditNoteAmountHint")}
+              </p>
+            </div>
+            <Button
+              onClick={handleCreditNote}
+              disabled={!creditReason.trim() || creditNoteMutation.isPending}
+              className="w-full"
+            >
+              {creditNoteMutation.isPending ? t("common.loading") : t("receipts.issueCreditNote")}
             </Button>
           </div>
         </DialogContent>

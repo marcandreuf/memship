@@ -48,6 +48,24 @@ STATUS_LABELS = {
     },
 }
 
+DOCUMENT_LABELS = {
+    "es": {
+        "invoice": "RECIBO",
+        "credit_note": "FACTURA RECTIFICATIVA",
+        "rectifies": "Rectifica el documento",
+    },
+    "ca": {
+        "invoice": "REBUT",
+        "credit_note": "FACTURA RECTIFICATIVA",
+        "rectifies": "Rectifica el document",
+    },
+    "en": {
+        "invoice": "RECEIPT",
+        "credit_note": "CREDIT NOTE",
+        "rectifies": "Rectifies document",
+    },
+}
+
 PAYMENT_METHOD_LABELS = {
     "es": {
         "cash": "Efectivo",
@@ -144,6 +162,10 @@ def generate_receipt_pdf(db: Session, receipt: Receipt) -> bytes:
         },
         "receipt": {
             "receipt_number": receipt.receipt_number,
+            "document_type": receipt.document_type,
+            "rectifies_receipt_number": (
+                receipt.rectifies.receipt_number if receipt.rectifies else None
+            ),
             "description": receipt.description,
             "base_amount": f"{receipt.base_amount:.2f}",
             "vat_rate": f"{receipt.vat_rate:.0f}" if receipt.vat_rate == int(receipt.vat_rate) else f"{receipt.vat_rate:.2f}",
@@ -169,6 +191,7 @@ def generate_receipt_pdf(db: Session, receipt: Receipt) -> bytes:
             "address": member_address,
             "member_number": member.member_number if member else "—",
         },
+        "document_labels": DOCUMENT_LABELS.get(locale, DOCUMENT_LABELS["es"]),
         "status_label": STATUS_LABELS.get(locale, STATUS_LABELS["es"]).get(receipt.status, receipt.status),
         "payment_method_label": PAYMENT_METHOD_LABELS.get(locale, PAYMENT_METHOD_LABELS["es"]).get(receipt.payment_method, receipt.payment_method) if receipt.payment_method else None,
     }

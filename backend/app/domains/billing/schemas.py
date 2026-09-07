@@ -99,11 +99,26 @@ class ReceiptReturnRequest(BaseModel):
     return_date: date | None = None
 
 
+class CreditNoteCreate(BaseModel):
+    """Request to rectify an issued receipt with a credit note.
+
+    ``amount`` is the gross total to credit and is positive here — the negative
+    is a storage detail of the document, not something a caller states. Omitting
+    it credits everything not yet credited.
+    """
+
+    reason: str = Field(min_length=1, max_length=500)
+    amount: Decimal | None = Field(default=None, gt=0)
+    notes: str | None = None
+
+
 class ReceiptResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
     receipt_number: str
+    document_type: str = "invoice"
+    rectifies_receipt_id: int | None = None
     member_id: int
     concept_id: int | None
     registration_id: int | None
@@ -146,6 +161,11 @@ class ReceiptDetailResponse(ReceiptResponse):
     member_name: str | None = None
     member_number: str | None = None
     concept_name: str | None = None
+    # The rectification link read from whichever end the caller is holding: the
+    # document this one corrects, and the credit notes correcting it.
+    rectifies_receipt_number: str | None = None
+    credit_note_ids: list[int] = []
+    credited_amount: Decimal = Decimal("0")
 
 
 class GenerateMembershipFeesRequest(BaseModel):

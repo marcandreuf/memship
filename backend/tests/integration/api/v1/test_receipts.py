@@ -336,6 +336,266 @@ class TestReceiptStatusTransitions:
         assert resp.status_code == 400
 
 
+# --- Credit Note Tests ---
+
+
+class TestCreditNotes:
+    """An issued receipt is corrected by a rectifying document, not by editing it.
+
+    The pair — original and credit note — is what keeps the numbering series
+    unbroken and the correction traceable, which "cancel and reissue" does not.
+    """
+
+    def _issued_receipt(self, client, db, suffix, base_amount=100):
+        _ensure_org_settings(db)
+        user = _create_user(db, "admin", f"rcpt-cn-{suffix}")
+        member, _ = _create_member(db, f"cn-{suffix}")
+        receipt = client.post(
+            "/api/v1/receipts/",
+            json={
+                "member_id": member.id,
+                "origin": "manual",
+                "description": "Credit note test",
+                "base_amount": base_amount,
+                "vat_rate": 21,
+                "emission_date": "2026-03-26",
+            },
+            cookies=_auth_cookie(user),
+        ).json()
+        client.post(f"/api/v1/receipts/{receipt['id']}/emit", cookies=_auth_cookie(user))
+        return receipt, user
+
+    def test_credit_note_mirrors_the_receipt_it_rectifies(self, client, db):
+        receipt, user = self._issued_receipt(client, db, "full")
+
+        resp = client.post(
+            f"/api/v1/receipts/{receipt['id']}/credit-note",
+            json={"reason": "Charged the wrong tier"},
+            cookies=_auth_cookie(user),
+        )
+
+        assert resp.status_code == 201
+        note = resp.json()
+        assert note["document_type"] == "credit_note"
+        assert note["rectifies_receipt_id"] == receipt["id"]
+        assert float(note["total_amount"]) == -121.0
+        assert float(note["base_amount"]) == -100.0
+        assert float(note["vat_amount"]) == -21.0
+        assert note["status"] == "emitted"
+        assert note["is_batchable"] is False
+        assert note["due_date"] is None
+        assert note["member_id"] == receipt["member_id"]
+
+    def test_credit_note_takes_the_next_number_in_the_series(self, client, db):
+        """No gap: the rectifying document is numbered like everything else."""
+        receipt, user = self._issued_receipt(client, db, "number")
+
+        note = client.post(
+            f"/api/v1/receipts/{receipt['id']}/credit-note",
+            json={"reason": "Duplicate charge"},
+            cookies=_auth_cookie(user),
+        ).json()
+
+        prefix, year, sequence = receipt["receipt_number"].rsplit("-", 2)
+        assert note["receipt_number"] == f"{prefix}-{year}-{int(sequence) + 1:04d}"
+
+    def test_original_receipt_is_left_untouched(self, client, db):
+        receipt, user = self._issued_receipt(client, db, "untouched")
+        client.post(
+            f"/api/v1/receipts/{receipt['id']}/credit-note",
+            json={"reason": "Overcharged"},
+            cookies=_auth_cookie(user),
+        )
+
+        original = client.get(
+            f"/api/v1/receipts/{receipt['id']}", cookies=_auth_cookie(user)
+        ).json()
+        assert original["status"] == "emitted"
+        assert float(original["total_amount"]) == 121.0
+        assert original["receipt_number"] == receipt["receipt_number"]
+
+    def test_link_is_readable_from_both_documents(self, client, db):
+        receipt, user = self._issued_receipt(client, db, "link")
+        note = client.post(
+            f"/api/v1/receipts/{receipt['id']}/credit-note",
+            json={"reason": "Wrong amount"},
+            cookies=_auth_cookie(user),
+        ).json()
+
+        original = client.get(
+            f"/api/v1/receipts/{receipt['id']}", cookies=_auth_cookie(user)
+        ).json()
+        rectifying = client.get(
+            f"/api/v1/receipts/{note['id']}", cookies=_auth_cookie(user)
+        ).json()
+
+        assert original["credit_note_ids"] == [note["id"]]
+        assert float(original["credited_amount"]) == 121.0
+        assert rectifying["rectifies_receipt_number"] == receipt["receipt_number"]
+
+    def test_partial_credit_splits_base_and_vat(self, client, db):
+        receipt, user = self._issued_receipt(client, db, "partial")
+
+        note = client.post(
+            f"/api/v1/receipts/{receipt['id']}/credit-note",
+            json={"reason": "Partial refund", "amount": 60.5},
+            cookies=_auth_cookie(user),
+        ).json()
+
+        assert float(note["total_amount"]) == -60.5
+        assert float(note["base_amount"]) == -50.0
+        assert float(note["vat_amount"]) == -10.5
+
+    def test_credits_stop_at_the_amount_invoiced(self, client, db):
+        receipt, user = self._issued_receipt(client, db, "overcredit")
+        client.post(
+            f"/api/v1/receipts/{receipt['id']}/credit-note",
+            json={"reason": "First half", "amount": 100},
+            cookies=_auth_cookie(user),
+        )
+
+        resp = client.post(
+            f"/api/v1/receipts/{receipt['id']}/credit-note",
+            json={"reason": "More than is left", "amount": 50},
+            cookies=_auth_cookie(user),
+        )
+
+        assert resp.status_code == 400
+        assert "left to credit" in resp.json()["detail"]
+
+    def test_a_paid_receipt_can_be_credited(self, client, db):
+        """The case cancellation cannot reach: the money has already moved."""
+        receipt, user = self._issued_receipt(client, db, "paid")
+        client.post(
+            f"/api/v1/receipts/{receipt['id']}/pay",
+            json={"payment_method": "cash"},
+            cookies=_auth_cookie(user),
+        )
+
+        resp = client.post(
+            f"/api/v1/receipts/{receipt['id']}/credit-note",
+            json={"reason": "Collected twice"},
+            cookies=_auth_cookie(user),
+        )
+
+        assert resp.status_code == 201
+        assert float(resp.json()["total_amount"]) == -121.0
+
+    def test_cannot_credit_a_receipt_nobody_has_been_sent(self, client, db):
+        """A 'pending' receipt is still editable, so it is corrected by editing."""
+        _ensure_org_settings(db)
+        user = _create_user(db, "admin", "rcpt-cn-pending")
+        member, _ = _create_member(db, "cn-pending")
+        receipt = client.post(
+            "/api/v1/receipts/",
+            json={
+                "member_id": member.id,
+                "origin": "manual",
+                "description": "Not issued yet",
+                "base_amount": 100,
+                "vat_rate": 21,
+                "emission_date": "2026-03-26",
+            },
+            cookies=_auth_cookie(user),
+        ).json()
+
+        resp = client.post(
+            f"/api/v1/receipts/{receipt['id']}/credit-note",
+            json={"reason": "Too early"},
+            cookies=_auth_cookie(user),
+        )
+
+        assert resp.status_code == 400
+
+    def test_cannot_credit_a_credit_note(self, client, db):
+        receipt, user = self._issued_receipt(client, db, "chain")
+        note = client.post(
+            f"/api/v1/receipts/{receipt['id']}/credit-note",
+            json={"reason": "First"},
+            cookies=_auth_cookie(user),
+        ).json()
+
+        resp = client.post(
+            f"/api/v1/receipts/{note['id']}/credit-note",
+            json={"reason": "Rectify the rectification"},
+            cookies=_auth_cookie(user),
+        )
+
+        assert resp.status_code == 400
+
+    def test_credit_notes_are_not_collected_by_direct_debit(self, client, db):
+        """The money moves back to the member — a remittance only collects."""
+        receipt, user = self._issued_receipt(client, db, "batch")
+        note = client.post(
+            f"/api/v1/receipts/{receipt['id']}/credit-note",
+            json={"reason": "Refund due"},
+            cookies=_auth_cookie(user),
+        ).json()
+
+        assert note["is_batchable"] is False
+
+    def test_a_credit_note_cannot_be_cancelled(self, client, db):
+        """The rectifying document is as final as the one it rectifies."""
+        receipt, user = self._issued_receipt(client, db, "nocancel")
+        note = client.post(
+            f"/api/v1/receipts/{receipt['id']}/credit-note",
+            json={"reason": "Refund due"},
+            cookies=_auth_cookie(user),
+        ).json()
+
+        resp = client.post(
+            f"/api/v1/receipts/{note['id']}/cancel", cookies=_auth_cookie(user)
+        )
+
+        assert resp.status_code == 400
+
+    def test_list_filters_by_document_type(self, client, db):
+        receipt, user = self._issued_receipt(client, db, "filter")
+        note = client.post(
+            f"/api/v1/receipts/{receipt['id']}/credit-note",
+            json={"reason": "Filter me"},
+            cookies=_auth_cookie(user),
+        ).json()
+
+        resp = client.get(
+            "/api/v1/receipts/?document_type=credit_note",
+            cookies=_auth_cookie(user),
+        )
+
+        assert resp.status_code == 200
+        ids = [r["id"] for r in resp.json()["items"]]
+        assert note["id"] in ids
+        assert receipt["id"] not in ids
+
+    def test_stats_keep_the_two_kinds_apart(self, client, db):
+        receipt, user = self._issued_receipt(client, db, "stats")
+        before = client.get("/api/v1/receipts/stats", cookies=_auth_cookie(user)).json()
+        client.post(
+            f"/api/v1/receipts/{receipt['id']}/credit-note",
+            json={"reason": "Not money owed to the club"},
+            cookies=_auth_cookie(user),
+        )
+
+        after = client.get("/api/v1/receipts/stats", cookies=_auth_cookie(user)).json()
+
+        assert after["emitted"] == before["emitted"]
+        assert after["pending_amount"] == before["pending_amount"]
+        assert after["credit_notes"] == before["credit_notes"] + 1
+        assert after["credited_this_month"] == before["credited_this_month"] + 121.0
+
+    def test_credit_note_requires_billing_write(self, client, db):
+        receipt, _ = self._issued_receipt(client, db, "perm")
+        member_user = _create_user(db, "member", "rcpt-cn-perm")
+
+        resp = client.post(
+            f"/api/v1/receipts/{receipt['id']}/credit-note",
+            json={"reason": "Not allowed"},
+            cookies=_auth_cookie(member_user),
+        )
+
+        assert resp.status_code == 403
+
+
 # --- Bulk Generation Tests ---
 
 

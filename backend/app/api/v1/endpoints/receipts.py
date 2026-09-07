@@ -16,6 +16,7 @@ from app.domains.auth.models import User
 from app.domains.billing.models import Receipt, ReceiptReminder
 from app.domains.billing.reminder_service import send_reminder
 from app.domains.billing.schemas import (
+    CreditNoteCreate,
     GenerateMembershipFeesRequest,
     ReceiptCreate,
     ReceiptDetailResponse,
@@ -28,7 +29,9 @@ from app.domains.billing.schemas import (
 from app.domains.billing.service import (
     build_receipts_query,
     cancel_receipt,
+    create_credit_note,
     create_receipt,
+    credited_amount,
     dispatch_payment_notifications,
     emit_receipt,
     generate_membership_fees,
@@ -90,6 +93,11 @@ def _to_detail(receipt: Receipt) -> dict:
         data["member_number"] = receipt.member.member_number
     if receipt.concept:
         data["concept_name"] = receipt.concept.name
+    data["rectifies_receipt_number"] = (
+        receipt.rectifies.receipt_number if receipt.rectifies else None
+    )
+    data["credit_note_ids"] = [note.id for note in receipt.credit_notes]
+    data["credited_amount"] = credited_amount(receipt)
     return data
 
 
@@ -99,6 +107,7 @@ def list_receipts(
     per_page: int = Query(20, ge=1, le=100),
     status_filter: str | None = Query(None, alias="status"),
     origin: str | None = Query(None),
+    document_type: str | None = Query(None),
     member_id: int | None = Query(None),
     search: str | None = Query(None),
     emission_date_from: date | None = Query(None),
@@ -111,6 +120,7 @@ def list_receipts(
         db,
         status=status_filter,
         origin=origin,
+        document_type=document_type,
         member_id=member_id,
         search=search,
         emission_date_from=emission_date_from,
@@ -126,6 +136,8 @@ def list_receipts(
 
 _RECEIPTS_CSV_HEADERS = [
     "receipt_number",
+    "document_type",
+    "rectifies_receipt_number",
     "member_number",
     "member_name",
     "concept",
@@ -149,6 +161,8 @@ def _receipt_csv_row(receipt: Receipt) -> list:
         member_number = receipt.member.member_number
     return [
         receipt.receipt_number,
+        receipt.document_type,
+        receipt.rectifies.receipt_number if receipt.rectifies else None,
         member_number,
         member_name,
         receipt.concept.name if receipt.concept else None,
@@ -168,6 +182,7 @@ def export_receipts_csv(
     status_filter: str | None = Query(None, alias="status"),
     origin: str | None = Query(None),
     member_id: int | None = Query(None),
+    document_type: str | None = Query(None),
     search: str | None = Query(None),
     emission_date_from: date | None = Query(None),
     emission_date_to: date | None = Query(None),
@@ -179,6 +194,7 @@ def export_receipts_csv(
         db,
         status=status_filter,
         origin=origin,
+        document_type=document_type,
         member_id=member_id,
         search=search,
         emission_date_from=emission_date_from,
@@ -197,10 +213,16 @@ def receipt_stats(
     from sqlalchemy import func as sqlfunc, extract
     from app.domains.billing.models import Receipt as R
 
+    # Every figure below counts invoices only. A credit note is born 'emitted'
+    # and carries a negative amount, so folding the two kinds together would
+    # both inflate the emitted count and quietly net money the club owes back
+    # against money it is owed. Credited money gets its own line instead.
+    invoices = R.document_type == "invoice"
+
     # Status counts
     status_counts = (
         db.query(R.status, sqlfunc.count(R.id))
-        .filter(R.is_active.is_(True))
+        .filter(R.is_active.is_(True), invoices)
         .group_by(R.status)
         .all()
     )
@@ -210,13 +232,18 @@ def receipt_stats(
     today = date.today()
     pending_amount = (
         db.query(sqlfunc.coalesce(sqlfunc.sum(R.total_amount), 0))
-        .filter(R.is_active.is_(True), R.status.in_(["pending", "emitted", "overdue"]))
+        .filter(
+            R.is_active.is_(True),
+            invoices,
+            R.status.in_(["pending", "emitted", "overdue"]),
+        )
         .scalar()
     )
     paid_this_month = (
         db.query(sqlfunc.coalesce(sqlfunc.sum(R.total_amount), 0))
         .filter(
             R.is_active.is_(True),
+            invoices,
             R.status == "paid",
             extract("year", R.payment_date) == today.year,
             extract("month", R.payment_date) == today.month,
@@ -225,7 +252,22 @@ def receipt_stats(
     )
     overdue_amount = (
         db.query(sqlfunc.coalesce(sqlfunc.sum(R.total_amount), 0))
-        .filter(R.is_active.is_(True), R.status == "overdue")
+        .filter(R.is_active.is_(True), invoices, R.status == "overdue")
+        .scalar()
+    )
+    credit_notes = (
+        db.query(sqlfunc.count(R.id))
+        .filter(R.is_active.is_(True), R.document_type == "credit_note")
+        .scalar()
+    )
+    credited_this_month = (
+        db.query(sqlfunc.coalesce(sqlfunc.sum(R.total_amount), 0))
+        .filter(
+            R.is_active.is_(True),
+            R.document_type == "credit_note",
+            extract("year", R.emission_date) == today.year,
+            extract("month", R.emission_date) == today.month,
+        )
         .scalar()
     )
 
@@ -237,9 +279,12 @@ def receipt_stats(
         "returned": statuses.get("returned", 0),
         "cancelled": statuses.get("cancelled", 0),
         "overdue": statuses.get("overdue", 0),
+        "credit_notes": credit_notes,
         "pending_amount": float(pending_amount),
         "paid_this_month": float(paid_this_month),
         "overdue_amount": float(overdue_amount),
+        # Positive: an amount credited back, not a balance.
+        "credited_this_month": float(-credited_this_month),
     }
 
 
@@ -467,6 +512,34 @@ def cancel_receipt_endpoint(
     db.commit()
     db.refresh(receipt)
     return receipt
+
+
+@router.post(
+    "/{receipt_id}/credit-note",
+    response_model=ReceiptResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_credit_note_endpoint(
+    receipt_id: int,
+    data: CreditNoteCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("billing.write")),
+):
+    """Rectify an issued receipt with a credit note.
+
+    Returns the new credit note, not the receipt it rectifies — the original is
+    left exactly as it was.
+    """
+    receipt = db.query(Receipt).filter(
+        Receipt.id == receipt_id, Receipt.is_active.is_(True)
+    ).first()
+    if not receipt:
+        raise HTTPException(status_code=404, detail="Receipt not found")
+
+    credit_note = create_credit_note(db, receipt, data, current_user.id)
+    db.commit()
+    db.refresh(credit_note)
+    return credit_note
 
 
 @router.post("/{receipt_id}/return", response_model=ReceiptResponse)

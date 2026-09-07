@@ -115,6 +115,11 @@ def create_remittance(
     errors = []
     member_ids = set()
     for r in receipts:
+        if r.document_type != "invoice":
+            errors.append(
+                f"Receipt {r.receipt_number}: a credit note is not collected — "
+                "the money moves back to the member"
+            )
         if r.status not in ("emitted", "overdue"):
             errors.append(f"Receipt {r.receipt_number}: status '{r.status}' not eligible (must be emitted or overdue)")
         if not r.is_batchable:

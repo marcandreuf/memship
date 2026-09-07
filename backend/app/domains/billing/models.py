@@ -80,18 +80,58 @@ class Receipt(Base):
             "discount_type IN ('percentage', 'fixed') OR discount_type IS NULL",
             name="valid_receipt_discount_type",
         ),
-        CheckConstraint("base_amount >= 0", name="receipt_base_non_negative"),
+        CheckConstraint(
+            "document_type IN ('invoice', 'credit_note')",
+            name="valid_receipt_document_type",
+        ),
+        # Amounts carry the sign of the document. An invoice charges the member
+        # and is never negative; a credit note gives money back and is never
+        # positive, so the two together sum to what is actually owed without a
+        # caller having to know which kind of row it is holding.
+        CheckConstraint(
+            "(document_type = 'invoice' AND base_amount >= 0)"
+            " OR (document_type = 'credit_note' AND base_amount <= 0)",
+            name="receipt_base_sign_matches_document_type",
+        ),
         CheckConstraint("vat_rate >= 0 AND vat_rate <= 100", name="receipt_vat_range"),
-        CheckConstraint("total_amount >= 0", name="receipt_total_non_negative"),
+        CheckConstraint(
+            "(document_type = 'invoice' AND total_amount >= 0)"
+            " OR (document_type = 'credit_note' AND total_amount <= 0)",
+            name="receipt_total_sign_matches_document_type",
+        ),
+        # A credit note that rectifies nothing is not a credit note, and an
+        # invoice that rectifies something is a credit note that forgot to say
+        # so. The link is what an accountant follows, so the schema requires it.
+        CheckConstraint(
+            "(document_type = 'invoice' AND rectifies_receipt_id IS NULL)"
+            " OR (document_type = 'credit_note' AND rectifies_receipt_id IS NOT NULL)",
+            name="credit_note_rectifies_a_receipt",
+        ),
         Index("ix_receipts_member_id", "member_id"),
         Index("ix_receipts_status", "status"),
         Index("ix_receipts_emission_date", "emission_date"),
         Index("ix_receipts_origin", "origin"),
         Index("ix_receipts_booking_id", "booking_id"),
+        Index("ix_receipts_rectifies_receipt_id", "rectifies_receipt_id"),
     )
 
     id = Column(Integer, primary_key=True, index=True)
     receipt_number = Column(String(50), nullable=False, unique=True)
+
+    # An issued invoice is never amended — under Spanish rules it is rectified
+    # by a further document that carries its own number from the same series.
+    # Both kinds live in this table so they share that series: a credit note
+    # takes the next number like anything else, and the series stays unbroken.
+    document_type = Column(
+        String(20), nullable=False, default="invoice", server_default="invoice"
+    )
+    # RESTRICT, unlike every other foreign key on this table: the document a
+    # credit note rectifies is the reason the credit note exists. Losing it
+    # would leave a negative amount pointing at nothing, which is exactly the
+    # untraceable hole credit notes are here to prevent.
+    rectifies_receipt_id = Column(
+        Integer, ForeignKey("receipts.id", ondelete="RESTRICT")
+    )
 
     # Relationships
     member_id = Column(Integer, ForeignKey("members.id"), nullable=False)
@@ -177,6 +217,14 @@ class Receipt(Base):
     purchased_membership_type = relationship("MembershipType")
     remittance = relationship("Remittance", back_populates="receipts")
     creator = relationship("User", foreign_keys=[created_by])
+    # The link read from both ends: ``rectifies`` from the credit note, and
+    # ``credit_notes`` from the invoice it corrects.
+    rectifies = relationship(
+        "Receipt",
+        remote_side=[id],
+        foreign_keys=[rectifies_receipt_id],
+        backref="credit_notes",
+    )
 
 
 class SepaMandate(Base):

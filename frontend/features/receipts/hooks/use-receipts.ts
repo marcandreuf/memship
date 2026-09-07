@@ -13,6 +13,7 @@ import {
   cancelReceipt,
   returnReceipt,
   reemitReceipt,
+  createCreditNote,
   generateMembershipFees,
   getConcepts,
   createConcept,
@@ -21,7 +22,7 @@ import {
   initiateRedsysPayment,
   getRedsysReturnStatus,
 } from "../services/receipts-api";
-import type { RedsysMethod, RedsysLocale } from "../services/receipts-api";
+import type { CreditNotePayload, RedsysMethod, RedsysLocale } from "../services/receipts-api";
 
 export function useReceipts(params?: URLSearchParams, enabled = true) {
   return useQuery({
@@ -110,6 +111,18 @@ export function useReemitReceipt() {
   return useMutation({
     mutationFn: reemitReceipt,
     onSuccess: () => qc.invalidateQueries({ queryKey: ["receipts"] }),
+  });
+}
+
+export function useCreateCreditNote() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: CreditNotePayload }) =>
+      createCreditNote(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["receipts"] });
+      qc.invalidateQueries({ queryKey: ["receipt-stats"] });
+    },
   });
 }
 

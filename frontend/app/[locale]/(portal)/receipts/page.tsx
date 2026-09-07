@@ -132,7 +132,14 @@ export default function ReceiptsPage() {
                 className="cursor-pointer hover:bg-muted/50"
                 onClick={() => router.push(`/receipts/${r.id}`)}
               >
-                <TableCell className="font-mono text-sm">{r.receipt_number}</TableCell>
+                <TableCell className="font-mono text-sm">
+                  {r.receipt_number}
+                  {r.document_type === "credit_note" && (
+                    <Badge variant="outline" className="ml-2 font-sans">
+                      {t("receipts.documentTypeCreditNote")}
+                    </Badge>
+                  )}
+                </TableCell>
                 <TableCell>{r.member_name || "—"}</TableCell>
                 <TableCell className="max-w-[200px] truncate">{r.description}</TableCell>
                 <TableCell className="text-right font-mono">{formatCurrency(r.total_amount)}</TableCell>
@@ -154,7 +161,14 @@ export default function ReceiptsPage() {
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="font-mono text-sm">{r.receipt_number}</p>
+                  <p className="font-mono text-sm">
+                    {r.receipt_number}
+                    {r.document_type === "credit_note" && (
+                      <Badge variant="outline" className="ml-2 font-sans">
+                        {t("receipts.documentTypeCreditNote")}
+                      </Badge>
+                    )}
+                  </p>
                   <p className="truncate font-medium">{r.member_name || "—"}</p>
                 </div>
                 <StatusBadge status={r.status} t={t} />

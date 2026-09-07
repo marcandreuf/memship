@@ -260,13 +260,16 @@ class TestReceiptsExport:
         assert 'filename="receipts.csv"' in resp.headers["content-disposition"]
         headers, rows = _parse_csv(resp)
         assert headers == [
-            "receipt_number", "member_number", "member_name", "concept", "origin",
+            "receipt_number", "document_type", "rectifies_receipt_number",
+            "member_number", "member_name", "concept", "origin",
             "status", "base_amount", "vat_amount", "total_amount",
             "emission_date", "due_date", "payment_date",
         ]
         assert len(rows) == 1
         row = rows[0]
         assert row[headers.index("receipt_number")] == "FAC-r-cols-1"
+        assert row[headers.index("document_type")] == "invoice"
+        assert row[headers.index("rectifies_receipt_number")] == ""
         assert row[headers.index("member_number")] == "M-r-cols-m"
         assert row[headers.index("member_name")] == "María García-r-cols-m"
         assert row[headers.index("concept")] == "Membership Fee r-cols"

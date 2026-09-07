@@ -3,6 +3,8 @@ import { apiClient } from "@/lib/client-api";
 export interface ReceiptData {
   id: number;
   receipt_number: string;
+  document_type: string;
+  rectifies_receipt_id: number | null;
   member_id: number;
   concept_id: number | null;
   registration_id: number | null;
@@ -35,6 +37,9 @@ export interface ReceiptData {
   member_name?: string | null;
   member_number?: string | null;
   concept_name?: string | null;
+  rectifies_receipt_number?: string | null;
+  credit_note_ids?: number[];
+  credited_amount?: number;
 }
 
 export interface ConceptData {
@@ -109,6 +114,20 @@ export async function reemitReceipt(id: number): Promise<ReceiptData> {
   return apiClient(`/receipts/${id}/reemit`, { method: "POST" });
 }
 
+export interface CreditNotePayload {
+  reason: string;
+  amount?: number;
+  notes?: string;
+}
+
+/** Rectify an issued receipt. Resolves to the new credit note, not the original. */
+export async function createCreditNote(id: number, data: CreditNotePayload): Promise<ReceiptData> {
+  return apiClient(`/receipts/${id}/credit-note`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
 export async function generateMembershipFees(data: Record<string, unknown>): Promise<{ generated: number; receipt_ids: number[] }> {
   return apiClient("/receipts/generate-membership-fees", {
     method: "POST",
@@ -129,9 +148,11 @@ export interface ReceiptStats {
   returned: number;
   cancelled: number;
   overdue: number;
+  credit_notes: number;
   pending_amount: number;
   paid_this_month: number;
   overdue_amount: number;
+  credited_this_month: number;
 }
 
 export async function getReceiptStats(): Promise<ReceiptStats> {
