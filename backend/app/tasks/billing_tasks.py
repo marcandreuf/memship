@@ -87,3 +87,32 @@ def scheduled_payment_reminders() -> dict:
         raise
     finally:
         db.close()
+
+
+@celery.task
+def payment_notifications_fanout(receipt_ids: list[int]) -> int:
+    """Queue one notification task per receipt that has just been paid.
+
+    Enqueued once by ``dispatch_payment_notifications``, whatever the batch
+    size: closing a SEPA remittance can settle hundreds of receipts, and the
+    request that does it must not make hundreds of queue round-trips. Fanning
+    out from a worker instead gives every receipt its own task, so one that
+    fails — a bad address, a template error — cannot strand the rest.
+    """
+    for receipt_id in receipt_ids:
+        send_payment_notification.delay(receipt_id)
+    return len(receipt_ids)
+
+
+@celery.task(bind=True, max_retries=3, default_retry_delay=60)
+def send_payment_notification(self, receipt_id: int) -> bool:
+    """Send the outbound notifications owed for one paid receipt.
+
+    The seam for anything that must be *sent* after a payment, as opposed to
+    written: those effects run inline in ``mark_receipt_paid``, inside the
+    transaction that records the payment. Nothing is sent today — the club has
+    no payment-confirmation mail configured — so this is the place to add one
+    rather than a fourth call site to wire up.
+    """
+    logger.debug(f"No payment notification configured for receipt {receipt_id}")
+    return False

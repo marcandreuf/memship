@@ -29,9 +29,10 @@ from app.domains.billing.service import (
     build_receipts_query,
     cancel_receipt,
     create_receipt,
+    dispatch_payment_notifications,
     emit_receipt,
     generate_membership_fees,
-    pay_receipt,
+    mark_receipt_paid,
     reemit_receipt,
     return_receipt,
     update_receipt,
@@ -378,8 +379,14 @@ def pay_receipt_endpoint(
     if not receipt:
         raise HTTPException(status_code=404, detail="Receipt not found")
 
-    receipt = pay_receipt(db, receipt, data)
+    pending = mark_receipt_paid(
+        db,
+        receipt,
+        payment_method=data.payment_method,
+        payment_date=data.payment_date,
+    )
     db.commit()
+    dispatch_payment_notifications(pending)
     db.refresh(receipt)
     return receipt
 

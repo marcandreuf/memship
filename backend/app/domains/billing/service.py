@@ -1,5 +1,7 @@
 """Billing service layer — receipt creation, numbering, status transitions, fee generation."""
 
+import logging
+from collections.abc import Sequence
 from datetime import date, datetime, timezone
 from decimal import ROUND_HALF_UP, Decimal
 
@@ -13,13 +15,14 @@ from app.domains.billing.models import Concept, InvoiceSequence, Receipt
 from app.domains.billing.schemas import (
     GenerateMembershipFeesRequest,
     ReceiptCreate,
-    ReceiptPayRequest,
     ReceiptReturnRequest,
     ReceiptUpdate,
 )
 from app.domains.members.models import Member, MembershipType
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Person
+
+logger = logging.getLogger(__name__)
 
 
 # --- Query builders ---
@@ -277,16 +280,108 @@ def emit_receipt(db: Session, receipt: Receipt) -> Receipt:
     return receipt
 
 
-def pay_receipt(
-    db: Session, receipt: Receipt, data: ReceiptPayRequest
-) -> Receipt:
-    """Mark a receipt as paid."""
+def mark_receipt_paid(
+    db: Session,
+    receipt: Receipt,
+    *,
+    payment_method: str,
+    payment_date: date | None = None,
+    transaction_id: str | None = None,
+    stripe_payment_intent_id: str | None = None,
+    redsys_auth_code: str | None = None,
+) -> list[int]:
+    """Record a payment against a receipt — the one place a receipt becomes paid.
+
+    Every payment path goes through here: an admin marking cash or a bank
+    transfer by hand, the Stripe webhook, the Redsys/Bizum webhook, and closing
+    a SEPA remittance. **Anything that must happen when a receipt is paid is
+    attached here**, so it fires for all of them and for whatever payment method
+    is added next.
+
+    Effects that must be atomic with the payment — activating something the
+    member has just bought — belong inline, in the caller's transaction. Emails
+    and other outbound notifications must not fire until that transaction has
+    committed, so they are not sent here: the ids of the receipts needing one
+    are returned, and the caller passes them to
+    ``dispatch_payment_notifications`` after ``db.commit()``.
+
+    Idempotent — an already-paid receipt is left untouched and nothing is
+    returned. Both webhook paths can and do deliver the same payment twice.
+    """
+    if receipt.status == "paid":
+        return []
+
     validate_status_transition(receipt.status, "paid")
+
     receipt.status = "paid"
-    receipt.payment_method = data.payment_method
-    receipt.payment_date = data.payment_date or date.today()
+    if not (payment_method == "redsys" and receipt.payment_method == "bizum"):
+        # A Redsys notification only says the money came through Redsys;
+        # create_payment already recorded 'bizum' when that is how it was paid.
+        receipt.payment_method = payment_method
+    receipt.payment_date = payment_date or date.today()
+    if transaction_id is not None:
+        receipt.transaction_id = transaction_id
+    if stripe_payment_intent_id is not None:
+        receipt.stripe_payment_intent_id = stripe_payment_intent_id
+    if redsys_auth_code is not None:
+        receipt.redsys_auth_code = redsys_auth_code
+
     db.flush()
-    return receipt
+    return [receipt.id]
+
+
+def mark_receipts_paid(
+    db: Session,
+    receipts: Sequence[Receipt],
+    *,
+    payment_method: str,
+    payment_date: date | None = None,
+) -> list[int]:
+    """Mark a batch of receipts paid, in the caller's single transaction.
+
+    For the cases where one human action settles many receipts at once —
+    closing a SEPA remittance. The database work stays atomic, so a batch can
+    never end up half-settled; the returned ids are dispatched as one fan-out
+    job rather than one queue round-trip per receipt.
+    """
+    pending: list[int] = []
+    for receipt in receipts:
+        pending.extend(
+            mark_receipt_paid(
+                db,
+                receipt,
+                payment_method=payment_method,
+                payment_date=payment_date,
+            )
+        )
+    return pending
+
+
+def dispatch_payment_notifications(receipt_ids: list[int]) -> None:
+    """Queue the notifications for receipts that have just been marked paid.
+
+    Call this **after** ``db.commit()``. A worker can read the database before
+    an uncommitted row is visible, and a transaction that rolls back must not
+    leave mail already sent — so dispatch happens once the payment is durable.
+
+    One fan-out job is enqueued whatever the batch size; it queues one task per
+    receipt, so each retries and fails on its own. Dispatch is best-effort — a
+    broker that is down must not fail a payment that is already recorded — but
+    it is logged, or an undelivered notification is indistinguishable from one
+    that was never wanted.
+    """
+    if not receipt_ids:
+        return
+
+    try:
+        from app.tasks.billing_tasks import payment_notifications_fanout
+
+        payment_notifications_fanout.delay(receipt_ids)
+    except Exception as exc:  # noqa: BLE001 — dispatch is best-effort
+        logger.error(
+            f"Failed to dispatch payment notifications: "
+            f"receipt_ids={receipt_ids}, error={exc}"
+        )
 
 
 def return_receipt(

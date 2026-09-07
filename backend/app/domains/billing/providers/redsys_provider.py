@@ -17,7 +17,6 @@ Crypto (3DES key derivation + HMAC-SHA256) is delegated to `python-redsys`.
 import logging
 import re
 import secrets
-from datetime import date
 from decimal import Decimal, InvalidOperation
 from urllib.parse import parse_qs
 
@@ -252,7 +251,10 @@ class RedsysAdapter(PaymentProviderAdapter):
     def handle_webhook(self, db: Session, event_data: dict) -> dict:
         """Apply a verified Redsys notification to the matching receipt."""
         from app.domains.billing.models import Receipt
-        from app.domains.billing.service import validate_status_transition
+        from app.domains.billing.service import (
+            mark_receipt_paid,
+            validate_status_transition,
+        )
 
         ds_order = event_data.get("ds_order")
         ds_response = event_data.get("ds_response", "")
@@ -323,16 +325,19 @@ class RedsysAdapter(PaymentProviderAdapter):
                 "receipt_id": receipt.id,
             }
 
-        receipt.status = "paid"
-        # Preserve 'bizum' if create_payment set it; otherwise default to 'redsys'
-        if receipt.payment_method not in ("redsys", "bizum"):
-            receipt.payment_method = "redsys"
-        receipt.payment_date = date.today()
-        receipt.redsys_auth_code = ds_auth_code[:8]
-        receipt.transaction_id = ds_auth_code or None
-        db.flush()
+        pending = mark_receipt_paid(
+            db,
+            receipt,
+            payment_method="redsys",
+            transaction_id=ds_auth_code or None,
+            redsys_auth_code=ds_auth_code[:8],
+        )
 
-        return {"receipt_id": receipt.id, "outcome": "paid"}
+        return {
+            "receipt_id": receipt.id,
+            "outcome": "paid",
+            "payment_notifications": pending,
+        }
 
     def check_payment_status(self, payment_id: str) -> dict:
         raise NotImplementedError("Redsys REST query API not in scope for v0.4.3")

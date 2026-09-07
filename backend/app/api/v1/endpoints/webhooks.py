@@ -13,6 +13,7 @@ from app.core.encryption import decrypt_config
 from app.db.session import get_db
 from app.domains.billing.models import PaymentProvider
 from app.domains.billing.provider_config import get_sensitive_fields
+from app.domains.billing.service import dispatch_payment_notifications
 from app.domains.billing import webhook_service
 
 logger = logging.getLogger(__name__)
@@ -147,6 +148,10 @@ async def receive_webhook(
             status_code=500,
             media_type="application/json",
         )
+
+    # After the commit, never before: a worker must not read a receipt whose row
+    # is not visible yet, and a handler that rolled back must not leave mail sent.
+    dispatch_payment_notifications((result or {}).get("payment_notifications") or [])
 
     return Response(
         content='{"detail":"OK"}',

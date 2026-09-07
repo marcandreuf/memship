@@ -402,6 +402,28 @@ class TestRedsysWebhookFlow:
         assert receipt.status == "paid"
         assert receipt.payment_method == "bizum"
 
+    def test_paid_notification_queues_the_payment_notifications(self, client, db):
+        """Redsys reaches the same shared function, so the same fan-out fires."""
+        from unittest.mock import patch
+
+        _create_org(db)
+        person = _create_person(db, suffix="wh-notify")
+        _create_user(db, person=person, suffix="wh-notify")
+        member = _create_member(db, person)
+        receipt = _create_receipt(db, member, ds_order="000000001601")
+        _create_redsys_provider(db)
+
+        envelope = _sign_notification(
+            ds_order=receipt.redsys_ds_order, ds_response="0000"
+        )
+        with patch(
+            "app.tasks.billing_tasks.payment_notifications_fanout.delay"
+        ) as delay:
+            resp = _post_webhook(client, envelope)
+
+        assert resp.status_code == 200
+        delay.assert_called_once_with([receipt.id])
+
     def test_denied_notification_leaves_receipt_unchanged(self, client, db):
         _create_org(db)
         person = _create_person(db, suffix="wh-den")
