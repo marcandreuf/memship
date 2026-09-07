@@ -42,6 +42,17 @@ def _create_test_user(db, email="test@example.com", password="password123", role
     return user
 
 
+def _default_tier(db, name="General", slug="general"):
+    mt = db.query(MembershipType).filter_by(is_default=True).first()
+    if not mt:
+        mt = MembershipType(
+            name=name, slug=slug, base_price=0, is_active=True, is_default=True
+        )
+        db.add(mt)
+        db.flush()
+    return mt
+
+
 class TestLogin:
     def test_login_success(self, client, db):
         _create_test_user(db, email="login@examplee6e3b1.com", password="password123")
@@ -114,12 +125,7 @@ class TestLogin:
 
 class TestRegister:
     def test_register_success(self, client, db):
-        # Ensure a default membership type exists
-        mt = db.query(MembershipType).first()
-        if not mt:
-            mt = MembershipType(name="General", slug="general", is_active=True)
-            db.add(mt)
-            db.flush()
+        _default_tier(db)
 
         response = client.post(
             "/api/v1/auth/register",
@@ -146,6 +152,36 @@ class TestRegister:
         )
         # The member number is allocated on approval, not at sign-up.
         assert member.member_number is None
+
+    def test_register_lands_on_the_default_tier_not_the_oldest_row(self, client, db):
+        """The bug: sign-up took the lowest id, which on a seeded install is a
+        paid plan, so the new member started accruing a monthly fee."""
+        paid = MembershipType(
+            name="Full Plan", slug="full-plan", base_price=50, is_active=True
+        )
+        db.add(paid)
+        db.flush()
+        free = _default_tier(db, name="Registered Tier", slug="registered-tier")
+
+        response = client.post(
+            "/api/v1/auth/register",
+            json={
+                "first_name": "Tier",
+                "last_name": "Check",
+                "email": "tier@examplee6e3b1.com",
+                "password": "password123",
+            },
+        )
+        assert response.status_code == 201
+
+        member = (
+            db.query(Member)
+            .join(Person, Member.person_id == Person.id)
+            .filter(Person.email == "tier@examplee6e3b1.com")
+            .one()
+        )
+        assert member.membership_type_id == free.id
+        assert member.membership_type_id != paid.id
 
     def test_register_duplicate_email(self, client, db):
         _create_test_user(db, email="dupe@examplee6e3b1.com")

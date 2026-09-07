@@ -13,6 +13,7 @@ from sqlalchemy import (
     String,
     Text,
     func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import relationship
@@ -54,9 +55,19 @@ class MembershipType(Base):
             name="valid_billing_frequency",
         ),
         CheckConstraint("slug ~ '^[a-z0-9-]+$'", name="membership_type_slug_format"),
+        CheckConstraint(
+            "NOT is_default OR coalesce(base_price, 0) = 0",
+            name="default_membership_type_is_free",
+        ),
         Index("idx_membership_types_slug", "slug"),
         Index("idx_membership_types_is_active", "is_active"),
         Index("idx_membership_types_display_order", "display_order"),
+        Index(
+            "uq_membership_types_is_default",
+            "is_default",
+            unique=True,
+            postgresql_where=text("is_default"),
+        ),
     )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -76,6 +87,7 @@ class MembershipType(Base):
     display_order = Column(Integer, default=0)
     color = Column(String(7))
     is_active = Column(Boolean, default=True)
+    is_default = Column(Boolean, nullable=False, server_default="false", default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()

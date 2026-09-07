@@ -68,6 +68,20 @@ def is_minor_by_dob(date_of_birth: date | None) -> bool:
     return age < MINOR_AGE_THRESHOLD
 
 
+def get_default_membership_type(db: Session) -> MembershipType | None:
+    """The tier a new sign-up lands on.
+
+    At most one row carries ``is_default`` and the database refuses to mark a
+    priced one, so whatever comes back is free. ``is_active`` is deliberately
+    not filtered: an admin who hides the default should get a harmless free tier
+    on the member rather than a NULL ``membership_type_id``, which bars them
+    from every activity that restricts allowed membership types.
+    """
+    return (
+        db.query(MembershipType).filter(MembershipType.is_default == True).first()
+    )
+
+
 def allocate_member_number(db: Session) -> str:
     """Allocate the next member number from the configured prefix + sequence.
 

@@ -74,9 +74,11 @@ def stub_provider(monkeypatch):
 
 
 def _ensure_membership_type(db):
-    mt = db.query(MembershipType).first()
+    mt = db.query(MembershipType).filter_by(is_default=True).first()
     if not mt:
-        mt = MembershipType(name="General", slug="general", is_active=True)
+        mt = MembershipType(
+            name="General", slug="general", base_price=0, is_active=True, is_default=True
+        )
         db.add(mt)
         db.flush()
     return mt
@@ -291,6 +293,25 @@ def test_pending_member_still_gets_a_session(client, db, stub_provider):
     user = db.query(User).filter(User.email == "sso@examplee6e3b1.com").one()
     member = db.query(Member).filter(Member.user_id == user.id).one()
     assert member.status == "pending"
+
+
+def test_signup_lands_on_the_default_tier_not_the_oldest_row(client, db, stub_provider):
+    """The SSO path had its own copy of the oldest-row lookup, and its own copy
+    of the silent-billing bug with it."""
+    paid = MembershipType(
+        name="Full Plan", slug="full-plan", base_price=50, is_active=True
+    )
+    db.add(paid)
+    db.flush()
+    free = _ensure_membership_type(db)
+    stub_provider(claims=CLAIMS)
+
+    client.get(GOOGLE_CALLBACK, follow_redirects=False)
+
+    user = db.query(User).filter(User.email == "sso@examplee6e3b1.com").one()
+    member = db.query(Member).filter(Member.user_id == user.id).one()
+    assert member.membership_type_id == free.id
+    assert member.membership_type_id != paid.id
 
 
 # --- Apple sends email_verified as a string --------------------------------

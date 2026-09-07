@@ -8,8 +8,11 @@ from sqlalchemy.orm import Session
 from app.domains.auth.models import User, UserIdentity
 from app.domains.auth.roles import assign_roles
 from app.domains.auth.service import get_registration_settings
-from app.domains.members.models import Member, MembershipType
-from app.domains.members.service import allocate_member_number
+from app.domains.members.models import Member
+from app.domains.members.service import (
+    allocate_member_number,
+    get_default_membership_type,
+)
 from app.domains.persons.models import Person
 
 
@@ -106,12 +109,7 @@ def find_or_create_from_oauth(db: Session, profile: OAuthProfile) -> tuple[User,
 
     assign_roles(db, user)
 
-    default_type = (
-        db.query(MembershipType)
-        .filter(MembershipType.is_active == True)
-        .order_by(MembershipType.id)
-        .first()
-    )
+    default_type = get_default_membership_type(db)
     member = Member(
         person_id=person.id,
         user_id=user.id,

@@ -293,7 +293,7 @@ def seed_groups(db) -> dict[str, Group]:
 def seed_membership_types(db, groups: dict[str, Group]) -> MembershipType:
     existing = db.query(MembershipType).count()
     if existing > 0:
-        default = db.query(MembershipType).filter_by(slug="full-member").first()
+        default = db.query(MembershipType).filter_by(is_default=True).first()
         if not default:
             default = db.query(MembershipType).first()
         print(f"  Membership types: already seeded ({existing} records)")
@@ -305,6 +305,12 @@ def seed_membership_types(db, groups: dict[str, Group]) -> MembershipType:
     honorary_group = groups.get("honorary-members")
 
     types = [
+        MembershipType(
+            name="Registered", slug="registered",
+            description="Free tier every new sign-up lands on until an administrator moves them to a paid plan",
+            base_price=0, billing_frequency="annual",
+            display_order=0, is_active=True, is_default=True,
+        ),
         MembershipType(
             name="Full Member", slug="full-member",
             description="Full membership with access to all facilities and voting rights",
@@ -354,7 +360,7 @@ def seed_membership_types(db, groups: dict[str, Group]) -> MembershipType:
     default = None
     for mt in types:
         db.add(mt)
-        if mt.slug == "full-member":
+        if mt.is_default:
             default = mt
     db.flush()
     print(f"  Membership types: created {len(types)} types")

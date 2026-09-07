@@ -1,5 +1,8 @@
 """Integration tests for membership type endpoints."""
 
+import pytest
+from sqlalchemy.exc import IntegrityError
+
 from app.core.security.jwt import create_access_token
 from app.core.security.password import hash_password
 from app.domains.auth.models import User
@@ -103,3 +106,34 @@ class TestMembershipTypeCRUD:
             json={"name": "Another", "slug": "existing"},
         )
         assert response.status_code == 409
+
+
+class TestDefaultTier:
+    """The tier new sign-ups land on, and the two rules the database enforces."""
+
+    def test_a_second_default_is_rejected(self, db):
+        db.add(MembershipType(name="First", slug="first", base_price=0, is_default=True))
+        db.flush()
+
+        db.add(MembershipType(name="Second", slug="second", base_price=0, is_default=True))
+        with pytest.raises(IntegrityError):
+            db.flush()
+
+    def test_a_priced_tier_cannot_be_the_default(self, db):
+        db.add(MembershipType(name="Paid", slug="paid", base_price=50, is_default=True))
+        with pytest.raises(IntegrityError):
+            db.flush()
+
+    def test_raising_the_default_price_is_refused_rather_than_crashing(self, client, db):
+        """Without the guard the check constraint would surface as a 500."""
+        user = _create_user(db, "admin")
+        mt = MembershipType(name="Free", slug="free", base_price=0, is_default=True)
+        db.add(mt)
+        db.flush()
+        client.cookies.update(_auth_cookie(user))
+
+        response = client.put(
+            f"/api/v1/membership-types/{mt.id}", json={"base_price": 50.0}
+        )
+
+        assert response.status_code == 400
