@@ -37,7 +37,7 @@ from sqlalchemy.orm import Session
 
 from app.domains.billing.models import Concept, Receipt
 from app.domains.billing.proration import prorate_membership_price
-from app.domains.billing.recurring_billing_service import due_days
+from app.domains.billing.recurring_billing_service import membership_fee_due_days
 from app.domains.billing.service import (
     calculate_vat,
     cancel_receipt,
@@ -248,7 +248,7 @@ def purchase_membership(
         total_amount=quote.total_amount,
         status="emitted",
         emission_date=today,
-        due_date=today + timedelta(days=due_days(db)),
+        due_date=today + timedelta(days=membership_fee_due_days(db)),
         billing_period_start=quote.period_start,
         billing_period_end=quote.period_end,
         is_batchable=True,
@@ -294,6 +294,11 @@ def activate_purchased_membership(db: Session, receipt: Receipt) -> bool:
     # between purchase and payment does not undo the payment, and the member
     # bought what they bought.
     member.membership_type_id = mtype.id
+    # A member who lapsed and then bought their way back has chosen this plan
+    # over the one they lost, so the parked tier is dropped rather than left to
+    # overwrite their purchase the next time an old fee is settled.
+    member.membership_reverted_from_id = None
+    member.membership_reverted_at = None
     db.flush()
     return True
 

@@ -58,6 +58,13 @@ def _to_response(member: Member) -> MemberResponse:
         membership_type_name=(
             member.membership_type.name if member.membership_type else None
         ),
+        membership_reverted_from_id=member.membership_reverted_from_id,
+        membership_reverted_from_name=(
+            member.membership_reverted_from.name
+            if member.membership_reverted_from
+            else None
+        ),
+        membership_reverted_at=member.membership_reverted_at,
         member_number=member.member_number,
         status=member.status,
         status_reason=member.status_reason,

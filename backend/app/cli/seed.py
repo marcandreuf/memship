@@ -291,13 +291,14 @@ def seed_groups(db) -> dict[str, Group]:
 
 
 def seed_membership_types(db, groups: dict[str, Group]) -> MembershipType:
-    existing = db.query(MembershipType).count()
-    if existing > 0:
-        default = db.query(MembershipType).filter_by(is_default=True).first()
-        if not default:
-            default = db.query(MembershipType).first()
-        print(f"  Membership types: already seeded ({existing} records)")
-        return default
+    """Create the sample tiers, skipping the ones the database already has.
+
+    Skipping on "any tier exists" used to skip all of them: `a5b6c7d8e9f0`
+    creates the free `registered` tier on every install, so a freshly migrated
+    database already holds one before the seed runs and the sample plans were
+    never created. Matching per slug seeds the rest, and leaves a tier a club
+    edited alone.
+    """
 
     adult_group = groups.get("adult-members")
     youth_group = groups.get("youth-programs")
@@ -357,14 +358,29 @@ def seed_membership_types(db, groups: dict[str, Group]) -> MembershipType:
             display_order=6, is_active=True,
         ),
     ]
-    default = None
+    existing_slugs = {slug for (slug,) in db.query(MembershipType.slug).all()}
+    default = db.query(MembershipType).filter_by(is_default=True).first()
+
+    created = 0
     for mt in types:
+        if mt.slug in existing_slugs:
+            continue
+        if mt.is_default and default is not None:
+            # One default only — the partial unique index enforces it, and the
+            # tier already carrying the flag is the one members point at.
+            mt.is_default = False
         db.add(mt)
+        created += 1
         if mt.is_default:
             default = mt
     db.flush()
-    print(f"  Membership types: created {len(types)} types")
-    return default
+
+    if created:
+        print(f"  Membership types: created {created} types")
+    else:
+        print(f"  Membership types: already seeded ({len(existing_slugs)} records)")
+
+    return default or db.query(MembershipType).first()
 
 
 def next_member_number(db) -> str:

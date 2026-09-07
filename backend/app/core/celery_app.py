@@ -39,6 +39,11 @@ celery.conf.beat_schedule = {
         "task": "app.tasks.billing_tasks.scheduled_payment_reminders",
         "schedule": crontab(hour=3, minute=0),
     },
+    # After the reminders, so today's chase goes out before anyone loses access.
+    "scheduled-membership-lapse": {
+        "task": "app.tasks.billing_tasks.scheduled_membership_lapse",
+        "schedule": crontab(hour=4, minute=0),
+    },
 }
 
 # Load every model so the SQLAlchemy mapper registry is fully configured in the

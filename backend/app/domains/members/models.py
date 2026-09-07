@@ -95,7 +95,11 @@ class MembershipType(Base):
 
     # Relationships
     group = relationship("Group", back_populates="membership_types")
-    members = relationship("Member", back_populates="membership_type")
+    members = relationship(
+        "Member",
+        back_populates="membership_type",
+        foreign_keys="Member.membership_type_id",
+    )
 
 
 class Member(Base):
@@ -131,6 +135,16 @@ class Member(Base):
         JSONB, default=lambda: {"email": True, "sms": False, "push": False}
     )
     internal_notes = Column(Text)
+    # Where a paid tier went when a membership fee went unpaid, and when. Not
+    # folded into ``status`` (see #145): a lapsed member is a full member who is
+    # on the free tier, not a suspended one. Storing the previous tier is the
+    # one thing reversion cannot derive afterwards — overwriting
+    # ``membership_type_id`` is what destroys it — and it is what lets paying
+    # the outstanding fee put the member back exactly where they were.
+    membership_reverted_from_id = Column(
+        Integer, ForeignKey("membership_types.id", ondelete="SET NULL")
+    )
+    membership_reverted_at = Column(DateTime(timezone=True))
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(
@@ -141,5 +155,10 @@ class Member(Base):
     # Relationships
     person = relationship("Person", back_populates="member", foreign_keys=[person_id])
     user = relationship("User", foreign_keys=[user_id])
-    membership_type = relationship("MembershipType", back_populates="members")
+    membership_type = relationship(
+        "MembershipType", back_populates="members", foreign_keys=[membership_type_id]
+    )
+    membership_reverted_from = relationship(
+        "MembershipType", foreign_keys=[membership_reverted_from_id]
+    )
     guardian = relationship("Person", foreign_keys=[guardian_person_id])

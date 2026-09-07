@@ -33,7 +33,7 @@ from app.db.base import Base
 from app.domains.audit.models import AuditLog
 from app.domains.auth.models import Role, User
 from app.domains.billing.models import PaymentProvider
-from app.domains.members.models import Member
+from app.domains.members.models import Member, MembershipType
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Person
 
@@ -297,3 +297,61 @@ class TestUnknownTableGuard:
         monkeypatch.setattr(reset_module, "KNOWN_TABLES", frozenset({"users"}))
         with pytest.raises(RuntimeError, match="does not know what to do"):
             reset_club_data(db)
+
+
+class TestMembershipTypeSeeding:
+    """Seeding tiers onto a database the migrations have already touched.
+
+    ``a5b6c7d8e9f0`` creates a free ``registered`` tier on every install, so by
+    the time the seed runs there is always one row in the table. Skipping on
+    "any tier exists" therefore skipped all of them and no install ever got the
+    sample plans.
+    """
+
+    def _slugs(self, db):
+        return {slug for (slug,) in db.query(MembershipType.slug).all()}
+
+    def test_the_samples_are_created_alongside_the_migration_default(self, db):
+        db.add(
+            MembershipType(
+                name="Registered",
+                slug="registered",
+                base_price=0,
+                billing_frequency="annual",
+                display_order=0,
+                is_active=True,
+                is_default=True,
+            )
+        )
+        db.flush()
+
+        seed_membership_types(db, seed_groups(db))
+
+        assert {"full-member", "student", "family"} <= self._slugs(db)
+
+    def test_the_existing_default_stays_the_only_one(self, db):
+        migration_default = MembershipType(
+            name="Registered",
+            slug="registered",
+            base_price=0,
+            billing_frequency="annual",
+            display_order=0,
+            is_active=True,
+            is_default=True,
+        )
+        db.add(migration_default)
+        db.flush()
+
+        default = seed_membership_types(db, seed_groups(db))
+
+        assert default.id == migration_default.id
+        assert db.query(MembershipType).filter_by(is_default=True).count() == 1
+
+    def test_seeding_twice_creates_nothing_the_second_time(self, db):
+        groups = seed_groups(db)
+        seed_membership_types(db, groups)
+        before = self._slugs(db)
+
+        seed_membership_types(db, groups)
+
+        assert self._slugs(db) == before

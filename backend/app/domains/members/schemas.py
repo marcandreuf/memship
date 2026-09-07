@@ -157,6 +157,12 @@ class MemberResponse(BaseModel):
     person: PersonResponse
     membership_type_id: int | None = None
     membership_type_name: str | None = None
+    # Set while a member is sitting on the free tier because a membership fee
+    # went unpaid. Says which plan they lost and when, so the tier they hold and
+    # the reason they hold it are answered by the same record.
+    membership_reverted_from_id: int | None = None
+    membership_reverted_from_name: str | None = None
+    membership_reverted_at: datetime | None = None
     member_number: str | None = None
     status: str
     status_reason: str | None = None

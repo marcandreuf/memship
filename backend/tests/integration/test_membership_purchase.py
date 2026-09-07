@@ -145,7 +145,7 @@ class TestPurchaseReceipt:
 
     def test_due_date_follows_the_configured_window(self, db):
         member, _, paid = _setup(
-            db, "due", features={"recurring_billing_due_days": 7}
+            db, "due", features={"membership_fee_due_days": 7}
         )
 
         receipt, _ = purchase_membership(db, member, paid, today=date(2026, 3, 15))
@@ -278,7 +278,7 @@ class TestSupersedingAPurchase:
 class TestExpiry:
     def test_an_unpaid_purchase_is_voided_past_its_due_date(self, db):
         member, _, paid = _setup(
-            db, "expire", features={"recurring_billing_due_days": 7}
+            db, "expire", features={"membership_fee_due_days": 7}
         )
         receipt, _ = purchase_membership(db, member, paid, today=date(2026, 3, 15))
 
@@ -288,7 +288,7 @@ class TestExpiry:
 
     def test_it_survives_up_to_and_including_the_due_date(self, db):
         member, _, paid = _setup(
-            db, "notyetdue", features={"recurring_billing_due_days": 7}
+            db, "notyetdue", features={"membership_fee_due_days": 7}
         )
         receipt, _ = purchase_membership(db, member, paid, today=date(2026, 3, 15))
 
@@ -298,7 +298,7 @@ class TestExpiry:
 
     def test_a_paid_purchase_is_never_touched(self, db):
         member, _, paid = _setup(
-            db, "paidnotexpired", features={"recurring_billing_due_days": 7}
+            db, "paidnotexpired", features={"membership_fee_due_days": 7}
         )
         receipt, _ = purchase_membership(db, member, paid, today=date(2026, 3, 15))
         mark_receipt_paid(db, receipt, payment_method="cash")
@@ -323,7 +323,7 @@ class TestExpiry:
             db,
             "beforedunning",
             features={
-                "recurring_billing_due_days": 7,
+                "membership_fee_due_days": 7,
                 "payment_reminders_enabled": True,
             },
         )
@@ -486,7 +486,7 @@ class TestNoDoubleBilling:
 
 def test_an_expired_purchase_frees_the_period_again(db):
     """Voiding does not lock the member out of buying the same period later."""
-    member, _, paid = _setup(db, "rebuy", features={"recurring_billing_due_days": 7})
+    member, _, paid = _setup(db, "rebuy", features={"membership_fee_due_days": 7})
     first, _ = purchase_membership(db, member, paid, today=date(2026, 3, 15))
     expire_unpaid_purchases(db, date(2026, 3, 23))
 

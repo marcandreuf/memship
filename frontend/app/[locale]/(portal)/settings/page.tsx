@@ -46,6 +46,7 @@ import { LogoUpload } from "@/features/settings/components/logo-upload";
 import { GenderOptionsSettings } from "@/features/settings/components/gender-options-settings";
 import { PaymentProvidersSettings } from "@/features/settings/components/payment-providers-settings";
 import { RecurringBillingSettings } from "@/features/settings/components/recurring-billing-settings";
+import { MembershipLapseSettings } from "@/features/settings/components/membership-lapse-settings";
 import { PaymentRemindersSettings } from "@/features/settings/components/payment-reminders-settings";
 import { CommunicationsSettings } from "@/features/settings/components/communications-settings";
 import { EmailTemplatesSettings } from "@/features/settings/components/email-templates-settings";
@@ -462,6 +463,7 @@ export default function SettingsPage() {
               <TabsTrigger value="payment-providers" className={SUBTAB_TRIGGER}>{t("settings.providers.tab")}</TabsTrigger>
               <TabsTrigger value="recurring-billing" className={SUBTAB_TRIGGER}>{t("settings.recurringBilling.tab")}</TabsTrigger>
               <TabsTrigger value="payment-reminders" className={SUBTAB_TRIGGER}>{t("settings.paymentReminders.tab")}</TabsTrigger>
+              <TabsTrigger value="membership-lapse" className={SUBTAB_TRIGGER}>{t("settings.membershipLapse.tab")}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="payments-general">
@@ -475,6 +477,9 @@ export default function SettingsPage() {
             </TabsContent>
             <TabsContent value="payment-reminders">
               <PaymentRemindersSettings />
+            </TabsContent>
+            <TabsContent value="membership-lapse">
+              <MembershipLapseSettings />
             </TabsContent>
           </Tabs>
         </TabsContent>}

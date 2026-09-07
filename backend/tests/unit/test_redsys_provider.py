@@ -85,9 +85,12 @@ def fake_receipt(receipt_id: int = 42, amount: str = "50.00", description: str =
         description=description,
         status="emitted",
         payment_method=None,
-        # Every real receipt carries this, and `mark_receipt_paid` reads it to
-        # decide whether a membership plan was bought and has to be activated.
+        # Every real receipt carries these, and `mark_receipt_paid` reads them
+        # to decide whether a membership plan was bought and has to be
+        # activated, and whether paying restores a plan the member lost to
+        # non-payment.
         purchased_membership_type_id=None,
+        origin="manual",
     )
 
 

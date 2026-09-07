@@ -368,21 +368,31 @@ class TestGeneratedFeesArePayable:
 
         self._run(db)
 
-        assert self._fee(db).due_date == date(2026, 7, 1)
+        # Seven days, not the 30 an ordinary invoice gets: an unpaid membership
+        # fee keeps handing out the tier it pays for.
+        assert self._fee(db).due_date == date(2026, 6, 8)
 
     def test_the_due_term_is_configurable(self, db):
         _create_member(db, "monthly", "due-2")
 
-        self._run(db, features={"recurring_billing_due_days": 7})
+        self._run(db, features={"membership_fee_due_days": 14})
+
+        assert self._fee(db).due_date == date(2026, 6, 15)
+
+    def test_the_general_invoice_window_does_not_govern_a_membership_fee(self, db):
+        """A fee that gates access is a different question from an invoice."""
+        _create_member(db, "monthly", "due-4")
+
+        self._run(db, features={"recurring_billing_due_days": 30})
 
         assert self._fee(db).due_date == date(2026, 6, 8)
 
     def test_a_nonsense_due_term_falls_back_to_the_default(self, db):
         _create_member(db, "monthly", "due-3")
 
-        self._run(db, features={"recurring_billing_due_days": "soon"})
+        self._run(db, features={"membership_fee_due_days": "soon"})
 
-        assert self._fee(db).due_date == date(2026, 7, 1)
+        assert self._fee(db).due_date == date(2026, 6, 8)
 
     def test_the_fee_falls_overdue_and_earns_a_reminder(self, db):
         """The end-to-end pipeline the audit found broken: generate → overdue →
