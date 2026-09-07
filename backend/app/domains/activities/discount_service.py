@@ -5,6 +5,7 @@ from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
+from app.core.money import round_money
 from app.domains.activities.models import DiscountCode
 
 
@@ -52,7 +53,7 @@ def apply_discount(price_amount: Decimal, discount: DiscountCode) -> Decimal:
         result = price_amount - discount.discount_value
 
     # Never go below zero
-    return max(Decimal("0"), result.quantize(Decimal("0.01")))
+    return max(Decimal("0"), round_money(result))
 
 
 def increment_usage(db: Session, discount: DiscountCode) -> None:

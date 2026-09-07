@@ -3,7 +3,7 @@
 import logging
 from collections.abc import Sequence
 from datetime import date, datetime, timezone
-from decimal import ROUND_HALF_UP, Decimal
+from decimal import Decimal
 
 from fastapi import HTTPException, status
 from sqlalchemy import extract, func, or_
@@ -11,6 +11,7 @@ from sqlalchemy.orm import Query, Session, joinedload
 
 from sqlalchemy.exc import IntegrityError
 
+from app.core.money import round_money
 from app.domains.billing.models import Concept, InvoiceSequence, Receipt
 from app.domains.billing.schemas import (
     GenerateMembershipFeesRequest,
@@ -84,9 +85,7 @@ def calculate_vat(base_amount: Decimal, vat_rate: Decimal) -> tuple[Decimal, Dec
 
     Returns (vat_amount, total_amount).
     """
-    vat_amount = (base_amount * vat_rate / Decimal("100")).quantize(
-        Decimal("0.01"), rounding=ROUND_HALF_UP
-    )
+    vat_amount = round_money(base_amount * vat_rate / Decimal("100"))
     total_amount = base_amount + vat_amount
     return vat_amount, total_amount
 
@@ -209,9 +208,7 @@ def create_receipt(
     # Apply discount
     discount_amount = Decimal(str(data.discount_amount or 0))
     if data.discount_type == "percentage" and discount_amount > 0:
-        discount_amount = (base_amount * discount_amount / Decimal("100")).quantize(
-            Decimal("0.01"), rounding=ROUND_HALF_UP
-        )
+        discount_amount = round_money(base_amount * discount_amount / Decimal("100"))
 
     effective_base = base_amount - discount_amount
     if effective_base < 0:
