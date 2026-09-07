@@ -75,7 +75,10 @@ export default function RemittanceDetailPage() {
   const canDownloadXml = remittance.sepa_file_path !== null;
   const canSubmit = canWrite && remittance.status === "ready";
   const canImportReturns = canWrite && ["submitted", "processed"].includes(remittance.status);
-  const canClose = canWrite && remittance.status === "processed";
+  const canClose = canWrite && ["submitted", "processed"].includes(remittance.status);
+  const awaitingSettlement = (remittance.receipts ?? []).filter((r) =>
+    ["emitted", "overdue"].includes(r.status)
+  ).length;
   const canCancel = canWrite && ["draft", "ready"].includes(remittance.status);
   const isTerminal = ["closed", "cancelled"].includes(remittance.status);
 
@@ -103,6 +106,7 @@ export default function RemittanceDetailPage() {
   function handleClose() {
     confirmAction({
       title: t("remittances.confirmClose"),
+      description: t("remittances.confirmCloseDescription", { count: awaitingSettlement }),
       cancelLabel: t("common.cancel"),
       confirmLabel: t("remittances.closeRemittance"),
       onConfirm: async () => {

@@ -12,6 +12,7 @@ from app.core.config import settings
 from app.domains.billing.models import Receipt, Remittance, SepaMandate
 from app.domains.billing.schemas import RemittanceCreate
 from app.domains.billing.sepa_xml import SepaExportError, generate_sepa_xml
+from app.domains.billing.service import mark_receipts_paid
 from app.domains.organizations.models import OrganizationSettings
 
 
@@ -45,7 +46,12 @@ def generate_remittance_number(db: Session, emission_date: date) -> str:
 VALID_REMITTANCE_TRANSITIONS = {
     "draft": {"ready", "cancelled"},
     "ready": {"submitted", "cancelled"},
-    "submitted": {"processed"},
+    # 'submitted' closes directly. A bank that has nothing to return sends
+    # nothing, and import_returns — the only thing that sets 'processed' —
+    # exists to record failures. Without this the batch where everyone paid is
+    # the one that could never be closed, which is exactly the batch that most
+    # needs reconciling.
+    "submitted": {"processed", "closed"},
     "processed": {"closed"},
     "closed": set(),
     "cancelled": set(),
@@ -301,12 +307,50 @@ def import_returns(
     return {"processed": processed, "returned": returned, "not_found": not_found}
 
 
-def close_remittance(db: Session, remittance: Remittance) -> Remittance:
-    """Close a remittance — finalize the batch."""
+# Statuses a receipt is left in while its collection is still in flight. Anything
+# else in the batch has already been settled by hand or reported back by the bank.
+AWAITING_SETTLEMENT = ("emitted", "overdue")
+
+
+def close_remittance(db: Session, remittance: Remittance) -> tuple[Remittance, list[int]]:
+    """Close a remittance — the settlement window has passed, so reconcile it.
+
+    SEPA confirms nothing. The bank reports the collections that failed and says
+    nothing at all about the rest, so closing is a human asserting that the
+    window has passed: every receipt still awaiting settlement is taken as
+    collected and marked paid. Receipts ``import_returns`` already flipped to
+    'returned', and cancelled or deactivated ones, are left alone.
+
+    The payment date is the remittance's own due date — the SEPA collection
+    date, when the money actually moved — rather than the moment the admin got
+    round to finishing the batch, which would book a March collection in April.
+
+    The whole batch is marked in the caller's transaction, so a remittance can
+    never end up 'closed' with some of its receipts still awaiting settlement.
+    Returns the remittance and the receipts owed a payment notification, for the
+    caller to dispatch once it has committed.
+    """
     validate_remittance_transition(remittance.status, "closed")
+
+    receipts = (
+        db.query(Receipt)
+        .filter(
+            Receipt.remittance_id == remittance.id,
+            Receipt.is_active.is_(True),
+            Receipt.status.in_(AWAITING_SETTLEMENT),
+        )
+        .all()
+    )
+    pending = mark_receipts_paid(
+        db,
+        receipts,
+        payment_method="direct_debit",
+        payment_date=remittance.due_date,
+    )
+
     remittance.status = "closed"
     db.flush()
-    return remittance
+    return remittance, pending
 
 
 def cancel_remittance(db: Session, remittance: Remittance) -> Remittance:

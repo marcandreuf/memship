@@ -24,6 +24,10 @@ class TestRemittanceTransitions:
     def test_processed_to_closed(self):
         validate_remittance_transition("processed", "closed")
 
+    def test_submitted_to_closed(self):
+        """The batch nobody returned never reaches 'processed', and must still close."""
+        validate_remittance_transition("submitted", "closed")
+
     def test_closed_is_terminal(self):
         from fastapi import HTTPException
         with pytest.raises(HTTPException):
