@@ -69,17 +69,26 @@ def scheduled_billing_run() -> dict:
 
 @celery.task
 def scheduled_payment_reminders() -> dict:
-    """Daily Beat entry point: mark overdue receipts, then send due reminders.
+    """Daily Beat entry point: void expired purchases, mark overdue, then remind.
 
-    No-op (returns zero counts) unless payment reminders are enabled in org
-    settings. Returns a small summary dict for the Celery result backend / logs.
+    Abandoned plan purchases are voided first and unconditionally. They are not
+    debts — nobody received the plan — so they must never reach ``mark_overdue``
+    and be chased for money that is not owed, and that has to hold whether or
+    not the club has switched payment reminders on. Everything after it is the
+    ordinary dunning pass, which stays a no-op (zero counts) while reminders are
+    disabled in org settings.
+
+    Returns a small summary dict for the Celery result backend / logs.
     """
     from app.db.session import SessionLocal
+    from app.domains.billing.membership_purchase_service import expire_unpaid_purchases
     from app.domains.billing.reminder_service import run_scheduled_reminders
 
     db = SessionLocal()
     try:
-        summary = run_scheduled_reminders(db)
+        purchases_expired = expire_unpaid_purchases(db)
+        summary = {"purchases_expired": purchases_expired}
+        summary.update(run_scheduled_reminders(db))
         db.commit()
         logger.info(f"Scheduled payment reminders complete: {summary}")
         return summary
