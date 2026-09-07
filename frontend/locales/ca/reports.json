@@ -1,0 +1,13 @@
+{
+  "reports": {
+    "paidTierWithoutPurchase": {
+      "nav": "Revisió de quotes",
+      "title": "Quotes de pagament sense cap compra al darrere",
+      "description": "Socis amb un tipus de afiliació que costa diners i sense cap quota pagada. L'alta aterrava abans al tipus creat primer, així que alguns d'aquests no els va triar ningú.",
+      "info": "Un soci hi apareix mentre el seu tipus de afiliació costi més de zero i cap dels seus rebuts de quota hagi arribat a pagat. Les quotes ja emeses i encara sense pagar es compten aquí en comptes de treure el soci de la llista: són el que el club està reclamant ara mateix. Els socis cancel·lats, caducats i desactivats en queden fora. Aquí no es modifica res: obre la fitxa i decideix.",
+      "empty": "Cap soci està en una quota de pagament sense una compra al darrere.",
+      "unpaidReceipts": "Quotes sense pagar",
+      "unpaidAmount": "Import sense pagar"
+    }
+  }
+}

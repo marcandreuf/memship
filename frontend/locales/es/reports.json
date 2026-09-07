@@ -1,0 +1,13 @@
+{
+  "reports": {
+    "paidTierWithoutPurchase": {
+      "nav": "Revisión de cuotas",
+      "title": "Cuotas de pago sin ninguna compra detrás",
+      "description": "Socios con un tipo de membresía que cuesta dinero y sin ninguna cuota pagada. El alta aterrizaba antes en el tipo creado primero, así que a algunos de estos no los eligió nadie.",
+      "info": "Un socio aparece mientras su tipo de membresía cueste más de cero y ninguno de sus recibos de cuota haya llegado a pagado. Las cuotas ya emitidas y aún sin pagar se cuentan aquí en lugar de sacar al socio de la lista: son lo que el club está reclamando ahora mismo. Los socios cancelados, caducados y desactivados quedan fuera. Aquí no se modifica nada: abre la ficha y decide.",
+      "empty": "Ningún socio está en una cuota de pago sin una compra detrás.",
+      "unpaidReceipts": "Cuotas sin pagar",
+      "unpaidAmount": "Importe sin pagar"
+    }
+  }
+}

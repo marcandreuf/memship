@@ -19,6 +19,7 @@ import {
   IdCard,
   ScanLine,
   TrendingUp,
+  TriangleAlert,
   MapPin,
   LogOut,
   ChevronsUpDown,
@@ -94,6 +95,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
           [
             { href: "/members", label: t("nav.members"), icon: Users, show: has("members.read") },
             { href: "/members/pending", label: t("nav.pendingRegistrations"), icon: UserCheck, show: has("members.approve") },
+            { href: "/paid-tier-without-purchase", label: t("reports.paidTierWithoutPurchase.nav"), icon: TriangleAlert, show: has("members.read") },
             { href: "/groups", label: t("nav.groups"), icon: FolderOpen, show: has("membership.read") },
             { href: "/activities", label: t("nav.activities"), icon: CalendarDays, show: has("activities.read") },
             { href: "/spaces", label: t("bookings.nav"), icon: MapPin, show: bookingsEnabled && has("bookings.read") },

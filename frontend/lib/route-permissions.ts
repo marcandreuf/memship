@@ -26,6 +26,7 @@ export const ROUTE_PERMISSIONS: ReadonlyArray<readonly [string, readonly string[
   ["/remittances", ["billing.read"]],
   ["/billing-runs", ["billing.read"]],
   ["/annual-summary", ["reports.read"]],
+  ["/paid-tier-without-purchase", ["members.read"]],
   ["/communications", ["communications.read"]],
   // Settings is a bag of tabs with their own gates — membership types is
   // reachable on `membership.write` alone, so any one of these opens the page.
