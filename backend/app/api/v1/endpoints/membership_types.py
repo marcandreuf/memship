@@ -93,6 +93,11 @@ def update_membership_type(
 ):
     mt = get_or_404(db, MembershipType, type_id)
     update_data = data.model_dump(exclude_unset=True)
+    if mt.is_default and update_data.get("base_price"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="The tier new sign-ups land on must stay free",
+        )
     for key, value in update_data.items():
         setattr(mt, key, value)
     db.commit()

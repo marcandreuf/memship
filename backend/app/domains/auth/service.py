@@ -9,8 +9,11 @@ from app.core.permissions import SUPER_ADMIN_SLUG
 from app.core.security.password import hash_password, verify_password
 from app.domains.auth.models import User
 from app.domains.auth.roles import assign_roles
-from app.domains.members.models import Member, MembershipType
-from app.domains.members.service import allocate_member_number
+from app.domains.members.models import Member
+from app.domains.members.service import (
+    allocate_member_number,
+    get_default_membership_type,
+)
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Person
 
@@ -96,13 +99,7 @@ def register_user(
 
     assign_roles(db, user)
 
-    # Create member with default membership type
-    default_type = (
-        db.query(MembershipType)
-        .filter(MembershipType.is_active == True)
-        .order_by(MembershipType.id)
-        .first()
-    )
+    default_type = get_default_membership_type(db)
 
     member = Member(
         person_id=person.id,
