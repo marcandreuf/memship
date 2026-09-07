@@ -5,6 +5,8 @@ export interface Space {
   name: string;
   space_type: string | null;
   description: string | null;
+  // What one booking costs, before tax. null or 0 = free, and nothing is billed.
+  price: number | null;
   open_time: string; // "HH:MM:SS"
   close_time: string;
   // Membership type ids allowed to book. null or empty = open to every member.
@@ -18,6 +20,7 @@ export interface SpaceInput {
   name: string;
   space_type: string | null;
   description: string | null;
+  price: number | null;
   open_time: string;
   close_time: string;
   allowed_membership_types: number[];
@@ -31,6 +34,8 @@ export interface SpaceSlot {
   start_time: string;
   end_time: string;
   capacity: number;
+  // Overrides the space's price for this slot; null falls back to the space.
+  price: number | null;
   series_id: string | null;
   is_active: boolean;
   // Slots of this slot's series dated on/after it (itself included).
@@ -49,6 +54,7 @@ export interface SpaceSlotInput {
   end_time?: string;
   all_day?: boolean;
   capacity: number;
+  price?: number | null;
   is_active?: boolean;
   repeat?: SlotRepeat;
 }
@@ -190,6 +196,8 @@ export interface AvailabilityCell {
   start_time: string;
   end_time: string;
   capacity: number;
+  // The slot's own price, or the space's, or 0 — before tax.
+  price: number;
   booked_count: number;
   waitlist_count: number;
   my_status: MyStatus;

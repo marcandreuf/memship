@@ -7,6 +7,7 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DecimalInput } from "@/components/ui/decimal-input";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
@@ -29,6 +30,14 @@ const spaceSchema = z
     name: z.string().min(1).max(200),
     space_type: z.string().max(50),
     description: z.string().max(2000),
+    // Left empty the space is free. Kept as a string so "empty" and "0" stay
+    // distinguishable — 0 is a deliberate free price, not a missing one.
+    price: z
+      .string()
+      .refine(
+        (v) => v === "" || (!Number.isNaN(Number(v)) && Number(v) >= 0),
+        "validation.notANumber"
+      ),
     open_time: z.string().regex(/^\d{2}:\d{2}$/, "validation.invalidTime"),
     close_time: z.string().regex(/^\d{2}:\d{2}$/, "validation.invalidTime"),
     // No selection means no restriction, the same reading the backend gives an
@@ -74,6 +83,7 @@ export function SpaceForm({
       name: space?.name ?? "",
       space_type: space?.space_type ?? "",
       description: space?.description ?? "",
+      price: space?.price != null ? String(space.price) : "",
       open_time: toTimeInput(space?.open_time) || "08:00",
       close_time: toTimeInput(space?.close_time) || "22:00",
       allowed_membership_types: space?.allowed_membership_types ?? [],
@@ -86,6 +96,7 @@ export function SpaceForm({
       name: data.name,
       space_type: data.space_type || null,
       description: data.description || null,
+      price: data.price === "" ? null : Number(data.price),
       open_time: data.open_time,
       close_time: data.close_time,
       allowed_membership_types: data.allowed_membership_types,
@@ -144,6 +155,22 @@ export function SpaceForm({
               <FormControl>
                 <Input {...field} />
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="price"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t("bookings.spaces.price")}</FormLabel>
+              <FormControl>
+                <DecimalInput placeholder="0.00" {...field} />
+              </FormControl>
+              <FormDescription>
+                {t("bookings.spaces.priceHint")}
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}

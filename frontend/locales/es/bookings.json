@@ -17,7 +17,10 @@
       "bookedToast": "Reserva confirmada",
       "waitlistedToast": "Añadido a la lista de espera",
       "membershipTypeNotAllowed": "Este espacio está reservado a otros tipos de socio. Tu tipo de socio no lo incluye; consulta con el club si quieres cambiarlo.",
-      "noMembershipType": "Este espacio está reservado a determinados tipos de socio y tu ficha no tiene ninguno asignado. Escribe al club para que te asigne uno."
+      "noMembershipType": "Este espacio está reservado a determinados tipos de socio y tu ficha no tiene ninguno asignado. Escribe al club para que te asigne uno.",
+      "price": "Esta reserva cuesta {price} antes de impuestos; el recibo mostrará el importe final.",
+      "priceOnPromotion": "Si queda una plaza libre, la reserva se confirma automáticamente y se cobran {price} antes de impuestos; el recibo mostrará el importe final.",
+      "refundPolicy": "Si cancelas antes de pagar, el cargo se anula con la reserva. Una vez pagado, el importe no se devuelve automáticamente: ni al cancelar, ni si el club elimina la franja. Cualquier devolución se acuerda directamente con el club."
     },
     "my": {
       "title": "Mis reservas",
@@ -37,6 +40,9 @@
       "type": "Tipo",
       "typePlaceholder": "pista, sala, campo…",
       "description": "Descripción",
+      "price": "Precio por reserva",
+      "priceHint": "Antes de impuestos. Déjalo vacío, o a 0, y el espacio es gratuito: no se emite ningún recibo.",
+      "free": "Gratuito",
       "openTime": "Apertura",
       "closeTime": "Cierre",
       "hours": "Horario",
@@ -61,6 +67,9 @@
       "start": "Inicio",
       "end": "Fin",
       "capacity": "Aforo",
+      "price": "Precio",
+      "priceHint": "Déjalo vacío para usar el precio del espacio. Pon 0 para que esta franja sea gratuita.",
+      "priceFromSpace": "Precio del espacio",
       "active": "Activa",
       "inactive": "Inactiva",
       "activate": "Activar",
