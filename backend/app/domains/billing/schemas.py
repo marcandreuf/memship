@@ -108,6 +108,7 @@ class ReceiptResponse(BaseModel):
     concept_id: int | None
     registration_id: int | None
     remittance_id: int | None
+    purchased_membership_type_id: int | None = None
     origin: str
     description: str
     base_amount: Decimal
@@ -325,3 +326,54 @@ class ReceiptReminderResponse(BaseModel):
     error: str | None = None
     sent_at: datetime | None = None
     created_at: datetime | None = None
+
+
+# --- Membership plan purchase schemas ---
+
+
+class MembershipPurchaseRequest(BaseModel):
+    membership_type_id: int
+
+
+class MembershipPurchaseQuote(BaseModel):
+    """What buying a plan costs today, before and after tax.
+
+    ``total_amount`` is the figure to show a member. The stored plan price is a
+    base amount and VAT is only added when the receipt is raised, so a portal
+    quoting ``base_amount`` alone would show a number the receipt contradicts —
+    the tax is computed here, by the same code that raises the receipt, rather
+    than reconstructed in the browser from a rate it has no reliable way to read.
+
+    ``months_charged`` / ``months_in_period`` are the prorated fraction of the
+    calendar period being paid for, and are null for a ``one_time`` plan, which
+    has no period. They are what lets the portal warn that an annual plan bought
+    in December is a month of cover, not a year.
+    """
+
+    membership_type_id: int
+    membership_type_name: str
+    billing_frequency: str
+    full_price: Decimal
+    base_amount: Decimal
+    vat_rate: Decimal
+    vat_amount: Decimal
+    total_amount: Decimal
+    is_prorated: bool
+    period_start: date | None = None
+    period_end: date | None = None
+    months_charged: int | None = None
+    months_in_period: int | None = None
+
+
+class MembershipPurchaseResponse(MembershipPurchaseQuote):
+    """The quote that was charged, plus the receipt now waiting to be paid.
+
+    ``receipt_id`` is what the portal hands to the existing Stripe or Redsys
+    checkout endpoint. The member's plan does not change until that receipt is
+    paid.
+    """
+
+    receipt_id: int
+    receipt_number: str
+    receipt_status: str
+    due_date: date | None = None

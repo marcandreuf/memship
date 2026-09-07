@@ -295,8 +295,9 @@ def mark_receipt_paid(
     attached here**, so it fires for all of them and for whatever payment method
     is added next.
 
-    Effects that must be atomic with the payment — activating something the
-    member has just bought — belong inline, in the caller's transaction. Emails
+    Effects that must be atomic with the payment — moving a member onto the
+    membership plan they have just bought — belong inline, in the caller's
+    transaction. Emails
     and other outbound notifications must not fire until that transaction has
     committed, so they are not sent here: the ids of the receipts needing one
     are returned, and the caller passes them to
@@ -324,6 +325,18 @@ def mark_receipt_paid(
         receipt.redsys_auth_code = redsys_auth_code
 
     db.flush()
+
+    # Granting a bought membership plan is a database effect, so it happens here
+    # rather than in the notification the caller sends after committing: the
+    # member's tier and the payment that bought it have to land together or not
+    # at all. Imported inside the function because the purchase service builds on
+    # this module. A no-op for every receipt that is not a purchase.
+    from app.domains.billing.membership_purchase_service import (
+        activate_purchased_membership,
+    )
+
+    activate_purchased_membership(db, receipt)
+
     return [receipt.id]
 
 
@@ -414,6 +427,40 @@ def reemit_receipt(db: Session, receipt: Receipt) -> Receipt:
 # --- Fee Generation ---
 
 
+def membership_concept(
+    db: Session, mtype: MembershipType, default_vat: Decimal
+) -> Concept:
+    """The billing concept a membership type's fees are raised against.
+
+    One concept per membership type, keyed on its slug and created on first use.
+    Both the scheduled fee run and a member buying the plan themselves come
+    here, so a purchase is invoiced at the same VAT rate the next scheduled run
+    will apply — quoting one rate at checkout and billing another in January is
+    a discrepancy nobody would be able to explain afterwards.
+    """
+    concept = (
+        db.query(Concept)
+        .filter(
+            Concept.code == f"membership-{mtype.slug}",
+            Concept.is_active.is_(True),
+        )
+        .first()
+    )
+    if concept:
+        return concept
+
+    concept = Concept(
+        name=f"{mtype.name}",
+        code=f"membership-{mtype.slug}",
+        concept_type="membership",
+        default_amount=mtype.base_price,
+        vat_rate=default_vat,
+    )
+    db.add(concept)
+    db.flush()
+    return concept
+
+
 def generate_membership_fees(
     db: Session,
     data: GenerateMembershipFeesRequest,
@@ -488,25 +535,7 @@ def generate_membership_fees(
 
         # Get or create concept for this membership type
         if mtype.id not in concept_cache:
-            concept = (
-                db.query(Concept)
-                .filter(
-                    Concept.code == f"membership-{mtype.slug}",
-                    Concept.is_active.is_(True),
-                )
-                .first()
-            )
-            if not concept:
-                concept = Concept(
-                    name=f"{mtype.name}",
-                    code=f"membership-{mtype.slug}",
-                    concept_type="membership",
-                    default_amount=mtype.base_price,
-                    vat_rate=default_vat,
-                )
-                db.add(concept)
-                db.flush()
-            concept_cache[mtype.id] = concept
+            concept_cache[mtype.id] = membership_concept(db, mtype, default_vat)
 
         concept = concept_cache[mtype.id]
         base_amount = Decimal(str(mtype.base_price))

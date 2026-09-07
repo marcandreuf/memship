@@ -40,7 +40,13 @@ def _last_day_of_month(year: int, month: int) -> int:
     return calendar.monthrange(year, month)[1]
 
 
-def _due_days(db: Session) -> int:
+def due_days(db: Session) -> int:
+    """How many days after emission an automatically raised fee falls due.
+
+    Shared with the plan-purchase flow, which gives a member the same window to
+    pay as the scheduled run gives everybody else — one configured answer to
+    "how long does an unpaid receipt stay open", not two that drift.
+    """
     org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
     features = (org.features if org else None) or {}
     try:
@@ -126,7 +132,7 @@ def run_billing(
     """
     today = today or date.today()
     period_start, period_end = compute_period(frequency, today)
-    due_date = today + timedelta(days=_due_days(db))
+    due_date = today + timedelta(days=due_days(db))
 
     existing = (
         db.query(BillingRun)
