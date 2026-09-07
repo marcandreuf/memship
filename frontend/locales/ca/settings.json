@@ -302,6 +302,22 @@
           "description": "Difusió dels anuncis que envien els administradors."
         }
       }
+    },
+    "registration": {
+      "tab": "Registre",
+      "title": "Registre públic",
+      "flowClosed": "El registre està tancat. Només hi ha socis si els crea un administrador.",
+      "flowApproval": "Qualsevol es pot registrar i cada alta queda pendent fins que un administrador la revisa. No es cobra res abans d'aquesta decisió.",
+      "flowImmediate": "Qualsevol es pot registrar i passa a ser soci a l'instant, amb el tipus gratuït de sota. Només un administrador mou algú a un tipus de pagament.",
+      "publicEnabled": "Permetre el registre públic",
+      "publicEnabledDesc": "Mostra el formulari d'alta i accepta registres de qui hi arribi",
+      "requiresApproval": "Revisar cada alta",
+      "requiresApprovalDesc": "Les altes noves queden pendents fins que un administrador les aprova; el número de soci s'assigna llavors, així que una alta abandonada no en gasta cap",
+      "defaultTier": "Tipus de afiliació per defecte",
+      "defaultTierLabel": "On aterren les altes noves",
+      "defaultTierDesc": "Només un tipus de afiliació gratuït pot ser el predeterminat, així que registrar-se mai no inicia una quota per si sol",
+      "noDefaultTier": "Cap seleccionat",
+      "noFreeTiers": "Encara no hi ha cap tipus de afiliació gratuït. Crea'n un a Tipus de afiliació i podrà ser el predeterminat."
     }
   }
 }

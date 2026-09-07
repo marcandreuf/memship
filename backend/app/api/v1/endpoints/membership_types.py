@@ -96,11 +96,31 @@ def update_membership_type(
 ):
     mt = get_or_404(db, MembershipType, type_id)
     update_data = data.model_dump(exclude_unset=True)
-    if mt.is_default and update_data.get("base_price"):
+
+    # The database refuses a priced default and a second default outright, so
+    # both rules are checked here first — an IntegrityError would reach the
+    # admin as a 500 with nothing to act on.
+    will_be_default = update_data.get("is_default", mt.is_default)
+    will_cost = float(update_data.get("base_price", mt.base_price) or 0)
+    if will_be_default and will_cost > 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="The tier new sign-ups land on must stay free",
         )
+    if mt.is_default and update_data.get("is_default") is False:
+        # Clearing it outright would leave sign-ups with no tier at all, and a
+        # member with no tier is barred from every activity that restricts
+        # membership types. Moving the flag to another tier is the way out.
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New sign-ups need a tier — mark another one the default instead",
+        )
+    if update_data.get("is_default") and not mt.is_default:
+        db.query(MembershipType).filter(
+            MembershipType.is_default == True, MembershipType.id != mt.id
+        ).update({"is_default": False}, synchronize_session=False)
+        db.flush()
+
     for key, value in update_data.items():
         setattr(mt, key, value)
     db.commit()

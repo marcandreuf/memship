@@ -72,6 +72,7 @@
       "queueTitle": "Pending registrations",
       "queueDescription": "Sign-ups waiting for a decision.",
       "queueEmpty": "No registrations are waiting for review."
-    }
+    },
+    "defaultType": "Default"
   }
 }

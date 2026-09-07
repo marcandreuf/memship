@@ -302,6 +302,22 @@
           "description": "Delivery of the announcements admins broadcast."
         }
       }
+    },
+    "registration": {
+      "tab": "Registration",
+      "title": "Public registration",
+      "flowClosed": "Sign-up is closed. Members exist only when an administrator creates them.",
+      "flowApproval": "Anyone can sign up, and every sign-up waits in the pending queue for an administrator. Nothing is billed before that decision.",
+      "flowImmediate": "Anyone can sign up and becomes a member straight away, on the free tier below. Only an administrator ever moves someone to a paid tier.",
+      "publicEnabled": "Allow public sign-up",
+      "publicEnabledDesc": "Show the sign-up form and accept registrations from anyone who reaches it",
+      "requiresApproval": "Review every sign-up",
+      "requiresApprovalDesc": "New sign-ups wait as pending until an administrator approves them; the member number is issued then, so an abandoned sign-up burns none",
+      "defaultTier": "Default membership type",
+      "defaultTierLabel": "Where new sign-ups land",
+      "defaultTierDesc": "Only a free membership type can be the default, so signing up never starts a fee on its own",
+      "noDefaultTier": "None selected",
+      "noFreeTiers": "There is no free membership type yet. Create one under Membership Types and it can become the default."
     }
   }
 }

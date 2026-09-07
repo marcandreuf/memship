@@ -161,3 +161,63 @@ class TestDefaultTier:
         )
 
         assert response.status_code == 400
+
+    def test_the_default_moves_to_the_tier_the_admin_picks(self, client, db):
+        user = _create_user(db, "admin")
+        current = MembershipType(name="Free", slug="free", base_price=0, is_default=True)
+        wanted = MembershipType(name="Welcome", slug="welcome", base_price=0)
+        db.add_all([current, wanted])
+        db.flush()
+        client.cookies.update(_auth_cookie(user))
+
+        response = client.put(
+            f"/api/v1/membership-types/{wanted.id}", json={"is_default": True}
+        )
+
+        assert response.status_code == 200
+        assert response.json()["is_default"] is True
+        db.expire_all()
+        assert current.is_default is False
+
+    def test_a_priced_tier_cannot_be_made_the_default(self, client, db):
+        user = _create_user(db, "admin")
+        mt = MembershipType(name="Premium", slug="premium", base_price=50)
+        db.add(mt)
+        db.flush()
+        client.cookies.update(_auth_cookie(user))
+
+        response = client.put(
+            f"/api/v1/membership-types/{mt.id}", json={"is_default": True}
+        )
+
+        assert response.status_code == 400
+
+    def test_the_default_cannot_be_left_unset(self, client, db):
+        """A sign-up with no tier is barred from membership-restricted activities."""
+        user = _create_user(db, "admin")
+        mt = MembershipType(name="Free", slug="free", base_price=0, is_default=True)
+        db.add(mt)
+        db.flush()
+        client.cookies.update(_auth_cookie(user))
+
+        response = client.put(
+            f"/api/v1/membership-types/{mt.id}", json={"is_default": False}
+        )
+
+        assert response.status_code == 400
+        db.expire_all()
+        assert mt.is_default is True
+
+    def test_the_listing_says_which_tier_is_the_default(self, client, db):
+        user = _create_user(db, "admin")
+        db.add(MembershipType(name="Free", slug="free", base_price=0, is_default=True))
+        db.add(MembershipType(name="Premium", slug="premium", base_price=50))
+        db.flush()
+        client.cookies.update(_auth_cookie(user))
+
+        response = client.get("/api/v1/membership-types/")
+
+        assert response.status_code == 200
+        defaults = {t["name"]: t["is_default"] for t in response.json()}
+        assert defaults["Free"] is True
+        assert defaults["Premium"] is False

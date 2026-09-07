@@ -302,6 +302,22 @@
           "description": "Difusión de los anuncios que envían los administradores."
         }
       }
+    },
+    "registration": {
+      "tab": "Registro",
+      "title": "Registro público",
+      "flowClosed": "El registro está cerrado. Solo hay socios si los crea un administrador.",
+      "flowApproval": "Cualquiera puede registrarse y cada alta queda pendiente hasta que un administrador la revisa. No se cobra nada antes de esa decisión.",
+      "flowImmediate": "Cualquiera puede registrarse y pasa a ser socio al momento, en el tipo gratuito de abajo. Solo un administrador mueve a alguien a un tipo de pago.",
+      "publicEnabled": "Permitir el registro público",
+      "publicEnabledDesc": "Muestra el formulario de alta y acepta registros de quien llegue a él",
+      "requiresApproval": "Revisar cada alta",
+      "requiresApprovalDesc": "Las altas nuevas quedan pendientes hasta que un administrador las aprueba; el número de socio se asigna entonces, así que un alta abandonada no gasta ninguno",
+      "defaultTier": "Tipo de membresía por defecto",
+      "defaultTierLabel": "Dónde aterrizan las altas nuevas",
+      "defaultTierDesc": "Solo un tipo de membresía gratuito puede ser el predeterminado, así que registrarse nunca inicia una cuota por sí solo",
+      "noDefaultTier": "Ninguno seleccionado",
+      "noFreeTiers": "Todavía no hay ningún tipo de membresía gratuito. Crea uno en Tipos de membresía y podrá ser el predeterminado."
     }
   }
 }
