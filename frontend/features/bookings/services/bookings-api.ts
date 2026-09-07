@@ -7,6 +7,8 @@ export interface Space {
   description: string | null;
   open_time: string; // "HH:MM:SS"
   close_time: string;
+  // Membership type ids allowed to book. null or empty = open to every member.
+  allowed_membership_types: number[] | null;
   is_active: boolean;
   created_at: string | null;
   updated_at: string | null;
@@ -18,6 +20,7 @@ export interface SpaceInput {
   description: string | null;
   open_time: string;
   close_time: string;
+  allowed_membership_types: number[];
   is_active?: boolean;
 }
 
@@ -193,9 +196,18 @@ export interface AvailabilityCell {
   cell_state: CellState;
 }
 
+// Why the member may not book this space at all. The two are separate because
+// they need separate answers: one is an upgrade, the other is a missing tier
+// only the club can assign.
+export type IneligibleReason =
+  | "membership_type_not_allowed"
+  | "no_membership_type";
+
 export interface WeekAvailability {
   space_id: number;
   week_start: string;
+  eligible: boolean;
+  ineligible_reason: IneligibleReason | null;
   cells: AvailabilityCell[];
 }
 

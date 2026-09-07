@@ -15,7 +15,9 @@
       "confirmWaitlist": "Esta franja está completa. ¿Unirse a la lista de espera?",
       "confirmWaitlistAction": "Unirse",
       "bookedToast": "Reserva confirmada",
-      "waitlistedToast": "Añadido a la lista de espera"
+      "waitlistedToast": "Añadido a la lista de espera",
+      "membershipTypeNotAllowed": "Este espacio está reservado a otros tipos de socio. Tu tipo de socio no lo incluye; consulta con el club si quieres cambiarlo.",
+      "noMembershipType": "Este espacio está reservado a determinados tipos de socio y tu ficha no tiene ninguno asignado. Escribe al club para que te asigne uno."
     },
     "my": {
       "title": "Mis reservas",
@@ -45,7 +47,11 @@
       "noSpaces": "Aún no hay espacios. Crea uno para empezar a aceptar reservas.",
       "notFound": "Espacio no encontrado.",
       "confirmDelete": "¿Eliminar este espacio? Se eliminarán sus franjas y reservas. Para dejar de aceptar reservas sin borrar nada, desactívalo desde Editar.",
-      "deleteAffected": "{count, plural, one {# socio tiene reservas activas que se cancelarán y se le avisará por correo.} other {# socios tienen reservas activas que se cancelarán y se les avisará por correo.}}"
+      "deleteAffected": "{count, plural, one {# socio tiene reservas activas que se cancelarán y se le avisará por correo.} other {# socios tienen reservas activas que se cancelarán y se les avisará por correo.}}",
+      "allowedTypes": "Tipos de socio con acceso",
+      "allowedTypesHint": "Sin ninguno marcado, el espacio queda abierto a todos los socios. Al marcar tipos, solo esos socios podrán reservarlo.",
+      "allowedTypesNone": "Aún no hay tipos de socio activos.",
+      "allowedTypesOpen": "Todos los socios"
     },
     "slots": {
       "tab": "Franjas",
