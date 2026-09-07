@@ -159,7 +159,10 @@ class StripeAdapter(PaymentProviderAdapter):
     def _handle_checkout_completed(self, db: Session, session_obj: dict) -> dict:
         """Handle successful Checkout payment."""
         from app.domains.billing.models import Receipt
-        from app.domains.billing.service import validate_status_transition
+        from app.domains.billing.service import (
+            mark_receipt_paid,
+            validate_status_transition,
+        )
 
         receipt_id = session_obj.get("metadata", {}).get("receipt_id")
         if not receipt_id:
@@ -217,14 +220,15 @@ class StripeAdapter(PaymentProviderAdapter):
                 "receipt_id": receipt.id,
             }
 
-        receipt.status = "paid"
-        receipt.payment_method = "stripe_checkout"
-        receipt.payment_date = date.today()
-        receipt.stripe_payment_intent_id = session_obj.get("payment_intent")
-        receipt.transaction_id = session_obj.get("payment_intent")
-        db.flush()
+        pending = mark_receipt_paid(
+            db,
+            receipt,
+            payment_method="stripe_checkout",
+            transaction_id=session_obj.get("payment_intent"),
+            stripe_payment_intent_id=session_obj.get("payment_intent"),
+        )
 
-        return {"receipt_id": receipt.id}
+        return {"receipt_id": receipt.id, "payment_notifications": pending}
 
     def _handle_checkout_expired(self, db: Session, session_obj: dict) -> dict:
         """Handle expired Checkout session."""
