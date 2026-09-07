@@ -1,0 +1,13 @@
+{
+  "reports": {
+    "paidTierWithoutPurchase": {
+      "nav": "Paid tier check",
+      "title": "Paid tiers with no purchase behind them",
+      "description": "Members sitting on a membership type that costs money, where no membership fee has ever been paid. Sign-up used to land on whichever type was created first, so some of these were chosen by nobody.",
+      "info": "A member is listed while their membership type costs more than zero and none of their membership receipts has reached paid. Fees already issued and still unpaid are counted here rather than clearing the member — that is what the club is currently asking for. Cancelled, expired and deactivated members are left out. Nothing here changes a member: open the record and decide.",
+      "empty": "No member is on a paid tier without a purchase behind it.",
+      "unpaidReceipts": "Unpaid fees",
+      "unpaidAmount": "Unpaid amount"
+    }
+  }
+}

@@ -22,3 +22,31 @@ export function getAnnualSummary(year?: number): Promise<AnnualSummary> {
   const qs = year ? `?year=${year}` : "";
   return apiClient<AnnualSummary>(`/reports/annual-summary${qs}`);
 }
+
+export interface PaidTierMember {
+  member_id: number;
+  member_number: string | null;
+  full_name: string;
+  email: string | null;
+  status: string;
+  joined_at: string;
+  membership_type_id: number;
+  membership_type_name: string;
+  base_price: number;
+  billing_frequency: string;
+  unpaid_receipts: number;
+  unpaid_amount: number;
+}
+
+export interface PaidTierWithoutPurchase {
+  meta: { page: number; per_page: number; total: number; total_pages: number };
+  items: PaidTierMember[];
+}
+
+export function getPaidTierWithoutPurchase(
+  page = 1
+): Promise<PaidTierWithoutPurchase> {
+  return apiClient<PaidTierWithoutPurchase>(
+    `/reports/paid-tier-without-purchase?page=${page}`
+  );
+}

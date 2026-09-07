@@ -24,6 +24,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
   const memberCard = (await import(`@/locales/${locale}/member-card.json`)).default;
   const exportNs = (await import(`@/locales/${locale}/export.json`)).default;
   const annualSummary = (await import(`@/locales/${locale}/annual-summary.json`)).default;
+  const reports = (await import(`@/locales/${locale}/reports.json`)).default;
   const notes = (await import(`@/locales/${locale}/notes.json`)).default;
   const profileFields = (await import(`@/locales/${locale}/profile-fields.json`)).default;
   const roles = (await import(`@/locales/${locale}/roles.json`)).default;
@@ -31,6 +32,6 @@ export default getRequestConfig(async ({ requestLocale }) => {
 
   return {
     locale,
-    messages: { ...common, ...auth, ...members, ...dashboard, ...settings, ...activities, ...receipts, ...mandates, ...remittances, ...paymentMethod, ...billingRuns, ...reminders, ...communications, ...memberCard, ...exportNs, ...annualSummary, ...notes, ...profileFields, ...bookings, ...roles },
+    messages: { ...common, ...auth, ...members, ...dashboard, ...settings, ...activities, ...receipts, ...mandates, ...remittances, ...paymentMethod, ...billingRuns, ...reminders, ...communications, ...memberCard, ...exportNs, ...annualSummary, ...reports, ...notes, ...profileFields, ...bookings, ...roles },
   };
 });

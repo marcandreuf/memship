@@ -8,7 +8,7 @@ from app.core.security.password import hash_password
 from app.domains.activities.models import Activity, Registration
 from app.domains.auth.models import User
 from app.domains.billing.models import Receipt
-from app.domains.members.models import Member
+from app.domains.members.models import Member, MembershipType
 from app.domains.persons.models import Person
 
 YEAR = 2026
@@ -34,7 +34,8 @@ def _admin(db, suffix):
     return user
 
 
-def _member(db, suffix, *, status="active", joined_at=None, status_changed_at=None, with_user=False):
+def _member(db, suffix, *, status="active", joined_at=None, status_changed_at=None, with_user=False,
+            membership_type_id=None, is_active=True):
     person = Person(first_name="Mem", last_name=f"Ber-{suffix}", email=f"m-rep-{suffix}@examplee6e3b1.com")
     db.add(person)
     db.flush()
@@ -58,6 +59,8 @@ def _member(db, suffix, *, status="active", joined_at=None, status_changed_at=No
         status=status,
         joined_at=joined_at or date(YEAR, 1, 1),
         status_changed_at=status_changed_at,
+        membership_type_id=membership_type_id,
+        is_active=is_active,
     )
     db.add(member)
     db.flush()
@@ -193,4 +196,123 @@ class TestAnnualSummary:
         client.cookies.update(_auth_cookie(user))
 
         resp = client.get(f"/api/v1/reports/annual-summary?year={YEAR}")
+        assert resp.status_code == 403
+
+
+def _tier(db, suffix, price, *, frequency="monthly"):
+    mtype = MembershipType(
+        name=f"Tier {suffix}",
+        slug=f"tier-rep-{suffix}",
+        base_price=Decimal(str(price)),
+        billing_frequency=frequency,
+        is_active=True,
+    )
+    db.add(mtype)
+    db.flush()
+    return mtype
+
+
+class TestPaidTierWithoutPurchase:
+    """Who the sign-up bug parked on a priced tier, and who merely looks like it."""
+
+    URL = "/api/v1/reports/paid-tier-without-purchase"
+
+    def test_a_paid_tier_with_no_receipts_at_all_is_listed(self, client, db):
+        admin = _admin(db, "ptp-plain")
+        tier = _tier(db, "plain", 50)
+        member = _member(db, "ptp-plain", membership_type_id=tier.id)
+        client.cookies.update(_auth_cookie(admin))
+
+        resp = client.get(self.URL)
+
+        assert resp.status_code == 200
+        rows = {r["member_id"]: r for r in resp.json()["items"]}
+        assert member.id in rows
+        assert rows[member.id]["membership_type_name"] == "Tier plain"
+        assert rows[member.id]["base_price"] == 50.0
+        assert rows[member.id]["unpaid_receipts"] == 0
+        assert rows[member.id]["unpaid_amount"] == 0.0
+
+    def test_a_free_tier_and_a_missing_tier_are_not_damage(self, client, db):
+        admin = _admin(db, "ptp-free")
+        free = _tier(db, "free", 0)
+        on_free = _member(db, "ptp-free", membership_type_id=free.id)
+        on_nothing = _member(db, "ptp-none")
+        client.cookies.update(_auth_cookie(admin))
+
+        resp = client.get(self.URL)
+
+        listed = {r["member_id"] for r in resp.json()["items"]}
+        assert on_free.id not in listed
+        assert on_nothing.id not in listed
+
+    def test_a_settled_membership_receipt_clears_the_member(self, client, db):
+        """Money that arrived against a membership fee is the purchase."""
+        admin = _admin(db, "ptp-paid")
+        tier = _tier(db, "paid", 50)
+        member = _member(db, "ptp-paid", membership_type_id=tier.id)
+        _receipt(db, member, suffix="ptp-paid", status="paid",
+                 emission_date=date(YEAR, 3, 1), payment_date=date(YEAR, 3, 15))
+        client.cookies.update(_auth_cookie(admin))
+
+        resp = client.get(self.URL)
+
+        assert member.id not in {r["member_id"] for r in resp.json()["items"]}
+
+    def test_unpaid_membership_receipts_are_counted_not_excused(self, client, db):
+        """Being billed already is the damage, not evidence of a purchase."""
+        admin = _admin(db, "ptp-unpaid")
+        tier = _tier(db, "unpaid", 50)
+        member = _member(db, "ptp-unpaid", membership_type_id=tier.id)
+        _receipt(db, member, suffix="ptp-emit", status="emitted",
+                 emission_date=date(YEAR, 4, 1))
+        _receipt(db, member, suffix="ptp-over", status="overdue",
+                 emission_date=date(YEAR, 5, 1))
+        _receipt(db, member, suffix="ptp-cxl", status="cancelled",
+                 emission_date=date(YEAR, 6, 1))
+        client.cookies.update(_auth_cookie(admin))
+
+        resp = client.get(self.URL)
+
+        row = next(r for r in resp.json()["items"] if r["member_id"] == member.id)
+        assert row["unpaid_receipts"] == 2
+        assert row["unpaid_amount"] == 242.0
+
+    def test_members_the_club_has_closed_are_left_out(self, client, db):
+        admin = _admin(db, "ptp-closed")
+        tier = _tier(db, "closed", 50)
+        cancelled = _member(db, "ptp-cxl", status="cancelled", membership_type_id=tier.id)
+        expired = _member(db, "ptp-exp", status="expired", membership_type_id=tier.id)
+        deactivated = _member(db, "ptp-off", membership_type_id=tier.id, is_active=False)
+        pending = _member(db, "ptp-pend", status="pending", membership_type_id=tier.id)
+        client.cookies.update(_auth_cookie(admin))
+
+        resp = client.get(self.URL)
+
+        listed = {r["member_id"] for r in resp.json()["items"]}
+        assert cancelled.id not in listed
+        assert expired.id not in listed
+        assert deactivated.id not in listed
+        assert pending.id in listed
+
+    def test_the_dearest_tier_comes_first(self, client, db):
+        admin = _admin(db, "ptp-order")
+        cheap = _tier(db, "cheap", 10)
+        dear = _tier(db, "dear", 90)
+        on_cheap = _member(db, "ptp-cheap", membership_type_id=cheap.id)
+        on_dear = _member(db, "ptp-dear", membership_type_id=dear.id)
+        client.cookies.update(_auth_cookie(admin))
+
+        resp = client.get(self.URL)
+
+        ordered = [r["member_id"] for r in resp.json()["items"]]
+        assert ordered.index(on_dear.id) < ordered.index(on_cheap.id)
+
+    def test_a_member_account_cannot_read_it(self, client, db):
+        _member(db, "ptp-forbidden", with_user=True)
+        _, user = _member(db, "ptp-forbidden2", with_user=True)
+        client.cookies.update(_auth_cookie(user))
+
+        resp = client.get(self.URL)
+
         assert resp.status_code == 403
