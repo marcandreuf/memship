@@ -47,7 +47,10 @@ export interface MembershipTypeData {
   billing_frequency: string;
   group_id: number | null;
   group_name: string | null;
+  min_age: number | null;
+  max_age: number | null;
   is_active: boolean;
+  is_default: boolean;
   created_at: string;
 }
 
@@ -118,9 +121,18 @@ export async function changeMemberStatus(
  * Approving a pending self-registration goes through its own endpoint rather
  * than the generic status change: the backend also allocates the member number
  * here and emails the applicant.
+ *
+ * `membershipTypeId` is the tier the admin picked; leaving it out keeps the
+ * free tier the sign-up landed on.
  */
-export async function approveMember(id: number): Promise<MemberData> {
-  return apiClient(`/members/${id}/approve`, { method: "POST" });
+export async function approveMember(
+  id: number,
+  membershipTypeId?: number
+): Promise<MemberData> {
+  return apiClient(`/members/${id}/approve`, {
+    method: "POST",
+    body: JSON.stringify({ membership_type_id: membershipTypeId ?? null }),
+  });
 }
 
 export async function rejectMember(
