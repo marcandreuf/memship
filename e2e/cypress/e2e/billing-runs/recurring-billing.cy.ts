@@ -12,7 +12,6 @@ describe("Recurring Billing — Settings tab (super admin)", () => {
   it("shows the recurring billing controls", () => {
     cy.contains("Enable recurring billing").should("be.visible");
     cy.contains("Day of month").should("be.visible");
-    cy.contains("Payment term (days)").should("be.visible");
     cy.contains("Notification email").should("be.visible");
     cy.contains("button", "Save").should("be.visible");
   });
@@ -29,7 +28,6 @@ describe("Recurring Billing — Settings tab (super admin)", () => {
     // Select by field name, not by input type — the card has more than one
     // number input and a bare type selector matches them all.
     cy.get('input[name="recurring_billing_day"]').clear().type("15");
-    cy.get('input[name="recurring_billing_due_days"]').clear().type("45");
     cy.get('input[type="email"]').clear().type("billing@cemediterrani.cat");
     cy.contains("button", "Save").click();
 

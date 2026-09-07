@@ -26,11 +26,20 @@ from app.domains.organizations.models import OrganizationSettings
 # Frequencies eligible for automatic recurring billing (one_time excluded).
 BILLABLE_FREQUENCIES = ("monthly", "quarterly", "annual")
 
-# Days between emission and the due date of an automatically generated fee.
-# Overridable per install with the ``recurring_billing_due_days`` feature key.
+# Days between emission and the due date of a membership fee, whether raised by
+# the scheduled run or bought by the member. Overridable per install with the
+# ``membership_fee_due_days`` feature key.
+#
+# Short on purpose, and deliberately not the 30 days a club gives an ordinary
+# invoice. A membership fee gates access: while it sits unpaid the member keeps
+# the tier it pays for, so the due window is the larger half of how long
+# non-payment buys a paid tier for free (see ``lapse_service``). Seven days puts
+# the three default dunning reminders at days 10, 17 and 24 and the reversion at
+# day 28 — every chase goes out before anyone loses access.
+#
 # A fee generated without a due date can never fall overdue, so no reminder is
 # ever sent for it — the dunning pipeline keys entirely off ``due_date``.
-DEFAULT_DUE_DAYS = 30
+DEFAULT_MEMBERSHIP_FEE_DUE_DAYS = 7
 
 # First month (1-based) of each calendar quarter.
 QUARTER_START_MONTHS = (1, 4, 7, 10)
@@ -40,19 +49,34 @@ def _last_day_of_month(year: int, month: int) -> int:
     return calendar.monthrange(year, month)[1]
 
 
-def due_days(db: Session) -> int:
-    """How many days after emission an automatically raised fee falls due.
+def membership_fee_due_days(db: Session) -> int:
+    """How many days after emission a membership fee falls due.
 
     Shared with the plan-purchase flow, which gives a member the same window to
     pay as the scheduled run gives everybody else — one configured answer to
-    "how long does an unpaid receipt stay open", not two that drift.
+    "how long does an unpaid membership fee stay open", not two that drift.
+
+    Replaces the general ``recurring_billing_due_days`` window on this path. An
+    install that had tuned that key is not carried over: its answer was chosen
+    for invoices a club sends out, and a fee that gates access is a different
+    question with a different right answer.
+
+    Only new receipts are affected. A due date is stored on the receipt when it
+    is raised, so everything already emitted keeps the window it was given.
     """
     org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
     features = (org.features if org else None) or {}
     try:
-        return max(0, int(features.get("recurring_billing_due_days", DEFAULT_DUE_DAYS)))
+        return max(
+            0,
+            int(
+                features.get(
+                    "membership_fee_due_days", DEFAULT_MEMBERSHIP_FEE_DUE_DAYS
+                )
+            ),
+        )
     except (TypeError, ValueError):
-        return DEFAULT_DUE_DAYS
+        return DEFAULT_MEMBERSHIP_FEE_DUE_DAYS
 
 
 def compute_period(frequency: str, today: date) -> tuple[date, date]:
@@ -121,7 +145,7 @@ def run_billing(
     Receipts are emitted, not left ``pending``: nobody is at the keyboard to press
     "Emit" on an unattended run, and until a fee is emitted it is eligible for
     neither a SEPA remittance nor the overdue/reminder pipeline. They also carry a
-    due date (``recurring_billing_due_days`` after emission, default 30) for the
+    due date (``membership_fee_due_days`` after emission, default 7) for the
     same reason — ``mark_overdue`` skips receipts that have none.
 
     Idempotent per period: if a successful run already exists for
@@ -132,7 +156,7 @@ def run_billing(
     """
     today = today or date.today()
     period_start, period_end = compute_period(frequency, today)
-    due_date = today + timedelta(days=due_days(db))
+    due_date = today + timedelta(days=membership_fee_due_days(db))
 
     existing = (
         db.query(BillingRun)

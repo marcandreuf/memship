@@ -86,8 +86,6 @@
       "enabledDesc": "Automatically generate membership-fee receipts on the configured schedule",
       "day": "Day of month",
       "dayDesc": "Day (1–31) the billing runs; a shorter month is billed on its last day. Quarterly and annual fees are only billed in the first month of their period.",
-      "dueDays": "Payment term (days)",
-      "dueDaysDesc": "Days from issue until a generated fee is due. Payment reminders start counting from that due date.",
       "notificationEmail": "Notification email",
       "notificationEmailDesc": "Optional address that receives a summary after each automatic run"
     },
@@ -102,6 +100,18 @@
       "repeatDaysDesc": "Days between subsequent reminders",
       "maxCount": "Maximum reminders",
       "maxCountDesc": "Maximum number of reminders per receipt (1–10)"
+    },
+    "membershipLapse": {
+      "tab": "Membership lapse",
+      "title": "Non-payment",
+      "enabled": "Revert unpaid members to the free tier",
+      "enabledDesc": "A member whose membership fee stays unpaid past the grace period goes back to the free default plan. Their receipt stays owed, and activities they already signed up for are kept.",
+      "dueDays": "Payment term (days)",
+      "dueDaysDesc": "Days from issue until a membership fee is due. Kept short on purpose: the fee pays for the plan the member is using meanwhile.",
+      "graceDays": "Grace period (days)",
+      "graceDaysDesc": "Days after the due date — or after a returned direct debit — before the plan is withdrawn.",
+      "summary": "A member loses their plan about {days} days after the fee is issued. Paying it restores the plan, however they pay.",
+      "noRemindersWarning": "Payment reminders are switched off, so nobody is chased before losing access: the member's first notice is the plan disappearing. Enable payment reminders to warn them first."
     },
     "communications": {
       "tab": "Communications",

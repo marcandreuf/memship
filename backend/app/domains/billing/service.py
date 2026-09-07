@@ -337,6 +337,13 @@ def mark_receipt_paid(
 
     activate_purchased_membership(db, receipt)
 
+    # Settling a membership fee that had already cost the member their tier puts
+    # them back on it, here for the same reason: every payment method restores
+    # the plan on identical terms, cash included.
+    from app.domains.billing.lapse_service import restore_reverted_membership
+
+    restore_reverted_membership(db, receipt)
+
     return [receipt.id]
 
 

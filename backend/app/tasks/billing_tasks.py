@@ -101,6 +101,35 @@ def scheduled_payment_reminders() -> dict:
 
 
 @celery.task
+def scheduled_membership_lapse() -> dict:
+    """Daily Beat entry point: revert members whose membership fee went unpaid.
+
+    Runs after the reminder pass, so a member who is about to lapse has already
+    had today's chase sent before losing access. Deliberately independent of
+    ``payment_reminders_enabled`` — a club that has not switched dunning on still
+    stops giving a paid tier away for free — which is why the settings screen
+    warns that without reminders the member's first notice is losing access.
+
+    Returns a small summary dict for the Celery result backend / logs.
+    """
+    from app.db.session import SessionLocal
+    from app.domains.billing.lapse_service import revert_lapsed_members
+
+    db = SessionLocal()
+    try:
+        summary = revert_lapsed_members(db)
+        db.commit()
+        logger.info(f"Membership lapse run complete: {summary}")
+        return summary
+    except Exception as exc:
+        db.rollback()
+        logger.error(f"Membership lapse run failed: {exc}")
+        raise
+    finally:
+        db.close()
+
+
+@celery.task
 def payment_notifications_fanout(receipt_ids: list[int]) -> int:
     """Queue one notification task per receipt that has just been paid.
 

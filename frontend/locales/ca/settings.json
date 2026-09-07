@@ -86,8 +86,6 @@
       "enabledDesc": "Genera automàticament els rebuts de quota de soci segons el calendari configurat",
       "day": "Dia del mes",
       "dayDesc": "Dia (1–31) en què s'executa la facturació; els mesos més curts es facturen l'últim dia. Les quotes trimestrals i anuals només es facturen el primer mes del seu període.",
-      "dueDays": "Termini de pagament (dies)",
-      "dueDaysDesc": "Dies des de l'emissió fins al venciment de la quota generada. Els recordatoris de pagament es compten a partir d'aquesta data de venciment.",
       "notificationEmail": "Correu de notificació",
       "notificationEmailDesc": "Correu opcional que rep un resum després de cada execució automàtica"
     },
@@ -102,6 +100,18 @@
       "repeatDaysDesc": "Dies entre recordatoris successius",
       "maxCount": "Recordatoris màxims",
       "maxCountDesc": "Nombre màxim de recordatoris per rebut (1–10)"
+    },
+    "membershipLapse": {
+      "tab": "Impagament de quota",
+      "title": "Impagament",
+      "enabled": "Retornar els socis impagats al pla gratuït",
+      "enabledDesc": "El soci amb la quota impagada un cop passat el període de gràcia torna al pla gratuït per defecte. El seu rebut es continua devent i es mantenen les activitats en què ja s'havia inscrit.",
+      "dueDays": "Termini de pagament (dies)",
+      "dueDaysDesc": "Dies des de l'emissió fins al venciment de la quota de soci. És curt expressament: la quota paga el pla que el soci està fent servir mentrestant.",
+      "graceDays": "Període de gràcia (dies)",
+      "graceDaysDesc": "Dies després del venciment — o després de la devolució d'un rebut domiciliat — abans de retirar el pla.",
+      "summary": "El soci perd el pla uns {days} dies després d'emetre's la quota. En pagar-la se li restitueix el pla, sigui quina sigui la forma de pagament.",
+      "noRemindersWarning": "Els recordatoris de pagament estan desactivats, així que ningú rep avís abans de perdre l'accés: el soci se n'assabenta quan el pla desapareix. Activa els recordatoris de pagament per avisar-lo abans."
     },
     "communications": {
       "tab": "Comunicacions",

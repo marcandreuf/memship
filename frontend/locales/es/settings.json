@@ -86,8 +86,6 @@
       "enabledDesc": "Genera automáticamente los recibos de cuota de socio según el calendario configurado",
       "day": "Día del mes",
       "dayDesc": "Día (1–31) en que se ejecuta la facturación; en los meses más cortos se factura el último día. Las cuotas trimestrales y anuales solo se facturan en el primer mes de su periodo.",
-      "dueDays": "Plazo de pago (días)",
-      "dueDaysDesc": "Días desde la emisión hasta el vencimiento de la cuota generada. Los recordatorios de pago se cuentan a partir de esa fecha de vencimiento.",
       "notificationEmail": "Correo de notificación",
       "notificationEmailDesc": "Correo opcional que recibe un resumen tras cada ejecución automática"
     },
@@ -102,6 +100,18 @@
       "repeatDaysDesc": "Días entre recordatorios sucesivos",
       "maxCount": "Recordatorios máximos",
       "maxCountDesc": "Número máximo de recordatorios por recibo (1–10)"
+    },
+    "membershipLapse": {
+      "tab": "Impago de cuota",
+      "title": "Impago",
+      "enabled": "Devolver a los socios impagados al plan gratuito",
+      "enabledDesc": "El socio cuya cuota siga impagada tras el periodo de gracia vuelve al plan gratuito por defecto. Su recibo sigue debiéndose y se mantienen las actividades en las que ya se inscribió.",
+      "dueDays": "Plazo de pago (días)",
+      "dueDaysDesc": "Días desde la emisión hasta el vencimiento de la cuota de socio. Es corto a propósito: la cuota paga el plan que el socio está usando mientras tanto.",
+      "graceDays": "Periodo de gracia (días)",
+      "graceDaysDesc": "Días tras el vencimiento — o tras la devolución de un recibo domiciliado — antes de retirar el plan.",
+      "summary": "El socio pierde su plan unos {days} días después de emitirse la cuota. Al pagarla se le restituye el plan, sea cual sea la forma de pago.",
+      "noRemindersWarning": "Los recordatorios de pago están desactivados, así que nadie recibe aviso antes de perder el acceso: el socio se entera al desaparecer su plan. Activa los recordatorios de pago para avisarle antes."
     },
     "communications": {
       "tab": "Comunicaciones",
