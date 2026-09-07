@@ -12,6 +12,23 @@ Cada recibo tiene un **número**, un **socio**, una **descripción**, importes (
 Acciones disponibles según el estado: **Emitir**, **Cobrar**, **Devolver**, **Anular** y
 **Reemitir** (para un recibo devuelto). Desde el recibo también puedes **Descargar PDF**.
 
+## Corregir un recibo emitido
+
+Un recibo emitido no se edita: se corrige emitiendo una **factura rectificativa** desde el
+propio recibo (**Emitir rectificativa**). El recibo original conserva su número, sus importes
+y su estado; la rectificativa es un documento nuevo, con importe negativo, que toma el
+siguiente número de la misma serie y enlaza con el documento que rectifica. Los dos juntos
+suman lo que el socio debe realmente.
+
+Puedes rectificar un recibo **emitido, vencido, devuelto o ya cobrado** — incluida, por tanto,
+una cantidad cobrada de más. Indicas el **motivo** y, si no quieres rectificar el total, el
+**importe**; se pueden emitir varias rectificativas parciales hasta cubrir el importe del
+recibo. Una rectificativa no se cobra por remesa ni se puede anular: la devolución del dinero
+se hace por el banco.
+
+Anular sigue estando disponible para un recibo que nunca debió emitirse, pero un recibo ya
+cobrado solo se corrige con una rectificativa.
+
 ## Origen de los recibos
 
 Un recibo puede tener origen:

@@ -48,6 +48,7 @@ def mark_overdue(db: Session, today: date | None = None) -> int:
         db.query(Receipt)
         .filter(
             Receipt.status.in_(OVERDUE_ELIGIBLE_STATUSES),
+            Receipt.document_type == "invoice",
             Receipt.is_active.is_(True),
             Receipt.payment_date.is_(None),
             Receipt.due_date.isnot(None),
@@ -82,6 +83,7 @@ def reminders_due(
         db.query(Receipt)
         .filter(
             Receipt.status == "overdue",
+            Receipt.document_type == "invoice",
             Receipt.is_active.is_(True),
             Receipt.payment_date.is_(None),
             Receipt.due_date.isnot(None),

@@ -115,6 +115,7 @@ def lapsed_receipts(db: Session, today: date | None = None) -> list[Receipt]:
         db.query(Receipt)
         .filter(
             Receipt.origin == "membership",
+            Receipt.document_type == "invoice",
             Receipt.purchased_membership_type_id.is_(None),
             Receipt.is_active.is_(True),
             Receipt.status.in_(LAPSABLE_STATUSES),
