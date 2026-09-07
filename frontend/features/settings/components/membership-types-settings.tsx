@@ -264,9 +264,16 @@ export function MembershipTypesSettings() {
                 <TableCell>{type.base_price.toFixed(2)} EUR</TableCell>
                 <TableCell>{type.group_name || t("members.noGroup")}</TableCell>
                 <TableCell>
-                  <Badge variant={type.is_active ? "default" : "outline"}>
-                    {type.is_active ? t("status.active") : t("members.inactive")}
-                  </Badge>
+                  <div className="flex flex-wrap gap-1">
+                    <Badge variant={type.is_active ? "default" : "outline"}>
+                      {type.is_active ? t("status.active") : t("members.inactive")}
+                    </Badge>
+                    {/* Which row new sign-ups land on is decided in the
+                        Registration panel; here it is only stated. */}
+                    {type.is_default && (
+                      <Badge variant="secondary">{t("members.defaultType")}</Badge>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-2">

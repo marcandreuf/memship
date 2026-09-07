@@ -53,6 +53,7 @@ import { MemberCardSettings } from "@/features/settings/components/member-card-s
 import { SsoSettings } from "@/features/settings/components/sso-settings";
 import { MailingSettings } from "@/features/settings/components/mailing-settings";
 import { ProfileFieldsSettings } from "@/features/settings/components/profile-fields-settings";
+import { RegistrationSettings } from "@/features/settings/components/registration-settings";
 import { BookingsSettings } from "@/features/settings/components/bookings-settings";
 import { RolesSettings } from "@/features/roles/components/roles-settings";
 import { UsersSettings } from "@/features/roles/components/users-settings";
@@ -518,6 +519,9 @@ export default function SettingsPage() {
                 <TabsTrigger value="profile-fields" className={SUBTAB_TRIGGER}>{t("profileFields.tab")}</TabsTrigger>
               )}
               <TabsTrigger value="membership-types" className={SUBTAB_TRIGGER}>{t("nav.membershipTypes")}</TabsTrigger>
+              {isSuperAdmin && (
+                <TabsTrigger value="registration" className={SUBTAB_TRIGGER}>{t("settings.registration.tab")}</TabsTrigger>
+              )}
             </TabsList>
 
             {isSuperAdmin && <TabsContent value="communications" className="space-y-3">
@@ -533,6 +537,11 @@ export default function SettingsPage() {
             <TabsContent value="membership-types">
               <MembershipTypesSettings />
             </TabsContent>
+            {/* Sits beside membership types because the tier new sign-ups land
+                on is edited here, and it is one of those rows. */}
+            {isSuperAdmin && <TabsContent value="registration">
+              <RegistrationSettings />
+            </TabsContent>}
           </Tabs>
         </TabsContent>
 

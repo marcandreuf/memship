@@ -72,6 +72,7 @@
       "queueTitle": "Altas pendientes",
       "queueDescription": "Solicitudes de alta pendientes de decisión.",
       "queueEmpty": "No hay altas pendientes de revisar."
-    }
+    },
+    "defaultType": "Por defecto"
   }
 }

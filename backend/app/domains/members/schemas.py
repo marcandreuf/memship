@@ -29,6 +29,7 @@ class MembershipTypeUpdate(BaseModel):
     base_price: float | None = Field(default=None, ge=0)
     billing_frequency: str | None = None
     is_active: bool | None = None
+    is_default: bool | None = None
 
 
 class MembershipTypeResponse(BaseModel):
