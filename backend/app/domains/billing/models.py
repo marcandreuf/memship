@@ -27,7 +27,7 @@ class Concept(Base):
     __tablename__ = "concepts"
     __table_args__ = (
         CheckConstraint(
-            "concept_type IN ('membership', 'activity', 'manual', 'service')",
+            "concept_type IN ('membership', 'activity', 'booking', 'manual', 'service')",
             name="valid_concept_type",
         ),
         CheckConstraint("default_amount >= 0", name="concept_amount_non_negative"),
@@ -69,7 +69,7 @@ class Receipt(Base):
             name="valid_receipt_status",
         ),
         CheckConstraint(
-            "origin IN ('membership', 'activity', 'manual', 'service')",
+            "origin IN ('membership', 'activity', 'booking', 'manual', 'service')",
             name="valid_receipt_origin",
         ),
         CheckConstraint(
@@ -87,6 +87,7 @@ class Receipt(Base):
         Index("ix_receipts_status", "status"),
         Index("ix_receipts_emission_date", "emission_date"),
         Index("ix_receipts_origin", "origin"),
+        Index("ix_receipts_booking_id", "booking_id"),
     )
 
     id = Column(Integer, primary_key=True, index=True)
@@ -96,6 +97,12 @@ class Receipt(Base):
     member_id = Column(Integer, ForeignKey("members.id"), nullable=False)
     concept_id = Column(Integer, ForeignKey("concepts.id"))
     registration_id = Column(Integer, ForeignKey("registrations.id"))
+    # SET NULL, unlike registration_id: a booking is a row an admin can destroy
+    # (deleting a slot cascades its bookings away), and a receipt must outlive
+    # that. It keeps its description, which is what the member is invoiced for.
+    booking_id = Column(
+        Integer, ForeignKey("bookings.id", ondelete="SET NULL")
+    )
     remittance_id = Column(Integer, ForeignKey("remittances.id"))
     created_by = Column(Integer, ForeignKey("users.id"))
 
@@ -157,6 +164,7 @@ class Receipt(Base):
     member = relationship("Member", backref="receipts")
     concept = relationship("Concept", back_populates="receipts")
     registration = relationship("Registration", backref="receipts")
+    booking = relationship("Booking", backref="receipts")
     remittance = relationship("Remittance", back_populates="receipts")
     creator = relationship("User", foreign_keys=[created_by])
 
