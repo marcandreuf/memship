@@ -40,7 +40,10 @@ class MembershipTypeResponse(BaseModel):
     group_name: str | None = None
     base_price: float
     billing_frequency: str
+    min_age: int | None = None
+    max_age: int | None = None
     is_active: bool
+    is_default: bool = False
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -105,6 +108,16 @@ class MemberUpdate(MemberSelfUpdate):
 class MemberStatusChange(BaseModel):
     status: MemberStatus
     reason: str | None = Field(default=None, max_length=2000)
+
+
+class MemberRegistrationApproval(BaseModel):
+    """Optional body on approve: the tier the admin puts the applicant on.
+
+    Omitted keeps the tier the sign-up landed on — the free default — so a
+    caller that posts no body at all gets the behaviour it always had.
+    """
+
+    membership_type_id: int | None = None
 
 
 class MemberRegistrationRejection(BaseModel):

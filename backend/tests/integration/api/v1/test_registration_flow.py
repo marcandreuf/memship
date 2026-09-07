@@ -25,6 +25,35 @@ def _ensure_membership_type(db):
     return mt
 
 
+def _default_membership_type(db):
+    """The free tier a sign-up lands on, created if this database has none."""
+    mt = (
+        db.query(MembershipType).filter(MembershipType.is_default == True).first()
+    )
+    if not mt:
+        mt = MembershipType(
+            name="Registered",
+            slug="registered",
+            base_price=0,
+            is_active=True,
+            is_default=True,
+        )
+        db.add(mt)
+        db.flush()
+    return mt
+
+
+def _paid_membership_type(db, name="Full Member", slug="full-member", is_active=True):
+    mt = db.query(MembershipType).filter(MembershipType.slug == slug).first()
+    if not mt:
+        mt = MembershipType(
+            name=name, slug=slug, base_price=50, is_active=is_active
+        )
+        db.add(mt)
+        db.flush()
+    return mt
+
+
 def _set_features(db, **flags):
     """Set org feature flags, creating the single-tenant settings row if needed."""
     org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
@@ -221,6 +250,82 @@ class TestAdminApproval:
         db.refresh(pending)
         assert pending.status == "active"
         assert pending.member_number is not None
+
+    def test_approve_without_a_body_keeps_the_signup_tier(self, client, db):
+        _create_user(db, email="admin@examplee6e3b1.com", role="admin")
+        _, pending = _create_user(db, email="pending@examplee6e3b1.com", status="pending")
+        landing_tier_id = pending.membership_type_id
+        _login(client, "admin@examplee6e3b1.com")
+
+        response = client.post(f"/api/v1/members/{pending.id}/approve")
+
+        assert response.status_code == 200
+        assert response.json()["membership_type_id"] == landing_tier_id
+        db.refresh(pending)
+        assert pending.membership_type_id == landing_tier_id
+
+    def test_approve_puts_the_member_on_the_chosen_paid_tier(self, client, db):
+        _create_user(db, email="admin@examplee6e3b1.com", role="admin")
+        _, pending = _create_user(db, email="pending@examplee6e3b1.com", status="pending")
+        paid = _paid_membership_type(db)
+        _login(client, "admin@examplee6e3b1.com")
+
+        response = client.post(
+            f"/api/v1/members/{pending.id}/approve",
+            json={"membership_type_id": paid.id},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["membership_type_id"] == paid.id
+        db.refresh(pending)
+        assert pending.status == "active"
+        assert pending.membership_type_id == paid.id
+
+    def test_approve_fills_in_the_default_tier_when_the_member_has_none(self, client, db):
+        _create_user(db, email="admin@examplee6e3b1.com", role="admin")
+        _, pending = _create_user(db, email="pending@examplee6e3b1.com", status="pending")
+        default_type = _default_membership_type(db)
+        pending.membership_type_id = None
+        db.flush()
+        _login(client, "admin@examplee6e3b1.com")
+
+        response = client.post(f"/api/v1/members/{pending.id}/approve")
+
+        assert response.status_code == 200
+        assert response.json()["membership_type_id"] == default_type.id
+
+    def test_approve_rejects_an_inactive_tier(self, client, db):
+        _create_user(db, email="admin@examplee6e3b1.com", role="admin")
+        _, pending = _create_user(db, email="pending@examplee6e3b1.com", status="pending")
+        retired = _paid_membership_type(
+            db, name="Retired Plan", slug="retired-plan", is_active=False
+        )
+        _login(client, "admin@examplee6e3b1.com")
+
+        response = client.post(
+            f"/api/v1/members/{pending.id}/approve",
+            json={"membership_type_id": retired.id},
+        )
+
+        assert response.status_code == 400
+        assert "not active" in response.json()["detail"]
+        db.refresh(pending)
+        assert pending.status == "pending"
+        assert pending.membership_type_id != retired.id
+
+    def test_approve_rejects_an_unknown_tier(self, client, db):
+        _create_user(db, email="admin@examplee6e3b1.com", role="admin")
+        _, pending = _create_user(db, email="pending@examplee6e3b1.com", status="pending")
+        _login(client, "admin@examplee6e3b1.com")
+
+        response = client.post(
+            f"/api/v1/members/{pending.id}/approve",
+            json={"membership_type_id": 999999},
+        )
+
+        assert response.status_code == 400
+        db.refresh(pending)
+        assert pending.status == "pending"
 
     def test_approve_rejects_non_pending_member(self, client, db):
         _create_user(db, email="admin@examplee6e3b1.com", role="admin")

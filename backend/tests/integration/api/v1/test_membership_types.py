@@ -61,6 +61,30 @@ class TestMembershipTypeCRUD:
         assert response.status_code == 200
         assert len(response.json()) >= 1
 
+    def test_list_carries_the_age_band_and_default_flag(self, client, db):
+        """The approval dropdown warns about age in the browser, so the list has
+        to hand it the band and tell it which tier to pre-select."""
+        user = _create_user(db, "member")
+        db.add(
+            MembershipType(
+                name="Youth",
+                slug="youth",
+                max_age=15,
+                min_age=6,
+                is_active=True,
+            )
+        )
+        db.flush()
+        client.cookies.update(_auth_cookie(user))
+
+        response = client.get("/api/v1/membership-types/")
+
+        assert response.status_code == 200
+        youth = next(mt for mt in response.json() if mt["slug"] == "youth")
+        assert youth["min_age"] == 6
+        assert youth["max_age"] == 15
+        assert youth["is_default"] is False
+
     def test_update_membership_type(self, client, db):
         user = _create_user(db, "admin")
         mt = MembershipType(name="Old", slug="old", is_active=True)

@@ -19,6 +19,7 @@ from app.domains.members.models import Member
 from app.domains.members.schemas import (
     GuardianResponse,
     MemberCreate,
+    MemberRegistrationApproval,
     MemberRegistrationRejection,
     MemberResponse,
     MemberSelfUpdate,
@@ -309,13 +310,21 @@ def _load_member_for_review(db: Session, member_id: int) -> Member:
 @router.post("/{member_id}/approve", response_model=MemberResponse)
 def approve_member_registration(
     member_id: int,
+    data: MemberRegistrationApproval | None = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("members.approve")),
 ):
+    """Approve a pending self-registration, optionally moving it to another tier.
+
+    The body is optional so callers that predate the tier choice keep working:
+    no body approves onto the free default the sign-up already assigned.
+    """
     member = _load_member_for_review(db, member_id)
 
     try:
-        member = approve_registration(db, member)
+        member = approve_registration(
+            db, member, data.membership_type_id if data else None
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
