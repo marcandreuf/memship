@@ -17,6 +17,7 @@ from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
 from app.domains.auth.models import User
 from app.domains.bookings import service
+from app.domains.bookings.eligibility import check_space_eligibility
 from app.domains.bookings.notifications import EmailBookingNotifier
 from app.domains.bookings.schemas import (
     AdminBookingPage,
@@ -316,7 +317,14 @@ def get_availability(
         raise HTTPException(status_code=404, detail="Space not found")
     member = _current_member(db, current_user)
     cells = service.space_week_availability(db, space, week_start, member.id)
-    return WeekAvailability(space_id=space_id, week_start=week_start, cells=cells)
+    eligibility = check_space_eligibility(space, member)
+    return WeekAvailability(
+        space_id=space_id,
+        week_start=week_start,
+        eligible=eligibility.eligible,
+        ineligible_reason=eligibility.reason,
+        cells=cells,
+    )
 
 
 @member_router.post(
@@ -338,6 +346,13 @@ def create_booking(
         )
     except service.SlotNotFound:
         raise HTTPException(status_code=404, detail="Slot not found")
+    except service.NotEligible as exc:
+        # A member who is not eligible never sees a book button — the week
+        # availability already told the UI so. This is the race: the tier
+        # changed after the calendar loaded.
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)
+        )
     except (service.SlotFull, service.DuplicateBooking) as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
     except (

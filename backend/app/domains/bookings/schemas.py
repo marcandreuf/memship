@@ -17,6 +17,8 @@ class SpaceCreate(BaseModel):
     description: str | None = None
     open_time: time
     close_time: time
+    # Empty or omitted means the space is open to every member.
+    allowed_membership_types: list[int] | None = None
     is_active: bool = True
 
     @model_validator(mode="after")
@@ -32,6 +34,7 @@ class SpaceUpdate(BaseModel):
     description: str | None = None
     open_time: time | None = None
     close_time: time | None = None
+    allowed_membership_types: list[int] | None = None
     is_active: bool | None = None
 
 
@@ -44,6 +47,7 @@ class SpaceRead(BaseModel):
     description: str | None
     open_time: time
     close_time: time
+    allowed_membership_types: list[int] | None
     is_active: bool
     created_at: datetime | None
     updated_at: datetime | None
@@ -181,4 +185,10 @@ class AvailabilityCell(BaseModel):
 class WeekAvailability(BaseModel):
     space_id: int
     week_start: date
+    # False when the space is restricted to membership types the member does not
+    # hold. The cells are still returned so the week reads normally, but nothing
+    # in it can be booked — the reason code says which of the two failures it is:
+    # membership_type_not_allowed | no_membership_type
+    eligible: bool = True
+    ineligible_reason: str | None = None
     cells: list[AvailabilityCell]

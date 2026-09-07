@@ -12,7 +12,7 @@ from pydantic import ValidationError
 
 from app.core.security.password import hash_password
 from app.domains.auth.models import User
-from app.domains.bookings import service
+from app.domains.bookings import eligibility, service
 from app.domains.bookings.models import Space, SpaceSlot
 from app.domains.bookings.schemas import (
     SlotRepeat,
@@ -21,7 +21,7 @@ from app.domains.bookings.schemas import (
     SpaceSlotUpdate,
     SpaceUpdate,
 )
-from app.domains.members.models import Member
+from app.domains.members.models import Member, MembershipType
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Person
 
@@ -55,14 +55,26 @@ def _org(db, **features):
     return org
 
 
-def _member(db, i=0):
+def _member(db, i=0, membership_type=None):
     person = Person(first_name=f"M{i}", last_name="T", email=f"m{i}@t.com")
     db.add(person)
     db.flush()
-    m = Member(person_id=person.id, status="active", is_active=True)
+    m = Member(
+        person_id=person.id,
+        status="active",
+        is_active=True,
+        membership_type_id=membership_type.id if membership_type else None,
+    )
     db.add(m)
     db.flush()
     return m
+
+
+def _membership_type(db, slug):
+    mt = MembershipType(name=slug.title(), slug=slug, is_active=True)
+    db.add(mt)
+    db.flush()
+    return mt
 
 
 def _user(db, i=0):
@@ -78,8 +90,14 @@ def _user(db, i=0):
     return user
 
 
-def _space(db):
-    s = Space(name="Court 1", open_time=time(8, 0), close_time=time(22, 0), is_active=True)
+def _space(db, allowed_membership_types=None):
+    s = Space(
+        name="Court 1",
+        open_time=time(8, 0),
+        close_time=time(22, 0),
+        allowed_membership_types=allowed_membership_types,
+        is_active=True,
+    )
     db.add(s)
     db.flush()
     return s
@@ -719,3 +737,172 @@ def test_my_bookings_reports_occupancy(db):
     assert mine[0]["slot_date"] == slot.slot_date
     assert mine[0]["capacity"] == 3
     assert mine[0]["booked_count"] == 2
+
+
+# --- Membership-type gating ------------------------------------------------
+#
+# `Space.allowed_membership_types` reads exactly like the activity column of the
+# same name: a list of ids, empty or NULL meaning open to everybody. What the
+# bookings side adds is telling the two failures apart — the member on a tier
+# that is not on the list and the member on no tier at all get different reason
+# codes, because they are different problems with different fixes.
+
+
+def test_member_on_an_allowed_type_books(db):
+    _org(db)
+    allowed = _membership_type(db, "premium")
+    space = _space(db, allowed_membership_types=[allowed.id])
+    slot = _slot(db, space, _future(3), capacity=1)
+    member = _member(db, 1, membership_type=allowed)
+
+    booking = service.create_booking(db, member, slot.id)
+
+    assert booking.status == "booked"
+
+
+def test_member_on_another_type_refused(db):
+    _org(db)
+    allowed = _membership_type(db, "premium")
+    other = _membership_type(db, "basic")
+    space = _space(db, allowed_membership_types=[allowed.id])
+    slot = _slot(db, space, _future(3), capacity=1)
+    member = _member(db, 1, membership_type=other)
+
+    with pytest.raises(service.NotEligible) as exc:
+        service.create_booking(db, member, slot.id)
+
+    assert exc.value.reason == eligibility.MEMBERSHIP_TYPE_NOT_ALLOWED
+
+
+def test_member_without_a_membership_type_refused_for_its_own_reason(db):
+    _org(db)
+    allowed = _membership_type(db, "premium")
+    space = _space(db, allowed_membership_types=[allowed.id])
+    slot = _slot(db, space, _future(3), capacity=1)
+    member = _member(db, 1, membership_type=None)
+
+    with pytest.raises(service.NotEligible) as exc:
+        service.create_booking(db, member, slot.id)
+
+    assert exc.value.reason == eligibility.NO_MEMBERSHIP_TYPE
+    assert str(exc.value) != eligibility.SpaceEligibility(
+        eligible=False, reason=eligibility.MEMBERSHIP_TYPE_NOT_ALLOWED
+    ).message
+
+
+@pytest.mark.parametrize("allowed", [None, []])
+def test_unrestricted_space_is_open_to_everyone(db, allowed):
+    _org(db)
+    space = _space(db, allowed_membership_types=allowed)
+    slot = _slot(db, space, _future(3), capacity=2)
+    typed = _member(db, 1, membership_type=_membership_type(db, "basic"))
+    untyped = _member(db, 2, membership_type=None)
+
+    assert service.create_booking(db, typed, slot.id).status == "booked"
+    assert service.create_booking(db, untyped, slot.id).status == "booked"
+
+
+def test_gating_a_space_does_not_touch_its_other_slots_rules(db):
+    """The gate is the only new refusal — a full slot still waitlists."""
+    _org(db)
+    allowed = _membership_type(db, "premium")
+    space = _space(db, allowed_membership_types=[allowed.id])
+    slot = _slot(db, space, _future(3), capacity=1)
+    m1 = _member(db, 1, membership_type=allowed)
+    m2 = _member(db, 2, membership_type=allowed)
+
+    service.create_booking(db, m1, slot.id)
+
+    assert service.create_booking(db, m2, slot.id).status == "waitlisted"
+
+
+def test_promotion_skips_a_member_who_lost_their_tier(db):
+    """Promotion is a confirmation path, so it re-checks the gate.
+
+    The first waitlisted member's tier is cleared while they wait. Promoting
+    them would hand them a seat in a space they may no longer use, so the seat
+    goes to the next eligible member and they keep their waitlist row.
+    """
+    _org(db, booking_cancellation_deadline_hours=0)
+    allowed = _membership_type(db, "premium")
+    space = _space(db, allowed_membership_types=[allowed.id])
+    slot = _slot(db, space, _future(3), capacity=1)
+    holder = _member(db, 1, membership_type=allowed)
+    lapsed = _member(db, 2, membership_type=allowed)
+    still_allowed = _member(db, 3, membership_type=allowed)
+    notifier = RecordingNotifier()
+
+    held = service.create_booking(db, holder, slot.id, notifier=notifier)
+    first = service.create_booking(db, lapsed, slot.id, notifier=notifier)
+    second = service.create_booking(db, still_allowed, slot.id, notifier=notifier)
+    assert (first.status, second.status) == ("waitlisted", "waitlisted")
+
+    lapsed.membership_type_id = None
+    db.flush()
+
+    canceller = _user(db, 9)
+    service.cancel_booking(
+        db, held, cancelled_by_user_id=canceller.id, is_admin=False, notifier=notifier
+    )
+    db.refresh(first)
+    db.refresh(second)
+
+    assert first.status == "waitlisted"
+    assert second.status == "booked"
+    assert notifier.calls[-1][0] == "promoted"
+
+
+def test_promotion_leaves_the_seat_open_when_nobody_waiting_is_eligible(db):
+    _org(db, booking_cancellation_deadline_hours=0)
+    allowed = _membership_type(db, "premium")
+    space = _space(db, allowed_membership_types=[allowed.id])
+    slot = _slot(db, space, _future(3), capacity=1)
+    holder = _member(db, 1, membership_type=allowed)
+    lapsed = _member(db, 2, membership_type=allowed)
+    notifier = RecordingNotifier()
+
+    held = service.create_booking(db, holder, slot.id, notifier=notifier)
+    waiting = service.create_booking(db, lapsed, slot.id, notifier=notifier)
+
+    lapsed.membership_type_id = None
+    db.flush()
+
+    canceller = _user(db, 9)
+    service.cancel_booking(
+        db, held, cancelled_by_user_id=canceller.id, is_admin=False, notifier=notifier
+    )
+    db.refresh(waiting)
+
+    assert waiting.status == "waitlisted"
+    assert [c[0] for c in notifier.calls].count("promoted") == 0
+
+
+def test_unrestricted_space_still_promotes_the_earliest_waitlisted(db):
+    _org(db, booking_cancellation_deadline_hours=0)
+    space = _space(db)
+    slot = _slot(db, space, _future(3), capacity=1)
+    m1, m2 = _member(db, 1), _member(db, 2)
+    notifier = RecordingNotifier()
+
+    b1 = service.create_booking(db, m1, slot.id, notifier=notifier)
+    b2 = service.create_booking(db, m2, slot.id, notifier=notifier)
+
+    canceller = _user(db, 9)
+    service.cancel_booking(
+        db, b1, cancelled_by_user_id=canceller.id, is_admin=False, notifier=notifier
+    )
+    db.refresh(b2)
+
+    assert b2.status == "booked"
+
+
+def test_update_space_stores_an_empty_allow_list_as_open(db):
+    """Empty and NULL must not be two different states in the column."""
+    _org(db)
+    allowed = _membership_type(db, "premium")
+    space = _space(db, allowed_membership_types=[allowed.id])
+
+    service.update_space(db, space, SpaceUpdate(allowed_membership_types=[]))
+    db.flush()
+
+    assert space.allowed_membership_types is None
