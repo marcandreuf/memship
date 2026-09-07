@@ -103,6 +103,15 @@ class Receipt(Base):
     booking_id = Column(
         Integer, ForeignKey("bookings.id", ondelete="SET NULL")
     )
+    # The plan an unpaid purchase receipt was raised for, so activation can read
+    # it off the receipt it has just marked paid. SET NULL, like
+    # ``members.membership_type_id`` — the only other foreign key to this table,
+    # and the one that establishes a membership type is a row the schema expects
+    # to be able to lose. A receipt must outlive that: it keeps its description
+    # and its amount, which is what the member was actually invoiced for.
+    purchased_membership_type_id = Column(
+        Integer, ForeignKey("membership_types.id", ondelete="SET NULL")
+    )
     remittance_id = Column(Integer, ForeignKey("remittances.id"))
     created_by = Column(Integer, ForeignKey("users.id"))
 
@@ -165,6 +174,7 @@ class Receipt(Base):
     concept = relationship("Concept", back_populates="receipts")
     registration = relationship("Registration", backref="receipts")
     booking = relationship("Booking", backref="receipts")
+    purchased_membership_type = relationship("MembershipType")
     remittance = relationship("Remittance", back_populates="receipts")
     creator = relationship("User", foreign_keys=[created_by])
 
