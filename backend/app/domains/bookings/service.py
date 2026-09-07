@@ -20,6 +20,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from sqlalchemy import func
 from sqlalchemy.orm import Query, Session, joinedload
 
+from app.domains.bookings.eligibility import check_space_eligibility
 from app.domains.bookings.models import Booking, Space, SpaceSlot
 from app.domains.bookings.notifications import (
     BookingNotification,
@@ -82,6 +83,18 @@ class BookingWindowExceeded(BookingError):
 
 class DuplicateBooking(BookingError):
     pass
+
+
+class NotEligible(BookingError):
+    """The member's membership type does not allow booking this space.
+
+    Carries the reason code from ``eligibility`` so the caller can tell
+    "your tier is not on the list" apart from "you have no tier".
+    """
+
+    def __init__(self, reason: str, message: str):
+        super().__init__(message)
+        self.reason = reason
 
 
 class CancellationTooLate(BookingError):
@@ -159,6 +172,7 @@ def create_space(db: Session, data: SpaceCreate) -> Space:
         description=data.description,
         open_time=data.open_time,
         close_time=data.close_time,
+        allowed_membership_types=data.allowed_membership_types or None,
         is_active=data.is_active,
     )
     db.add(space)
@@ -167,6 +181,12 @@ def create_space(db: Session, data: SpaceCreate) -> Space:
 
 def update_space(db: Session, space: Space, data: SpaceUpdate) -> Space:
     payload = data.model_dump(exclude_unset=True)
+    if "allowed_membership_types" in payload:
+        # An empty list and NULL both mean "open to everyone"; store one of them
+        # so the column has a single reading.
+        payload["allowed_membership_types"] = (
+            payload["allowed_membership_types"] or None
+        )
     for key, value in payload.items():
         setattr(space, key, value)
     if space.close_time <= space.open_time:
@@ -591,6 +611,10 @@ def create_booking(
     if space is None or not space.is_active:
         raise SlotNotFound(str(space_slot_id))
 
+    eligibility = check_space_eligibility(space, member)
+    if not eligibility.eligible:
+        raise NotEligible(eligibility.reason, eligibility.message)
+
     tz = _tz(db)
     now_local = datetime.now(tz)
     slot_start = datetime.combine(slot.slot_date, slot.start_time, tzinfo=tz)
@@ -693,31 +717,53 @@ def cancel_booking(
     if was_booked:
         booked = _count(db, slot.id, BookingStatus.BOOKED)
         if booked < slot.capacity:
-            promoted = (
-                db.query(Booking)
-                .filter(
-                    Booking.space_slot_id == slot.id,
-                    Booking.status == BookingStatus.WAITLISTED,
-                )
-                .order_by(Booking.waitlisted_at.asc(), Booking.id.asc())
-                .first()
-            )
-            if promoted is not None:
-                promoted.status = BookingStatus.BOOKED
-                promoted.waitlisted_at = None
-                db.flush()
-                space = get_space(db, slot.space_id)
-                member = (
-                    db.query(Member)
-                    .options(joinedload(Member.person))
-                    .filter(Member.id == promoted.member_id)
-                    .first()
-                )
-                if member is not None and space is not None:
-                    notifier.send_promoted(
-                        _notification(db, promoted, slot, space, member)
-                    )
+            _promote_next(db, slot, notifier)
     return booking
+
+
+def _promote_next(
+    db: Session, slot: SpaceSlot, notifier: BookingNotifier
+) -> Booking | None:
+    """Promote the earliest waitlisted member who may still hold the slot.
+
+    Promotion is a confirmation path, so it re-checks eligibility rather than
+    trusting the check that ran when the member joined the waitlist: a tier can
+    be changed or cleared while a member waits, and promoting them would hand
+    them a seat in a space they are no longer allowed to use. An ineligible
+    member is skipped and keeps their place on the waitlist — the seat goes to
+    the next eligible one, and nobody is silently cancelled for an
+    administrative change they did not make.
+    """
+    space = get_space(db, slot.space_id)
+    candidates = (
+        db.query(Booking)
+        .filter(
+            Booking.space_slot_id == slot.id,
+            Booking.status == BookingStatus.WAITLISTED,
+        )
+        .order_by(Booking.waitlisted_at.asc(), Booking.id.asc())
+        .all()
+    )
+    for candidate in candidates:
+        member = (
+            db.query(Member)
+            .options(joinedload(Member.person))
+            .filter(Member.id == candidate.member_id)
+            .first()
+        )
+        if member is None:
+            continue
+        if space is not None and not check_space_eligibility(space, member).eligible:
+            continue
+        candidate.status = BookingStatus.BOOKED
+        candidate.waitlisted_at = None
+        db.flush()
+        if space is not None:
+            notifier.send_promoted(
+                _notification(db, candidate, slot, space, member)
+            )
+        return candidate
+    return None
 
 
 # --- Reads ----------------------------------------------------------------

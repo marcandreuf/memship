@@ -28,7 +28,7 @@ from sqlalchemy import (
     func,
     text,
 )
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base
@@ -47,6 +47,9 @@ class Space(Base):
     description = Column(Text)
     open_time = Column(Time, nullable=False)
     close_time = Column(Time, nullable=False)
+    # Membership type ids allowed to book. Empty or NULL = open to every member,
+    # the same reading as Activity.allowed_membership_types.
+    allowed_membership_types = Column(ARRAY(Integer))
     is_active = Column(Boolean, nullable=False, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(

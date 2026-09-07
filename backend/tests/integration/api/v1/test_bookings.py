@@ -6,7 +6,7 @@ import pytest
 
 from app.core.security.password import hash_password
 from app.domains.auth.models import User
-from app.domains.members.models import Member
+from app.domains.members.models import Member, MembershipType
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Person
 
@@ -54,7 +54,7 @@ def _user(db, role="admin", email=None):
     return user
 
 
-def _member_user(db, email):
+def _member_user(db, email, membership_type=None):
     person = Person(first_name="Mem", last_name="Ber", email=email)
     db.add(person)
     db.flush()
@@ -65,30 +65,37 @@ def _member_user(db, email):
     db.add(user)
     db.flush()
     member = Member(
-        person_id=person.id, user_id=user.id, status="active", is_active=True
+        person_id=person.id, user_id=user.id, status="active", is_active=True,
+        membership_type_id=membership_type.id if membership_type else None,
     )
     db.add(member)
     db.flush()
     return user, member
 
 
+def _membership_type(db, slug):
+    mt = MembershipType(name=slug.title(), slug=slug, is_active=True)
+    db.add(mt)
+    db.flush()
+    return mt
+
+
 def _future(days=3):
     return date.today() + timedelta(days=days)
 
 
-def _make_space(client, admin, *, open_="08:00:00", close="22:00:00"):
-    sp = client.post(
-        "/api/v1/spaces",
-        json={"name": "Court 1", "open_time": open_, "close_time": close},
-        cookies=_auth(admin),
-    )
+def _make_space(client, admin, *, open_="08:00:00", close="22:00:00", allowed=None):
+    body = {"name": "Court 1", "open_time": open_, "close_time": close}
+    if allowed is not None:
+        body["allowed_membership_types"] = allowed
+    sp = client.post("/api/v1/spaces", json=body, cookies=_auth(admin))
     assert sp.status_code == 201, sp.text
     return sp.json()["id"]
 
 
-def _make_space_and_slot(client, admin, *, capacity=1, on=None):
+def _make_space_and_slot(client, admin, *, capacity=1, on=None, allowed=None):
     on = on or _future(3)
-    space_id = _make_space(client, admin)
+    space_id = _make_space(client, admin, allowed=allowed)
     sl = client.post(
         f"/api/v1/spaces/{space_id}/slots",
         json={
@@ -440,3 +447,128 @@ class TestAdminBookingsView:
         assert body["meta"]["total"] == 1
         assert body["items"][0]["member_name"]
         assert body["items"][0]["slot_date"] == _future(3).isoformat()
+
+
+class TestMembershipGating:
+    """A space restricted to membership types refuses the wrong tier, and says
+    which of the two things went wrong."""
+
+    def test_admin_sets_and_clears_the_allow_list(self, client, db):
+        _org(db)
+        admin = _user(db, "admin")
+        premium = _membership_type(db, "premium-gate")
+        space_id = _make_space(client, admin, allowed=[premium.id])
+
+        r = client.get(f"/api/v1/spaces/{space_id}", cookies=_auth(admin))
+        assert r.json()["allowed_membership_types"] == [premium.id]
+
+        r = client.put(
+            f"/api/v1/spaces/{space_id}",
+            json={"allowed_membership_types": []},
+            cookies=_auth(admin),
+        )
+        assert r.status_code == 200, r.text
+        assert r.json()["allowed_membership_types"] is None
+
+    def test_allowed_member_books(self, client, db):
+        _org(db)
+        admin = _user(db, "admin")
+        premium = _membership_type(db, "premium-books")
+        _space_id, slot_id = _make_space_and_slot(
+            client, admin, allowed=[premium.id]
+        )
+        user, _ = _member_user(db, "ok@examplee6e3b1.com", membership_type=premium)
+
+        r = client.post(
+            "/api/v1/bookings",
+            json={"space_slot_id": slot_id},
+            cookies=_auth(user),
+        )
+        assert r.status_code == 201, r.text
+        assert r.json()["status"] == "booked"
+
+    def test_member_on_another_tier_is_forbidden(self, client, db):
+        _org(db)
+        admin = _user(db, "admin")
+        premium = _membership_type(db, "premium-blocks")
+        basic = _membership_type(db, "basic-blocked")
+        _space_id, slot_id = _make_space_and_slot(
+            client, admin, allowed=[premium.id]
+        )
+        user, _ = _member_user(db, "no@examplee6e3b1.com", membership_type=basic)
+
+        r = client.post(
+            "/api/v1/bookings",
+            json={"space_slot_id": slot_id},
+            cookies=_auth(user),
+        )
+        assert r.status_code == 403
+        assert "membership type does not include" in r.json()["detail"]
+
+    def test_member_with_no_tier_is_told_something_else(self, client, db):
+        _org(db)
+        admin = _user(db, "admin")
+        premium = _membership_type(db, "premium-untyped")
+        _space_id, slot_id = _make_space_and_slot(
+            client, admin, allowed=[premium.id]
+        )
+        user, _ = _member_user(db, "none@examplee6e3b1.com")
+
+        r = client.post(
+            "/api/v1/bookings",
+            json={"space_slot_id": slot_id},
+            cookies=_auth(user),
+        )
+        assert r.status_code == 403
+        assert "no membership type assigned" in r.json()["detail"]
+
+    def test_availability_reports_the_restriction(self, client, db):
+        _org(db)
+        admin = _user(db, "admin")
+        premium = _membership_type(db, "premium-avail")
+        basic = _membership_type(db, "basic-avail")
+        space_id, _slot_id = _make_space_and_slot(
+            client, admin, allowed=[premium.id]
+        )
+        blocked, _ = _member_user(
+            db, "blocked@examplee6e3b1.com", membership_type=basic
+        )
+        untyped, _ = _member_user(db, "untyped@examplee6e3b1.com")
+        allowed_user, _ = _member_user(
+            db, "allowed@examplee6e3b1.com", membership_type=premium
+        )
+        week = (_future(3) - timedelta(days=_future(3).weekday())).isoformat()
+        url = f"/api/v1/spaces/{space_id}/availability?week_start={week}"
+
+        body = client.get(url, cookies=_auth(blocked)).json()
+        assert body["eligible"] is False
+        assert body["ineligible_reason"] == "membership_type_not_allowed"
+        # The week still comes back, so the member sees what they are missing.
+        assert body["cells"]
+
+        body = client.get(url, cookies=_auth(untyped)).json()
+        assert body["ineligible_reason"] == "no_membership_type"
+
+        body = client.get(url, cookies=_auth(allowed_user)).json()
+        assert body["eligible"] is True
+        assert body["ineligible_reason"] is None
+
+    def test_unrestricted_space_stays_open(self, client, db):
+        _org(db)
+        admin = _user(db, "admin")
+        space_id, slot_id = _make_space_and_slot(client, admin)
+        user, _ = _member_user(db, "open@examplee6e3b1.com")
+        week = (_future(3) - timedelta(days=_future(3).weekday())).isoformat()
+
+        body = client.get(
+            f"/api/v1/spaces/{space_id}/availability?week_start={week}",
+            cookies=_auth(user),
+        ).json()
+        assert body["eligible"] is True
+
+        r = client.post(
+            "/api/v1/bookings",
+            json={"space_slot_id": slot_id},
+            cookies=_auth(user),
+        )
+        assert r.status_code == 201
