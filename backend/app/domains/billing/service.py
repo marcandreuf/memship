@@ -604,3 +604,72 @@ def generate_activity_receipt(
     db.add(receipt)
     db.flush()
     return receipt
+
+
+def generate_booking_receipt(
+    db: Session,
+    booking_id: int,
+    member_id: int,
+    description: str,
+    amount: Decimal,
+    created_by_id: int | None = None,
+) -> Receipt | None:
+    """Create a receipt for a space booking.
+
+    Called whenever a booking is confirmed — booking a free seat, or being
+    promoted off the waitlist.
+
+    Returns ``None`` for a free booking, which is the normal case: a space with
+    no price never reaches a receipt at all. The return type says so, unlike
+    ``generate_activity_receipt`` (see #106).
+
+    ``description`` carries the space name and the slot's date and time because
+    the link back to the booking is deliberately breakable — ``booking_id`` is
+    ``ON DELETE SET NULL``, so an admin deleting a slot leaves this text as the
+    only record of what was billed.
+    """
+    if amount <= 0:
+        return None
+
+    org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
+    vat_rate = Decimal(str((org.default_vat_rate if org else None) or 21))
+
+    concept = (
+        db.query(Concept)
+        .filter(Concept.code == "space-booking", Concept.is_active.is_(True))
+        .first()
+    )
+    if not concept:
+        concept = Concept(
+            name="Space Booking",
+            code="space-booking",
+            concept_type="booking",
+            default_amount=Decimal("0"),
+            vat_rate=vat_rate,
+        )
+        db.add(concept)
+        db.flush()
+
+    base_amount = Decimal(str(amount))
+    vat_amount, total_amount = calculate_vat(base_amount, vat_rate)
+    today = date.today()
+
+    receipt = Receipt(
+        receipt_number=generate_receipt_number(db, today),
+        member_id=member_id,
+        concept_id=concept.id,
+        booking_id=booking_id,
+        origin="booking",
+        description=description,
+        base_amount=base_amount,
+        vat_rate=vat_rate,
+        vat_amount=vat_amount,
+        total_amount=total_amount,
+        status="emitted",
+        emission_date=today,
+        is_batchable=True,
+        created_by=created_by_id,
+    )
+    db.add(receipt)
+    db.flush()
+    return receipt

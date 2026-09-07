@@ -21,6 +21,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    Numeric,
     SmallInteger,
     String,
     Text,
@@ -38,6 +39,9 @@ class Space(Base):
     __tablename__ = "spaces"
     __table_args__ = (
         CheckConstraint("close_time > open_time", name="space_hours_valid"),
+        CheckConstraint(
+            "price IS NULL OR price >= 0", name="space_price_non_negative"
+        ),
         Index("ix_spaces_active", "is_active"),
     )
 
@@ -45,6 +49,9 @@ class Space(Base):
     name = Column(String(200), nullable=False)
     space_type = Column(String(50))
     description = Column(Text)
+    # What one booking of this space costs, before VAT. NULL or 0 = free, and a
+    # free space raises no receipt at all. A slot may override it.
+    price = Column(Numeric(10, 2))
     open_time = Column(Time, nullable=False)
     close_time = Column(Time, nullable=False)
     # Membership type ids allowed to book. Empty or NULL = open to every member,
@@ -66,6 +73,9 @@ class SpaceSlot(Base):
     __table_args__ = (
         CheckConstraint("end_time > start_time", name="space_slot_time_valid"),
         CheckConstraint("capacity >= 1", name="space_slot_capacity_valid"),
+        CheckConstraint(
+            "price IS NULL OR price >= 0", name="space_slot_price_non_negative"
+        ),
         Index("ix_space_slots_space_date", "space_id", "slot_date"),
         Index("ix_space_slots_series", "series_id"),
     )
@@ -78,6 +88,9 @@ class SpaceSlot(Base):
     start_time = Column(Time, nullable=False)
     end_time = Column(Time, nullable=False)
     capacity = Column(SmallInteger, nullable=False, default=1)
+    # Overrides the space's price for this one slot — prime time costs more.
+    # NULL falls back to the space; 0 is an explicit free slot in a paid space.
+    price = Column(Numeric(10, 2))
     # Slots generated together by one repeat rule share a series_id; NULL = one-off.
     series_id = Column(UUID(as_uuid=True))
     is_active = Column(Boolean, nullable=False, default=True)

@@ -20,6 +20,11 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from sqlalchemy import func
 from sqlalchemy.orm import Query, Session, joinedload
 
+from app.domains.bookings.billing import (
+    booking_price,
+    ensure_booking_receipt,
+    void_booking_receipts,
+)
 from app.domains.bookings.eligibility import check_space_eligibility
 from app.domains.bookings.models import Booking, Space, SpaceSlot
 from app.domains.bookings.notifications import (
@@ -170,6 +175,7 @@ def create_space(db: Session, data: SpaceCreate) -> Space:
         name=data.name,
         space_type=data.space_type,
         description=data.description,
+        price=data.price,
         open_time=data.open_time,
         close_time=data.close_time,
         allowed_membership_types=data.allowed_membership_types or None,
@@ -382,6 +388,7 @@ def create_slot(db: Session, space: Space, data: SpaceSlotCreate) -> list[SpaceS
             start_time=start_time,
             end_time=end_time,
             capacity=data.capacity,
+            price=data.price,
             series_id=series_id,
             is_active=data.is_active,
         )
@@ -558,6 +565,7 @@ def space_week_availability(
                 "start_time": slot.start_time,
                 "end_time": slot.end_time,
                 "capacity": slot.capacity,
+                "price": booking_price(space, slot),
                 "booked_count": booked,
                 "waitlist_count": waitlisted,
                 "my_status": my_status,
@@ -646,6 +654,7 @@ def create_booking(
     db.flush()
 
     if status == BookingStatus.BOOKED:
+        ensure_booking_receipt(db, booking, slot, space)
         notifier.send_confirmation(
             _notification(
                 db,
@@ -699,6 +708,10 @@ def cancel_booking(
     booking.cancelled_at = now_local
     booking.cancelled_by_user_id = cancelled_by_user_id
     db.flush()
+
+    # Money follows the seat: whatever is still unpaid is voided here, and a
+    # paid receipt is left standing — the club settles that one offline.
+    void_booking_receipts(db, booking)
 
     if is_admin:
         # The member didn't cancel this themselves — tell them.
@@ -759,6 +772,9 @@ def _promote_next(
         candidate.waitlisted_at = None
         db.flush()
         if space is not None:
+            # Promotion confirms a seat, so it bills like any other confirmation
+            # path — the one that is easiest to forget.
+            ensure_booking_receipt(db, candidate, slot, space)
             notifier.send_promoted(
                 _notification(db, candidate, slot, space, member)
             )

@@ -15,6 +15,9 @@ class SpaceCreate(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     space_type: str | None = Field(default=None, max_length=50)
     description: str | None = None
+    # Price per booking, before VAT. None or 0 means the space is free and no
+    # receipt is ever raised for it. Typed like ActivityPrice.amount.
+    price: float | None = Field(default=None, ge=0)
     open_time: time
     close_time: time
     # Empty or omitted means the space is open to every member.
@@ -32,6 +35,7 @@ class SpaceUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=200)
     space_type: str | None = Field(default=None, max_length=50)
     description: str | None = None
+    price: float | None = Field(default=None, ge=0)
     open_time: time | None = None
     close_time: time | None = None
     allowed_membership_types: list[int] | None = None
@@ -45,6 +49,7 @@ class SpaceRead(BaseModel):
     name: str
     space_type: str | None
     description: str | None
+    price: float | None
     open_time: time
     close_time: time
     allowed_membership_types: list[int] | None
@@ -77,6 +82,8 @@ class SpaceSlotCreate(BaseModel):
     # all_day expands to the space's opening hours in the service.
     all_day: bool = False
     capacity: int = Field(default=1, ge=1)
+    # Overrides the space's price for this slot; None falls back to the space.
+    price: float | None = Field(default=None, ge=0)
     is_active: bool = True
     repeat: SlotRepeat | None = None
 
@@ -96,6 +103,7 @@ class SpaceSlotUpdate(BaseModel):
     end_time: time | None = None
     all_day: bool = False
     capacity: int | None = Field(default=None, ge=1)
+    price: float | None = Field(default=None, ge=0)
     is_active: bool | None = None
 
 
@@ -108,6 +116,7 @@ class SpaceSlotRead(BaseModel):
     start_time: time
     end_time: time
     capacity: int
+    price: float | None
     series_id: UUID | None
     is_active: bool
     # Slots in this slot's series dated today-or-later than it (itself included);
@@ -174,6 +183,9 @@ class AvailabilityCell(BaseModel):
     start_time: time
     end_time: time
     capacity: int
+    # What this slot costs the member: the slot's own price, or the space's,
+    # or 0 when neither is set. Shown before the booking is confirmed.
+    price: float
     booked_count: int
     waitlist_count: int
     # none | booked | waitlisted
