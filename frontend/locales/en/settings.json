@@ -293,6 +293,11 @@
           "description": "Chases overdue receipts on the configured schedule.",
           "warning": "Overdue receipts stop being chased by email."
         },
+        "payment_confirmation": {
+          "name": "Payment confirmation",
+          "description": "Tells the member their payment has been recorded.",
+          "warning": "Members paying by direct debit, cash or transfer get no signal that their payment arrived."
+        },
         "billing_summary": {
           "name": "Billing summary",
           "description": "Internal summary of each billing run, to the admin address."

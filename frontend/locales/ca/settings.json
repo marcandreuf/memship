@@ -293,6 +293,11 @@
           "description": "Reclama els rebuts vençuts segons la pauta configurada.",
           "warning": "Els rebuts vençuts deixaran de reclamar-se per correu."
         },
+        "payment_confirmation": {
+          "name": "Confirmació de pagament",
+          "description": "Avisa el soci que el seu pagament ha quedat registrat.",
+          "warning": "Qui pagui per domiciliació, efectiu o transferència no tindrà cap senyal que el seu pagament ha arribat."
+        },
         "billing_summary": {
           "name": "Resum de facturació",
           "description": "Resum intern de cada remesa, a l'adreça d'administració."

@@ -1,0 +1,20 @@
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}Hem registrat el pagament del rebut {{ receipt_number }}.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Pagament confirmat</h1>
+<p style="{{ s.p }}">Hola {{ member_name }},</p>
+<p style="{{ s.p }}">Hem registrat el pagament del rebut següent. No has de fer res més.</p>
+{% call c.panel() %}
+{{ c.data_row("Rebut", receipt_number) }}
+{{ c.data_row("Concepte", description) }}
+{{ c.data_row("Import", amount ~ " " ~ currency) }}
+{{ c.data_row("Data de pagament", payment_date) }}
+{%- if payment_method_label %}
+{{ c.data_row("Forma de pagament", payment_method_label) }}
+{%- endif %}
+{% endcall %}
+<p style="{{ s.note_last }}">Si detectes cap error, posa't en contacte amb nosaltres.</p>
+{% endblock %}

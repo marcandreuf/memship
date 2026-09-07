@@ -293,6 +293,11 @@
           "description": "Reclama los recibos vencidos según la pauta configurada.",
           "warning": "Los recibos vencidos dejarán de reclamarse por correo."
         },
+        "payment_confirmation": {
+          "name": "Confirmación de pago",
+          "description": "Avisa al socio de que su pago ha quedado registrado.",
+          "warning": "Quien pague por domiciliación, efectivo o transferencia no tendrá ninguna señal de que su pago ha llegado."
+        },
         "billing_summary": {
           "name": "Resumen de facturación",
           "description": "Resumen interno de cada remesa, a la dirección de administración."

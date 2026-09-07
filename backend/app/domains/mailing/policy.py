@@ -57,6 +57,7 @@ CATALOG: tuple[TemplateSpec, ...] = (
     TemplateSpec("booking_cancelled", "bookings", "operational"),
     TemplateSpec("receipt_delivery", "billing", "operational"),
     TemplateSpec("payment_reminder", "billing", "operational"),
+    TemplateSpec("payment_confirmation", "billing", "operational"),
     TemplateSpec("billing_summary", "billing", "optional"),
     TemplateSpec("announcement", "broadcasts", "optional"),
 )
