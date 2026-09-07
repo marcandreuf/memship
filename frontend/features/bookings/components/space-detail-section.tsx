@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { DetailSection } from "@/components/entity/detail-section";
+import { useMembershipTypes } from "@/features/members/hooks/use-members";
 import type { Space } from "../services/bookings-api";
 
 interface SpaceDetailSectionProps {
@@ -10,6 +11,15 @@ interface SpaceDetailSectionProps {
 
 export function SpaceDetailSection({ space }: SpaceDetailSectionProps) {
   const t = useTranslations();
+  const { data: membershipTypes } = useMembershipTypes();
+
+  const allowed = space.allowed_membership_types ?? [];
+  const allowedNames = allowed
+    .map(
+      (id) =>
+        membershipTypes?.find((mt) => mt.id === id)?.name ?? String(id)
+    )
+    .join(", ");
 
   const fields = [
     { label: t("bookings.spaces.name"), value: space.name, inline: true },
@@ -24,6 +34,13 @@ export function SpaceDetailSection({ space }: SpaceDetailSectionProps) {
       value: space.is_active
         ? t("bookings.spaces.active")
         : t("bookings.spaces.inactive"),
+      inline: true,
+    },
+    {
+      label: t("bookings.spaces.allowedTypes"),
+      value: allowed.length
+        ? allowedNames
+        : t("bookings.spaces.allowedTypesOpen"),
       inline: true,
     },
     { label: t("bookings.spaces.description"), value: space.description },

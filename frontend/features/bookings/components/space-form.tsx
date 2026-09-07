@@ -11,12 +11,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
 import { mapApiErrorsToForm } from "@/lib/errors";
+import { useMembershipTypes } from "@/features/members/hooks/use-members";
 import { useCreateSpace, useUpdateSpace } from "../hooks/use-bookings";
 import type { Space } from "../services/bookings-api";
 
@@ -29,6 +31,9 @@ const spaceSchema = z
     description: z.string().max(2000),
     open_time: z.string().regex(/^\d{2}:\d{2}$/, "validation.invalidTime"),
     close_time: z.string().regex(/^\d{2}:\d{2}$/, "validation.invalidTime"),
+    // No selection means no restriction, the same reading the backend gives an
+    // empty array — so there is no "nobody may book this" state to fall into.
+    allowed_membership_types: z.array(z.number()),
     is_active: z.boolean(),
   })
   .superRefine((data, ctx) => {
@@ -60,6 +65,8 @@ export function SpaceForm({
   const t = useTranslations();
   const createMutation = useCreateSpace();
   const updateMutation = useUpdateSpace();
+  const { data: membershipTypes } = useMembershipTypes();
+  const activeTypes = (membershipTypes ?? []).filter((mt) => mt.is_active);
 
   const form = useForm<SpaceFormValues>({
     resolver: useZodResolver(spaceSchema),
@@ -69,6 +76,7 @@ export function SpaceForm({
       description: space?.description ?? "",
       open_time: toTimeInput(space?.open_time) || "08:00",
       close_time: toTimeInput(space?.close_time) || "22:00",
+      allowed_membership_types: space?.allowed_membership_types ?? [],
       is_active: space?.is_active ?? true,
     },
   });
@@ -80,6 +88,7 @@ export function SpaceForm({
       description: data.description || null,
       open_time: data.open_time,
       close_time: data.close_time,
+      allowed_membership_types: data.allowed_membership_types,
       is_active: data.is_active,
     };
     try {
@@ -167,6 +176,45 @@ export function SpaceForm({
             )}
           />
         </div>
+        <FormField
+          control={form.control}
+          name="allowed_membership_types"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t("bookings.spaces.allowedTypes")}</FormLabel>
+              <FormDescription>
+                {t("bookings.spaces.allowedTypesHint")}
+              </FormDescription>
+              {activeTypes.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  {t("bookings.spaces.allowedTypesNone")}
+                </p>
+              ) : (
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {activeTypes.map((mt) => (
+                    <label
+                      key={mt.id}
+                      className="flex items-center gap-2 text-sm"
+                    >
+                      <Checkbox
+                        checked={field.value.includes(mt.id)}
+                        onCheckedChange={(checked) =>
+                          field.onChange(
+                            checked
+                              ? [...field.value, mt.id]
+                              : field.value.filter((id) => id !== mt.id)
+                          )
+                        }
+                      />
+                      {mt.name}
+                    </label>
+                  ))}
+                </div>
+              )}
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <FormField
           control={form.control}
           name="is_active"

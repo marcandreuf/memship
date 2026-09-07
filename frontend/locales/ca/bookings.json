@@ -15,7 +15,9 @@
       "confirmWaitlist": "Aquesta franja és plena. Vols unir-te a la llista d'espera?",
       "confirmWaitlistAction": "Uneix-m'hi",
       "bookedToast": "Reserva confirmada",
-      "waitlistedToast": "Afegit a la llista d'espera"
+      "waitlistedToast": "Afegit a la llista d'espera",
+      "membershipTypeNotAllowed": "Aquest espai està reservat a altres tipus de soci. El teu tipus de soci no l'inclou; consulta amb el club si el vols canviar.",
+      "noMembershipType": "Aquest espai està reservat a determinats tipus de soci i la teva fitxa no en té cap d'assignat. Escriu al club perquè te n'assigni un."
     },
     "my": {
       "title": "Les meves reserves",
@@ -45,7 +47,11 @@
       "noSpaces": "Encara no hi ha espais. Crea'n un per començar a acceptar reserves.",
       "notFound": "Espai no trobat.",
       "confirmDelete": "Vols eliminar aquest espai? Se n'eliminaran les franges i les reserves. Per deixar d'acceptar reserves sense esborrar res, desactiva'l des d'Edita.",
-      "deleteAffected": "{count, plural, one {# soci té reserves actives que es cancel·laran i se l'avisarà per correu.} other {# socis tenen reserves actives que es cancel·laran i se'ls avisarà per correu.}}"
+      "deleteAffected": "{count, plural, one {# soci té reserves actives que es cancel·laran i se l'avisarà per correu.} other {# socis tenen reserves actives que es cancel·laran i se'ls avisarà per correu.}}",
+      "allowedTypes": "Tipus de soci amb accés",
+      "allowedTypesHint": "Sense cap marcat, l'espai queda obert a tots els socis. En marcar tipus, només aquests socis el podran reservar.",
+      "allowedTypesNone": "Encara no hi ha tipus de soci actius.",
+      "allowedTypesOpen": "Tots els socis"
     },
     "slots": {
       "tab": "Franges",

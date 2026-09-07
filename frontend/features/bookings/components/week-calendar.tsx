@@ -20,7 +20,7 @@ import {
   useAvailableSpaces,
   useCreateBooking,
 } from "../hooks/use-bookings";
-import type { AvailabilityCell } from "../services/bookings-api";
+import type { AvailabilityCell, IneligibleReason } from "../services/bookings-api";
 
 const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6];
 
@@ -64,6 +64,14 @@ export function WeekCalendar() {
     weekStart,
     spaceId !== null
   );
+
+  // The space itself is off limits to this member's membership type. The week
+  // still renders — hiding it would leave the member guessing why a space they
+  // can see in the picker has nothing in it — but nothing in it can be booked.
+  const ineligibleReason: IneligibleReason | null =
+    availability && !availability.eligible
+      ? availability.ineligible_reason
+      : null;
 
   const cellsByWeekday = useMemo(() => {
     const map = new Map<number, AvailabilityCell[]>();
@@ -164,6 +172,14 @@ export function WeekCalendar() {
         </div>
       </div>
 
+      {ineligibleReason ? (
+        <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+          {ineligibleReason === "no_membership_type"
+            ? t("bookings.book.noMembershipType")
+            : t("bookings.book.membershipTypeNotAllowed")}
+        </div>
+      ) : null}
+
       {loadingAvailability ? (
         <TabContentSkeleton />
       ) : (
@@ -190,6 +206,7 @@ export function WeekCalendar() {
                         cell={cell}
                         onBook={() => book(cell)}
                         pending={createBooking.isPending}
+                        bookable={ineligibleReason === null}
                       />
                     ))
                   )}
@@ -207,13 +224,19 @@ function SlotCell({
   cell,
   onBook,
   pending,
+  bookable,
 }: {
   cell: AvailabilityCell;
   onBook: () => void;
   pending: boolean;
+  /** False when the member's membership type does not include this space. */
+  bookable: boolean;
 }) {
   const t = useTranslations();
-  const muted = cell.cell_state === "past" || cell.cell_state === "out_of_window";
+  const muted =
+    !bookable ||
+    cell.cell_state === "past" ||
+    cell.cell_state === "out_of_window";
 
   return (
     <div
