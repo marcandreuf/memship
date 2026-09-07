@@ -18,24 +18,24 @@ describe("Membership lapse — Settings tab (super admin)", () => {
 
   it("warns that reversion without reminders cuts members off unwarned", () => {
     // The warning is the point of the tab: reversion runs whether or not
-    // dunning is on, so a club can downgrade members it never chased.
+    // dunning is on, so a club can downgrade members it never chased. Save the
+    // switch rather than only flipping it — leaving the tab drops unsaved form
+    // state, and the warning keys off what is actually stored.
     cy.get('[role="switch"]').then(($sw) => {
       if ($sw.attr("aria-checked") !== "true") {
         cy.wrap($sw).click();
+        cy.contains("button", "Save").click();
+        cy.contains(/saved successfully/i).should("be.visible");
       }
     });
 
-    cy.settingsTab("Payments", "Payment reminders");
-    cy.get('[role="switch"]')
-      .invoke("attr", "aria-checked")
-      .then((remindersOn) => {
-        cy.settingsTab("Payments", "Membership lapse");
-        if (remindersOn === "true") {
-          cy.contains("Payment reminders are switched off").should("not.exist");
-        } else {
-          cy.contains("Payment reminders are switched off").should("be.visible");
-        }
-      });
+    const apiUrl = Cypress.env("API_URL") || "http://localhost:8003/api/v1";
+    cy.request(`${apiUrl}/settings`).then((resp) => {
+      const remindersOn = Boolean(resp.body?.features?.payment_reminders_enabled);
+      cy.contains("Payment reminders are switched off").should(
+        remindersOn ? "not.exist" : "be.visible",
+      );
+    });
   });
 
   it("enables reversion, sets the windows, and saves", () => {
