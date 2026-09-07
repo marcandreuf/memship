@@ -17,7 +17,10 @@
       "bookedToast": "Booked",
       "waitlistedToast": "Added to the waitlist",
       "membershipTypeNotAllowed": "This space is reserved for other membership types. Yours does not include it — ask the club if you want to change it.",
-      "noMembershipType": "This space is reserved for certain membership types and your record has none assigned. Ask the club to assign you one."
+      "noMembershipType": "This space is reserved for certain membership types and your record has none assigned. Ask the club to assign you one.",
+      "price": "This booking costs {price} before tax; the receipt will show the final amount.",
+      "priceOnPromotion": "If a place frees up you are booked automatically and charged {price} before tax; the receipt will show the final amount.",
+      "refundPolicy": "If you cancel before paying, the charge is cancelled with it. Once paid, the money is not returned automatically \u2014 not if you cancel, and not if the club removes the slot. Arrange any refund with the club."
     },
     "my": {
       "title": "My bookings",
@@ -37,6 +40,9 @@
       "type": "Type",
       "typePlaceholder": "pitch, court, room…",
       "description": "Description",
+      "price": "Price per booking",
+      "priceHint": "Before tax. Leave it empty, or 0, and the space is free \u2014 no receipt is raised.",
+      "free": "Free",
       "openTime": "Opens",
       "closeTime": "Closes",
       "hours": "Hours",
@@ -61,6 +67,9 @@
       "start": "Start",
       "end": "End",
       "capacity": "Capacity",
+      "price": "Price",
+      "priceHint": "Leave it empty to use the space's price. Enter 0 to make this slot free.",
+      "priceFromSpace": "Space price",
       "active": "Active",
       "inactive": "Inactive",
       "activate": "Activate",

@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { DetailSection } from "@/components/entity/detail-section";
 import { useMembershipTypes } from "@/features/members/hooks/use-members";
+import { useFormatters } from "@/hooks/use-formatters";
 import type { Space } from "../services/bookings-api";
 
 interface SpaceDetailSectionProps {
@@ -12,6 +13,7 @@ interface SpaceDetailSectionProps {
 export function SpaceDetailSection({ space }: SpaceDetailSectionProps) {
   const t = useTranslations();
   const { data: membershipTypes } = useMembershipTypes();
+  const { formatCurrency } = useFormatters();
 
   const allowed = space.allowed_membership_types ?? [];
   const allowedNames = allowed
@@ -27,6 +29,13 @@ export function SpaceDetailSection({ space }: SpaceDetailSectionProps) {
     {
       label: t("bookings.spaces.hours"),
       value: `${space.open_time.slice(0, 5)}–${space.close_time.slice(0, 5)}`,
+      inline: true,
+    },
+    {
+      label: t("bookings.spaces.price"),
+      value: space.price
+        ? formatCurrency(space.price)
+        : t("bookings.spaces.free"),
       inline: true,
     },
     {

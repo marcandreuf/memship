@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Repeat } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DecimalInput } from "@/components/ui/decimal-input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
@@ -21,6 +22,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -81,6 +83,14 @@ const slotSchema = z
     start_time: z.string(),
     end_time: z.string(),
     capacity: z.coerce.number().int().min(1),
+    // Empty means "use the space's price"; "0" means this slot is free. The two
+    // are different answers, so the field stays a string until it is submitted.
+    price: z
+      .string()
+      .refine(
+        (v) => v === "" || (!Number.isNaN(Number(v)) && Number(v) >= 0),
+        "validation.notANumber"
+      ),
     is_active: z.boolean(),
     repeat_enabled: z.boolean(),
     repeat_weekdays: z.array(z.number().int().min(0).max(6)),
@@ -183,6 +193,7 @@ export function SlotsTab({ spaceId }: { spaceId: number }) {
                 <TableHead>{t("bookings.slots.start")}</TableHead>
                 <TableHead>{t("bookings.slots.end")}</TableHead>
                 <TableHead>{t("bookings.slots.capacity")}</TableHead>
+                <TableHead>{t("bookings.slots.price")}</TableHead>
                 <TableHead>{t("common.actions")}</TableHead>
               </TableRow>
             </TableHeader>
@@ -218,7 +229,7 @@ function SlotRow({
   const t = useTranslations();
   const { has } = usePermissions();
   const canWrite = has("bookings.write");
-  const { formatDate } = useFormatters();
+  const { formatCurrency, formatDate } = useFormatters();
   const qc = useQueryClient();
   const updateMutation = useUpdateSlot(spaceId);
   const deleteMutation = useDeleteSlot(spaceId);
@@ -276,6 +287,11 @@ function SlotRow({
       <TableCell>{toTimeInput(slot.start_time)}</TableCell>
       <TableCell>{toTimeInput(slot.end_time)}</TableCell>
       <TableCell>{slot.capacity}</TableCell>
+      <TableCell className="text-muted-foreground">
+        {slot.price != null
+          ? formatCurrency(slot.price)
+          : t("bookings.slots.priceFromSpace")}
+      </TableCell>
       <TableCell>
         <div className="flex gap-2">
           {confirmDialog}
@@ -347,6 +363,7 @@ function SlotForm({
       start_time: slot ? toTimeInput(slot.start_time) : "10:00",
       end_time: slot ? toTimeInput(slot.end_time) : "11:00",
       capacity: slot?.capacity ?? 1,
+      price: slot?.price != null ? String(slot.price) : "",
       is_active: slot?.is_active ?? true,
       repeat_enabled: false,
       repeat_weekdays: [],
@@ -366,6 +383,7 @@ function SlotForm({
         ? {}
         : { start_time: data.start_time, end_time: data.end_time }),
       capacity: data.capacity,
+      price: data.price === "" ? null : Number(data.price),
       is_active: data.is_active,
     };
     try {
@@ -488,6 +506,22 @@ function SlotForm({
               <FormControl>
                 <Input type="number" min={1} {...field} />
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="price"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t("bookings.slots.price")}</FormLabel>
+              <FormControl>
+                <DecimalInput placeholder="0.00" {...field} />
+              </FormControl>
+              <FormDescription>
+                {t("bookings.slots.priceHint")}
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}

@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { TabContentSkeleton } from "@/components/ui/skeletons";
+import { useFormatters } from "@/hooks/use-formatters";
 import {
   useAvailability,
   useAvailableSpaces,
@@ -53,6 +54,7 @@ export function WeekCalendar() {
   );
   const [confirmDialog, confirmAction] = useConfirmDialog();
   const createBooking = useCreateBooking();
+  const { formatCurrency } = useFormatters();
 
   useEffect(() => {
     if (spaceId === null && spaces.length) setSpaceId(spaces[0].id);
@@ -87,10 +89,25 @@ export function WeekCalendar() {
 
   function book(cell: AvailabilityCell) {
     const waitlist = cell.cell_state === "full";
+    // What it costs and what happens to that money afterwards, before the
+    // member commits. Nothing is refunded automatically — neither a
+    // cancellation nor the club removing the slot returns a paid amount — so
+    // the policy is stated here rather than left to be discovered.
+    const price = formatCurrency(cell.price);
+    const description =
+      cell.price > 0
+        ? [
+            waitlist
+              ? t("bookings.book.priceOnPromotion", { price })
+              : t("bookings.book.price", { price }),
+            t("bookings.book.refundPolicy"),
+          ].join(" ")
+        : undefined;
     confirmAction({
       title: waitlist
         ? t("bookings.book.confirmWaitlist")
         : t("bookings.book.confirmBook"),
+      description,
       cancelLabel: t("common.cancel"),
       confirmLabel: waitlist
         ? t("bookings.book.confirmWaitlistAction")
@@ -233,6 +250,7 @@ function SlotCell({
   bookable: boolean;
 }) {
   const t = useTranslations();
+  const { formatCurrency } = useFormatters();
   const muted =
     !bookable ||
     cell.cell_state === "past" ||
@@ -249,6 +267,9 @@ function SlotCell({
         {cell.booked_count}/{cell.capacity}
         {cell.waitlist_count > 0 ? ` · +${cell.waitlist_count}` : ""}
       </div>
+      {cell.price > 0 && (
+        <div className="font-medium">{formatCurrency(cell.price)}</div>
+      )}
       <div className="mt-1">
         {cell.my_status === "booked" ? (
           /* Success green, deliberately not the primary fill — the primary
