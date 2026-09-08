@@ -67,6 +67,31 @@ describe("Membership purchase", () => {
     });
   });
 
+  it("warns that a mid-period first charge is smaller than the plan price", () => {
+    // The annual plan covers the rest of the calendar year in whole months
+    // including the month of purchase, so it is prorated in every month but
+    // January — when 12 of 12 are charged and there is nothing to warn about.
+    // Deriving the expectation from today's date exercises the banner all year
+    // instead of failing every January.
+    const monthsCharged = 12 - new Date().getMonth();
+
+    cy.get('[data-testid="plan-card-annual-member"]')
+      .contains("button", /choose/i)
+      .click();
+
+    cy.get('[role="dialog"]').within(() => {
+      if (monthsCharged === 12) {
+        cy.contains(/of 12 months/i).should("not.exist");
+        return;
+      }
+      cy.contains(`covers ${monthsCharged} of 12 months`).should("be.visible");
+      cy.contains(/less than the plan price/i).should("be.visible");
+      // The full fee that lands at the next boundary. Amounts render through
+      // the org's locale and currency settings, so only the figure is ours.
+      cy.contains(/200[.,]00/).should("be.visible");
+    });
+  });
+
   it("raises a receipt and leaves the member on their current plan", () => {
     cy.get('[data-testid="current-plan"]')
       .invoke("text")

@@ -347,6 +347,28 @@ class TestMembershipTypeSeeding:
         assert default.id == migration_default.id
         assert db.query(MembershipType).filter_by(is_default=True).count() == 1
 
+    def test_a_paid_plan_is_billed_other_than_monthly(self, db):
+        """Proration has to be reachable from seeded data.
+
+        ``prorate_membership_price`` charges whole months of the calendar
+        period, so a monthly plan is charged in full every time and
+        ``is_prorated`` is never true. If every paid sample tier were monthly,
+        neither the arithmetic nor the warning the purchase dialog shows for it
+        could be exercised against a seeded club.
+        """
+        seed_membership_types(db, seed_groups(db))
+
+        prorateable = (
+            db.query(MembershipType)
+            .filter(
+                MembershipType.base_price > 0,
+                MembershipType.billing_frequency.in_(("quarterly", "annual")),
+            )
+            .all()
+        )
+
+        assert prorateable, "no paid tier is billed quarterly or annually"
+
     def test_seeding_twice_creates_nothing_the_second_time(self, db):
         groups = seed_groups(db)
         seed_membership_types(db, groups)

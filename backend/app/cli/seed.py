@@ -357,6 +357,18 @@ def seed_membership_types(db, groups: dict[str, Group]) -> MembershipType:
             base_price=0, billing_frequency="one_time",
             display_order=6, is_active=True,
         ),
+        # The only paid plan that is not monthly, and the reason it is here: a
+        # monthly period is never prorated, so with monthly plans alone nothing
+        # a club can buy from seeded data exercises the mid-period arithmetic in
+        # `billing/proration.py` — or the warning the purchase dialog shows for
+        # it. 200 EUR/year is the figure that module documents itself with.
+        MembershipType(
+            name="Annual Member", slug="annual-member",
+            description="Full membership paid once a year; a mid-year join is charged for the remaining whole months",
+            group_id=adult_group.id if adult_group else None,
+            base_price=200.00, billing_frequency="annual",
+            display_order=7, is_active=True,
+        ),
     ]
     existing_slugs = {slug for (slug,) in db.query(MembershipType.slug).all()}
     default = db.query(MembershipType).filter_by(is_default=True).first()
