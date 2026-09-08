@@ -2,7 +2,16 @@
 
 import * as React from "react"
 import { Tabs as TabsPrimitive } from "radix-ui"
+import { useTranslations } from "next-intl"
 
+import { Badge } from "@/components/ui/badge"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 
 function Tabs({
@@ -63,4 +72,83 @@ function TabsContent({
   )
 }
 
-export { Tabs, TabsList, TabsTrigger, TabsContent }
+export interface TabsNavItem {
+  value: string
+  label: string
+  badge?: string | number
+}
+
+// Where the bar gives way to the dropdown. Container widths, not viewport ones:
+// the container is the content column, so a collapsed sidebar brings the bar
+// back at a viewport width that would still hide it under a media query. The
+// right threshold depends on how many tabs there are, hence the choice.
+const COLLAPSE = {
+  sm: { menu: "@md:hidden", list: "hidden @md:inline-flex" },
+  md: { menu: "@2xl:hidden", list: "hidden @2xl:inline-flex" },
+  lg: { menu: "@4xl:hidden", list: "hidden @4xl:inline-flex" },
+} as const
+
+interface TabsNavProps {
+  items: TabsNavItem[]
+  value: string
+  onValueChange: (value: string) => void
+  /** How wide the container must be before the bar replaces the dropdown. */
+  collapse?: keyof typeof COLLAPSE
+}
+
+/**
+ * The navigation for a `Tabs`, as a bar in a wide container and as a select in
+ * a narrow one. `TabsList` scrolls sideways rather than overflowing the page,
+ * but a scrolling nav hides its own tabs — past a few triggers there is nothing
+ * on screen to say the rest exist. Both paths write the same value, so the
+ * active tab survives a resize across the threshold.
+ *
+ * Controlled, because the select trigger has to render the active tab's label.
+ */
+function TabsNav({ items, value, onValueChange, collapse = "md" }: TabsNavProps) {
+  const t = useTranslations()
+
+  const label = (item: TabsNavItem) => (
+    <>
+      {item.label}
+      {item.badge !== undefined && (
+        <Badge variant="secondary" className="ml-1.5 px-1.5 py-0 text-xs">
+          {item.badge}
+        </Badge>
+      )}
+    </>
+  )
+
+  return (
+    <>
+      {/* The bar comes first in the DOM even though the select is what shows in
+          a narrow container: the select trigger repeats the active tab's label,
+          so a text query would otherwise resolve to whichever of the two is
+          hidden. */}
+      <TabsList className={COLLAPSE[collapse].list}>
+        {items.map((item) => (
+          <TabsTrigger key={item.value} value={item.value}>
+            {label(item)}
+          </TabsTrigger>
+        ))}
+      </TabsList>
+      <Select value={value} onValueChange={onValueChange}>
+        <SelectTrigger
+          aria-label={t("common.sections")}
+          className={cn("w-full", COLLAPSE[collapse].menu)}
+        >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {items.map((item) => (
+            <SelectItem key={item.value} value={item.value}>
+              {label(item)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </>
+  )
+}
+
+export { Tabs, TabsList, TabsNav, TabsTrigger, TabsContent }

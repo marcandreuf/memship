@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { useZodResolver } from "@/hooks/use-zod-resolver";
@@ -28,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsNav, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { mapApiErrorsToForm } from "@/lib/errors";
 import { useAuth } from "@/features/auth/hooks/use-auth";
@@ -165,6 +165,30 @@ export default function SettingsPage() {
   const showRolesTab = has("roles.read");
   const showUsersTab = customRolesEnabled && has("users.read");
 
+  // Ten triggers never fit a narrow content column, so `TabsNav` swaps the bar
+  // for a dropdown — which needs the tabs as data rather than as markup.
+  const tabItems = [
+    isSuperAdmin && { value: "organization", label: t("settings.organization") },
+    isSuperAdmin && { value: "payments", label: t("settings.payments") },
+    isSuperAdmin && { value: "communications", label: t("settings.communications.tab") },
+    isSuperAdmin && { value: "member-card", label: t("settings.memberCard.tab") },
+    isSuperAdmin && { value: "integrations", label: t("settings.integrations.tab") },
+    // Ungated: membership types is the one setting a plain admin can reach,
+    // and it lives in here.
+    { value: "members", label: t("nav.members") },
+    isSuperAdmin && { value: "bookings", label: t("bookings.settings.tab") },
+    // Gated on the permission, not on the super-admin role: authoring roles is
+    // superadmin-only because `roles.write` is reserved, but a custom role may
+    // legitimately hold `roles.read` or `users.read`.
+    showRolesTab && { value: "roles", label: t("roles.tab") },
+    showUsersTab && { value: "users", label: t("roles.users") },
+  ].filter((tab): tab is { value: string; label: string } => Boolean(tab));
+
+  // Seeded lazily: `isSuperAdmin` is false while auth is still loading, and
+  // `useState(isSuperAdmin ? ...)` would freeze a super admin on the Members tab.
+  const [selectedTab, setSelectedTab] = useState<string>();
+  const tab = selectedTab ?? (isSuperAdmin ? "organization" : "members");
+
   if (!isAdmin) {
     return (
       <div className="py-8 text-center text-muted-foreground">
@@ -204,39 +228,13 @@ export default function SettingsPage() {
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">{t("settings.title")}</h1>
 
-      <Tabs defaultValue={isSuperAdmin ? "organization" : "members"}>
-        <TabsList>
-          {isSuperAdmin && (
-            <TabsTrigger value="organization">{t("settings.organization")}</TabsTrigger>
-          )}
-          {isSuperAdmin && (
-            <TabsTrigger value="payments">{t("settings.payments")}</TabsTrigger>
-          )}
-          {isSuperAdmin && (
-            <TabsTrigger value="communications">{t("settings.communications.tab")}</TabsTrigger>
-          )}
-          {isSuperAdmin && (
-            <TabsTrigger value="member-card">{t("settings.memberCard.tab")}</TabsTrigger>
-          )}
-          {isSuperAdmin && (
-            <TabsTrigger value="integrations">{t("settings.integrations.tab")}</TabsTrigger>
-          )}
-          {/* Ungated: membership types is the one setting a plain admin can
-              reach, and it lives in here. */}
-          <TabsTrigger value="members">{t("nav.members")}</TabsTrigger>
-          {isSuperAdmin && (
-            <TabsTrigger value="bookings">{t("bookings.settings.tab")}</TabsTrigger>
-          )}
-          {/* Gated on the permission, not on the super-admin role: authoring
-              roles is superadmin-only because `roles.write` is reserved, but a
-              custom role may legitimately hold `roles.read` or `users.read`. */}
-          {showRolesTab && (
-            <TabsTrigger value="roles">{t("roles.tab")}</TabsTrigger>
-          )}
-          {showUsersTab && (
-            <TabsTrigger value="users">{t("roles.users")}</TabsTrigger>
-          )}
-        </TabsList>
+      <Tabs value={tab} onValueChange={setSelectedTab}>
+        <TabsNav
+          collapse="lg"
+          items={tabItems}
+          value={tab}
+          onValueChange={setSelectedTab}
+        />
 
         {isSuperAdmin && <TabsContent value="organization">
           <div className="space-y-3 max-w-4xl">
