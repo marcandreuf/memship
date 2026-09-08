@@ -200,7 +200,7 @@ export function WeekCalendar() {
       {loadingAvailability ? (
         <TabContentSkeleton />
       ) : (
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-7">
+        <div className="grid grid-cols-1 gap-2 @4xl:grid-cols-7">
           {WEEKDAYS.map((wd) => {
             const dayDate = new Date(weekStartDate);
             dayDate.setDate(dayDate.getDate() + wd);

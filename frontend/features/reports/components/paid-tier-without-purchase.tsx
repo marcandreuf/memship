@@ -53,7 +53,7 @@ export function PaidTierWithoutPurchase() {
         </div>
       ) : (
         <>
-          <div className="hidden md:block rounded-md border">
+          <div className="hidden @3xl:block rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -104,7 +104,7 @@ export function PaidTierWithoutPurchase() {
             </Table>
           </div>
 
-          <div className="space-y-3 md:hidden">
+          <div className="space-y-3 @3xl:hidden">
             {items.map((row) => (
               <Link
                 key={row.member_id}

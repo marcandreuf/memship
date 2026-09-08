@@ -108,7 +108,7 @@ export default function AnnualSummaryPage() {
         <TableSkeleton />
       ) : (
         <>
-          <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
+          <div className="grid gap-3 grid-cols-1 @md:grid-cols-2 @3xl:grid-cols-4">
             <StatCard
               label={t("annualSummary.yearRevenue")}
               value={formatCurrency(yearRevenue)}
@@ -130,7 +130,7 @@ export default function AnnualSummaryPage() {
                 {t("annualSummary.revenueVsOutstanding")}
               </CardTitle>
             </CardHeader>
-            <CardContent className="px-2">
+            <CardContent className="min-w-0 px-2">
               <ResponsiveContainer width="100%" height={300}>
                 <ComposedChart
                   data={chartData}
@@ -185,7 +185,7 @@ export default function AnnualSummaryPage() {
                   {t("annualSummary.newMembersByMonth")}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="px-2">
+              <CardContent className="min-w-0 px-2">
                 <ResponsiveContainer width="100%" height={220}>
                   <ComposedChart
                     data={chartData}
