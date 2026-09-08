@@ -1,0 +1,33 @@
+{
+  "membership": {
+    "title": "El meu pla de soci",
+    "info": "Consulta el teu pla actual i contracta'n un altre. El pla s'activa quan es paga el rebut, no en triar-lo.",
+    "nav": "El meu pla",
+    "currentPlan": "Pla actual",
+    "noPlan": "Sense pla",
+    "revertedNotice": "Ets al pla gratuït perquè va quedar una quota sense pagar. En pagar-la recuperaràs «{plan}».",
+    "availablePlans": "Plans disponibles",
+    "noPlans": "No hi ha plans disponibles per contractar.",
+    "beforeVat": "sense IVA",
+    "choosePlan": "Contractar",
+    "confirmPurchaseTitle": "Confirmar la contractació",
+    "confirmPurchase": "Contractar i generar rebut",
+    "baseAmount": "Base imposable",
+    "vat": "IVA ({rate}%)",
+    "totalToday": "Total a pagar ara",
+    "quoteUnavailable": "Aquest pla no es pot contractar ara mateix.",
+    "proratedExplain": "Aquest primer cobrament cobreix {monthsCharged} de {monthsInPeriod} mesos, fins al {periodEnd}. Per això és inferior al preu del pla ({fullPrice}).",
+    "proratedNextCharge": "En començar el període següent s'emetrà la quota completa de {fullPrice}.",
+    "notGrantedUntilPaid": "El pla s'activa quan el rebut estigui pagat. Fins llavors conserves el pla actual i els seus accessos.",
+    "purchaseRaised": "Rebut generat. Ja el pots pagar.",
+    "awaitingPayment": "Pendent de pagament",
+    "awaitingPaymentExplain": "Rebut {receipt}, amb venciment el {dueDate}. Si no es paga abans d'aquesta data s'anul·la i no se't cobra res. Contractar un altre pla substitueix aquest.",
+    "noOnlinePayment": "No hi ha pagament en línia actiu. Paga el rebut pels mitjans que indiqui el club.",
+    "frequency": {
+      "monthly": "Mensual",
+      "quarterly": "Trimestral",
+      "annual": "Anual",
+      "one_time": "Pagament únic"
+    }
+  }
+}

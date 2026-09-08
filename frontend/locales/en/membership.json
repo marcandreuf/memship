@@ -1,0 +1,33 @@
+{
+  "membership": {
+    "title": "My membership plan",
+    "info": "See the plan you hold and buy another. A plan activates when its receipt is paid, not when you choose it.",
+    "nav": "My plan",
+    "currentPlan": "Current plan",
+    "noPlan": "No plan",
+    "revertedNotice": "You are on the free plan because a fee went unpaid. Paying it puts you back on \"{plan}\".",
+    "availablePlans": "Available plans",
+    "noPlans": "There are no plans available to buy.",
+    "beforeVat": "before VAT",
+    "choosePlan": "Choose",
+    "confirmPurchaseTitle": "Confirm purchase",
+    "confirmPurchase": "Buy and raise receipt",
+    "baseAmount": "Net amount",
+    "vat": "VAT ({rate}%)",
+    "totalToday": "Total to pay now",
+    "quoteUnavailable": "This plan cannot be bought right now.",
+    "proratedExplain": "This first charge covers {monthsCharged} of {monthsInPeriod} months, up to {periodEnd}. That is why it is less than the plan price ({fullPrice}).",
+    "proratedNextCharge": "When the next period starts, the full {fullPrice} fee is issued.",
+    "notGrantedUntilPaid": "The plan activates once the receipt is paid. Until then you keep your current plan and its access.",
+    "purchaseRaised": "Receipt raised. You can pay it now.",
+    "awaitingPayment": "Awaiting payment",
+    "awaitingPaymentExplain": "Receipt {receipt}, due {dueDate}. If it is not paid by then it is voided and you are charged nothing. Buying another plan replaces this one.",
+    "noOnlinePayment": "No online payment is switched on. Pay the receipt however the club asks.",
+    "frequency": {
+      "monthly": "Monthly",
+      "quarterly": "Quarterly",
+      "annual": "Annual",
+      "one_time": "One-off"
+    }
+  }
+}

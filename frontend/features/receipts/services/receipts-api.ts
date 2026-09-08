@@ -9,6 +9,7 @@ export interface ReceiptData {
   concept_id: number | null;
   registration_id: number | null;
   remittance_id: number | null;
+  purchased_membership_type_id: number | null;
   origin: string;
   description: string;
   base_amount: number;

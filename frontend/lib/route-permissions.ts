@@ -48,6 +48,7 @@ export const ROUTE_PERMISSIONS: ReadonlyArray<readonly [string, readonly string[
   ["/my-activities", ["self.registrations.read"]],
   ["/my-bookings", ["self.bookings.read"]],
   ["/my-receipts", ["self.billing.read"]],
+  ["/my-membership", ["self.billing.read"]],
   ["/my-card", ["self.card.read"]],
   ["/profile", ["self.profile.read"]],
 ];

@@ -1,0 +1,33 @@
+{
+  "membership": {
+    "title": "Mi plan de socio",
+    "info": "Consulta tu plan actual y contrata otro. El plan se activa cuando se paga el recibo, no al elegirlo.",
+    "nav": "Mi plan",
+    "currentPlan": "Plan actual",
+    "noPlan": "Sin plan",
+    "revertedNotice": "Estás en el plan gratuito porque quedó una cuota sin pagar. Al pagarla recuperarás «{plan}».",
+    "availablePlans": "Planes disponibles",
+    "noPlans": "No hay planes disponibles para contratar.",
+    "beforeVat": "sin IVA",
+    "choosePlan": "Contratar",
+    "confirmPurchaseTitle": "Confirmar contratación",
+    "confirmPurchase": "Contratar y generar recibo",
+    "baseAmount": "Base imponible",
+    "vat": "IVA ({rate}%)",
+    "totalToday": "Total a pagar ahora",
+    "quoteUnavailable": "Este plan no se puede contratar ahora mismo.",
+    "proratedExplain": "Este primer cobro cubre {monthsCharged} de {monthsInPeriod} meses, hasta el {periodEnd}. Por eso es inferior al precio del plan ({fullPrice}).",
+    "proratedNextCharge": "Al empezar el siguiente periodo se emitirá la cuota completa de {fullPrice}.",
+    "notGrantedUntilPaid": "El plan se activa cuando el recibo esté pagado. Hasta entonces conservas el plan actual y sus accesos.",
+    "purchaseRaised": "Recibo generado. Ya puedes pagarlo.",
+    "awaitingPayment": "Pendiente de pago",
+    "awaitingPaymentExplain": "Recibo {receipt}, con vencimiento el {dueDate}. Si no se paga antes de esa fecha se anula y no se te cobra nada. Contratar otro plan sustituye a este.",
+    "noOnlinePayment": "No hay pago en línea activo. Paga el recibo por los medios que indique el club.",
+    "frequency": {
+      "monthly": "Mensual",
+      "quarterly": "Trimestral",
+      "annual": "Anual",
+      "one_time": "Pago único"
+    }
+  }
+}
