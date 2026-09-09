@@ -161,7 +161,7 @@ export default function MandateDetailPage() {
                 </Button>
               </div>
               {mandate.document_info && (
-                <dl className="grid grid-cols-3 gap-2 text-sm">
+                <dl className="grid grid-cols-1 gap-2 text-sm @md:grid-cols-3">
                   <div>
                     <dt className="text-xs text-muted-foreground">{t("mandates.docFilename")}</dt>
                     <dd className="font-mono text-xs">{mandate.document_info.filename}</dd>

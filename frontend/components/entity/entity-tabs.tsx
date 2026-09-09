@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsNav } from "@/components/ui/tabs";
 
 interface EntityTab {
   id: string;
@@ -24,37 +23,33 @@ interface EntityTabsProps {
 
 export function EntityTabs({ tabs, defaultTab, lazy = false }: EntityTabsProps) {
   const initial = defaultTab || tabs[0]?.id;
+  // Controlled so the dropdown in `TabsNav` can label itself with the open tab.
+  // Seeded lazily rather than from `useState(initial)`: callers build `tabs`
+  // from data, so the first render often has none and would freeze the initial
+  // value at undefined.
+  const [selected, setSelected] = useState<string>();
   // Track which tabs have been opened so lazy content mounts once and persists.
-  const [visited, setVisited] = useState<Set<string>>(
-    () => new Set(initial ? [initial] : [])
-  );
+  const [visited, setVisited] = useState<Set<string>>(() => new Set());
 
   if (tabs.length === 0) return null;
 
+  const active = selected ?? initial;
+
+  const onValueChange = (value: string) => {
+    setSelected(value);
+    setVisited((prev) => (prev.has(value) ? prev : new Set(prev).add(value)));
+  };
+
   return (
-    <Tabs
-      defaultValue={initial}
-      onValueChange={(value) =>
-        setVisited((prev) =>
-          prev.has(value) ? prev : new Set(prev).add(value)
-        )
-      }
-    >
-      <TabsList>
-        {tabs.map((tab) => (
-          <TabsTrigger key={tab.id} value={tab.id}>
-            {tab.label}
-            {tab.badge !== undefined && (
-              <Badge variant="secondary" className="ml-1.5 text-xs px-1.5 py-0">
-                {tab.badge}
-              </Badge>
-            )}
-          </TabsTrigger>
-        ))}
-      </TabsList>
+    <Tabs value={active} onValueChange={onValueChange}>
+      <TabsNav
+        items={tabs.map(({ id, label, badge }) => ({ value: id, label, badge }))}
+        value={active ?? ""}
+        onValueChange={onValueChange}
+      />
       {tabs.map((tab) => (
         <TabsContent key={tab.id} value={tab.id}>
-          {lazy && !visited.has(tab.id) ? null : tab.content}
+          {lazy && tab.id !== active && !visited.has(tab.id) ? null : tab.content}
         </TabsContent>
       ))}
     </Tabs>

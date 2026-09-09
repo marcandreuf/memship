@@ -139,7 +139,7 @@ export default function NewActivityPage() {
               <CardTitle>{t("activities.basicInfo")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-5">
+              <div className="grid gap-4 @2xl:grid-cols-5">
                 <FormField
                   control={form.control}
                   name="name"
@@ -236,7 +236,7 @@ export default function NewActivityPage() {
               <CardTitle>{t("activities.location")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-5">
+              <div className="grid gap-4 @2xl:grid-cols-5">
                 <FormField
                   control={form.control}
                   name="location"

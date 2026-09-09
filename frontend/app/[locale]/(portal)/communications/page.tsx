@@ -68,7 +68,7 @@ export default function CommunicationsPage() {
         </div>
       ) : (
         <>
-        <div className="hidden md:block rounded-md border">
+        <div className="hidden @3xl:block rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -107,7 +107,7 @@ export default function CommunicationsPage() {
         </Table>
         </div>
 
-        <div className="space-y-3 md:hidden">
+        <div className="space-y-3 @3xl:hidden">
           {items.map((a: AnnouncementData) => (
             <Link
               key={a.id}

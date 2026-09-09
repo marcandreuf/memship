@@ -26,7 +26,7 @@ export function Pagination({
   const to = Math.min(page * perPage, total);
 
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex flex-wrap items-center justify-between gap-2">
       <p className="text-sm text-muted-foreground">
         {t("common.showing", { from, to, total })}
       </p>
