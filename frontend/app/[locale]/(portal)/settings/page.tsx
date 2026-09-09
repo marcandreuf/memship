@@ -28,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsNav, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsNav } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { mapApiErrorsToForm } from "@/lib/errors";
 import { useAuth } from "@/features/auth/hooks/use-auth";
@@ -90,11 +90,6 @@ const ADDRESS_FIELDS = ["address_line1", "address_line2", "city", "state_provinc
 // Nested tab styling. The shared Tabs component is underline-styled; a second
 // underline row would read as a peer of the top-level bar, so sub-tabs use the
 // muted pill look (shadcn's stock appearance) to sit visually inside their parent.
-// self-start: the Tabs root is `flex flex-col`, so without it the list
-// stretches to full width and the pill track spans the page.
-const SUBTAB_LIST = "h-auto w-auto self-start gap-0 rounded-lg border-0 bg-muted p-1";
-const SUBTAB_TRIGGER =
-  "rounded-md border-0 px-3 py-1 data-[state=active]:bg-background data-[state=active]:shadow-sm";
 
 export default function SettingsPage() {
   const t = useTranslations();
@@ -189,6 +184,29 @@ export default function SettingsPage() {
   const [selectedTab, setSelectedTab] = useState<string>();
   const tab = selectedTab ?? (isSuperAdmin ? "organization" : "members");
 
+  // Each nested bar is controlled for the same reason as the top-level one.
+  const [paymentsTab, setPaymentsTab] = useState("payments-general");
+  const [integrationsTab, setIntegrationsTab] = useState("sso");
+  const [selectedMembersTab, setSelectedMembersTab] = useState<string>();
+  const membersTab =
+    selectedMembersTab ?? (isSuperAdmin ? "communications" : "membership-types");
+
+  const paymentsSubtabs = [
+    { value: "payments-general", label: t("settings.paymentsGeneral") },
+    { value: "payment-providers", label: t("settings.providers.tab") },
+    { value: "recurring-billing", label: t("settings.recurringBilling.tab") },
+    { value: "payment-reminders", label: t("settings.paymentReminders.tab") },
+    { value: "membership-lapse", label: t("settings.membershipLapse.tab") },
+  ];
+
+  const membersSubtabs = [
+    isSuperAdmin && { value: "communications", label: t("settings.communications.tab") },
+    isSuperAdmin && { value: "member-card", label: t("settings.memberCard.tab") },
+    isSuperAdmin && { value: "profile-fields", label: t("profileFields.tab") },
+    { value: "membership-types", label: t("nav.membershipTypes") },
+    isSuperAdmin && { value: "registration", label: t("settings.registration.tab") },
+  ].filter((item): item is { value: string; label: string } => Boolean(item));
+
   if (!isAdmin) {
     return (
       <div className="py-8 text-center text-muted-foreground">
@@ -230,7 +248,7 @@ export default function SettingsPage() {
 
       <Tabs value={tab} onValueChange={setSelectedTab}>
         <TabsNav
-          collapse="lg"
+          collapse="xl"
           items={tabItems}
           value={tab}
           onValueChange={setSelectedTab}
@@ -455,14 +473,14 @@ export default function SettingsPage() {
         {isSuperAdmin && <TabsContent value="payments">
           {/* Muted pills, not the underline the top-level bar uses — so the
               nested row reads as a child of Payments rather than a peer. */}
-          <Tabs defaultValue="payments-general">
-            <TabsList className={SUBTAB_LIST}>
-              <TabsTrigger value="payments-general" className={SUBTAB_TRIGGER}>{t("settings.paymentsGeneral")}</TabsTrigger>
-              <TabsTrigger value="payment-providers" className={SUBTAB_TRIGGER}>{t("settings.providers.tab")}</TabsTrigger>
-              <TabsTrigger value="recurring-billing" className={SUBTAB_TRIGGER}>{t("settings.recurringBilling.tab")}</TabsTrigger>
-              <TabsTrigger value="payment-reminders" className={SUBTAB_TRIGGER}>{t("settings.paymentReminders.tab")}</TabsTrigger>
-              <TabsTrigger value="membership-lapse" className={SUBTAB_TRIGGER}>{t("settings.membershipLapse.tab")}</TabsTrigger>
-            </TabsList>
+          <Tabs value={paymentsTab} onValueChange={setPaymentsTab}>
+            <TabsNav
+              variant="pill"
+              collapse="lg"
+              items={paymentsSubtabs}
+              value={paymentsTab}
+              onValueChange={setPaymentsTab}
+            />
 
             <TabsContent value="payments-general">
               <PaymentsSettings />
@@ -492,11 +510,17 @@ export default function SettingsPage() {
         </TabsContent>}
 
         {isSuperAdmin && <TabsContent value="integrations">
-          <Tabs defaultValue="sso">
-            <TabsList className={SUBTAB_LIST}>
-              <TabsTrigger value="sso" className={SUBTAB_TRIGGER}>{t("settings.sso.tab")}</TabsTrigger>
-              <TabsTrigger value="mailing" className={SUBTAB_TRIGGER}>{t("settings.mailing.tab")}</TabsTrigger>
-            </TabsList>
+          <Tabs value={integrationsTab} onValueChange={setIntegrationsTab}>
+            <TabsNav
+              variant="pill"
+              collapse="sm"
+              items={[
+                { value: "sso", label: t("settings.sso.tab") },
+                { value: "mailing", label: t("settings.mailing.tab") },
+              ]}
+              value={integrationsTab}
+              onValueChange={setIntegrationsTab}
+            />
             <TabsContent value="sso">
               <SsoSettings />
             </TabsContent>
@@ -510,22 +534,14 @@ export default function SettingsPage() {
             is ungated; its children keep their own gates, so a plain admin
             lands here and sees only membership types. */}
         <TabsContent value="members">
-          <Tabs defaultValue={isSuperAdmin ? "communications" : "membership-types"}>
-            <TabsList className={SUBTAB_LIST}>
-              {isSuperAdmin && (
-                <TabsTrigger value="communications" className={SUBTAB_TRIGGER}>{t("settings.communications.tab")}</TabsTrigger>
-              )}
-              {isSuperAdmin && (
-                <TabsTrigger value="member-card" className={SUBTAB_TRIGGER}>{t("settings.memberCard.tab")}</TabsTrigger>
-              )}
-              {isSuperAdmin && (
-                <TabsTrigger value="profile-fields" className={SUBTAB_TRIGGER}>{t("profileFields.tab")}</TabsTrigger>
-              )}
-              <TabsTrigger value="membership-types" className={SUBTAB_TRIGGER}>{t("nav.membershipTypes")}</TabsTrigger>
-              {isSuperAdmin && (
-                <TabsTrigger value="registration" className={SUBTAB_TRIGGER}>{t("settings.registration.tab")}</TabsTrigger>
-              )}
-            </TabsList>
+          <Tabs value={membersTab} onValueChange={setSelectedMembersTab}>
+            <TabsNav
+              variant="pill"
+              collapse="lg"
+              items={membersSubtabs}
+              value={membersTab}
+              onValueChange={setSelectedMembersTab}
+            />
 
             {isSuperAdmin && <TabsContent value="communications" className="space-y-3">
               <CommunicationsSettings />

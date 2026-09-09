@@ -85,7 +85,21 @@ export interface TabsNavItem {
 const COLLAPSE = {
   sm: { menu: "@md:hidden", list: "hidden @md:inline-flex" },
   md: { menu: "@2xl:hidden", list: "hidden @2xl:inline-flex" },
-  lg: { menu: "@4xl:hidden", list: "hidden @4xl:inline-flex" },
+  lg: { menu: "@3xl:hidden", list: "hidden @3xl:inline-flex" },
+  xl: { menu: "@4xl:hidden", list: "hidden @4xl:inline-flex" },
+} as const
+
+// `underline` is the page-level bar. `pill` is the muted track a nested bar
+// uses, so a sub-tab row reads as a child of the tab above it rather than a
+// peer — and its select is the short one, for the same reason.
+const VARIANT = {
+  underline: { list: "", trigger: "", size: "default" },
+  pill: {
+    list: "h-auto w-auto self-start gap-0 rounded-lg border-0 bg-muted p-1",
+    trigger:
+      "rounded-md border-0 px-3 py-1 data-[state=active]:bg-background data-[state=active]:shadow-sm",
+    size: "sm",
+  },
 } as const
 
 interface TabsNavProps {
@@ -94,6 +108,7 @@ interface TabsNavProps {
   onValueChange: (value: string) => void
   /** How wide the container must be before the bar replaces the dropdown. */
   collapse?: keyof typeof COLLAPSE
+  variant?: keyof typeof VARIANT
 }
 
 /**
@@ -105,8 +120,15 @@ interface TabsNavProps {
  *
  * Controlled, because the select trigger has to render the active tab's label.
  */
-function TabsNav({ items, value, onValueChange, collapse = "md" }: TabsNavProps) {
+function TabsNav({
+  items,
+  value,
+  onValueChange,
+  collapse = "md",
+  variant = "underline",
+}: TabsNavProps) {
   const t = useTranslations()
+  const styles = VARIANT[variant]
 
   const label = (item: TabsNavItem) => (
     <>
@@ -125,15 +147,20 @@ function TabsNav({ items, value, onValueChange, collapse = "md" }: TabsNavProps)
           a narrow container: the select trigger repeats the active tab's label,
           so a text query would otherwise resolve to whichever of the two is
           hidden. */}
-      <TabsList className={COLLAPSE[collapse].list}>
+      <TabsList className={cn(styles.list, COLLAPSE[collapse].list)}>
         {items.map((item) => (
-          <TabsTrigger key={item.value} value={item.value}>
+          <TabsTrigger
+            key={item.value}
+            value={item.value}
+            className={styles.trigger}
+          >
             {label(item)}
           </TabsTrigger>
         ))}
       </TabsList>
       <Select value={value} onValueChange={onValueChange}>
         <SelectTrigger
+          size={styles.size}
           aria-label={t("common.sections")}
           className={cn("w-full", COLLAPSE[collapse].menu)}
         >
