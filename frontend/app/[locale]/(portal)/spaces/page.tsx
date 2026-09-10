@@ -112,7 +112,7 @@ export default function SpacesPage() {
       ) : (
         <>
           {/* Desktop table */}
-          <div className="hidden md:block rounded-md border">
+          <div className="hidden @3xl:block rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -148,7 +148,7 @@ export default function SpacesPage() {
           </div>
 
           {/* Mobile card view */}
-          <div className="space-y-3 md:hidden">
+          <div className="space-y-3 @3xl:hidden">
             {filteredSpaces.map((space) => (
               <Link
                 key={space.id}

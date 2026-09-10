@@ -186,7 +186,7 @@ function FinanceGraphCard() {
           {t("dashboard.viewAnnualSummary")} →
         </Link>
       </CardHeader>
-      <CardContent className="px-2 flex-1 min-h-[320px]">
+      <CardContent className="min-w-0 px-2 flex-1 min-h-[320px]">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={chartData} margin={{ top: 8, right: 16, bottom: 4, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />

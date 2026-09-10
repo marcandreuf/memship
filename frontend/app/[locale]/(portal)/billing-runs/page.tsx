@@ -99,7 +99,7 @@ export default function BillingRunsPage() {
         <div className="py-8 text-center text-muted-foreground">{t("billingRuns.empty")}</div>
       ) : (
         <>
-        <div className="hidden md:block rounded-md border">
+        <div className="hidden @3xl:block rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -130,7 +130,7 @@ export default function BillingRunsPage() {
         </Table>
         </div>
 
-        <div className="space-y-3 md:hidden">
+        <div className="space-y-3 @3xl:hidden">
           {items.map((run: BillingRun) => (
             <Link
               key={run.id}

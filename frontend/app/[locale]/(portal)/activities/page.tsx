@@ -129,7 +129,7 @@ export default function ActivitiesPage() {
       ) : isAdmin ? (
         <>
           {/* Admin: Desktop table */}
-          <div className="hidden md:block rounded-md border">
+          <div className="hidden @3xl:block rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -172,7 +172,7 @@ export default function ActivitiesPage() {
           </div>
 
           {/* Admin: Mobile card view */}
-          <div className="space-y-3 md:hidden">
+          <div className="space-y-3 @3xl:hidden">
             {data.items.map((activity) => (
               <Link
                 key={activity.id}

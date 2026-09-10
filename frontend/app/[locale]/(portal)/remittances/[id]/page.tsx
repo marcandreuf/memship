@@ -240,7 +240,7 @@ export default function RemittanceDetailPage() {
           {importResult ? (
             <div className="space-y-3">
               <h3 className="text-sm font-medium">{t("remittances.importResults")}</h3>
-              <div className="grid grid-cols-3 gap-3 text-center">
+              <div className="grid grid-cols-1 gap-3 text-center @md:grid-cols-3">
                 <div className="border rounded-md p-3">
                   <p className="text-2xl font-bold">{importResult.processed}</p>
                   <p className="text-xs text-muted-foreground">{t("remittances.importProcessed")}</p>
