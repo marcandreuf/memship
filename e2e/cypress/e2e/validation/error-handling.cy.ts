@@ -172,7 +172,13 @@ describe("Validation — Frontend Zod Constraints", () => {
       cy.get('input[name="min_participants"]').clear().type("100");
       cy.get('input[name="max_participants"]').clear().type("10");
       cy.get('button[type="submit"]').click();
-      cy.contains(/max participants must be greater/i).should("be.visible");
+      // Scoped to the field: the rule shares `validation.maxLessThanMin` with
+      // the age range, so a bare text match would also pass on the wrong error.
+      cy.get('input[name="max_participants"]')
+        .closest('[data-slot="form-item"]')
+        .find('[data-slot="form-message"]')
+        .should("be.visible")
+        .and("contain", "Maximum must be greater than or equal to minimum");
       cy.url().should("include", "/activities/new");
     });
   });
