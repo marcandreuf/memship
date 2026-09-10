@@ -7,6 +7,8 @@ and the payment provider credentials that live in the database rather than in
 """
 
 import argparse
+from datetime import date
+from decimal import Decimal
 
 import pytest
 
@@ -27,12 +29,13 @@ from app.cli.seed import (
     seed_narrow_role,
     set_password,
     super_admin_users,
+    sync_invoice_sequence,
 )
 from app.core.permissions import MEMBER_SLUG, SUPER_ADMIN_SLUG
 from app.db.base import Base
 from app.domains.audit.models import AuditLog
 from app.domains.auth.models import Role, User
-from app.domains.billing.models import PaymentProvider
+from app.domains.billing.models import InvoiceSequence, PaymentProvider, Receipt
 from app.domains.members.models import Member, MembershipType
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Person
@@ -347,6 +350,28 @@ class TestMembershipTypeSeeding:
         assert default.id == migration_default.id
         assert db.query(MembershipType).filter_by(is_default=True).count() == 1
 
+    def test_a_paid_plan_is_billed_other_than_monthly(self, db):
+        """Proration has to be reachable from seeded data.
+
+        ``prorate_membership_price`` charges whole months of the calendar
+        period, so a monthly plan is charged in full every time and
+        ``is_prorated`` is never true. If every paid sample tier were monthly,
+        neither the arithmetic nor the warning the purchase dialog shows for it
+        could be exercised against a seeded club.
+        """
+        seed_membership_types(db, seed_groups(db))
+
+        prorateable = (
+            db.query(MembershipType)
+            .filter(
+                MembershipType.base_price > 0,
+                MembershipType.billing_frequency.in_(("quarterly", "annual")),
+            )
+            .all()
+        )
+
+        assert prorateable, "no paid tier is billed quarterly or annually"
+
     def test_seeding_twice_creates_nothing_the_second_time(self, db):
         groups = seed_groups(db)
         seed_membership_types(db, groups)
@@ -355,3 +380,76 @@ class TestMembershipTypeSeeding:
         seed_membership_types(db, groups)
 
         assert self._slugs(db) == before
+
+
+class TestInvoiceSequenceSeeding:
+    """`sync_invoice_sequence` — the counter versus the numbers the seed wrote."""
+
+    def _receipt(self, db, number):
+        membership_type = _base_install(db)
+        user = _account(f"holder-{number}@example.com", MEMBER_SLUG, membership_type, db)
+        member = db.query(Member).filter_by(user_id=user.id).one()
+        db.add(
+            Receipt(
+                receipt_number=number,
+                member_id=member.id,
+                origin="manual",
+                description="numbered by the seed, not by the allocator",
+                base_amount=Decimal("10.00"),
+                vat_rate=Decimal("21.00"),
+                vat_amount=Decimal("2.10"),
+                total_amount=Decimal("12.10"),
+                status="emitted",
+                emission_date=date(2026, 1, 1),
+            )
+        )
+        db.flush()
+
+    def test_the_counter_clears_the_receipts_the_seed_issued(self, db):
+        """A seeded club has to be able to raise its next receipt.
+
+        The billing and SEPA seeders number their receipts themselves, so the
+        counter `allocate_receipt_number` reads knows nothing about them. Left
+        that way it hands out `-0001` again, hits the collision guard, and
+        returns 500 to every flow that raises a receipt — a plan purchase, a
+        manual receipt, a remittance run — on a database that looks fully
+        seeded.
+        """
+        create_org_settings(db, {"name": "Club", "email": "club@example.com"})
+        self._receipt(db, "FAC-2026-0028")
+
+        sync_invoice_sequence(db)
+
+        row = db.query(InvoiceSequence).filter(InvoiceSequence.year == 2026).one()
+        assert row.next_number == 29
+
+    def test_the_counter_is_never_moved_backwards(self, db):
+        """A club that has issued real receipts keeps its own position.
+
+        Re-running the seed on a live database must not rewind the series to
+        wherever the samples happened to stop: an invoice series only ever
+        moves forward, and a number it has already handed out is spent.
+        """
+        create_org_settings(db, {"name": "Club", "email": "club@example.com"})
+        self._receipt(db, "FAC-2026-0005")
+        db.add(InvoiceSequence(year=2026, next_number=72))
+        db.flush()
+
+        sync_invoice_sequence(db)
+
+        row = db.query(InvoiceSequence).filter(InvoiceSequence.year == 2026).one()
+        assert row.next_number == 72
+
+    def test_a_prefix_the_series_does_not_use_is_left_alone(self, db):
+        """The demo cohort numbers itself in its own namespace.
+
+        `demo_data` issues `DEMO-<year>-NNNN`, deliberately outside the club's
+        series so the two cannot collide. Counting those into the counter would
+        push the real series past numbers it never issued.
+        """
+        create_org_settings(db, {"name": "Club", "email": "club@example.com"})
+        self._receipt(db, "DEMO-2026-0400")
+
+        sync_invoice_sequence(db)
+
+        assert db.query(InvoiceSequence).count() == 0

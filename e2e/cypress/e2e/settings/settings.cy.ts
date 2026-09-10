@@ -5,7 +5,11 @@ describe("Settings — Super Admin", () => {
   });
 
   it("shows settings page", () => {
-    cy.contains("Settings").should("be.visible");
+    // Anchored on the heading, not a bare text match: the sidebar's own
+    // "Settings" link comes first in the DOM, and `SidebarContent` scrolls, so
+    // once the nav grew past the sidebar's height that label sat below its fold
+    // and the assertion failed on an element the test never meant to reach.
+    cy.contains("h1", "Settings").should("be.visible");
   });
 
   it("shows organization settings form", () => {

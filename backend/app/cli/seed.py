@@ -49,7 +49,14 @@ from app.domains.activities.models import (
     ActivityPrice, DiscountCode, Registration, RegistrationConsent,
 )
 from app.domains.members.models import Group, Member, MembershipType
-from app.domains.billing.models import Concept, PaymentProvider, Receipt, Remittance, SepaMandate
+from app.domains.billing.models import (
+    Concept,
+    InvoiceSequence,
+    PaymentProvider,
+    Receipt,
+    Remittance,
+    SepaMandate,
+)
 
 ph = PasswordHasher()
 
@@ -356,6 +363,18 @@ def seed_membership_types(db, groups: dict[str, Group]) -> MembershipType:
             group_id=honorary_group.id if honorary_group else None,
             base_price=0, billing_frequency="one_time",
             display_order=6, is_active=True,
+        ),
+        # The only paid plan that is not monthly, and the reason it is here: a
+        # monthly period is never prorated, so with monthly plans alone nothing
+        # a club can buy from seeded data exercises the mid-period arithmetic in
+        # `billing/proration.py` — or the warning the purchase dialog shows for
+        # it. 200 EUR/year is the figure that module documents itself with.
+        MembershipType(
+            name="Annual Member", slug="annual-member",
+            description="Full membership paid once a year; a mid-year join is charged for the remaining whole months",
+            group_id=adult_group.id if adult_group else None,
+            base_price=200.00, billing_frequency="annual",
+            display_order=7, is_active=True,
         ),
     ]
     existing_slugs = {slug for (slug,) in db.query(MembershipType.slug).all()}
@@ -1588,6 +1607,64 @@ def seed_sepa_data(db) -> None:
     print("  SEPA seed: complete — ready for manual SEPA workflow testing")
 
 
+def sync_invoice_sequence(db) -> None:
+    """Move the invoice counter past the numbers the seed issued by hand.
+
+    `seed_billing_data` and `seed_sepa_data` write `receipt_number` straight
+    onto the model instead of going through `allocate_receipt_number`, so the
+    counter that function reads stays unset while the series it guards already
+    runs to several dozen. The first receipt created through the API then draws
+    the number the seed used for its first one and — correctly — refuses to
+    guess its way out of the collision, which fails every flow that raises a
+    receipt until someone corrects the counter by hand.
+
+    Reads the series back off the receipts rather than counting the seeders'
+    rows: the two number independently, either may be skipped by its own
+    already-seeded guard, and only the receipts know where the series actually
+    got to. Never moves a counter backwards, so a database that has since
+    issued real receipts keeps its own position.
+    """
+    org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
+    if org is None:
+        return
+
+    prefix = org.invoice_prefix or "FAC"
+    highest: dict[int, int] = {}
+    for (number,) in db.query(Receipt.receipt_number).filter(
+        Receipt.receipt_number.like(f"{prefix}-%")
+    ):
+        parts = (number or "").split("-")
+        if len(parts) < 3:
+            continue
+        try:
+            year, sequence = int(parts[-2]), int(parts[-1])
+        except ValueError:
+            continue
+        highest[year] = max(sequence, highest.get(year, 0))
+
+    if not highest:
+        print("  Invoice sequence: no seeded receipts to account for")
+        return
+
+    for year, sequence in sorted(highest.items()):
+        row = db.query(InvoiceSequence).filter(InvoiceSequence.year == year).first()
+        if row is None:
+            db.add(InvoiceSequence(year=year, next_number=sequence + 1))
+        elif (row.next_number or 1) > sequence:
+            continue
+        else:
+            row.next_number = sequence + 1
+        print(f"  Invoice sequence: {year} continues at {sequence + 1}")
+
+    # The org-wide counter is what `allocate_receipt_number` reads when annual
+    # reset is off, and it is seeded at 1 like the per-year rows.
+    overall = max(highest.values())
+    if (org.invoice_next_number or 1) <= overall:
+        org.invoice_next_number = overall + 1
+
+    db.flush()
+
+
 # Follows SEED_EMAIL_DOMAIN like the demo members do — an environment that
 # points the members at a domain it owns needs the admin reachable too, or the
 # one account that receives password resets is the one that cannot.
@@ -1762,6 +1839,7 @@ def run_test_mode(db, membership_type: MembershipType) -> None:
         ("registration consents", lambda: seed_registration_consents(db)),
         ("billing data", lambda: seed_billing_data(db)),
         ("SEPA data", lambda: seed_sepa_data(db)),
+        ("invoice sequence", lambda: sync_invoice_sequence(db)),
     ):
         print(f"\nSeeding {label}...")
         fn()

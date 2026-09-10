@@ -17,6 +17,11 @@ export interface MemberData {
   person: PersonData;
   membership_type_id: number | null;
   membership_type_name: string | null;
+  // Set only while the member sits on the free tier because a membership fee
+  // went unpaid: which plan they lost, and when.
+  membership_reverted_from_id: number | null;
+  membership_reverted_from_name: string | null;
+  membership_reverted_at: string | null;
   member_number: string | null;
   status: string;
   status_reason: string | null;

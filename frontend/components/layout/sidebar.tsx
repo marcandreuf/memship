@@ -20,6 +20,7 @@ import {
   ScanLine,
   TrendingUp,
   TriangleAlert,
+  BadgeEuro,
   MapPin,
   LogOut,
   ChevronsUpDown,
@@ -121,6 +122,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
     [
       { href: "/my-activities", label: t("activities.registration.myActivities"), icon: ClipboardList, show: has("self.registrations.read") },
       { href: "/my-bookings", label: t("bookings.navMyBookings"), icon: ClipboardList, show: bookingsEnabled && has("self.bookings.read") },
+      { href: "/my-membership", label: t("membership.nav"), icon: BadgeEuro, show: has("self.billing.read") },
       { href: "/my-receipts", label: t("receipts.myReceipts"), icon: Receipt, show: has("self.billing.read") },
       { href: "/my-card", label: t("nav.myCard"), icon: IdCard, show: cardEnabled && has("self.card.read") },
     ],
