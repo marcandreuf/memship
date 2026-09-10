@@ -25,7 +25,7 @@ describe("Communications (v0.5.0 + v0.5.1)", () => {
     cy.loginAsSuperAdmin();
     cy.visit("/en/settings");
     cy.contains('[role="tab"]', "Communications").click();
-    cy.contains("Enable communications").should("be.visible");
+    cy.contains("Enable announcements").should("be.visible");
     cy.contains("button", "Save").should("be.visible");
   });
 
