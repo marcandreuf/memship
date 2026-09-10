@@ -200,7 +200,7 @@ export default function MyMembershipPage() {
           {t("membership.noPlans")}
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" data-testid="plan-catalogue">
+        <div className="grid gap-4 @xl:grid-cols-2 @3xl:grid-cols-3" data-testid="plan-catalogue">
           {purchasable.map((plan) => (
             <div
               key={plan.id}
