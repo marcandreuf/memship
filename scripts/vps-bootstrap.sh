@@ -108,13 +108,21 @@ esac
 
 export DEBIAN_FRONTEND=noninteractive
 
+# A fresh server runs apt itself: `apt-daily`, `apt-daily-upgrade` and
+# `unattended-upgrades` fire on boot and hold the dpkg lock for minutes. Plain
+# apt-get does not wait for it — it prints "Could not get lock
+# /var/lib/dpkg/lock-frontend" and exits 100, which under `set -e` aborted this
+# script part-way, leaving a box with Docker but no firewall and no fail2ban.
+# Wait for the lock rather than racing the timers.
+apt_get() { apt-get -o DPkg::Lock::Timeout=300 "$@"; }
+
 step "Updating the package index"
-apt-get update -qq
+apt_get update -qq
 # No git. An instance holds no source checkout: the deployment files arrive
 # as a release tarball over curl, or over rsync from the deploy workflow.
 # Installing git here would put a tool on the box that nothing uses and that
 # invites someone to clone a working copy next to a production deployment.
-apt-get install -y -qq ca-certificates curl gnupg >/dev/null
+apt_get install -y -qq ca-certificates curl gnupg >/dev/null
 
 # ---------------------------------------------------------------- deploy user
 
@@ -164,7 +172,12 @@ step "Docker Engine and the Compose plugin"
 
 # Docker's own repository, not the distro package — the distro one lags badly
 # and the Compose plugin is packaged differently there.
-if [ -f /etc/apt/sources.list.d/docker.list ] && command -v docker >/dev/null 2>&1; then
+# Both filenames are checked: Docker's current instructions write the deb822
+# `docker.sources`, older ones (and this script, below) write `docker.list`.
+# Looking for only one of them adds a second definition of the same repository,
+# and every later apt run warns "configured multiple times" for a dozen targets.
+if { [ -f /etc/apt/sources.list.d/docker.list ] || [ -f /etc/apt/sources.list.d/docker.sources ]; } \
+   && command -v docker >/dev/null 2>&1; then
     skip "Docker apt repository already configured"
 else
     install -m 0755 -d /etc/apt/keyrings
@@ -174,11 +187,11 @@ else
     printf 'deb [arch=%s signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/%s %s stable\n' \
         "$(dpkg --print-architecture)" "$ID" "$VERSION_CODENAME" \
         > /etc/apt/sources.list.d/docker.list
-    apt-get update -qq
+    apt_get update -qq
     info "added download.docker.com"
 fi
 
-apt-get install -y -qq \
+apt_get install -y -qq \
     docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin >/dev/null
 systemctl enable --now docker >/dev/null 2>&1 || true
 info "docker $(docker version --format '{{.Server.Version}}' 2>/dev/null || echo '?')"
@@ -199,7 +212,7 @@ warn "Membership of the 'docker' group grants effective root on this host.
 
 step "Automatic security updates"
 
-apt-get install -y -qq unattended-upgrades >/dev/null
+apt_get install -y -qq unattended-upgrades >/dev/null
 
 # dpkg-reconfigure is interactive; writing the file is the same outcome.
 # This updates the HOST only. memship itself is updated by re-running
@@ -215,7 +228,7 @@ info "security patches applied automatically"
 
 step "fail2ban"
 
-apt-get install -y -qq fail2ban >/dev/null
+apt_get install -y -qq fail2ban >/dev/null
 cat > /etc/fail2ban/jail.d/sshd.local <<'EOF'
 [sshd]
 enabled = true
@@ -251,7 +264,7 @@ SSH_PORT="$(printf '%s\n' "$SSH_PORTS" | head -1)"
 if [ "$DO_FIREWALL" -eq 1 ]; then
     step "Firewall"
 
-    apt-get install -y -qq ufw >/dev/null
+    apt_get install -y -qq ufw >/dev/null
 
     # Order matters: allow SSH BEFORE enabling, or enabling drops this session.
     # 22 goes in unconditionally as well — if sshd is being moved off it, the
