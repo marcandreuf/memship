@@ -54,6 +54,8 @@
       "notFound": "Espacio no encontrado.",
       "confirmDelete": "¿Eliminar este espacio? Se eliminarán sus franjas y reservas. Para dejar de aceptar reservas sin borrar nada, desactívalo desde Editar.",
       "deleteAffected": "{count, plural, one {# socio tiene reservas activas que se cancelarán y se le avisará por correo.} other {# socios tienen reservas activas que se cancelarán y se les avisará por correo.}}",
+      "confirmHours": "¿Reducir el horario de apertura?",
+      "hoursSlotsAffected": "{count, plural, one {# franja próxima queda fuera del nuevo horario y se eliminará.} other {# franjas próximas quedan fuera del nuevo horario y se eliminarán.}}",
       "allowedTypes": "Tipos de socio con acceso",
       "allowedTypesHint": "Sin ninguno marcado, el espacio queda abierto a todos los socios. Al marcar tipos, solo esos socios podrán reservarlo.",
       "allowedTypesNone": "Aún no hay tipos de socio activos.",

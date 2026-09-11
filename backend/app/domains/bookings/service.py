@@ -118,6 +118,17 @@ class HasActiveBookings(BookingError):
         self.affected_members = affected_members
 
 
+class SlotsOutsideHours(BookingError):
+    """Narrowing a space's hours would leave slots outside them."""
+
+    def __init__(self, slot_count: int, affected_members: int):
+        super().__init__(
+            f"{slot_count} slot(s) fall outside the new opening hours"
+        )
+        self.slot_count = slot_count
+        self.affected_members = affected_members
+
+
 # --- Settings / time helpers ---------------------------------------------
 
 
@@ -185,7 +196,19 @@ def create_space(db: Session, data: SpaceCreate) -> Space:
     return space
 
 
-def update_space(db: Session, space: Space, data: SpaceUpdate) -> Space:
+def update_space(
+    db: Session,
+    space: Space,
+    data: SpaceUpdate,
+    *,
+    force: bool = False,
+    notifier: BookingNotifier | None = None,
+) -> Space:
+    """Update a space. Narrowing its hours is checked against the slots that
+    already exist: without ``force`` it refuses when upcoming active slots fall
+    outside the new window, so members cannot keep booking a time the space is
+    closed; with ``force`` those slots are deleted the way ``delete_slot`` does
+    it, and every member holding one is notified."""
     payload = data.model_dump(exclude_unset=True)
     if "allowed_membership_types" in payload:
         # An empty list and NULL both mean "open to everyone"; store one of them
@@ -197,7 +220,36 @@ def update_space(db: Session, space: Space, data: SpaceUpdate) -> Space:
         setattr(space, key, value)
     if space.close_time <= space.open_time:
         raise SlotOutsideOpeningHours("close_time must be after open_time")
+
+    if payload.keys() & {"open_time", "close_time"}:
+        stranded = _slots_outside_hours(db, space)
+        if stranded:
+            affected = _affected_active_bookings(db, [s.id for s in stranded])
+            if not force:
+                raise SlotsOutsideHours(
+                    len(stranded), len({b.member_id for b in affected})
+                )
+            for slot in stranded:
+                delete_slot(db, slot, force=True, notifier=notifier)
     return space
+
+
+def _slots_outside_hours(db: Session, space: Space) -> list[SpaceSlot]:
+    """Upcoming active slots that start before the space opens or end after it
+    closes. Past slots are history and stay as they are."""
+    today = datetime.now(_tz(db)).date()
+    return (
+        db.query(SpaceSlot)
+        .filter(
+            SpaceSlot.space_id == space.id,
+            SpaceSlot.is_active.is_(True),
+            SpaceSlot.slot_date >= today,
+            (SpaceSlot.start_time < space.open_time)
+            | (SpaceSlot.end_time > space.close_time),
+        )
+        .order_by(SpaceSlot.slot_date, SpaceSlot.start_time)
+        .all()
+    )
 
 
 def deactivate_space(db: Session, space: Space) -> Space:

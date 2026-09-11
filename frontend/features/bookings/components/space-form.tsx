@@ -18,10 +18,13 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { useQueryClient } from "@tanstack/react-query";
+import { useConfirmDialog } from "@/components/ui/confirm-dialog";
+import { ClientApiError } from "@/lib/client-api";
 import { mapApiErrorsToForm } from "@/lib/errors";
 import { useMembershipTypes } from "@/features/members/hooks/use-members";
 import { useCreateSpace, useUpdateSpace } from "../hooks/use-bookings";
-import type { Space } from "../services/bookings-api";
+import { updateSpace, type Space } from "../services/bookings-api";
 
 const toTimeInput = (s: string | null | undefined) => (s ? s.slice(0, 5) : "");
 
@@ -74,6 +77,8 @@ export function SpaceForm({
   const t = useTranslations();
   const createMutation = useCreateSpace();
   const updateMutation = useUpdateSpace();
+  const qc = useQueryClient();
+  const [confirmDialog, confirmAction] = useConfirmDialog();
   const { data: membershipTypes } = useMembershipTypes();
   const activeTypes = (membershipTypes ?? []).filter((mt) => mt.is_active);
 
@@ -104,13 +109,50 @@ export function SpaceForm({
     };
     try {
       if (space) {
-        await updateMutation.mutateAsync({ id: space.id, data: payload });
+        // The raw call so the expected 409 — upcoming slots outside the new
+        // hours — skips the global error toast and reaches the confirm below.
+        await updateSpace(space.id, payload);
+        qc.invalidateQueries({ queryKey: ["spaces"] });
+        qc.invalidateQueries({ queryKey: ["space", space.id] });
       } else {
         await createMutation.mutateAsync(payload);
       }
       toast.success(t("toast.success.saved"));
       onSuccess();
     } catch (error) {
+      if (space && error instanceof ClientApiError && error.status === 409) {
+        const detail = error.detail as unknown as {
+          slots_outside_hours?: number;
+          affected_members?: number;
+        };
+        confirmAction({
+          title: t("bookings.spaces.confirmHours"),
+          description:
+            t("bookings.spaces.hoursSlotsAffected", {
+              count: detail?.slots_outside_hours ?? 0,
+            }) +
+            " " +
+            t("bookings.spaces.deleteAffected", {
+              count: detail?.affected_members ?? 0,
+            }),
+          cancelLabel: t("common.cancel"),
+          confirmLabel: t("common.save"),
+          onConfirm: async () => {
+            try {
+              await updateMutation.mutateAsync({
+                id: space.id,
+                data: payload,
+                force: true,
+              });
+              toast.success(t("toast.success.saved"));
+              onSuccess();
+            } catch {
+              /* global handler */
+            }
+          },
+        });
+        return;
+      }
       mapApiErrorsToForm(error, form);
     }
   }
@@ -274,6 +316,7 @@ export function SpaceForm({
           </Button>
         )}
       </form>
+      {confirmDialog}
     </Form>
   );
 }

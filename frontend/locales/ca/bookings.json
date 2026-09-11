@@ -54,6 +54,8 @@
       "notFound": "Espai no trobat.",
       "confirmDelete": "Vols eliminar aquest espai? Se n'eliminaran les franges i les reserves. Per deixar d'acceptar reserves sense esborrar res, desactiva'l des d'Edita.",
       "deleteAffected": "{count, plural, one {# soci té reserves actives que es cancel·laran i se l'avisarà per correu.} other {# socis tenen reserves actives que es cancel·laran i se'ls avisarà per correu.}}",
+      "confirmHours": "Vols reduir l'horari d'obertura?",
+      "hoursSlotsAffected": "{count, plural, one {# franja propera queda fora del nou horari i s'eliminarà.} other {# franges properes queden fora del nou horari i s'eliminaran.}}",
       "allowedTypes": "Tipus de soci amb accés",
       "allowedTypesHint": "Sense cap marcat, l'espai queda obert a tots els socis. En marcar tipus, només aquests socis el podran reservar.",
       "allowedTypesNone": "Encara no hi ha tipus de soci actius.",
