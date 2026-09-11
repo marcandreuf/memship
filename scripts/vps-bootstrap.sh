@@ -85,19 +85,21 @@ esac
 # rather than after half the box is configured.
 if [ -n "$SSH_KEY_FILE" ]; then
     [ -r "$SSH_KEY_FILE" ] || die "cannot read $SSH_KEY_FILE"
-    # First valid key line, so an authorized_keys file with several keys works
-    # here as well as a single .pub — taking the whole file would append every
-    # line again as one blob.
-    SSH_KEY="$(grep -E '^(ssh|ecdsa)-' "$SSH_KEY_FILE" | head -1 || true)"
+    # Every valid key line, not just the first. The docs point people at their
+    # own ~/.ssh/authorized_keys, which is exactly the file that holds several —
+    # and taking only the first silently leaves them unable to log in as the
+    # deploy user with any of the others. Re-running stays safe because each key
+    # is checked against the target file individually further down.
+    SSH_KEY="$(grep -E '^(ssh|ecdsa)-' "$SSH_KEY_FILE" || true)"
     [ -n "$SSH_KEY" ] || die "no SSH public key found in $SSH_KEY_FILE"
 elif [ -z "$SSH_KEY" ] && [ -r /root/.ssh/authorized_keys ]; then
     # Most providers install your key for root on a fresh box. Reusing it means
     # the deploy user is reachable with the same key you are already using.
-    SSH_KEY="$(grep -E '^(ssh|ecdsa)-' /root/.ssh/authorized_keys | head -1 || true)"
-    [ -n "$SSH_KEY" ] && info "reusing the first key from /root/.ssh/authorized_keys"
+    SSH_KEY="$(grep -E '^(ssh|ecdsa)-' /root/.ssh/authorized_keys || true)"
+    [ -n "$SSH_KEY" ] && info "reusing the keys from /root/.ssh/authorized_keys"
 fi
 
-case "$SSH_KEY" in
+case "$(printf '%s\n' "$SSH_KEY" | head -1)" in
     ssh-*|ecdsa-*) ;;
     '') warn "no SSH public key found for '$DEPLOY_USER'.
     Pass --ssh-key-file <path> or --ssh-key '<key>'. Without one you will not be
@@ -143,12 +145,21 @@ if [ -n "$SSH_KEY" ]; then
     install -d -m 0700 -o "$DEPLOY_USER" -g "$DEPLOY_USER" "$USER_HOME/.ssh"
     AUTH="$USER_HOME/.ssh/authorized_keys"
     touch "$AUTH"
-    if grep -qxF "$SSH_KEY" "$AUTH" 2>/dev/null; then
-        skip "key already authorised"
-    else
-        printf '%s\n' "$SSH_KEY" >> "$AUTH"
-        info "authorised key added"
-    fi
+    ADDED=0 PRESENT=0
+    while IFS= read -r key; do
+        [ -n "$key" ] || continue
+        if grep -qxF "$key" "$AUTH" 2>/dev/null; then
+            PRESENT=$((PRESENT + 1))
+        else
+            printf '%s\n' "$key" >> "$AUTH"
+            ADDED=$((ADDED + 1))
+        fi
+    done <<EOF
+$SSH_KEY
+EOF
+    [ "$ADDED" -gt 0 ] && info "authorised $ADDED key(s)"
+    [ "$PRESENT" -gt 0 ] && skip "$PRESENT key(s) already authorised"
+    :
     chmod 0600 "$AUTH"
     chown "$DEPLOY_USER:$DEPLOY_USER" "$AUTH"
 fi
@@ -370,7 +381,10 @@ cat <<EOF
      FIRST, in a SECOND terminal, confirm this works and keep it open:
 
        ssh -p $SSH_PORT $DEPLOY_USER@<this-host>
-       sudo -v
+       docker info >/dev/null && echo ok
+
+     ('$DEPLOY_USER' has no password by design and cannot sudo — see step 2 —
+     so check what it does need instead: a login, and the docker socket.)
 
      Only once that succeeds, edit /etc/ssh/sshd_config:
 
@@ -390,10 +404,21 @@ EOF
 fi
 
 cat <<EOF
-  2. INSTALL MEMSHIP as $DEPLOY_USER — not as root:
+  2. INSTALL MEMSHIP. Make the directories HERE, as root — both of them:
+
+       install -d -o $DEPLOY_USER -g $DEPLOY_USER /srv/openmemship/app /srv/openmemship/data
+
+     '$DEPLOY_USER' was created with no password, so it cannot use sudo. That is
+     deliberate: it holds the docker socket, which is already effective root, and
+     handing it a second route to root as well buys nothing. So root does the two
+     things that need root — creating those directories — and everything after
+     this line runs unprivileged. Both are named because 'install -d' gives the
+     ownership to what it creates, not to the parent, so making only 'app' leaves
+     '$DEPLOY_USER' unable to create the data root and install.sh stops there.
+
+     Then become $DEPLOY_USER. Nothing below needs root:
 
        su - $DEPLOY_USER          # or log in again over SSH, so the docker group applies
-       sudo install -d -o $DEPLOY_USER -g $DEPLOY_USER /srv/openmemship/app
        curl -fsSL https://github.com/marcandreuf/memship/archive/refs/tags/v<version>.tar.gz \\
          | tar -xz -C /srv/openmemship/app --strip-components=1
        cd /srv/openmemship/app

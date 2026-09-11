@@ -61,12 +61,27 @@ Log out and back in afterwards, so the deploy user's `docker` group membership t
 
 ## Install
 
-As the deploy user — **not** as root. `/srv` belongs to root, so create the install directory and
-hand it to yourself before unpacking into it; `install.sh` writes `.env` inside that directory
-and needs to own it:
+`/srv` belongs to root, so the two directories are made **as root** first, and everything after
+that runs as the deploy user. Name **both** of them: `install -d` gives the ownership to the
+directories it creates, not to the parent, so creating only `app` leaves `/srv/openmemship` owned
+by root and the deploy user unable to create the data root — `install.sh` then stops with
+`cannot create /srv/openmemship/data`.
 
 ```bash
-sudo install -d -o "$USER" -g "$USER" /srv/openmemship/app
+sudo install -d -o deploy -g deploy /srv/openmemship/app /srv/openmemship/data
+```
+
+If the deploy user is the account you are already logged in as, use `-o "$USER" -g "$USER"`.
+
+> **The deploy user cannot `sudo`.** `vps-bootstrap.sh` creates it with `adduser
+> --disabled-password`, so it has no password to type at a sudo prompt. That is deliberate — the
+> account already holds the docker socket, which is effective root, and a second route to root
+> buys nothing. It is why the command above is run as root rather than as the deploy user.
+
+Now become the deploy user — nothing below needs root. `install.sh` writes `.env` inside the
+install directory and needs to own it:
+
+```bash
 curl -fsSL "https://github.com/marcandreuf/memship/archive/refs/tags/v${MEMSHIP_VERSION}.tar.gz" \
   | tar -xz -C /srv/openmemship/app --strip-components=1
 cd /srv/openmemship/app
@@ -76,7 +91,7 @@ cd /srv/openmemship/app
 
 The bootstrap script in your home directory has done its job now and can be deleted.
 
-That creates the data root, generates real secrets into `.env` (mode 600), pulls the published
+That populates the data root, generates real secrets into `.env` (mode 600), pulls the published
 images and starts the stack.
 
 **Copy `.env` off the server now, before you put real data in.** `SECRET_KEY` and
