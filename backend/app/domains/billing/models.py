@@ -482,3 +482,21 @@ class InvoiceSequence(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
+
+class RemittanceSequence(Base):
+    """The next remittance number for one year — the same counter shape as
+    ``InvoiceSequence``, for the same reason.
+
+    Remittance numbers were still ``COUNT(remittances in year) + 1`` after
+    receipts moved to a locked counter, so two batches generated together could
+    draw the same number and the second failed on the unique index (or, with
+    the old collision loop, skipped one).
+    """
+
+    __tablename__ = "remittance_sequences"
+
+    year = Column(Integer, primary_key=True, autoincrement=False)
+    next_number = Column(Integer, nullable=False, default=1)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
