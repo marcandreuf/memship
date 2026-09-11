@@ -114,13 +114,25 @@ def get_space_admin(
 def update_space(
     space_id: int,
     data: SpaceUpdate,
+    force: bool = False,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("bookings.write")),
 ):
+    """Narrowing the hours past existing upcoming slots answers 409 with the
+    slot and affected-member counts when force is absent — the UI confirms,
+    then retries with force=true and those slots are deleted."""
     _require_bookings_enabled(db)
     space = _load_space_or_404(db, space_id)
     try:
-        service.update_space(db, space, data)
+        service.update_space(db, space, data, force=force, notifier=_notifier)
+    except service.SlotsOutsideHours as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "slots_outside_hours": exc.slot_count,
+                "affected_members": exc.affected_members,
+            },
+        )
     except service.BookingError as exc:
         raise _slot_error_422(exc)
     db.commit()

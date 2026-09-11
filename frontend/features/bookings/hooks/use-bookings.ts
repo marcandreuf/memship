@@ -49,8 +49,15 @@ export function useCreateSpace() {
 export function useUpdateSpace() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<SpaceInput> }) =>
-      updateSpace(id, data),
+    mutationFn: ({
+      id,
+      data,
+      force,
+    }: {
+      id: number;
+      data: Partial<SpaceInput>;
+      force?: boolean;
+    }) => updateSpace(id, data, force),
     onSuccess: (_res, { id }) => {
       qc.invalidateQueries({ queryKey: ["spaces"] });
       qc.invalidateQueries({ queryKey: ["space", id] });

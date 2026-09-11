@@ -184,6 +184,96 @@ def test_update_space_accepts_widened_hours(db):
     assert space.close_time == time(23, 0)
 
 
+# --- Narrowing hours against existing slots -------------------------------
+#
+# Opening hours are validated when a slot is created, but nothing used to look
+# back at the slots when the hours changed: narrow them and the slots outside
+# the new window stayed bookable.
+
+
+def test_update_space_refuses_to_narrow_hours_past_upcoming_slots(db):
+    _org(db)
+    space = _space(db)
+    early = _slot(db, space, _future(3), start=time(8, 0), end=time(9, 0))
+    _slot(db, space, _future(3), start=time(12, 0), end=time(13, 0))
+    m1 = _member(db, 1)
+    service.create_booking(db, m1, early.id)
+
+    with pytest.raises(service.SlotsOutsideHours) as exc:
+        service.update_space(db, space, SpaceUpdate(open_time=time(10, 0)))
+
+    assert exc.value.slot_count == 1
+    assert exc.value.affected_members == 1
+
+
+def test_update_space_ignores_past_slots_outside_the_new_hours(db):
+    _org(db)
+    space = _space(db)
+    past = SpaceSlot(
+        space_id=space.id, slot_date=date.today() - timedelta(days=3),
+        start_time=time(8, 0), end_time=time(9, 0), capacity=1, is_active=True,
+    )
+    db.add(past)
+    db.flush()
+
+    service.update_space(db, space, SpaceUpdate(open_time=time(10, 0)))
+    db.flush()
+    assert space.open_time == time(10, 0)
+    assert past.is_active
+
+
+def test_update_space_ignores_slots_inside_the_new_hours(db):
+    _org(db)
+    space = _space(db)
+    _slot(db, space, _future(3), start=time(12, 0), end=time(13, 0))
+
+    service.update_space(
+        db, space, SpaceUpdate(open_time=time(11, 0), close_time=time(14, 0))
+    )
+    db.flush()
+    assert (space.open_time, space.close_time) == (time(11, 0), time(14, 0))
+
+
+def test_update_space_with_force_deletes_stranded_slots_and_notifies(db):
+    _org(db)
+    space = _space(db)
+    early = _slot(db, space, _future(3), start=time(8, 0), end=time(9, 0))
+    late = _slot(db, space, _future(4), start=time(21, 0), end=time(22, 0))
+    kept = _slot(db, space, _future(3), start=time(12, 0), end=time(13, 0))
+    m1, m2 = _member(db, 1), _member(db, 2)
+    service.create_booking(db, m1, early.id)
+    service.create_booking(db, m2, late.id)
+    notifier = RecordingNotifier()
+
+    service.update_space(
+        db, space,
+        SpaceUpdate(open_time=time(10, 0), close_time=time(20, 0)),
+        force=True, notifier=notifier,
+    )
+    db.flush()
+
+    remaining = {s.id for s in service.list_slots(db, space.id)}
+    assert remaining == {kept.id}
+    assert sorted(n.to for kind, n in notifier.calls if kind == "admin_cancellation") == [
+        "m1@t.com", "m2@t.com"
+    ]
+
+
+def test_update_space_without_hours_change_never_touches_slots(db):
+    """Only a change to the window triggers the check; renaming a space whose
+    slots already sit outside its hours (legacy data) must still work."""
+    _org(db)
+    space = _space(db)
+    slot = _slot(db, space, _future(3), start=time(8, 0), end=time(9, 0))
+    space.open_time = time(10, 0)
+    db.flush()
+
+    service.update_space(db, space, SpaceUpdate(name="Court 2"))
+    db.flush()
+    assert space.name == "Court 2"
+    assert slot.is_active
+
+
 # --- Slot validation + creation -------------------------------------------
 
 

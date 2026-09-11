@@ -103,11 +103,15 @@ export async function createSpace(data: SpaceInput): Promise<Space> {
   });
 }
 
+// Narrowing the hours past existing upcoming slots answers 409 +
+// {slots_outside_hours, affected_members} without force — the UI confirms,
+// then retries with force and those slots are deleted.
 export async function updateSpace(
   id: number,
-  data: Partial<SpaceInput>
+  data: Partial<SpaceInput>,
+  force = false
 ): Promise<Space> {
-  return apiClient<Space>(`/spaces/${id}`, {
+  return apiClient<Space>(`/spaces/${id}${force ? "?force=true" : ""}`, {
     method: "PUT",
     body: JSON.stringify(data),
   });

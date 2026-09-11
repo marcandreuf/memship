@@ -304,6 +304,34 @@ class TestDeleteGuards:
         )
 
 
+    def test_space_hours_narrowing_409_then_force(self, client, db):
+        _org(db)
+        admin = _user(db, "admin")
+        space_id, slot_id = _make_space_and_slot(client, admin)  # 10:00-11:00
+        u1, _ = _member_user(db, "h1@examplee6e3b1.com")
+        client.post(
+            "/api/v1/bookings", json={"space_slot_id": slot_id}, cookies=_auth(u1)
+        )
+
+        r = client.put(
+            f"/api/v1/spaces/{space_id}",
+            json={"open_time": "12:00:00"},
+            cookies=_auth(admin),
+        )
+        assert r.status_code == 409
+        assert r.json()["detail"] == {"slots_outside_hours": 1, "affected_members": 1}
+
+        rf = client.put(
+            f"/api/v1/spaces/{space_id}?force=true",
+            json={"open_time": "12:00:00"},
+            cookies=_auth(admin),
+        )
+        assert rf.status_code == 200
+        assert rf.json()["open_time"] == "12:00:00"
+        slots = client.get(f"/api/v1/spaces/{space_id}/slots", cookies=_auth(admin)).json()
+        assert slots == []
+
+
 class TestBooking:
     def test_member_books_a_free_slot(self, client, db):
         _org(db)
