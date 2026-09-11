@@ -488,8 +488,11 @@ class PaymentMethodUpdate(BaseModel):
 
 
 class PaymentMethodResponse(BaseModel):
+    """The full IBAN is write-only. The response carries the masked form so the
+    member can recognise the account on file; anything that sees the payload
+    (browser devtools, a proxy log) sees no more than that."""
+
     payment_method: str | None = None
-    bank_iban: str | None = None
     bank_iban_masked: str | None = None
     bank_bic: str | None = None
     bank_holder_name: str | None = None
@@ -542,7 +545,6 @@ def _build_payment_response(person: Person, db: Session) -> PaymentMethodRespons
 
     return PaymentMethodResponse(
         payment_method=person.payment_method,
-        bank_iban=person.bank_iban,
         bank_iban_masked=_mask_iban(person.bank_iban),
         bank_bic=person.bank_bic,
         bank_holder_name=person.bank_holder_name,
