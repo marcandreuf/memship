@@ -15,6 +15,7 @@
     "iban": "IBAN",
     "bic": "BIC / SWIFT",
     "bicHint": "Normalmente se detecta automáticamente a partir del IBAN",
+    "ibanOnFileHint": "Déjalo en blanco para mantener la cuenta registrada",
     "holderName": "Titular de la cuenta",
     "mandate": "Mandato SEPA",
     "mandateReference": "Referencia del mandato",

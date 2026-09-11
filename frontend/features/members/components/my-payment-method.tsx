@@ -18,7 +18,6 @@ import { useFormatters } from "@/hooks/use-formatters";
 
 interface PaymentMethodData {
   payment_method: string | null;
-  bank_iban: string | null;
   bank_iban_masked: string | null;
   bank_bic: string | null;
   bank_holder_name: string | null;
@@ -63,10 +62,13 @@ export function MyPaymentMethod() {
   const [holderName, setHolderName] = useState("");
   const [dirty, setDirty] = useState(false);
 
+  // The IBAN is write-only: the API only returns the masked form, so the field
+  // starts empty and shows the account on file as its placeholder. Leaving it
+  // blank keeps that account; typing one replaces it.
   useEffect(() => {
     if (data) {
       setMethod(data.payment_method || "");
-      setIban(data.bank_iban || "");
+      setIban("");
       setBic(data.bank_bic || "");
       setHolderName(data.bank_holder_name || "");
     }
@@ -85,7 +87,7 @@ export function MyPaymentMethod() {
     try {
       await mutation.mutateAsync({
         payment_method: method || null,
-        bank_iban: iban || null,
+        ...(iban ? { bank_iban: iban } : {}),
         bank_bic: bic || null,
         bank_holder_name: holderName || null,
       });
@@ -180,7 +182,15 @@ export function MyPaymentMethod() {
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
                 <Label className="text-xs">{t("paymentMethod.iban")}</Label>
-                <Input className="h-8 mt-1 font-mono" value={iban} onChange={(e) => handleChange(setIban)(e.target.value)} placeholder="ES9121000418450200051332" />
+                <Input
+                  className="h-8 mt-1 font-mono"
+                  value={iban}
+                  onChange={(e) => handleChange(setIban)(e.target.value)}
+                  placeholder={data?.bank_iban_masked || "ES9121000418450200051332"}
+                />
+                {data?.bank_iban_masked && (
+                  <p className="text-xs text-muted-foreground mt-1">{t("paymentMethod.ibanOnFileHint")}</p>
+                )}
               </div>
               <div>
                 <Label className="text-xs">{t("paymentMethod.bic")}</Label>

@@ -65,7 +65,7 @@ class TestGetPaymentMethod:
         assert r.status_code == 200
         data = r.json()
         assert data["payment_method"] is None
-        assert data["bank_iban"] is None
+        assert data["bank_iban_masked"] is None
         assert data["mandate_status"] == "none"
         assert data["warnings"] == []
 
@@ -84,7 +84,7 @@ class TestGetPaymentMethod:
         assert r.status_code == 200
         data = r.json()
         assert data["payment_method"] == "direct_debit"
-        assert data["bank_iban"] == "ES6621000418401234567891"
+        assert "bank_iban" not in data
         assert data["bank_iban_masked"] == "ES66 **** **** **** 7891"
         assert data["mandate_status"] == "active"
         assert data["mandate_reference"] == "TEST-PM-001"
@@ -119,7 +119,8 @@ class TestUpdatePaymentMethod:
         assert r.status_code == 200
         data = r.json()
         assert data["payment_method"] == "bank_transfer"
-        assert data["bank_iban"] == "ES7920385778983000760236"
+        assert "bank_iban" not in data
+        assert data["bank_iban_masked"] == "ES79 **** **** **** 0236"
         assert data["bank_holder_name"] == "Test Member"
 
     def test_iban_normalized_uppercase(self, client, db):
@@ -129,7 +130,9 @@ class TestUpdatePaymentMethod:
             "bank_iban": "es79 2038 5778 9830 0076 0236",
         })
         assert r.status_code == 200
-        assert r.json()["bank_iban"] == "ES7920385778983000760236"
+        assert r.json()["bank_iban_masked"] == "ES79 **** **** **** 0236"
+        db.refresh(user.person)
+        assert user.person.bank_iban == "ES7920385778983000760236"
 
     def test_invalid_payment_method_rejected(self, client, db):
         user, _ = _setup(db)
@@ -151,6 +154,18 @@ class TestUpdatePaymentMethod:
         assert "missing_iban" in data["warnings"]
         assert "no_active_mandate" in data["warnings"]
 
+    def test_omitting_iban_keeps_the_one_on_file(self, client, db):
+        """The form no longer echoes the IBAN back, so a save that does not
+        mention it must not wipe it."""
+        user, _ = _setup(db, iban="ES6621000418401234567891")
+        db.commit()
+        r = client.put("/api/v1/members/me/payment-method", cookies=_auth(user), json={
+            "payment_method": "direct_debit",
+            "bank_holder_name": "Test Member",
+        })
+        assert r.status_code == 200
+        assert r.json()["bank_iban_masked"] == "ES66 **** **** **** 7891"
+
     def test_clear_iban(self, client, db):
         user, _ = _setup(db, iban="ES6621000418401234567891")
         db.commit()
@@ -158,7 +173,7 @@ class TestUpdatePaymentMethod:
             "bank_iban": None,
         })
         assert r.status_code == 200
-        assert r.json()["bank_iban"] is None
+        assert r.json()["bank_iban_masked"] is None
 
 
 class TestPaymentMethodAuth:
