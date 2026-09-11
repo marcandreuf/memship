@@ -15,18 +15,28 @@ class DiscountError(Exception):
 
 
 def validate_discount_code(
-    db: Session, activity_id: int, code: str
+    db: Session, activity_id: int, code: str, *, for_update: bool = False
 ) -> DiscountCode:
-    """Validate a discount code for an activity. Returns the code or raises DiscountError."""
-    discount = (
-        db.query(DiscountCode)
-        .filter(
-            DiscountCode.activity_id == activity_id,
-            DiscountCode.code == code,
-            DiscountCode.is_active.is_(True),
-        )
-        .first()
+    """Validate a discount code for an activity. Returns the code or raises DiscountError.
+
+    ``for_update`` locks the row for the rest of the transaction. A caller that
+    goes on to redeem the code needs it: the ``max_uses`` check here and the
+    increment in ``increment_usage`` are a read-modify-write on
+    ``current_uses``, and without the lock two registrations arriving together
+    both pass the check and the cap is exceeded by one. The preview endpoint
+    only reads, so it leaves the row unlocked.
+    """
+    query = db.query(DiscountCode).filter(
+        DiscountCode.activity_id == activity_id,
+        DiscountCode.code == code,
+        DiscountCode.is_active.is_(True),
     )
+    if for_update:
+        # populate_existing: the row may already be in the session from an
+        # earlier read, and without it the locked SELECT would hand back the
+        # stale in-memory counter instead of the one just read under the lock.
+        query = query.with_for_update().populate_existing()
+    discount = query.first()
     if not discount:
         raise DiscountError("Discount code not found")
 
@@ -57,5 +67,32 @@ def apply_discount(price_amount: Decimal, discount: DiscountCode) -> Decimal:
 
 
 def increment_usage(db: Session, discount: DiscountCode) -> None:
-    """Increment the usage counter for a discount code."""
+    """Count one redemption. The row must be locked — see validate_discount_code."""
     discount.current_uses = (discount.current_uses or 0) + 1
+
+
+def release_usage(db: Session, discount_id: int) -> None:
+    """Give back the use a cancelled registration took, so the code can be
+    redeemed by someone else. Locks the row itself: cancellation does not
+    come through validate_discount_code."""
+    discount = (
+        db.query(DiscountCode)
+        .filter(DiscountCode.id == discount_id)
+        .with_for_update()
+        .first()
+    )
+    if discount is not None:
+        discount.current_uses = max(0, (discount.current_uses or 0) - 1)
+
+
+def retake_usage(db: Session, discount_id: int) -> None:
+    """Count the use again when a cancelled registration is reinstated by an
+    admin. No cap check: the admin is overriding, and the seat is theirs to give."""
+    discount = (
+        db.query(DiscountCode)
+        .filter(DiscountCode.id == discount_id)
+        .with_for_update()
+        .first()
+    )
+    if discount is not None:
+        discount.current_uses = (discount.current_uses or 0) + 1

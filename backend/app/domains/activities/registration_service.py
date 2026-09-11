@@ -14,6 +14,8 @@ from app.domains.activities.discount_service import (
     DiscountError,
     apply_discount,
     increment_usage,
+    release_usage,
+    retake_usage,
     validate_discount_code,
 )
 from app.domains.activities.eligibility import check_eligibility
@@ -124,7 +126,10 @@ def register_member(
     discounted_amount = original_amount
     if discount_code:
         try:
-            discount = validate_discount_code(db, activity.id, discount_code)
+            # Locked: the cap check and the increment below are one decision.
+            discount = validate_discount_code(
+                db, activity.id, discount_code, for_update=True
+            )
             discounted_amount = apply_discount(original_amount, discount)
         except DiscountError as e:
             raise RegistrationError(str(e))
@@ -281,6 +286,10 @@ def cancel_registration(
     elif was_waitlisted:
         activity.waitlist_count = max(0, (activity.waitlist_count or 0) - 1)
 
+    # The use this registration took goes back to the code.
+    if registration.discount_code_id:
+        release_usage(db, registration.discount_code_id)
+
     # Promote from waitlist if a confirmed spot freed up
     if was_confirmed:
         _promote_from_waitlist(db, activity, registration.modality_id)
@@ -374,6 +383,13 @@ def admin_change_status(
 
     if new_status == "cancelled":
         registration.cancelled_at = datetime.now(timezone.utc)
+
+    # The discount use follows the registration in and out of 'cancelled'.
+    if registration.discount_code_id:
+        if new_status == "cancelled":
+            release_usage(db, registration.discount_code_id)
+        elif old_status == "cancelled":
+            retake_usage(db, registration.discount_code_id)
 
     registration.status = new_status
     if new_status == "confirmed" and old_status != "confirmed":
