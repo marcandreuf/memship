@@ -511,6 +511,43 @@ def _member_active_booking(
     )
 
 
+def _counts_by_slot(db: Session, slot_ids: list[int]) -> dict[tuple[int, str], int]:
+    """Booked / waitlisted counts for many slots in one query, keyed by
+    ``(slot_id, status)``. The week view is the member-facing calendar that
+    everyone opens at once when booking opens; a query per slot per count made
+    it two round trips per cell."""
+    if not slot_ids:
+        return {}
+    rows = (
+        db.query(Booking.space_slot_id, Booking.status, func.count(Booking.id))
+        .filter(
+            Booking.space_slot_id.in_(slot_ids),
+            Booking.status.in_(ACTIVE_STATUSES),
+        )
+        .group_by(Booking.space_slot_id, Booking.status)
+        .all()
+    )
+    return {(slot_id, status): count for slot_id, status, count in rows}
+
+
+def _member_statuses_by_slot(
+    db: Session, slot_ids: list[int], member_id: int
+) -> dict[int, str]:
+    """The member's active booking status per slot, for the slots they hold."""
+    if not slot_ids:
+        return {}
+    rows = (
+        db.query(Booking.space_slot_id, Booking.status)
+        .filter(
+            Booking.space_slot_id.in_(slot_ids),
+            Booking.member_id == member_id,
+            Booking.status.in_(ACTIVE_STATUSES),
+        )
+        .all()
+    )
+    return {slot_id: status for slot_id, status in rows}
+
+
 # --- Availability ---------------------------------------------------------
 
 
@@ -535,17 +572,18 @@ def space_week_availability(
         .order_by(SpaceSlot.slot_date, SpaceSlot.start_time)
         .all()
     )
+    slot_ids = [slot.id for slot in slots]
+    counts = _counts_by_slot(db, slot_ids)
+    my_statuses = (
+        _member_statuses_by_slot(db, slot_ids, member_id) if member_id is not None else {}
+    )
+
     cells: list[dict] = []
     for slot in slots:
         on = slot.slot_date
-        booked = _count(db, slot.id, BookingStatus.BOOKED)
-        waitlisted = _count(db, slot.id, BookingStatus.WAITLISTED)
-
-        my_status = "none"
-        if member_id is not None:
-            mine = _member_active_booking(db, slot.id, member_id)
-            if mine is not None:
-                my_status = mine.status
+        booked = counts.get((slot.id, BookingStatus.BOOKED), 0)
+        waitlisted = counts.get((slot.id, BookingStatus.WAITLISTED), 0)
+        my_status = my_statuses.get(slot.id, "none")
 
         slot_start = datetime.combine(on, slot.start_time, tzinfo=tz)
         if slot_start <= now_local:
