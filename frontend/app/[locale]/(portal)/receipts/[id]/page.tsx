@@ -185,7 +185,11 @@ export default function ReceiptDetailPage() {
   const canCancel = canWrite && !isCreditNote && !["paid", "cancelled"].includes(receipt.status);
   const canReemit = canWrite && receipt.status === "returned";
   const canRemind = canWrite && !isCreditNote && ["emitted", "overdue"].includes(receipt.status);
-  const sentReminderCount = (reminders ?? []).filter((r) => r.status === "sent").length;
+  // Queued ones count too: the worker sends them after the click, and a second
+  // click meanwhile must not slip past the cap.
+  const sentReminderCount = (reminders ?? []).filter(
+    (r) => r.status === "sent" || r.status === "queued"
+  ).length;
   const maxReminders = Number(settings?.features?.reminder_max_count ?? 3);
   const remindersExhausted = sentReminderCount >= maxReminders;
 

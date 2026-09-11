@@ -1,7 +1,7 @@
 {
   "reminders": {
     "sendReminder": "Send reminder",
-    "sentToast": "Reminder sent",
+    "sentToast": "Reminder queued for sending",
     "maxReached": "Maximum number of reminders already sent",
     "historyTitle": "Payment reminders",
     "number": "#",
@@ -10,6 +10,7 @@
     "statusLabel": "Status",
     "none": "No reminders sent yet",
     "status": {
+      "queued": "Queued",
       "sent": "Sent",
       "failed": "Failed",
       "skipped": "Skipped"

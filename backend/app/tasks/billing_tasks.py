@@ -217,3 +217,30 @@ def send_payment_notification(self, receipt_id: int) -> bool:
             f"Payment notification failed: receipt_id={receipt_id}, error={exc}"
         )
         raise self.retry(exc=exc)
+
+
+@celery.task
+def send_queued_reminder(reminder_id: int, payload: dict) -> str:
+    """Deliver a reminder the request path queued, and record the outcome on
+    its row. The payload was resolved when the row was written, so the task
+    does not re-read the receipt; a transport failure lands as ``failed`` with
+    the error, the same as the synchronous path, rather than retrying blind.
+    """
+    from app.db.session import SessionLocal
+    from app.domains.billing.models import ReceiptReminder
+    from app.domains.billing.reminder_service import deliver, record_outcome
+
+    db = SessionLocal()
+    try:
+        reminder = db.query(ReceiptReminder).filter(ReceiptReminder.id == reminder_id).first()
+        if reminder is None or reminder.status != "queued":
+            return "skipped"
+        record_outcome(reminder, *deliver(payload))
+        db.commit()
+        return reminder.status
+    except Exception as exc:
+        db.rollback()
+        logger.error(f"Queued reminder {reminder_id} failed: {exc}")
+        raise
+    finally:
+        db.close()

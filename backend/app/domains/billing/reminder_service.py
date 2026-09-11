@@ -9,6 +9,10 @@ Three concerns, mirroring ``recurring_billing_service``:
   due, repeat every Y days, max N) to decide which overdue receipts need a
   reminder today.
 - ``send_reminder`` renders + sends the email and logs a ``ReceiptReminder`` row.
+  It runs inside the Celery worker (the scheduled pass). The admin's manual
+  button goes through ``queue_reminder`` instead, which logs a ``queued`` row
+  and hands the send to a task once the request commits — an admin must not
+  wait on SMTP, and a slow mail server must not turn the click into a timeout.
 
 Email-only for now. Does not commit — the caller owns the transaction.
 """
@@ -19,6 +23,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.email import send_payment_reminder_email
+from app.db.after_commit import run_after_commit
 from app.domains.billing.models import PaymentProvider, Receipt, ReceiptReminder
 from app.domains.members.models import Member
 from app.domains.organizations.models import OrganizationSettings
@@ -62,8 +67,14 @@ def mark_overdue(db: Session, today: date | None = None) -> int:
     return len(rows)
 
 
+# Reminders that count against the schedule and the cap: delivered ones, and
+# ones handed to the worker that have not come back yet. Leaving ``queued`` out
+# would let a second click queue a duplicate before the first is sent.
+COUNTED_STATUSES = ("sent", "queued")
+
+
 def _sent_reminders(receipt: Receipt) -> list[ReceiptReminder]:
-    return [rem for rem in receipt.reminders if rem.status == "sent"]
+    return [rem for rem in receipt.reminders if rem.status in COUNTED_STATUSES]
 
 
 def reminders_due(
@@ -127,20 +138,14 @@ def _recipient(db: Session, receipt: Receipt) -> tuple[Person | None, Organizati
     return person, org
 
 
-def send_reminder(
-    db: Session,
-    receipt: Receipt,
-    triggered_by: str,
-    user_id: int | None = None,
-    today: date | None = None,
-) -> ReceiptReminder:
-    """Render and send a payment reminder for ``receipt``, logging a row.
+def _prepare_reminder(
+    db: Session, receipt: Receipt, today: date
+) -> tuple[Person, dict]:
+    """Resolve the recipient and the email payload for a reminder.
 
     Raises ``ValueError`` if the member has no email (a precondition the manual
-    endpoint surfaces to the admin). Send-transport failures are recorded as a
-    ``failed`` row rather than raised. Does not commit.
+    endpoint surfaces to the admin).
     """
-    today = today or date.today()
     person, org = _recipient(db, receipt)
     if person is None or not person.email:
         raise ValueError("Member has no email address")
@@ -163,39 +168,98 @@ def send_reminder(
     elif org and org.bank_iban:
         bank_details = " — ".join(filter(None, [org.bank_name, org.bank_iban]))
 
-    reminder_number = len(_sent_reminders(receipt)) + 1
+    payload = dict(
+        to=person.email,
+        member_name=member_name,
+        receipt_number=receipt.receipt_number,
+        amount=f"{receipt.total_amount:.2f}",
+        currency=currency,
+        due_date=receipt.due_date.isoformat() if receipt.due_date else "",
+        days_overdue=days_overdue,
+        org_name=org_name,
+        pay_now_url=pay_now_url,
+        bank_details=bank_details,
+        locale=locale,
+    )
+    return person, payload
 
-    sent_ok = False
-    error = None
-    try:
-        sent_ok = send_payment_reminder_email(
-            to=person.email,
-            member_name=member_name,
-            receipt_number=receipt.receipt_number,
-            amount=f"{receipt.total_amount:.2f}",
-            currency=currency,
-            due_date=receipt.due_date.isoformat() if receipt.due_date else "",
-            days_overdue=days_overdue,
-            org_name=org_name,
-            pay_now_url=pay_now_url,
-            bank_details=bank_details,
-            locale=locale,
-        )
-    except Exception as exc:  # noqa: BLE001 — recorded on the row for the admin
-        error = str(exc)
 
-    reminder = ReceiptReminder(
+def _new_reminder_row(
+    receipt: Receipt, person: Person, triggered_by: str, user_id: int | None
+) -> ReceiptReminder:
+    return ReceiptReminder(
         receipt_id=receipt.id,
-        reminder_number=reminder_number,
+        reminder_number=len(_sent_reminders(receipt)) + 1,
         channel="email",
-        status="sent" if sent_ok else "failed",
+        status="queued",
         to_email=person.email,
         triggered_by=triggered_by,
         triggered_by_user_id=user_id,
-        error=error if error else (None if sent_ok else "Email transport unavailable or send failed"),
     )
+
+
+def deliver(payload: dict) -> tuple[bool, str | None]:
+    """Send one reminder email. Returns ``(sent_ok, error)``; never raises."""
+    try:
+        return send_payment_reminder_email(**payload), None
+    except Exception as exc:  # noqa: BLE001 — recorded on the row for the admin
+        return False, str(exc)
+
+
+def record_outcome(reminder: ReceiptReminder, sent_ok: bool, error: str | None) -> None:
+    reminder.status = "sent" if sent_ok else "failed"
+    reminder.error = error if error else (None if sent_ok else "Email transport unavailable or send failed")
+
+
+def send_reminder(
+    db: Session,
+    receipt: Receipt,
+    triggered_by: str,
+    user_id: int | None = None,
+    today: date | None = None,
+) -> ReceiptReminder:
+    """Render and send a payment reminder for ``receipt`` now, logging a row.
+
+    For the worker (scheduled pass). Send-transport failures are recorded as a
+    ``failed`` row rather than raised. Does not commit.
+    """
+    today = today or date.today()
+    person, payload = _prepare_reminder(db, receipt, today)
+    reminder = _new_reminder_row(receipt, person, triggered_by, user_id)
+    record_outcome(reminder, *deliver(payload))
     db.add(reminder)
     db.flush()
+    return reminder
+
+
+def queue_reminder(
+    db: Session,
+    receipt: Receipt,
+    triggered_by: str,
+    user_id: int | None = None,
+    today: date | None = None,
+) -> ReceiptReminder:
+    """Log a ``queued`` reminder and hand the send to Celery once the caller's
+    transaction commits. The task records ``sent`` / ``failed`` on the row.
+
+    For the request path: the admin gets their response as soon as the row is
+    written, and a slow or failing mail server shows up on the row rather than
+    as a timeout. Does not commit.
+    """
+    today = today or date.today()
+    person, payload = _prepare_reminder(db, receipt, today)
+    reminder = _new_reminder_row(receipt, person, triggered_by, user_id)
+    db.add(reminder)
+    db.flush()
+
+    reminder_id = reminder.id
+
+    def dispatch() -> None:
+        from app.tasks.billing_tasks import send_queued_reminder
+
+        send_queued_reminder.delay(reminder_id, payload)
+
+    run_after_commit(db, dispatch)
     return reminder
 
 

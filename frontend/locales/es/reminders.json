@@ -1,7 +1,7 @@
 {
   "reminders": {
     "sendReminder": "Enviar recordatorio",
-    "sentToast": "Recordatorio enviado",
+    "sentToast": "Recordatorio en cola de envío",
     "maxReached": "Ya se ha enviado el número máximo de recordatorios",
     "historyTitle": "Recordatorios de pago",
     "number": "Nº",
@@ -10,6 +10,7 @@
     "statusLabel": "Estado",
     "none": "Aún no se ha enviado ningún recordatorio",
     "status": {
+      "queued": "En cola",
       "sent": "Enviado",
       "failed": "Fallido",
       "skipped": "Omitido"
