@@ -6,6 +6,8 @@ from decimal import Decimal
 
 from sqlalchemy.orm import Query, Session, joinedload
 
+from app.db.after_commit import run_after_commit
+
 logger = logging.getLogger(__name__)
 
 from app.domains.activities.discount_service import (
@@ -178,8 +180,8 @@ def register_member(
     if status == "confirmed":
         ensure_registration_receipt(db, registration, activity)
 
-    # Dispatch email notification (async via Celery)
-    _dispatch_registration_email(registration, activity, member)
+    # Queued for after the endpoint commits — see _dispatch_registration_email.
+    _dispatch_registration_email(db, registration, activity, member)
 
     return registration
 
@@ -310,8 +312,7 @@ def cancel_registration(
             registration.id,
         )
 
-    # Dispatch cancellation email (async via Celery)
-    _dispatch_cancellation_email(registration, activity)
+    _dispatch_cancellation_email(db, registration, activity)
 
     return registration
 
@@ -537,13 +538,19 @@ def _promote_from_waitlist(
 
     ensure_registration_receipt(db, next_in_line, activity)
 
-    # Dispatch promotion email (async via Celery)
-    _dispatch_promotion_email(next_in_line, activity)
+    _dispatch_promotion_email(db, next_in_line, activity)
 
     return next_in_line
 
 
 # --- Email dispatch helpers ---
+#
+# Each helper resolves the email payload now, while the ORM objects are loaded,
+# and queues the Celery ``.delay()`` on the session with ``run_after_commit``.
+# Sending from inside the service was a race: the worker could read the
+# database before the registration row was committed, and a commit that failed
+# afterwards left the member told about a registration that never existed.
+# The task takes the payload explicitly and never re-reads the row.
 
 def _get_member_email(registration: Registration) -> str | None:
     """Get the member's email address from the registration."""
@@ -562,16 +569,16 @@ def _get_member_name(registration: Registration) -> str:
 
 
 def _dispatch_registration_email(
-    registration: Registration, activity: Activity, member: "Member"
+    db: Session, registration: Registration, activity: Activity, member: "Member"
 ) -> None:
-    """Dispatch registration confirmation email via Celery."""
+    """Queue the registration confirmation email for after commit."""
     try:
         from app.tasks.email_tasks import send_registration_email_task
         email = _get_member_email(registration) or (member.person.email if member.person else None)
         if not email:
             return
         name = _get_member_name(registration) or (member.person.first_name if member.person else "")
-        send_registration_email_task.delay(
+        payload = dict(
             to=email,
             member_name=name,
             activity_name=activity.name,
@@ -579,39 +586,46 @@ def _dispatch_registration_email(
             activity_date=activity.starts_at.strftime("%d/%m/%Y") if activity.starts_at else None,
             location=activity.location,
         )
+        run_after_commit(db, lambda: send_registration_email_task.delay(**payload))
     except Exception as e:
         logger.error(f"Failed to dispatch registration email: {e}")
 
 
-def _dispatch_cancellation_email(registration: Registration, activity: Activity) -> None:
-    """Dispatch cancellation email via Celery."""
+def _dispatch_cancellation_email(
+    db: Session, registration: Registration, activity: Activity
+) -> None:
+    """Queue the cancellation email for after commit."""
     try:
         from app.tasks.email_tasks import send_cancellation_email_task
         email = _get_member_email(registration)
         if not email:
             return
-        send_cancellation_email_task.delay(
+        payload = dict(
             to=email,
             member_name=_get_member_name(registration),
             activity_name=activity.name,
         )
+        run_after_commit(db, lambda: send_cancellation_email_task.delay(**payload))
     except Exception as e:
         logger.error(f"Failed to dispatch cancellation email: {e}")
 
 
-def _dispatch_promotion_email(registration: Registration, activity: Activity) -> None:
-    """Dispatch waitlist promotion email via Celery."""
+def _dispatch_promotion_email(
+    db: Session, registration: Registration, activity: Activity
+) -> None:
+    """Queue the waitlist promotion email for after commit."""
     try:
         from app.tasks.email_tasks import send_promotion_email_task
         email = _get_member_email(registration)
         if not email:
             return
-        send_promotion_email_task.delay(
+        payload = dict(
             to=email,
             member_name=_get_member_name(registration),
             activity_name=activity.name,
             activity_date=activity.starts_at.strftime("%d/%m/%Y") if activity.starts_at else None,
             location=activity.location,
         )
+        run_after_commit(db, lambda: send_promotion_email_task.delay(**payload))
     except Exception as e:
         logger.error(f"Failed to dispatch promotion email: {e}")
