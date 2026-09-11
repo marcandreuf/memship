@@ -49,7 +49,7 @@ describe("Payment Reminders — receipt detail (admin)", () => {
     cy.url().should("match", /\/receipts\/\d+/);
 
     cy.contains("button", "Send reminder").click();
-    cy.contains(/reminder sent/i).should("be.visible");
+    cy.contains(/reminder queued/i).should("be.visible");
 
     // The history card appears with at least one reminder row.
     cy.get('[data-cy="reminder-history"]').should("be.visible");

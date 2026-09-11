@@ -429,7 +429,7 @@ class ReceiptReminder(Base):
             name="valid_receipt_reminder_channel",
         ),
         CheckConstraint(
-            "status IN ('sent', 'failed', 'skipped')",
+            "status IN ('queued', 'sent', 'failed', 'skipped')",
             name="valid_receipt_reminder_status",
         ),
         CheckConstraint(

@@ -14,7 +14,7 @@ from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
 from app.domains.auth.models import User
 from app.domains.billing.models import Receipt, ReceiptReminder
-from app.domains.billing.reminder_service import send_reminder
+from app.domains.billing.reminder_service import COUNTED_STATUSES, queue_reminder
 from app.domains.billing.schemas import (
     CreditNoteCreate,
     GenerateMembershipFeesRequest,
@@ -459,7 +459,7 @@ def send_receipt_reminder(
         db.query(ReceiptReminder)
         .filter(
             ReceiptReminder.receipt_id == receipt.id,
-            ReceiptReminder.status == "sent",
+            ReceiptReminder.status.in_(COUNTED_STATUSES),
         )
         .count()
     )
@@ -469,7 +469,7 @@ def send_receipt_reminder(
         )
 
     try:
-        reminder = send_reminder(db, receipt, "manual", user_id=current_user.id)
+        reminder = queue_reminder(db, receipt, "manual", user_id=current_user.id)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
     db.commit()

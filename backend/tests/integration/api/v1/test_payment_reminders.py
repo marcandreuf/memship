@@ -12,10 +12,12 @@ from app.domains.auth.models import User
 from app.domains.billing.models import PaymentProvider, Receipt, ReceiptReminder
 from app.domains.billing.reminder_service import (
     mark_overdue,
+    queue_reminder,
     reminders_due,
     run_scheduled_reminders,
     send_reminder,
 )
+from app.tasks.billing_tasks import send_queued_reminder
 from app.domains.members.models import Member, MembershipType
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Person
@@ -390,19 +392,127 @@ class TestRunScheduled:
 # --- Manual endpoint ---
 
 
-class TestManualEndpoint:
-    def test_send_reminder_ok(self, client, db, monkeypatch):
+class TestQueueReminder:
+    """The request path writes the row and hands the send to the worker after
+    the commit — the admin never waits on SMTP."""
+
+    def test_row_is_queued_and_the_task_fires_after_commit(self, db):
+        _ensure_org_settings(db)
+        member = _create_member(db, "qr1")
+        r = _create_receipt(db, member, "qr1", "overdue", due_date=TODAY - timedelta(days=5))
+
+        with patch("app.tasks.billing_tasks.send_queued_reminder.delay") as delay:
+            reminder = queue_reminder(db, r, "manual", user_id=None, today=TODAY)
+            assert reminder.status == "queued"
+            assert reminder.reminder_number == 1
+            assert reminder.to_email == "maria-qr1@examplee6e3b1.com"
+            delay.assert_not_called()
+
+            db.commit()
+
+        delay.assert_called_once()
+        reminder_id, payload = delay.call_args.args
+        assert reminder_id == reminder.id
+        assert payload["to"] == "maria-qr1@examplee6e3b1.com"
+        assert payload["receipt_number"] == r.receipt_number
+        assert payload["days_overdue"] == 5
+
+    def test_a_queued_reminder_counts_towards_the_next_number(self, db):
+        """A second click before the worker has run must not restart at #1
+        or slip past the cap."""
+        _ensure_org_settings(db)
+        member = _create_member(db, "qr2")
+        r = _create_receipt(db, member, "qr2", "overdue", due_date=TODAY - timedelta(days=5))
+
+        with patch("app.tasks.billing_tasks.send_queued_reminder.delay"):
+            first = queue_reminder(db, r, "manual", today=TODAY)
+            db.refresh(r)
+            second = queue_reminder(db, r, "manual", today=TODAY)
+        assert (first.reminder_number, second.reminder_number) == (1, 2)
+
+    def test_raises_when_no_email(self, db):
+        _ensure_org_settings(db)
+        member = _create_member(db, "qr3", email=None)
+        r = _create_receipt(db, member, "qr3", "overdue", due_date=TODAY - timedelta(days=5))
+        with pytest.raises(ValueError):
+            queue_reminder(db, r, "manual", today=TODAY)
+        assert db.query(ReceiptReminder).filter_by(receipt_id=r.id).count() == 0
+
+
+class TestQueuedReminderTask:
+    def _queued(self, db, suffix):
+        _ensure_org_settings(db)
+        member = _create_member(db, suffix)
+        r = _create_receipt(db, member, suffix, "overdue", due_date=TODAY - timedelta(days=5))
+        with patch("app.tasks.billing_tasks.send_queued_reminder.delay") as delay:
+            queue_reminder(db, r, "manual", today=TODAY)
+            db.commit()
+        return delay.call_args.args
+
+    def test_records_sent(self, db, monkeypatch):
         _patch_email_sent(monkeypatch, ok=True)
+        reminder_id, payload = self._queued(db, "qt1")
+        monkeypatch.setattr("app.db.session.SessionLocal", lambda: db)
+
+        assert send_queued_reminder.run(reminder_id, payload) == "sent"
+        row = db.get(ReceiptReminder, reminder_id)
+        assert row.status == "sent"
+        assert row.error is None
+
+    def test_records_failed_with_the_error(self, db, monkeypatch):
+        def boom(**kwargs):
+            raise RuntimeError("smtp down")
+
+        monkeypatch.setattr(
+            "app.domains.billing.reminder_service.send_payment_reminder_email", boom
+        )
+        reminder_id, payload = self._queued(db, "qt2")
+        monkeypatch.setattr("app.db.session.SessionLocal", lambda: db)
+
+        assert send_queued_reminder.run(reminder_id, payload) == "failed"
+        row = db.get(ReceiptReminder, reminder_id)
+        assert row.status == "failed"
+        assert row.error == "smtp down"
+
+    def test_skips_a_row_that_is_no_longer_queued(self, db, monkeypatch):
+        _patch_email_sent(monkeypatch, ok=True)
+        reminder_id, payload = self._queued(db, "qt3")
+        db.get(ReceiptReminder, reminder_id).status = "sent"
+        db.flush()
+        monkeypatch.setattr("app.db.session.SessionLocal", lambda: db)
+
+        assert send_queued_reminder.run(reminder_id, payload) == "skipped"
+
+
+class TestManualEndpoint:
+    def test_send_reminder_queues_and_returns_at_once(self, client, db, monkeypatch):
         _ensure_org_settings(db)
         user = _create_user(db, "admin", "me1")
         member = _create_member(db, "me1")
         r = _create_receipt(db, member, "me1", "overdue", due_date=TODAY - timedelta(days=5))
-        resp = client.post(
-            f"/api/v1/receipts/{r.id}/send-reminder", cookies=_auth_cookie(user)
-        )
+        with patch("app.tasks.billing_tasks.send_queued_reminder.delay") as delay:
+            resp = client.post(
+                f"/api/v1/receipts/{r.id}/send-reminder", cookies=_auth_cookie(user)
+            )
         assert resp.status_code == 200
-        assert resp.json()["status"] == "sent"
+        assert resp.json()["status"] == "queued"
         assert resp.json()["triggered_by"] == "manual"
+        delay.assert_called_once()
+
+    def test_a_queued_reminder_counts_against_the_cap(self, client, db, monkeypatch):
+        _ensure_org_settings(db, features={"reminder_max_count": 1})
+        user = _create_user(db, "admin", "me6")
+        member = _create_member(db, "me6")
+        r = _create_receipt(db, member, "me6", "overdue", due_date=TODAY - timedelta(days=5))
+        with patch("app.tasks.billing_tasks.send_queued_reminder.delay"):
+            first = client.post(
+                f"/api/v1/receipts/{r.id}/send-reminder", cookies=_auth_cookie(user)
+            )
+            second = client.post(
+                f"/api/v1/receipts/{r.id}/send-reminder", cookies=_auth_cookie(user)
+            )
+        assert first.status_code == 200
+        assert second.status_code == 409
 
     def test_send_forbidden_for_member(self, client, db):
         _ensure_org_settings(db)
