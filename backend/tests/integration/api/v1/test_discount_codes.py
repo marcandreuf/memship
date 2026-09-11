@@ -423,6 +423,82 @@ class TestRegisterWithDiscount:
         db.refresh(dc)
         assert dc.current_uses == 1
 
+    def test_cancellation_releases_the_use(self, client, db):
+        """A use is only spent while the registration stands."""
+        admin = _create_user(db, "admin", suffix="-regd8")
+        user, member = _create_member_with_user(db, suffix="-regd8")
+        activity, price = _create_published_activity(
+            db, admin.id, allow_self_cancellation=True,
+        )
+        dc = DiscountCode(
+            activity_id=activity.id, code="ONCE",
+            discount_type="percentage", discount_value=5, is_active=True,
+            max_uses=1,
+        )
+        db.add(dc)
+        db.flush()
+
+        client.cookies.update(_auth_cookie(user))
+        response = client.post(
+            f"/api/v1/activities/{activity.id}/register",
+            json={"price_id": price.id, "discount_code": "ONCE"},
+        )
+        assert response.status_code == 201
+        reg_id = response.json()["id"]
+        db.refresh(dc)
+        assert dc.current_uses == 1
+
+        response = client.delete(f"/api/v1/registrations/{reg_id}")
+        assert response.status_code == 204
+        db.refresh(dc)
+        assert dc.current_uses == 0
+
+        # The freed use is redeemable by the next member.
+        other_user, _ = _create_member_with_user(db, suffix="-regd8b")
+        client.cookies.update(_auth_cookie(other_user))
+        response = client.post(
+            f"/api/v1/activities/{activity.id}/register",
+            json={"price_id": price.id, "discount_code": "ONCE"},
+        )
+        assert response.status_code == 201
+        db.refresh(dc)
+        assert dc.current_uses == 1
+
+    def test_admin_status_change_moves_the_use_with_the_registration(self, client, db):
+        admin = _create_user(db, "admin", suffix="-regd9")
+        user, member = _create_member_with_user(db, suffix="-regd9")
+        activity, price = _create_published_activity(db, admin.id)
+        dc = DiscountCode(
+            activity_id=activity.id, code="ADMIN",
+            discount_type="percentage", discount_value=5, is_active=True,
+            max_uses=5,
+        )
+        db.add(dc)
+        db.flush()
+
+        client.cookies.update(_auth_cookie(user))
+        reg_id = client.post(
+            f"/api/v1/activities/{activity.id}/register",
+            json={"price_id": price.id, "discount_code": "ADMIN"},
+        ).json()["id"]
+        db.refresh(dc)
+        assert dc.current_uses == 1
+
+        client.cookies.update(_auth_cookie(admin))
+        response = client.put(
+            f"/api/v1/registrations/{reg_id}/status", json={"status": "cancelled"}
+        )
+        assert response.status_code == 200
+        db.refresh(dc)
+        assert dc.current_uses == 0
+
+        response = client.put(
+            f"/api/v1/registrations/{reg_id}/status", json={"status": "confirmed"}
+        )
+        assert response.status_code == 200
+        db.refresh(dc)
+        assert dc.current_uses == 1
+
     def test_register_without_discount_stores_amounts(self, client, db):
         """Registration without discount still stores original/discounted amounts (equal)."""
         admin = _create_user(db, "admin", suffix="-regd6")
