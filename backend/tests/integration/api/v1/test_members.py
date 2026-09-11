@@ -205,6 +205,69 @@ class TestMemberCRUD:
         assert response.status_code == 200
         assert response.json()["person"]["first_name"] == "Updated"
 
+    def test_update_email_moves_the_login_address_too(self, client, db):
+        """Login reads User.email, mail reads Person.email — one address."""
+        admin = _create_admin(db)
+        user, member = _create_member_user(db, "old-address@examplee6e3b1.com")
+        client.cookies.update(_auth_cookie(admin))
+
+        response = client.put(
+            f"/api/v1/members/{member.id}",
+            json={"email": "new-address@examplee6e3b1.com"},
+        )
+        assert response.status_code == 200
+        assert response.json()["person"]["email"] == "new-address@examplee6e3b1.com"
+        db.refresh(user)
+        assert user.email == "new-address@examplee6e3b1.com"
+
+    def test_update_email_rejects_an_address_another_login_holds(self, client, db):
+        admin = _create_admin(db)
+        user, member = _create_member_user(db, "mine@examplee6e3b1.com")
+        _create_member_user(db, "theirs@examplee6e3b1.com")
+        client.cookies.update(_auth_cookie(admin))
+
+        response = client.put(
+            f"/api/v1/members/{member.id}",
+            json={"email": "theirs@examplee6e3b1.com"},
+        )
+        assert response.status_code == 409
+        db.refresh(user)
+        assert user.email == "mine@examplee6e3b1.com"
+        assert member.person.email == "mine@examplee6e3b1.com"
+
+    def test_update_email_cannot_clear_a_login_address(self, client, db):
+        admin = _create_admin(db)
+        _, member = _create_member_user(db, "keep-me@examplee6e3b1.com")
+        client.cookies.update(_auth_cookie(admin))
+
+        response = client.put(
+            f"/api/v1/members/{member.id}",
+            json={"email": None},
+        )
+        assert response.status_code == 400
+
+    def test_update_email_on_a_member_without_login_touches_only_the_person(
+        self, client, db
+    ):
+        admin = _create_admin(db)
+        mt = _ensure_membership_type(db)
+        client.cookies.update(_auth_cookie(admin))
+        created = client.post(
+            "/api/v1/members/",
+            json={"first_name": "No", "last_name": "Login", "membership_type_id": mt.id},
+        ).json()
+
+        response = client.put(
+            f"/api/v1/members/{created['id']}",
+            json={"email": "no-login@examplee6e3b1.com"},
+        )
+        assert response.status_code == 200
+        assert response.json()["person"]["email"] == "no-login@examplee6e3b1.com"
+        assert (
+            db.query(User).filter(User.email == "no-login@examplee6e3b1.com").first()
+            is None
+        )
+
     def test_member_cannot_list(self, client, db):
         _, member = _create_member_user(db, "no-list@examplee6e3b1.com")
         user = db.query(User).filter(User.id == member.user_id).first()

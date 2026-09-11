@@ -5,6 +5,7 @@ from datetime import date, datetime, timezone
 from sqlalchemy import func
 from sqlalchemy.orm import Query, Session, joinedload
 
+from app.domains.auth.models import User
 from app.domains.members.models import Member, MembershipType
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Person
@@ -177,6 +178,36 @@ def create_member(
     db.flush()
 
     return member
+
+
+class EmailTaken(ValueError):
+    """Another account already signs in with this address."""
+
+
+def change_member_email(db: Session, member: Member, email: str | None) -> None:
+    """Write a member's address to the Person row and to their User row, if any.
+
+    Login reads ``User.email`` while every mail the app sends reads
+    ``Person.email``. Writing only the Person row — what the update endpoint
+    used to do — sent mail to the corrected address while sign-in still
+    expected the old one, and nothing surfaced the split. The two rows are one
+    address, so they move together.
+
+    ``users.email`` is unique, so the address must not belong to another
+    account. The Person row is only checked against Users: a person with no
+    login (an admin-created member) may share an address with one, as before.
+    """
+    user = member.person.user
+    if user is not None:
+        if not email:
+            raise ValueError("A member with a login must keep an email address")
+        taken = (
+            db.query(User).filter(User.email == email, User.id != user.id).first()
+        )
+        if taken:
+            raise EmailTaken("Email already registered")
+        user.email = email
+    member.person.email = email
 
 
 def change_member_status(

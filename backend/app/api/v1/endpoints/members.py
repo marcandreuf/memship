@@ -30,9 +30,11 @@ from app.domains.members.schemas import (
 from app.core.csv_export import stream_csv
 from app.domains.member_card.schemas import AssignNumbersResponse
 from app.domains.members.service import (
+    EmailTaken,
     approve_registration,
     assign_missing_member_numbers,
     build_members_query,
+    change_member_email,
     change_member_status,
     create_member,
     is_minor_by_dob,
@@ -250,9 +252,18 @@ def update_member(
 
     update_data = data.model_dump(exclude_unset=True)
 
+    # The address also lives on the User row, and login reads it from there.
+    if "email" in update_data:
+        try:
+            change_member_email(db, member, update_data.pop("email"))
+        except EmailTaken as e:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+        except ValueError as e:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
     # Person fields
     person_fields = {
-        "first_name", "last_name", "email", "date_of_birth", "gender", "national_id"
+        "first_name", "last_name", "date_of_birth", "gender", "national_id"
     }
     for field in person_fields:
         if field in update_data:
