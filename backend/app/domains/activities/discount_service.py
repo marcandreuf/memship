@@ -6,6 +6,7 @@ from decimal import Decimal
 from sqlalchemy.orm import Session
 
 from app.core.money import round_money
+from app.domains.activities.discount_schemas import normalize_code
 from app.domains.activities.models import DiscountCode
 
 
@@ -28,7 +29,7 @@ def validate_discount_code(
     """
     query = db.query(DiscountCode).filter(
         DiscountCode.activity_id == activity_id,
-        DiscountCode.code == code,
+        DiscountCode.code == normalize_code(code),
         DiscountCode.is_active.is_(True),
     )
     if for_update:
