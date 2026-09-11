@@ -209,6 +209,63 @@ class TestDiscountCodeCRUD:
         assert response.status_code == 403
 
 
+class TestCodeCase:
+    """summer20 and SUMMER20 are the same code, however it was typed."""
+
+    def test_create_stores_the_code_in_upper_case(self, client, db):
+        admin = _create_user(db, "admin", suffix="-case1")
+        activity, _ = _create_published_activity(db, admin.id)
+        client.cookies.update(_auth_cookie(admin))
+
+        r = client.post(
+            f"/api/v1/activities/{activity.id}/discount-codes",
+            json={"code": " summer20 ", "discount_type": "percentage", "discount_value": 20},
+        )
+        assert r.status_code == 201
+        assert r.json()["code"] == "SUMMER20"
+
+    def test_duplicate_differing_only_in_case_is_rejected(self, client, db):
+        admin = _create_user(db, "admin", suffix="-case2")
+        activity, _ = _create_published_activity(db, admin.id)
+        db.add(DiscountCode(
+            activity_id=activity.id, code="SUMMER20",
+            discount_type="percentage", discount_value=20, is_active=True,
+        ))
+        db.flush()
+        client.cookies.update(_auth_cookie(admin))
+
+        r = client.post(
+            f"/api/v1/activities/{activity.id}/discount-codes",
+            json={"code": "Summer20", "discount_type": "fixed", "discount_value": 5},
+        )
+        assert r.status_code == 400
+
+    def test_validate_and_register_accept_any_case(self, client, db):
+        admin = _create_user(db, "admin", suffix="-case3")
+        user, _ = _create_member_with_user(db, suffix="-case3")
+        activity, price = _create_published_activity(db, admin.id)
+        db.add(DiscountCode(
+            activity_id=activity.id, code="SUMMER20",
+            discount_type="percentage", discount_value=20, is_active=True,
+        ))
+        db.flush()
+        client.cookies.update(_auth_cookie(user))
+
+        r = client.post(
+            f"/api/v1/activities/{activity.id}/validate-discount",
+            json={"code": "summer20"},
+        )
+        assert r.status_code == 200
+        assert r.json()["valid"] is True
+
+        r = client.post(
+            f"/api/v1/activities/{activity.id}/register",
+            json={"price_id": price.id, "discount_code": "Summer20"},
+        )
+        assert r.status_code == 201
+        assert r.json()["discounted_amount"] == 80.0
+
+
 class TestValidateDiscount:
     def test_validate_valid_code(self, client, db):
         admin = _create_user(db, "admin", suffix="-val1")

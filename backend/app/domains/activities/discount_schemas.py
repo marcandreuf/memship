@@ -2,13 +2,24 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.domains.shared.enums import DiscountType
 
 
+def normalize_code(value: str | None) -> str | None:
+    """Codes are printed on posters and retyped from messages in whatever case
+    the member likes; ``summer20`` and ``SUMMER20`` are the same code. Stored
+    and looked up in upper case, so the unique constraint and the lookup agree."""
+    if value is None:
+        return None
+    return value.strip().upper()
+
+
 class DiscountCodeCreate(BaseModel):
     code: str = Field(min_length=1, max_length=50)
+
+    _normalize_code = field_validator("code")(normalize_code)
     description: str | None = Field(default=None, max_length=2000)
     discount_type: DiscountType
     discount_value: float = Field(gt=0)
@@ -27,6 +38,8 @@ class DiscountCodeCreate(BaseModel):
 
 class DiscountCodeUpdate(BaseModel):
     code: str | None = Field(default=None, min_length=1, max_length=50)
+
+    _normalize_code = field_validator("code")(normalize_code)
     description: str | None = Field(default=None, max_length=2000)
     discount_type: DiscountType | None = None
     discount_value: float | None = Field(default=None, gt=0)
@@ -63,6 +76,8 @@ class DiscountCodeResponse(BaseModel):
 
 class ValidateDiscountRequest(BaseModel):
     code: str = Field(min_length=1, max_length=50)
+
+    _normalize_code = field_validator("code")(normalize_code)
 
 
 class ValidateDiscountResponse(BaseModel):

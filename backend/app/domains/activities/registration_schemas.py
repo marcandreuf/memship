@@ -2,8 +2,9 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
+from app.domains.activities.discount_schemas import normalize_code
 from app.domains.shared.enums import RegistrationStatus
 
 
@@ -19,6 +20,8 @@ class RegisterRequest(BaseModel):
     consents: list[ConsentAcceptanceInput] = []
     registration_data: dict = {}
     member_notes: str | None = Field(default=None, max_length=2000)
+
+    _normalize_code = field_validator("discount_code")(normalize_code)
 
 
 class CancelRegistrationRequest(BaseModel):
