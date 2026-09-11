@@ -16,6 +16,22 @@ from fastapi.responses import StreamingResponse
 # Byte-order mark: makes Excel detect UTF-8 instead of the system code page.
 _BOM = "﻿"
 
+# A cell starting with one of these is evaluated as a formula by Excel and
+# LibreOffice when the file is opened, and the exports carry member-supplied
+# text (names, notes) straight into an admin's spreadsheet. A leading
+# apostrophe is the spreadsheet convention for "this is text" and defuses it.
+# Tab and carriage return are included because a cell beginning with either is
+# trimmed before the check, exposing whatever comes next.
+_FORMULA_TRIGGERS = ("=", "+", "-", "@", "\t", "\r")
+
+
+def _defuse(value: Any) -> Any:
+    if value is None:
+        return ""
+    if isinstance(value, str) and value.startswith(_FORMULA_TRIGGERS):
+        return "'" + value
+    return value
+
 
 def iter_csv(headers: list[str], rows: Iterable[Iterable[Any]]) -> Iterator[str]:
     """Yield CSV text a row at a time (header row first, prefixed with the BOM)."""
@@ -32,7 +48,7 @@ def iter_csv(headers: list[str], rows: Iterable[Iterable[Any]]) -> Iterator[str]
     yield _BOM + flush()
 
     for row in rows:
-        writer.writerow(["" if value is None else value for value in row])
+        writer.writerow([_defuse(value) for value in row])
         yield flush()
 
 

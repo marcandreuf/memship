@@ -188,6 +188,18 @@ class TestMembersExport:
         assert len(rows) == 1
         assert rows[0][1] == "M-m-ct-1"
 
+    def test_member_supplied_text_cannot_open_as_a_formula(self, client, db):
+        admin = _admin(db, "m-formula")
+        m = _member(db, "m-formula-1")
+        m.person.first_name = '=HYPERLINK("http://evil.example","click")'
+        db.flush()
+        client.cookies.update(_auth_cookie(admin))
+
+        resp = client.get("/api/v1/members/export.csv")
+        assert resp.status_code == 200
+        _, rows = _parse_csv(resp)
+        assert rows[0][2] == "'" + '=HYPERLINK("http://evil.example","click")'
+
     def test_empty_returns_header_only(self, client, db):
         admin = _admin(db, "m-empty")
         client.cookies.update(_auth_cookie(admin))
