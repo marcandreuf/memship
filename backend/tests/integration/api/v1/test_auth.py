@@ -350,6 +350,34 @@ class TestPasswordReset:
         )
         assert response.status_code == 200
 
+    def test_reset_token_is_stored_as_a_digest(self, client, db):
+        """The row never holds the token the member was mailed, and the mailed
+        token is what resets — not its digest."""
+        from app.domains.auth.service import token_digest
+
+        user = _create_test_user(db, email="digest@examplee6e3b1.com", password="oldpassword1")
+        token = client.post(
+            "/api/v1/auth/password-reset-request",
+            json={"email": "digest@examplee6e3b1.com"},
+        ).json()["reset_token"]
+
+        db.refresh(user)
+        assert user.reset_token == token_digest(token)
+        assert user.reset_token != token
+
+        # Presenting the stored digest itself must not work.
+        response = client.post(
+            "/api/v1/auth/password-reset",
+            json={"token": user.reset_token, "new_password": "newpassword1"},
+        )
+        assert response.status_code == 400
+
+        response = client.post(
+            "/api/v1/auth/password-reset",
+            json={"token": token, "new_password": "newpassword1"},
+        )
+        assert response.status_code == 200
+
     def test_password_reset_invalid_token(self, client):
         response = client.post(
             "/api/v1/auth/password-reset",
@@ -432,8 +460,10 @@ class TestPasswordReset:
         """A token already in flight when this shipped must stop working too."""
         from datetime import datetime, timedelta, timezone
 
+        from app.domains.auth.service import token_digest
+
         user = _create_test_user(db, email="owner2@examplee6e3b1.com", role="super_admin")
-        user.reset_token = "still-inside-its-hour"
+        user.reset_token = token_digest("still-inside-its-hour")
         user.reset_token_expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
         db.flush()
 

@@ -1,5 +1,7 @@
 """Authentication service — business logic for auth operations."""
 
+import hashlib
+import hmac
 import secrets
 from datetime import datetime, timedelta, timezone
 
@@ -49,9 +51,38 @@ def authenticate_user(db: Session, email: str, password: str) -> User | None:
     return user
 
 
+def token_digest(token: str) -> str:
+    """What the users table holds in place of a recovery token.
+
+    The verification and reset tokens are single-factor account recovery, so
+    the row stores a SHA-256 of the token rather than the token itself: a read
+    of the table (a backup, a log, a stray SELECT) yields nothing usable, and
+    the lookup below compares digests — an attacker who could time the SQL
+    equality would be timing a hash they cannot invert, not the secret.
+    """
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
+def _find_by_token(db: Session, column, token: str) -> User | None:
+    """Look an active user up by a recovery token, comparing in constant time.
+
+    The digest narrows the query; ``compare_digest`` over the stored value is
+    the check that decides, so no byte of the comparison leaks through timing
+    even if the database lookup were to.
+    """
+    digest = token_digest(token)
+    user = db.query(User).filter(column == digest, User.is_active == True).first()
+    if user is None:
+        return None
+    stored = getattr(user, column.key) or ""
+    if not hmac.compare_digest(stored, digest):
+        return None
+    return user
+
+
 def _issue_verification_token(user: User) -> str:
     token = secrets.token_urlsafe(32)
-    user.verification_token = token
+    user.verification_token = token_digest(token)
     user.verification_token_expires_at = datetime.now(timezone.utc) + timedelta(
         hours=VERIFICATION_TOKEN_TTL_HOURS
     )
@@ -126,11 +157,7 @@ def register_user(
 
 def verify_email(db: Session, token: str) -> User | None:
     """Consume a verification token. Returns the user, or None if invalid/expired."""
-    user = (
-        db.query(User)
-        .filter(User.verification_token == token, User.is_active == True)
-        .first()
-    )
+    user = _find_by_token(db, User.verification_token, token)
     if not user:
         return None
 
@@ -191,7 +218,7 @@ def request_password_reset(db: Session, email: str) -> str | None:
         return None
 
     token = secrets.token_urlsafe(32)
-    user.reset_token = token
+    user.reset_token = token_digest(token)
     user.reset_token_expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
     db.flush()
 
@@ -199,14 +226,7 @@ def request_password_reset(db: Session, email: str) -> str | None:
 
 
 def reset_password(db: Session, token: str, new_password: str) -> bool:
-    user = (
-        db.query(User)
-        .filter(
-            User.reset_token == token,
-            User.is_active == True,
-        )
-        .first()
-    )
+    user = _find_by_token(db, User.reset_token, token)
     if not user:
         return False
 

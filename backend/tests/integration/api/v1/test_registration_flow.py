@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 
 from app.core.security.password import hash_password
 from app.domains.auth.models import User
+from app.domains.auth.service import token_digest
 from app.domains.members.models import Member, MembershipType
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Person
@@ -139,6 +140,9 @@ class TestRegistrationCreatesPendingMember:
         user = db.query(User).filter(User.email == REGISTER_PAYLOAD["email"]).first()
         assert user.email_verified is False
         assert user.verification_token is not None
+        # Stored as a digest, never the token the member was mailed.
+        assert user.verification_token != response.json()["verification_token"]
+        assert user.verification_token == token_digest(response.json()["verification_token"])
 
     def test_register_blocked_when_public_registration_disabled(self, client, db):
         _set_features(db, public_registration=False)
