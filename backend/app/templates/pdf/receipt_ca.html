@@ -96,13 +96,13 @@
     </tbody>
   </table>
 
-  {% if receipt.discount_amount and receipt.discount_amount > 0 %}
-  <p style="font-size:9pt;color:#666;">Descompte aplicat: {{ receipt.discount_amount }} {{ org.currency }}</p>
-  {% endif %}
-
   <div class="totals">
     <table>
-      <tr><td class="label">Base imposable</td><td class="value">{{ receipt.base_amount }} {{ org.currency }}</td></tr>
+      {% if receipt.discount_amount %}
+      <tr><td class="label">Base</td><td class="value">{{ receipt.base_amount }} {{ org.currency }}</td></tr>
+      <tr><td class="label">Descompte{% if receipt.discount_percentage %} ({{ receipt.discount_percentage }}%){% endif %}</td><td class="value">-{{ receipt.discount_amount }} {{ org.currency }}</td></tr>
+      {% endif %}
+      <tr><td class="label">Base imposable</td><td class="value">{{ receipt.net_amount }} {{ org.currency }}</td></tr>
       <tr><td class="label">IVA ({{ receipt.vat_rate }}%)</td><td class="value">{{ receipt.vat_amount }} {{ org.currency }}</td></tr>
       <tr class="total-row"><td>TOTAL</td><td class="value">{{ receipt.total_amount }} {{ org.currency }}</td></tr>
     </table>

@@ -199,6 +199,14 @@ export default function ReceiptDetailPage() {
     { label: t("receipts.description"), value: receipt.description },
     { label: t("receipts.origin"), value: t(`receipts.origin${receipt.origin.charAt(0).toUpperCase() + receipt.origin.slice(1)}`) },
     { label: t("receipts.base"), value: formatCurrency(receipt.base_amount) },
+    ...(Number(receipt.discount_amount) > 0
+      ? [{
+          label: t("receipts.discount"),
+          value: receipt.discount_type === "percentage"
+            ? `${Number(receipt.discount_amount)}%`
+            : formatCurrency(Number(receipt.discount_amount)),
+        }]
+      : []),
     { label: t("receipts.vatRate"), value: `${Number(receipt.vat_rate)}%` },
     { label: t("receipts.vat"), value: formatCurrency(receipt.vat_amount) },
     { label: t("receipts.total"), value: formatCurrency(receipt.total_amount) },
