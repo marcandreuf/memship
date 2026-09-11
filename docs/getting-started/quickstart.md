@@ -8,7 +8,20 @@ images and is meant for **evaluation**, not production. For a real deployment, s
 
 - Docker and Docker Compose
 
-## 1. Download the quick-start compose file and start
+## 1. Make a folder for it
+
+Everything below runs from one directory, which ends up holding the single file this
+needs. Compose takes its **project name** from that directory's name, and the quick-start
+stack keeps its data in Docker volumes named after that project — so run every
+`docker compose` command in this guide from inside this folder. From anywhere else Compose
+looks for a different project and will not find your containers or your data.
+
+```bash
+mkdir -p "$HOME/memship-quickstart"
+cd "$HOME/memship-quickstart"
+```
+
+## 2. Download the quick-start compose file and start
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/marcandreuf/memship/main/docker-compose.quickstart.yml -o docker-compose.yml
@@ -18,7 +31,7 @@ PORT=8081 docker compose up -d
 
 Change `PORT=8081` to any port you prefer (default is `80`).
 
-## 2. Run the setup
+## 3. Run the setup
 
 The same command sets Memship up on every environment. It is interactive, and asks
 three independent questions:
@@ -66,7 +79,7 @@ generated passwords. They are printed once, at the end of the run:
 
 Keep that output — the passwords are stored only as hashes and cannot be shown again.
 
-## 3. Open the app
+## 4. Open the app
 
 Go to **http://localhost:8081** and log in as the super admin you created.
 
@@ -87,9 +100,46 @@ setup and answer *yes* to the club-data question. It deletes the demo club while
 your super admin, the system roles and any payment providers you configured — see
 [First-time setup](first-setup.md).
 
-## Stop and clean up
+## Stop everything
+
+Run these from the folder you created in step 1 — Compose identifies the stack by the
+directory it is run from.
 
 ```bash
-docker compose down          # stop containers
-docker compose down -v       # stop and delete all data (volumes)
+docker compose stop          # pause it; containers and data stay put
+docker compose start         # ... and pick up where you left off
 ```
+
+```bash
+docker compose down          # stop and remove the containers and the network; data kept
+docker compose down -v       # ... and delete the data volumes with them
+```
+
+`down` keeps your database and uploads, so `docker compose up -d` afterwards brings back the
+same club. **`down -v` is the one that leaves nothing behind** — the demo club, the super
+admin you created and every receipt go with it, and there is no undo.
+
+To get the disk space back as well, remove the images once the stack is down:
+
+```bash
+docker image rm ghcr.io/marcandreuf/memship-backend:latest \
+                ghcr.io/marcandreuf/memship-frontend:latest
+```
+
+Leave `caddy`, `postgres` and `redis` alone unless you are sure nothing else on the machine
+uses them — they are ordinary public images and something else may well.
+
+### If you are not in that folder any more
+
+The quick-start containers have fixed names, so you can always stop them by name from
+anywhere — useful if you deleted the directory, or cannot remember where you put it:
+
+```bash
+docker rm -f demo-memship-caddy demo-memship-frontend demo-memship-api \
+             demo-memship-celery-worker demo-memship-celery-beat \
+             demo-memship-redis demo-memship-db
+```
+
+That removes the containers but not the data. The volumes are named after the Compose
+project, which is the folder name — `docker volume ls | grep demo-memship` finds them, and
+`docker volume rm <name>` deletes one.
