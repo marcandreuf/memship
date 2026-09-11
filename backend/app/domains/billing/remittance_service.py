@@ -5,12 +5,17 @@ from decimal import Decimal
 from pathlib import Path
 
 from fastapi import HTTPException, status
-from sqlalchemy import extract, func
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.domains.billing.models import Receipt, Remittance, SepaMandate
+from app.domains.billing.models import (
+    Receipt,
+    Remittance,
+    RemittanceSequence,
+    SepaMandate,
+)
 from app.domains.billing.schemas import RemittanceCreate
+from app.domains.billing.sequences import next_yearly_number
 from app.domains.billing.sepa_xml import SepaExportError, generate_sepa_xml
 from app.domains.billing.service import mark_receipts_paid
 from app.domains.organizations.models import OrganizationSettings
@@ -22,21 +27,27 @@ from app.domains.organizations.models import OrganizationSettings
 def generate_remittance_number(db: Session, emission_date: date) -> str:
     """Generate the next remittance number.
 
-    Format: REM-{year}-{sequence:04d}, annual reset.
+    Format: REM-{year}-{sequence:04d}, annual reset. Drawn from a per-year
+    counter locked FOR UPDATE (see RemittanceSequence), the same way receipt
+    numbers are — COUNT(remittances) + 1 let two concurrent generations pick
+    the same number.
     """
     year = emission_date.year
-    count = (
-        db.query(func.count(Remittance.id))
-        .filter(extract("year", Remittance.emission_date) == year)
-        .scalar()
-    )
-    sequence = count + 1
+    sequence = next_yearly_number(db, RemittanceSequence, year)
     number = f"REM-{year}-{sequence:04d}"
 
-    # Ensure uniqueness
-    while db.query(Remittance).filter(Remittance.remittance_number == number).first():
-        sequence += 1
-        number = f"REM-{year}-{sequence:04d}"
+    # Under the lock a collision means the counter is behind the remittances
+    # already issued — a number written outside this function — and stepping
+    # past it would hide that. Surface it instead.
+    if db.query(Remittance).filter(Remittance.remittance_number == number).first():
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=(
+                f"Remittance number {number} already exists. The remittance "
+                f"sequence for {year} is behind the remittances already issued "
+                "and must be corrected before more are created."
+            ),
+        )
 
     return number
 

@@ -9,8 +9,6 @@ from fastapi import HTTPException, status
 from sqlalchemy import extract, func, or_
 from sqlalchemy.orm import Query, Session, joinedload, selectinload
 
-from sqlalchemy.exc import IntegrityError
-
 from app.core.money import round_money
 from app.domains.billing.models import Concept, InvoiceSequence, Receipt
 from app.domains.billing.schemas import (
@@ -20,6 +18,7 @@ from app.domains.billing.schemas import (
     ReceiptReturnRequest,
     ReceiptUpdate,
 )
+from app.domains.billing.sequences import next_yearly_number
 from app.domains.members.models import Member, MembershipType
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Person
@@ -131,30 +130,7 @@ def generate_receipt_number(db: Session, emission_date: date) -> str:
         # unbroken, and that made it neither. See InvoiceSequence.
         #
         # Its own row lock, taken after the org lock and always in that order.
-        seq_row = (
-            db.query(InvoiceSequence)
-            .filter(InvoiceSequence.year == year)
-            .with_for_update()
-            .first()
-        )
-        if seq_row is None:
-            # First receipt of this year. Two callers can reach this at once, so
-            # the loser of the insert re-reads the winner's row under the lock
-            # rather than both starting at 1.
-            try:
-                with db.begin_nested():
-                    seq_row = InvoiceSequence(year=year, next_number=1)
-                    db.add(seq_row)
-                    db.flush()
-            except IntegrityError:
-                seq_row = (
-                    db.query(InvoiceSequence)
-                    .filter(InvoiceSequence.year == year)
-                    .with_for_update()
-                    .one()
-                )
-        sequence = seq_row.next_number or 1
-        seq_row.next_number = sequence + 1
+        sequence = next_yearly_number(db, InvoiceSequence, year)
     else:
         # Global sequential — use org counter
         sequence = org.invoice_next_number or 1
