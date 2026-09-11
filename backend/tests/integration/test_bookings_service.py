@@ -8,6 +8,7 @@ and query back within the same transaction.
 from datetime import date, time, timedelta
 
 import pytest
+from sqlalchemy import event
 from pydantic import ValidationError
 
 from app.core.security.password import hash_password
@@ -710,6 +711,57 @@ def test_availability_reports_counts_and_state(db):
     assert cell["capacity"] == 1
     assert cell["my_status"] == "booked"
     assert cell["cell_state"] == "full"
+
+
+def test_availability_reports_waitlist_and_other_members_per_slot(db):
+    """Counts are per slot and per status; a member's status is their own."""
+    _org(db)
+    space = _space(db)
+    target = _future(3)
+    week_start = target - timedelta(days=target.weekday())
+    full = _slot(db, space, target, capacity=1)
+    empty = _slot(db, space, target, start=time(12, 0), end=time(13, 0))
+    m1, m2 = _member(db, 1), _member(db, 2)
+    service.create_booking(db, m1, full.id)
+    service.create_booking(db, m2, full.id)  # waitlisted
+
+    by_id = {
+        c["space_slot_id"]: c
+        for c in service.space_week_availability(db, space, week_start, m2.id)
+    }
+    assert by_id[full.id]["booked_count"] == 1
+    assert by_id[full.id]["waitlist_count"] == 1
+    assert by_id[full.id]["my_status"] == "waitlisted"
+    assert by_id[empty.id]["booked_count"] == 0
+    assert by_id[empty.id]["waitlist_count"] == 0
+    assert by_id[empty.id]["my_status"] == "none"
+
+
+def test_availability_query_count_does_not_grow_with_slots(db):
+    """The week view is the page everyone opens at once: a fixed number of
+    queries however many slots the week holds, not two or three per slot."""
+    _org(db)
+    space = _space(db)
+    target = _future(3)
+    week_start = target - timedelta(days=target.weekday())
+    for hour in range(8, 20):
+        _slot(db, space, target, start=time(hour, 0), end=time(hour + 1, 0))
+    m1 = _member(db, 1)
+
+    seen = []
+
+    def record(conn, cursor, statement, params, context, executemany):
+        seen.append(statement)
+
+    event.listen(db.get_bind(), "before_cursor_execute", record)
+    try:
+        cells = service.space_week_availability(db, space, week_start, m1.id)
+    finally:
+        event.remove(db.get_bind(), "before_cursor_execute", record)
+
+    assert len(cells) == 12
+    booking_queries = [q for q in seen if "FROM bookings" in q]
+    assert len(booking_queries) == 2, booking_queries
 
 
 def test_availability_only_covers_slots_dated_in_week(db):
