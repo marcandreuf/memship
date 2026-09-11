@@ -97,6 +97,39 @@ def calculate_vat(base_amount: Decimal, vat_rate: Decimal) -> tuple[Decimal, Dec
     return vat_amount, total_amount
 
 
+def resolve_discount(
+    base_amount: Decimal, discount_amount: Decimal | None, discount_type: str | None
+) -> Decimal:
+    """The money a receipt's discount takes off its base.
+
+    ``discount_amount`` is what the admin entered: a percentage of the base when
+    ``discount_type`` is ``percentage``, otherwise a fixed sum. Never more than
+    the base itself.
+    """
+    value = Decimal(str(discount_amount or 0))
+    if value <= 0:
+        return Decimal("0")
+    if discount_type == "percentage":
+        value = round_money(base_amount * value / Decimal("100"))
+    return min(value, base_amount)
+
+
+def apply_amounts(receipt: Receipt) -> None:
+    """Derive ``vat_amount`` and ``total_amount`` from the receipt's inputs.
+
+    ``base_amount`` is the gross figure the admin entered and ``discount_amount``
+    / ``discount_type`` the discount as entered; VAT is charged on what is left.
+    The one place this arithmetic lives, so create and update cannot disagree —
+    they used to: create applied the discount and stored the net base, update
+    wrote the discount fields and then ignored them.
+    """
+    base = Decimal(str(receipt.base_amount))
+    net = base - resolve_discount(base, receipt.discount_amount, receipt.discount_type)
+    receipt.vat_amount, receipt.total_amount = calculate_vat(
+        net, Decimal(str(receipt.vat_rate))
+    )
+
+
 # --- Receipt Number Generation ---
 
 
@@ -185,21 +218,6 @@ def create_receipt(
     db: Session, data: ReceiptCreate, created_by_id: int
 ) -> Receipt:
     """Create a new receipt with calculated VAT."""
-    org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
-    vat_rate = Decimal(str(data.vat_rate))
-    base_amount = Decimal(str(data.base_amount))
-
-    # Apply discount
-    discount_amount = Decimal(str(data.discount_amount or 0))
-    if data.discount_type == "percentage" and discount_amount > 0:
-        discount_amount = round_money(base_amount * discount_amount / Decimal("100"))
-
-    effective_base = base_amount - discount_amount
-    if effective_base < 0:
-        effective_base = Decimal("0")
-
-    vat_amount, total_amount = calculate_vat(effective_base, vat_rate)
-
     receipt_number = generate_receipt_number(db, data.emission_date)
 
     receipt = Receipt(
@@ -209,11 +227,9 @@ def create_receipt(
         registration_id=data.registration_id,
         origin=data.origin,
         description=data.description,
-        base_amount=effective_base,
-        vat_rate=vat_rate,
-        vat_amount=vat_amount,
-        total_amount=total_amount,
-        discount_amount=discount_amount if data.discount_amount else Decimal("0"),
+        base_amount=Decimal(str(data.base_amount)),
+        vat_rate=Decimal(str(data.vat_rate)),
+        discount_amount=Decimal(str(data.discount_amount or 0)),
         discount_type=data.discount_type,
         status="pending",
         emission_date=data.emission_date,
@@ -224,6 +240,7 @@ def create_receipt(
         is_batchable=data.is_batchable,
         created_by=created_by_id,
     )
+    apply_amounts(receipt)
     db.add(receipt)
     db.flush()
     return receipt
@@ -238,16 +255,11 @@ def update_receipt(db: Session, receipt: Receipt, data: ReceiptUpdate) -> Receip
         )
 
     update_data = data.model_dump(exclude_unset=True)
-
-    # Recalculate amounts if base or vat changed
-    recalculate = "base_amount" in update_data or "vat_rate" in update_data
     for key, value in update_data.items():
         setattr(receipt, key, value)
 
-    if recalculate:
-        base = Decimal(str(receipt.base_amount))
-        vat_rate = Decimal(str(receipt.vat_rate))
-        receipt.vat_amount, receipt.total_amount = calculate_vat(base, vat_rate)
+    if update_data.keys() & {"base_amount", "vat_rate", "discount_amount", "discount_type"}:
+        apply_amounts(receipt)
 
     db.flush()
     return receipt
@@ -508,9 +520,10 @@ def create_credit_note(
     if amount == total and already_credited == 0:
         # Crediting the whole thing mirrors the original exactly, rather than
         # re-deriving the split and risking a cent of drift against the document
-        # it is meant to cancel out.
-        base_amount = Decimal(str(receipt.base_amount))
+        # it is meant to cancel out. The base is the net one — the receipt's
+        # base_amount is gross of any discount, and a credit note carries none.
         vat_amount = Decimal(str(receipt.vat_amount))
+        base_amount = total - vat_amount
     else:
         base_amount = round_money(amount / (Decimal("1") + vat_rate / Decimal("100")))
         vat_amount = amount - base_amount

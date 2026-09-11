@@ -1,5 +1,6 @@
 """Receipt PDF generation using WeasyPrint + Jinja2."""
 
+from decimal import Decimal
 from io import BytesIO
 from pathlib import Path
 
@@ -7,6 +8,7 @@ from jinja2 import Environment, FileSystemLoader
 from sqlalchemy.orm import Session
 
 from app.domains.billing.models import Receipt
+from app.domains.billing.service import resolve_discount
 from app.domains.members.models import Member
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Address, Person
@@ -145,6 +147,9 @@ def generate_receipt_pdf(db: Session, receipt: Receipt) -> bytes:
 
     org_address = _get_org_address(db)
     member_address = _get_member_address(db, person.id) if person else None
+    discount = resolve_discount(
+        Decimal(str(receipt.base_amount)), receipt.discount_amount, receipt.discount_type
+    )
 
     context = {
         "org": {
@@ -168,11 +173,17 @@ def generate_receipt_pdf(db: Session, receipt: Receipt) -> bytes:
             ),
             "description": receipt.description,
             "base_amount": f"{receipt.base_amount:.2f}",
+            "net_amount": f"{Decimal(str(receipt.base_amount)) - discount:.2f}",
             "vat_rate": f"{receipt.vat_rate:.0f}" if receipt.vat_rate == int(receipt.vat_rate) else f"{receipt.vat_rate:.2f}",
             "vat_amount": f"{receipt.vat_amount:.2f}",
             "total_amount": f"{receipt.total_amount:.2f}",
-            "discount_amount": f"{receipt.discount_amount:.2f}" if receipt.discount_amount else None,
-            "discount_type": receipt.discount_type,
+            # The money taken off, and the percentage it came from when it did.
+            "discount_amount": f"{discount:.2f}" if discount else None,
+            "discount_percentage": (
+                f"{receipt.discount_amount:g}"
+                if discount and receipt.discount_type == "percentage"
+                else None
+            ),
             "status": receipt.status,
             "emission_date": receipt.emission_date.strftime("%d/%m/%Y") if receipt.emission_date else None,
             "due_date": receipt.due_date.strftime("%d/%m/%Y") if receipt.due_date else None,

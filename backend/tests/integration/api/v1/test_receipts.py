@@ -185,10 +185,37 @@ class TestReceiptCRUD:
         )
         assert resp.status_code == 201
         data = resp.json()
-        # 10% of 200 = 20 discount, base = 180, VAT = 37.80, total = 217.80
-        assert float(data["base_amount"]) == 180.0
+        # The base stays the gross figure entered; 10% off it is 20, VAT is
+        # charged on the remaining 180 = 37.80, total 217.80.
+        assert float(data["base_amount"]) == 200.0
+        assert float(data["discount_amount"]) == 10.0
+        assert data["discount_type"] == "percentage"
         assert float(data["vat_amount"]) == 37.80
         assert float(data["total_amount"]) == 217.80
+
+    def test_fixed_discount_cannot_exceed_the_base(self, client, db):
+        _ensure_org_settings(db)
+        user = _create_user(db, "admin", "rcpt-disc-cap")
+        member, _ = _create_member(db, "disc-cap")
+
+        resp = client.post(
+            "/api/v1/receipts/",
+            json={
+                "member_id": member.id,
+                "origin": "manual",
+                "description": "Over-discounted",
+                "base_amount": 50,
+                "vat_rate": 21,
+                "discount_amount": 80,
+                "discount_type": "fixed",
+                "emission_date": "2026-03-26",
+            },
+            cookies=_auth_cookie(user),
+        )
+        assert resp.status_code == 201
+        data = resp.json()
+        assert float(data["vat_amount"]) == 0.0
+        assert float(data["total_amount"]) == 0.0
 
     def test_list_receipts(self, client, db):
         _ensure_org_settings(db)
@@ -222,6 +249,109 @@ class TestReceiptCRUD:
         user = _create_user(db, "member", "rcpt-auth")
         resp = client.get("/api/v1/receipts/", cookies=_auth_cookie(user))
         assert resp.status_code == 403
+
+
+class TestDiscountedReceiptEdits:
+    """Whatever was edited last, total == (base - discount) + VAT.
+
+    update_receipt used to write discount_amount / discount_type to the row and
+    leave the totals alone, and a base_amount edit was stored as-is against a
+    base that create_receipt had already netted the discount out of.
+    """
+
+    def _create(self, client, db, suffix, **fields):
+        _ensure_org_settings(db)
+        user = _create_user(db, "admin", f"rcpt-edit-{suffix}")
+        member, _ = _create_member(db, f"edit-{suffix}")
+        body = {
+            "member_id": member.id,
+            "origin": "manual",
+            "description": "Editable",
+            "base_amount": 200,
+            "vat_rate": 21,
+            "emission_date": "2026-03-26",
+            **fields,
+        }
+        resp = client.post("/api/v1/receipts/", json=body, cookies=_auth_cookie(user))
+        assert resp.status_code == 201
+        return user, resp.json()["id"]
+
+    def _update(self, client, user, receipt_id, **fields):
+        resp = client.put(
+            f"/api/v1/receipts/{receipt_id}", json=fields, cookies=_auth_cookie(user)
+        )
+        assert resp.status_code == 200, resp.text
+        return resp.json()
+
+    def test_changing_the_discount_changes_the_totals(self, client, db):
+        user, rid = self._create(client, db, "disc")
+
+        data = self._update(client, user, rid, discount_amount=10, discount_type="percentage")
+        assert float(data["base_amount"]) == 200.0
+        assert float(data["vat_amount"]) == 37.80
+        assert float(data["total_amount"]) == 217.80
+
+        data = self._update(client, user, rid, discount_amount=50, discount_type="fixed")
+        assert float(data["vat_amount"]) == 31.50
+        assert float(data["total_amount"]) == 181.50
+
+    def test_changing_the_base_keeps_the_discount_applied(self, client, db):
+        user, rid = self._create(
+            client, db, "base", discount_amount=10, discount_type="percentage"
+        )
+
+        data = self._update(client, user, rid, base_amount=100)
+        assert float(data["base_amount"]) == 100.0
+        assert float(data["discount_amount"]) == 10.0
+        # 10% of 100 = 10 off, VAT on 90 = 18.90, total 108.90
+        assert float(data["vat_amount"]) == 18.90
+        assert float(data["total_amount"]) == 108.90
+
+    def test_changing_the_vat_rate_charges_it_on_the_net_base(self, client, db):
+        user, rid = self._create(
+            client, db, "vat", discount_amount=20, discount_type="fixed"
+        )
+
+        data = self._update(client, user, rid, vat_rate=10)
+        # 200 - 20 = 180, 10% of that = 18, total 198
+        assert float(data["vat_amount"]) == 18.0
+        assert float(data["total_amount"]) == 198.0
+
+    def test_percentage_behaves_the_same_on_update_as_on_create(self, client, db):
+        user, created_rid = self._create(
+            client, db, "same-c", discount_amount=15, discount_type="percentage"
+        )
+        created = client.get(
+            f"/api/v1/receipts/{created_rid}", cookies=_auth_cookie(user)
+        ).json()
+
+        updated_rid = client.post(
+            "/api/v1/receipts/",
+            json={
+                "member_id": created["member_id"],
+                "origin": "manual",
+                "description": "Editable",
+                "base_amount": 200,
+                "vat_rate": 21,
+                "emission_date": "2026-03-26",
+            },
+            cookies=_auth_cookie(user),
+        ).json()["id"]
+        updated = self._update(
+            client, user, updated_rid, discount_amount=15, discount_type="percentage"
+        )
+
+        for key in ("base_amount", "discount_amount", "vat_amount", "total_amount"):
+            assert float(updated[key]) == float(created[key]), key
+
+    def test_removing_the_discount_restores_the_full_amount(self, client, db):
+        user, rid = self._create(
+            client, db, "clear", discount_amount=10, discount_type="percentage"
+        )
+
+        data = self._update(client, user, rid, discount_amount=0)
+        assert float(data["vat_amount"]) == 42.0
+        assert float(data["total_amount"]) == 242.0
 
 
 # --- Status Transition Tests ---
@@ -346,7 +476,7 @@ class TestCreditNotes:
     unbroken and the correction traceable, which "cancel and reissue" does not.
     """
 
-    def _issued_receipt(self, client, db, suffix, base_amount=100):
+    def _issued_receipt(self, client, db, suffix, base_amount=100, **fields):
         _ensure_org_settings(db)
         user = _create_user(db, "admin", f"rcpt-cn-{suffix}")
         member, _ = _create_member(db, f"cn-{suffix}")
@@ -359,6 +489,7 @@ class TestCreditNotes:
                 "base_amount": base_amount,
                 "vat_rate": 21,
                 "emission_date": "2026-03-26",
+                **fields,
             },
             cookies=_auth_cookie(user),
         ).json()
@@ -385,6 +516,24 @@ class TestCreditNotes:
         assert note["is_batchable"] is False
         assert note["due_date"] is None
         assert note["member_id"] == receipt["member_id"]
+
+    def test_credit_note_for_a_discounted_receipt_adds_up(self, client, db):
+        """The receipt's base is gross of its discount; the note's is net."""
+        receipt, user = self._issued_receipt(
+            client, db, "disc", base_amount=200,
+            discount_amount=10, discount_type="percentage",
+        )
+        assert float(receipt["total_amount"]) == 217.80
+
+        note = client.post(
+            f"/api/v1/receipts/{receipt['id']}/credit-note",
+            json={"reason": "Cancelled"},
+            cookies=_auth_cookie(user),
+        ).json()
+        assert float(note["total_amount"]) == -217.80
+        assert float(note["base_amount"]) == -180.0
+        assert float(note["vat_amount"]) == -37.80
+        assert float(note["base_amount"]) + float(note["vat_amount"]) == float(note["total_amount"])
 
     def test_credit_note_takes_the_next_number_in_the_series(self, client, db):
         """No gap: the rectifying document is numbered like everything else."""
@@ -675,6 +824,32 @@ class TestReceiptPDF:
         assert resp.status_code == 200
         assert resp.headers["content-type"] == "application/pdf"
         assert resp.content[:5] == b"%PDF-"  # Valid PDF header
+
+    def test_discounted_receipt_renders(self, client, db):
+        _ensure_org_settings(db)
+        user = _create_user(db, "admin", "pdf-disc")
+        member, _ = _create_member(db, "pdf-disc")
+
+        create_resp = client.post(
+            "/api/v1/receipts/",
+            json={
+                "member_id": member.id,
+                "origin": "manual",
+                "description": "Discounted PDF",
+                "base_amount": 200,
+                "vat_rate": 21,
+                "discount_amount": 10,
+                "discount_type": "percentage",
+                "emission_date": "2026-03-26",
+            },
+            cookies=_auth_cookie(user),
+        )
+        receipt_id = create_resp.json()["id"]
+        client.post(f"/api/v1/receipts/{receipt_id}/emit", cookies=_auth_cookie(user))
+
+        resp = client.get(f"/api/v1/receipts/{receipt_id}/pdf", cookies=_auth_cookie(user))
+        assert resp.status_code == 200
+        assert resp.content[:5] == b"%PDF-"
 
     def test_member_cannot_download_other_receipt(self, client, db):
         _ensure_org_settings(db)
