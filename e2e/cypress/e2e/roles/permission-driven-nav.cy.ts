@@ -2,8 +2,9 @@
 
 // The one place the whole chain runs as a single thing: catalog → role →
 // assignment → per-request resolution (no role claim in the JWT) → /auth/me →
-// has(key) → rendered sidebar. treasurer@examplee6e3b1.com holds `billing.*` and the
-// pinned `member` role, and nothing else.
+// has(key) → rendered sidebar. treasurer@examplee6e3b1.com holds `billing.*` and
+// the `member` role, and nothing else — a club officer who is also a member,
+// which is why it keeps its personal nav while the admin accounts do not.
 //
 // Assertions go through hrefs rather than labels: "Receipts" is a substring of
 // "My Receipts", and telling the staff item from the personal one is the whole
@@ -31,7 +32,7 @@ describe("Permission-driven nav", { tags: ["@roles"] }, () => {
     cy.get(navLink("/annual-summary")).should("not.exist");
   });
 
-  it("keeps its personal nav, because `member` is pinned", () => {
+  it("keeps its personal nav, because it is a member as well as an officer", () => {
     // The regression this guards: one administrative permission used to flip
     // the sidebar to the staff shape wholesale and take the self-service items
     // with it, even though the account still held every `self.*` key.
@@ -93,8 +94,15 @@ describe("Permission-driven nav — full admin", { tags: ["@roles"] }, () => {
     cy.get(navLink("/activities")).should("have.length", 1);
   });
 
-  it("also has its own member surface — staff are members too", () => {
-    cy.get(navLink("/my-receipts")).should("exist");
+  it("has no member surface, because an operator is not in the club", () => {
+    // Was the opposite until #168, when `member` was pinned to every account
+    // and an admin carried a member number and a place in the billing run.
+    // The nav hangs off the member record, not off `self.*` — a staff role
+    // holds every `self.*` key and always will, because those are the floor on
+    // the endpoints staff and members share.
+    cy.get(navLink("/my-receipts")).should("not.exist");
+    cy.get(navLink("/my-activities")).should("not.exist");
+    cy.get(navLink("/my-membership")).should("not.exist");
   });
 });
 
