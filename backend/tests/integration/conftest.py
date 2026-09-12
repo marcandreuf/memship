@@ -163,10 +163,13 @@ def _install_role_assignment_hook(session):
 
     ``users.role`` is gone, so ``User(role="admin")`` would be a TypeError.
     Tests keep writing it as fixture shorthand: ``User.__init__`` pops the kwarg
-    and the flush hook turns it into real ``user_roles`` rows — ``member``
-    always (it is pinned to every account), plus the named staff role. Tests
-    build users directly rather than through registration, so without this
-    nothing would populate ``user_roles`` and every check would deny.
+    and the flush hook turns it into real ``user_roles`` rows. It grants exactly
+    what it names, because `member` is no longer a floor every account holds
+    (#168) — ``role="admin"`` is a staff account with no membership, which is
+    the shape that issue is about. Pass a tuple, ``role=("admin", "member")``,
+    for the person who is genuinely both. Tests build users directly rather
+    than through registration, so without this nothing would populate
+    ``user_roles`` and every check would deny.
     """
     from sqlalchemy import event, text
 
@@ -185,7 +188,8 @@ def _install_role_assignment_hook(session):
         for user in pending:
             if user.role_assignments:
                 continue
-            slugs = {"member", getattr(user, "_fixture_role", "member")}
+            named = getattr(user, "_fixture_role", "member")
+            slugs = {named} if isinstance(named, str) else set(named)
             user.role_assignments = [
                 UserRoleAssignment(role_id=role_ids[slug])
                 for slug in sorted(slugs)

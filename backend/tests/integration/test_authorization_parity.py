@@ -56,10 +56,11 @@ class TestLegacyRoleParity:
         assert resolve_permissions(user) == set(MEMBER_SEED_KEYS)
 
     def test_restricted_lands_on_member_with_no_staff_reach(self, db):
-        """The tier is gone; a hand-provisioned account backfills to `member`.
-        Its two real capabilities — everyone's custom-field values, cancel any
-        booking — are deliberately lost."""
-        user = _user(db, "parity-restricted@examplee6e3b1.com", "restricted")
+        """The tier is gone; a hand-provisioned account backfills to `member`,
+        which is what the fixture holds here. Its two real capabilities —
+        everyone's custom-field values, cancel any booking — are deliberately
+        lost."""
+        user = _user(db, "parity-restricted@examplee6e3b1.com", "member")
 
         held = resolve_permissions(user)
 

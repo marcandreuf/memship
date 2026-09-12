@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
+from app.core.permissions import MEMBER_SLUG
 from app.domains.auth.models import User, UserIdentity
 from app.domains.auth.roles import assign_roles
 from app.domains.auth.service import get_registration_settings
@@ -107,7 +108,8 @@ def find_or_create_from_oauth(db: Session, profile: OAuthProfile) -> tuple[User,
     db.add(user)
     db.flush()
 
-    assign_roles(db, user)
+    # Sign-up through a provider is still a member signing up (#168).
+    assign_roles(db, user, MEMBER_SLUG)
 
     default_type = get_default_membership_type(db)
     member = Member(

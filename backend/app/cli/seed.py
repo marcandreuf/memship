@@ -37,7 +37,7 @@ from sqlalchemy import text
 
 from app.cli.reset import preview_club_data, reset_club_data
 from app.core.config import settings as app_settings
-from app.core.permissions import ADMIN_SLUG, SUPER_ADMIN_SLUG
+from app.core.permissions import ADMIN_SLUG, MEMBER_SLUG, SUPER_ADMIN_SLUG
 from app.db.session import SessionLocal
 from app.domains.audit.models import AuditLog
 from app.domains.organizations.models import OrganizationSettings
@@ -454,7 +454,7 @@ def create_user_with_member(
     db.add(user)
     db.flush()
 
-    assign_roles(db, user, role)
+    assign_roles(db, user, role, MEMBER_SLUG)
 
     member_number = next_member_number(db)
     member = Member(
@@ -761,12 +761,11 @@ def seed_extra_members(db, default_membership_type: MembershipType) -> list[Memb
         db.add(user)
         db.flush()
 
-        # Every account holds `member` permanently — permissions come from
-        # user_roles, so without this the account authenticates and then gets
-        # 403 on its own portal. Missed when roles & permissions replaced the
-        # users.role column: the migration backfilled existing rows, but this
-        # seeding path kept creating users with no assignment at all.
-        assign_roles(db, user)
+        # Permissions come from user_roles, so without this the account
+        # authenticates and then gets 403 on its own portal. These are members,
+        # so `member` is named explicitly — it is no longer a floor every
+        # account gets (#168).
+        assign_roles(db, user, MEMBER_SLUG)
 
         member_number = next_member_number(db)
         status = statuses[i % len(statuses)]
@@ -1759,7 +1758,7 @@ def attach_login(db, member: Member, password: str) -> str:
     )
     db.add(user)
     db.flush()
-    assign_roles(db, user, "member")
+    assign_roles(db, user, MEMBER_SLUG)
     member.user_id = user.id
     db.flush()
     return person.email
