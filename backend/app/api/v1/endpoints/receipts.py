@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.core.authorization import require_permission, user_has
 from app.core.csv_export import stream_csv
+from app.core.db_utils import current_member_or_403
 from app.core.pagination import paginate
 from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
@@ -589,9 +590,7 @@ def list_my_receipts(
     current_user: User = Depends(require_permission("self.billing.read")),
 ):
     """List current user's receipts (member self-service)."""
-    member = _own_member(db, current_user)
-    if not member:
-        raise HTTPException(status_code=404, detail="Member not found")
+    member = current_member_or_403(db, current_user, active_only=True)
 
     query = (
         db.query(Receipt)
