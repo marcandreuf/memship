@@ -19,7 +19,9 @@ from app.cli.seed import (
     _run_unattended,
     any_admin_user_id,
     create_org_settings,
+    create_staff_user,
     create_user_with_member,
+    next_member_number,
     restore_member_records,
     seed_address_types,
     seed_contact_types,
@@ -65,6 +67,24 @@ def _account(email, role, membership_type, db):
         role,
         membership_type,
     )
+    return db.query(User).filter_by(email=email).one()
+
+
+def _staff(email, role, db):
+    create_staff_user(
+        db,
+        {
+            "first_name": "Test",
+            "last_name": "Operator",
+            "email": email,
+            "password": "correct horse battery staple",
+        },
+        role,
+    )
+    # `roles` is a selectin relationship loaded when the row was first flushed,
+    # before its assignments existed; without this the test reads the empty set
+    # that load cached rather than what the seed wrote.
+    db.expire_all()
     return db.query(User).filter_by(email=email).one()
 
 
@@ -181,7 +201,10 @@ class TestResetClears:
 
         assert second == {}
 
-    def test_survivors_get_their_member_record_back(self, db):
+    def test_a_promoted_member_gets_their_member_record_back(self, db):
+        """The case `restore_member_records` still covers after #168: an account
+        that was a member first and was granted `super_admin` afterwards holds
+        both roles, and a reset would otherwise leave the role with no row."""
         membership_type = _base_install(db)
         keeper = _account("owner@example.org", "super_admin", membership_type, db)
 
@@ -192,6 +215,74 @@ class TestResetClears:
         member = db.query(Member).filter_by(person_id=keeper.person_id).one()
         assert member.user_id == keeper.id
         assert member.status == "active"
+
+
+class TestStaffAreNotMembers:
+    """#168: an account that administers the instance is not in the club.
+
+    The register used to open with the operator on M-0001, who was `active` on
+    whatever tier the setup picked — inside every member count, every export,
+    and the population a billing run charges.
+    """
+
+    def test_a_seeded_super_admin_has_no_member_record(self, db):
+        _base_install(db)
+
+        user = _staff("owner@example.org", SUPER_ADMIN_SLUG, db)
+
+        assert db.query(Member).filter_by(person_id=user.person_id).first() is None
+        assert {r.slug for r in user.roles} == {SUPER_ADMIN_SLUG}
+
+    def test_a_seeded_club_admin_has_no_member_record(self, db):
+        _base_install(db)
+
+        user = _staff("club@example.org", "admin", db)
+
+        assert db.query(Member).filter_by(person_id=user.person_id).first() is None
+        assert {r.slug for r in user.roles} == {"admin"}
+
+    def test_the_first_real_member_gets_m_0001(self, db):
+        """The visible symptom in the issue: the operator took M-0001, so the
+        club's first actual member started at M-0002."""
+        membership_type = _base_install(db)
+        _staff("owner@example.org", SUPER_ADMIN_SLUG, db)
+
+        joiner = _account("first@example.org", MEMBER_SLUG, membership_type, db)
+
+        member = db.query(Member).filter_by(person_id=joiner.person_id).one()
+        assert member.member_number == "M-0001"
+
+    def test_the_register_is_empty_before_anyone_joins(self, db):
+        _base_install(db)
+        _staff("owner@example.org", SUPER_ADMIN_SLUG, db)
+        _staff("club@example.org", "admin", db)
+
+        assert db.query(Member).count() == 0
+        assert next_member_number(db) == "M-0001"
+
+    def test_an_unattended_install_leaves_the_register_empty(self, db, monkeypatch):
+        """The whole path an operator actually runs, not just the helper."""
+        membership_type = _base_install(db)
+        monkeypatch.setenv("MEMSHIP_ADMIN_PASSWORD", "correct horse battery staple")
+
+        _run_unattended(db, membership_type, _args(admin_email="owner@example.org"))
+
+        db.expire_all()
+        user = db.query(User).filter_by(email="owner@example.org").one()
+        assert {r.slug for r in user.roles} == {SUPER_ADMIN_SLUG}
+        assert db.query(Member).count() == 0
+
+    def test_a_reset_does_not_hand_a_staff_account_a_membership(self, db):
+        """`restore_member_records` used to give every surviving super admin a
+        member record, which is how the shape came back after every reset."""
+        _base_install(db)
+        keeper = _staff("owner@example.org", SUPER_ADMIN_SLUG, db)
+
+        reset_club_data(db)
+        membership_type = seed_membership_types(db, seed_groups(db))
+        restore_member_records(db, super_admin_users(db), membership_type)
+
+        assert db.query(Member).filter_by(person_id=keeper.person_id).first() is None
 
 
 class TestCreatedByResolution:

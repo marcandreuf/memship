@@ -188,7 +188,14 @@ def _install_role_assignment_hook(session):
         for user in pending:
             if user.role_assignments:
                 continue
-            named = getattr(user, "_fixture_role", "member")
+            named = getattr(user, "_fixture_role", None)
+            # No `role=` means the account was built by the code under test —
+            # registration, SSO, seeding — which assigns its own roles right
+            # after this flush. Fabricating one here would put `member` back on
+            # the staff accounts #168 takes it off, and the test would be
+            # asserting against the shim rather than the app.
+            if named is None:
+                continue
             slugs = {named} if isinstance(named, str) else set(named)
             user.role_assignments = [
                 UserRoleAssignment(role_id=role_ids[slug])
@@ -201,7 +208,8 @@ def _accept_fixture_role_kwarg():
     original_init = User.__init__
 
     def __init__(self, **kwargs):
-        self._fixture_role = kwargs.pop("role", "member")
+        if "role" in kwargs:
+            self._fixture_role = kwargs.pop("role")
         original_init(self, **kwargs)
 
     User.__init__ = __init__
