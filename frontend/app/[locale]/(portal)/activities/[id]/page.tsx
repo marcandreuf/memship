@@ -59,8 +59,11 @@ export default function ActivityDetailPage({
   const canReadRegistrations = has("registrations.read");
 
   const { data: activity, isLoading } = useActivity(activityId);
-  const { data: eligibility } = useEligibility(activityId);
-  const { data: myRegs } = useMyRegistrations();
+  // Both are about *this account's* relationship to the activity, which an
+  // operator account does not have (#168) — the endpoints refuse it.
+  const isMember = user?.member_id != null;
+  const { data: eligibility } = useEligibility(activityId, isMember);
+  const { data: myRegs } = useMyRegistrations({}, isMember);
   const updateMutation = useUpdateActivity();
   const deleteMutation = useDeleteActivity();
   const publishMutation = usePublishActivity();

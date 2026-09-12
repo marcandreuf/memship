@@ -9,9 +9,10 @@ per-space week calendar and manage their own reservations.
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 
 from app.core.authorization import require_permission, user_has
+from app.core.db_utils import current_member_or_403
 from app.core.pagination import paginate
 from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
@@ -33,7 +34,6 @@ from app.domains.bookings.schemas import (
     SpaceUpdate,
     WeekAvailability,
 )
-from app.domains.members.models import Member
 from app.domains.organizations.models import OrganizationSettings
 
 router = APIRouter(prefix="/spaces", tags=["bookings"])
@@ -47,18 +47,6 @@ def _require_bookings_enabled(db: Session) -> None:
     features = (org.features or {}) if org else {}
     if not features.get("bookings"):
         raise HTTPException(status_code=404, detail="Not found")
-
-
-def _current_member(db: Session, user: User) -> Member:
-    member = (
-        db.query(Member)
-        .options(joinedload(Member.person))
-        .filter(Member.user_id == user.id)
-        .first()
-    )
-    if member is None:
-        raise HTTPException(status_code=403, detail="No member profile")
-    return member
 
 
 def _load_space_or_404(db: Session, space_id: int) -> "service.Space":
@@ -327,7 +315,7 @@ def get_availability(
     space = service.get_space(db, space_id)
     if space is None or not space.is_active:
         raise HTTPException(status_code=404, detail="Space not found")
-    member = _current_member(db, current_user)
+    member = current_member_or_403(db, current_user)
     cells = service.space_week_availability(db, space, week_start, member.id)
     eligibility = check_space_eligibility(space, member)
     return WeekAvailability(
@@ -348,7 +336,7 @@ def create_booking(
     current_user: User = Depends(require_permission("self.bookings.write")),
 ):
     _require_bookings_enabled(db)
-    member = _current_member(db, current_user)
+    member = current_member_or_403(db, current_user)
     try:
         booking = service.create_booking(
             db,
@@ -386,7 +374,7 @@ def get_my_bookings(
     current_user: User = Depends(require_permission("self.bookings.read")),
 ):
     _require_bookings_enabled(db)
-    member = _current_member(db, current_user)
+    member = current_member_or_403(db, current_user)
     scope = scope if scope in ("upcoming", "past") else "upcoming"
     return service.my_bookings(db, member.id, scope=scope)
 
@@ -406,7 +394,7 @@ def cancel_booking(
 
     is_admin = user_has(current_user, "bookings.write")
     if not is_admin:
-        member = _current_member(db, current_user)
+        member = current_member_or_403(db, current_user)
         if booking.member_id != member.id:
             raise HTTPException(status_code=403, detail="Not your booking")
 

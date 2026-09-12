@@ -374,16 +374,23 @@ export default function DashboardPage() {
   const { data: regStats } = useRegistrationStats(canReadRegistrations);
   const { data: receiptStats } = useReceiptStats(canReadBilling);
 
-  // Member: my registrations + receipts
+  // Member: my registrations + receipts. Gated the same way the staff cards
+  // above are — an operator account has no member record (#168), so these two
+  // would be a pair of guaranteed 403s on every dashboard load.
+  const isMember = user?.member_id != null;
   const { data: myRegistrations } = useMyRegistrations(
-    !isAdmin ? { per_page: 5 } : {}
+    !isAdmin ? { per_page: 5 } : {},
+    !isAdmin && isMember
   );
   const myReceiptsParams = useMemo(() => {
     const p = new URLSearchParams();
     p.set("per_page", "5");
     return p;
   }, []);
-  const { data: myReceipts } = useMyReceipts(!isAdmin ? myReceiptsParams : undefined);
+  const { data: myReceipts } = useMyReceipts(
+    !isAdmin ? myReceiptsParams : undefined,
+    !isAdmin && isMember
+  );
 
   const memberCounters = useMemo<CounterItem[]>(() => [
     { label: t("status.active"), value: activeMembers?.meta.total ?? 0, color: MEMBER_COLORS.active },

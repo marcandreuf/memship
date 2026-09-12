@@ -37,7 +37,7 @@ from sqlalchemy import text
 
 from app.cli.reset import preview_club_data, reset_club_data
 from app.core.config import settings as app_settings
-from app.core.permissions import ADMIN_SLUG, SUPER_ADMIN_SLUG
+from app.core.permissions import ADMIN_SLUG, MEMBER_SLUG, SUPER_ADMIN_SLUG
 from app.db.session import SessionLocal
 from app.domains.audit.models import AuditLog
 from app.domains.organizations.models import OrganizationSettings
@@ -420,22 +420,26 @@ def next_member_number(db) -> str:
     return f"M-{max(numbers) + 1 if numbers else 1:04d}"
 
 
-def create_user_with_member(
-    db, details: dict, role: str, membership_type: MembershipType
-) -> None:
-    existing = db.query(User).filter_by(email=details["email"]).first()
-    if existing:
-        # These accounts and their passwords are a contract with the Cypress
-        # suite, so this has to converge on the known state rather than merely
-        # leave the row alone. Skipping meant that once the password had been
-        # changed — by `dev.sh passwd`, or by hand — reseeding never put it back
-        # and the suite failed on a login it had no reason to doubt. Development
-        # and CI only: the caller already refuses to run anywhere else.
-        existing.password_hash = ph.hash(details["password"])
-        db.flush()
-        print(f"  {role} user: exists, password set to the fixed test one")
-        return
+def _converge_existing(db, details: dict, role: str) -> bool:
+    """True when the account already exists and only its password was reset.
 
+    These accounts and their passwords are a contract with the Cypress suite,
+    so seeding has to converge on the known state rather than merely leave the
+    row alone. Skipping meant that once the password had been changed — by
+    `dev.sh passwd`, or by hand — reseeding never put it back and the suite
+    failed on a login it had no reason to doubt. Development and CI only: the
+    caller already refuses to run anywhere else.
+    """
+    existing = db.query(User).filter_by(email=details["email"]).first()
+    if not existing:
+        return False
+    existing.password_hash = ph.hash(details["password"])
+    db.flush()
+    print(f"  {role} user: exists, password set to the fixed test one")
+    return True
+
+
+def _create_account(db, details: dict, *slugs: str) -> User:
     person = Person(
         first_name=details["first_name"],
         last_name=details["last_name"],
@@ -454,11 +458,41 @@ def create_user_with_member(
     db.add(user)
     db.flush()
 
-    assign_roles(db, user, role)
+    assign_roles(db, user, *slugs)
+    # Not left to the caller's next flush: `reset_club_data` decides what to
+    # keep by reading `user_roles`, so an assignment still pending there is an
+    # operator account that does not look like one yet.
+    db.flush()
+    return user
+
+
+def create_staff_user(db, details: dict, role: str) -> None:
+    """An account that administers the instance, and nothing more.
+
+    No member record, no member number, no membership type: an operator is not
+    a member of the club (#168). Where the same human is genuinely both, that
+    is a second account with a second address — `users.email` is UNIQUE, so it
+    is forced anyway — and no feature links the two.
+    """
+    if _converge_existing(db, details, role):
+        return
+
+    _create_account(db, details, role)
+    print(f"  {role} user: created ({details['email']}, not a club member)")
+
+
+def create_user_with_member(
+    db, details: dict, role: str, membership_type: MembershipType
+) -> None:
+    """An account that belongs to a person in the club's member register."""
+    if _converge_existing(db, details, role):
+        return
+
+    user = _create_account(db, details, role, MEMBER_SLUG)
 
     member_number = next_member_number(db)
     member = Member(
-        person_id=person.id,
+        person_id=user.person_id,
         user_id=user.id,
         membership_type_id=membership_type.id,
         member_number=member_number,
@@ -761,12 +795,11 @@ def seed_extra_members(db, default_membership_type: MembershipType) -> list[Memb
         db.add(user)
         db.flush()
 
-        # Every account holds `member` permanently — permissions come from
-        # user_roles, so without this the account authenticates and then gets
-        # 403 on its own portal. Missed when roles & permissions replaced the
-        # users.role column: the migration backfilled existing rows, but this
-        # seeding path kept creating users with no assignment at all.
-        assign_roles(db, user)
+        # Permissions come from user_roles, so without this the account
+        # authenticates and then gets 403 on its own portal. These are members,
+        # so `member` is named explicitly — it is no longer a floor every
+        # account gets (#168).
+        assign_roles(db, user, MEMBER_SLUG)
 
         member_number = next_member_number(db)
         status = statuses[i % len(statuses)]
@@ -1699,14 +1732,20 @@ def super_admin_users(db) -> list[User]:
 
 
 def restore_member_records(db, users: list[User], membership_type: MembershipType) -> None:
-    """Give the surviving super admins a member record again after a reset.
+    """Give back a member record to a survivor of a reset that still holds `member`.
 
-    `members` is club data and goes with the rest of it, but every account the
-    setup creates has one — see `create_user_with_member`. Without this a super
-    admin comes out of a reset with a person record and no membership, which is
-    a shape nothing else in the app produces.
+    `members` is club data and goes with the rest of it. A super admin created
+    by the setup is not in it at all any more (#168), so for those this does
+    nothing — a person record and no membership is now the intended shape, not
+    the anomaly this function was written to prevent.
+
+    What it still covers is the account that was promoted rather than created:
+    a member who was granted `super_admin` keeps both roles, and a reset would
+    otherwise leave them holding `member` with no row to back it.
     """
     for user in users:
+        if not any(r.slug == MEMBER_SLUG for r in user.roles):
+            continue
         if db.query(Member).filter_by(person_id=user.person_id).first():
             continue
         db.add(
@@ -1759,7 +1798,7 @@ def attach_login(db, member: Member, password: str) -> str:
     )
     db.add(user)
     db.flush()
-    assign_roles(db, user, "member")
+    assign_roles(db, user, MEMBER_SLUG)
     member.user_id = user.id
     db.flush()
     return person.email
@@ -1780,7 +1819,7 @@ def create_demo_accounts(db, membership_type: MembershipType) -> list[tuple[str,
         set_password(db, existing, admin_password)
         print(f"  club admin: password reset ({DEMO_CLUB_ADMIN_EMAIL})")
     else:
-        create_user_with_member(
+        create_staff_user(
             db,
             {
                 "first_name": "Club",
@@ -1789,7 +1828,6 @@ def create_demo_accounts(db, membership_type: MembershipType) -> list[tuple[str,
                 "password": admin_password,
             },
             ADMIN_SLUG,
-            membership_type,
         )
     accounts.append(("club admin", DEMO_CLUB_ADMIN_EMAIL, admin_password))
 
@@ -1822,7 +1860,14 @@ def run_test_mode(db, membership_type: MembershipType) -> None:
 
     print("\nCreating test accounts...")
     for account in TEST_ACCOUNTS:
-        create_user_with_member(db, account, account["role"], membership_type)
+        # `super_admin` and `admin` administer the instance and are not in the
+        # member register (#168). `treasurer` is a custom club-officer role held
+        # by an actual member — its own `self.*` keys come from `member` and
+        # nowhere else, so taking that away would lock it out of its profile.
+        if account["role"] in (SUPER_ADMIN_SLUG, ADMIN_SLUG):
+            create_staff_user(db, account, account["role"])
+        else:
+            create_user_with_member(db, account, account["role"], membership_type)
 
     admin_id = any_admin_user_id(db)
     if admin_id:
@@ -2004,7 +2049,7 @@ def _run_interactive(db, membership_type: MembershipType) -> list[tuple[str, str
     accounts: list[tuple[str, str, str]] = []
     if super_details:
         print("\nCreating super admin...")
-        create_user_with_member(db, super_details, SUPER_ADMIN_SLUG, membership_type)
+        create_staff_user(db, super_details, SUPER_ADMIN_SLUG)
         accounts.append(("super admin", super_details["email"], "(the password you chose)"))
     elif reset_target is not None:
         set_password(db, reset_target, reset_password)
@@ -2070,7 +2115,7 @@ def _run_unattended(db, membership_type: MembershipType, args) -> list[tuple[str
             print(f"\n  super admin: password reset ({args.admin_email})")
         else:
             print("\nCreating super admin...")
-            create_user_with_member(
+            create_staff_user(
                 db,
                 {
                     "first_name": "Super",
@@ -2079,7 +2124,6 @@ def _run_unattended(db, membership_type: MembershipType, args) -> list[tuple[str
                     "password": password,
                 },
                 SUPER_ADMIN_SLUG,
-                membership_type,
             )
         accounts.append(("super admin", args.admin_email, "(from MEMSHIP_ADMIN_PASSWORD)"))
 

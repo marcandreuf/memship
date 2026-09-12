@@ -16,6 +16,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.authorization import require_permission
+from app.core.db_utils import current_member_or_403
 from app.db.session import get_db
 from app.domains.auth.models import User
 from app.domains.billing.membership_purchase_service import (
@@ -28,26 +29,9 @@ from app.domains.billing.schemas import (
     MembershipPurchaseRequest,
     MembershipPurchaseResponse,
 )
-from app.domains.members.models import Member, MembershipType
+from app.domains.members.models import MembershipType
 
 router = APIRouter(prefix="/members/me/membership", tags=["members"])
-
-
-def _own_member(db: Session, user: User) -> Member:
-    """The caller's own member record, resolved through the foreign key.
-
-    Never through ``Person.email``: that column is non-unique and a minor
-    routinely shares a guardian's address, so an email match can return somebody
-    else's member row — and this endpoint would then bill them.
-    """
-    member = (
-        db.query(Member)
-        .filter(Member.user_id == user.id, Member.is_active.is_(True))
-        .first()
-    )
-    if not member:
-        raise HTTPException(status_code=404, detail="Member not found")
-    return member
 
 
 def _membership_type(db: Session, membership_type_id: int) -> MembershipType:
@@ -92,7 +76,7 @@ def quote_membership(
     cannot be quoted either and the portal never offers a price it would then
     reject.
     """
-    member = _own_member(db, current_user)
+    member = current_member_or_403(db, current_user, active_only=True)
     mtype = _membership_type(db, membership_type_id)
     quote = quote_membership_purchase(db, member, mtype)
     return MembershipPurchaseQuote(**_quote_fields(quote))
@@ -115,7 +99,7 @@ def purchase_membership_endpoint(
     later. Any purchase still awaiting payment is voided by this one, so a
     member who picked the wrong plan can simply pick again.
     """
-    member = _own_member(db, current_user)
+    member = current_member_or_403(db, current_user, active_only=True)
     mtype = _membership_type(db, data.membership_type_id)
 
     receipt, quote = purchase_membership(

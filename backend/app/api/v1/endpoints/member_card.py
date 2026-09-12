@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.authorization import require_permission
+from app.core.db_utils import current_member_or_403
 from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
 from app.domains.auth.models import User
@@ -40,18 +41,6 @@ def _require_card_enabled(db: Session) -> None:
     features = (org.features or {}) if org else {}
     if not features.get("member_card"):
         raise HTTPException(status_code=404, detail="Not found")
-
-
-def _current_member(db: Session, user: User) -> Member:
-    member = (
-        db.query(Member)
-        .options(joinedload(Member.person))
-        .filter(Member.user_id == user.id)
-        .first()
-    )
-    if member is None:
-        raise HTTPException(status_code=403, detail="No member profile")
-    return member
 
 
 def _load_member_or_404(db: Session, member_id: int) -> Member:
@@ -90,7 +79,7 @@ def get_my_card(
     current_user: User = Depends(require_permission("self.card.read")),
 ):
     _require_card_enabled(db)
-    member = _current_member(db, current_user)
+    member = current_member_or_403(db, current_user)
     return build_card(db, member)
 
 
@@ -100,7 +89,7 @@ def get_my_card_qr(
     current_user: User = Depends(require_permission("self.card.read")),
 ):
     _require_card_enabled(db)
-    member = _current_member(db, current_user)
+    member = current_member_or_403(db, current_user)
     return _qr_response(member)
 
 
@@ -110,7 +99,7 @@ def get_my_card_pdf(
     current_user: User = Depends(require_permission("self.card.read")),
 ):
     _require_card_enabled(db)
-    member = _current_member(db, current_user)
+    member = current_member_or_403(db, current_user)
     return _pdf_response(db, member)
 
 

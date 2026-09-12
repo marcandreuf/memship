@@ -72,7 +72,10 @@ export default function ActivitiesPage() {
     search: search || undefined,
     status: isAdmin ? statusFilter || undefined : "published",
   });
-  const { data: myRegs } = useMyRegistrations();
+  // Only a member has registrations. An operator account has none (#168) and
+  // the endpoint refuses it, so asking is a guaranteed 403 on a page admins
+  // open constantly.
+  const { data: myRegs } = useMyRegistrations({}, user?.member_id != null);
 
   return (
     <div className="space-y-4">
