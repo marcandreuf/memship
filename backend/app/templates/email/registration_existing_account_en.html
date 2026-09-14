@@ -1,0 +1,13 @@
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}Someone tried to sign up with your address. You already have an account.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Hello, {{ first_name }}</h1>
+<p style="{{ s.p }}">Someone has just tried to create an account with this email address. You already have one, so nothing was created and nothing has changed.</p>
+<p style="{{ s.p }}">If it was you, there is no need to sign up again — just sign in.</p>
+{{ c.button(login_url, "Sign in") }}
+<p style="{{ s.p }}">Forgotten your password? You can <a href="{{ reset_url }}" style="{{ s.link }}">choose a new one</a>.</p>
+<p style="{{ s.note_last }}">If it was not you, you can ignore this message. Your account is untouched and whoever tried was not told that this address is registered.</p>
+{% endblock %}

@@ -183,10 +183,36 @@ class TestRegister:
         assert member.membership_type_id == free.id
         assert member.membership_type_id != paid.id
 
-    def test_register_duplicate_email(self, client, db):
+    def test_a_taken_address_is_answered_exactly_like_a_free_one(
+        self, client, db, monkeypatch
+    ):
+        """The whole of #102, in one assertion.
+
+        `/register` used to answer 409 "Email already registered" here, and the
+        register form rendered that string verbatim — so the public signup page
+        reported whether any address was a member, one address at a time.
+
+        Asserted with a transport configured, which is the condition the
+        property has to hold under. Without one the endpoint takes its dev-mode
+        branch and hands the caller a verification token, which only the free
+        address has — a difference this test would otherwise report as the bug
+        returning. That branch is gated by `_dev_tokens_allowed()` and the mode
+        ships fixed passwords published in this repository, so there is no
+        membership there to disclose.
+        """
+        import app.api.v1.endpoints.auth as auth_endpoint
+
+        monkeypatch.setattr(auth_endpoint, "mailing_enabled", lambda _db: True)
+        monkeypatch.setattr(
+            auth_endpoint, "send_verification_email", lambda *a, **k: True
+        )
+        monkeypatch.setattr(
+            auth_endpoint, "send_existing_account_email", lambda *a, **k: True
+        )
+        _default_tier(db)
         _create_test_user(db, email="dupe@examplee6e3b1.com")
 
-        response = client.post(
+        taken = client.post(
             "/api/v1/auth/register",
             json={
                 "first_name": "Dup",
@@ -195,7 +221,129 @@ class TestRegister:
                 "password": "password123",
             },
         )
-        assert response.status_code == 409
+        free = client.post(
+            "/api/v1/auth/register",
+            json={
+                "first_name": "Dup",
+                "last_name": "User",
+                "email": "notdupe@examplee6e3b1.com",
+                "password": "password123",
+            },
+        )
+
+        assert taken.status_code == free.status_code == 201
+        # Compared whole rather than field by field: a field added later that
+        # varies with the address puts the oracle back, and this is the
+        # assertion that has to notice.
+        assert taken.json() == {**free.json(), "email": "dupe@examplee6e3b1.com"}
+
+    def test_a_taken_address_creates_nothing(self, client, db):
+        _default_tier(db)
+        _create_test_user(db, email="untouched@examplee6e3b1.com")
+        before = db.query(User).count(), db.query(Member).count()
+
+        client.post(
+            "/api/v1/auth/register",
+            json={
+                "first_name": "Dup",
+                "last_name": "User",
+                "email": "untouched@examplee6e3b1.com",
+                "password": "different-password",
+            },
+        )
+
+        db.expire_all()
+        assert (db.query(User).count(), db.query(Member).count()) == before
+
+    def test_a_taken_address_does_not_change_the_password(self, client, db):
+        """Otherwise the endpoint is an unauthenticated password reset."""
+        _default_tier(db)
+        _create_test_user(db, email="keep@examplee6e3b1.com", password="password123")
+        before = db.query(User).filter(User.email == "keep@examplee6e3b1.com").one()
+        original = before.password_hash
+
+        client.post(
+            "/api/v1/auth/register",
+            json={
+                "first_name": "Dup",
+                "last_name": "User",
+                "email": "keep@examplee6e3b1.com",
+                "password": "attackers-password",
+            },
+        )
+
+        db.expire_all()
+        after = db.query(User).filter(User.email == "keep@examplee6e3b1.com").one()
+        assert after.password_hash == original
+
+    def test_a_taken_address_mails_its_owner(self, client, db, monkeypatch):
+        """What the caller is not told, the owner is.
+
+        Without this the fix strands the person who forgot they had an account:
+        told to check an inbox nothing was ever sent to.
+        """
+        import app.api.v1.endpoints.auth as auth_endpoint
+
+        _default_tier(db)
+        _create_test_user(db, email="owner@examplee6e3b1.com")
+        sent: list[tuple] = []
+        monkeypatch.setattr(
+            auth_endpoint, "mailing_enabled", lambda _db: True
+        )
+        monkeypatch.setattr(
+            auth_endpoint,
+            "send_existing_account_email",
+            lambda *a, **k: sent.append(a) or True,
+        )
+        monkeypatch.setattr(
+            auth_endpoint, "send_verification_email", lambda *a, **k: True
+        )
+
+        client.post(
+            "/api/v1/auth/register",
+            json={
+                "first_name": "Dup",
+                "last_name": "User",
+                "email": "owner@examplee6e3b1.com",
+                "password": "password123",
+            },
+        )
+
+        assert len(sent) == 1
+        to, first_name, login_url, reset_url = sent[0]
+        assert to == "owner@examplee6e3b1.com"
+        # No token in either link: an attempt to sign up as someone must not be
+        # able to mint or burn that person's recovery tokens.
+        assert "token=" not in reset_url and "token=" not in login_url
+
+    def test_an_unknown_address_mails_nobody_about_an_existing_account(
+        self, client, db, monkeypatch
+    ):
+        import app.api.v1.endpoints.auth as auth_endpoint
+
+        _default_tier(db)
+        sent: list[tuple] = []
+        monkeypatch.setattr(auth_endpoint, "mailing_enabled", lambda _db: True)
+        monkeypatch.setattr(
+            auth_endpoint,
+            "send_existing_account_email",
+            lambda *a, **k: sent.append(a) or True,
+        )
+        monkeypatch.setattr(
+            auth_endpoint, "send_verification_email", lambda *a, **k: True
+        )
+
+        client.post(
+            "/api/v1/auth/register",
+            json={
+                "first_name": "Brand",
+                "last_name": "New",
+                "email": "nobody@examplee6e3b1.com",
+                "password": "password123",
+            },
+        )
+
+        assert sent == []
 
     def test_register_short_password(self, client):
         response = client.post(

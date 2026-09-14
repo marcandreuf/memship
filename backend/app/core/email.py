@@ -37,6 +37,11 @@ _jinja_env = Environment(
 
 # Email subject translations
 _SUBJECTS = {
+    "registration_existing_account": {
+        "es": "Ya tienes una cuenta en {org}",
+        "ca": "Ja tens un compte a {org}",
+        "en": "You already have an account at {org}",
+    },
     "registration_confirmed": {
         "es": "Inscripción confirmada: {activity}",
         "ca": "Inscripció confirmada: {activity}",
@@ -545,6 +550,26 @@ def send_password_reset_email(to: str, first_name: str, reset_url: str, locale: 
         "first_name": first_name,
         "reset_url": reset_url,
     })
+
+
+def send_existing_account_email(
+    to: str, first_name: str, login_url: str, reset_url: str, locale: str = "es"
+) -> bool:
+    """Tell an address that someone tried to register it, and that it is taken.
+
+    The counterpart to ``/register`` answering a known address exactly as it
+    answers an unknown one (#102). Without this the owner is the one who pays
+    for that silence — told to check an inbox nothing was ever sent to — so the
+    mail is what makes the uniform response honest rather than merely quiet.
+
+    It carries no token. The reset link points at the form, so an attempt to
+    sign up as someone cannot mint, or burn, that person's recovery tokens.
+    """
+    return _send_templated("registration_existing_account", to, locale, {
+        "first_name": first_name,
+        "login_url": login_url,
+        "reset_url": reset_url,
+    }, subject_args={"org": get_email_branding().name})
 
 
 def send_verification_email(

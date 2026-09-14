@@ -56,7 +56,9 @@ def _auth_cookie(user):
 
 class TestCatalog:
     def test_mandatory_is_exactly_the_account_access_templates(self):
-        assert MANDATORY == frozenset({"verification", "password_reset"})
+        assert MANDATORY == frozenset(
+            {"verification", "password_reset", "registration_existing_account"}
+        )
 
     def test_every_key_is_unique_and_has_a_group(self):
         keys = [spec.key for spec in CATALOG]

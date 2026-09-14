@@ -249,6 +249,10 @@
           "name": "Password reset",
           "locked": "The only way to recover access to an account."
         },
+        "registration_existing_account": {
+          "name": "Signup on an existing address",
+          "locked": "The only warning an owner gets that someone tried to sign up as them."
+        },
         "registration_approved": {
           "name": "Registration approved",
           "description": "Tells the member their registration was approved and they can log in.",

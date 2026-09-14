@@ -7,10 +7,13 @@ its key (matching the template file and the ``_SUBJECTS`` entry in
 Three tiers, mirroring how much freedom the organization has:
 
 - ``mandatory`` — the account-access mails. ``verification`` is the only way to
-  activate an account and ``password_reset`` the only recovery path, so neither
-  can be switched off: ``is_enabled`` short-circuits to ``True`` and the API
-  rejects an attempt to disable one. A member-level opt-out must not apply to
-  these either (they rest on contract, not consent).
+  activate an account, ``password_reset`` the only recovery path, and
+  ``registration_existing_account`` the only thing an owner hears when someone
+  tries to sign up as them — which is also the only reason ``/register`` can
+  answer a known address the same way it answers an unknown one (#102). None can
+  be switched off: ``is_enabled`` short-circuits to ``True`` and the API rejects
+  an attempt to disable one. A member-level opt-out must not apply to these
+  either (they rest on contract, not consent).
 - ``operational`` — the member gained or lost something and has no other signal
   (a seat opened, the club cancelled their booking, a receipt was issued). The
   UI warns before switching one off.
@@ -18,8 +21,8 @@ Three tiers, mirroring how much freedom the organization has:
   the admin-facing summary and the broadcast channel.
 
 Resolution is DB-with-default, and the default is **off**: a key absent from
-``communications_config`` does not send. Nothing but the two mandatory mails
-leaves a fresh install until someone switches it on, so an organization opts
+``communications_config`` does not send. Nothing but the mandatory mails leaves
+a fresh install until someone switches it on, so an organization opts
 into each channel rather than discovering it after members have been mailed. A
 key with no catalogue entry is not configurable and always sends.
 """
@@ -45,6 +48,7 @@ class TemplateSpec:
 CATALOG: tuple[TemplateSpec, ...] = (
     TemplateSpec("verification", "auth", "mandatory"),
     TemplateSpec("password_reset", "auth", "mandatory"),
+    TemplateSpec("registration_existing_account", "auth", "mandatory"),
     TemplateSpec("registration_approved", "members", "operational"),
     TemplateSpec("registration_rejected", "members", "optional"),
     TemplateSpec("registration_confirmed", "activities", "optional"),

@@ -249,6 +249,10 @@
           "name": "Restablir la contrasenya",
           "locked": "Única manera de recuperar l'accés a un compte."
         },
+        "registration_existing_account": {
+          "name": "Registre sobre un compte existent",
+          "locked": "Únic avís que rep el titular que algú ha intentat registrar-se com ell."
+        },
         "registration_approved": {
           "name": "Alta aprovada",
           "description": "Avisa el soci que la seva alta s'ha aprovat i ja pot entrar.",
