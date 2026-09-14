@@ -12,11 +12,13 @@ The throttles are process-global, so every test here leans on the autouse
 import pytest
 
 from app.core.security.password import hash_password
+from app.core.security import rate_limit
 from app.core.security.rate_limit import (
     EMAIL_DISPATCH_BY_EMAIL,
     EMAIL_DISPATCH_BY_IP,
     LOGIN_BY_EMAIL,
     LOGIN_BY_IP,
+    REGISTER_BY_EMAIL,
     REGISTER_BY_IP,
 )
 from app.domains.auth.models import User
@@ -52,6 +54,22 @@ def account(db):
     user = User(
         person_id=person.id,
         email="throttle@examplee6e3b1.com",
+        password_hash=hash_password(PASSWORD),
+        is_active=True,
+        email_verified=True,
+    )
+    db.add(user)
+    db.flush()
+    return user
+
+
+def _make_user(db, email):
+    person = Person(first_name="Known", last_name="Member", email=email)
+    db.add(person)
+    db.flush()
+    user = User(
+        person_id=person.id,
+        email=email,
         password_hash=hash_password(PASSWORD),
         is_active=True,
         email_verified=True,
@@ -214,12 +232,15 @@ class TestMailDispatchIsBounded:
 
 class TestRegistrationIsBounded:
     def _register(self, client, i):
+        return self._register_as(client, f"signup{i}@examplee6e3b1.com")
+
+    def _register_as(self, client, email):
         return client.post(
             "/api/v1/auth/register",
             json={
                 "first_name": "New",
                 "last_name": "Member",
-                "email": f"signup{i}@examplee6e3b1.com",
+                "email": email,
                 "password": "a-long-enough-password",
             },
         )
@@ -240,3 +261,34 @@ class TestRegistrationIsBounded:
             assert self._register(client, i).status_code == 403
 
         assert self._register(client, 99).status_code == 429
+
+    def test_one_address_is_capped_however_many_sources_try_it(self, client, db, org):
+        """Registering a known address mails its owner (#102), so without this
+        the fix hands anyone a mail cannon pointed at a member's inbox — rotate
+        the source and `REGISTER_BY_IP` never bites."""
+        for _ in range(REGISTER_BY_EMAIL.limit):
+            r = self._register_as(client, "target@examplee6e3b1.com")
+            assert r.status_code == 201
+
+        assert self._register_as(client, "target@examplee6e3b1.com").status_code == 429
+
+    def test_the_address_cap_does_not_depend_on_the_address_existing(
+        self, client, db, org
+    ):
+        """Counted before the lookup, or the limit itself reports whether the
+        address is registered — the disclosure #102 removed, moved one layer
+        down."""
+        _make_user(db, "known@examplee6e3b1.com")
+
+        known = [
+            self._register_as(client, "known@examplee6e3b1.com").status_code
+            for _ in range(REGISTER_BY_EMAIL.limit + 1)
+        ]
+        rate_limit.reset_all()
+        unknown = [
+            self._register_as(client, "unknown@examplee6e3b1.com").status_code
+            for _ in range(REGISTER_BY_EMAIL.limit + 1)
+        ]
+
+        assert known == unknown
+        assert known[-1] == 429

@@ -249,6 +249,10 @@
           "name": "Restablecer contraseña",
           "locked": "Única forma de recuperar el acceso a una cuenta."
         },
+        "registration_existing_account": {
+          "name": "Registro sobre una cuenta existente",
+          "locked": "Único aviso que recibe el titular de que alguien ha intentado registrarse como él."
+        },
         "registration_approved": {
           "name": "Alta aprobada",
           "description": "Avisa al socio de que su alta ha sido aprobada y ya puede entrar.",

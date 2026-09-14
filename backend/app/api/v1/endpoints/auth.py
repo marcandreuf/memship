@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.email import (
+    send_existing_account_email,
     send_password_reset_email,
     send_verification_email,
 )
@@ -18,11 +19,13 @@ from app.core.security.dependencies import get_current_user
 from app.core.authorization import require_permission, resolve_permissions
 from app.core.security.jwt import create_access_token
 from app.core.security.oauth import get_provider, provider_redirect_uri
+from app.core.security.password import spend_verify_work
 from app.core.security.rate_limit import (
     EMAIL_DISPATCH_BY_EMAIL,
     EMAIL_DISPATCH_BY_IP,
     LOGIN_BY_EMAIL,
     LOGIN_BY_IP,
+    REGISTER_BY_EMAIL,
     REGISTER_BY_IP,
     client_ip,
     enforce,
@@ -55,6 +58,7 @@ from app.domains.auth.oauth_service import (
 from app.domains.auth.sso_config import resolve_sso_config
 from app.domains.mailing.mailing_config import mailing_enabled
 from app.domains.auth.service import (
+    EmailTaken,
     authenticate_user,
     get_registration_settings,
     register_user,
@@ -161,16 +165,80 @@ def _verification_url(token: str) -> str:
     return f"{settings.FRONTEND_URL}/{settings.DEFAULT_LOCALE}/verify-email?token={token}"
 
 
+def _frontend_url(path: str) -> str:
+    return f"{settings.FRONTEND_URL}/{settings.DEFAULT_LOCALE}/{path}"
+
+
+# The one thing /register says, whoever the address turns out to belong to.
+REGISTRATION_RECEIVED = "Registration received. Check your email to confirm your address."
+REGISTRATION_RECEIVED_DEV = "Registration received (dev mode — no email sent)"
+
+
+def _registration_received(
+    email: str,
+    requires_approval: bool,
+    *,
+    dev: bool = False,
+    verification_token: str | None = None,
+) -> RegisterResponse:
+    """Build the response both branches of ``/register`` return.
+
+    Every field has to be answerable without knowing whether the address was
+    already taken, or the body reinstates by its shape the disclosure the status
+    code no longer makes (#102):
+
+    - ``email`` is the caller's own input, echoed.
+    - ``requires_approval`` is organisation-level and identical for everyone.
+    - ``member_status`` follows from ``requires_approval`` alone — a fresh
+      registration lands in ``pending``, or in ``active`` when the club approves
+      inline — so it is derived here rather than read off a member row that only
+      one of the two branches has.
+    """
+    return RegisterResponse(
+        message=REGISTRATION_RECEIVED_DEV if dev else REGISTRATION_RECEIVED,
+        email=email,
+        member_status="pending" if requires_approval else "active",
+        requires_approval=requires_approval,
+        verification_token=verification_token,
+    )
+
+
+def _notify_existing_account(db: Session, email: str) -> None:
+    """Tell the owner of an address that someone tried to register it.
+
+    What the caller is not told, the owner is. Failures are swallowed: the
+    response must not vary with whether this send worked, and an address that
+    cannot be mailed is not a reason to answer it differently from one that can.
+    """
+    user = db.query(User).filter(User.email == email).first()
+    if user is None or user.person is None:
+        return
+    try:
+        send_existing_account_email(
+            user.email,
+            user.person.first_name,
+            _frontend_url("login"),
+            _frontend_url("forgot-password"),
+        )
+    except Exception:  # noqa: BLE001 — never let a transport fault shape the reply
+        logger.exception("Could not notify an existing account of a signup attempt")
+
+
 @router.post(
     "/register", response_model=RegisterResponse, status_code=status.HTTP_201_CREATED
 )
 def register(data: RegisterRequest, request: Request, db: Session = Depends(get_db)):
     # Every call writes a Person, a User and a Member row, and — once a
-    # transport is configured — sends mail. Counted per source only: keying on
-    # the submitted address would let a script pick a new one each time.
+    # transport is configured — sends mail. Bounded per source, because keying
+    # on the submitted address alone would let a script pick a new one each
+    # time, and per address, because a known one is mailed (#102).
+    #
+    # Both are enforced and recorded before the address is looked up, so the
+    # limit a caller hits does not depend on the answer they came for.
     ip = client_ip(request)
-    enforce((REGISTER_BY_IP, ip))
-    record((REGISTER_BY_IP, ip))
+    identity = identity_key(data.email)
+    enforce((REGISTER_BY_IP, ip), (REGISTER_BY_EMAIL, identity))
+    record((REGISTER_BY_IP, ip), (REGISTER_BY_EMAIL, identity))
 
     public_registration, requires_approval = get_registration_settings(db)
     if not public_registration:
@@ -178,6 +246,10 @@ def register(data: RegisterRequest, request: Request, db: Session = Depends(get_
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Public registration is disabled",
         )
+
+    # Resolved once, before the address is looked up: asking twice would put a
+    # second query on one branch and not the other.
+    can_mail = mailing_enabled(db)
 
     try:
         user, verification_token = register_user(
@@ -187,49 +259,47 @@ def register(data: RegisterRequest, request: Request, db: Session = Depends(get_
             email=data.email,
             password=data.password,
         )
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=str(e),
+    except EmailTaken:
+        # This used to answer 409 "Email already registered", which the register
+        # form rendered verbatim — anyone could read a club's membership off the
+        # public signup page one address at a time. It now answers exactly as the
+        # branch below does, and the owner is told by mail instead (#102).
+        #
+        # The argon2 hash `register_user` would have spent is spent anyway. Skip
+        # it and the taken address simply returns sooner, which is the same
+        # disclosure read off a clock.
+        spend_verify_work(data.password)
+        if can_mail:
+            _notify_existing_account(db, data.email)
+        return _registration_received(
+            data.email, requires_approval, dev=not can_mail and _dev_tokens_allowed()
         )
 
-    member = user.person.member
-    member_status = member.status if member else "pending"
     db.commit()
 
     # No session cookie here: the account is not usable until the email is
     # confirmed and (when configured) an admin approves the registration.
-    if mailing_enabled(db):
+    if can_mail:
         send_verification_email(
             user.email, user.person.first_name, _verification_url(verification_token)
         )
-        return RegisterResponse(
-            message="Registration received. Check your email to confirm your address.",
-            email=user.email,
-            member_status=member_status,
-            requires_approval=requires_approval,
-        )
+        return _registration_received(data.email, requires_approval)
 
-    # Dev mode — no transport configured, hand the token back like password reset does
+    # Dev mode — no transport configured, hand the token back like password reset
+    # does. The taken-address branch has no token to hand back, so dev mode can
+    # tell the two apart where production cannot. That is deliberate and stays:
+    # `_dev_tokens_allowed()` gates it, and the mode ships fixed passwords
+    # published in this repository, so there is no membership here to disclose.
     if _dev_tokens_allowed():
-        return RegisterResponse(
-            message="Registration received (dev mode — no email sent)",
-            email=user.email,
-            member_status=member_status,
-            requires_approval=requires_approval,
-            verification_token=verification_token,
+        return _registration_received(
+            data.email, requires_approval, dev=True, verification_token=verification_token
         )
 
     logger.error(
         "A user registered but no mail transport is configured — the verification "
         "email cannot be sent. Configure a provider in Settings → Integrations."
     )
-    return RegisterResponse(
-        message="Registration received. Check your email to confirm your address.",
-        email=user.email,
-        member_status=member_status,
-        requires_approval=requires_approval,
-    )
+    return _registration_received(data.email, requires_approval)
 
 
 @router.post("/verify-email", response_model=MessageResponse)

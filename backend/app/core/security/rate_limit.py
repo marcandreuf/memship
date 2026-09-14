@@ -124,12 +124,23 @@ EMAIL_DISPATCH_BY_IP = Throttle("email-dispatch-ip", limit=10, window_seconds=36
 # Registration creates a Person, a User and a Member row per call.
 REGISTER_BY_IP = Throttle("register-ip", limit=5, window_seconds=3600)
 
+# Registering an address that already has an account mails its owner (#102), so
+# the endpoint sends to an address an anonymous caller chose and needs the same
+# per-address bound the reset and resend pair has. It does not share their
+# budget: registration is not account recovery, and letting signup attempts
+# spend a member's recovery allowance would turn a disclosure fix into a denial
+# of service on their password reset. Enforced and recorded on every call, never
+# only on the branch that sends — "did this attempt do anything" is the
+# distinction the whole change exists to remove.
+REGISTER_BY_EMAIL = Throttle("register-email", limit=3, window_seconds=3600)
+
 ALL_THROTTLES = (
     LOGIN_BY_EMAIL,
     LOGIN_BY_IP,
     EMAIL_DISPATCH_BY_EMAIL,
     EMAIL_DISPATCH_BY_IP,
     REGISTER_BY_IP,
+    REGISTER_BY_EMAIL,
 )
 
 

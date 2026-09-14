@@ -1,0 +1,13 @@
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}Alguien ha intentado registrarse con tu dirección. Ya tienes una cuenta.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Hola, {{ first_name }}</h1>
+<p style="{{ s.p }}">Alguien acaba de intentar crear una cuenta con esta dirección de correo. Ya tienes una, así que no se ha creado nada ni ha cambiado nada.</p>
+<p style="{{ s.p }}">Si has sido tú, no hace falta que te registres otra vez: basta con que entres.</p>
+{{ c.button(login_url, "Entrar") }}
+<p style="{{ s.p }}">¿Has olvidado la contraseña? Puedes <a href="{{ reset_url }}" style="{{ s.link }}">elegir una nueva</a>.</p>
+<p style="{{ s.note_last }}">Si no has sido tú, puedes ignorar este mensaje. Tu cuenta sigue intacta y a quien lo intentó no se le dijo que esta dirección esté registrada.</p>
+{% endblock %}

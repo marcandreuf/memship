@@ -8,7 +8,11 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 
 from app.core.permissions import MEMBER_SLUG, SUPER_ADMIN_SLUG
-from app.core.security.password import hash_password, verify_password
+from app.core.security.password import (
+    hash_password,
+    spend_verify_work,
+    verify_password,
+)
 from app.domains.auth.models import User
 from app.domains.auth.roles import assign_roles
 from app.domains.members.models import Member
@@ -20,6 +24,15 @@ from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Person
 
 VERIFICATION_TOKEN_TTL_HOURS = 24
+
+
+class EmailTaken(ValueError):
+    """This address already signs in to the instance.
+
+    Raised rather than answered: whether the caller is told is the caller's
+    endpoint to decide, and ``/register`` deliberately does not tell them
+    (#102).
+    """
 
 
 def get_registration_settings(db: Session) -> tuple[bool, bool]:
@@ -37,11 +50,22 @@ def get_registration_settings(db: Session) -> tuple[bool, bool]:
 
 
 def authenticate_user(db: Session, email: str, password: str) -> User | None:
+    """Resolve a sign-in, spending the same work whatever the answer.
+
+    The caller answers "Invalid email or password" to all three failures below,
+    which only holds as long as they are also indistinguishable on a clock. Both
+    early returns skip the argon2 verification the third performs, so each one
+    spends it against a decoy first — otherwise an unknown address comes back
+    measurably sooner than a wrong password, and the login form enumerates
+    accounts by stopwatch (#102).
+    """
     user = db.query(User).filter(User.email == email, User.is_active == True).first()
     if not user:
+        spend_verify_work(password)
         return None
     # SSO-only accounts have no password hash — they cannot log in on this path.
     if not user.password_hash:
+        spend_verify_work(password)
         return None
     if not verify_password(password, user.password_hash):
         return None
@@ -106,7 +130,7 @@ def register_user(
     # Check if email already exists
     existing = db.query(User).filter(User.email == email).first()
     if existing:
-        raise ValueError("Email already registered")
+        raise EmailTaken("Email already registered")
 
     # Create person
     person = Person(
