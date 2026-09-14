@@ -13,11 +13,40 @@
 const API = Cypress.env("API_URL") || "http://localhost:8003/api/v1";
 const SPACE = `E2E Court ${Date.now()}`;
 
-// A concrete future date: 2 days ahead is always future and within the
-// default 14-day booking window.
+// A concrete future date: 2 days ahead is always future and within the default
+// 14-day booking window.
+//
+// Being inside the window is not enough to be on screen. The calendar opens on
+// the current week (Mon-Sun of today) and renders only that, so from Saturday
+// `today + 2` is next week's and every day shown is empty — `weeksAhead` below
+// is what the calendar test steps through to reach it. Before that existed the
+// spec failed every Saturday and Sunday and passed the rest of the week (#182).
 const target = new Date();
 target.setDate(target.getDate() + 2);
 target.setHours(0, 0, 0, 0);
+
+const mondayOf = (d: Date) => {
+  const copy = new Date(d);
+  copy.setDate(copy.getDate() - ((copy.getDay() + 6) % 7)); // 0 = Monday
+  copy.setHours(0, 0, 0, 0);
+  return copy;
+};
+
+// The calendar's own week heading, "DD/MM - DD/MM" over Monday to Sunday.
+const ddmm = (d: Date) =>
+  `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+const rangeLabel = (monday: Date) => {
+  const sunday = new Date(monday);
+  sunday.setDate(sunday.getDate() + 6);
+  return `${ddmm(monday)} \u2013 ${ddmm(sunday)}`;
+};
+
+// How many times the calendar has to advance before the slot's week is the one
+// on screen. 0 from Monday to Friday, 1 at the weekend.
+const weeksAhead = Math.round(
+  (mondayOf(target).getTime() - mondayOf(new Date()).getTime()) /
+    (7 * 24 * 60 * 60 * 1000)
+);
 const iso = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
     d.getDate()
@@ -174,6 +203,28 @@ describe("Simple Bookings", () => {
     // space by name, which may be another one.
     cy.get('[role="combobox"]').click();
     cy.contains('[role="option"]', SPACE).click();
+
+    // Choosing the option sets the value but leaves the popup open under
+    // Cypress's synthetic events, and an open Radix select holds
+    // `pointer-events: none` on <body> — so the next click lands on a dead
+    // element rather than the control it names. A real pointer closes it; this
+    // one needs telling. Dismiss, then wait for the lock to lift rather than for
+    // an animation, because the lock is what actually blocks.
+    //
+    // Nothing before this line needed it: every earlier step only reads the
+    // page, and `pointer-events` does not affect an assertion.
+    cy.get('[role="combobox"]').should("contain.text", SPACE);
+    cy.get("body").type("{esc}");
+    cy.get("body").should("not.have.css", "pointer-events", "none");
+
+    // Step to the slot's week. Asserted rather than assumed: if the control
+    // ever stops advancing a week per click, the timeout below would read as
+    // "the calendar does not render slots" instead of "navigation broke".
+    for (let i = 0; i < weeksAhead; i++) {
+      cy.get('[aria-label="Next week"]').click();
+    }
+    cy.contains(rangeLabel(mondayOf(target))).should("be.visible");
+
     cy.contains("10:00").should("be.visible");
   });
 });
