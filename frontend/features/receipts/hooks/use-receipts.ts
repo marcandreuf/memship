@@ -40,10 +40,11 @@ export function useReceiptStats(enabled = true) {
   });
 }
 
-export function useMyReceipts(params?: URLSearchParams) {
+export function useMyReceipts(params?: URLSearchParams, enabled = true) {
   return useQuery({
     queryKey: ["my-receipts", params?.toString()],
     queryFn: () => getMyReceipts(params),
+    enabled,
   });
 }
 

@@ -75,6 +75,11 @@ export default function ProfilePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
+  // An operator account administers the instance without belonging to the club
+  // (#168), so it has a person but no member record. `useMember` is already
+  // inert on 0, but without this the page waited on a member that never loads
+  // and rendered its skeleton for good.
+  const isMember = user?.member_id != null;
   const { data: member, isLoading } = useMember(user?.member_id || 0);
   const { data: profile, isLoading: profileLoading } = useMyProfile();
   const { data: settings } = useSettings();
@@ -93,11 +98,13 @@ export default function ProfilePage() {
     }
   }, [profile]);
 
-  if (isLoading || profileLoading || !member) {
+  if (profileLoading || (isMember && (isLoading || !member))) {
     return <FormSkeleton fields={5} />;
   }
 
-  const person = member.person;
+  // The club facts come from the member record; the rest of the page is about
+  // the person, which every account has.
+  const person = member?.person;
 
   function handleLocaleChange(newLocale: string) {
     router.replace(pathname, { locale: newLocale as Locale });
@@ -195,7 +202,9 @@ export default function ProfilePage() {
           },
         ]
       : []),
-    { id: "payment", label: t("paymentMethod.title"), content: <MyPaymentMethod /> },
+    ...(isMember
+      ? [{ id: "payment", label: t("paymentMethod.title"), content: <MyPaymentMethod /> }]
+      : []),
   ];
   const tabParam = searchParams.get("tab");
   const defaultTab = tabs.some((tab) => tab.id === tabParam)
@@ -206,7 +215,7 @@ export default function ProfilePage() {
     <div className="space-y-3">
       <div className="flex items-center gap-3">
         <h1 className="text-2xl font-bold">{t("nav.profile")}</h1>
-        <Badge>{t(`status.${member.status}`)}</Badge>
+        {member && <Badge>{t(`status.${member.status}`)}</Badge>}
       </div>
 
       {/* Compact member-info header: photo + read-only facts. */}
@@ -215,20 +224,24 @@ export default function ProfilePage() {
           <div className="grid gap-4 lg:grid-cols-[auto_1fr] lg:items-start lg:gap-8">
             <div className="flex justify-center lg:block">
               <MemberPhotoUpload
-                photoUrl={person.photo_url ?? null}
-                fullName={`${person.first_name} ${person.last_name}`}
+                photoUrl={person?.photo_url ?? user?.photo_url ?? null}
+                fullName={`${person?.first_name ?? user?.first_name ?? ""} ${person?.last_name ?? user?.last_name ?? ""}`}
               />
             </div>
             <dl className="grid content-start gap-x-8 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
-              <Field label={t("profile.firstName")} value={person.first_name} />
-              <Field label={t("profile.lastName")} value={person.last_name} />
-              <Field label={t("profile.email")} value={person.email} />
-              <Field label={t("profile.memberNumber")} value={member.member_number} />
-              <Field label={t("profile.membershipType")} value={member.membership_type_name} />
-              <Field label={t("profile.status")} value={t(`status.${member.status}`)} />
-              <Field label={t("profile.dateOfBirth")} value={person.date_of_birth ? formatDate(person.date_of_birth) : null} />
-              <Field label={t("profile.nationalId")} value={person.national_id} />
-              <Field label={t("profile.joinedAt")} value={formatDate(member.joined_at)} />
+              <Field label={t("profile.firstName")} value={person?.first_name ?? user?.first_name} />
+              <Field label={t("profile.lastName")} value={person?.last_name ?? user?.last_name} />
+              <Field label={t("profile.email")} value={person?.email ?? user?.email} />
+              {member && (
+                <>
+                  <Field label={t("profile.memberNumber")} value={member.member_number} />
+                  <Field label={t("profile.membershipType")} value={member.membership_type_name} />
+                  <Field label={t("profile.status")} value={t(`status.${member.status}`)} />
+                  <Field label={t("profile.dateOfBirth")} value={person?.date_of_birth ? formatDate(person.date_of_birth) : null} />
+                  <Field label={t("profile.nationalId")} value={person?.national_id} />
+                  <Field label={t("profile.joinedAt")} value={formatDate(member.joined_at)} />
+                </>
+              )}
             </dl>
           </div>
         </CardContent>

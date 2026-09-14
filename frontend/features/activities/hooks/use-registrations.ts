@@ -15,11 +15,11 @@ import {
   type RegisterParams,
 } from "../services/registrations-api";
 
-export function useEligibility(activityId: number) {
+export function useEligibility(activityId: number, enabled = true) {
   return useQuery({
     queryKey: ["eligibility", activityId],
     queryFn: () => checkEligibility(activityId),
-    enabled: activityId > 0,
+    enabled: enabled && activityId > 0,
   });
 }
 
@@ -90,10 +90,14 @@ export function useRegistrationStats(enabled = true) {
   });
 }
 
-export function useMyRegistrations(params: { page?: number; per_page?: number } = {}) {
+export function useMyRegistrations(
+  params: { page?: number; per_page?: number } = {},
+  enabled = true,
+) {
   return useQuery({
     queryKey: ["my-registrations", params],
     queryFn: () => listMyRegistrations(params),
+    enabled,
   });
 }
 

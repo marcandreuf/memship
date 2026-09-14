@@ -91,6 +91,15 @@ class TestFirstTimeSsoSignIn:
         assert member.status == "pending"
         assert member.member_number is None
 
+    def test_sso_signup_grants_the_member_role(self, db):
+        """`member` is opt-in since #168; signing up through a provider is
+        still a member signing up, so this path names it."""
+        _ensure_membership_type(db)
+
+        user, _ = find_or_create_from_oauth(db, _profile())
+
+        assert {r.slug for r in user.roles} == {"member"}
+
     def test_links_the_identity_to_the_new_user(self, db):
         _ensure_membership_type(db)
 

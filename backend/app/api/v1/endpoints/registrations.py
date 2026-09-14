@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.core.authorization import require_permission, user_has
 from app.core.csv_export import stream_csv
+from app.core.db_utils import current_member_or_403
 from app.core.pagination import paginate
 from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
@@ -41,13 +42,6 @@ def _get_activity_or_404(db: Session, activity_id: int) -> Activity:
     if not activity:
         raise HTTPException(status_code=404, detail="Activity not found")
     return activity
-
-
-def _get_member_for_user(db: Session, user: User) -> Member:
-    member = db.query(Member).filter(Member.user_id == user.id).first()
-    if not member:
-        raise HTTPException(status_code=400, detail="No member profile found")
-    return member
 
 
 def _to_detail_response(registration: Registration) -> RegistrationDetailResponse:
@@ -186,7 +180,7 @@ def register_for_activity(
 ):
     """Register current user's member for an activity."""
     activity = _get_activity_or_404(db, activity_id)
-    member = _get_member_for_user(db, current_user)
+    member = current_member_or_403(db, current_user)
 
     try:
         registration = register_member(
@@ -218,7 +212,7 @@ def check_activity_eligibility(
 ):
     """Check if current user is eligible to register."""
     activity = _get_activity_or_404(db, activity_id)
-    member = _get_member_for_user(db, current_user)
+    member = current_member_or_403(db, current_user)
 
     result = check_eligibility(db, activity, member)
     return EligibilityResponse(eligible=result.eligible, reasons=result.reasons)
@@ -258,7 +252,7 @@ def cancel_own_registration(
 
     # Check ownership if not admin
     if not is_admin:
-        member = _get_member_for_user(db, current_user)
+        member = current_member_or_403(db, current_user)
         if registration.member_id != member.id:
             raise HTTPException(status_code=403, detail="Cannot cancel another member's registration")
 
@@ -323,7 +317,7 @@ def list_my_registrations(
     current_user: User = Depends(require_permission("self.registrations.read")),
 ):
     """List current user's registrations."""
-    member = _get_member_for_user(db, current_user)
+    member = current_member_or_403(db, current_user)
 
     query = (
         db.query(Registration)

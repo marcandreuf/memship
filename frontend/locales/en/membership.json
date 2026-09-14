@@ -3,6 +3,7 @@
     "title": "My membership plan",
     "info": "See the plan you hold and buy another. A plan activates when its receipt is paid, not when you choose it.",
     "nav": "My plan",
+    "notAMember": "This account administers the instance and is not a club member, so it holds no plan.",
     "currentPlan": "Current plan",
     "noPlan": "No plan",
     "revertedNotice": "You are on the free plan because a fee went unpaid. Paying it puts you back on \"{plan}\".",

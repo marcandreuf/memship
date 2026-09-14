@@ -129,6 +129,19 @@ class TestRegistrationCreatesPendingMember:
         assert member.status == "pending"
         assert member.member_number is None
 
+    def test_register_grants_the_member_role(self, client, db):
+        """`member` is opt-in since #168, so self-registration has to ask for
+        it. Without this the account authenticates and 403s on its own portal."""
+        _register(client, db)
+
+        user = (
+            db.query(User)
+            .filter(User.email == REGISTER_PAYLOAD["email"])
+            .one()
+        )
+
+        assert {r.slug for r in user.roles} == {"member"}
+
     def test_register_issues_verification_token_and_leaves_email_unverified(
         self, client, db
     ):

@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
 
-from app.core.permissions import SUPER_ADMIN_SLUG
+from app.core.permissions import MEMBER_SLUG, SUPER_ADMIN_SLUG
 from app.core.security.password import hash_password, verify_password
 from app.domains.auth.models import User
 from app.domains.auth.roles import assign_roles
@@ -128,7 +128,9 @@ def register_user(
     db.add(user)
     db.flush()
 
-    assign_roles(db, user)
+    # Someone signing themselves up is a member; staff accounts are made
+    # elsewhere and do not get this role (#168).
+    assign_roles(db, user, MEMBER_SLUG)
 
     default_type = get_default_membership_type(db)
 

@@ -7,7 +7,6 @@ from sqlalchemy.orm import Session
 from app.core.authorization import resolve_permissions
 from app.core.permissions import (
     ALL_KEYS,
-    MEMBER_SLUG,
     RESERVED_KEYS,
     SUPER_ADMIN_SLUG,
 )
@@ -62,9 +61,14 @@ class LastSuperAdmin(RoleError):
 
 
 def assign_roles(db: Session, user: User, *extra_slugs: str) -> None:
-    """Attach ``member`` — which every account holds permanently — plus any
-    staff role named by slug."""
-    slugs = {MEMBER_SLUG, *extra_slugs}
+    """Attach the roles named by slug, and only those.
+
+    ``member`` is one of them, not a floor: an account that administers the
+    instance is not thereby a member of the club (#168), so the caller that
+    means "this is a member" says so. Passing no slug at all leaves the account
+    with no roles and so no permissions — callers are expected to name one.
+    """
+    slugs = set(extra_slugs)
     roles = db.query(Role).filter(Role.slug.in_(slugs)).all()
 
     already = {a.role_id for a in user.role_assignments}
@@ -230,8 +234,7 @@ def replace_user_roles(db: Session, user: User, role_ids: list[int], *, caller: 
     if losing_super and _super_admin_count(db) <= 1:
         raise LastSuperAdmin()
 
-    member_role = db.query(Role).filter(Role.slug == MEMBER_SLUG).one()
-    keep = {r.id for r in roles} | {member_role.id}
+    keep = {r.id for r in roles}
 
     before = {r.slug: r.id for r in user.roles}
     by_id = {r.id: r for r in db.query(Role).filter(Role.id.in_(keep)).all()}

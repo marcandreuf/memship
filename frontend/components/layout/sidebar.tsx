@@ -78,13 +78,20 @@ export function AppSidebar({ user }: AppSidebarProps) {
   // narrow custom role sees exactly what it can open. A feature flag and a
   // permission are ANDed: the flag says the club uses the feature at all.
   //
-  // **Additive, not either/or.** `member` is pinned to every account, so staff
-  // hold every `self.*` key too — an account that gains one administrative
-  // permission must not lose its personal nav. The staff groups are appended
-  // when the account is staff; the personal groups always render, gated on the
-  // `self.*` keys. `/activities` and `/dashboard` appear on both sides and are
-  // deduplicated below, first occurrence winning, so the staff catalog (which
-  // shows drafts) beats the member catalog for anyone holding both.
+  // **Additive, not either/or.** An account that gains one administrative
+  // permission must not lose its personal nav, so the staff groups are
+  // appended when the account is staff rather than replacing anything.
+  // `/activities` and `/dashboard` appear on both sides and are deduplicated
+  // below, first occurrence winning, so the staff catalog (which shows drafts)
+  // beats the member catalog for anyone holding both.
+  //
+  // The personal groups hang off `isMember`, not off the `self.*` keys. Those
+  // keys do not answer "is this person in the club": `ADMIN_SEED_KEYS` is the
+  // whole catalogue bar the reserved ones and a super admin resolves to all of
+  // it, so every staff account holds them — they are the floor on the routes
+  // staff and members share, which is why they cannot be taken away (#168).
+  // What separates the two is whether the account has a member record at all.
+  const isMember = user.member_id !== null && user.member_id !== undefined;
   const seenHrefs = new Set<string>();
   const navGroups = [
     [
@@ -115,17 +122,21 @@ export function AppSidebar({ user }: AppSidebarProps) {
           ],
         ]
       : []),
-    [
-      { href: "/activities", label: t("nav.activities"), icon: CalendarDays, show: has("self.activities.read") },
-      { href: "/book", label: t("bookings.navBook"), icon: MapPin, show: bookingsEnabled && has("self.bookings.write") },
-    ],
-    [
-      { href: "/my-activities", label: t("activities.registration.myActivities"), icon: ClipboardList, show: has("self.registrations.read") },
-      { href: "/my-bookings", label: t("bookings.navMyBookings"), icon: ClipboardList, show: bookingsEnabled && has("self.bookings.read") },
-      { href: "/my-membership", label: t("membership.nav"), icon: BadgeEuro, show: has("self.billing.read") },
-      { href: "/my-receipts", label: t("receipts.myReceipts"), icon: Receipt, show: has("self.billing.read") },
-      { href: "/my-card", label: t("nav.myCard"), icon: IdCard, show: cardEnabled && has("self.card.read") },
-    ],
+    ...(isMember
+      ? [
+          [
+            { href: "/activities", label: t("nav.activities"), icon: CalendarDays, show: has("self.activities.read") },
+            { href: "/book", label: t("bookings.navBook"), icon: MapPin, show: bookingsEnabled && has("self.bookings.write") },
+          ],
+          [
+            { href: "/my-activities", label: t("activities.registration.myActivities"), icon: ClipboardList, show: has("self.registrations.read") },
+            { href: "/my-bookings", label: t("bookings.navMyBookings"), icon: ClipboardList, show: bookingsEnabled && has("self.bookings.read") },
+            { href: "/my-membership", label: t("membership.nav"), icon: BadgeEuro, show: has("self.billing.read") },
+            { href: "/my-receipts", label: t("receipts.myReceipts"), icon: Receipt, show: has("self.billing.read") },
+            { href: "/my-card", label: t("nav.myCard"), icon: IdCard, show: cardEnabled && has("self.card.read") },
+          ],
+        ]
+      : []),
     ...(isAdmin
       ? [
           [

@@ -3,6 +3,7 @@
     "title": "Mi plan de socio",
     "info": "Consulta tu plan actual y contrata otro. El plan se activa cuando se paga el recibo, no al elegirlo.",
     "nav": "Mi plan",
+    "notAMember": "Esta cuenta administra la instancia y no es socia del club, así que no tiene ningún plan.",
     "currentPlan": "Plan actual",
     "noPlan": "Sin plan",
     "revertedNotice": "Estás en el plan gratuito porque quedó una cuota sin pagar. Al pagarla recuperarás «{plan}».",

@@ -41,6 +41,10 @@ export default function MyMembershipPage() {
   // dialog closes rather than after the receipt list has refetched.
   const [justPurchased, setJustPurchased] = useState<MembershipPurchaseData | null>(null);
 
+  // An operator account has no membership to show (#168). `useMember` is
+  // already inert on 0, so the page has to answer for itself rather than wait
+  // on a member that never arrives.
+  const isMember = user?.member_id != null;
   const { data: member, isLoading: memberLoading } = useMember(user?.member_id || 0);
   const { data: plans, isLoading: plansLoading } = useMembershipTypes();
 
@@ -112,6 +116,17 @@ export default function MyMembershipPage() {
     } catch {
       /* global handler */
     }
+  }
+
+  if (!isMember) {
+    return (
+      <div className="space-y-3">
+        <h1 className="text-2xl font-bold">{t("membership.nav")}</h1>
+        <div className="py-8 text-center text-muted-foreground">
+          {t("membership.notAMember")}
+        </div>
+      </div>
+    );
   }
 
   if (memberLoading || !member) return <FormSkeleton />;

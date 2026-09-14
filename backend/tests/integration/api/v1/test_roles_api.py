@@ -213,7 +213,7 @@ class TestEscalationGuard:
         )
 
         assert r.status_code == 200
-        assert {x["slug"] for x in r.json()["roles"]} == {"admin", "member"}
+        assert {x["slug"] for x in r.json()["roles"]} == {"admin"}
 
     def test_assignable_flag_agrees_with_what_put_accepts(self, client, db):
         _ensure_org(db)
@@ -226,7 +226,7 @@ class TestEscalationGuard:
         assert by_slug["member"]["assignable"] is True
 
 
-class TestMemberPinAndEmptySet:
+class TestMemberRoleAndEmptySet:
     def test_an_empty_role_set_is_rejected(self, client, db):
         _ensure_org(db)
         boss = _user(db, "super_admin")
@@ -241,7 +241,9 @@ class TestMemberPinAndEmptySet:
         assert r.status_code == 400
         assert r.json()["detail"]["code"] == "roles_required"
 
-    def test_member_is_re_added_when_the_payload_omits_it(self, client, db):
+    def test_member_is_removed_when_the_payload_omits_it(self, client, db):
+        """#168: `member` used to be re-added here, so an admin could never
+        take it off through the UI or the API."""
         _ensure_org(db)
         boss = _user(db, "super_admin")
         target = _user(db, "member", email="pin-omitted@examplee6e3b1.com")
@@ -254,7 +256,25 @@ class TestMemberPinAndEmptySet:
         )
 
         assert r.status_code == 200
-        assert "member" in {x["slug"] for x in r.json()["roles"]}
+        assert {x["slug"] for x in r.json()["roles"]} == {"admin"}
+
+    def test_the_removal_survives_a_re_read(self, client, db):
+        """The write and the read-back are separate paths; the old pin made
+        the second one put the role straight back."""
+        _ensure_org(db)
+        boss = _user(db, "super_admin")
+        target = _user(db, "member", email="pin-stays-off@examplee6e3b1.com")
+        admin_role = db.query(Role).filter_by(slug="admin").one()
+
+        client.put(
+            f"/api/v1/users/{target.id}/roles",
+            json={"role_ids": [admin_role.id]},
+            cookies=_auth_cookie(boss),
+        )
+
+        body = client.get("/api/v1/auth/me", cookies=_auth_cookie(target)).json()
+
+        assert {r["slug"] for r in body["roles"]} == {"admin"}
 
     def test_the_last_super_admin_cannot_be_demoted(self, client, db):
         _ensure_org(db)
@@ -279,7 +299,7 @@ class TestAuthMePayload:
         body = client.get("/api/v1/auth/me", cookies=_auth_cookie(admin)).json()
 
         assert "role" not in body
-        assert {r["slug"] for r in body["roles"]} == {"admin", "member"}
+        assert {r["slug"] for r in body["roles"]} == {"admin"}
         assert "members.write" in body["permissions"]
         assert "roles.write" not in body["permissions"]
 
@@ -356,7 +376,7 @@ class TestAuditTrail:
             .filter(AuditLog.table_name == "user_roles", AuditLog.record_id == target.id)
             .one()
         )
-        assert row.changed_fields == ["+admin"]
+        assert row.changed_fields == ["+admin", "-member"]
         assert row.user_id == boss.id
 
     def test_a_refused_assignment_records_nothing(self, client, db):
