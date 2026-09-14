@@ -2,6 +2,7 @@
   "name": "memship-e2e",
   "version": "0.2.2",
   "private": true,
+  "packageManager": "pnpm@10.29.3",
   "scripts": {
     "cypress:open": "cypress open",
     "cypress:run": "cypress run",
