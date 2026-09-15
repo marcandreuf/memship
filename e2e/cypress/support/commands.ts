@@ -12,6 +12,16 @@ export const TEST_ACCOUNTS = {
   // three system roles cannot express a partial admin, so this is the only
   // account that exercises permission-driven nav.
   treasurer: { email: "treasurer@examplee6e3b1.com", password: "TestTreasurer1!" },
+  // Exists only to be mutated by role-assignment.cy.ts. `member` is the only
+  // other seeded account with the plain `member` role, and that spec used to
+  // toggle roles on it directly — sharing it with any spec that logs in as
+  // `member` and asserts on its nav/permissions is a race under parallel
+  // workers (#185): the assignment can be mid-flight when the other spec logs
+  // in. Nothing should ever call `cy.login` with this account.
+  roleAssignmentTarget: {
+    email: "role-assignment@examplee6e3b1.com",
+    password: "TestRoleAssignment1!",
+  },
 };
 
 // --- Type declarations ---
