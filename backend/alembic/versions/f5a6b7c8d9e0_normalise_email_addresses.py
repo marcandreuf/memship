@@ -59,7 +59,14 @@ FIND_DUPLICATES = sa.text(
     SELECT {NORMALISED} AS normalised,
            string_agg(
                id || ' <' || email || '>'
-               || CASE WHEN is_active THEN '' ELSE ' [inactive]' END
+               || CASE
+                    WHEN is_active IS TRUE THEN ''
+                    WHEN is_active IS FALSE THEN ' [inactive]'
+                    -- The column is nullable with only a Python-side default,
+                    -- so a row written outside the ORM can hold NULL. Reporting
+                    -- that as inactive would invite deleting the wrong account.
+                    ELSE ' [is_active not set]'
+                  END
                || CASE
                     WHEN last_login_at IS NULL THEN ' [never signed in]'
                     ELSE ' [last signed in ' || last_login_at::date || ']'
