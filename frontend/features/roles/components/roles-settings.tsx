@@ -368,14 +368,6 @@ function RoleForm({
         </div>
       </div>
 
-      {/* Retuning `member` reaches every account in the club, staff included,
-          because it is pinned to all of them. */}
-      {role?.slug === "member" && (
-        <p className="rounded-md border border-dashed p-2 text-xs text-muted-foreground">
-          {t("roles.memberPinned")}
-        </p>
-      )}
-
       <PermissionSection
         title={t("roles.administrative")}
         groups={administrative}

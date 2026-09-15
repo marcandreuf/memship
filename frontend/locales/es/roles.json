@@ -19,7 +19,6 @@
     "reserved": "Reservado al superadministrador",
     "notAssignable": "No puedes asignar un rol con más permisos de los que tienes.",
     "superAdminOnly": "Solo un superadministrador puede asignar este rol.",
-    "memberPinned": "Todas las cuentas tienen el rol Socio de forma permanente.",
     "rolesRequired": "Hay que asignar al menos un rol.",
     "lastSuperAdmin": "No se puede retirar el último superadministrador.",
     "users": "Cuentas",

@@ -40,8 +40,7 @@ export const ROUTE_PERMISSIONS: ReadonlyArray<readonly [string, readonly string[
       "settings.custom_fields.write",
     ],
   ],
-  // Member-facing routes. Everyone holds these today because `member` is
-  // pinned to every account, but the keys are what the pages actually need.
+  // Member-facing routes, gated on the `self.*` keys the member role grants.
   ["/activities", ["self.activities.read", "activities.read"]],
   ["/announcements", ["self.communications.read"]],
   ["/book", ["self.bookings.write"]],
