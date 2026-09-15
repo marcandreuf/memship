@@ -4,6 +4,7 @@ import os
 import subprocess
 from pathlib import Path
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -195,6 +196,19 @@ class Settings(BaseSettings):
     @property
     def cors_origins_list(self) -> list[str]:
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",")]
+
+    @field_validator("SEED_EMAIL_DOMAIN")
+    @classmethod
+    def _lowercase_seed_domain(cls, value: str) -> str:
+        """Addresses built from this are stored normalised, so it must be too.
+
+        `demo_data` both writes ``demo{n}@<domain>`` and finds its own rows
+        again with a ``LIKE`` on the same pattern. The model validators lower
+        the stored value, so a domain spelled with a capital here would write
+        rows the pattern no longer matches — reseeding a demo club twice
+        instead of recognising the one already there (#191).
+        """
+        return value.strip().lower()
 
 
 settings = Settings()

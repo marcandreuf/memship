@@ -34,6 +34,7 @@ from app.cli.seed import (
     sync_invoice_sequence,
 )
 from app.core.permissions import MEMBER_SLUG, SUPER_ADMIN_SLUG
+from app.core.schema_types import normalize_email
 from app.db.base import Base
 from app.domains.audit.models import AuditLog
 from app.domains.auth.models import Role, User
@@ -67,7 +68,7 @@ def _account(email, role, membership_type, db):
         role,
         membership_type,
     )
-    return db.query(User).filter_by(email=email).one()
+    return db.query(User).filter_by(email=normalize_email(email)).one()
 
 
 def _staff(email, role, db):
@@ -85,7 +86,7 @@ def _staff(email, role, db):
     # before its assignments existed; without this the test reads the empty set
     # that load cached rather than what the seed wrote.
     db.expire_all()
-    return db.query(User).filter_by(email=email).one()
+    return db.query(User).filter_by(email=normalize_email(email)).one()
 
 
 class TestTableClassification:
