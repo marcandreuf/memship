@@ -78,8 +78,7 @@ export async function listUsers(q?: string, roleId?: number): Promise<UserAccoun
   return apiClient<UserAccount[]>(`/users${query ? `?${query}` : ""}`);
 }
 
-/** Full replacement. `member` is pinned server-side whether or not it is
- *  named, and an empty list is refused with `roles_required`. */
+/** Full replacement — an empty list is refused with `roles_required`. */
 export async function updateUserRoles(
   userId: number,
   roleIds: number[]

@@ -19,7 +19,6 @@
     "reserved": "Reserved to the super admin",
     "notAssignable": "You cannot assign a role holding more permissions than you do.",
     "superAdminOnly": "Only a super admin can assign this role.",
-    "memberPinned": "Every account holds the Member role permanently.",
     "rolesRequired": "At least one role must be assigned.",
     "lastSuperAdmin": "The last super admin cannot be removed.",
     "users": "Accounts",

@@ -253,9 +253,6 @@ function AssignRolesForm({
 
       <div className="space-y-1.5">
         {roles.map((role) => {
-          // `member` is pinned to every account and removable by nobody, so it
-          // renders as a locked, always-checked row rather than a choice.
-          const pinned = role.slug === "member";
           const reason = role.assignable
             ? null
             : role.slug === "super_admin"
@@ -266,23 +263,21 @@ function AssignRolesForm({
             <label
               key={role.id}
               className={`flex items-start gap-2 rounded-md border p-2 ${
-                pinned || reason ? "opacity-70" : "cursor-pointer"
+                reason ? "opacity-70" : "cursor-pointer"
               }`}
               title={reason ?? undefined}
               data-testid={`assign-role-${role.slug}`}
             >
               <Checkbox
                 className="mt-0.5"
-                checked={pinned || selected.has(role.id)}
-                disabled={pinned || Boolean(reason)}
+                checked={selected.has(role.id)}
+                disabled={Boolean(reason)}
                 onCheckedChange={(checked) => toggle(role.id, checked === true)}
               />
               <span className="leading-tight">
                 <span className="block text-xs font-medium">{role.name}</span>
                 <span className="block text-xs text-muted-foreground">
-                  {pinned
-                    ? t("roles.memberPinned")
-                    : (reason ?? role.description ?? "")}
+                  {reason ?? role.description ?? ""}
                 </span>
               </span>
             </label>

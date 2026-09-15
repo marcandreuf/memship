@@ -42,15 +42,14 @@ describe("Roles — assignment", { tags: ["@roles"] }, () => {
       });
   });
 
-  it("locks the member row, which no caller can remove", () => {
+  it("renders the member role as an ordinary assignable role", () => {
     cy.get('[data-testid="user-search"]').type(TEST_ACCOUNTS.member.email);
     cy.get(`[data-testid="user-row-${TEST_ACCOUNTS.member.email}"]`)
       .contains("button", "Edit")
       .click();
 
     cy.get('[data-testid="assign-role-member"]').within(() => {
-      cy.get("button").should("be.disabled");
-      cy.contains("Every account holds the Member role permanently").should("exist");
+      cy.get("button").should("not.be.disabled").and("have.attr", "data-state", "checked");
     });
   });
 

@@ -19,7 +19,6 @@
     "reserved": "Reservat al superadministrador",
     "notAssignable": "No pots assignar un rol amb més permisos dels que tens.",
     "superAdminOnly": "Només un superadministrador pot assignar aquest rol.",
-    "memberPinned": "Tots els comptes tenen el rol Soci de manera permanent.",
     "rolesRequired": "Cal assignar almenys un rol.",
     "lastSuperAdmin": "No es pot retirar l'últim superadministrador.",
     "users": "Comptes",
