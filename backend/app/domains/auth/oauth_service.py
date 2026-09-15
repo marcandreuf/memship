@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from app.core.permissions import MEMBER_SLUG
+from app.core.schema_types import normalize_email
 from app.domains.auth.models import User, UserIdentity
 from app.domains.auth.roles import assign_roles
 from app.domains.auth.service import get_registration_settings
@@ -33,6 +34,17 @@ class OAuthProfile:
     email_verified: bool
     first_name: str
     last_name: str
+
+    def __post_init__(self) -> None:
+        """Normalise here, not at the call site.
+
+        Nothing on this path goes through a request schema, so the address
+        arrives exactly as the provider spelled it. It is then matched against
+        ``users.email`` to link an existing account, and written to three rows
+        when a new one is created — every one of which has to agree with what
+        the password paths store (#191).
+        """
+        self.email = normalize_email(self.email)
 
 
 def find_or_create_from_oauth(db: Session, profile: OAuthProfile) -> tuple[User, bool]:

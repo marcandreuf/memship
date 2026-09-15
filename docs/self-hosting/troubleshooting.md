@@ -46,6 +46,64 @@ the database with `./scripts/db-backup.sh`, not with `ls`.
 If you are upgrading from a release where the backend ran as root, see the note in
 [Upgrading](upgrading.md).
 
+### A migration refused to run and the API will not start
+
+After an upgrade, `verify-deployment.sh` fails and the API never answers. `docker compose ps`
+shows `api` restarting, and its logs end in a report rather than a stack trace you have to
+interpret:
+
+```
+Cannot normalise email addresses: 1 address(es) are held by more than one account,
+differing only by case or surrounding whitespace.
+
+  marc@example.com
+    34 <Marc@Example.com> [last signed in 2026-09-01] [has a member record]
+    35 <marc@example.com> [inactive] [never signed in]
+
+Decide which account keeps each address and remove or change the others, then run
+the upgrade again.
+Nothing has been changed — this migration made no writes.
+```
+
+**This is deliberate, not a broken release.** Some migrations inspect the data before changing it
+and stop when they find something only a person should decide about. The guard wrote nothing, so
+the database is exactly as it was. **Do not restore the pre-upgrade snapshot** — there is nothing
+to undo, and restoring it loses anything written since it was taken.
+
+If the report scrolled past, read it again with:
+
+```bash
+docker compose logs api --tail 40
+```
+
+**Fix it by changing a row, not by deleting one.** Deleting the duplicate account is the obvious
+move and the wrong one: `members.user_id` is `ON DELETE SET NULL`, so removing the account
+detaches that person's membership and leaves no way to reconnect it — and if the account ever
+triggered a billing run or created an announcement, the delete fails outright on a foreign key.
+
+Pick the account to retire using the report's annotations — when it last signed in, whether it
+holds a member record — and give it a different address:
+
+```bash
+docker compose exec -T db psql -U memship -d memship_db \
+  -c "UPDATE users SET email = 'retired-35-' || email WHERE id = 35;"
+```
+
+That is reversible, touches nothing else, and satisfies the guard. Then let the migration run:
+
+```bash
+docker compose restart api
+./scripts/verify-deployment.sh "$MEMSHIP_VERSION"
+```
+
+Once the instance is back, sort the duplicate out properly in **Settings → Accounts**, where you
+can see both accounts and deactivate or re-address the one you do not want. Doing it there rather
+than in SQL means the change is audited.
+
+If the report names more accounts than you can work through quickly, note that the instance stays
+down throughout — the check runs after the stack has been replaced. Moving it earlier is
+[issue #194](https://github.com/marcandreuf/memship/issues/194).
+
 ### Postgres will not start on RHEL, Fedora, Rocky or AlmaLinux
 
 SELinux. Bind mounts need relabelling — see the SELinux section of

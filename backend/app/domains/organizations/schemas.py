@@ -1,11 +1,10 @@
 """Organization settings schemas."""
 
 from datetime import datetime
-from typing import Annotated
 
-from pydantic import BaseModel, Field, StringConstraints
+from pydantic import BaseModel, Field
 
-Email = Annotated[str, StringConstraints(pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$", max_length=255)]
+from app.core.schema_types import Email
 
 
 class OrganizationSettingsResponse(BaseModel):

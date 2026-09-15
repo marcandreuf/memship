@@ -100,7 +100,31 @@ Two related changes in the same release:
 ## Database migrations
 
 Migrations run automatically on backend startup when `RUN_MIGRATIONS=1` (the default in the
-Compose stack). No manual migration step is needed for a standard upgrade.
+Compose stack). No manual migration step is needed for a standard upgrade, and almost always
+there is nothing to think about here.
+
+**A migration is allowed to refuse.** Some carry a guard: they inspect the data before changing
+it and stop if they find something only a person should decide about — two accounts that differ
+only by the case of their email address, say, where folding them would pick a winner between two
+people's logins. The guard writes a report naming exactly what it found, makes **no changes at
+all**, and the upgrade stops there.
+
+What that looks like: the API container does not start, so `verify-deployment.sh` fails and
+prints the report. Because migrations run before the API serves, the symptom is an API that
+never answers rather than a container that obviously died.
+
+Three things worth knowing when it happens:
+
+- **The database is untouched.** An aborting guard writes nothing, so there is no half-migrated
+  state. Do not restore the pre-upgrade snapshot — there is nothing to undo, and restoring loses
+  anything written since it was taken.
+- **The previous version is not serving either.** `install.sh` has already recreated the stack by
+  this point, so the instance is down until the report is resolved. Moving that check to before
+  the recreate is [issue #194](https://github.com/marcandreuf/memship/issues/194).
+- **Resolve the data, then restart** — you do not need to re-download or re-pin anything.
+
+[Troubleshooting](troubleshooting.md#a-migration-refused-to-run-and-the-api-will-not-start) has
+the steps, including why the fix is to *change* a row rather than delete one.
 
 If you prefer to run migrations manually, set `RUN_MIGRATIONS=0` and run them yourself against
 the backend container after pulling the new image.

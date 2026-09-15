@@ -23,10 +23,11 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Link } from "@/lib/i18n/routing";
+import { emailSchema } from "@/lib/validation";
 import { requestPasswordReset, ClientApiError } from "../services/auth-api";
 
 const forgotPasswordSchema = z.object({
-  email: z.string().email(),
+  email: emailSchema,
 });
 
 type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;

@@ -15,6 +15,10 @@
 #   2. it reports the version that was deployed, not the one it was running
 #   3. the Celery worker answers a ping — it is the half that fails quietly,
 #      and without it no mail and no scheduled billing job runs
+#
+# When a check fails it prints the service's container state and log tail, so
+# the reason is in this output. A migration guard that aborts an upgrade writes
+# its report there, naming the rows a person has to resolve.
 
 set -euo pipefail
 
@@ -26,6 +30,7 @@ cd "$REPO_ROOT"
 
 TIMEOUT="${VERIFY_TIMEOUT:-300}"
 INTERVAL=5
+FAILURE_LOG_LINES="${VERIFY_LOG_LINES:-40}"
 
 # The API is published on the loopback interface only, which is where we probe
 # it: going in through the public hostname would test DNS and the certificate
@@ -35,6 +40,37 @@ INTERVAL=5
 env_value() {
     [ -f .env ] || return 0
     grep -E "^$1=" .env | tail -1 | cut -d= -f2- || true
+}
+
+# What a service is doing and what it last said, printed here rather than left
+# one command away.
+#
+# The API applies migrations before it serves, and a migration is allowed to
+# refuse: a guard that finds data it will not rewrite aborts the upgrade on
+# purpose. That leaves the container restarting under its `unless-stopped`
+# policy, which from outside is indistinguishable from any other boot failure
+# — both are an API that never answers. The container state separates the two
+# (`restarting` with a climbing restart count is a loop, not a slow start), and
+# the log tail carries the report the guard wrote, which names the rows to fix.
+# A deliberate abort makes no writes, so the database is as it was.
+report_service_failure() {
+    local service="$1" cid
+    cid="$(docker compose ps -q "$service" 2>/dev/null | head -1 || true)"
+    if [ -n "$cid" ]; then
+        printf -- '--- %s container ---\n' "$service" >&2
+        # `>&2` before `2>/dev/null`: redirections apply left to right, so the
+        # other order points stdout at the just-silenced stderr and the line
+        # disappears.
+        docker inspect "$cid" \
+            --format '  state={{.State.Status}} exit={{.State.ExitCode}} restarts={{.RestartCount}}' \
+            >&2 2>/dev/null || true
+        printf '\n' >&2
+    fi
+    printf -- '--- last %s lines of `docker compose logs %s` ---\n' \
+        "$FAILURE_LOG_LINES" "$service" >&2
+    docker compose logs "$service" --tail "$FAILURE_LOG_LINES" --no-log-prefix 2>&1 \
+        | sed 's/^/  /' >&2 || true
+    printf -- '---\n' >&2
 }
 
 API_PORT="$(env_value API_PORT)"
@@ -57,7 +93,8 @@ done
 if [ -z "$body" ]; then
     printf '\n'
     printf 'ERROR: the API did not answer within %ss.\n' "$TIMEOUT" >&2
-    printf 'A failed migration is the usual cause. Check:  docker compose logs api\n' >&2
+    printf 'A migration that refused to run is the usual cause, and it says why below.\n' >&2
+    report_service_failure api
     exit 1
 fi
 
@@ -77,7 +114,8 @@ printf '==> Pinging the Celery worker\n'
 if ! docker compose exec -T celery-worker \
         celery -A app.core.celery_app inspect ping -t 10 </dev/null >/dev/null 2>&1; then
     printf 'ERROR: the API is up but the Celery worker did not answer.\n' >&2
-    printf 'Mail and the scheduled billing jobs will not run. Check:  docker compose logs celery-worker\n' >&2
+    printf 'Mail and the scheduled billing jobs will not run.\n' >&2
+    report_service_failure celery-worker
     exit 1
 fi
 printf '  worker responding\n'

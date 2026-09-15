@@ -3,6 +3,7 @@
 import { useForm } from "react-hook-form";
 import { useZodResolver } from "@/hooks/use-zod-resolver";
 import { z } from "zod";
+import { optionalEmailSchema } from "@/lib/validation";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,7 +32,7 @@ import type { GenderOption } from "@/features/settings/components/gender-options
 const memberSchema = z.object({
   first_name: z.string().min(1).max(100),
   last_name: z.string().min(1).max(100),
-  email: z.string().email().optional().or(z.literal("")),
+  email: optionalEmailSchema,
   date_of_birth: z.string().optional().or(z.literal("")),
   gender: z.string().optional().or(z.literal("")),
   national_id: z.string().optional().or(z.literal("")),

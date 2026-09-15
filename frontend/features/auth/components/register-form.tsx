@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/form";
 import { useState } from "react";
 import { Link } from "@/lib/i18n/routing";
+import { emailSchema } from "@/lib/validation";
 import { useAuth } from "../hooks/use-auth";
 import { ClientApiError, type RegisterResult } from "../services/auth-api";
 import { SsoButtons } from "./sso-buttons";
@@ -31,7 +32,7 @@ const registerSchema = z
   .object({
     first_name: z.string().min(1).max(100),
     last_name: z.string().min(1).max(100),
-    email: z.string().email(),
+    email: emailSchema,
     password: z.string().min(8).max(128),
     confirm_password: z.string(),
   })
