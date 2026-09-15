@@ -17,6 +17,7 @@ import {
   FormLabel,
 } from "@/components/ui/form";
 import { FormErrorSummary } from "@/components/ui/form-error-summary";
+import { useMembershipTypes } from "@/features/members/hooks/use-members";
 import type { ActivityData } from "../services/activities-api";
 
 const editActivitySchema = z.object({
@@ -35,6 +36,7 @@ const editActivitySchema = z.object({
   min_age: z.coerce.number().int().min(0).optional().or(z.literal("")),
   max_age: z.coerce.number().int().min(0).optional().or(z.literal("")),
   tax_rate: z.coerce.number().min(0).max(100),
+  allowed_membership_types: z.array(z.number()),
   allow_self_cancellation: z.boolean(),
   self_cancellation_deadline_hours: z.coerce.number().int().min(0).optional().or(z.literal("")),
 }).refine((data) => new Date(data.ends_at) > new Date(data.starts_at), {
@@ -76,6 +78,8 @@ export function ActivityEditForm({
   onCancel,
 }: ActivityEditFormProps) {
   const t = useTranslations();
+  const { data: membershipTypes } = useMembershipTypes();
+  const activeTypes = (membershipTypes ?? []).filter((mt) => mt.is_active);
 
   const form = useForm<EditActivityFormValues>({
     resolver: useZodResolver(editActivitySchema),
@@ -95,6 +99,7 @@ export function ActivityEditForm({
       min_age: activity.min_age ?? "",
       max_age: activity.max_age ?? "",
       tax_rate: activity.tax_rate,
+      allowed_membership_types: activity.allowed_membership_types ?? [],
       allow_self_cancellation: activity.allow_self_cancellation,
       self_cancellation_deadline_hours: activity.self_cancellation_deadline_hours ?? "",
     },
@@ -112,6 +117,7 @@ export function ActivityEditForm({
       min_participants: data.min_participants,
       max_participants: data.max_participants,
       tax_rate: data.tax_rate,
+      allowed_membership_types: data.allowed_membership_types,
       allow_self_cancellation: data.allow_self_cancellation,
       short_description: data.short_description || null,
       description: data.description || null,
@@ -179,6 +185,33 @@ export function ActivityEditForm({
             <FormItem><FormLabel>{t("activities.maxAge")}</FormLabel><FormControl><Input type="number" min={0} {...field} /></FormControl></FormItem>
           )} />
         </div>
+        <FormField control={form.control} name="allowed_membership_types" render={({ field }) => (
+          <FormItem>
+            <FormLabel>{t("activities.allowedTypes")}</FormLabel>
+            <p className="text-sm text-muted-foreground">{t("activities.allowedTypesHint")}</p>
+            {activeTypes.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t("activities.allowedTypesNone")}</p>
+            ) : (
+              <div className="grid gap-2 sm:grid-cols-2">
+                {activeTypes.map((mt) => (
+                  <label key={mt.id} className="flex items-center gap-2 text-sm">
+                    <Checkbox
+                      checked={field.value.includes(mt.id)}
+                      onCheckedChange={(checked) =>
+                        field.onChange(
+                          checked
+                            ? [...field.value, mt.id]
+                            : field.value.filter((id) => id !== mt.id)
+                        )
+                      }
+                    />
+                    {mt.name}
+                  </label>
+                ))}
+              </div>
+            )}
+          </FormItem>
+        )} />
         <FormField control={form.control} name="allow_self_cancellation" render={({ field }) => (
           <FormItem className="flex items-center gap-2">
             <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>

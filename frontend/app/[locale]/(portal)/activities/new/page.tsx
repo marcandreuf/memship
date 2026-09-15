@@ -27,6 +27,7 @@ import {
 import { toast } from "sonner";
 import { mapApiErrorsToForm } from "@/lib/errors";
 import { useCreateActivity } from "@/features/activities/hooks/use-activities";
+import { useMembershipTypes } from "@/features/members/hooks/use-members";
 
 const activitySchema = z.object({
   name: z.string().min(1).max(255),
@@ -44,6 +45,7 @@ const activitySchema = z.object({
   min_age: z.coerce.number().int().min(0).optional().or(z.literal("")),
   max_age: z.coerce.number().int().min(0).optional().or(z.literal("")),
   tax_rate: z.coerce.number().min(0).max(100),
+  allowed_membership_types: z.array(z.number()),
   allow_self_cancellation: z.boolean(),
   self_cancellation_deadline_hours: z.coerce.number().int().min(0).optional().or(z.literal("")),
 }).refine((data) => new Date(data.ends_at) > new Date(data.starts_at), {
@@ -69,6 +71,8 @@ export default function NewActivityPage() {
   const t = useTranslations();
   const router = useRouter();
   const { mutateAsync: create, isPending } = useCreateActivity();
+  const { data: membershipTypes } = useMembershipTypes();
+  const activeTypes = (membershipTypes ?? []).filter((mt) => mt.is_active);
 
   const form = useForm<ActivityFormValues>({
     resolver: useZodResolver(activitySchema),
@@ -88,6 +92,7 @@ export default function NewActivityPage() {
       min_age: "",
       max_age: "",
       tax_rate: 0,
+      allowed_membership_types: [],
       allow_self_cancellation: false,
       self_cancellation_deadline_hours: "",
     },
@@ -105,6 +110,7 @@ export default function NewActivityPage() {
       min_participants: data.min_participants,
       max_participants: data.max_participants,
       tax_rate: data.tax_rate,
+      allowed_membership_types: data.allowed_membership_types,
       allow_self_cancellation: data.allow_self_cancellation,
     };
     if (data.short_description) payload.short_description = data.short_description;
@@ -335,6 +341,45 @@ export default function NewActivityPage() {
                   <FormItem>
                     <FormLabel>{t("activities.taxRate")}</FormLabel>
                     <FormControl><DecimalInput {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="allowed_membership_types"
+                render={({ field }) => (
+                  <FormItem className="sm:col-span-2">
+                    <FormLabel>{t("activities.allowedTypes")}</FormLabel>
+                    <p className="text-sm text-muted-foreground">
+                      {t("activities.allowedTypesHint")}
+                    </p>
+                    {activeTypes.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        {t("activities.allowedTypesNone")}
+                      </p>
+                    ) : (
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        {activeTypes.map((mt) => (
+                          <label
+                            key={mt.id}
+                            className="flex items-center gap-2 text-sm"
+                          >
+                            <Checkbox
+                              checked={field.value.includes(mt.id)}
+                              onCheckedChange={(checked) =>
+                                field.onChange(
+                                  checked
+                                    ? [...field.value, mt.id]
+                                    : field.value.filter((id) => id !== mt.id)
+                                )
+                              }
+                            />
+                            {mt.name}
+                          </label>
+                        ))}
+                      </div>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}

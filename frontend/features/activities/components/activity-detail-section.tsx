@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { DetailSection } from "@/components/entity/detail-section";
+import { useMembershipTypes } from "@/features/members/hooks/use-members";
 import type { ActivityData } from "../services/activities-api";
 import { useLocaleDate } from "@/hooks/use-locale-date";
 
@@ -12,6 +13,12 @@ interface ActivityDetailSectionProps {
 export function ActivityDetailSection({ activity }: ActivityDetailSectionProps) {
   const { shortDateTime: formatDate } = useLocaleDate();
   const t = useTranslations();
+  const { data: membershipTypes } = useMembershipTypes();
+
+  const allowedTypes = activity.allowed_membership_types ?? [];
+  const allowedTypeNames = allowedTypes
+    .map((id) => membershipTypes?.find((mt) => mt.id === id)?.name ?? String(id))
+    .join(", ");
 
   const fields = [
     { label: t("activities.name"), value: activity.name },
@@ -29,6 +36,11 @@ export function ActivityDetailSection({ activity }: ActivityDetailSectionProps) 
     { label: t("activities.minAge"), value: activity.min_age, inline: true },
     { label: t("activities.maxAge"), value: activity.max_age, inline: true },
     { label: t("activities.taxRate"), value: `${activity.tax_rate}%`, inline: true },
+    {
+      label: t("activities.allowedTypes"),
+      value: allowedTypes.length ? allowedTypeNames : t("activities.allowedTypesOpen"),
+      inline: true,
+    },
     { label: t("activities.allowSelfCancellation"), value: activity.allow_self_cancellation ? t("common.yes") : t("common.no"), inline: true },
   ];
 

@@ -42,6 +42,10 @@
     "ages": "{min} - {max} anos",
     "schedule": "Horario",
     "capacityEligibility": "Capacidad y elegibilidad",
+    "allowedTypes": "Tipos de socio con acceso",
+    "allowedTypesHint": "Sin ninguno marcado, la actividad queda abierta a todos los socios. Al marcar tipos, solo esos socios podrán inscribirse.",
+    "allowedTypesNone": "Aún no hay tipos de socio activos.",
+    "allowedTypesOpen": "Todos los socios",
     "options": "Opciones",
     "status": {
       "draft": "Borrador",
