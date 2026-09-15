@@ -42,6 +42,9 @@
     "ages": "{min} - {max} years",
     "schedule": "Schedule",
     "capacityEligibility": "Capacity & Eligibility",
+    "allowedTypes": "Membership types with access",
+    "allowedTypesHint": "With none ticked the activity is open to every member. Tick types and only those members can register.",
+    "allowedTypesNone": "No active membership types yet.",
     "options": "Options",
     "status": {
       "draft": "Draft",

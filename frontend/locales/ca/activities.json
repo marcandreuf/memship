@@ -42,6 +42,9 @@
     "ages": "{min} - {max} anys",
     "schedule": "Horari",
     "capacityEligibility": "Capacitat i elegibilitat",
+    "allowedTypes": "Tipus de soci amb accés",
+    "allowedTypesHint": "Sense cap marcat, l'activitat queda oberta a tots els socis. En marcar tipus, només aquests socis s'hi podran inscriure.",
+    "allowedTypesNone": "Encara no hi ha tipus de soci actius.",
     "options": "Opcions",
     "status": {
       "draft": "Esborrany",
