@@ -110,7 +110,12 @@ class Member(Base):
             name="valid_status",
         ),
         Index("idx_members_person_id", "person_id"),
-        Index("idx_members_user_id", "user_id", postgresql_where="user_id IS NOT NULL"),
+        Index(
+            "uq_members_user_id",
+            "user_id",
+            unique=True,
+            postgresql_where="user_id IS NOT NULL",
+        ),
         Index("idx_members_membership_type_id", "membership_type_id"),
         Index("idx_members_member_number", "member_number", postgresql_where="member_number IS NOT NULL"),
         Index("idx_members_status", "status"),

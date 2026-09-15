@@ -39,10 +39,11 @@ def current_member_or_403(db: Session, user, *, active_only: bool = False):
     column is non-unique and a minor routinely shares a guardian's address, so
     an email match can return somebody else's member row.
 
-    ``user_id`` itself is nullable and indexed but not unique (#187), so a
-    user who cancelled and rejoined on a fresh row can have two. The ordering
-    below makes the live, most recent membership win deterministically rather
-    than leaving it to whatever order Postgres happens to return.
+    A partial unique index on ``user_id`` (``uq_members_user_id``, migration
+    ``c58bc5181d90``) now makes a second row impossible going forward (#187).
+    The ordering below is kept anyway: it costs nothing against a unique
+    column, and it is what the migration itself used to decide which of any
+    pre-existing duplicate survived, so the two stay in lockstep.
     """
     from app.domains.members.models import Member
 
