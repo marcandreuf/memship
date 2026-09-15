@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { DecimalInput } from "@/components/ui/decimal-input";
 import {
   Card,
   CardContent,
@@ -42,6 +43,7 @@ const activitySchema = z.object({
   max_participants: z.coerce.number().int().min(1),
   min_age: z.coerce.number().int().min(0).optional().or(z.literal("")),
   max_age: z.coerce.number().int().min(0).optional().or(z.literal("")),
+  tax_rate: z.coerce.number().min(0).max(100),
   allow_self_cancellation: z.boolean(),
   self_cancellation_deadline_hours: z.coerce.number().int().min(0).optional().or(z.literal("")),
 }).refine((data) => new Date(data.ends_at) > new Date(data.starts_at), {
@@ -85,6 +87,7 @@ export default function NewActivityPage() {
       max_participants: 1,
       min_age: "",
       max_age: "",
+      tax_rate: 0,
       allow_self_cancellation: false,
       self_cancellation_deadline_hours: "",
     },
@@ -101,6 +104,7 @@ export default function NewActivityPage() {
       registration_ends_at: new Date(data.registration_ends_at).toISOString(),
       min_participants: data.min_participants,
       max_participants: data.max_participants,
+      tax_rate: data.tax_rate,
       allow_self_cancellation: data.allow_self_cancellation,
     };
     if (data.short_description) payload.short_description = data.short_description;
@@ -320,6 +324,17 @@ export default function NewActivityPage() {
                   <FormItem>
                     <FormLabel>{t("activities.maxAge")}</FormLabel>
                     <FormControl><Input type="number" min={0} {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="tax_rate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t("activities.taxRate")}</FormLabel>
+                    <FormControl><DecimalInput {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
