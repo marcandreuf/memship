@@ -22,6 +22,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Link } from "@/lib/i18n/routing";
+import { emailSchema } from "@/lib/validation";
 import { useAuth } from "../hooks/use-auth";
 import { useSearchParams } from "next/navigation";
 import { ClientApiError } from "../services/auth-api";
@@ -37,7 +38,7 @@ const SSO_ERROR_KEYS: Record<string, string> = {
 };
 
 const loginSchema = z.object({
-  email: z.string().email(),
+  email: emailSchema,
   password: z.string().min(8),
 });
 

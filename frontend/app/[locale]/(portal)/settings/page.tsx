@@ -31,6 +31,7 @@ import {
 import { Tabs, TabsContent, TabsNav } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { mapApiErrorsToForm } from "@/lib/errors";
+import { optionalEmailSchema } from "@/lib/validation";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
 import {
@@ -63,7 +64,7 @@ import { FormSkeleton } from "@/components/ui/skeletons";
 const settingsSchema = z.object({
   name: z.string().min(1).max(255),
   legal_name: z.string().max(255).optional().or(z.literal("")),
-  email: z.string().email().optional().or(z.literal("")),
+  email: optionalEmailSchema,
   phone: z.string().max(50).optional().or(z.literal("")),
   website: z.string().max(255).optional().or(z.literal("")),
   tax_id: z.string().max(50).optional().or(z.literal("")),
