@@ -45,6 +45,7 @@
     "allowedTypes": "Membership types with access",
     "allowedTypesHint": "With none ticked the activity is open to every member. Tick types and only those members can register.",
     "allowedTypesNone": "No active membership types yet.",
+    "allowedTypesOpen": "All members",
     "options": "Options",
     "status": {
       "draft": "Draft",
