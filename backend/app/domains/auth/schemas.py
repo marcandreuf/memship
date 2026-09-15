@@ -5,8 +5,7 @@ from typing import Annotated
 
 from pydantic import BaseModel, Field, StringConstraints
 
-# Use a simple regex instead of EmailStr to allow dev domains (.test, .local)
-Email = Annotated[str, StringConstraints(pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$", max_length=255)]
+from app.core.schema_types import Email
 
 
 class LoginRequest(BaseModel):

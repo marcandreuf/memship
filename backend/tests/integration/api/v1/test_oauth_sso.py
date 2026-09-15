@@ -195,6 +195,35 @@ class TestLinkingToAnExistingAccount:
 
         assert db.query(UserIdentity).count() == 0
 
+    def test_links_when_the_provider_spells_the_address_in_another_case(self, db):
+        """#191: a provider that upper-cases must not create a second account.
+
+        Nothing on this path goes through a request schema, so without
+        normalisation the ``User.email ==`` lookup misses and the profile falls
+        through to the create branch — leaving the member with two accounts and
+        a password they cannot use on the new one.
+        """
+        existing = _create_password_user(db, "sso@examplee6e3b1.com")
+
+        user, created = find_or_create_from_oauth(
+            db, _profile(email="SSO@ExampleE6E3B1.com")
+        )
+
+        assert created is False
+        assert user.id == existing.id
+        assert db.query(User).count() == 1
+
+    def test_the_address_is_stored_normalised_on_every_row_it_touches(self, db):
+        """The linked identity too, or the rows disagree on the same address."""
+        _create_password_user(db, "sso@examplee6e3b1.com")
+
+        user, _ = find_or_create_from_oauth(
+            db, _profile(email="  SSO@ExampleE6E3B1.com  ")
+        )
+
+        identity = db.query(UserIdentity).filter(UserIdentity.user_id == user.id).one()
+        assert identity.email == "sso@examplee6e3b1.com"
+
 
 class TestAppleClientSecret:
     """Apple has no static secret — it is an ES256 JWT signed with the .p8 key."""

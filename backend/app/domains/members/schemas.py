@@ -1,13 +1,11 @@
 """Member and MembershipType schemas."""
 
 from datetime import date, datetime
-from typing import Annotated
 
-from pydantic import BaseModel, Field, StringConstraints, field_validator
+from pydantic import BaseModel, Field, field_validator
 
+from app.core.schema_types import Email
 from app.domains.shared.enums import MemberStatus
-
-Email = Annotated[str, StringConstraints(pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$", max_length=255)]
 
 
 # --- MembershipType ---
