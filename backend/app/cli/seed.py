@@ -712,6 +712,17 @@ TEST_ACCOUNTS = [
         "password": "TestTreasurer1!",
         "role": "treasurer",
     },
+    {
+        # Exists only to be mutated by role-assignment.cy.ts (#185). That spec
+        # used to toggle roles on `member@` directly, which raced any spec
+        # asserting on `member@`'s own nav or permissions under parallel
+        # workers. No spec should ever log in as this account.
+        "first_name": "Role",
+        "last_name": "AssignmentTarget",
+        "email": "role-assignment@examplee6e3b1.com",
+        "password": "TestRoleAssignment1!",
+        "role": "member",
+    },
 ]
 
 # A deliberately narrow custom role. The three system roles cannot express a
