@@ -38,11 +38,19 @@ def current_member_or_403(db: Session, user, *, active_only: bool = False):
     Resolved through ``Member.user_id``, never through ``Person.email``: that
     column is non-unique and a minor routinely shares a guardian's address, so
     an email match can return somebody else's member row.
+
+    ``user_id`` itself is nullable and indexed but not unique (#187), so a
+    user who cancelled and rejoined on a fresh row can have two. The ordering
+    below makes the live, most recent membership win deterministically rather
+    than leaving it to whatever order Postgres happens to return.
     """
     from app.domains.members.models import Member
 
-    query = db.query(Member).options(joinedload(Member.person)).filter(
-        Member.user_id == user.id
+    query = (
+        db.query(Member)
+        .options(joinedload(Member.person))
+        .filter(Member.user_id == user.id)
+        .order_by(Member.is_active.desc(), Member.id.desc())
     )
     if active_only:
         query = query.filter(Member.is_active.is_(True))
