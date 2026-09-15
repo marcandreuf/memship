@@ -15,8 +15,9 @@ from sqlalchemy import (
     text,
 )
 from sqlalchemy.dialects.postgresql import INET, JSONB
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, validates
 
+from app.core.schema_types import normalize_email
 from app.db.base import Base
 
 
@@ -82,6 +83,24 @@ class User(Base):
         viewonly=True,
         lazy="selectin",
     )
+
+    @validates("email")
+    def _normalise_email(self, _key, value):
+        """Store the address the way every lookup spells it.
+
+        The request schemas normalise on the way in, so the API can only ever
+        match a stripped, lower-cased value. Anything writing this column
+        without going through a schema — `app.cli.seed`, which builds addresses
+        from its arguments and from SEED_EMAIL_DOMAIN — would otherwise create
+        a row no spelling reaches: the capital is stored, and the login form
+        normalises what it sends (#191).
+
+        Here rather than at those call sites because the call sites are the
+        part that keeps being missed. Validators do not fire when the ORM loads
+        a row, so this normalises writes only and leaves existing values to the
+        migration.
+        """
+        return normalize_email(value)
 
 
 class Role(Base):
@@ -165,3 +184,8 @@ class UserIdentity(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="identities")
+
+    @validates("email")
+    def _normalise_email(self, _key, value):
+        """Same rule as ``User.email`` — see the validator there (#191)."""
+        return normalize_email(value)

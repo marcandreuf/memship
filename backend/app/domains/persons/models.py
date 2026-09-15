@@ -14,8 +14,9 @@ from sqlalchemy import (
     Text,
     func,
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, validates
 
+from app.core.schema_types import normalize_email
 from app.db.base import Base
 
 
@@ -62,6 +63,16 @@ class Person(Base):
         foreign_keys="Contact.entity_id",
         viewonly=True,
     )
+
+    @validates("email")
+    def _normalise_email(self, _key, value):
+        """Same rule as ``User.email`` — see the validator there (#191).
+
+        This column is deliberately not unique (a minor shares a guardian's
+        address), so normalising it changes no constraint. It is here because
+        `attach_login` copies it into ``users.email``, where it decides a login.
+        """
+        return normalize_email(value)
 
 
 class AddressType(Base):

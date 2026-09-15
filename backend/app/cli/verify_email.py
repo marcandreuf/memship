@@ -30,6 +30,7 @@ from datetime import datetime, timezone
 # a name" the first time a query runs — which the test suite never sees, because
 # its conftest has already imported everything.
 import app.db.models_registry  # noqa: F401
+from app.core.schema_types import normalize_email
 from app.db.session import SessionLocal
 from app.domains.auth.models import User
 
@@ -77,6 +78,12 @@ def main() -> None:
         help="Skip the confirmation prompt. Required with --all-unverified.",
     )
     args = parser.parse_args()
+    if args.email:
+        # The column holds normalised addresses, so `--email Marc@x.com` would
+        # report "no account" for a row that is right there (#191). Normalised
+        # here rather than in the query so the messages below name the address
+        # as stored — the operator needs to recognise what was confirmed.
+        args.email = normalize_email(args.email)
 
     db = SessionLocal()
     try:

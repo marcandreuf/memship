@@ -38,6 +38,7 @@ from sqlalchemy import text
 from app.cli.reset import preview_club_data, reset_club_data
 from app.core.config import settings as app_settings
 from app.core.permissions import ADMIN_SLUG, MEMBER_SLUG, SUPER_ADMIN_SLUG
+from app.core.schema_types import normalize_email
 from app.db.session import SessionLocal
 from app.domains.audit.models import AuditLog
 from app.domains.organizations.models import OrganizationSettings
@@ -83,6 +84,19 @@ def prompt_yes_no(question: str, default: bool = False) -> bool:
         print("Please answer y or n.")
 
 
+def prompt_email(prompt: str) -> str:
+    """Read an address, normalised the way the database stores it.
+
+    Every address the API accepts is stripped and lower-cased by a request
+    schema, and `users.email` / `persons.email` normalise on write as well.
+    These prompts are neither, so the rule is applied here: both so what gets
+    written matches what a lookup will ask for, and so an operator typing the
+    capital from their signature still resolves to the row that no longer
+    holds it (#191).
+    """
+    return normalize_email(input(prompt))
+
+
 def prompt_password(label: str = "Password") -> str:
     while True:
         password = getpass.getpass(f"{label} (min 8 chars): ")
@@ -115,7 +129,7 @@ def prompt_club_details() -> dict:
     return {
         "name": name,
         "legal_name": input("Legal name: ").strip() or None,
-        "email": input("Contact email: ").strip() or None,
+        "email": prompt_email("Contact email: ") or None,
         "phone": input("Phone: ").strip() or None,
         "website": input("Website: ").strip() or None,
         "tax_id": input("Tax ID (NIF/CIF): ").strip() or None,
@@ -126,7 +140,7 @@ def prompt_user_details(role_label: str) -> dict:
     print(f"\n--- {role_label} Account ---")
     first_name = input("First name: ").strip()
     last_name = input("Last name: ").strip()
-    email = input("Email: ").strip()
+    email = prompt_email("Email: ")
     password = prompt_password()
 
     return {
@@ -1963,7 +1977,7 @@ def _run_interactive(db, membership_type: MembershipType) -> list[tuple[str, str
             # typo asks again rather than dropping them back to a prompt that
             # looks like it worked. Blank backs out.
             while reset_target is None:
-                email = input("Which address? (blank to skip) ").strip()
+                email = prompt_email("Which address? (blank to skip) ")
                 if not email:
                     print("  Skipping the password reset.")
                     break
@@ -2084,6 +2098,12 @@ def _run_unattended(db, membership_type: MembershipType, args) -> list[tuple[str
 
     accounts: list[tuple[str, str, str]] = []
     if args.admin_email:
+        # Normalised here rather than in `_parse_args` because this is where it
+        # is read: the lookup below, the row it writes and the summary it prints
+        # all have to agree with what the request schemas store, and this
+        # function is also called directly. `--admin-email Admin@club.com` used
+        # to create a super admin that no spelling could sign in as (#191).
+        admin_email = normalize_email(args.admin_email)
         password = os.environ.get("MEMSHIP_ADMIN_PASSWORD")
         if not password:
             print(
@@ -2096,7 +2116,7 @@ def _run_unattended(db, membership_type: MembershipType, args) -> list[tuple[str
             print("\nERROR: MEMSHIP_ADMIN_PASSWORD must be at least 8 characters.", file=sys.stderr)
             sys.exit(1)
 
-        existing = db.query(User).filter_by(email=args.admin_email).first()
+        existing = db.query(User).filter_by(email=admin_email).first()
         if existing:
             # An address already in use by an ordinary account is not a super
             # admin to recover — it is somebody else. Resetting it here would
@@ -2105,14 +2125,14 @@ def _run_unattended(db, membership_type: MembershipType, args) -> list[tuple[str
             # neither of the two things it looks like it does.
             if not any(r.slug == SUPER_ADMIN_SLUG for r in existing.roles):
                 print(
-                    f"\nERROR: {args.admin_email} already belongs to an account that is not a\n"
+                    f"\nERROR: {admin_email} already belongs to an account that is not a\n"
                     "super admin. Refusing to reset it — pass an address that is a super admin,\n"
                     "or promote this account from Settings > Users while signed in as one.",
                     file=sys.stderr,
                 )
                 sys.exit(1)
             set_password(db, existing, password)
-            print(f"\n  super admin: password reset ({args.admin_email})")
+            print(f"\n  super admin: password reset ({admin_email})")
         else:
             print("\nCreating super admin...")
             create_staff_user(
@@ -2120,12 +2140,12 @@ def _run_unattended(db, membership_type: MembershipType, args) -> list[tuple[str
                 {
                     "first_name": "Super",
                     "last_name": "Admin",
-                    "email": args.admin_email,
+                    "email": admin_email,
                     "password": password,
                 },
                 SUPER_ADMIN_SLUG,
             )
-        accounts.append(("super admin", args.admin_email, "(from MEMSHIP_ADMIN_PASSWORD)"))
+        accounts.append(("super admin", admin_email, "(from MEMSHIP_ADMIN_PASSWORD)"))
 
     if args.club_name:
         print("\nCreating organization...")
