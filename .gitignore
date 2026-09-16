@@ -71,6 +71,10 @@ e2e/cypress/videos/
 e2e/cypress/downloads/
 e2e/cypress/reports/
 e2e/runner-results/
+# Rewritten by every `cypress-parallel` run, so it is dirty after any suite run.
+# It only balances specs across workers, and a missing file falls back to equal
+# weights and regenerates itself on the first run.
+e2e/cypress/parallel-weights.json
 
 # Claude Code session journals (local, never committed)
 .claude/journals/
