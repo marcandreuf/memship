@@ -45,6 +45,7 @@ setting the backend reads.
 | `DEFAULT_LOCALE` | `es`                     | Default interface language: `es`, `ca`, or `en`.                  |
 | `CORS_ORIGINS`   | `http://localhost:3000`  | Comma-separated list of allowed browser origins. Set to your site URL(s). |
 | `FRONTEND_URL`   | `http://localhost:3000`  | Public URL of the frontend; used in email links.                  |
+| `TRUSTED_PROXY_HOPS` | `1`                  | How many proxies sit in front of the API. Each appends the peer it accepted to `X-Forwarded-For`, so the caller's address is this many entries from the right. `1` is the bundled Caddy. Raise it if you put anything else in front — a CDN, a load balancer, your own reverse proxy — or the per-IP login throttle keys every caller to that proxy and rate-limits your whole site at once. Set it to `0` only if the API is published with nothing in front, which makes the header caller-supplied and the per-IP limit evadable. |
 | `BACKEND_PUBLIC_URL` | `http://localhost:8003` | Publicly reachable backend URL for payment-provider callbacks (e.g. Redsys `Ds_Merchant_MerchantURL`). In production this **must** be the external hostname the gateway can POST to. |
 
 ## Ports
