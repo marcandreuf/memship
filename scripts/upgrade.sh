@@ -23,13 +23,53 @@
 
 set -euo pipefail
 
-VERSION="${1:?usage: upgrade.sh <version>, e.g. 2.7.0}"
+ALLOW_DOWNGRADE=0
+VERSION=""
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --allow-downgrade) ALLOW_DOWNGRADE=1; shift ;;
+        -*) printf 'unknown option: %s\n' "$1" >&2; exit 2 ;;
+        *)  VERSION="$1"; shift ;;
+    esac
+done
+[ -n "$VERSION" ] || { printf 'usage: upgrade.sh <version> [--allow-downgrade]\n' >&2; exit 2; }
 VERSION="${VERSION#v}"
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
 step() { printf '\n==> %s\n' "$*"; }
+
+current_tag() {
+    [ -f .env ] || return 0
+    grep -E '^IMAGE_TAG=' .env | tail -1 | cut -d= -f2- || true
+}
+
+is_release() { printf '%s' "$1" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; }
+
+# Images go back; a migrated schema does not. Rolling back a release that
+# migrated needs a restore from the pre-upgrade snapshot, which this script
+# cannot do for you — so going backwards is refused rather than half-performed.
+#
+# Only compared between two release versions. An RC or a `latest` install has no
+# ordering to reason about, so it is left alone rather than guessed at.
+CURRENT="$(current_tag)"
+if [ "$ALLOW_DOWNGRADE" -eq 0 ] && is_release "$CURRENT" && is_release "$VERSION" \
+        && [ "$CURRENT" != "$VERSION" ]; then
+    OLDER="$(printf '%s\n%s\n' "$CURRENT" "$VERSION" | sort -V | head -1)"
+    if [ "$OLDER" = "$VERSION" ]; then
+        printf '\nRefusing to downgrade: this instance runs %s, you asked for %s.\n\n' \
+            "$CURRENT" "$VERSION" >&2
+        printf '  Re-pinning IMAGE_TAG moves the images back. It does not move the\n' >&2
+        printf '  database back: a release that ran a migration has already changed\n' >&2
+        printf '  the schema, and %s will not understand it.\n\n' "$VERSION" >&2
+        printf '  To go back, restore the snapshot taken before you upgraded to %s:\n' "$CURRENT" >&2
+        printf '    docs/self-hosting/backups-and-restore.md\n\n' >&2
+        printf '  If you know this release carried no migration, or you have already\n' >&2
+        printf '  restored the database, pass --allow-downgrade.\n' >&2
+        exit 1
+    fi
+fi
 
 # Snapshot before anything touches the database. A release that carries a schema
 # migration cannot be rolled back by re-pinning IMAGE_TAG — the images go back,
@@ -66,8 +106,28 @@ fi
 # a promise that the upgrade will succeed — disk, lock timeouts and a bug in a
 # migration are all outside what any check can see from here.
 if [ -f .env ] && [ -n "$(docker compose ps --quiet db 2>/dev/null)" ]; then
-    step "Pre-upgrade checks — asking $VERSION about your data"
-    IMAGE_TAG="$VERSION" docker compose pull api
+    step "Pre-upgrade checks — $VERSION"
+
+    # Every image, not only the one the data check runs from. install.sh pulls
+    # after it has recreated the stack, so a version that does not exist, or a
+    # release whose images did not all publish, used to take the instance down
+    # and only then fail. Pulling here means a bad tag is an upgrade that
+    # declines while the old one keeps serving.
+    #
+    # It is also not wasted work: install.sh pulls the same images a moment
+    # later and finds them already local.
+    printf '  Fetching the %s images...\n' "$VERSION"
+    set +e
+    IMAGE_TAG="$VERSION" docker compose pull --quiet
+    pull_status=$?
+    set -e
+    if [ "$pull_status" -ne 0 ]; then
+        printf '\nUpgrade stopped: could not fetch every image for %s.\n\n' "$VERSION" >&2
+        printf '  Check the version exists, and that this host can reach the\n' >&2
+        printf '  registry. Nothing has been changed and the instance is still\n' >&2
+        printf '  serving %s.\n' "${CURRENT:-the version it was on}" >&2
+        exit 1
+    fi
 
     set +e
     IMAGE_TAG="$VERSION" docker compose run --rm --no-deps \

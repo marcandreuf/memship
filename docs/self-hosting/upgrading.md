@@ -49,11 +49,19 @@ archive. No git and no source checkout are involved.
    cannot be rolled back by re-pinning `IMAGE_TAG` — the images go back, the migrated schema
    does not — so this dump is the only way out of a bad upgrade. If it fails, the upgrade does
    not happen. On a first install there is no database yet and it says so instead.
-2. **Asks the new release about your data**, before anything is replaced. It pulls the target
-   image and runs its checks against the database the old version is still serving. A migration
-   that would refuse (see below) says so here, while the instance is still up, and the upgrade
-   stops without changing anything. A pass means no migration's declared data precondition is
-   violated — not that the upgrade cannot fail for other reasons.
+2. **Checks the release before anything is replaced.** It fetches every image for the target
+   version — so a version that does not exist, or one whose images did not all publish, stops
+   the upgrade here rather than after the stack has been torn down — and then runs the release's
+   own checks against the database the old version is still serving. A migration that would
+   refuse (see below) says so now, while the instance is still up, and nothing is changed. A
+   pass means no image is missing and no migration's declared data precondition is violated —
+   not that the upgrade cannot fail for other reasons.
+
+   **Going backwards is refused.** Re-pinning `IMAGE_TAG` moves the images back but not the
+   schema, so an older release meets a database it does not understand. Restore the snapshot
+   taken before you upgraded instead — see [Rolling back](#rolling-back). If you know the
+   release you are leaving carried no migration, or you have already restored the database,
+   `--allow-downgrade` proceeds.
 3. **Applies the version** through `scripts/install.sh --tag "$MEMSHIP_VERSION"`, which writes
    `IMAGE_TAG`, pulls, and recreates the stack. It never overwrites an existing `.env`. It also
    force-recreates Caddy, which matters: the `Caddyfile` is bind-mounted, so changing its
