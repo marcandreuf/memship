@@ -28,7 +28,7 @@ describe("Recurring Billing — Settings tab (super admin)", () => {
     // Select by field name, not by input type — the card has more than one
     // number input and a bare type selector matches them all.
     cy.get('input[name="recurring_billing_day"]').clear().type("15");
-    cy.get('input[type="email"]').clear().type("billing@cemediterrani.cat");
+    cy.get('input[type="email"]').clear().type("billing@mediterrani.example");
     cy.contains("button", "Save").click();
 
     cy.contains(/saved successfully/i).should("be.visible");

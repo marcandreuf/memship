@@ -193,12 +193,19 @@ def seed_contact_types(db) -> None:
 # Only ever applied to a demo club. A real installation gets what the operator
 # types at the prompt — before this was split, every client inherited the name,
 # tax ID and IBAN below and had to notice in order to correct them.
+# Contact details follow SEED_EMAIL_DOMAIN for the same reason the demo members
+# do. `--demo` is offered on production instances, which have a working mail
+# transport, and this is the organisation's own address — it lands in message
+# headers and reply-to rather than only in recipient lists. The default domain is
+# reserved by RFC 2606 and can never resolve; `cemediterrani.cat` was a plausible
+# registrable one (#130). The phone follows no variable, so it is a placeholder
+# no one can dial rather than a plausible Barcelona landline.
 DEMO_ORG = {
     "name": "Club Esportiu Mediterrani",
     "legal_name": "Club Esportiu Mediterrani S.L.",
-    "email": "info@cemediterrani.cat",
-    "phone": "+34 933 001 234",
-    "website": "https://cemediterrani.cat",
+    "email": f"info@{app_settings.SEED_EMAIL_DOMAIN}",
+    "phone": "+34 000 000 000",
+    "website": f"https://{app_settings.SEED_EMAIL_DOMAIN}",
     "tax_id": "B12345678",
     "bank_name": "CaixaBank",
     "bank_iban": "ES9121000418450200051332",

@@ -98,7 +98,7 @@ def scratch_db():
     admin.dispose()
 
 
-def _seed(*args, password=PASSWORD):
+def _seed(*args, password=PASSWORD, env_extra=None):
     """Run the module the way the documentation says to run it.
 
     A real subprocess, so `main()`, the argument parsing and the CLI's own
@@ -106,7 +106,7 @@ def _seed(*args, password=PASSWORD):
     the scratch database — `app.db.session` binds its engine to that setting at
     import, the same as it does in the API container.
     """
-    env = {**os.environ, "DATABASE_URL": _scratch_url()}
+    env = {**os.environ, "DATABASE_URL": _scratch_url(), **(env_extra or {})}
     if password is None:
         env.pop("MEMSHIP_ADMIN_PASSWORD", None)
     else:
@@ -130,6 +130,25 @@ def installed(scratch_db):
     others drives its own, since what they assert is the run itself.
     """
     result = _seed("--admin-email", INSTALL_ADDRESS)
+    assert result.returncode == 0, result.stderr
+    return result
+
+
+# Not a domain anyone can register, and not the default either — an assertion
+# that passes on the default cannot tell a value that was read from one that was
+# hardcoded to the same thing.
+DEMO_DOMAIN = "club-that-nobody-owns.example"
+
+
+@pytest.fixture(scope="module")
+def demo_installed(scratch_db):
+    """One `--demo` install, with the domain set only in the subprocess."""
+    result = _seed(
+        "--admin-email",
+        INSTALL_ADDRESS,
+        "--demo",
+        env_extra={"SEED_EMAIL_DOMAIN": DEMO_DOMAIN},
+    )
     assert result.returncode == 0, result.stderr
     return result
 
@@ -319,3 +338,53 @@ class TestItFailsLoudly:
                 {"e": "plain.member@example.org"},
             ).scalar_one()
         assert stored == "untouched"
+
+
+class TestTheDemoClubContactDetails:
+    """`--demo` is offered on production instances, which send real mail.
+
+    Every other seeded address is deliberately unreachable — `TEST_ACCOUNTS` on
+    a domain nobody owns, demo members on `SEED_EMAIL_DOMAIN`, which defaults to
+    an RFC 2606 `.example`. The organisation's own contact address escaped that
+    and was hardcoded to a plausible registrable domain (#130), which is worse
+    than a recipient address: it lands in message headers and reply-to.
+
+    Asserted through a subprocess because `DEMO_ORG` is built at import. Only a
+    fresh interpreter with its own environment proves the variable is read
+    rather than a default baked in at collection time.
+    """
+
+    def test_the_contact_address_follows_the_configured_domain(
+        self, demo_installed, scratch_db
+    ):
+        with scratch_db.connect() as conn:
+            email, website = conn.execute(
+                sa.text("SELECT email, website FROM organization_settings WHERE id = 1")
+            ).one()
+
+        assert email == f"info@{DEMO_DOMAIN}"
+        assert website == f"https://{DEMO_DOMAIN}"
+
+    def test_no_seeded_address_is_on_a_registrable_domain(
+        self, demo_installed, scratch_db
+    ):
+        """The whole point of the variable: an operator who never sets it still
+        gets nothing a mail transport could deliver."""
+        with scratch_db.connect() as conn:
+            addresses = [
+                row[0]
+                for row in conn.execute(
+                    sa.text(
+                        "SELECT email FROM persons WHERE email IS NOT NULL "
+                        "UNION SELECT email FROM organization_settings WHERE email IS NOT NULL"
+                    )
+                )
+            ]
+
+        assert addresses
+        stray = [
+            a
+            for a in addresses
+            if not a.endswith((f"@{DEMO_DOMAIN}", "@example.org", "@examplee6e3b1.com"))
+        ]
+        assert stray == [], f"seeded addresses on a deliverable domain: {stray}"
