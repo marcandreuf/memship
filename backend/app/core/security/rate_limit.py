@@ -28,27 +28,41 @@ from threading import Lock
 
 from fastapi import HTTPException, Request, status
 
+from app.core.config import settings
+
 
 def client_ip(request: Request) -> str:
     """The caller's address, as far as it can be trusted.
 
-    Every documented deployment puts Caddy in front of the API, so
-    `request.client.host` is Caddy's address on the compose network and is the
-    same for all callers — useless as a key. Caddy *appends* the peer it saw to
-    `X-Forwarded-For`, so with one proxy in the chain the **rightmost** entry is
-    the address Caddy actually accepted the connection from. Anything a client
-    sends itself lands to the left of it and is ignored here.
+    Every documented deployment puts a proxy in front of the API, so
+    `request.client.host` is that proxy's address on the compose network and is
+    the same for all callers — useless as a key. Each proxy in the chain
+    *appends* the peer it accepted to `X-Forwarded-For`, so the caller's own
+    address sits ``TRUSTED_PROXY_HOPS`` entries from the right. Anything further
+    left was supplied by the caller and is ignored.
 
-    Publishing the API directly, with no proxy, makes the whole header
-    caller-controlled and the per-IP limit evadable. The per-identity limits do
-    not depend on it.
+    The count is configured because nothing in a request reveals it. Reading the
+    rightmost entry is correct for exactly one proxy; with a second hop in front
+    — a CDN, a load balancer, an operator's own proxy — it returns that hop's
+    address instead, collapsing every caller into one bucket so `LOGIN_BY_IP`
+    throttles the whole site at once (#59).
+
+    Two cases fall back to the socket, both meaning "this request did not arrive
+    through the deployment that was described, so the header proves nothing":
+    ``TRUSTED_PROXY_HOPS = 0``, which is the API published with nothing in front
+    and the whole header therefore caller-controlled, and a chain shorter than
+    the one configured. The per-identity limits do not depend on any of this.
     """
+    socket = request.client.host if request.client else "unknown"
+    trusted = settings.TRUSTED_PROXY_HOPS
+    if trusted < 1:
+        return socket
     forwarded = request.headers.get("x-forwarded-for")
     if forwarded:
         hops = [hop.strip() for hop in forwarded.split(",") if hop.strip()]
-        if hops:
-            return hops[-1]
-    return request.client.host if request.client else "unknown"
+        if len(hops) >= trusted:
+            return hops[-trusted]
+    return socket
 
 
 class Throttle:

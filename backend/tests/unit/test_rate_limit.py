@@ -5,6 +5,9 @@ import time
 import pytest
 from fastapi import HTTPException
 
+from pydantic import ValidationError
+
+from app.core.config import Settings, settings
 from app.core.security.rate_limit import (
     Throttle,
     client_ip,
@@ -154,3 +157,57 @@ class TestClientIp:
 
     def test_a_missing_client_does_not_raise(self):
         assert client_ip(_Request(host=None)) == "unknown"
+
+
+class TestClientIpBehindMoreThanOneProxy:
+    """`TRUSTED_PROXY_HOPS` states how deep the chain is, because a request does
+    not reveal it. Every case here is one proxy chain read with the right and the
+    wrong count (#59)."""
+
+    # Caller -> CDN -> Caddy -> API. The CDN appends the caller, Caddy appends
+    # the CDN, so the caller is two entries from the right.
+    TWO_HOPS = "198.51.100.7, 203.0.113.9"
+
+    def test_the_caller_is_found_when_the_count_matches_the_chain(self, monkeypatch):
+        monkeypatch.setattr(settings, "TRUSTED_PROXY_HOPS", 2)
+        request = _Request(host="172.18.0.2", forwarded=self.TWO_HOPS)
+
+        assert client_ip(request) == "198.51.100.7"
+
+    def test_one_hop_too_few_buckets_the_whole_site_together(self, monkeypatch):
+        """The failure #59 describes: the rightmost entry is the inner proxy, so
+        every caller shares one key and `LOGIN_BY_IP` throttles everybody at
+        once. Asserted so the reason for the setting cannot be optimised away."""
+        monkeypatch.setattr(settings, "TRUSTED_PROXY_HOPS", 1)
+        alice = _Request(host="172.18.0.2", forwarded="198.51.100.7, 203.0.113.9")
+        bob = _Request(host="172.18.0.2", forwarded="198.51.100.250, 203.0.113.9")
+
+        assert client_ip(alice) == client_ip(bob) == "203.0.113.9"
+
+    def test_a_chain_shorter_than_configured_falls_back_to_the_socket(self, monkeypatch):
+        """Fewer entries than proxies means the request did not come through the
+        chain that was described, so nothing in the header is worth trusting."""
+        monkeypatch.setattr(settings, "TRUSTED_PROXY_HOPS", 2)
+        request = _Request(host="172.18.0.2", forwarded="1.2.3.4")
+
+        assert client_ip(request) == "172.18.0.2"
+
+    def test_a_deeper_chain_still_ignores_what_the_caller_supplied(self, monkeypatch):
+        monkeypatch.setattr(settings, "TRUSTED_PROXY_HOPS", 2)
+        request = _Request(host="172.18.0.2", forwarded="9.9.9.9, " + self.TWO_HOPS)
+
+        assert client_ip(request) == "198.51.100.7"
+
+
+class TestClientIpWithNoProxy:
+    def test_zero_hops_ignores_the_header_entirely(self, monkeypatch):
+        """Published with nothing in front, the whole header is caller-supplied,
+        so honouring any of it hands out the throttle key."""
+        monkeypatch.setattr(settings, "TRUSTED_PROXY_HOPS", 0)
+        request = _Request(host="203.0.113.9", forwarded="1.2.3.4, 5.6.7.8")
+
+        assert client_ip(request) == "203.0.113.9"
+
+    def test_a_negative_count_is_refused_at_the_boundary(self):
+        with pytest.raises(ValidationError):
+            Settings(TRUSTED_PROXY_HOPS=-1)

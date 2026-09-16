@@ -92,6 +92,16 @@ class Settings(BaseSettings):
     # make the demo club's members reachable.
     SEED_EMAIL_DOMAIN: str = "mediterrani.example"
     CORS_ORIGINS: str = "http://localhost:3000"
+    # How many proxies sit between a caller and this API. Each one appends the
+    # peer it accepted to `X-Forwarded-For`, so the caller's own address is that
+    # many entries from the right — and nothing in a request reveals the number,
+    # which is why it has to be stated rather than detected. 1 is the bundled
+    # Caddy. Raise it for an extra hop in front (a CDN, a load balancer, an
+    # operator's own reverse proxy). Set it to 0 when the API is published with
+    # nothing in front, which makes the whole header caller-supplied and the only
+    # safe reading the socket. A value that does not match the deployment breaks
+    # the per-IP throttles in both directions — see #59.
+    TRUSTED_PROXY_HOPS: int = 1
     LOG_LEVEL: str = "info"
 
     # SMTP (optional — emails disabled if SMTP_HOST is empty).
@@ -196,6 +206,14 @@ class Settings(BaseSettings):
     @property
     def cors_origins_list(self) -> list[str]:
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",")]
+
+    @field_validator("TRUSTED_PROXY_HOPS")
+    @classmethod
+    def _no_negative_hops(cls, value: int) -> int:
+        """Negative would index from the wrong end of the header silently."""
+        if value < 0:
+            raise ValueError("TRUSTED_PROXY_HOPS cannot be negative")
+        return value
 
     @field_validator("SEED_EMAIL_DOMAIN")
     @classmethod
