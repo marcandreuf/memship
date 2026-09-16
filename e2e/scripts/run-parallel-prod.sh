@@ -1,10 +1,18 @@
 #!/bin/bash
-# Run the cypress suite in parallel against a production frontend build.
+# Run the cypress suite in parallel against the frontend artifact we actually ship.
 #
 # `next dev` compiles each route on first request. With several workers sharing
 # one dev server that stall pushes navigations past their timeouts, so specs
 # fail or survive only on retry, and which ones fail changes between runs.
 # A production build serves prebuilt routes and removes the problem.
+#
+# The build is served the way `frontend/docker/Dockerfile` serves it — the
+# standalone server, not `next start`. `next.config.ts` sets
+# `output: "standalone"`, and Next refuses to combine that with `next start`:
+# it warns and serves something no deployment runs. Assembling the layout the
+# image assembles (`public/` and `.next/static/` beside the standalone root,
+# then `node server.js`) is what makes a green suite evidence about the thing
+# that ships rather than about a build only this script produces.
 #
 # Usage: ./scripts/run-parallel-prod.sh [threads]
 
@@ -13,6 +21,7 @@ cd "$(dirname "$0")/.."
 
 THREADS=${1:-4}
 FRONTEND_DIR="../frontend"
+STANDALONE="$FRONTEND_DIR/.next/standalone"
 PORT=3000
 SERVER_PID=""
 
@@ -36,8 +45,7 @@ cleanup() {
   kill "$SERVER_PID" 2>/dev/null || true
   wait "$SERVER_PID" 2>/dev/null || true
 
-  # `pnpm start` re-parents `next-server`, so the port can still be held once
-  # the wrapper is gone. Kill whatever is actually still listening.
+  # Belt and braces: kill whatever is still listening, whoever parented it.
   for _ in $(seq 1 10); do
     port_in_use || return 0
     for p in $(listeners_on_port); do
@@ -60,8 +68,19 @@ fi
 echo "-> Building the frontend..."
 (cd "$FRONTEND_DIR" && pnpm build)
 
+# `next build` leaves these outside the standalone root. The image copies them
+# in at build time (`frontend/docker/Dockerfile`), and without them the server
+# answers every asset and every static route with a 404.
+echo "-> Assembling the standalone bundle..."
+mkdir -p "$STANDALONE/public" "$STANDALONE/.next"
+cp -r "$FRONTEND_DIR/public/." "$STANDALONE/public/" 2>/dev/null || true
+rm -rf "$STANDALONE/.next/static"
+cp -r "$FRONTEND_DIR/.next/static" "$STANDALONE/.next/static"
+
 echo "-> Starting the production server on :$PORT..."
-(cd "$FRONTEND_DIR" && pnpm start) &
+# Loopback rather than the image's 0.0.0.0 — same server and same code path,
+# but a local test run has no reason to listen on the network.
+(cd "$STANDALONE" && NODE_ENV=production PORT="$PORT" HOSTNAME=127.0.0.1 node server.js) &
 SERVER_PID=$!
 
 echo "-> Waiting for the server to accept requests..."
