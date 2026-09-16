@@ -49,8 +49,48 @@ else
     step "No running database — first install, nothing to snapshot"
 fi
 
+# Ask the release whether it would refuse, while the old one is still serving.
+#
+# Migrations are applied by the API container on start, so without this the
+# answer arrives after `up -d` has replaced the stack: the API crash-loops under
+# `unless-stopped`, Caddy and the frontend stay up so members get errors rather
+# than a maintenance page, and the instance is down until a person resolves the
+# data. The check is the same one the migration runs; only the moment changes.
+#
+# RUN_MIGRATIONS=0 is load-bearing, not tidiness. The api service sets it to 1
+# and the image's entrypoint runs `alembic upgrade head` when it is set, so
+# without the override this would apply the very migration it is checking,
+# against the live database, while the old stack is still serving.
+#
+# A pass means no migration's declared data precondition is violated. It is not
+# a promise that the upgrade will succeed — disk, lock timeouts and a bug in a
+# migration are all outside what any check can see from here.
+if [ -f .env ] && [ -n "$(docker compose ps --quiet db 2>/dev/null)" ]; then
+    step "Pre-upgrade checks — asking $VERSION about your data"
+    IMAGE_TAG="$VERSION" docker compose pull api
+
+    set +e
+    IMAGE_TAG="$VERSION" docker compose run --rm --no-deps \
+        -e RUN_MIGRATIONS=0 api python -m app.cli.preflight
+    preflight_status=$?
+    set -e
+
+    case "$preflight_status" in
+        0) ;;
+        1)  printf '\nUpgrade stopped. Nothing has been changed and the instance is\n' >&2
+            printf 'still serving the version it was.\n' >&2
+            exit 1 ;;
+        *)  printf '\nUpgrade stopped: the checks could not be run.\n' >&2
+            printf 'That is not the same as passing. Resolve the error above, or\n' >&2
+            printf 'investigate before continuing.\n' >&2
+            exit 1 ;;
+    esac
+else
+    step "No running database — first install, nothing to check"
+fi
+
 step "Applying $VERSION"
-install_args=(--tag "$VERSION")
+install_args=(--tag "$VERSION" --upgrade)
 if [ -n "${DATA_ROOT:-}" ]; then
     install_args+=(--data-root "$DATA_ROOT")
 fi

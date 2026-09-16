@@ -87,19 +87,35 @@ FIND_DUPLICATES = sa.text(
 TABLES = ["users", "persons", "user_identities", "organization_settings"]
 
 
+def preflight_check(conn) -> str | None:
+    """Why this migration would refuse, or ``None`` if it would not.
+
+    Read-only and side-effect free, so `app/cli/preflight.py` can call it
+    against a live database before the stack is replaced (#194) and get the same
+    answer `upgrade()` below would reach. One function with two callers, rather
+    than a description of the check kept in step with the check by hand.
+    """
+    duplicates = conn.execute(FIND_DUPLICATES).all()
+    if not duplicates:
+        return None
+    groups = "\n\n".join(
+        f"  {row.normalised}\n    {row.accounts}" for row in duplicates
+    )
+    return (
+        f"Cannot normalise email addresses: {len(duplicates)} address(es) are "
+        "held by more than one account, differing only by case or surrounding "
+        "whitespace.\n\n"
+        f"{groups}\n\n"
+        "Decide which account keeps each address and remove or change the "
+        "others, then run the upgrade again."
+    )
+
+
 def upgrade() -> None:
-    duplicates = op.get_bind().execute(FIND_DUPLICATES).all()
-    if duplicates:
-        groups = "\n\n".join(
-            f"  {row.normalised}\n    {row.accounts}" for row in duplicates
-        )
+    blocked = preflight_check(op.get_bind())
+    if blocked:
         raise RuntimeError(
-            f"\n\nCannot normalise email addresses: {len(duplicates)} address(es) "
-            "are held by more than one account, differing only by case or "
-            "surrounding whitespace.\n\n"
-            f"{groups}\n\n"
-            "Decide which account keeps each address and remove or change the "
-            "others, then run the upgrade again.\n"
+            f"\n\n{blocked}\n"
             "Nothing has been changed — this migration made no writes.\n"
         )
 
