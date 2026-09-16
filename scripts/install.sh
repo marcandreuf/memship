@@ -27,6 +27,9 @@ DATA_ROOT=""
 DOMAIN=""
 IMAGE_TAG=""
 SKIP_DNS_CHECK=0
+# Set by scripts/upgrade.sh, which is the supported way to touch an instance
+# that is already running. Not for operators — see the guard below.
+FROM_UPGRADE=0
 
 die() { printf '\nError: %s\n' "$*" >&2; exit 1; }
 info() { printf '  %s\n' "$*"; }
@@ -46,6 +49,7 @@ while [ $# -gt 0 ]; do
         --domain)    DOMAIN="${2:-}"; shift 2 ;;
         --tag)       IMAGE_TAG="${2:-}"; shift 2 ;;
         --skip-dns-check) SKIP_DNS_CHECK=1; shift ;;
+        --upgrade)   FROM_UPGRADE=1; shift ;;
         -h|--help)   usage ;;
         *) die "unknown option: $1 (try --help)" ;;
     esac
@@ -67,6 +71,34 @@ info "docker $(docker version --format '{{.Server.Version}}' 2>/dev/null || echo
 
 # Resolve the data root: --data-root wins, then an existing .env, then ./data.
 ENV_FILE="$REPO_ROOT/.env"
+
+# ------------------------------------------------------- already installed?
+
+# This script installs. `scripts/upgrade.sh` is what touches an instance that is
+# already running, and it does three things this does not: it snapshots the
+# database first, it asks the new image whether a migration would refuse before
+# the stack is replaced (#194), and it verifies the result afterwards. Coming in
+# through here skips all three — most importantly the check, which is the
+# difference between an upgrade that declines and an instance that is down.
+#
+# A running `db` container alongside an existing .env is the signal. A half-built
+# install — .env written, nothing up — is not one, and still proceeds.
+if [ "$FROM_UPGRADE" -eq 0 ] && [ -f "$ENV_FILE" ] \
+        && [ -n "$(docker compose ps --quiet db 2>/dev/null)" ]; then
+    CURRENT_TAG="$(grep -E '^IMAGE_TAG=' "$ENV_FILE" | tail -1 | cut -d= -f2- || true)"
+    die "this instance is already installed and running${CURRENT_TAG:+ (}${CURRENT_TAG}${CURRENT_TAG:+)}.
+
+  To change its version, or to re-apply configuration such as a new domain:
+
+    ./scripts/upgrade.sh ${IMAGE_TAG:-${CURRENT_TAG:-<version>}}
+
+  That snapshots the database, checks the release against your data before
+  replacing anything, applies it and verifies the result. This script does none
+  of that, so running it here would skip the check that keeps a refused
+  migration from becoming downtime.
+
+  Full procedure: docs/self-hosting/upgrading.md"
+fi
 if [ -z "$DATA_ROOT" ] && [ -f "$ENV_FILE" ]; then
     DATA_ROOT="$(grep -E '^MEMSHIP_DATA_ROOT=' "$ENV_FILE" | tail -1 | cut -d= -f2- || true)"
 fi

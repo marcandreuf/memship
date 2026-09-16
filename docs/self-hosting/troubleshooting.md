@@ -12,8 +12,9 @@ curl -s http://localhost/api/v1/health  # {"status":"healthy","version":"2.3.0",
 ```
 
 `version` is the image tag you are on. If it reads `latest` you are on an unpinned install and
-cannot tell what is running — set `IMAGE_TAG` in `.env` to a release and re-run
-`./scripts/install.sh`.
+cannot tell what is running — pin it with `./scripts/upgrade.sh <version>`, which checks the
+release against your data before replacing anything. `install.sh` refuses to run against an
+instance that is already up, precisely so that check is not skipped.
 
 ## The stack will not start
 

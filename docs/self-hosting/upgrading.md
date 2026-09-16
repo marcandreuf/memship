@@ -49,12 +49,17 @@ archive. No git and no source checkout are involved.
    cannot be rolled back by re-pinning `IMAGE_TAG` — the images go back, the migrated schema
    does not — so this dump is the only way out of a bad upgrade. If it fails, the upgrade does
    not happen. On a first install there is no database yet and it says so instead.
-2. **Applies the version** through `scripts/install.sh --tag "$MEMSHIP_VERSION"`, which writes
+2. **Asks the new release about your data**, before anything is replaced. It pulls the target
+   image and runs its checks against the database the old version is still serving. A migration
+   that would refuse (see below) says so here, while the instance is still up, and the upgrade
+   stops without changing anything. A pass means no migration's declared data precondition is
+   violated — not that the upgrade cannot fail for other reasons.
+3. **Applies the version** through `scripts/install.sh --tag "$MEMSHIP_VERSION"`, which writes
    `IMAGE_TAG`, pulls, and recreates the stack. It never overwrites an existing `.env`. It also
    force-recreates Caddy, which matters: the `Caddyfile` is bind-mounted, so changing its
    contents gives `docker compose up -d` no reason to recreate the container, and it would
    otherwise keep serving the old configuration.
-3. **Verifies the result** with `scripts/verify-deployment.sh`, which waits for the API, checks
+4. **Verifies the result** with `scripts/verify-deployment.sh`, which waits for the API, checks
    that it reports the version you just deployed, and pings the Celery worker. `docker compose
    up -d` returning says only that containers were created — migrations run before the API
    serves, so a failed one looks like an API that never answers rather than a container that
@@ -109,19 +114,24 @@ only by the case of their email address, say, where folding them would pick a wi
 people's logins. The guard writes a report naming exactly what it found, makes **no changes at
 all**, and the upgrade stops there.
 
-What that looks like: the API container does not start, so `verify-deployment.sh` fails and
-prints the report. Because migrations run before the API serves, the symptom is an API that
-never answers rather than a container that obviously died.
+What that looks like: `upgrade.sh` stops at its pre-upgrade checks and prints the report,
+naming the migration that would refuse.
 
 Three things worth knowing when it happens:
 
-- **The database is untouched.** An aborting guard writes nothing, so there is no half-migrated
-  state. Do not restore the pre-upgrade snapshot — there is nothing to undo, and restoring loses
-  anything written since it was taken.
-- **The previous version is not serving either.** `install.sh` has already recreated the stack by
-  this point, so the instance is down until the report is resolved. Moving that check to before
-  the recreate is [issue #194](https://github.com/marcandreuf/memship/issues/194).
-- **Resolve the data, then restart** — you do not need to re-download or re-pin anything.
+- **The database is untouched.** A guard writes nothing before it refuses, so there is no
+  half-migrated state. Do not restore the pre-upgrade snapshot — there is nothing to undo, and
+  restoring loses anything written since it was taken.
+- **Your instance is still serving.** The checks run before anything is replaced, so the version
+  you were on keeps answering while you resolve the report. Take the time you need.
+- **Resolve the data, then run the same upgrade command again** — you do not need to re-download
+  or re-pin anything.
+
+> Upgrades before this existed ran the check on API start, *after* the stack had been replaced,
+> so a refusal meant the API crash-looped and members got errors until someone resolved the data
+> ([issue #194](https://github.com/marcandreuf/memship/issues/194)). If you reach a refusal that
+> way — because you ran `install.sh` directly, or upgraded from an older release — the data
+> advice above is unchanged; the instance is simply down while you follow it.
 
 [Troubleshooting](troubleshooting.md#a-migration-refused-to-run-and-the-api-will-not-start) has
 the steps, including why the fix is to *change* a row rather than delete one.
