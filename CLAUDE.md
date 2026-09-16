@@ -94,25 +94,54 @@ and tears down. It serves the build the way the image does — the standalone
 server, not `next start`, which Next refuses to combine with
 `output: "standalone"` and which served a build no deployment runs (#206).
 
-Measured 2026-09-16 at 219 tests: three consecutive runs, all **219/219 with no
-retries**, around 4m50s of wall clock for the specs across 4 workers (roughly
-1000s of spec time, ~71% saved by parallelism) plus the build. The dev-server
+**`cypress/e2e/roles/` runs on a worker of its own.** `run-parallel.sh` splits
+the suite in two: the `roles/` specs run serially on one pinned worker, and
+everything else shares the remaining threads. The default count of 4 therefore
+means one pinned worker beside a three-thread pool, not a four-way pool.
+
+The pinning is load-bearing, not tidiness. `roles-feature-flag.cy.ts` turns
+`features.custom_roles` off inside its tests and restores it only in
+`afterEach`. That flag is global `organization_settings` state, not per-worker:
+while it is off, `showUsersTab` in `app/[locale]/(portal)/settings/page.tsx` is
+false and the Accounts tab is gone for **every** session. A concurrent
+`role-assignment.cy.ts` then timed out reaching that tab and passed only on
+retry (#216). A cypress-parallel thread runs one `cypress run` over its whole
+list, so a thread is genuine serialisation — which is what makes this a fix and
+not a reshuffle.
+
+**The general rule this encodes:** a spec that mutates global
+`organization_settings` — a feature flag, a locale, anything on the single
+`id = 1` row — is mutating state every other worker can see. It needs to be
+confined to the pinned worker alongside every spec that reads what it touches,
+or it will surface as an unrelated spec failing intermittently somewhere else.
+Only the `custom_roles` flag has been audited this way.
+
+Measured 2026-09-16 at 219 tests, after the pinning: three consecutive runs, all
+**219/219 leaving no screenshots at all**, at 262.6s, 277.6s and 300.2s of spec
+wall clock plus the build. The pinned worker took 2:41–2:55 of that, well inside
+the pool's ~4.5 minutes, so it is not near becoming the critical path. Worker
+count is not worth tuning off these numbers: the spread between identical runs
+is ~38s, wide enough to swallow any difference a thread more or less would make.
+
+An earlier three-run measurement on the same day, before the pinning, also
+reported no retries — and a later run on that same code left one. Three clean
+runs show a race is gone; they do not show there are no others. The dev-server
 comparison is older and has not been re-taken — when the suite was 167 tests it
 produced ~12 retry-only passes in 68m. Treat that figure as historical and the
 conclusion as current.
 
-Two of those three runs reused the previous run's database rather than
-reseeding, and neither degraded — but that is three runs, not a guarantee, and
-worker assignment shifts between runs, so a shared-state collision may simply
-not have been scheduled. See #117 and #58; neither is fixed.
+Every run above reused the previous run's database rather than reseeding, and
+none degraded — but worker assignment shifts between runs, so a shared-state
+collision may simply not have been scheduled. See #117; it is not fixed.
 
-Retries mask this, so read the failure screenshots in `cypress/screenshots/`
-(gitignored, overwritten each run) — a screenshot with no "attempt N" suffix
-means a test failed once and passed on retry. A clean run leaves none.
+Retries mask all of this, so read the failure screenshots in
+`cypress/screenshots/` (gitignored, overwritten each run) — a screenshot with no
+"attempt N" suffix means a test failed once and passed on retry. A clean run
+leaves none.
 
-Intermittent retry-only passes under parallel load are a known open problem —
-see issue #58. Treat a run that only passes on retry as a failure to explain,
-not a pass.
+Intermittent retry-only passes under parallel load remain a known open problem —
+see issue #58, which #216 narrowed rather than closed. Treat a run that only
+passes on retry as a failure to explain, not a pass.
 
 ### Docker (backend services)
 ```bash
