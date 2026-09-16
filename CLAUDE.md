@@ -90,10 +90,21 @@ pnpm cypress:run --spec 'cypress/e2e/auth/login.cy.ts'   # Single spec
 route on first request; with 4 workers sharing one dev server that stall pushes
 navigations past their timeouts, so specs fail — or pass only on retry — and
 which ones fail changes between runs. `test:parallel:prod` builds, serves, runs
-and tears down. Measured on one commit when the suite was 167 tests: a clean
-run with no retries in 15m against a production build, versus ~12 retry-only
-passes in 68m against the dev server. The suite has grown since, so treat the
-counts as historical and the conclusion as current.
+and tears down. It serves the build the way the image does — the standalone
+server, not `next start`, which Next refuses to combine with
+`output: "standalone"` and which served a build no deployment runs (#206).
+
+Measured 2026-09-16 at 219 tests: three consecutive runs, all **219/219 with no
+retries**, around 4m50s of wall clock for the specs across 4 workers (roughly
+1000s of spec time, ~71% saved by parallelism) plus the build. The dev-server
+comparison is older and has not been re-taken — when the suite was 167 tests it
+produced ~12 retry-only passes in 68m. Treat that figure as historical and the
+conclusion as current.
+
+Two of those three runs reused the previous run's database rather than
+reseeding, and neither degraded — but that is three runs, not a guarantee, and
+worker assignment shifts between runs, so a shared-state collision may simply
+not have been scheduled. See #117 and #58; neither is fixed.
 
 Retries mask this, so read the failure screenshots in `cypress/screenshots/`
 (gitignored, overwritten each run) — a screenshot with no "attempt N" suffix
