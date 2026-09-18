@@ -22,9 +22,10 @@ from datetime import date, timedelta
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.core.email import send_payment_reminder_email
+from app.core.email import EmailOutcome, send_payment_reminder_email
 from app.db.after_commit import run_after_commit
 from app.domains.billing.models import PaymentProvider, Receipt, ReceiptReminder
+from app.domains.mailing.policy import is_enabled as template_enabled
 from app.domains.members.models import Member
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Person
@@ -198,17 +199,32 @@ def _new_reminder_row(
     )
 
 
-def deliver(payload: dict) -> tuple[bool, str | None]:
-    """Send one reminder email. Returns ``(sent_ok, error)``; never raises."""
+def deliver(payload: dict) -> tuple[EmailOutcome, str | None]:
+    """Send one reminder email. Returns ``(outcome, error)``; never raises."""
     try:
         return send_payment_reminder_email(**payload), None
     except Exception as exc:  # noqa: BLE001 — recorded on the row for the admin
-        return False, str(exc)
+        return EmailOutcome.FAILED, str(exc)
 
 
-def record_outcome(reminder: ReceiptReminder, sent_ok: bool, error: str | None) -> None:
-    reminder.status = "sent" if sent_ok else "failed"
-    reminder.error = error if error else (None if sent_ok else "Email transport unavailable or send failed")
+# How each outcome lands on the row. ``suppressed`` is recorded as ``skipped``
+# — already permitted by the status CHECK constraint — with no error, because
+# the organization switching the template off is not a fault to report.
+_ROW_STATUS = {
+    EmailOutcome.SENT: "sent",
+    EmailOutcome.SUPPRESSED: "skipped",
+    EmailOutcome.FAILED: "failed",
+}
+
+
+def record_outcome(
+    reminder: ReceiptReminder, outcome: EmailOutcome, error: str | None
+) -> None:
+    reminder.status = _ROW_STATUS[outcome]
+    if outcome is EmailOutcome.FAILED:
+        reminder.error = error or "Email transport unavailable or send failed"
+    else:
+        reminder.error = None
 
 
 def send_reminder(
@@ -274,21 +290,42 @@ def run_scheduled_reminders(db: Session, today: date | None = None) -> dict:
     features = (org.features if org else None) or {}
 
     if not features.get("payment_reminders_enabled"):
-        return {"overdue_marked": 0, "reminders_sent": 0, "failures": 0}
+        return {
+            "overdue_marked": 0,
+            "reminders_sent": 0,
+            "suppressed": 0,
+            "failures": 0,
+        }
 
     days_after_due = features.get("reminder_days_after_due", 3)
     repeat_days = features.get("reminder_repeat_days", 7)
     max_count = features.get("reminder_max_count", 3)
 
     overdue_marked = mark_overdue(db, today)
+    due = reminders_due(db, today, days_after_due, repeat_days, max_count)
+
+    # The template is off by default, so this is the ordinary state of a fresh
+    # install, not an error. Report what was held back and write nothing:
+    # a `skipped` row per receipt per night would accumulate for as long as the
+    # receipt stays overdue, and say nothing a counter does not (#219).
+    if not template_enabled(db, "payment_reminder"):
+        return {
+            "overdue_marked": overdue_marked,
+            "reminders_sent": 0,
+            "suppressed": len(due),
+            "failures": 0,
+        }
 
     sent = 0
+    suppressed = 0
     failures = 0
-    for receipt in reminders_due(db, today, days_after_due, repeat_days, max_count):
+    for receipt in due:
         try:
             reminder = send_reminder(db, receipt, "scheduled", today=today)
             if reminder.status == "sent":
                 sent += 1
+            elif reminder.status == "skipped":
+                suppressed += 1
             else:
                 failures += 1
         except ValueError:
@@ -298,5 +335,6 @@ def run_scheduled_reminders(db: Session, today: date | None = None) -> dict:
     return {
         "overdue_marked": overdue_marked,
         "reminders_sent": sent,
+        "suppressed": suppressed,
         "failures": failures,
     }

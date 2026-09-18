@@ -10,6 +10,7 @@ import logging
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from enum import Enum
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound, select_autoescape
@@ -27,6 +28,20 @@ from app.domains.mailing.policy import always_sends as template_always_sends
 from app.domains.mailing.policy import is_enabled as is_template_enabled
 
 logger = logging.getLogger(__name__)
+
+
+class EmailOutcome(str, Enum):
+    """Why an email did or did not go out.
+
+    ``SUPPRESSED`` is not a failure: the template is switched off in Settings,
+    which is the default for everything but the account-access mails. A caller
+    that records its result for a human has to tell the two apart, or it reports
+    the organization's own configuration as a broken mail transport (#219).
+    """
+
+    SENT = "sent"
+    SUPPRESSED = "suppressed"
+    FAILED = "failed"
 
 # Jinja2 template environment
 _template_dir = Path(__file__).resolve().parent.parent / "templates" / "email"
@@ -498,12 +513,45 @@ def _send_templated(
     attachment_filename: str = "document.pdf",
     attachment_mime: str = "application/pdf",
 ) -> bool:
+    """Whether the mail went out. Most callers only need this much."""
+    return (
+        _send_templated_outcome(
+            template_key,
+            to,
+            locale,
+            context,
+            subject_args=subject_args,
+            subject=subject,
+            attachment=attachment,
+            attachment_filename=attachment_filename,
+            attachment_mime=attachment_mime,
+        )
+        is EmailOutcome.SENT
+    )
+
+
+def _send_templated_outcome(
+    template_key: str,
+    to: str,
+    locale: str,
+    context: dict,
+    subject_args: dict | None = None,
+    subject: str | None = None,
+    attachment: bytes | None = None,
+    attachment_filename: str = "document.pdf",
+    attachment_mime: str = "application/pdf",
+) -> EmailOutcome:
     """Render and send one catalogued template, honouring the org's switches.
 
     The single place that decides whether a templated email happens. Every
     ``send_*_email`` below routes through here, so the on/off gate, the
     suppression log line and the not-delivered warning exist once rather than at
     seventeen call sites.
+
+    Returns the outcome rather than a bool, because "switched off" and "did not
+    deliver" are different facts and a caller that persists the result must not
+    conflate them (#219). ``_send_templated`` is the bool view for the callers
+    that only act on success.
 
     ``subject`` overrides the catalogue subject (announcements carry their own).
     Passing ``attachment`` routes through the attachment transport.
@@ -513,7 +561,7 @@ def _send_templated(
             f"Email suppressed (template disabled in settings): "
             f"template={template_key}, to={to}"
         )
-        return False
+        return EmailOutcome.SUPPRESSED
 
     if subject is None:
         subject = _get_subject(template_key, locale, **(subject_args or {}))
@@ -533,7 +581,7 @@ def _send_templated(
 
     if not ok:
         logger.warning(f"Email not delivered: template={template_key}, to={to}")
-    return ok
+    return EmailOutcome.SENT if ok else EmailOutcome.FAILED
 
 
 # --- High-level email functions ---
@@ -682,9 +730,14 @@ def send_payment_reminder_email(
     pay_now_url: str | None = None,
     bank_details: str | None = None,
     locale: str = "es",
-) -> bool:
-    """Send a payment reminder for an overdue receipt."""
-    return _send_templated(
+) -> EmailOutcome:
+    """Send a payment reminder for an overdue receipt.
+
+    The one ``send_*_email`` that returns the outcome rather than a bool: its
+    result is written to a ``ReceiptReminder`` row and shown to an administrator,
+    who needs "switched off" and "would not send" to read differently (#219).
+    """
+    return _send_templated_outcome(
         "payment_reminder",
         to,
         locale,

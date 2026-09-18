@@ -3,6 +3,7 @@
     "sendReminder": "Enviar recordatorio",
     "sentToast": "Recordatorio en cola de envío",
     "maxReached": "Ya se ha enviado el número máximo de recordatorios",
+    "templateDisabled": "Los correos de recordatorio de pago están desactivados en Ajustes → Comunicaciones.",
     "historyTitle": "Recordatorios de pago",
     "number": "Nº",
     "sentAt": "Enviado",

@@ -3,6 +3,7 @@
     "sendReminder": "Send reminder",
     "sentToast": "Reminder queued for sending",
     "maxReached": "Maximum number of reminders already sent",
+    "templateDisabled": "Payment reminder emails are switched off in Settings → Communications.",
     "historyTitle": "Payment reminders",
     "number": "#",
     "sentAt": "Sent",

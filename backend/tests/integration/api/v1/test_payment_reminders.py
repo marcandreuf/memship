@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 import pytest
 
+from app.core.email import EmailOutcome
 from app.core.security.jwt import create_access_token
 from app.core.security.password import hash_password
 from app.domains.auth.models import User
@@ -55,7 +56,7 @@ def _auth_cookie(user):
     return {"access_token": create_access_token(user.id)}
 
 
-def _ensure_org_settings(db, features=None):
+def _ensure_org_settings(db, features=None, reminder_template=True):
     org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
     if not org:
         org = OrganizationSettings(
@@ -72,9 +73,16 @@ def _ensure_org_settings(db, features=None):
         )
         db.add(org)
         db.flush()
+    # The reminder paths consult the policy with the caller's session, so this
+    # is the real switch rather than a stub. Default on: most of this suite
+    # covers what happens when a reminder does go out. Pass False for the
+    # opted-out state, which is what a fresh install actually looks like.
+    org.communications_config = {
+        "templates": {"payment_reminder": {"enabled": reminder_template}}
+    }
     if features is not None:
         org.features = features
-        db.flush()
+    db.flush()
     return org
 
 
@@ -148,7 +156,7 @@ def _capture_reminder_email(monkeypatch):
 
     def _fake(**kwargs):
         captured.update(kwargs)
-        return True
+        return EmailOutcome.SENT
 
     monkeypatch.setattr(
         "app.domains.billing.reminder_service.send_payment_reminder_email", _fake
@@ -368,7 +376,12 @@ class TestRunScheduled:
         member = _create_member(db, "rs1")
         _create_receipt(db, member, "rs1", "emitted", due_date=TODAY - timedelta(days=10))
         summary = run_scheduled_reminders(db, today=TODAY)
-        assert summary == {"overdue_marked": 0, "reminders_sent": 0, "failures": 0}
+        assert summary == {
+            "overdue_marked": 0,
+            "reminders_sent": 0,
+            "suppressed": 0,
+            "failures": 0,
+        }
 
     def test_marks_and_sends(self, db, monkeypatch):
         _patch_email_sent(monkeypatch, ok=True)
@@ -481,7 +494,7 @@ class TestQueuedReminderTask:
         db.flush()
         monkeypatch.setattr("app.db.session.SessionLocal", lambda: db)
 
-        assert send_queued_reminder.run(reminder_id, payload) == "skipped"
+        assert send_queued_reminder.run(reminder_id, payload) == "not_queued"
 
 
 class TestManualEndpoint:
@@ -565,3 +578,100 @@ class TestManualEndpoint:
         user = _create_user(db, "admin", "me6")
         resp = client.get("/api/v1/receipts/999999/reminders", cookies=_auth_cookie(user))
         assert resp.status_code == 404
+
+
+# --- A switched-off template is not a delivery failure (#219) ---------------
+
+
+class TestSuppressedIsNotAFailure:
+    """`payment_reminder` ships off, so this is the ordinary state of a fresh
+    install. Reporting it as a failed send sends the administrator looking for a
+    broken mail transport when the switch is in their own settings."""
+
+    def test_a_suppressed_send_is_recorded_as_skipped_not_failed(self, db, monkeypatch):
+        _patch_email_sent(monkeypatch, ok=True)
+        _ensure_org_settings(db, reminder_template=False)
+        member = _create_member(db, "sup1")
+        r = _create_receipt(db, member, "sup1", "overdue", due_date=TODAY - timedelta(days=5))
+
+        # The real gate, not the suite's stub: this is the fact under test.
+        with patch("app.core.email._template_enabled", return_value=False):
+            reminder = send_reminder(db, r, "manual", today=TODAY)
+
+        assert reminder.status == "skipped"
+        assert reminder.error is None
+
+    def test_a_real_transport_failure_still_says_so(self, db, monkeypatch):
+        _patch_email_sent(monkeypatch, ok=False)
+        _ensure_org_settings(db)
+        member = _create_member(db, "sup2")
+        r = _create_receipt(db, member, "sup2", "overdue", due_date=TODAY - timedelta(days=5))
+
+        reminder = send_reminder(db, r, "scheduled", today=TODAY)
+
+        assert reminder.status == "failed"
+        assert reminder.error == "Email transport unavailable or send failed"
+
+    def test_the_scheduled_run_reports_suppressed_separately(self, db):
+        _ensure_org_settings(
+            db,
+            features={"payment_reminders_enabled": True, "reminder_days_after_due": 3},
+            reminder_template=False,
+        )
+        member = _create_member(db, "sup3")
+        _create_receipt(db, member, "sup3", "emitted", due_date=TODAY - timedelta(days=10))
+
+        summary = run_scheduled_reminders(db, today=TODAY)
+
+        assert summary["overdue_marked"] == 1
+        assert summary["suppressed"] == 1
+        assert summary["failures"] == 0
+        assert summary["reminders_sent"] == 0
+
+    def test_the_scheduled_run_writes_no_rows_when_suppressed(self, db):
+        """Otherwise one row per overdue receipt accumulates every night, for as
+        long as the receipt stays overdue, saying nothing the counter does not."""
+        _ensure_org_settings(
+            db,
+            features={"payment_reminders_enabled": True, "reminder_days_after_due": 3},
+            reminder_template=False,
+        )
+        member = _create_member(db, "sup4")
+        r = _create_receipt(db, member, "sup4", "emitted", due_date=TODAY - timedelta(days=10))
+
+        run_scheduled_reminders(db, today=TODAY)
+        run_scheduled_reminders(db, today=TODAY + timedelta(days=1))
+        run_scheduled_reminders(db, today=TODAY + timedelta(days=2))
+
+        rows = db.query(ReceiptReminder).filter(ReceiptReminder.receipt_id == r.id).count()
+        assert rows == 0
+
+    def test_the_manual_button_refuses_instead_of_queueing(self, client, db):
+        _ensure_org_settings(db, reminder_template=False)
+        user = _create_user(db, "admin", "sup5")
+        member = _create_member(db, "sup5")
+        r = _create_receipt(db, member, "sup5", "overdue", due_date=TODAY - timedelta(days=5))
+
+        with patch("app.tasks.billing_tasks.send_queued_reminder.delay") as delay:
+            resp = client.post(
+                f"/api/v1/receipts/{r.id}/send-reminder", cookies=_auth_cookie(user)
+            )
+
+        assert resp.status_code == 409
+        assert resp.json()["detail"]["code"] == "reminder_template_disabled"
+        delay.assert_not_called()
+        assert db.query(ReceiptReminder).filter(ReceiptReminder.receipt_id == r.id).count() == 0
+
+    def test_a_skipped_row_does_not_consume_the_reminder_budget(self, db, monkeypatch):
+        """A reminder held back was never delivered, so it must not count toward
+        `reminder_max_count` once the organization switches the template on."""
+        _patch_email_sent(monkeypatch, ok=True)
+        _ensure_org_settings(db, reminder_template=False)
+        member = _create_member(db, "sup6")
+        r = _create_receipt(db, member, "sup6", "overdue", due_date=TODAY - timedelta(days=5))
+        with patch("app.core.email._template_enabled", return_value=False):
+            send_reminder(db, r, "manual", today=TODAY)
+
+        due = reminders_due(db, TODAY, days_after_due=3, repeat_days=7, max_count=1)
+
+        assert r in due
