@@ -59,6 +59,7 @@
       "delete": "Eliminar",
       "test": "Probar conexión",
       "testSuccess": "La configuración es válida",
+      "notReady": "No se puede activar: {errors}",
       "displayName": "Nombre visible",
       "empty": "No hay proveedores de pago configurados",
       "configured": "Ya configurado",

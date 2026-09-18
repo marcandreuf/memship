@@ -59,6 +59,7 @@
       "delete": "Eliminar",
       "test": "Provar connexió",
       "testSuccess": "La configuració és vàlida",
+      "notReady": "No es pot activar: {errors}",
       "displayName": "Nom visible",
       "empty": "No hi ha proveïdors de pagament configurats",
       "configured": "Ja configurat",

@@ -51,6 +51,24 @@ router = APIRouter(prefix="/receipts", tags=["receipts"])
 member_router = APIRouter(tags=["receipts"])
 
 
+def _provider_unavailable(provider_type: str, exc: Exception) -> HTTPException:
+    """Turn a provider SDK failure into an answer a member can be shown.
+
+    Activation refuses an incomplete config (#218), but credentials can still be
+    revoked or rotated afterwards, and the provider can simply be down. Either
+    way the member is standing in front of a pay button, so the reply says the
+    payment method is unavailable rather than surfacing a 500. The cause goes to
+    the log, where the administrator who can fix it will look.
+    """
+    logger.error(
+        "Payment initiation failed for provider %s: %s", provider_type, exc, exc_info=True
+    )
+    return HTTPException(
+        status_code=status.HTTP_502_BAD_GATEWAY,
+        detail={"code": "provider_unavailable", "provider_type": provider_type},
+    )
+
+
 def _own_member(db: Session, user: User) -> Member | None:
     """Resolve the caller's member record through the foreign key.
 
@@ -678,14 +696,17 @@ def create_stripe_checkout(
     success_url = f"{base_url}/payment/success?session_id={{CHECKOUT_SESSION_ID}}"
     cancel_url = f"{base_url}/payment/cancel?session_id={{CHECKOUT_SESSION_ID}}"
 
-    result = adapter.create_payment(
-        receipt=receipt,
-        person=person,
-        currency=currency,
-        success_url=success_url,
-        cancel_url=cancel_url,
-        stripe_customer_id=stripe_customer_id,
-    )
+    try:
+        result = adapter.create_payment(
+            receipt=receipt,
+            person=person,
+            currency=currency,
+            success_url=success_url,
+            cancel_url=cancel_url,
+            stripe_customer_id=stripe_customer_id,
+        )
+    except Exception as exc:  # noqa: BLE001 — provider SDKs raise their own types
+        raise _provider_unavailable("stripe", exc) from exc
 
     # Store session ID on receipt
     receipt.stripe_checkout_session_id = result["session_id"]
@@ -763,15 +784,18 @@ def initiate_redsys_payment(
     cancel_url = f"{frontend}/payment/redsys/return?receipt_id={receipt.id}&outcome=ko"
     merchant_url = f"{backend}/api/v1/webhooks/redsys"
 
-    result = adapter.create_payment(
-        receipt=receipt,
-        person=person,
-        success_url=success_url,
-        cancel_url=cancel_url,
-        merchant_url=merchant_url,
-        method=method,
-        locale=locale,
-    )
+    try:
+        result = adapter.create_payment(
+            receipt=receipt,
+            person=person,
+            success_url=success_url,
+            cancel_url=cancel_url,
+            merchant_url=merchant_url,
+            method=method,
+            locale=locale,
+        )
+    except Exception as exc:  # noqa: BLE001 — provider SDKs raise their own types
+        raise _provider_unavailable("redsys", exc) from exc
 
     receipt.redsys_ds_order = result["ds_order"]
     if method == "bizum":

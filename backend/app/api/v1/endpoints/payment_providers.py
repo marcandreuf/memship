@@ -13,6 +13,7 @@ from app.domains.billing.models import PaymentProvider, Receipt
 from app.domains.billing.provider_config import (
     PROVIDER_CONFIG_SCHEMAS,
     get_sensitive_fields,
+    validate_provider_config,
 )
 from app.domains.billing.providers.base import LocalValidationAdapter
 from app.domains.billing.schemas import (
@@ -22,6 +23,35 @@ from app.domains.billing.schemas import (
 )
 
 router = APIRouter(prefix="/payment-providers", tags=["payment-providers"])
+
+# The statuses that put a provider in front of members: `/active-methods`
+# selects on these, and the member's pay buttons are built from that list alone.
+MEMBER_FACING_STATUSES = ("active", "test")
+
+
+def _require_ready(provider_type: str, config: dict) -> None:
+    """Refuse to advertise a provider whose config cannot take a payment.
+
+    Activation is the last point where an incomplete config is still a settings
+    problem. Past it the provider is offered to members, and the missing field
+    resurfaces as a failed payment on someone else's screen (#218). Mirrors the
+    mail transport's `mailing_provider_not_ready`, which guards the same way.
+
+    Takes the prospective config rather than the model, so a request that
+    activates and completes the config at once is judged on the result, and a
+    refusal leaves nothing to undo.
+
+    Local validation only — the same check `/{id}/test` runs. It cannot know a
+    key was revoked upstream, so the payment paths still degrade on their own.
+    """
+    errors = validate_provider_config(
+        provider_type, decrypt_config(config or {}, get_sensitive_fields(provider_type))
+    )
+    if errors:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "provider_not_ready", "errors": errors},
+        )
 
 
 def _mask_provider(provider: PaymentProvider) -> dict:
@@ -139,6 +169,9 @@ def create_provider(
         config=encrypted,
         is_default=data.is_default,
     )
+    if provider.status in MEMBER_FACING_STATUSES:
+        _require_ready(provider.provider_type, encrypted)
+
     db.add(provider)
     db.commit()
     db.refresh(provider)
@@ -160,12 +193,8 @@ def update_provider(
     if not provider:
         raise HTTPException(status_code=404, detail="Payment provider not found")
 
-    if data.display_name is not None:
-        provider.display_name = data.display_name
-    if data.status is not None:
-        provider.status = data.status
-    if data.is_default is not None:
-        provider.is_default = data.is_default
+    new_status = data.status if data.status is not None else provider.status
+    new_config = provider.config or {}
     if data.config is not None:
         sensitive = get_sensitive_fields(provider.provider_type)
         # If a sensitive field is masked (starts with ****), keep the existing encrypted value
@@ -181,6 +210,20 @@ def update_provider(
                 from app.core.encryption import encrypt_value
                 new_config[field] = encrypt_value(new_val)
             # else: empty string, store as-is
+
+    # Before any of it is applied, so a refusal leaves the live provider exactly
+    # as it was — including the case of clearing a required field on one that is
+    # already taking payments.
+    if new_status in MEMBER_FACING_STATUSES:
+        _require_ready(provider.provider_type, new_config)
+
+    if data.display_name is not None:
+        provider.display_name = data.display_name
+    if data.status is not None:
+        provider.status = new_status
+    if data.is_default is not None:
+        provider.is_default = data.is_default
+    if data.config is not None:
         provider.config = new_config
 
     db.commit()
@@ -232,6 +275,7 @@ def toggle_provider(
     if provider.status == "active":
         provider.status = "disabled"
     else:
+        _require_ready(provider.provider_type, provider.config or {})
         provider.status = "active"
 
     db.commit()

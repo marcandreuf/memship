@@ -493,3 +493,75 @@ class TestStripeWebhookNotifies:
 
         assert resp.status_code == 200
         delay.assert_not_called()
+
+
+class TestPaymentInitiationDegrades:
+    """Activation refuses an incomplete config (#218), but credentials can still
+    be revoked or rotated afterwards. The member is at a pay button either way,
+    so the provider's failure must not reach them as a 500."""
+
+    def _provider(self, db):
+        from app.core.encryption import encrypt_config
+
+        provider = PaymentProvider(
+            provider_type="stripe",
+            display_name="Stripe",
+            status="active",
+            config=encrypt_config(
+                {
+                    "secret_key": "sk_test_revoked",
+                    "publishable_key": "pk_test_abc",
+                    "webhook_secret": "whsec_abc",
+                },
+                ["secret_key", "webhook_secret"],
+            ),
+            is_default=False,
+        )
+        db.add(provider)
+        db.flush()
+        return provider
+
+    def test_a_revoked_stripe_key_is_not_an_internal_error(self, client, db):
+        from app.domains.billing.providers.stripe_provider import StripeAdapter
+
+        _create_org(db)
+        member = _create_member(db, "degrade")
+        receipt = _create_receipt(db, member, "degrade")
+        self._provider(db)
+        admin = _create_admin(db, "degrade")
+
+        with patch.object(
+            StripeAdapter,
+            "create_payment",
+            side_effect=Exception("You did not provide an API key"),
+        ):
+            resp = client.post(
+                f"/api/v1/receipts/{receipt.id}/stripe/checkout",
+                cookies=_auth_cookie(admin),
+            )
+
+        assert resp.status_code == 502
+        detail = resp.json()["detail"]
+        assert detail["code"] == "provider_unavailable"
+        assert detail["provider_type"] == "stripe"
+
+    def test_the_receipt_is_left_alone_when_initiation_fails(self, client, db):
+        from app.domains.billing.providers.stripe_provider import StripeAdapter
+
+        _create_org(db)
+        member = _create_member(db, "degrade2")
+        receipt = _create_receipt(db, member, "degrade2")
+        self._provider(db)
+        admin = _create_admin(db, "degrade2")
+
+        with patch.object(
+            StripeAdapter, "create_payment", side_effect=Exception("boom")
+        ):
+            client.post(
+                f"/api/v1/receipts/{receipt.id}/stripe/checkout",
+                cookies=_auth_cookie(admin),
+            )
+
+        db.refresh(receipt)
+        assert receipt.stripe_checkout_session_id is None
+        assert receipt.status == "emitted"
