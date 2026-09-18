@@ -87,7 +87,8 @@
       "create": "Afegir preu",
       "edit": "Editar preu",
       "noPrices": "No hi ha preus configurats",
-      "free": "Gratis"
+      "free": "Gratis",
+      "vatBreakdown": "{base} + {rate}% IVA ({vat})"
     },
     "discounts": {
       "title": "Descomptes",

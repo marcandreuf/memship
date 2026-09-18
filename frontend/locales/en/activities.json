@@ -87,7 +87,8 @@
       "create": "Add Price",
       "edit": "Edit Price",
       "noPrices": "No prices configured",
-      "free": "Free"
+      "free": "Free",
+      "vatBreakdown": "{base} + {rate}% VAT ({vat})"
     },
     "discounts": {
       "title": "Discounts",

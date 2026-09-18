@@ -23,6 +23,7 @@ from app.domains.activities.discount_service import (
 )
 from app.domains.activities.models import Activity, ActivityPrice, DiscountCode
 from app.domains.auth.models import User
+from app.domains.billing.service import activity_vat_rate, calculate_vat
 
 router = APIRouter(prefix="/activities/{activity_id}/discount-codes", tags=["discount-codes"])
 
@@ -145,7 +146,7 @@ def validate_discount(
     current_user: User = Depends(require_permission("self.activities.read")),
 ):
     """Validate a discount code and return the discount preview."""
-    get_or_404(db, Activity, activity_id)
+    activity = get_or_404(db, Activity, activity_id)
 
     try:
         discount = validate_discount_code(db, activity_id, data.code)
@@ -155,6 +156,8 @@ def validate_discount(
     # If price_id provided, calculate discounted amount
     original_amount = None
     discounted_amount = None
+    original_total = None
+    discounted_total = None
     if price_id:
         price = (
             db.query(ActivityPrice)
@@ -165,10 +168,15 @@ def validate_discount(
             .first()
         )
         if price:
-            original_amount = float(price.amount)
-            discounted_amount = float(
-                apply_discount(Decimal(str(price.amount)), discount)
-            )
+            base = Decimal(str(price.amount))
+            discounted = apply_discount(base, discount)
+            original_amount = float(base)
+            discounted_amount = float(discounted)
+            # Same rate the receipt will carry, so the preview and the invoice
+            # cannot disagree.
+            rate = activity_vat_rate(db, activity.tax_rate)
+            original_total = float(calculate_vat(base, rate)[1])
+            discounted_total = float(calculate_vat(discounted, rate)[1])
 
     return ValidateDiscountResponse(
         valid=True,
@@ -176,4 +184,6 @@ def validate_discount(
         discount_value=float(discount.discount_value),
         original_amount=original_amount,
         discounted_amount=discounted_amount,
+        original_total=original_total,
+        discounted_total=discounted_total,
     )

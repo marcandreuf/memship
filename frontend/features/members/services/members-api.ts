@@ -179,6 +179,9 @@ export interface MemberRegistrationData {
   status: string;
   original_amount: number | null;
   discounted_amount: number | null;
+  vat_rate?: number;
+  /** Tax-inclusive — matches the invoice. Absent for a free registration. */
+  total_amount?: number | null;
   registration_data: Record<string, unknown>;
   member_notes: string | null;
   admin_notes: string | null;

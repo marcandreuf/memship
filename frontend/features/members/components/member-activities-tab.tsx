@@ -10,12 +10,14 @@ import { REGISTRATION_STATUS_VARIANTS } from "@/lib/status-variants";
 import { TabContentSkeleton } from "@/components/ui/skeletons";
 import { useMemberRegistrations } from "../hooks/use-members";
 import { useLocaleDate } from "@/hooks/use-locale-date";
+import { useFormatters } from "@/hooks/use-formatters";
 
 interface MemberActivitiesTabProps {
   memberId: number;
 }
 
 export function MemberActivitiesTab({ memberId }: MemberActivitiesTabProps) {
+  const { formatCurrency } = useFormatters();
   const t = useTranslations();
   const { shortDate: formatDate } = useLocaleDate();
   const { data, isLoading } = useMemberRegistrations(memberId);
@@ -66,11 +68,13 @@ export function MemberActivitiesTab({ memberId }: MemberActivitiesTabProps) {
             </TableCell>
             <TableCell>{formatDate(reg.created_at)}</TableCell>
             <TableCell>
-              {reg.discounted_amount != null
-                ? `${Number(reg.discounted_amount).toFixed(2)} EUR`
-                : reg.original_amount != null
-                  ? `${Number(reg.original_amount).toFixed(2)} EUR`
-                  : "—"}
+              {reg.total_amount != null
+                ? formatCurrency(reg.total_amount)
+                : reg.discounted_amount != null
+                  ? formatCurrency(reg.discounted_amount)
+                  : reg.original_amount != null
+                    ? formatCurrency(reg.original_amount)
+                    : "—"}
             </TableCell>
           </TableRow>
         ))}

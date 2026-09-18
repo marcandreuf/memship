@@ -209,3 +209,107 @@ class TestBillingIsNotDuplicated:
 
         assert _receipts_for(db, registration) == []
         assert _receipts_for(db, promoted) == []
+
+
+# --- The quote must match the invoice (#220) -------------------------------
+
+
+class TestTheQuotedPriceIsWhatIsInvoiced:
+    """A member was shown the stored base and invoiced the base plus VAT, so the
+    figure they agreed to was not the figure they owed."""
+
+    def test_the_price_list_carries_the_tax_inclusive_total(self, client, db, org, membership_type):
+        from app.core.security.jwt import create_access_token
+        from app.domains.auth.models import User
+        from app.core.security.password import hash_password
+
+        activity, price = _activity(db, amount=Decimal("95.00"))
+        person = Person(first_name="Q", last_name="Quote", email="quote@examplee6e3b1.com")
+        db.add(person)
+        db.flush()
+        user = User(
+            person_id=person.id,
+            email="quote@examplee6e3b1.com",
+            password_hash=hash_password("password123"),
+            role="admin",
+            is_active=True,
+        )
+        db.add(user)
+        db.flush()
+
+        resp = client.get(
+            f"/api/v1/activities/{activity.id}/prices/",
+            cookies={"access_token": create_access_token(user.id)},
+        )
+
+        assert resp.status_code == 200
+        quoted = resp.json()[0]
+        assert quoted["amount"] == 95.00
+        assert quoted["vat_rate"] == 21.0
+        assert quoted["vat_amount"] == 19.95
+        assert quoted["total_amount"] == 114.95
+
+    def test_the_quote_equals_the_receipt_it_produces(self, db, org, membership_type):
+        """The two numbers come from one rate resolution, so they cannot drift."""
+        from app.domains.billing.service import activity_vat_rate, calculate_vat
+
+        activity, price = _activity(db, amount=Decimal("95.00"))
+        member = _member(db, membership_type, "quote-eq")
+
+        rate = activity_vat_rate(db, activity.tax_rate)
+        _, quoted_total = calculate_vat(Decimal(str(price.amount)), rate)
+
+        registration = register_member(db, activity=activity, member=member, price_id=price.id)
+        db.flush()
+
+        receipt = _receipts_for(db, registration)[0]
+        assert receipt.total_amount == quoted_total
+        assert receipt.base_amount == Decimal("95.00")
+
+    def test_an_activity_rate_overrides_the_org_default(self, db, org, membership_type):
+        activity, price = _activity(db, amount=Decimal("100.00"))
+        activity.tax_rate = Decimal("10.00")
+        db.flush()
+
+        member = _member(db, membership_type, "quote-rate")
+        registration = register_member(db, activity=activity, member=member, price_id=price.id)
+        db.flush()
+
+        from app.domains.billing.service import activity_vat_rate
+
+        assert activity_vat_rate(db, activity.tax_rate) == Decimal("10.00")
+        assert _receipts_for(db, registration)[0].total_amount == Decimal("110.00")
+
+    def test_a_zero_activity_rate_falls_back_to_the_org_default(self, db, org, membership_type):
+        """`generate_activity_receipt` treated 0 as unset, and the quote has to
+        agree with that rather than quote a tax-free total."""
+        from app.domains.billing.service import activity_vat_rate
+
+        activity, _ = _activity(db, amount=Decimal("100.00"))
+        activity.tax_rate = Decimal("0")
+        db.flush()
+
+        assert activity_vat_rate(db, activity.tax_rate) == Decimal("21")
+
+    def test_the_registration_reports_what_it_is_billed_at(self, db, org, membership_type):
+        activity, price = _activity(db, amount=Decimal("95.00"))
+        member = _member(db, membership_type, "quote-reg")
+        registration = register_member(db, activity=activity, member=member, price_id=price.id)
+        db.flush()
+
+        from app.api.v1.endpoints.registrations import _vat_fields
+
+        fields = _vat_fields(db, registration, activity)
+        assert fields["total_amount"] == 114.95
+        assert fields["vat_rate"] == 21.0
+
+    def test_a_free_registration_quotes_no_total(self, db, org, membership_type):
+        activity, price = _activity(db, amount=Decimal("0.00"))
+        member = _member(db, membership_type, "quote-free")
+        registration = register_member(db, activity=activity, member=member, price_id=price.id)
+        db.flush()
+
+        from app.api.v1.endpoints.registrations import _vat_fields
+
+        assert _vat_fields(db, registration, activity) == {}
+        assert _receipts_for(db, registration) == []

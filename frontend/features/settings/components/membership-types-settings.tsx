@@ -49,6 +49,7 @@ import type { MembershipTypeData } from "@/features/members/services/members-api
 import { useGroups } from "@/features/groups/hooks/use-groups";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
+import { useFormatters } from "@/hooks/use-formatters";
 
 const createSchema = z.object({
   name: z.string().min(1).max(255),
@@ -61,6 +62,7 @@ const createSchema = z.object({
 type CreateFormValues = z.infer<typeof createSchema>;
 
 export function MembershipTypesSettings() {
+  const { formatCurrency } = useFormatters();
   const t = useTranslations();
   const { has } = usePermissions();
   const canWrite = has("membership.write");
@@ -261,7 +263,7 @@ export function MembershipTypesSettings() {
               <TableRow key={type.id}>
                 <TableCell className="font-medium">{type.name}</TableCell>
                 <TableCell className="font-mono text-sm">{type.slug}</TableCell>
-                <TableCell>{type.base_price.toFixed(2)} EUR</TableCell>
+                <TableCell>{formatCurrency(type.base_price)}</TableCell>
                 <TableCell>{type.group_name || t("members.noGroup")}</TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">

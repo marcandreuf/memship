@@ -21,7 +21,7 @@ interface MemberRegistrationCardProps {
 
 export function MemberRegistrationCard({ registration, activity }: MemberRegistrationCardProps) {
   const t = useTranslations();
-  const { formatDateTime } = useFormatters();
+  const { formatDateTime, formatCurrency } = useFormatters();
   const isActive = registration.status !== "cancelled";
   const isCancelled = registration.status === "cancelled";
 
@@ -64,17 +64,19 @@ export function MemberRegistrationCard({ registration, activity }: MemberRegistr
             <>
               <span className="text-muted-foreground">{t("activities.registration.amount")}</span>
               <span>
+                {/* The billed total, not the base: the invoice adds VAT on top,
+                    and a member comparing the two should see one number. */}
                 {registration.discount_code_id && registration.discounted_amount != null && registration.discounted_amount < registration.original_amount ? (
                   <>
                     <span className="line-through text-muted-foreground mr-1">
-                      {Number(registration.original_amount).toFixed(2)} EUR
+                      {formatCurrency(registration.original_amount)}
                     </span>
                     <span className="font-medium text-green-600">
-                      {Number(registration.discounted_amount).toFixed(2)} EUR
+                      {formatCurrency(registration.total_amount ?? registration.discounted_amount)}
                     </span>
                   </>
                 ) : (
-                  <span>{Number(registration.original_amount).toFixed(2)} EUR</span>
+                  <span>{formatCurrency(registration.total_amount ?? registration.original_amount)}</span>
                 )}
               </span>
             </>

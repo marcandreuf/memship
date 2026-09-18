@@ -19,7 +19,11 @@ export interface ActivityPriceData {
   modality_id: number | null;
   name: string;
   description: string | null;
+  /** Stored base. VAT is added when the receipt is raised — show `total_amount`. */
   amount: number;
+  vat_rate: number;
+  vat_amount: number;
+  total_amount: number;
   display_order: number;
   is_optional: boolean;
   is_default: boolean;
@@ -206,6 +210,9 @@ export interface ValidateDiscountResult {
   discount_value: number | null;
   original_amount: number | null;
   discounted_amount: number | null;
+  /** Tax-inclusive equivalents — what the member is actually charged. */
+  original_total: number | null;
+  discounted_total: number | null;
   error: string | null;
 }
 

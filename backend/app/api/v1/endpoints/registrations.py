@@ -1,5 +1,7 @@
 """Registration endpoints."""
 
+from decimal import Decimal
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
@@ -32,6 +34,7 @@ from app.domains.activities.registration_service import (
     register_member,
 )
 from app.domains.auth.models import User
+from app.domains.billing.service import activity_vat_rate, calculate_vat
 from app.domains.members.models import Member
 
 router = APIRouter(tags=["registrations"])
@@ -167,6 +170,30 @@ def export_activity_registrations_csv(
     return stream_csv(_REGISTRATIONS_CSV_HEADERS, rows, f"activity-{activity_id}-registrations.csv")
 
 
+def _vat_fields(db: Session, registration, activity=None) -> dict:
+    """The tax-inclusive total a registration's receipt will carry.
+
+    Computed from the same rate ``generate_activity_receipt`` resolves, so the
+    portal cannot quote a figure the invoice contradicts (#220). Empty for a
+    free registration, which raises no receipt.
+    """
+    base = registration.discounted_amount
+    if base is None or Decimal(str(base)) <= 0:
+        return {}
+    if activity is None:
+        activity = db.query(Activity).filter(Activity.id == registration.activity_id).first()
+    rate = activity_vat_rate(db, activity.tax_rate if activity else None)
+    _, total = calculate_vat(Decimal(str(base)), rate)
+    return {"vat_rate": float(rate), "total_amount": float(total)}
+
+
+def _billed(db: Session, registration, activity=None) -> RegistrationResponse:
+    """A registration response carrying what it is actually billed at."""
+    return RegistrationResponse.model_validate(registration).model_copy(
+        update=_vat_fields(db, registration, activity)
+    )
+
+
 @router.post(
     "/activities/{activity_id}/register",
     response_model=RegistrationResponse,
@@ -196,7 +223,7 @@ def register_for_activity(
         )
         db.commit()
         db.refresh(registration)
-        return RegistrationResponse.model_validate(registration)
+        return _billed(db, registration, activity)
     except RegistrationError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -301,7 +328,7 @@ def change_registration_status(
         admin_change_status(db, registration, data.status, data.admin_notes)
         db.commit()
         db.refresh(registration)
-        return RegistrationResponse.model_validate(registration)
+        return _billed(db, registration)
     except RegistrationError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -330,14 +357,16 @@ def list_my_registrations(
 
     return {
         "meta": meta.model_dump(),
-        "items": [RegistrationResponse.model_validate(r) for r in items],
+        "items": [_billed(db, r) for r in items],
     }
 
 
 # --- Admin: specific member's registrations ---
 
 
-def _to_registration_with_activity(registration: Registration) -> RegistrationDetailResponse:
+def _to_registration_with_activity(
+    db: Session, registration: Registration
+) -> RegistrationDetailResponse:
     activity_info = None
     if registration.activity:
         activity_info = RegistrationActivityInfo(
@@ -367,6 +396,7 @@ def _to_registration_with_activity(registration: Registration) -> RegistrationDe
         cancelled_by_name=registration.cancelled_by_name,
         created_at=registration.created_at,
         activity=activity_info,
+        **_vat_fields(db, registration, registration.activity),
     )
 
 
@@ -389,7 +419,7 @@ def list_member_registrations(
 
     return {
         "meta": meta.model_dump(),
-        "items": [_to_registration_with_activity(r) for r in items],
+        "items": [_to_registration_with_activity(db, r) for r in items],
     }
 
 

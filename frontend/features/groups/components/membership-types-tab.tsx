@@ -13,12 +13,14 @@ import {
 } from "@/components/ui/table";
 import { TabContentSkeleton } from "@/components/ui/skeletons";
 import { useMembershipTypes } from "@/features/members/hooks/use-members";
+import { useFormatters } from "@/hooks/use-formatters";
 
 interface MembershipTypesTabProps {
   groupId: number;
 }
 
 export function MembershipTypesTab({ groupId }: MembershipTypesTabProps) {
+  const { formatCurrency } = useFormatters();
   const t = useTranslations();
   const router = useRouter();
   const { data: allTypes, isLoading } = useMembershipTypes();
@@ -54,7 +56,7 @@ export function MembershipTypesTab({ groupId }: MembershipTypesTabProps) {
           >
             <TableCell className="font-medium">{mt.name}</TableCell>
             <TableCell className="font-mono text-sm">{mt.slug}</TableCell>
-            <TableCell>{Number(mt.base_price).toFixed(2)} EUR</TableCell>
+            <TableCell>{formatCurrency(mt.base_price)}</TableCell>
             <TableCell>{mt.billing_frequency}</TableCell>
             <TableCell>
               <Badge variant={mt.is_active ? "default" : "outline"}>

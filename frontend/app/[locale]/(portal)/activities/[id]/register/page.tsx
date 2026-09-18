@@ -24,6 +24,7 @@ import type { ValidateDiscountResult, ActivityConsentData } from "@/features/act
 import { useEligibility, useRegister } from "@/features/activities/hooks/use-registrations";
 import { Checkbox } from "@/components/ui/checkbox";
 import { FormSkeleton } from "@/components/ui/skeletons";
+import { useFormatters } from "@/hooks/use-formatters";
 
 export default function RegisterPage({
   params,
@@ -34,6 +35,7 @@ export default function RegisterPage({
   const activityId = Number(id);
   const t = useTranslations();
   const router = useRouter();
+  const { formatCurrency } = useFormatters();
 
   const { data: activity, isLoading: actLoading } = useActivity(activityId);
   const { data: eligibility, isLoading: eligLoading } = useEligibility(activityId);
@@ -58,6 +60,7 @@ export default function RegisterPage({
   }
 
   const visiblePrices = activity.prices.filter((p) => p.is_visible && p.is_active);
+  const selectedPrice = visiblePrices.find((p) => p.id === selectedPriceId);
   const hasModalities = activity.modalities.length > 0;
   const isAlreadyRegistered = eligibility?.reasons?.some((r) =>
     r.toLowerCase().includes("already registered")
@@ -73,7 +76,7 @@ export default function RegisterPage({
       const result = await validateDiscount(activityId, discountCode.trim(), selectedPriceId || undefined);
       setDiscountResult(result);
     } catch {
-      setDiscountResult({ valid: false, error: t("activities.discounts.validationFailed"), discount_type: null, discount_value: null, original_amount: null, discounted_amount: null });
+      setDiscountResult({ valid: false, error: t("activities.discounts.validationFailed"), discount_type: null, discount_value: null, original_amount: null, discounted_amount: null, original_total: null, discounted_total: null });
     }
     setDiscountChecking(false);
   }
@@ -196,11 +199,22 @@ export default function RegisterPage({
                 <SelectContent>
                   {visiblePrices.map((p) => (
                     <SelectItem key={p.id} value={p.id.toString()}>
-                      {p.name} — {p.amount > 0 ? `${Number(p.amount).toFixed(2)} EUR` : t("activities.prices.free")}
+                      {p.name} — {p.amount > 0 ? formatCurrency(p.total_amount) : t("activities.prices.free")}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {selectedPrice && selectedPrice.amount > 0 && selectedPrice.vat_amount > 0 && (
+                // The figure above is tax-inclusive; show what it is made of so
+                // it reconciles with the invoice rather than merely matching it.
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  {t("activities.prices.vatBreakdown", {
+                    base: formatCurrency(selectedPrice.amount),
+                    rate: selectedPrice.vat_rate,
+                    vat: formatCurrency(selectedPrice.vat_amount),
+                  })}
+                </p>
+              )}
             </div>
 
             {/* Discount code */}
@@ -228,7 +242,7 @@ export default function RegisterPage({
               {discountResult && (
                 <p className={`text-sm mt-1 ${discountResult.valid ? "text-green-600" : "text-destructive"}`}>
                   {discountResult.valid
-                    ? `${discountResult.discount_type === "percentage" ? `${discountResult.discount_value}%` : `${Number(discountResult.discount_value).toFixed(2)} EUR`} ${t("activities.discounts.discountApplied")}${discountResult.discounted_amount != null ? ` — ${Number(discountResult.discounted_amount).toFixed(2)} EUR` : ""}`
+                    ? `${discountResult.discount_type === "percentage" ? `${discountResult.discount_value}%` : formatCurrency(discountResult.discount_value ?? 0)} ${t("activities.discounts.discountApplied")}${discountResult.discounted_total != null ? ` — ${formatCurrency(discountResult.discounted_total)}` : ""}`
                     : discountResult.error}
                 </p>
               )}
