@@ -225,6 +225,10 @@ def send_queued_reminder(reminder_id: int, payload: dict) -> str:
     its row. The payload was resolved when the row was written, so the task
     does not re-read the receipt; a transport failure lands as ``failed`` with
     the error, the same as the synchronous path, rather than retrying blind.
+
+    Returns the row's resulting status, or ``not_queued`` when there was nothing
+    to deliver — distinct from the ``skipped`` status a suppressed send records,
+    which is an outcome rather than a no-op.
     """
     from app.db.session import SessionLocal
     from app.domains.billing.models import ReceiptReminder
@@ -234,7 +238,7 @@ def send_queued_reminder(reminder_id: int, payload: dict) -> str:
     try:
         reminder = db.query(ReceiptReminder).filter(ReceiptReminder.id == reminder_id).first()
         if reminder is None or reminder.status != "queued":
-            return "skipped"
+            return "not_queued"
         record_outcome(reminder, *deliver(payload))
         db.commit()
         return reminder.status

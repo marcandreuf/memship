@@ -3,6 +3,7 @@
     "sendReminder": "Enviar recordatori",
     "sentToast": "Recordatori a la cua d'enviament",
     "maxReached": "Ja s'ha enviat el nombre màxim de recordatoris",
+    "templateDisabled": "Els correus de recordatori de pagament estan desactivats a Configuració → Comunicacions.",
     "historyTitle": "Recordatoris de pagament",
     "number": "Núm.",
     "sentAt": "Enviat",

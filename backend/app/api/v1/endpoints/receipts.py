@@ -16,6 +16,7 @@ from app.db.session import get_db
 from app.domains.auth.models import User
 from app.domains.billing.models import Receipt, ReceiptReminder
 from app.domains.billing.reminder_service import COUNTED_STATUSES, queue_reminder
+from app.domains.mailing.policy import is_enabled as template_enabled
 from app.domains.billing.schemas import (
     CreditNoteCreate,
     GenerateMembershipFeesRequest,
@@ -470,6 +471,16 @@ def send_receipt_reminder(
     if receipt.status not in ("emitted", "overdue"):
         raise HTTPException(
             status_code=409, detail="Receipt is not awaiting payment"
+        )
+
+    # Off by default, so this is the likely answer on a fresh install. Refusing
+    # here beats queueing a send that cannot happen and reporting it back as a
+    # failed delivery the administrator then goes looking for in their SMTP
+    # configuration — the toggle is in their own settings (#219).
+    if not template_enabled(db, "payment_reminder"):
+        raise HTTPException(
+            status_code=409,
+            detail={"code": "reminder_template_disabled"},
         )
 
     org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()

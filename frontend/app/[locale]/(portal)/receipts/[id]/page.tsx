@@ -161,7 +161,16 @@ export default function ReceiptDetailPage() {
     try {
       await sendReminderMutation.mutateAsync(receipt!.id);
       toast.success(t("reminders.sentToast"));
-    } catch { /* global handler */ }
+    } catch (err) {
+      // The template ships off, so this is the likely answer on a fresh
+      // install. Name the setting rather than let it read as a send failure.
+      const code = (err as { detail?: { code?: string } })?.detail?.code;
+      if (code === "reminder_template_disabled") {
+        toast.error(t("reminders.templateDisabled"));
+        return;
+      }
+      /* global handler */
+    }
   }
 
   // Status says whether the action is possible; `billing.write` says whether
