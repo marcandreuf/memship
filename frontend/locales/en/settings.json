@@ -78,6 +78,30 @@
         "redsys": "Redsys",
         "goCardless": "GoCardless",
         "paypal": "PayPal"
+      },
+      "fields": {
+        "access_token": "Access Token",
+        "client_id": "Client ID",
+        "client_secret": "Client Secret",
+        "currency_code": "Currency Code",
+        "environment": "Environment",
+        "format": "SEPA Format",
+        "merchant_code": "Merchant Code (FUC)",
+        "publishable_key": "Publishable Key",
+        "secret_key": "Secret Key",
+        "terminal_id": "Terminal ID",
+        "webhook_secret": "Webhook Secret"
+      },
+      "errors": {
+        "missing_required_field": "{field} is required",
+        "invalid_option": "{field} must be one of: {options}",
+        "must_start_with": "{field} must start with \"{prefix}\"",
+        "must_be_numeric": "{field} must contain digits only",
+        "must_be_digits": "{field} must be exactly {length} digits",
+        "must_be_digits_between": "{field} must be between {min} and {max} digits",
+        "unknown_provider_type": "Unknown provider type: {provider_type}",
+        "authentication_failed": "The provider rejected these credentials",
+        "connection_failed": "Could not reach the provider"
       }
     },
     "recurringBilling": {

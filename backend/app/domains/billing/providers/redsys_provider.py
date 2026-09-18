@@ -144,18 +144,32 @@ class RedsysAdapter(PaymentProviderAdapter):
 
         errors = validate_provider_config("redsys", self.config)
         if errors:
-            return {"success": False, "message": "; ".join(errors)}
+            return {"success": False, "errors": errors, "message": None}
+
+        # Stricter than activation asks for: a TPV rejects a merchant code of the
+        # wrong length outright, and this is where an administrator finds out.
         if not self.merchant_code.isdigit() or not (7 <= len(self.merchant_code) <= 9):
-            return {"success": False, "message": "Merchant Code must be 7-9 digits"}
+            errors.append(
+                {
+                    "code": "must_be_digits_between",
+                    "field": "merchant_code",
+                    "min": 7,
+                    "max": 9,
+                }
+            )
         if not self.terminal_id.isdigit():
-            return {"success": False, "message": "Terminal ID must be numeric"}
+            errors.append({"code": "must_be_numeric", "field": "terminal_id"})
         try:
             int(self.currency_code)
         except (ValueError, TypeError):
-            return {"success": False, "message": "Currency Code must be ISO 4217 numeric"}
+            errors.append({"code": "must_be_numeric", "field": "currency_code"})
+        if errors:
+            return {"success": False, "errors": errors, "message": None}
         return {
             "success": True,
-            "message": f"Redsys config valid ({self.environment})",
+            "errors": [],
+            "message": None,
+            "environment": self.environment,
         }
 
     def create_payment(

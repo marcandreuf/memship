@@ -461,7 +461,7 @@ class TestActivationRequiresCompleteConfig:
         detail = resp.json()["detail"]
         assert detail["code"] == "provider_not_ready"
         # The missing fields are named, so the administrator knows what to fill.
-        assert any("Secret Key" in e for e in detail["errors"])
+        assert {"code": "missing_required_field", "field": "secret_key"} in detail["errors"]
 
     def test_rejected_provider_stays_disabled(self, client, db):
         user = _create_user(db, suffix="pp-guard2")
@@ -588,7 +588,11 @@ class TestActivationRequiresCompleteConfig:
         )
 
         assert resp.status_code == 400
-        assert any("sk_" in e for e in resp.json()["detail"]["errors"])
+        assert {
+            "code": "must_start_with",
+            "field": "secret_key",
+            "prefix": "sk_",
+        } in resp.json()["detail"]["errors"]
 
 
 # --- Test Connection ---
@@ -662,7 +666,9 @@ class TestTestProvider:
         assert resp.status_code == 200
         data = resp.json()
         assert data["success"] is False
-        assert "Authentication failed" in data["message"]
+        assert data["errors"] == [{"code": "authentication_failed"}]
+        # Stripe's own words are passed through rather than translated.
+        assert data["message"] == "Invalid API Key provided"
 
     def test_sepa_config_valid(self, client, db):
         user = _create_user(db, suffix="pp-test3")
@@ -731,3 +737,61 @@ class TestProviderTypes:
         stripe = next(t for t in data if t["provider_type"] == "stripe")
         assert len(stripe["fields"]) == 3
         assert stripe["sensitive_fields"] == ["secret_key", "webhook_secret"]
+
+
+class TestTestResponseIsTranslatable:
+    """`/test` used to hand the UI a rendered English sentence (#223)."""
+
+    def test_a_local_validation_failure_returns_codes_not_prose(self, client, db):
+        user = _create_user(db, suffix="pp-i18n1")
+        provider = _create_provider(db, provider_type="sepa_direct_debit", config={"format": "wrong"})
+        cookies = _auth_cookie(user)
+
+        resp = client.post(
+            f"/api/v1/payment-providers/{provider.id}/test", cookies=cookies
+        )
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["success"] is False
+        assert data["message"] is None
+        assert data["errors"] == [
+            {"code": "invalid_option", "field": "format", "options": ["pain.008.001.02"]}
+        ]
+
+    def test_a_valid_config_reports_success_with_nothing_to_render(self, client, db):
+        user = _create_user(db, suffix="pp-i18n2")
+        provider = _create_provider(db, provider_type="sepa_direct_debit")
+        cookies = _auth_cookie(user)
+
+        resp = client.post(
+            f"/api/v1/payment-providers/{provider.id}/test", cookies=cookies
+        )
+
+        data = resp.json()
+        assert data["success"] is True
+        assert data["errors"] == []
+
+    def test_redsys_reports_its_stricter_rule_as_a_code(self, client, db):
+        """Redsys checks a merchant-code length activation does not, and that
+        rule has to be translatable too."""
+        user = _create_user(db, suffix="pp-i18n3")
+        provider = _create_provider(
+            db,
+            provider_type="redsys",
+            config={**VALID_CONFIGS["redsys"], "merchant_code": "123"},
+        )
+        cookies = _auth_cookie(user)
+
+        resp = client.post(
+            f"/api/v1/payment-providers/{provider.id}/test", cookies=cookies
+        )
+
+        data = resp.json()
+        assert data["success"] is False
+        assert {
+            "code": "must_be_digits_between",
+            "field": "merchant_code",
+            "min": 7,
+            "max": 9,
+        } in data["errors"]

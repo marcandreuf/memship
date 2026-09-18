@@ -40,9 +40,11 @@ import {
 } from "../hooks/use-payment-providers";
 import type {
   PaymentProvider,
+  ProviderConfigError,
   ProviderTypeSchema,
   ProviderField,
 } from "../services/payment-providers-api";
+import { useProviderErrors } from "../hooks/use-provider-errors";
 
 const STATUS_VARIANT: Record<string, "default" | "secondary" | "outline"> = {
   active: "default",
@@ -60,6 +62,7 @@ const PROVIDER_ICONS: Record<string, string> = {
 
 export function PaymentProvidersSettings() {
   const t = useTranslations();
+  const { describeAll, fieldLabel } = useProviderErrors();
   const { data, isLoading } = usePaymentProviders();
   const { data: providerTypes } = useProviderTypes();
   const createMutation = useCreatePaymentProvider();
@@ -114,14 +117,12 @@ export function PaymentProvidersSettings() {
   }
 
   function showSaveError(err: unknown) {
-    const detail = (err as { detail?: { code?: string; errors?: string[] } })?.detail;
+    const detail = (err as { detail?: { code?: string; errors?: ProviderConfigError[] } })?.detail;
     if (detail?.code === "provider_not_ready") {
       // The missing fields, not a generic failure: this is the last point where
       // an incomplete config is still a settings problem rather than a member's
       // failed payment.
-      toast.error(
-        t("settings.providers.notReady", { errors: (detail.errors ?? []).join("; ") }),
-      );
+      toast.error(t("settings.providers.notReady", { errors: describeAll(detail.errors) }));
       return;
     }
     toast.error(t("toast.error.generic"));
@@ -176,7 +177,12 @@ export function PaymentProvidersSettings() {
       if (result.success) {
         toast.success(t("settings.providers.testSuccess"));
       } else {
-        toast.error(result.message);
+        // `message` is the provider's own words (a live API's rejection) and
+        // cannot be translated; the codes around it can.
+        const described = describeAll(result.errors);
+        toast.error(
+          result.message ? `${described}: ${result.message}` : described,
+        );
       }
     } catch {
       toast.error(t("toast.error.generic"));
@@ -346,7 +352,7 @@ export function PaymentProvidersSettings() {
               {getSchema()?.fields.map((field: ProviderField) => (
                 <div key={field.key}>
                   <label className="text-xs font-medium">
-                    {field.label}
+                    {fieldLabel(field.key)}
                     {field.required && (
                       <span className="text-destructive ml-0.5">*</span>
                     )}
