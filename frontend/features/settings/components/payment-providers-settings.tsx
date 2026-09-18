@@ -113,6 +113,20 @@ export function PaymentProvidersSettings() {
     }
   }
 
+  function showSaveError(err: unknown) {
+    const detail = (err as { detail?: { code?: string; errors?: string[] } })?.detail;
+    if (detail?.code === "provider_not_ready") {
+      // The missing fields, not a generic failure: this is the last point where
+      // an incomplete config is still a settings problem rather than a member's
+      // failed payment.
+      toast.error(
+        t("settings.providers.notReady", { errors: (detail.errors ?? []).join("; ") }),
+      );
+      return;
+    }
+    toast.error(t("toast.error.generic"));
+  }
+
   async function handleSave() {
     if (!selectedType) return;
     try {
@@ -132,8 +146,10 @@ export function PaymentProvidersSettings() {
         toast.success(t("toast.success.created"));
       }
       setDialogOpen(false);
-    } catch {
-      toast.error(t("toast.error.generic"));
+    } catch (err) {
+      // Reachable by clearing a required field on a provider that is already
+      // live; the dialog stays open so the value can be put back.
+      showSaveError(err);
     }
   }
 
@@ -149,8 +165,8 @@ export function PaymentProvidersSettings() {
   async function handleToggle(provider: PaymentProvider) {
     try {
       await toggleMutation.mutateAsync(provider.id);
-    } catch {
-      toast.error(t("toast.error.generic"));
+    } catch (err) {
+      showSaveError(err);
     }
   }
 

@@ -29,10 +29,30 @@ def _auth_cookie(user):
     return {"access_token": create_access_token(user.id)}
 
 
+# A complete config per type. Activation validates (#218), so a provider built
+# for a test that switches it on needs one; pass `config={}` to build a provider
+# that is deliberately not ready.
+VALID_CONFIGS = {
+    "stripe": {
+        "secret_key": "sk_test_abc123",
+        "publishable_key": "pk_test_xyz456",
+        "webhook_secret": "whsec_test789",
+    },
+    "redsys": {
+        "merchant_code": "100000001",
+        "terminal_id": "1",
+        "secret_key": "sq7HjrUOBfKmC576ILgskD5srU870gJ7",
+        "environment": "test",
+        "currency_code": "978",
+    },
+    "sepa_direct_debit": {"format": "pain.008.001.02"},
+}
+
+
 def _create_provider(db, provider_type="stripe", status="disabled", config=None):
     """Create a payment provider directly in the DB (no encryption)."""
     if config is None:
-        config = {}
+        config = dict(VALID_CONFIGS.get(provider_type, {}))
     provider = PaymentProvider(
         provider_type=provider_type,
         display_name=provider_type.replace("_", " ").title(),
@@ -419,6 +439,156 @@ class TestToggleProvider:
             "/api/v1/payment-providers/99999/toggle", cookies=cookies
         )
         assert resp.status_code == 404
+
+
+# --- Activation guard (#218) -----------------------------------------------
+
+
+class TestActivationRequiresCompleteConfig:
+    """A provider reaches members the moment it is active, so activation is the
+    last point where an incomplete config is still a settings problem."""
+
+    def test_toggle_on_rejected_when_config_incomplete(self, client, db):
+        user = _create_user(db, suffix="pp-guard1")
+        provider = _create_provider(db, provider_type="stripe", status="disabled", config={})
+        cookies = _auth_cookie(user)
+
+        resp = client.post(
+            f"/api/v1/payment-providers/{provider.id}/toggle", cookies=cookies
+        )
+
+        assert resp.status_code == 400
+        detail = resp.json()["detail"]
+        assert detail["code"] == "provider_not_ready"
+        # The missing fields are named, so the administrator knows what to fill.
+        assert any("Secret Key" in e for e in detail["errors"])
+
+    def test_rejected_provider_stays_disabled(self, client, db):
+        user = _create_user(db, suffix="pp-guard2")
+        provider = _create_provider(db, provider_type="stripe", status="disabled", config={})
+        cookies = _auth_cookie(user)
+
+        client.post(f"/api/v1/payment-providers/{provider.id}/toggle", cookies=cookies)
+
+        db.refresh(provider)
+        assert provider.status == "disabled"
+
+    def test_incomplete_provider_is_not_advertised_to_members(self, client, db):
+        """The whole point of the guard: `/active-methods` drives the member's
+        pay buttons, and a refused activation must not reach it."""
+        user = _create_user(db, suffix="pp-guard3")
+        member = _create_user(db, role="member", suffix="pp-guard3m")
+        provider = _create_provider(db, provider_type="stripe", status="disabled", config={})
+
+        client.post(
+            f"/api/v1/payment-providers/{provider.id}/toggle", cookies=_auth_cookie(user)
+        )
+
+        resp = client.get(
+            "/api/v1/payment-providers/active-methods", cookies=_auth_cookie(member)
+        )
+        assert resp.status_code == 200
+        assert "stripe" not in [m["provider_type"] for m in resp.json()]
+
+    def test_toggle_off_always_allowed(self, client, db):
+        """Switching a provider off must never be blocked by its own config —
+        that is the escape hatch when credentials go bad."""
+        user = _create_user(db, suffix="pp-guard4")
+        provider = _create_provider(db, provider_type="stripe", status="active", config={})
+        cookies = _auth_cookie(user)
+
+        resp = client.post(
+            f"/api/v1/payment-providers/{provider.id}/toggle", cookies=cookies
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "disabled"
+
+    def test_create_active_rejected_when_config_incomplete(self, client, db):
+        user = _create_user(db, suffix="pp-guard5")
+        cookies = _auth_cookie(user)
+
+        resp = client.post(
+            "/api/v1/payment-providers/",
+            json={
+                "provider_type": "stripe",
+                "display_name": "Stripe",
+                "status": "active",
+                "config": {"secret_key": "sk_test_abc123"},
+            },
+            cookies=cookies,
+        )
+
+        assert resp.status_code == 400
+        assert resp.json()["detail"]["code"] == "provider_not_ready"
+        assert db.query(PaymentProvider).filter_by(provider_type="stripe").count() == 0
+
+    def test_create_disabled_allowed_when_config_incomplete(self, client, db):
+        """Saving a half-filled provider is how it gets configured — only
+        switching it on is guarded."""
+        user = _create_user(db, suffix="pp-guard6")
+        cookies = _auth_cookie(user)
+
+        resp = client.post(
+            "/api/v1/payment-providers/",
+            json={
+                "provider_type": "stripe",
+                "display_name": "Stripe",
+                "status": "disabled",
+                "config": {"secret_key": "sk_test_abc123"},
+            },
+            cookies=cookies,
+        )
+
+        assert resp.status_code == 201
+
+    def test_update_cannot_empty_a_required_field_on_a_live_provider(self, client, db):
+        user = _create_user(db, suffix="pp-guard7")
+        provider = _create_provider(db, provider_type="redsys", status="active")
+        cookies = _auth_cookie(user)
+
+        resp = client.put(
+            f"/api/v1/payment-providers/{provider.id}",
+            json={"config": {**VALID_CONFIGS["redsys"], "merchant_code": ""}},
+            cookies=cookies,
+        )
+
+        assert resp.status_code == 400
+        assert resp.json()["detail"]["code"] == "provider_not_ready"
+        db.refresh(provider)
+        assert provider.config["merchant_code"] == "100000001"
+
+    def test_update_may_activate_and_complete_the_config_together(self, client, db):
+        """Validated against the merged result, not the payload alone."""
+        user = _create_user(db, suffix="pp-guard8")
+        provider = _create_provider(db, provider_type="stripe", status="disabled", config={})
+        cookies = _auth_cookie(user)
+
+        resp = client.put(
+            f"/api/v1/payment-providers/{provider.id}",
+            json={"status": "active", "config": VALID_CONFIGS["stripe"]},
+            cookies=cookies,
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "active"
+
+    def test_malformed_key_rejected_not_just_missing_ones(self, client, db):
+        user = _create_user(db, suffix="pp-guard9")
+        provider = _create_provider(
+            db,
+            provider_type="stripe",
+            status="disabled",
+            config={**VALID_CONFIGS["stripe"], "secret_key": "not-a-stripe-key"},
+        )
+        cookies = _auth_cookie(user)
+
+        resp = client.post(
+            f"/api/v1/payment-providers/{provider.id}/toggle", cookies=cookies
+        )
+
+        assert resp.status_code == 400
+        assert any("sk_" in e for e in resp.json()["detail"]["errors"])
 
 
 # --- Test Connection ---

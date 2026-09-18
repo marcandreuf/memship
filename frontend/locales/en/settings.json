@@ -59,6 +59,7 @@
       "delete": "Delete",
       "test": "Test Connection",
       "testSuccess": "Configuration is valid",
+      "notReady": "Cannot activate: {errors}",
       "displayName": "Display Name",
       "empty": "No payment providers configured",
       "configured": "Already configured",
