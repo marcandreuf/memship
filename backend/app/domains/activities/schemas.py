@@ -83,12 +83,25 @@ class ActivityPriceUpdate(BaseModel):
 
 
 class ActivityPriceResponse(BaseModel):
+    """A price, and what registering at it actually costs.
+
+    ``amount`` is the stored base; VAT is only added when the receipt is raised,
+    so a portal showing ``amount`` alone shows a figure the invoice contradicts
+    (#220). ``total_amount`` is the one to put in front of a member — computed
+    here from the same rate the receipt will use, rather than reconstructed in
+    the browser from a rate it has no reliable way to read. Same reasoning as
+    ``MembershipPurchaseQuote``.
+    """
+
     id: int
     activity_id: int
     modality_id: int | None = None
     name: str
     description: str | None = None
     amount: float
+    vat_rate: float = 0
+    vat_amount: float = 0
+    total_amount: float = 0
     display_order: int
     is_optional: bool
     is_default: bool

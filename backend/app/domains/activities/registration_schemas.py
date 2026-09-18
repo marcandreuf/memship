@@ -60,6 +60,13 @@ class RegistrationActivityInfo(BaseModel):
 
 
 class RegistrationResponse(BaseModel):
+    """A registration, and what it is billed at.
+
+    ``original_amount`` / ``discounted_amount`` are bases; VAT is added when the
+    receipt is raised. ``total_amount`` is the figure that matches the invoice
+    and the one to show a member (#220).
+    """
+
     id: int
     activity_id: int
     member_id: int
@@ -69,6 +76,8 @@ class RegistrationResponse(BaseModel):
     status: str
     original_amount: float | None = None
     discounted_amount: float | None = None
+    vat_rate: float = 0
+    total_amount: float | None = None
     registration_data: dict = {}
     member_notes: str | None = None
     admin_notes: str | None = None

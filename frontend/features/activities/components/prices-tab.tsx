@@ -42,6 +42,7 @@ import {
 } from "../hooks/use-activities";
 import type { ActivityData, ActivityModalityData, ActivityPriceData } from "../services/activities-api";
 import { useLocaleDate } from "@/hooks/use-locale-date";
+import { useFormatters } from "@/hooks/use-formatters";
 
 const priceSchema = z.object({
   name: z.string().min(1).max(255),
@@ -62,8 +63,9 @@ function toLocalDatetime(iso: string) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-function formatAmount(amount: number) {
-  return amount === 0 ? null : `${amount.toFixed(2)} EUR`;
+function useAmountFormatter() {
+  const { formatCurrency } = useFormatters();
+  return (amount: number) => (amount === 0 ? null : formatCurrency(amount));
 }
 
 interface PricesTabProps {
@@ -75,6 +77,7 @@ interface PricesTabProps {
 }
 
 export function PricesTab({ activityId, prices, modalities, activity, isAdmin }: PricesTabProps) {
+  const formatAmount = useAmountFormatter();
   const t = useTranslations();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<ActivityPriceData | null>(null);
@@ -282,6 +285,7 @@ function PriceRow({
   price: ActivityPriceData;
   onEdit: () => void;
 }) {
+  const formatAmount = useAmountFormatter();
   const t = useTranslations();
   const { shortDateTime: formatDate } = useLocaleDate();
   const deleteMutation = useDeletePrice(activityId);

@@ -28,6 +28,7 @@ import {
 import type { DiscountCodeData } from "../services/activities-api";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
 import { useLocaleDate } from "@/hooks/use-locale-date";
+import { useFormatters } from "@/hooks/use-formatters";
 
 const discountSchema = z.object({
   code: z.string().min(1).max(50),
@@ -217,6 +218,7 @@ function DiscountRow({
   discount: DiscountCodeData;
   onEdit: () => void;
 }) {
+  const { formatCurrency } = useFormatters();
   const t = useTranslations();
   const { shortDate: formatDate } = useLocaleDate();
   const { has } = usePermissions();
@@ -228,7 +230,7 @@ function DiscountRow({
     <TableRow>
       <TableCell><Badge variant="outline" className="font-mono">{discount.code}</Badge></TableCell>
       <TableCell>{discount.discount_type === "percentage" ? t("activities.discounts.percentage") : t("activities.discounts.fixed")}</TableCell>
-      <TableCell>{discount.discount_type === "percentage" ? `${discount.discount_value}%` : `${Number(discount.discount_value).toFixed(2)} EUR`}</TableCell>
+      <TableCell>{discount.discount_type === "percentage" ? `${discount.discount_value}%` : formatCurrency(discount.discount_value)}</TableCell>
       <TableCell>{discount.current_uses}{discount.max_uses ? ` / ${discount.max_uses}` : ""}</TableCell>
       <TableCell>{discount.valid_from ? formatDate(discount.valid_from) : "—"}</TableCell>
       <TableCell>{discount.valid_until ? formatDate(discount.valid_until) : "—"}</TableCell>

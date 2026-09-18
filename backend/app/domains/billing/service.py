@@ -97,6 +97,19 @@ def calculate_vat(base_amount: Decimal, vat_rate: Decimal) -> tuple[Decimal, Dec
     return vat_amount, total_amount
 
 
+def activity_vat_rate(db: Session, tax_rate: Decimal | float | None) -> Decimal:
+    """The rate an activity's receipt will carry: its own, or the org default.
+
+    The single place that decides it. A member is quoted the tax-inclusive total
+    before registering (#220), and a quote computed from a differently-resolved
+    rate than the receipt uses is worse than no quote at all.
+    """
+    if tax_rate is not None and Decimal(str(tax_rate)) > 0:
+        return Decimal(str(tax_rate))
+    org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
+    return Decimal(str((org.default_vat_rate if org else None) or 21))
+
+
 def resolve_discount(
     base_amount: Decimal, discount_amount: Decimal | None, discount_type: str | None
 ) -> Decimal:
@@ -715,8 +728,7 @@ def generate_activity_receipt(
 
     Called automatically when a registration is confirmed.
     """
-    org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
-    vat_rate = tax_rate if tax_rate is not None and tax_rate > 0 else Decimal(str(org.default_vat_rate or 21))
+    vat_rate = activity_vat_rate(db, tax_rate)
 
     if amount <= 0:
         return None  # No receipt for free activities

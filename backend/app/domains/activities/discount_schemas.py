@@ -81,9 +81,18 @@ class ValidateDiscountRequest(BaseModel):
 
 
 class ValidateDiscountResponse(BaseModel):
+    """What a code is worth, before and after tax.
+
+    The ``*_total`` figures are what the member will be charged; the plain
+    amounts are the bases VAT is added to when the receipt is raised. Quoting a
+    discounted base alone understates the saving's effect on the invoice (#220).
+    """
+
     valid: bool
     discount_type: str | None = None
     discount_value: float | None = None
     original_amount: float | None = None
     discounted_amount: float | None = None
+    original_total: float | None = None
+    discounted_total: float | None = None
     error: str | None = None

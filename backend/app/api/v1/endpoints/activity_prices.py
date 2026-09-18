@@ -1,5 +1,7 @@
 """Activity price endpoints."""
 
+from decimal import Decimal
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
@@ -14,8 +16,22 @@ from app.domains.activities.schemas import (
     ActivityPriceUpdate,
 )
 from app.domains.auth.models import User
+from app.domains.billing.service import activity_vat_rate, calculate_vat
 
 router = APIRouter(prefix="/activities/{activity_id}/prices", tags=["activity-prices"])
+
+
+def _priced(db: Session, activity: Activity, price: ActivityPrice) -> ActivityPriceResponse:
+    """Attach what the member will actually be charged to a stored base price."""
+    rate = activity_vat_rate(db, activity.tax_rate)
+    vat, total = calculate_vat(Decimal(str(price.amount)), rate)
+    return ActivityPriceResponse.model_validate(price).model_copy(
+        update={
+            "vat_rate": float(rate),
+            "vat_amount": float(vat),
+            "total_amount": float(total),
+        }
+    )
 
 
 @router.get("/", response_model=list[ActivityPriceResponse])
@@ -25,11 +41,14 @@ def list_prices(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("self.activities.read")),
 ):
-    get_or_404(db, Activity, activity_id)
+    activity = get_or_404(db, Activity, activity_id)
     query = db.query(ActivityPrice).filter(ActivityPrice.activity_id == activity_id)
     if modality_id is not None:
         query = query.filter(ActivityPrice.modality_id == modality_id)
-    return query.order_by(ActivityPrice.display_order).all()
+    return [
+        _priced(db, activity, p)
+        for p in query.order_by(ActivityPrice.display_order).all()
+    ]
 
 
 @router.post("/", response_model=ActivityPriceResponse, status_code=status.HTTP_201_CREATED)
@@ -39,7 +58,7 @@ def create_price(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("activities.write")),
 ):
-    get_or_404(db, Activity, activity_id)
+    activity = get_or_404(db, Activity, activity_id)
 
     # If modality_id provided, verify it belongs to the same activity
     if data.modality_id is not None:
@@ -57,7 +76,7 @@ def create_price(
     db.add(price)
     db.commit()
     db.refresh(price)
-    return price
+    return _priced(db, activity, price)
 
 
 @router.put("/{price_id}", response_model=ActivityPriceResponse)
@@ -68,6 +87,7 @@ def update_price(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("activities.write")),
 ):
+    activity = get_or_404(db, Activity, activity_id)
     price = get_or_404(db, ActivityPrice, price_id)
     if price.activity_id != activity_id:
         raise HTTPException(status_code=404, detail="Price not found for this activity")
@@ -77,7 +97,7 @@ def update_price(
         setattr(price, key, value)
     db.commit()
     db.refresh(price)
-    return price
+    return _priced(db, activity, price)
 
 
 @router.delete("/{price_id}", status_code=status.HTTP_204_NO_CONTENT)
