@@ -55,14 +55,26 @@ class StripeAdapter(PaymentProviderAdapter):
                 display_name = account.settings.dashboard.display_name
             return {
                 "success": True,
-                "message": f"Connected to Stripe account: {display_name or account.id}",
+                "errors": [],
+                # Stripe's own words for the account — nothing to translate.
+                "message": display_name or account.id,
                 "account_id": account.id,
                 "country": account.country,
             }
         except stripe.AuthenticationError as exc:
-            return {"success": False, "message": f"Authentication failed: {exc}"}
+            # The detail comes from Stripe, so it stays as-is; the code is what
+            # the UI renders around it (#223).
+            return {
+                "success": False,
+                "errors": [{"code": "authentication_failed"}],
+                "message": str(exc),
+            }
         except Exception as exc:
-            return {"success": False, "message": f"Connection failed: {exc}"}
+            return {
+                "success": False,
+                "errors": [{"code": "connection_failed"}],
+                "message": str(exc),
+            }
 
     def create_payment(
         self,

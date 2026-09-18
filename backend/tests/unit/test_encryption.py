@@ -174,7 +174,7 @@ class TestConfigValidation:
     def test_stripe_missing_required(self):
         config = {"secret_key": "sk_live_abc", "webhook_secret": "whsec_test"}
         errors = validate_provider_config("stripe", config)
-        assert any("Publishable Key" in e for e in errors)
+        assert {"code": "missing_required_field", "field": "publishable_key"} in errors
 
     def test_stripe_missing_webhook_secret(self):
         config = {
@@ -182,7 +182,7 @@ class TestConfigValidation:
             "publishable_key": "pk_live_xyz",
         }
         errors = validate_provider_config("stripe", config)
-        assert any("Webhook Secret" in e for e in errors)
+        assert {"code": "missing_required_field", "field": "webhook_secret"} in errors
 
     def test_stripe_invalid_key_prefix(self):
         config = {
@@ -191,7 +191,7 @@ class TestConfigValidation:
             "webhook_secret": "whsec_test",
         }
         errors = validate_provider_config("stripe", config)
-        assert any("sk_" in e for e in errors)
+        assert {"code": "must_start_with", "field": "secret_key", "prefix": "sk_"} in errors
 
     def test_valid_redsys_config(self):
         config = {
@@ -213,7 +213,7 @@ class TestConfigValidation:
             "currency_code": "978",
         }
         errors = validate_provider_config("redsys", config)
-        assert any("numeric" in e.lower() for e in errors)
+        assert {"code": "must_be_numeric", "field": "merchant_code"} in errors
 
     def test_redsys_invalid_currency_code(self):
         config = {
@@ -224,7 +224,7 @@ class TestConfigValidation:
             "currency_code": "EU",
         }
         errors = validate_provider_config("redsys", config)
-        assert any("3-digit" in e for e in errors)
+        assert {"code": "must_be_digits", "field": "currency_code", "length": 3} in errors
 
     def test_valid_sepa_config(self):
         config = {"format": "pain.008.001.02"}
@@ -250,4 +250,50 @@ class TestConfigValidation:
 
     def test_unknown_provider_type(self):
         errors = validate_provider_config("unknown", {})
-        assert any("Unknown" in e for e in errors)
+        assert errors == [{"code": "unknown_provider_type", "provider_type": "unknown"}]
+
+
+class TestValidationErrorsAreTranslatable:
+    """Messages reach an administrator's screen and the organization may not be
+    running in English, so validation emits codes rather than sentences (#223)."""
+
+    def test_no_error_carries_a_rendered_sentence(self):
+        """Every error is a code plus parameters — a field key, never a label."""
+        cases = [
+            ("stripe", {}),
+            ("stripe", {"secret_key": "nope", "publishable_key": "pk_x", "webhook_secret": "w"}),
+            ("redsys", {"merchant_code": "abc", "terminal_id": "x", "secret_key": "s",
+                        "environment": "test", "currency_code": "EU"}),
+            ("sepa_direct_debit", {"format": "not-a-format"}),
+            ("unknown", {}),
+        ]
+        for provider_type, config in cases:
+            for error in validate_provider_config(provider_type, config):
+                assert isinstance(error, dict), (provider_type, error)
+                assert "code" in error, (provider_type, error)
+                # A label would be untranslatable; the key is what the locale
+                # files are indexed by.
+                assert "label" not in error and "message" not in error, error
+                if "field" in error:
+                    assert error["field"] == error["field"].lower()
+
+    def test_an_invalid_option_reports_what_was_allowed(self):
+        errors = validate_provider_config("sepa_direct_debit", {"format": "wrong"})
+        assert errors == [
+            {
+                "code": "invalid_option",
+                "field": "format",
+                "options": ["pain.008.001.02"],
+            }
+        ]
+
+    def test_every_emitted_code_has_a_field_the_ui_can_name(self):
+        """A code carrying a field must name one the schema declares, or the UI
+        has nothing to look up in its locale files."""
+        from app.domains.billing.provider_config import PROVIDER_CONFIG_SCHEMAS
+
+        for provider_type, schema in PROVIDER_CONFIG_SCHEMAS.items():
+            keys = {f["key"] for f in schema["fields"]}
+            for error in validate_provider_config(provider_type, {}):
+                if "field" in error:
+                    assert error["field"] in keys, (provider_type, error)

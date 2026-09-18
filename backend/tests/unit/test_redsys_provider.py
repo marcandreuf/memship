@@ -162,7 +162,9 @@ class TestTestConnection:
         adapter = RedsysAdapter(VALID_CONFIG)
         result = adapter.test_connection()
         assert result["success"] is True
-        assert "test" in result["message"]
+        assert result["errors"] == []
+        # The environment is a field now, not prose spliced into a message (#223).
+        assert result["environment"] == "test"
 
     def test_missing_merchant_code(self):
         config = {**VALID_CONFIG, "merchant_code": ""}

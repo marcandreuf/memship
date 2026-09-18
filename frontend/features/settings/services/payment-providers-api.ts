@@ -32,9 +32,23 @@ export interface PaymentProviderListResponse {
   meta: { page: number; per_page: number; total: number; total_pages: number };
 }
 
+/** A validation failure as a code plus its parameters, for the UI to translate. */
+export interface ProviderConfigError {
+  code: string;
+  field?: string;
+  prefix?: string;
+  length?: number;
+  min?: number;
+  max?: number;
+  options?: string[];
+  provider_type?: string;
+}
+
 export interface TestResult {
   success: boolean;
-  message: string;
+  errors: ProviderConfigError[];
+  /** Text only the provider could produce (a live API's own words). Not translatable. */
+  message: string | null;
 }
 
 export async function getPaymentProviders(): Promise<PaymentProviderListResponse> {

@@ -78,6 +78,30 @@
         "redsys": "Redsys",
         "goCardless": "GoCardless",
         "paypal": "PayPal"
+      },
+      "fields": {
+        "access_token": "Token d'accés",
+        "client_id": "ID de client",
+        "client_secret": "Secret de client",
+        "currency_code": "Codi de moneda",
+        "environment": "Entorn",
+        "format": "Format SEPA",
+        "merchant_code": "Codi de comerç (FUC)",
+        "publishable_key": "Clau publicable",
+        "secret_key": "Clau secreta",
+        "terminal_id": "ID de terminal",
+        "webhook_secret": "Secret del webhook"
+      },
+      "errors": {
+        "missing_required_field": "{field} és obligatori",
+        "invalid_option": "{field} ha de ser un de: {options}",
+        "must_start_with": "{field} ha de començar per \"{prefix}\"",
+        "must_be_numeric": "{field} només pot contenir dígits",
+        "must_be_digits": "{field} ha de tenir exactament {length} dígits",
+        "must_be_digits_between": "{field} ha de tenir entre {min} i {max} dígits",
+        "unknown_provider_type": "Tipus de proveïdor desconegut: {provider_type}",
+        "authentication_failed": "El proveïdor ha rebutjat aquestes credencials",
+        "connection_failed": "No s'ha pogut connectar amb el proveïdor"
       }
     },
     "recurringBilling": {

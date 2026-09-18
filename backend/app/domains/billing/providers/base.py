@@ -21,7 +21,11 @@ class PaymentProviderAdapter(ABC):
         added when each provider is implemented (v0.4.2+).
 
         Returns:
-            {"success": bool, "message": str}
+            ``{"success": bool, "errors": list[dict], "message": str | None}``.
+
+            ``errors`` are structured codes the UI translates (#223).
+            ``message`` carries text only the provider could produce — a live
+            API's own words — which cannot be translated and is shown as-is.
         """
 
     @abstractmethod
@@ -96,9 +100,7 @@ class LocalValidationAdapter(PaymentProviderAdapter):
         from app.domains.billing.provider_config import validate_provider_config
 
         errors = validate_provider_config(self.provider_type, self.config)
-        if errors:
-            return {"success": False, "message": "; ".join(errors)}
-        return {"success": True, "message": "Configuration is valid"}
+        return {"success": not errors, "errors": errors, "message": None}
 
     def create_payment(self, receipt, member) -> dict:
         raise NotImplementedError(
