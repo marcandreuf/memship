@@ -104,7 +104,7 @@ export function GenderOptionsSettings() {
                     <Input
                       value={opt.value}
                       onChange={(e) => updateOption(i, "value", e.target.value)}
-                      className="h-7 text-xs font-mono"
+                      className="h-7 min-w-28 text-xs font-mono"
                       placeholder="value_key"
                     />
                   </TableCell>
@@ -113,7 +113,7 @@ export function GenderOptionsSettings() {
                       <Input
                         value={(opt[`label_${loc}`] as string) || ""}
                         onChange={(e) => updateOption(i, `label_${loc}`, e.target.value)}
-                        className="h-7 text-xs"
+                        className="h-7 min-w-28 text-xs"
                       />
                     </TableCell>
                   ))}
