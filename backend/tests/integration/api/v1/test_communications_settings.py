@@ -155,11 +155,18 @@ class TestSendGate:
 
     @patch("app.core.email.send_email", return_value=True)
     def test_gate_failure_still_sends_an_uncatalogued_template(self, mock_send):
-        """``welcome`` has no switch, so there is no policy to be broken."""
+        """``mailing_test`` has no switch, so there is no policy to be broken.
+
+        It is the only key the catalogue deliberately omits — see
+        ``test_template_catalogue.py``, which keeps it that way — so this goes
+        through the funnel directly rather than through a ``send_*_email``.
+        """
         with patch(
             "app.db.session.SessionLocal", side_effect=RuntimeError("db down")
         ):
-            ok = email_module.send_welcome_email("u@example.com", "Ana", "M-0001")
+            ok = email_module._send_templated(
+                "mailing_test", "u@example.com", "es", {"provider": "resend"}
+            )
         assert ok is True
         mock_send.assert_called_once()
 

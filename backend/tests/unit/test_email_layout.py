@@ -41,7 +41,11 @@ BRANDING = EmailBranding(
     website_label="club.test",
 )
 
-WELCOME = {"first_name": "María", "member_number": "SJ-0042"}
+APPROVED = {
+    "first_name": "María",
+    "member_number": "SJ-0042",
+    "login_url": "https://club.test/login",
+}
 
 
 @pytest.fixture(autouse=True)
@@ -79,7 +83,7 @@ def _resolved_gmail():
 class TestTheRenderedEmailIsACompleteDocument:
     @pytest.mark.parametrize("locale", ["es", "ca", "en"])
     def test_it_is_a_full_html_document(self, branded, locale):
-        html = render_template("welcome", locale, dict(WELCOME))
+        html = render_template("registration_approved", locale, dict(APPROVED))
 
         assert html.lstrip().startswith("<!DOCTYPE html")
         assert html.rstrip().endswith("</html>")
@@ -87,7 +91,7 @@ class TestTheRenderedEmailIsACompleteDocument:
         assert f'<html lang="{locale}">' in html
 
     def test_it_declares_viewport_and_colour_scheme(self, branded):
-        html = render_template("welcome", "es", dict(WELCOME))
+        html = render_template("registration_approved", "es", dict(APPROVED))
 
         assert 'name="viewport"' in html
         assert 'name="color-scheme" content="light dark"' in html
@@ -96,7 +100,7 @@ class TestTheRenderedEmailIsACompleteDocument:
     @pytest.mark.parametrize("locale", ["es", "ca", "en"])
     def test_it_signs_off_with_the_platform_name_in_english(self, branded, locale):
         """The signature is a product name, never translated."""
-        html = render_template("welcome", locale, dict(WELCOME))
+        html = render_template("registration_approved", locale, dict(APPROVED))
 
         assert "Powered by " in html
         assert 'href="https://openmemship.com/"' in html
@@ -107,16 +111,16 @@ class TestTheRenderedEmailIsACompleteDocument:
 
     def test_the_layout_falls_back_to_es_with_the_content(self, branded):
         """An unknown locale must not lose the chrome along with the copy."""
-        html = render_template("welcome", "fr", dict(WELCOME))
+        html = render_template("registration_approved", "fr", dict(APPROVED))
 
-        assert "Bienvenido" in html
+        assert "Buenas noticias" in html
         assert _LAYOUT_STRINGS["es"]["automated_notice"] in html
         assert '<html lang="es">' in html
 
 
 class TestBrandingReachesTheChrome:
     def test_header_and_footer_carry_the_organisation(self, branded):
-        html = render_template("welcome", "es", dict(WELCOME))
+        html = render_template("registration_approved", "es", dict(APPROVED))
 
         assert html.count("Club Sant Jordi") >= 2  # header text + footer
         assert "hola@club.test" in html
@@ -127,7 +131,7 @@ class TestBrandingReachesTheChrome:
     def test_the_logo_is_rendered_with_the_name_as_text(self, branded):
         """Images are blocked by default for unknown senders, so the name can
         never be carried by the logo alone."""
-        html = render_template("welcome", "es", dict(WELCOME))
+        html = render_template("registration_approved", "es", dict(APPROVED))
 
         assert '<img src="https://club.test/uploads/org/logo.png"' in html
         assert 'alt="Club Sant Jordi"' in html
@@ -139,13 +143,13 @@ class TestBrandingReachesTheChrome:
             "get_email_branding",
             return_value=EmailBranding(name="Club Sant Jordi"),
         ):
-            html = render_template("welcome", "es", dict(WELCOME))
+            html = render_template("registration_approved", "es", dict(APPROVED))
 
         assert "<img" not in html
         assert "Club Sant Jordi" in html
 
     def test_the_brand_colour_paints_the_header_band(self, branded):
-        html = render_template("welcome", "es", dict(WELCOME))
+        html = render_template("registration_approved", "es", dict(APPROVED))
 
         assert "background-color:#0083ad" in html
 
@@ -278,7 +282,7 @@ class TestWebsiteNormalisation:
 
 class TestThePlainTextAlternative:
     def test_it_carries_the_message_without_markup(self, branded):
-        html = render_template("welcome", "es", dict(WELCOME))
+        html = render_template("registration_approved", "es", dict(APPROVED))
         text = html_to_text(html)
 
         assert "<" not in text
@@ -287,10 +291,17 @@ class TestThePlainTextAlternative:
         assert "Club Sant Jordi" in text
 
     def test_the_hidden_preheader_and_its_padding_are_dropped(self, branded):
-        html = render_template("welcome", "es", dict(WELCOME))
+        # ``verification`` rather than the file's usual sample: its preheader
+        # and its body say the same thing in different words, so a preheader
+        # that survived into the text is distinguishable from the body copy.
+        html = render_template(
+            "verification",
+            "es",
+            {"first_name": "María", "verification_url": "https://club.test/v?t=a"},
+        )
         text = html_to_text(html)
 
-        assert "Tu cuenta de socio ya está activa." not in text
+        assert "Confirma tu correo para completar el alta." not in text
         assert "‌" not in text
         assert "͏" not in text
 
@@ -305,7 +316,7 @@ class TestThePlainTextAlternative:
         assert "Confirm my email" in text
 
     def test_styles_and_scripts_never_leak_into_the_text(self, branded):
-        html = render_template("welcome", "es", dict(WELCOME))
+        html = render_template("registration_approved", "es", dict(APPROVED))
         text = html_to_text(html)
 
         assert "prefers-color-scheme" not in text

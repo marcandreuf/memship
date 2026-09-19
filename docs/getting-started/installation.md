@@ -271,6 +271,6 @@ two rows only:
 
 1. [First-time setup](first-setup.md) — create your organization and admin.
 2. [Configuration reference](../self-hosting/configuration.md) — review production settings.
-3. [Email delivery](../self-hosting/email.md) — required for welcome emails, password resets,
-   and payment notifications.
+3. [Email delivery](../self-hosting/email.md) — required for address confirmations, password
+   resets, and payment notifications.
 4. [Backups & restore](../self-hosting/backups-and-restore.md) — set up before going live.
