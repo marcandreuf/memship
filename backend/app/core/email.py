@@ -25,6 +25,7 @@ from app.domains.mailing.mailing_config import (
     resolve_mailing_config,
 )
 from app.domains.mailing.policy import always_sends as template_always_sends
+from app.domains.mailing.policy import honours_member_opt_out
 from app.domains.mailing.policy import is_enabled as is_template_enabled
 
 logger = logging.getLogger(__name__)
@@ -37,10 +38,16 @@ class EmailOutcome(str, Enum):
     which is the default for everything but the account-access mails. A caller
     that records its result for a human has to tell the two apart, or it reports
     the organization's own configuration as a broken mail transport (#219).
+
+    ``OPTED_OUT`` is also not a failure, and is a different fact again: the
+    organization has this template switched on and the member asked not to
+    receive it (#230). An admin reading a delivery record needs to see their own
+    setting and a member's choice as two different answers.
     """
 
     SENT = "sent"
     SUPPRESSED = "suppressed"
+    OPTED_OUT = "opted_out"
     FAILED = "failed"
 
 # Jinja2 template environment
@@ -497,6 +504,74 @@ def _template_enabled(template_key: str) -> bool:
         db.close()
 
 
+def _member_opted_out(to: str) -> bool:
+    """Whether everyone reachable at ``to`` has switched club email off.
+
+    The funnel knows an address, not a member, so the member is resolved from
+    the address rather than threaded through all eighteen senders and their call
+    sites — several of which hold only an address themselves.
+
+    ``persons.email`` is non-unique on purpose (``persons/models.py``): families
+    share an address and a guardian receives a minor's mail. So an address can
+    resolve to several members who disagree, and the rule is **send unless they
+    all opted out**. A guardian who opted out still gets their child's booking
+    confirmation, because that mail is about a member who did not opt out —
+    suppressing on the first opt-out would silence mail nobody chose to lose.
+
+    Only active members are consulted. A cancelled member's stale row must not
+    decide anything for the household that still uses the address.
+
+    An address with no member behind it — staff, an applicant, anyone not yet a
+    member — is not opted out; there is no preference to read.
+
+    Fails **open**, unlike the template gate above, and the asymmetry is the
+    point. The gate fails closed because its default is off and its failure mode
+    is mail nobody opted into. This one runs only after the organization has
+    explicitly switched the template on, and a preference that cannot be read is
+    not a member saying no — it is an unknown, and the stored default is to
+    send. Failing closed here would let one unreadable table silence every
+    confirmation in the install, quietly.
+
+    A genuine database outage never reaches this line: the gate opens a session
+    first and suppresses on its own failure. What reaches it is a fault with the
+    member tables specifically, so it warns loudly and lets the mail through.
+    """
+    from sqlalchemy import func
+
+    from app.domains.members.models import Member
+    from app.domains.persons.models import Person
+
+    try:
+        db = db_session.SessionLocal()
+    except Exception as e:  # noqa: BLE001
+        logger.warning(
+            f"Member preferences unavailable (no session), sending anyway: "
+            f"to={to}, error={e}"
+        )
+        return False
+    try:
+        rows = (
+            db.query(Member.communication_preferences)
+            .join(Person, Member.person_id == Person.id)
+            .filter(
+                func.lower(Person.email) == to.lower(),
+                Member.is_active.is_(True),
+            )
+            .all()
+        )
+    except Exception as e:  # noqa: BLE001
+        logger.warning(
+            f"Member preferences unreadable, sending anyway: to={to}, error={e}"
+        )
+        return False
+    finally:
+        db.close()
+
+    if not rows:
+        return False
+    return all((prefs or {}).get("email") is False for (prefs,) in rows)
+
+
 def _send_templated(
     template_key: str,
     to: str,
@@ -539,9 +614,14 @@ def _send_templated_outcome(
     """Render and send one catalogued template, honouring the org's switches.
 
     The single place that decides whether a templated email happens. Every
-    ``send_*_email`` below routes through here, so the on/off gate, the
-    suppression log line and the not-delivered warning exist once rather than at
-    seventeen call sites.
+    ``send_*_email`` below routes through here, so the organization's on/off
+    gate, the member's own opt-out, the suppression log lines and the
+    not-delivered warning exist once rather than at seventeen call sites.
+
+    Two gates, in order, because they answer to different people: the
+    organization decides whether a template sends at all, and only then does a
+    member's preference decide whether it sends *to them*. Which templates the
+    member's choice reaches is ``policy.honours_member_opt_out``.
 
     Returns the outcome rather than a bool, because "switched off" and "did not
     deliver" are different facts and a caller that persists the result must not
@@ -557,6 +637,13 @@ def _send_templated_outcome(
             f"template={template_key}, to={to}"
         )
         return EmailOutcome.SUPPRESSED
+
+    if honours_member_opt_out(template_key) and _member_opted_out(to):
+        logger.info(
+            f"Email suppressed (member opted out): "
+            f"template={template_key}, to={to}"
+        )
+        return EmailOutcome.OPTED_OUT
 
     if subject is None:
         subject = _get_subject(template_key, locale, **(subject_args or {}))

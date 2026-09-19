@@ -80,6 +80,31 @@ MANDATORY: frozenset[str] = frozenset(
 # holds the template files, this catalogue and ``_SUBJECTS`` to the same set.
 
 
+def honours_member_opt_out(template_key: str) -> bool:
+    """Whether a member's blanket "don't email me" silences this template.
+
+    Only the ``optional`` tier. The other two are deliberate:
+
+    - ``mandatory`` rests on contract, not consent — the docstring above says an
+      opt-out must not reach it, and without ``verification`` or
+      ``password_reset`` a member cannot hold an account at all.
+    - ``operational`` carries ``receipt_delivery`` and ``payment_reminder``. A
+      member who ticks one box must not thereby stop receiving their own
+      invoices and the notices that precede a debt — a club may be obliged to
+      send those, and will certainly want them sent.
+
+    What is left is what the member loses nothing by losing: confirmations whose
+    state is visible in the portal anyway, plus the broadcast channel. The UI
+    copy beside the preference has to say that, or the toggle promises more than
+    it does.
+
+    A key with no catalogue entry has no tier, so it is never silenced here —
+    the same reason ``always_sends`` lets it through.
+    """
+    spec = BY_KEY.get(template_key)
+    return spec is not None and spec.tier == "optional"
+
+
 def always_sends(template_key: str) -> bool:
     """Whether ``template_key`` bypasses the configuration entirely.
 

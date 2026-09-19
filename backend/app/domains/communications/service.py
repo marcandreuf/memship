@@ -100,7 +100,15 @@ def resolve_audience(
 
 
 def email_recipients(db: Session, members: list[Member]) -> list[Person]:
-    """Persons reachable by email — has an email and hasn't opted out of email."""
+    """Persons reachable by email — has an email and hasn't opted out of email.
+
+    Since #230 the funnel in ``app.core.email`` honours the same preference for
+    every ``optional`` template, ``announcement`` included, so this filter is no
+    longer the only thing standing between an opted-out member and a broadcast.
+    It stays because it is cheaper: it keeps the fan-out from rendering a mail
+    that the funnel would then drop, and it is what the recipient snapshot below
+    is built from.
+    """
     out: list[Person] = []
     for member in members:
         prefs = member.communication_preferences or {}

@@ -71,6 +71,27 @@ class MemberCreate(BaseModel):
         return v
 
 
+class CommunicationPreferences(BaseModel):
+    """Which channels a member agrees to hear from the club on.
+
+    Only ``email`` is acted on today; ``sms`` and ``push`` are stored against
+    the day those channels exist, which is why they are here rather than a lone
+    boolean. The defaults match the column's own (``members/models.py``), so a
+    body that sets one channel does not silently clear the others.
+
+    Turning ``email`` off does not silence everything: it reaches the templates
+    in the ``optional`` tier, not the account-access mails or the operational
+    ones a club may be obliged to send. See
+    ``app.domains.mailing.policy.honours_member_opt_out``.
+    """
+
+    email: bool = True
+    sms: bool = False
+    push: bool = False
+
+    model_config = {"extra": "forbid"}
+
+
 class MemberSelfUpdate(BaseModel):
     """The fields a member may write on their own record.
 
@@ -88,6 +109,9 @@ class MemberSelfUpdate(BaseModel):
     national_id: str | None = Field(default=None, max_length=20)
     bank_iban: str | None = Field(default=None, max_length=34)
     bank_bic: str | None = Field(default=None, max_length=11)
+    # A member's own choice, so it belongs to the self-editable set rather than
+    # to the staff-only fields ``MemberUpdate`` adds back.
+    communication_preferences: CommunicationPreferences | None = None
 
     @field_validator("date_of_birth")
     @classmethod
@@ -168,6 +192,7 @@ class MemberResponse(BaseModel):
     is_minor: bool = False
     guardian: GuardianResponse | None = None
     internal_notes: str | None = None
+    communication_preferences: CommunicationPreferences | None = None
     is_active: bool
     created_at: datetime
 

@@ -90,6 +90,27 @@ flow by design — their password is reset from the host with `python -m app.cli
 [Recovering the super admin password](../getting-started/first-setup.md#recovering-the-super-admin-password)
 — so testing with one looks like mail that never arrives.
 
+## What a member can switch off
+
+Each member has a **Receive club emails** toggle on their profile. It covers the
+`optional` templates — booking and activity confirmations, and club announcements —
+and nothing else:
+
+| Tier | Examples | Member opt-out |
+|---|---|---|
+| Mandatory | address confirmation, password reset | never applies |
+| Operational | receipts, payment reminders, a cancelled booking | never applies |
+| Optional | booking and registration confirmations, announcements | applies |
+
+A member who opts out still receives their invoices and the notices that precede a
+debt, which a club may be obliged to send. Staff can set the toggle on a member's
+behalf from the member record, for someone who asks at the desk or has no portal
+login.
+
+Which templates sit in which tier is **Settings → Communications**, and the
+organization's own switch is checked first: a template switched off there does not
+send to anybody, whatever the member chose.
+
 ## Troubleshooting
 
 - **No email at all** — check in this order: (1) **Settings → Integrations → Mailing**, is

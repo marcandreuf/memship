@@ -250,6 +250,25 @@ class TestHighLevelEmails:
         assert "cancel·lada" in subject.lower()
 
     @patch("app.core.email.send_email", return_value=True)
+    def test_an_unreadable_member_preference_does_not_silence_the_mail(
+        self, mock_send
+    ):
+        """The opt-out lookup (#230) fails open, and this suite proves it.
+
+        These tests run with no database at all — CI points the unit job at an
+        empty SQLite file — so a session opens and every query against the
+        member tables raises. A lookup that failed closed there would report
+        every ``optional`` template as suppressed, which is exactly how this was
+        caught: the organization switched the template on, and one unreadable
+        table would have silenced it for everyone.
+        """
+        result = send_registration_confirmation_email(
+            "user@example.com", "Ana", "Yoga", "confirmed", locale="es",
+        )
+        assert result is True
+        mock_send.assert_called_once()
+
+    @patch("app.core.email.send_email", return_value=True)
     def test_send_waitlist_promotion(self, mock_send):
         result = send_waitlist_promotion_email(
             "user@example.com", "Bob", "Chess Club", locale="en",

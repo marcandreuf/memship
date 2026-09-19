@@ -209,10 +209,15 @@ def deliver(payload: dict) -> tuple[EmailOutcome, str | None]:
 
 # How each outcome lands on the row. ``suppressed`` is recorded as ``skipped``
 # — already permitted by the status CHECK constraint — with no error, because
-# the organization switching the template off is not a fault to report.
+# the organization switching the template off is not a fault to report. Neither
+# is a member's opt-out, so it lands the same way. ``payment_reminder`` is
+# ``operational`` and a member's opt-out does not reach that tier (#230), so
+# ``OPTED_OUT`` cannot arrive here today; it is mapped rather than left to raise
+# a KeyError if the tier is ever reconsidered.
 _ROW_STATUS = {
     EmailOutcome.SENT: "sent",
     EmailOutcome.SUPPRESSED: "skipped",
+    EmailOutcome.OPTED_OUT: "skipped",
     EmailOutcome.FAILED: "failed",
 }
 

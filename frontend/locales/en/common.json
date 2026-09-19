@@ -95,7 +95,9 @@
     "preferences": "Preferences",
     "editProfile": "Edit Profile",
     "phone": "Phone",
-    "memberInfo": "Member Information"
+    "memberInfo": "Member Information",
+    "emailOptIn": "Receive club emails",
+    "emailOptInHelp": "Booking and registration confirmations, and club announcements. Your account emails (sign-in and password) and billing emails (receipts and payment notices) are always sent."
   },
   "validation": {
     "required": "This field is required",

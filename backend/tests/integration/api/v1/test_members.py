@@ -357,6 +357,121 @@ class TestMemberSelfService:
         assert response.json()["person"]["first_name"] == "MySelf"
 
 
+class TestCommunicationPreferences:
+    """The member's own channel choice (#230).
+
+    It had no write path before: the column existed and two places read it, so
+    the only way to opt a member out was raw SQL. It belongs to the member, not
+    to staff, which is why it sits in ``MemberSelfUpdate`` rather than in the
+    staff-only fields ``MemberUpdate`` adds back.
+    """
+
+    def test_a_member_can_switch_club_email_off_for_themselves(self, client, db):
+        user, member = _create_member_user(db, "prefs-self@examplee6e3b1.com")
+        client.cookies.update(_auth_cookie(user))
+
+        response = client.put(
+            f"/api/v1/members/{member.id}",
+            json={"communication_preferences": {"email": False}},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["communication_preferences"] == {
+            "email": False,
+            "sms": False,
+            "push": False,
+        }
+        db.refresh(member)
+        assert member.communication_preferences["email"] is False
+
+    def test_the_response_carries_the_stored_preference(self, client, db):
+        admin = _create_admin(db)
+        _, member = _create_member_user(db, "prefs-read@examplee6e3b1.com")
+        member.communication_preferences = {
+            "email": False,
+            "sms": True,
+            "push": False,
+        }
+        db.commit()
+        client.cookies.update(_auth_cookie(admin))
+
+        response = client.get(f"/api/v1/members/{member.id}")
+
+        assert response.status_code == 200
+        assert response.json()["communication_preferences"]["email"] is False
+        assert response.json()["communication_preferences"]["sms"] is True
+
+    def test_a_row_that_never_stored_one_reads_as_null(self, client, db):
+        """Rows predating the column's default must not be given a choice the
+        member never made."""
+        admin = _create_admin(db)
+        _, member = _create_member_user(db, "prefs-null@examplee6e3b1.com")
+        member.communication_preferences = None
+        db.commit()
+        client.cookies.update(_auth_cookie(admin))
+
+        response = client.get(f"/api/v1/members/{member.id}")
+
+        assert response.status_code == 200
+        assert response.json()["communication_preferences"] is None
+
+    def test_the_unnamed_channels_keep_their_defaults(self, client, db):
+        """A body that sets one channel must not silently clear the others."""
+        user, member = _create_member_user(db, "prefs-partial@examplee6e3b1.com")
+        client.cookies.update(_auth_cookie(user))
+
+        response = client.put(
+            f"/api/v1/members/{member.id}",
+            json={"communication_preferences": {"sms": True}},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["communication_preferences"] == {
+            "email": True,
+            "sms": True,
+            "push": False,
+        }
+
+    def test_an_unknown_channel_is_rejected(self, client, db):
+        """A typo must fail loudly rather than land in the JSONB column."""
+        user, member = _create_member_user(db, "prefs-typo@examplee6e3b1.com")
+        client.cookies.update(_auth_cookie(user))
+
+        response = client.put(
+            f"/api/v1/members/{member.id}",
+            json={"communication_preferences": {"emial": False}},
+        )
+
+        assert response.status_code == 422
+
+    def test_a_member_cannot_set_it_on_someone_else(self, client, db):
+        user, _ = _create_member_user(db, "prefs-mine@examplee6e3b1.com")
+        _, other = _create_member_user(db, "prefs-theirs@examplee6e3b1.com")
+        client.cookies.update(_auth_cookie(user))
+
+        response = client.put(
+            f"/api/v1/members/{other.id}",
+            json={"communication_preferences": {"email": False}},
+        )
+
+        assert response.status_code == 403
+
+    def test_staff_can_set_it_on_a_members_behalf(self, client, db):
+        """A member who asks at the desk, or one with no portal login at all."""
+        admin = _create_admin(db)
+        _, member = _create_member_user(db, "prefs-desk@examplee6e3b1.com")
+        db.commit()
+        client.cookies.update(_auth_cookie(admin))
+
+        response = client.put(
+            f"/api/v1/members/{member.id}",
+            json={"communication_preferences": {"email": False}},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["communication_preferences"]["email"] is False
+
+
 class TestGuardianMinor:
     def test_create_minor_with_guardian(self, client, db):
         admin = _create_admin(db)
