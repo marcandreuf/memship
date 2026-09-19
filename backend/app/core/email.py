@@ -823,9 +823,15 @@ def send_booking_waitlisted_email(
     space_name: str,
     booking_date: str,
     booking_time: str,
+    position: int | None = None,
     locale: str = "es",
 ) -> bool:
-    """Tell a member their booking is on the waitlist."""
+    """Tell a member their booking is on the waitlist.
+
+    ``position`` sits before ``locale`` to match the order the dispatch site
+    passes them positionally. The templates render it only when it is set, so
+    a caller that does not know the queue position still gets a valid mail.
+    """
     return _send_templated(
         "booking_waitlisted",
         to,
@@ -835,6 +841,7 @@ def send_booking_waitlisted_email(
             "space_name": space_name,
             "booking_date": booking_date,
             "booking_time": booking_time,
+            "position": position,
         },
         subject_args={"space": space_name},
     )
