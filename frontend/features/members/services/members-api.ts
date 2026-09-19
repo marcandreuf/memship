@@ -27,8 +27,19 @@ export interface MemberData {
   status_reason: string | null;
   joined_at: string;
   internal_notes: string | null;
+  // Null on rows written before the column had a default: no choice was made,
+  // which is not the same as choosing to receive everything.
+  communication_preferences: CommunicationPreferences | null;
   is_active: boolean;
   created_at: string;
+}
+
+/** Which channels the member agrees to hear from the club on. Only `email` is
+ *  acted on today; the other two are stored against the day they exist. */
+export interface CommunicationPreferences {
+  email: boolean;
+  sms: boolean;
+  push: boolean;
 }
 
 export interface PageMeta {

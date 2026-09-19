@@ -74,6 +74,9 @@ def _to_response(member: Member) -> MemberResponse:
         is_minor=member.is_minor or False,
         guardian=guardian,
         internal_notes=member.internal_notes,
+        # Rows predating the column's default carry NULL; the response says
+        # None rather than inventing a preference the member never expressed.
+        communication_preferences=member.communication_preferences,
         is_active=member.is_active,
         created_at=member.created_at,
     )

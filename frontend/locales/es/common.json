@@ -95,7 +95,9 @@
     "preferences": "Preferencias",
     "editProfile": "Editar perfil",
     "phone": "Teléfono",
-    "memberInfo": "Información del socio"
+    "memberInfo": "Información del socio",
+    "emailOptIn": "Recibir correos del club",
+    "emailOptInHelp": "Confirmaciones de reservas e inscripciones y los comunicados del club. Los correos de tu cuenta (acceso y contraseña) y los de facturación (recibos y avisos de pago) se envían siempre."
   },
   "validation": {
     "required": "Este campo es obligatorio",

@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -17,7 +18,7 @@ import {
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { FormSkeleton } from "@/components/ui/skeletons";
 import { EntityTabs } from "@/components/entity/entity-tabs";
-import { useMember } from "@/features/members/hooks/use-members";
+import { useMember, useUpdateMember } from "@/features/members/hooks/use-members";
 import { useSettings } from "@/features/settings/hooks/use-settings";
 import { MemberPhotoUpload } from "@/features/member-card/components/member-photo-upload";
 import { MyPaymentMethod } from "@/features/members/components/my-payment-method";
@@ -84,6 +85,7 @@ export default function ProfilePage() {
   const { data: profile, isLoading: profileLoading } = useMyProfile();
   const { data: settings } = useSettings();
   const updateMutation = useUpdateMyProfile();
+  const updateMember = useUpdateMember();
   const genderOptions = (settings?.features?.gender_options as GenderOption[] | undefined) || [];
   const customFieldsEnabled = Boolean(settings?.features?.custom_profile_fields);
 
@@ -118,6 +120,29 @@ export default function ProfilePage() {
   function handlePhoneChange(value: string) {
     setPhone(value);
     setDirty(true);
+  }
+
+  // Saved on the switch rather than behind the Save button: the button posts to
+  // /members/me/profile, and the preference lives on the member record. A
+  // member with no record — an operator account (#168) — has no preference to
+  // set, which is why the row is rendered only for members.
+  async function handleEmailOptIn(checked: boolean) {
+    if (!user?.member_id) return;
+    try {
+      await updateMember.mutateAsync({
+        id: user.member_id,
+        data: {
+          communication_preferences: {
+            email: checked,
+            sms: member?.communication_preferences?.sms ?? false,
+            push: member?.communication_preferences?.push ?? false,
+          },
+        },
+      });
+      toast.success(t("toast.success.saved"));
+    } catch {
+      toast.error(t("toast.error.generic"));
+    }
   }
 
   async function handleSave() {
@@ -187,6 +212,30 @@ export default function ProfilePage() {
         <Button size="sm" className="mt-3" onClick={handleSave} disabled={updateMutation.isPending}>
           {updateMutation.isPending ? t("common.loading") : t("common.save")}
         </Button>
+      )}
+
+      {isMember && (
+        <div className="mt-6 border-t pt-4">
+          <p className="text-xs text-muted-foreground mb-2">
+            {t("profile.preferences")}
+          </p>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-medium">{t("profile.emailOptIn")}</p>
+              {/* The toggle does not silence account or billing mail, and the
+                  copy has to say so — otherwise it promises more than it does. */}
+              <p className="text-xs text-muted-foreground">
+                {t("profile.emailOptInHelp")}
+              </p>
+            </div>
+            <Switch
+              data-testid="email-opt-in"
+              checked={member?.communication_preferences?.email ?? true}
+              onCheckedChange={handleEmailOptIn}
+              disabled={updateMember.isPending}
+            />
+          </div>
+        </div>
       )}
     </div>
   );

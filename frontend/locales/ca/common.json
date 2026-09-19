@@ -95,7 +95,9 @@
     "preferences": "Preferències",
     "editProfile": "Editar perfil",
     "phone": "Telèfon",
-    "memberInfo": "Informació del soci"
+    "memberInfo": "Informació del soci",
+    "emailOptIn": "Rebre correus del club",
+    "emailOptInHelp": "Confirmacions de reserves i inscripcions i els comunicats del club. Els correus del teu compte (accés i contrasenya) i els de facturació (rebuts i avisos de pagament) s'envien sempre."
   },
   "validation": {
     "required": "Aquest camp és obligatori",
