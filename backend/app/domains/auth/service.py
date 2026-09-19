@@ -202,6 +202,37 @@ def verify_email(db: Session, token: str) -> User | None:
     return user
 
 
+def confirm_email_without_token(db: Session, user: User) -> bool:
+    """Mark an address confirmed on an administrator's word, not the owner's.
+
+    Sign-in requires a confirmed address, and the only self-service way to
+    confirm one is a link sent by email. When mail is not working — the state of
+    every self-hosted install before a provider is configured — a member who
+    registers can never sign in, and no endpoint could unstick them (#231).
+
+    This is deliberately not the same act as :func:`verify_email`. That one
+    proves the person reading the mailbox asked for the account; this one
+    asserts that an administrator established it some other way. The audit row
+    the caller writes has to say which of the two happened, because an admin who
+    can confirm any address can confirm one they control.
+
+    Clears the outstanding token as well: after this, a link still sitting in a
+    mailbox confirms nothing, which keeps one address from having two live paths
+    to the same account.
+
+    Returns False when the address was already confirmed, so the caller can skip
+    writing an audit row for a change that did not happen.
+    """
+    if user.email_verified:
+        return False
+    user.email_verified = True
+    user.email_verified_at = datetime.now(timezone.utc)
+    user.verification_token = None
+    user.verification_token_expires_at = None
+    db.flush()
+    return True
+
+
 def resend_verification(db: Session, email: str) -> tuple[User, str] | None:
     """Reissue a verification token. Returns None when there is nothing to send."""
     user = (

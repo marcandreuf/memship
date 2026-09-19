@@ -111,6 +111,26 @@ Which templates sit in which tier is **Settings → Communications**, and the
 organization's own switch is checked first: a template switched off there does not
 send to anybody, whatever the member chose.
 
+## Members cannot sign in before email works
+
+Signing in requires a confirmed address, and the only self-service way to confirm one
+is the link sent at sign-up. So until a provider is configured:
+
+- **Self-registration is refused**, with a message telling the visitor to contact the
+  club, rather than creating an account whose owner could never use it.
+- **A member who registered earlier and never confirmed** shows as *active* and cannot
+  sign in. Open their member record: it says the address is unconfirmed and offers
+  **Confirm address**. That needs `users.write`, and it is recorded in the audit log as
+  confirmed by an administrator rather than by the member — confirm only an address you
+  have established is theirs by some other means.
+- From the host, the same thing without the UI:
+  `python -m app.cli.verify_email --email someone@example.org`, or `--list` to see who
+  is waiting.
+
+A provider that is *configured but broken* — a wrong API key, say — is not caught by the
+registration guard: it looks usable and fails at the transport. Those members get stuck
+the same way, and **Confirm address** is the way out.
+
 ## Troubleshooting
 
 - **No email at all** — check in this order: (1) **Settings → Integrations → Mailing**, is

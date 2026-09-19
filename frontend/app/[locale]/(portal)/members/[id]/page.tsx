@@ -13,6 +13,7 @@ import { MemberCardTab } from "@/features/member-card/components/member-card-tab
 import { MemberDetailSection } from "@/features/members/components/member-detail-section";
 import { MemberForm } from "@/features/members/components/member-form";
 import { MemberStatusActions } from "@/features/members/components/member-status-actions";
+import { UnconfirmedEmailNotice } from "@/features/members/components/unconfirmed-email-notice";
 import {
   useMember,
   useUpdateMember,
@@ -42,6 +43,9 @@ export default function MemberDetailPage({
   const { has } = usePermissions();
   // Status changes and inline editing are writes, not "staff at all".
   const isAdmin = has("members.write");
+  // Confirming an address is an account credential, not a member detail, so it
+  // answers to `users.write` rather than to `members.write` (#231).
+  const canConfirmEmail = has("users.write");
   const { data: settings } = useSettings();
   const cardEnabled = Boolean(settings?.features?.member_card);
   const customFieldsEnabled = Boolean(settings?.features?.custom_profile_fields);
@@ -91,6 +95,8 @@ export default function MemberDetailPage({
           isAdmin ? <MemberStatusActions member={member} /> : undefined
         }
       />
+
+      <UnconfirmedEmailNotice member={member} canConfirm={canConfirmEmail} />
 
       <InlineEditWrapper
         title={t("members.memberInfo")}

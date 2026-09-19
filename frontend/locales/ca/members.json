@@ -73,6 +73,12 @@
       "queueDescription": "Sol·licituds d'alta pendents de decisió.",
       "queueEmpty": "No hi ha altes pendents de revisar."
     },
-    "defaultType": "Per defecte"
+    "defaultType": "Per defecte",
+    "unconfirmedEmail": {
+      "title": "Correu sense confirmar: aquest soci no pot accedir",
+      "description": "L'accés exigeix confirmar l'adreça, i l'únic manera de fer-ho és l'enllaç que s'envia per correu. Si el correu del club no funciona, l'enllaç no arriba mai. Confirma l'adreça només si has comprovat per una altra via que és seva; quedarà registrada com a confirmada per un administrador.",
+      "action": "Confirmar adreça",
+      "confirmed": "Adreça confirmada. El soci ja pot accedir."
+    }
   }
 }

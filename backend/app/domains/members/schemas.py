@@ -193,6 +193,10 @@ class MemberResponse(BaseModel):
     guardian: GuardianResponse | None = None
     internal_notes: str | None = None
     communication_preferences: CommunicationPreferences | None = None
+    # Whether the member's login has a confirmed address. None when they have no
+    # login. Sign-in is refused until it is true, so an admin looking at an
+    # "active" member who cannot get in needs to see it (#231).
+    email_verified: bool | None = None
     is_active: bool
     created_at: datetime
 

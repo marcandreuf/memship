@@ -251,6 +251,32 @@ def register(data: RegisterRequest, request: Request, db: Session = Depends(get_
     # second query on one branch and not the other.
     can_mail = mailing_enabled(db)
 
+    # Refuse rather than create an account nobody can reach (#231). Sign-in
+    # needs a confirmed address, confirming one needs the link, and the link
+    # needs a transport — so registering here used to mint an account that was
+    # permanently stuck, told its owner to check an inbox that would never
+    # receive anything, and showed the admin an active member. A closed door is
+    # the honest answer, and it is visible.
+    #
+    # This catches an install with no provider configured, which is every
+    # self-hosted one before setup. It does not catch a provider that is
+    # configured and broken — an invalid API key resolves as usable here and
+    # fails at the transport (the counterpart #218 covers). That case still
+    # needs the rescue on the member record.
+    if not can_mail and not _dev_tokens_allowed():
+        logger.error(
+            "Registration refused: no mail transport is configured, so the "
+            "verification email cannot be sent and the account could never be "
+            "used. Configure a provider in Settings → Integrations."
+        )
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=(
+                "Registration is unavailable: the club has not finished setting "
+                "up email. Please contact the club."
+            ),
+        )
+
     try:
         user, verification_token = register_user(
             db,
@@ -295,10 +321,9 @@ def register(data: RegisterRequest, request: Request, db: Session = Depends(get_
             data.email, requires_approval, dev=True, verification_token=verification_token
         )
 
-    logger.error(
-        "A user registered but no mail transport is configured — the verification "
-        "email cannot be sent. Configure a provider in Settings → Integrations."
-    )
+    # Unreachable: the guard above refuses when there is no transport, and dev
+    # mode returned the token. Kept as the explicit end of the branch rather
+    # than an implicit fall-through returning None.
     return _registration_received(data.email, requires_approval)
 
 
@@ -333,6 +358,18 @@ def resend_verification_endpoint(
     data: ResendVerificationRequest, request: Request, db: Session = Depends(get_db)
 ):
     _throttle_mail_to(request, data.email)
+
+    # Nothing to resend through, so say so instead of promising a link that
+    # cannot be sent (#231). This discloses the install's state, not the
+    # address's, so it is the same answer for everybody.
+    if not mailing_enabled(db) and not _dev_tokens_allowed():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=(
+                "Email is not configured for this club, so a verification link "
+                "cannot be sent. Please contact the club."
+            ),
+        )
 
     result = resend_verification(db, data.email)
     db.commit()

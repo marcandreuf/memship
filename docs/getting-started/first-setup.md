@@ -157,6 +157,10 @@ configured. Set up [email delivery](../self-hosting/email.md) and send a test be
 onboarding real members — trigger a password reset from a **member or club admin** account,
 since the flow refuses super admins and would look like a delivery failure.
 
+Do this before opening self-registration: until a provider is configured, sign-ups are
+refused, because the confirmation link they depend on cannot be sent. See
+[Members cannot sign in before email works](../self-hosting/email.md#members-cannot-sign-in-before-email-works).
+
 ## Next steps
 
 - [Admin guide → Introducción](../admin-guide/overview.es.md) — how the admin panel is organized.

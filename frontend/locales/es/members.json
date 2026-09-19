@@ -73,6 +73,12 @@
       "queueDescription": "Solicitudes de alta pendientes de decisión.",
       "queueEmpty": "No hay altas pendientes de revisar."
     },
-    "defaultType": "Por defecto"
+    "defaultType": "Por defecto",
+    "unconfirmedEmail": {
+      "title": "Correo sin confirmar: este socio no puede acceder",
+      "description": "El acceso exige confirmar la dirección, y el único modo de hacerlo es el enlace que se envía por correo. Si el correo del club no funciona, el enlace nunca llega. Confirma la dirección solo si has comprobado por otra vía que es suya; quedará registrado como confirmada por un administrador.",
+      "action": "Confirmar dirección",
+      "confirmed": "Dirección confirmada. El socio ya puede acceder."
+    }
   }
 }
