@@ -207,7 +207,7 @@ export function MailingSettings() {
 
     return (
       <Card key={name}>
-        <CardHeader className="py-3 px-4 flex flex-row items-center justify-between">
+        <CardHeader className="py-3 px-4 flex flex-row items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <span className="text-xl">{schema.icon}</span>
             <div>
