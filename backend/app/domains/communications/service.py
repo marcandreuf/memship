@@ -99,8 +99,15 @@ def resolve_audience(
     return query.all()
 
 
-def email_recipients(db: Session, members: list[Member]) -> list[Person]:
-    """Persons reachable by email — has an email and hasn't opted out of email.
+def email_recipients(
+    db: Session, members: list[Member]
+) -> list[tuple[Member, Person]]:
+    """Members reachable by email, paired with the person holding the address.
+
+    The pair rather than the person alone: the fan-out has to write each
+    delivery outcome back to that member's recipient row (#228), and an address
+    cannot identify a member — ``persons.email`` is non-unique, so a household
+    shares one.
 
     Since #230 the funnel in ``app.core.email`` honours the same preference for
     every ``optional`` template, ``announcement`` included, so this filter is no
@@ -109,14 +116,14 @@ def email_recipients(db: Session, members: list[Member]) -> list[Person]:
     that the funnel would then drop, and it is what the recipient snapshot below
     is built from.
     """
-    out: list[Person] = []
+    out: list[tuple[Member, Person]] = []
     for member in members:
         prefs = member.communication_preferences or {}
         if prefs.get("email") is False:
             continue
         person = db.query(Person).filter(Person.id == member.person_id).first()
         if person and person.email:
-            out.append(person)
+            out.append((member, person))
     return out
 
 
@@ -156,7 +163,7 @@ def send_announcement(
     for m in members:
         prefs = m.communication_preferences or {}
         person = persons.get(m.person_id)
-        emailed = (
+        eligible = (
             prefs.get("email") is not False
             and person is not None
             and bool(person.email)
@@ -166,7 +173,12 @@ def send_announcement(
                 announcement_id=ann.id,
                 member_id=m.id,
                 user_id=m.user_id,
-                emailed=emailed,
+                email_eligible=eligible,
+                # False, not NULL: this announcement is being sent now, so its
+                # delivery record starts empty rather than unknown. NULL is
+                # reserved for rows written before the outcome was recorded
+                # at all.
+                email_sent=False,
                 in_app=m.user_id is not None,
             )
         )
@@ -218,10 +230,11 @@ def _seen_join(announcement_id: int):
 def list_recipients(db: Session, announcement_id: int):
     """Recipient snapshot joined to member/person and the in-app read state.
 
-    Returns a query of rows (member_id, first_name, last_name, email, emailed,
-    in_app, read_at) ordered by name. ``read_at`` is the "Seen" timestamp and is
-    NULL for email-only recipients (no user account → no notification). Caller
-    paginates.
+    Returns a query of rows (member_id, first_name, last_name, email,
+    email_eligible, email_sent, in_app, read_at) ordered by name. ``read_at`` is
+    the "Seen" timestamp and is NULL for email-only recipients (no user account
+    → no notification). ``email_sent`` is NULL on announcements sent before the
+    outcome was recorded at all (#228). Caller paginates.
     """
     return (
         db.query(
@@ -229,7 +242,8 @@ def list_recipients(db: Session, announcement_id: int):
             Person.first_name,
             Person.last_name,
             Person.email,
-            AnnouncementRecipient.emailed,
+            AnnouncementRecipient.email_eligible,
+            AnnouncementRecipient.email_sent,
             AnnouncementRecipient.in_app,
             Notification.read_at,
         )
@@ -247,7 +261,18 @@ def recipient_stats(db: Session, announcement_id: int) -> dict:
         AnnouncementRecipient.announcement_id == announcement_id
     )
     recipient_count = base.count()
-    emailed_count = base.filter(AnnouncementRecipient.emailed.is_(True)).count()
+    eligible_count = base.filter(
+        AnnouncementRecipient.email_eligible.is_(True)
+    ).count()
+    # Delivered, not eligible (#228). NULL everywhere means the announcement
+    # predates the outcome being recorded, and "unknown" is reported as such
+    # rather than as nothing delivered.
+    recorded = base.filter(AnnouncementRecipient.email_sent.isnot(None)).count()
+    emailed_count = (
+        base.filter(AnnouncementRecipient.email_sent.is_(True)).count()
+        if recorded
+        else None
+    )
     seen_count = (
         db.query(AnnouncementRecipient)
         .join(Notification, _seen_join(announcement_id))
@@ -259,6 +284,7 @@ def recipient_stats(db: Session, announcement_id: int) -> dict:
     )
     return {
         "recipient_count": recipient_count,
+        "email_eligible_count": eligible_count,
         "emailed_count": emailed_count,
         "seen_count": seen_count,
         "sent_by": _announcement_author_name(db, announcement_id),

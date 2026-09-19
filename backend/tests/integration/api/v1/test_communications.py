@@ -166,7 +166,7 @@ class TestAudienceResolver:
         _create_member(db, "eo-in")
         _create_member(db, "eo-out", opted_out=True)
         members = service.resolve_audience(db, "all", None)
-        emails = {p.email for p in service.email_recipients(db, members)}
+        emails = {p.email for _, p in service.email_recipients(db, members)}
         assert emails == {"mem-eo-in@examplee6e3b1.com"}
         # Opted-out member is still part of the resolved audience (gets in-app).
         assert len(members) == 2
@@ -454,16 +454,20 @@ class TestRecipients:
             )
         }
         assert set(recips) == {with_acct.id, email_only.id, opted_out.id}
-        # Member with account: emailed + in-app.
-        assert recips[with_acct.id].emailed is True
+        # Member with account: eligible for email + in-app.
+        assert recips[with_acct.id].email_eligible is True
         assert recips[with_acct.id].in_app is True
-        # Email-only member: emailed, not in-app, no user_id.
-        assert recips[email_only.id].emailed is True
+        # Email-only member: eligible, not in-app, no user_id.
+        assert recips[email_only.id].email_eligible is True
         assert recips[email_only.id].in_app is False
         assert recips[email_only.id].user_id is None
-        # Opted-out member: not emailed, but still in-app (has account).
-        assert recips[opted_out.id].emailed is False
+        # Opted-out member: not eligible, but still in-app (has account).
+        assert recips[opted_out.id].email_eligible is False
         assert recips[opted_out.id].in_app is True
+        # The snapshot says only who *could* be emailed. Delivery is the
+        # fan-out's to record, and it has not run here (#228), so every row
+        # starts at "nothing delivered yet" rather than at eligibility.
+        assert all(r.email_sent is False for r in recips.values())
 
     def test_recipients_endpoint_lists_and_paginates(self, client, db):
         admin = _create_user(db, "admin", "rl-a")
@@ -483,7 +487,15 @@ class TestRecipients:
         assert body["meta"]["total_pages"] == 2
         assert len(body["items"]) == 2
         item = body["items"][0]
-        assert {"member_id", "name", "email", "emailed", "in_app", "seen_at"} <= item.keys()
+        assert {
+            "member_id",
+            "name",
+            "email",
+            "email_eligible",
+            "emailed",
+            "in_app",
+            "seen_at",
+        } <= item.keys()
         # Not yet opened by anyone.
         assert all(i["seen_at"] is None for i in body["items"])
 
@@ -549,7 +561,10 @@ class TestRecipients:
         assert resp.status_code == 200
         stats = resp.json()
         assert stats["recipient_count"] == 4
-        assert stats["emailed_count"] == 3  # all but the opted-out member
+        assert stats["email_eligible_count"] == 3  # all but the opted-out member
+        # The fan-out is a Celery task and has not run, so nothing is delivered
+        # yet. Before #228 this read 3 — the audience, reported as deliveries.
+        assert stats["emailed_count"] == 0
         assert stats["seen_count"] == 1
         assert stats["sent_by"] == "Test User"  # from _create_user
 

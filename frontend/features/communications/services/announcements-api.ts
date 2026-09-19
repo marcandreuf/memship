@@ -80,7 +80,11 @@ export interface RecipientData {
   member_id: number;
   name: string;
   email: string | null;
-  emailed: boolean;
+  /** Could be emailed at send time: has an address, had not opted out. */
+  email_eligible: boolean;
+  /** Whether the fan-out delivered it. Null on announcements sent before the
+   *  outcome was recorded — not known, as against known to have failed. */
+  emailed: boolean | null;
   in_app: boolean;
   seen_at: string | null;
 }
@@ -92,7 +96,10 @@ export interface PaginatedRecipients {
 
 export interface RecipientStats {
   recipient_count: number;
-  emailed_count: number;
+  /** The audience that could be emailed, and the part of it that was. They
+   *  differ whenever a send fails, and null means never recorded. */
+  email_eligible_count: number;
+  emailed_count: number | null;
   seen_count: number;
   sent_by: string | null;
 }

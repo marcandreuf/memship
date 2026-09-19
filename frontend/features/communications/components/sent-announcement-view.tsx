@@ -76,7 +76,10 @@ export function SentAnnouncementView({
                       { label: t("communications.view.sentBy"), value: stats?.sent_by ?? "—" },
                       { label: t("communications.view.target"), value: targetLabel() },
                       { label: t("communications.view.recipientCount"), value: recipientCount },
-                      { label: t("communications.view.emailedCount"), value: stats?.emailed_count ?? "—" },
+                      { label: t("communications.view.emailEligibleCount"), value: stats?.email_eligible_count ?? "—" },
+                      // Null means the announcement predates the delivery
+                      // record — unknown, not zero delivered.
+                      { label: t("communications.view.emailedCount"), value: stats?.emailed_count ?? t("communications.view.emailedUnknown") },
                       { label: t("communications.view.seenCount"), value: seenCount },
                       { label: t("communications.view.createdAt"), value: announcement.created_at ? formatDateTime(announcement.created_at) : "—" },
                     ]}

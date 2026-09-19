@@ -61,7 +61,7 @@
       "sentBy": "Enviat per",
       "target": "Audiència",
       "recipientCount": "Destinataris",
-      "emailedCount": "Per correu",
+      "emailedCount": "Lliurats",
       "seenCount": "Vistos",
       "createdAt": "Creat el",
       "noRecipients": "No hi ha destinataris registrats per a aquest anunci.",
@@ -72,7 +72,10 @@
       "channelInApp": "A l'app",
       "seen": "Vist",
       "seenAt": "Vist {date}",
-      "notSeen": "No vist"
+      "notSeen": "No vist",
+      "emailEligibleCount": "Amb correu disponible",
+      "emailedUnknown": "Sense registrar",
+      "notDelivered": "No lliurat"
     }
   }
 }

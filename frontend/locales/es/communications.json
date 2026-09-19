@@ -61,7 +61,7 @@
       "sentBy": "Enviado por",
       "target": "Audiencia",
       "recipientCount": "Destinatarios",
-      "emailedCount": "Por correo",
+      "emailedCount": "Entregados",
       "seenCount": "Vistos",
       "createdAt": "Creado el",
       "noRecipients": "No hay destinatarios registrados para este anuncio.",
@@ -72,7 +72,10 @@
       "channelInApp": "En la app",
       "seen": "Visto",
       "seenAt": "Visto {date}",
-      "notSeen": "No visto"
+      "notSeen": "No visto",
+      "emailEligibleCount": "Con correo disponible",
+      "emailedUnknown": "Sin registrar",
+      "notDelivered": "No entregado"
     }
   }
 }

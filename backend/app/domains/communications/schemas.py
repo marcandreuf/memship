@@ -75,13 +75,21 @@ class RecipientResponse(BaseModel):
     member_id: int
     name: str
     email: str | None = None
-    emailed: bool
+    # Could be emailed at send time: has an address, had not opted out.
+    email_eligible: bool
+    # Whether the fan-out delivered it. None on announcements sent before the
+    # outcome was recorded (#228) — not known, as against known to have failed.
+    emailed: bool | None = None
     in_app: bool
     seen_at: datetime | None = None  # in-app read timestamp; None for email-only
 
 
 class RecipientStatsResponse(BaseModel):
     recipient_count: int
-    emailed_count: int
+    # The audience that could be emailed, and the part of it that was. They
+    # differ whenever a send fails — an absent transport, a bounce, a rejected
+    # address — and reporting the first as the second is what #228 was.
+    email_eligible_count: int
+    emailed_count: int | None = None
     seen_count: int
     sent_by: str | None = None
