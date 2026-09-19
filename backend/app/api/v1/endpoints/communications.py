@@ -178,7 +178,8 @@ def list_recipients(
             member_id=r.member_id,
             name=f"{r.first_name} {r.last_name}".strip(),
             email=r.email,
-            emailed=r.emailed,
+            email_eligible=r.email_eligible,
+            emailed=r.email_sent,
             in_app=r.in_app,
             seen_at=r.read_at,
         ).model_dump()
@@ -193,7 +194,12 @@ def recipient_stats(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("communications.read")),
 ):
-    """Aggregate delivery stats (recipients / emailed / seen) for the sent view."""
+    """Aggregate delivery stats for the sent view.
+
+    ``email_eligible_count`` is the audience that could be emailed and
+    ``emailed_count`` the part of it that was; ``emailed_count`` is null on
+    announcements sent before the outcome was recorded (#228).
+    """
     _require_communications_enabled(db)
     ann = service.get_announcement(db, announcement_id)
     if ann is None:

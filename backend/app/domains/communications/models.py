@@ -82,7 +82,14 @@ class AnnouncementRecipient(Base):
     audience at send time (membership changes afterwards must not alter it).
     ``user_id`` is set only when the member has an account; it joins back to
     ``notifications`` (source_type='announcement', source_id) for the read state
-    that drives the admin "Seen" badge. ``emailed`` mirrors the email opt-out.
+    that drives the admin "Seen" badge.
+
+    Two email columns, because they are two facts that were conflated (#228):
+    ``email_eligible`` is the audience snapshot — whether this member could be
+    emailed at send time — and ``email_sent`` is what the fan-out actually
+    managed. An install with no mail transport told the admin it had emailed
+    every member when it had emailed none, because only the first was recorded
+    and it was labelled as the second.
     """
 
     __tablename__ = "announcement_recipients"
@@ -101,6 +108,13 @@ class AnnouncementRecipient(Base):
     )
     # NULL when the member has no user account (email-only recipient).
     user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
-    emailed = Column(Boolean, nullable=False, default=False)  # email actually sent
+    # Could this member be emailed when the announcement was sent: they have an
+    # address and had not opted out. A faithful snapshot — later changes to the
+    # member must not alter it.
+    email_eligible = Column(Boolean, nullable=False, default=False)
+    # What the fan-out actually did. False at send, True once the transport
+    # accepted it. NULL means no outcome was ever recorded, which is every row
+    # written before #228 — "we do not know", not "nothing was delivered".
+    email_sent = Column(Boolean)
     in_app = Column(Boolean, nullable=False, default=False)  # notification row created
     created_at = Column(DateTime(timezone=True), server_default=func.now())

@@ -20,7 +20,10 @@ def send_announcement_task(self, announcement_id: int) -> int:
         from app.core.email_branding import get_email_branding
         from app.db.session import SessionLocal
         from app.domains.communications.markdown import render_markdown
-        from app.domains.communications.models import Announcement
+        from app.domains.communications.models import (
+            Announcement,
+            AnnouncementRecipient,
+        )
         from app.domains.communications.service import (
             email_recipients,
             resolve_audience,
@@ -63,10 +66,21 @@ def send_announcement_task(self, announcement_id: int) -> int:
 
             members = resolve_audience(db, ann.target_type, ann.target_id)
             sent = 0
-            for person in email_recipients(db, members):
-                if send_announcement_email(
+            for member, person in email_recipients(db, members):
+                delivered = send_announcement_email(
                     person.email, ann.subject, body_html, org_name, locale
-                ):
+                )
+                # The outcome is written to the recipient row, not just counted
+                # and returned to the Celery result backend, which nothing the
+                # admin sees ever reads (#228). Committed per recipient so a
+                # fan-out that dies part-way leaves a true record of what it
+                # managed before it did.
+                db.query(AnnouncementRecipient).filter(
+                    AnnouncementRecipient.announcement_id == announcement_id,
+                    AnnouncementRecipient.member_id == member.id,
+                ).update({"email_sent": delivered})
+                db.commit()
+                if delivered:
                     sent += 1
             logger.info(f"Announcement {announcement_id}: {sent} emails sent")
             return sent

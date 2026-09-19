@@ -50,9 +50,18 @@ export function RecipientsTab({ announcementId }: { announcementId: number }) {
               </TableCell>
               <TableCell>
                 <div className="flex gap-1">
-                  {r.emailed && (
+                  {r.email_eligible && (
                     <Badge variant="outline">
                       {t("communications.view.channelEmail")}
+                    </Badge>
+                  )}
+                  {/* Eligible but not delivered: an absent transport, a bounce,
+                      a rejected address. Reported rather than counted as a
+                      send (#228). `null` is an announcement sent before the
+                      outcome was recorded, and claims nothing. */}
+                  {r.email_eligible && r.emailed === false && (
+                    <Badge variant="destructive">
+                      {t("communications.view.notDelivered")}
                     </Badge>
                   )}
                   {r.in_app && (
