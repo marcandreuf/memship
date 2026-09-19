@@ -199,7 +199,7 @@ export function PaymentProvidersSettings() {
   return (
     <div className="space-y-3 max-w-4xl">
       <Card>
-        <CardHeader className="py-3 px-4 flex flex-row items-center justify-between">
+        <CardHeader className="py-3 px-4 flex flex-col items-start gap-2 @md:flex-row @md:items-center @md:justify-between">
           <div>
             <CardTitle className="text-base">
               {t("settings.providers.title")}
@@ -208,7 +208,7 @@ export function PaymentProvidersSettings() {
               {t("settings.providers.description")}
             </CardDescription>
           </div>
-          <Button size="sm" onClick={openCreate}>
+          <Button size="sm" className="shrink-0" onClick={openCreate}>
             <Plus className="h-4 w-4 mr-1" />
             {t("settings.providers.add")}
           </Button>
@@ -223,14 +223,14 @@ export function PaymentProvidersSettings() {
               {providers.map((provider) => (
                 <div
                   key={provider.id}
-                  className="flex items-center justify-between rounded-lg border p-3"
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3"
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
                     <span className="text-xl">
                       {PROVIDER_ICONS[provider.provider_type] ?? "💰"}
                     </span>
-                    <div>
-                      <div className="flex items-center gap-2">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span className="text-sm font-medium">
                           {provider.display_name}
                         </span>
@@ -248,7 +248,7 @@ export function PaymentProvidersSettings() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="ml-auto flex shrink-0 items-center gap-2">
                     <Switch
                       checked={provider.status === "active"}
                       onCheckedChange={() => handleToggle(provider)}
@@ -290,7 +290,7 @@ export function PaymentProvidersSettings() {
 
       {/* Create / Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>
               {editingProvider

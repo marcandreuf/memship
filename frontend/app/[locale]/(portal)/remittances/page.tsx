@@ -77,7 +77,7 @@ export default function RemittancesPage() {
             <DialogTrigger asChild>
               <Button>{t("remittances.createRemittance")}</Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="sm:max-w-2xl">
               <DialogHeader>
                 <DialogTitle>{t("remittances.createRemittance")}</DialogTitle>
               </DialogHeader>
