@@ -85,3 +85,7 @@ docs/agents/
 
 # Written on the server by scripts/install.sh at first install
 POST-INSTALL.md
+
+# Left behind by running the unit suite the way CI does, against an empty
+# SQLite file (DATABASE_URL=sqlite:///unused.db).
+backend/unused.db
