@@ -14,7 +14,9 @@ from app.core.email import (
 from app.core.pagination import PageMeta, paginate
 from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
+from app.domains.audit.models import AuditLog
 from app.domains.auth.models import User
+from app.domains.auth.service import confirm_email_without_token
 from app.domains.members.models import Member
 from app.domains.members.schemas import (
     GuardianResponse,
@@ -77,6 +79,11 @@ def _to_response(member: Member) -> MemberResponse:
         # Rows predating the column's default carry NULL; the response says
         # None rather than inventing a preference the member never expressed.
         communication_preferences=member.communication_preferences,
+        # None when the member has no login at all (admin-created), as against
+        # False for one who has an account and has not confirmed the address.
+        email_verified=(
+            bool(member.user.email_verified) if member.user else None
+        ),
         is_active=member.is_active,
         created_at=member.created_at,
     )
@@ -326,6 +333,68 @@ def _load_member_for_review(db: Session, member_id: int) -> Member:
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
     return member
+
+
+@router.post("/{member_id}/confirm-email", response_model=MemberResponse)
+def confirm_member_email(
+    member_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("users.write")),
+):
+    """Confirm a member's address on an administrator's word (#231).
+
+    Sign-in requires a confirmed address and the only self-service route to one
+    is a link sent by email, so a member who registers before the club has a
+    working mail provider can never sign in — and until this endpoint, nothing
+    in the product could unstick them. ``/auth/resend-verification`` goes
+    through the same broken transport, ``/users/{id}/active`` and
+    ``/members/{id}/approve`` set flags that are already true. The remedies were
+    a working transport or editing the database by hand.
+
+    Gated on ``users.write`` rather than ``members.write``: this is an account
+    credential, not a membership detail, and an administrator who can confirm
+    any address can confirm one they control. The audit row says the address was
+    confirmed by an admin rather than by its owner, so the two are
+    distinguishable afterwards — that difference is the whole reason to record
+    it.
+
+    Idempotent: confirming an already-confirmed address changes nothing and
+    writes no audit row.
+    """
+    member = (
+        db.query(Member)
+        .options(
+            joinedload(Member.person),
+            joinedload(Member.membership_type),
+            joinedload(Member.guardian),
+            joinedload(Member.user),
+        )
+        .filter(Member.id == member_id)
+        .first()
+    )
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+    if member.user is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This member has no account to confirm",
+        )
+
+    if confirm_email_without_token(db, member.user):
+        db.add(
+            AuditLog(
+                table_name="users",
+                record_id=member.user.id,
+                action="update",
+                user_id=current_user.id,
+                new_values={"email_verified": True, "confirmed_by": "admin"},
+                changed_fields=["email_verified"],
+            )
+        )
+
+    db.commit()
+    db.refresh(member)
+    return _to_response(member)
 
 
 @router.post("/{member_id}/approve", response_model=MemberResponse)

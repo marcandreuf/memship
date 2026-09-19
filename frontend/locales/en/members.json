@@ -73,6 +73,12 @@
       "queueDescription": "Sign-ups waiting for a decision.",
       "queueEmpty": "No registrations are waiting for review."
     },
-    "defaultType": "Default"
+    "defaultType": "Default",
+    "unconfirmedEmail": {
+      "title": "Email unconfirmed — this member cannot sign in",
+      "description": "Signing in requires a confirmed address, and the only way to confirm one is the link sent by email. If the club's email is not working, that link never arrives. Confirm the address only if you have established by other means that it is theirs; it will be recorded as confirmed by an administrator.",
+      "action": "Confirm address",
+      "confirmed": "Address confirmed. The member can sign in now."
+    }
   }
 }

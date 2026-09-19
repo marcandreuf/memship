@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   approveMember,
   changeMemberStatus,
+  confirmMemberEmail,
   createMember,
   getMember,
   listMembers,
@@ -81,6 +82,16 @@ export function useUpdateMember() {
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: Record<string, unknown> }) =>
       updateMember(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: MEMBERS_KEY });
+    },
+  });
+}
+
+export function useConfirmMemberEmail() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => confirmMemberEmail(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: MEMBERS_KEY });
     },

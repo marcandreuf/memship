@@ -30,6 +30,10 @@ export interface MemberData {
   // Null on rows written before the column had a default: no choice was made,
   // which is not the same as choosing to receive everything.
   communication_preferences: CommunicationPreferences | null;
+  /** Whether the member's login has a confirmed address; null when they have no
+   *  login. Sign-in is refused until it is true, so an "active" member with
+   *  false is one who cannot get in. */
+  email_verified: boolean | null;
   is_active: boolean;
   created_at: string;
 }
@@ -141,6 +145,12 @@ export async function changeMemberStatus(
  * `membershipTypeId` is the tier the admin picked; leaving it out keeps the
  * free tier the sign-up landed on.
  */
+/** Confirm a member's email address without the link they never received.
+ *  Needs `users.write` — it is an account credential, not a member detail. */
+export async function confirmMemberEmail(id: number): Promise<MemberData> {
+  return apiClient(`/members/${id}/confirm-email`, { method: "POST" });
+}
+
 export async function approveMember(
   id: number,
   membershipTypeId?: number
