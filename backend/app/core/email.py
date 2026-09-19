@@ -97,11 +97,6 @@ _SUBJECTS = {
         "ca": "Reserva cancel·lada: {space}",
         "en": "Booking cancelled: {space}",
     },
-    "welcome": {
-        "es": "Bienvenido a Memship",
-        "ca": "Benvingut a Memship",
-        "en": "Welcome to Memship",
-    },
     "password_reset": {
         "es": "Restablecer contraseña",
         "ca": "Restablir contrasenya",
@@ -585,13 +580,6 @@ def _send_templated_outcome(
 
 
 # --- High-level email functions ---
-
-def send_welcome_email(to: str, first_name: str, member_number: str, locale: str = "es") -> bool:
-    return _send_templated("welcome", to, locale, {
-        "first_name": first_name,
-        "member_number": member_number,
-    })
-
 
 def send_password_reset_email(to: str, first_name: str, reset_url: str, locale: str = "es") -> bool:
     return _send_templated("password_reset", to, locale, {

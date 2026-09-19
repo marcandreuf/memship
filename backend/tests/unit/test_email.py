@@ -10,11 +10,13 @@ from app.core.email import (
     send_password_reset_email,
     send_payment_confirmation_email,
     send_registration_cancellation_email,
+    send_registration_approved_email,
     send_registration_confirmation_email,
     send_waitlist_promotion_email,
-    send_welcome_email,
 )
 from app.domains.mailing.mailing_config import ResolvedMailing, ResolvedProvider
+
+LOGIN_URL = "http://localhost:3000/login"
 
 
 def _provider(name, values, sources=None):
@@ -90,26 +92,42 @@ class TestEmailTransport:
 
 class TestTemplateRendering:
     def test_render_template_es(self):
-        html = render_template("welcome", "es", {"first_name": "María", "member_number": "M-001"})
+        html = render_template(
+            "registration_approved",
+            "es",
+            {"first_name": "María", "member_number": "M-001", "login_url": LOGIN_URL},
+        )
         assert "María" in html
         assert "M-001" in html
-        assert "Bienvenido" in html
+        assert "Buenas noticias" in html
 
     def test_render_template_ca(self):
-        html = render_template("welcome", "ca", {"first_name": "Joan", "member_number": "M-002"})
+        html = render_template(
+            "registration_approved",
+            "ca",
+            {"first_name": "Joan", "member_number": "M-002", "login_url": LOGIN_URL},
+        )
         assert "Joan" in html
-        assert "Benvingut" in html
+        assert "Bones notícies" in html
 
     def test_render_template_en(self):
-        html = render_template("welcome", "en", {"first_name": "John", "member_number": "M-003"})
+        html = render_template(
+            "registration_approved",
+            "en",
+            {"first_name": "John", "member_number": "M-003", "login_url": LOGIN_URL},
+        )
         assert "John" in html
-        assert "Welcome" in html
+        assert "Good news" in html
 
     def test_render_template_fallback_to_es(self):
         """Unknown locale falls back to ES."""
-        html = render_template("welcome", "fr", {"first_name": "Pierre", "member_number": "M-004"})
+        html = render_template(
+            "registration_approved",
+            "fr",
+            {"first_name": "Pierre", "member_number": "M-004", "login_url": LOGIN_URL},
+        )
         assert "Pierre" in html
-        assert "Bienvenido" in html
+        assert "Buenas noticias" in html
 
     def test_render_registration_confirmed(self):
         html = render_template("registration_confirmed", "en", {
@@ -172,21 +190,26 @@ class TestHighLevelEmails:
             yield
 
     @patch("app.core.email.send_email", return_value=True)
-    def test_send_welcome_email(self, mock_send):
-        result = send_welcome_email("user@example.com", "Maria", "M-0001")
+    def test_send_registration_approved_email(self, mock_send):
+        result = send_registration_approved_email(
+            "user@example.com", "Maria", "M-0001", LOGIN_URL
+        )
         assert result is True
         mock_send.assert_called_once()
         args = mock_send.call_args[0]
         assert args[0] == "user@example.com"
         assert "Maria" in args[2]
         assert "M-0001" in args[2]
+        assert LOGIN_URL in args[2]
 
     @patch("app.core.email.send_email", return_value=True)
-    def test_send_welcome_email_ca(self, mock_send):
-        result = send_welcome_email("user@example.com", "Joan", "M-0002", locale="ca")
+    def test_send_registration_approved_email_ca(self, mock_send):
+        result = send_registration_approved_email(
+            "user@example.com", "Joan", "M-0002", LOGIN_URL, locale="ca"
+        )
         assert result is True
         subject = mock_send.call_args[0][1]
-        assert "Benvingut" in subject
+        assert "sol·licitud" in subject
 
     @patch("app.core.email.send_email", return_value=True)
     def test_send_password_reset_email(self, mock_send):

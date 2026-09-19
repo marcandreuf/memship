@@ -73,7 +73,11 @@ MANDATORY: frozenset[str] = frozenset(
 )
 
 # ``mailing_test`` is deliberately absent: it is the settings screen's own
-# credential check, not a member communication, and must send regardless.
+# credential check, not a member communication, and must send regardless. It is
+# the *only* absence: an uncatalogued key has no switch to consult and so mails
+# members on a fresh install that opted into nothing, which is how ``welcome``
+# sat here unwired until #229 removed it. ``tests/unit/test_template_catalogue.py``
+# holds the template files, this catalogue and ``_SUBJECTS`` to the same set.
 
 
 def always_sends(template_key: str) -> bool:

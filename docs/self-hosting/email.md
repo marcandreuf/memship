@@ -1,6 +1,6 @@
 # Email delivery
 
-Memship sends transactional email for welcome messages, password resets, activity
+Memship sends transactional email for address confirmations, password resets, activity
 confirmations, waitlist promotions, payment receipts, and overdue reminders. **Email is
 disabled until you configure a transport.**
 
@@ -78,7 +78,7 @@ which is the quickest way to see which source is live.
 ## Verify
 
 Trigger a real send to confirm delivery — for example, request a **password reset** from the
-login page, or create a member and check the welcome email arrives. Emails are localized
+login page, or approve a pending registration and check the approval email arrives. Emails are localized
 (ES/CA/EN) based on the recipient's language.
 
 If you configured through the settings screen, prefer its **Send test** button: it sends through

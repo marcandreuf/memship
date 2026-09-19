@@ -152,7 +152,7 @@ From the admin panel, go to **Settings** and complete:
 
 ## 4. Verify email delivery
 
-Welcome emails, password resets, and payment notifications all depend on email being
+Address confirmations, password resets, and payment notifications all depend on email being
 configured. Set up [email delivery](../self-hosting/email.md) and send a test before
 onboarding real members — trigger a password reset from a **member or club admin** account,
 since the flow refuses super admins and would look like a delivery failure.

@@ -37,7 +37,6 @@ PREVIEW_BRANDING = email_branding.EmailBranding(
 # One context per template name. Optional fields are populated so the preview
 # shows the fullest version of each email; drop a value to see the other branch.
 CONTEXTS: dict[str, dict] = {
-    "welcome": {"first_name": "María", "member_number": "SJ-0042"},
     "verification": {
         "first_name": "María",
         "verification_url": "https://clubsantjordi.test/verify?token=8f3c1d",
