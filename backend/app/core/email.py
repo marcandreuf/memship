@@ -524,9 +524,17 @@ def _member_opted_out(to: str) -> bool:
     An address with no member behind it — staff, an applicant, anyone not yet a
     member — is not opted out; there is no preference to read.
 
-    Fails **closed**, like the template gate above: an unreadable preference is
-    not consent. In practice the gate has already opened a session by the time
-    this runs, so a database that answers there answers here too.
+    Fails **open**, unlike the template gate above, and the asymmetry is the
+    point. The gate fails closed because its default is off and its failure mode
+    is mail nobody opted into. This one runs only after the organization has
+    explicitly switched the template on, and a preference that cannot be read is
+    not a member saying no — it is an unknown, and the stored default is to
+    send. Failing closed here would let one unreadable table silence every
+    confirmation in the install, quietly.
+
+    A genuine database outage never reaches this line: the gate opens a session
+    first and suppresses on its own failure. What reaches it is a fault with the
+    member tables specifically, so it warns loudly and lets the mail through.
     """
     from sqlalchemy import func
 
@@ -537,10 +545,10 @@ def _member_opted_out(to: str) -> bool:
         db = db_session.SessionLocal()
     except Exception as e:  # noqa: BLE001
         logger.warning(
-            f"Member preferences unavailable (no session), not sending: "
+            f"Member preferences unavailable (no session), sending anyway: "
             f"to={to}, error={e}"
         )
-        return True
+        return False
     try:
         rows = (
             db.query(Member.communication_preferences)
@@ -553,9 +561,9 @@ def _member_opted_out(to: str) -> bool:
         )
     except Exception as e:  # noqa: BLE001
         logger.warning(
-            f"Member preferences unreadable, not sending: to={to}, error={e}"
+            f"Member preferences unreadable, sending anyway: to={to}, error={e}"
         )
-        return True
+        return False
     finally:
         db.close()
 
