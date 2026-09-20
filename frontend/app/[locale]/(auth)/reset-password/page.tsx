@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { useZodResolver } from "@/hooks/use-zod-resolver";
 import { z } from "zod";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import {
   Card,
   CardContent,
@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/form";
 import { Link } from "@/lib/i18n/routing";
 import { resetPassword, ClientApiError } from "@/features/auth/services/auth-api";
+import { PasswordStrength } from "@/features/auth/components/password-strength";
 
 const resetSchema = z
   .object({
@@ -50,6 +51,7 @@ export default function ResetPasswordPage() {
     resolver: useZodResolver(resetSchema),
     defaultValues: { new_password: "", confirm_password: "" },
   });
+  const newPassword = useWatch({ control: form.control, name: "new_password" });
 
   if (!token) {
     return (
@@ -128,13 +130,13 @@ export default function ResetPasswordPage() {
                   <FormItem>
                     <FormLabel>{t("auth.newPassword")}</FormLabel>
                     <FormControl>
-                      <Input
-                        type="password"
+                      <PasswordInput
                         placeholder={t("auth.passwordPlaceholder")}
                         autoComplete="new-password"
                         {...field}
                       />
                     </FormControl>
+                    <PasswordStrength password={newPassword} />
                     <FormMessage />
                   </FormItem>
                 )}
@@ -147,8 +149,7 @@ export default function ResetPasswordPage() {
                   <FormItem>
                     <FormLabel>{t("auth.confirmPassword")}</FormLabel>
                     <FormControl>
-                      <Input
-                        type="password"
+                      <PasswordInput
                         autoComplete="new-password"
                         {...field}
                       />

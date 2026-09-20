@@ -1,11 +1,12 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { useZodResolver } from "@/hooks/use-zod-resolver";
 import { z } from "zod";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import {
   Card,
   CardContent,
@@ -27,6 +28,7 @@ import { emailSchema } from "@/lib/validation";
 import { useAuth } from "../hooks/use-auth";
 import { ClientApiError, type RegisterResult } from "../services/auth-api";
 import { SsoButtons } from "./sso-buttons";
+import { PasswordStrength } from "./password-strength";
 
 const registerSchema = z
   .object({
@@ -58,6 +60,7 @@ export function RegisterForm() {
       confirm_password: "",
     },
   });
+  const password = useWatch({ control: form.control, name: "password" });
 
   async function onSubmit(data: RegisterFormValues) {
     try {
@@ -194,13 +197,13 @@ export function RegisterForm() {
                 <FormItem>
                   <FormLabel>{t("auth.password")}</FormLabel>
                   <FormControl>
-                    <Input
-                      type="password"
+                    <PasswordInput
                       placeholder={t("auth.passwordPlaceholder")}
                       autoComplete="new-password"
                       {...field}
                     />
                   </FormControl>
+                  <PasswordStrength password={password} />
                   <FormMessage />
                 </FormItem>
               )}
@@ -213,8 +216,7 @@ export function RegisterForm() {
                 <FormItem>
                   <FormLabel>{t("auth.confirmPassword")}</FormLabel>
                   <FormControl>
-                    <Input
-                      type="password"
+                    <PasswordInput
                       autoComplete="new-password"
                       {...field}
                     />
