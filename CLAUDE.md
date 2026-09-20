@@ -6,21 +6,18 @@ Memship is a self-hosted membership management system for professional associati
 
 **Current version:** the latest `git tag` (`git describe --tags`) — git tags are the single source of truth; there is no VERSION file
 
-## Product Strategy: MVP-first toward v1.0.0
+## Where things belong
 
-Pre-1.0 development ships the **initial functional version** — broad enough that a club can manage members, activities, and basic billing end-to-end — then launches publicly with a landing page and live demo. Complex / in-depth variations of features are deferred past v1.0.0 and built ad-hoc when a real customer asks by name.
+Roadmap, pre-1.0 scope discipline and strategic context live in the private
+`memship-context` repo (`docs/STATUS.md`) — that is the single source, and this
+file previously carried a copy of it that had already drifted.
 
-When scoping any feature before v1.0.0:
-- Default to the initial-step version. Deeper variations are mentioned only as "could be added if a customer asks."
-- Bundling three or more meaningful features in one version is a smell — split or trim.
-- Per-provider depth is sugar when another path already covers the same user need. Defer.
-- Don't add edge-case hardening that doesn't block normal flows.
+Meeting notes, idea and proposal documents, and strategy material belong there
+too — never in this repo. `docs/` here is **functional and setup documentation
+only**: how memship works and how to run it. This repo is public; that one is not.
 
-Full strategic context lives in the private `memship-context` repo (`docs/`, `STATUS.md`).
+## Tech stack
 
-Meeting notes, idea and proposal documents, and strategy material belong there too — never in this repo. `docs/` here is **functional and setup documentation only**: how memship works and how to run it. This repo is public; that one is not.
-
-**Tech stack:**
 - Backend: Python 3.12+ / FastAPI / SQLAlchemy 2.0 / Alembic
 - Frontend: Next.js 16 / React 19 / Tailwind 4 / Shadcn/ui / next-intl / next-themes
 - Database: PostgreSQL 15 (single-tenant, `CHECK (id = 1)` on organization_settings)
