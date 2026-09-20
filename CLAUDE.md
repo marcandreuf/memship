@@ -239,7 +239,9 @@ memship/
 - Database naming: `snake_case`, plural tables (e.g., `members`, `activities`)
 - API routes: `/api/v1/` prefix, versioned
 - Domain modules: each domain has `models.py`, `schemas.py`, `service.py`
-- Auth: JWT via HTTP-only cookies (set by Next.js API proxy, not directly by FastAPI)
+- Auth: JWT in an HTTP-only `access_token` cookie, set by FastAPI in `_set_session_cookie`
+  — the single place deciding its flags. The Next.js proxy copies the `Set-Cookie` header
+  through; it does not mint the cookie. There is no bearer-token path
 - Password hashing: argon2
 - Tests: pytest, integration tests use TestClient with real PostgreSQL
 
