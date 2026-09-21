@@ -224,7 +224,8 @@ carries the `dev` extra — pytest, xdist, factory-boy — that the shipped imag
 out, while the API, worker and beat containers keep building the production stage. So the stack
 you develop against stays the one that ships, and the test dependencies never reach a registry.
 `backend/tests` is bind-mounted, so an edited test runs immediately; only a dependency change
-needs a rebuild.
+needs a rebuild. The test database is recreated on every run — `dev.sh test` removes `db-test`
+before starting — so a column added to a model is there the next time the suite runs.
 
 For end-to-end tests, **run the full suite against a production build**:
 

@@ -224,7 +224,10 @@ def create_test_tables():
 
     create_all uses IF NOT EXISTS for most DDL, but PostgreSQL type
     creation can race, so the error is caught and ignored.
-    Skips drop_all — the test DB is ephemeral (CI service or local docker).
+    Skips drop_all — the test DB is ephemeral: a fresh service per CI job,
+    and locally `dev.sh test` removes db-test before each run, because a
+    container that outlived the run kept the first run's schema and
+    create_all never adds a column to an existing table (#274).
     """
     from sqlalchemy.exc import IntegrityError
 
