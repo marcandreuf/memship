@@ -146,6 +146,18 @@ class TestListProviders:
         assert len(data["items"]) == 1
         assert data["items"][0]["provider_type"] == "sepa_direct_debit"
 
+    def test_list_honours_per_page(self, client, db):
+        # The route took `page_size`, a name nothing sends (#255).
+        user = _create_user(db, suffix="pp-list3")
+        _create_provider(db, provider_type="stripe")
+        _create_provider(db, provider_type="sepa_direct_debit", config={"format": "pain.008.001.02"})
+        resp = client.get("/api/v1/payment-providers/?page=1&per_page=1", cookies=_auth_cookie(user))
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data["items"]) == 1
+        assert data["meta"]["per_page"] == 1
+        assert data["meta"]["total"] == 2
+
 
 # --- Create ---
 

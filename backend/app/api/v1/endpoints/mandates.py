@@ -35,7 +35,7 @@ def list_mandates(
     status_filter: str | None = Query(None, alias="status"),
     search: str | None = None,
     page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
+    per_page: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("billing.read")),
 ):
@@ -54,7 +54,7 @@ def list_mandates(
         )
 
     query = query.order_by(SepaMandate.created_at.desc())
-    items, meta = paginate(query, page, page_size)
+    items, meta = paginate(query, page, per_page)
 
     return {
         "items": [MandateResponse.model_validate(m).model_dump() for m in items],

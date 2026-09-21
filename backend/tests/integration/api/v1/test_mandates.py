@@ -188,6 +188,27 @@ class TestMandateCRUD:
         assert resp.status_code == 200
         assert resp.json()["total"] >= 1
 
+    def test_list_mandates_honours_per_page(self, client, db):
+        """The page size is `per_page`, the name every other list and the
+        response meta use. The route took `page_size`, which the frontend never
+        sends, so any size other than the default was silently ignored (#255).
+        """
+        _ensure_org_settings(db)
+        admin = _create_user(db, suffix="mnd-pp")
+        for i in range(6):
+            member, _ = _create_member(db, suffix=f"mnd-pp{i}")
+            client.post(
+                "/api/v1/mandates/",
+                json=_mandate_payload(member.id),
+                cookies=_auth_cookie(admin),
+            )
+
+        resp = client.get("/api/v1/mandates/?page=1&per_page=5", cookies=_auth_cookie(admin))
+        assert resp.status_code == 200
+        body = resp.json()
+        assert len(body["items"]) == 5
+        assert body["meta"]["per_page"] == 5
+
     def test_get_mandate(self, client, db):
         _ensure_org_settings(db)
         admin = _create_user(db, suffix="mnd-g1")
