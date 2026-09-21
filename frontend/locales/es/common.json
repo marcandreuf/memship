@@ -154,6 +154,19 @@
       "unauthorized": "Inicia sesión para continuar"
     }
   },
+  "apiErrors": {
+    "invalid_time_range": "La hora de fin debe ser posterior a la de inicio",
+    "slot_outside_opening_hours": "La franja queda fuera del horario de apertura del espacio{dates_count, plural, =0 {} other { ({dates})}}",
+    "slot_overlap": "La franja se solapa con otra existente{dates_count, plural, =0 {} other { ({dates})}}",
+    "slot_in_past": "La fecha y hora de la franja ya han pasado{dates_count, plural, =0 {} other { ({dates})}}",
+    "slot_full": "La franja está completa y la lista de espera está desactivada",
+    "booking_in_past": "Esta franja ya ha empezado",
+    "booking_window_exceeded": "Esta fecha está fuera del plazo de reserva",
+    "duplicate_booking": "Ya tienes esta franja reservada",
+    "not_eligible": "{reason, select, no_membership_type {No tienes ningún tipo de socio asignado} other {Tu tipo de socio no incluye este espacio}}",
+    "cancellation_too_late": "El plazo de cancelación ha pasado",
+    "not_cancellable": "Esta reserva ya está cancelada"
+  },
   "groups": {
     "title": "Grupos",
     "name": "Nombre",

@@ -51,7 +51,13 @@ ACTIVE_STATUSES = (BookingStatus.BOOKED, BookingStatus.WAITLISTED)
 
 
 class BookingError(Exception):
-    """Base class for booking domain errors."""
+    """Base class for booking domain errors.
+
+    ``dates`` names the occurrences a series-wide check failed on, so the API
+    can report them beside the code; it is empty for a single-slot error.
+    """
+
+    dates: list[date] = []
 
 
 class SpaceNotFound(BookingError):
@@ -60,6 +66,10 @@ class SpaceNotFound(BookingError):
 
 class SlotNotFound(BookingError):
     pass
+
+
+class InvalidTimeRange(BookingError):
+    """An end time that is not after its start time."""
 
 
 class SlotOutsideOpeningHours(BookingError):
@@ -219,7 +229,7 @@ def update_space(
     for key, value in payload.items():
         setattr(space, key, value)
     if space.close_time <= space.open_time:
-        raise SlotOutsideOpeningHours("close_time must be after open_time")
+        raise InvalidTimeRange("close_time must be after open_time")
 
     if payload.keys() & {"open_time", "close_time"}:
         stranded = _slots_outside_hours(db, space)
@@ -416,6 +426,7 @@ def create_slot(db: Session, space: Space, data: SpaceSlotCreate) -> list[SpaceS
 
     dates = _occurrence_dates(data)
     errors: list[str] = []
+    failed: list[date] = []
     for d in dates:
         try:
             _past_guard(db, d, start_time)
@@ -424,13 +435,17 @@ def create_slot(db: Session, space: Space, data: SpaceSlotCreate) -> list[SpaceS
             )
         except BookingError as exc:
             errors.append(str(exc))
+            failed.append(d)
     if errors:
         message = "; ".join(errors)
         if any("overlaps" in e for e in errors):
-            raise SlotOverlap(message)
-        if any("opening hours" in e for e in errors):
-            raise SlotOutsideOpeningHours(message)
-        raise SlotInPast(message)
+            error: BookingError = SlotOverlap(message)
+        elif any("opening hours" in e for e in errors):
+            error = SlotOutsideOpeningHours(message)
+        else:
+            error = SlotInPast(message)
+        error.dates = failed
+        raise error
 
     series_id = uuid4() if data.repeat is not None and len(dates) > 1 else None
     slots = [
@@ -493,7 +508,7 @@ def update_slot(
         start_time = payload.get("start_time", target.start_time)
         end_time = payload.get("end_time", target.end_time)
         if end_time <= start_time:
-            raise SlotOutsideOpeningHours("end_time must be after start_time")
+            raise InvalidTimeRange("end_time must be after start_time")
         _validate_slot_on_date(
             db,
             space,

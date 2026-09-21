@@ -154,6 +154,19 @@
       "unauthorized": "Please sign in to continue"
     }
   },
+  "apiErrors": {
+    "invalid_time_range": "The end time must be after the start time",
+    "slot_outside_opening_hours": "The slot falls outside the space's opening hours{dates_count, plural, =0 {} other { ({dates})}}",
+    "slot_overlap": "The slot overlaps an existing slot{dates_count, plural, =0 {} other { ({dates})}}",
+    "slot_in_past": "The slot's date and time are in the past{dates_count, plural, =0 {} other { ({dates})}}",
+    "slot_full": "The slot is full and the waitlist is off",
+    "booking_in_past": "This slot has already started",
+    "booking_window_exceeded": "This date is beyond the booking window",
+    "duplicate_booking": "You already hold this slot",
+    "not_eligible": "{reason, select, no_membership_type {You have no membership type assigned} other {Your membership type does not include this space}}",
+    "cancellation_too_late": "The cancellation deadline has passed",
+    "not_cancellable": "This booking is already cancelled"
+  },
   "groups": {
     "title": "Groups",
     "name": "Name",
