@@ -33,6 +33,7 @@ import { SsoButtons } from "./sso-buttons";
 const SSO_ERROR_KEYS: Record<string, string> = {
   sso_failed: "auth.ssoFailed",
   sso_email_unverified: "auth.ssoEmailUnverified",
+  sso_email_unsupported: "auth.ssoEmailUnsupported",
   registration_closed: "auth.ssoRegistrationClosed",
   account_disabled: "auth.ssoAccountDisabled",
   account_locked: "auth.ssoAccountLocked",

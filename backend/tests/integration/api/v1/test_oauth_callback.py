@@ -166,6 +166,20 @@ def test_claims_without_email_are_refused(client, db, stub_provider):
     assert db.query(User).count() == 0
 
 
+def test_a_non_ascii_provider_email_is_refused(client, db, stub_provider):
+    """The provider's address bypasses the ``Email`` type, so the ASCII rule
+    that keeps the application and the unique index folding alike (#242) is
+    enforced by the endpoint. Refused with its own code, not ``sso_failed``,
+    because trying again will not help."""
+    stub_provider(claims={**CLAIMS, "email": "İrem@example.com"})
+
+    response = client.get(GOOGLE_CALLBACK, follow_redirects=False)
+
+    assert response.status_code in (302, 307)
+    assert "error=sso_email_unsupported" in _location(response)
+    assert "access_token" not in response.headers.get("set-cookie", "")
+
+
 def test_empty_userinfo_is_refused(client, db, stub_provider):
     """A token with no userinfo at all must not fall through as a sign-in."""
     stub_provider(claims=None)

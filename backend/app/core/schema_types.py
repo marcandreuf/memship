@@ -35,11 +35,24 @@ def normalize_email(value: Any) -> Any:
 # A simple regex rather than EmailStr, so dev domains (.test, .local) validate.
 # The normalisation runs first, so a padded or upper-case address is corrected
 # rather than rejected by the anchored pattern.
+#
+# ASCII only, on purpose. The address is folded twice — by ``str.lower()`` here
+# and by Postgres ``lower()`` in the ``uq_users_email_lower`` index — and the
+# two agree on every ASCII letter and on nothing else that can be relied on:
+# ``İ`` (U+0130) becomes ``i`` plus a combining dot in Python and a bare ``i``
+# in Postgres, so the same typed address could be stored twice under an index
+# meant to forbid exactly that, and could never be signed in with (#242).
+# Restricting what is accepted to what both fold identically is what makes the
+# index and the application mean the same thing by "normalised". The visible
+# ASCII range less ``@`` — ``!`` to ``?`` and ``A`` to ``~`` — is the previous
+# ``[^@\s]`` with the non-ASCII half removed.
+_ASCII_ATOM = r"[!-?A-~]+"
+
 Email = Annotated[
     str,
     BeforeValidator(normalize_email),
     StringConstraints(
-        pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$",
+        pattern=rf"^{_ASCII_ATOM}@{_ASCII_ATOM}\.{_ASCII_ATOM}$",
         max_length=255,
     ),
 ]

@@ -600,6 +600,11 @@ async def oauth_callback(
     email = claims.get("email")
     if not subject or not email:
         return RedirectResponse(_frontend_url("/login", error="sso_failed"))
+    if not email.isascii():
+        # The provider's address never passes through the ``Email`` type, so
+        # the ASCII rule that keeps the application and the unique index
+        # folding case the same way (#242) has to be applied here by hand.
+        return RedirectResponse(_frontend_url("/login", error="sso_email_unsupported"))
 
     # Apple sends email_verified as the string "true"/"false" rather than a bool.
     raw_verified = claims.get("email_verified")
