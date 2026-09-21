@@ -145,6 +145,31 @@ describe("Simple Bookings", () => {
     cy.contains("10:00").should("be.visible");
   });
 
+  it("admin is told, in their language, why a slot was refused", () => {
+    // A slot over the seeded 10:00-11:00 one. The API answers a code, not a
+    // sentence, and the UI renders the translation — the English literal from
+    // the raise site ("slot overlaps an existing slot") must not be what the
+    // admin reads (#256).
+    cy.loginAsAdmin();
+    cy.visit(`/en/spaces/${spaceId}`);
+    cy.contains('[role="tab"]', "Slots").click();
+    cy.contains("button", "Add slot").click();
+    cy.get('[role="dialog"]').within(() => {
+      cy.get('input[type="date"]').clear().type(SLOT_DATE);
+      cy.get('input[type="time"]').eq(0).clear().type("10:30");
+      cy.get('input[type="time"]').eq(1).clear().type("11:30");
+      cy.get('button[type="submit"]').click();
+    });
+    // Asserted on the toast element, not on visibility: the dialog is still
+    // open, and Radix puts `pointer-events: none` on <body> while it is, so
+    // Cypress's visibility check reads the toast as covered even though it
+    // renders above the overlay.
+    cy.get("[data-sonner-toast]").should(
+      "contain.text",
+      `The slot overlaps an existing slot (${SLOT_DATE})`
+    );
+  });
+
   it("admin creates a repeating series via the API", () => {
     // A week out so every generated occurrence is in the future; cleaned up
     // immediately (no bookings → no force needed).

@@ -88,7 +88,7 @@ function ReminderRow({ reminder }: { reminder: Reminder }) {
         onClick={() =>
           remove.mutate(reminder.id, {
             onSuccess: () => toast.success(t("notes.deletedToast")),
-            onError: (e) => toast.error(getErrorMessage(e)),
+            onError: (e) => toast.error(getErrorMessage(e, t)),
           })
         }
       >
@@ -120,7 +120,7 @@ export function ReminderList() {
           setDueDate("");
           toast.success(t("notes.addedToast"));
         },
-        onError: (err) => toast.error(getErrorMessage(err)),
+        onError: (err) => toast.error(getErrorMessage(err, t)),
       }
     );
   };

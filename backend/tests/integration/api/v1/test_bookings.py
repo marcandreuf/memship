@@ -161,6 +161,10 @@ class TestSpacesRBAC:
             cookies=_auth(admin),
         )
         assert r.status_code == 422
+        # A code the UI translates, with the English literal as the fallback,
+        # rather than a validation envelope naming no field (#256).
+        assert r.json()["detail"]["code"] == "slot_outside_opening_hours"
+        assert "opening hours" in r.json()["detail"]["message"]
 
 
 class TestSlots:
@@ -177,6 +181,7 @@ class TestSlots:
             cookies=_auth(admin),
         )
         assert r.status_code == 422
+        assert r.json()["detail"]["code"] == "slot_in_past"
 
     def test_repeat_creates_series(self, client, db):
         _org(db)
@@ -199,6 +204,35 @@ class TestSlots:
         assert body[0]["series_id"] is not None
         assert body[0]["series_size_upcoming"] == 3
         assert body[2]["series_size_upcoming"] == 1
+
+    def test_series_conflict_names_the_dates(self, client, db):
+        """A series is all-or-nothing, and the admin needs to know which
+        occurrences failed: the code carries them, not just the message."""
+        _org(db)
+        admin = _user(db, "admin")
+        space_id = _make_space(client, admin)
+        start = _future(7)
+        taken = start + timedelta(weeks=1)
+        client.post(
+            f"/api/v1/spaces/{space_id}/slots",
+            json={
+                "slot_date": taken.isoformat(),
+                "start_time": "10:30:00", "end_time": "11:30:00",
+            },
+            cookies=_auth(admin),
+        )
+        r = client.post(
+            f"/api/v1/spaces/{space_id}/slots",
+            json={
+                "slot_date": start.isoformat(),
+                "start_time": "10:00:00", "end_time": "11:00:00",
+                "repeat": {"weekdays": [start.weekday()], "interval_weeks": 1, "count": 3},
+            },
+            cookies=_auth(admin),
+        )
+        assert r.status_code == 422
+        assert r.json()["detail"]["code"] == "slot_overlap"
+        assert r.json()["detail"]["dates"] == [taken.isoformat()]
 
     def test_all_day_slot_spans_opening_hours(self, client, db):
         _org(db)
@@ -375,6 +409,7 @@ class TestBooking:
             cookies=_auth(u1),
         )
         assert rdup.status_code == 409
+        assert rdup.json()["detail"]["code"] == "duplicate_booking"
 
     def test_full_slot_conflicts_when_waitlist_disabled(self, client, db):
         _org(db, booking_waitlist_enabled=False)
@@ -394,6 +429,7 @@ class TestBooking:
             cookies=_auth(u2),
         )
         assert r2.status_code == 409
+        assert r2.json()["detail"]["code"] == "slot_full"
 
     def test_cancel_promotes_waitlisted_member(self, client, db):
         _org(db, booking_cancellation_deadline_hours=0)
@@ -420,6 +456,20 @@ class TestBooking:
         mine = client.get("/api/v1/me/bookings?scope=upcoming", cookies=_auth(u2))
         assert mine.status_code == 200
         assert mine.json()[0]["status"] == "booked"
+
+    def test_cancel_past_the_deadline_is_a_coded_422(self, client, db):
+        # The slot is three days out and the deadline is a hundred hours.
+        _org(db, booking_cancellation_deadline_hours=100)
+        admin = _user(db, "admin")
+        _space_id, slot_id = _make_space_and_slot(client, admin)
+        u1, _ = _member_user(db, "late@examplee6e3b1.com")
+        booking_id = client.post(
+            "/api/v1/bookings", json={"space_slot_id": slot_id}, cookies=_auth(u1)
+        ).json()["id"]
+
+        rc = client.delete(f"/api/v1/bookings/{booking_id}", cookies=_auth(u1))
+        assert rc.status_code == 422
+        assert rc.json()["detail"]["code"] == "cancellation_too_late"
 
     def test_my_bookings_reports_occupancy(self, client, db):
         _org(db)
@@ -531,7 +581,9 @@ class TestMembershipGating:
             cookies=_auth(user),
         )
         assert r.status_code == 403
-        assert "membership type does not include" in r.json()["detail"]
+        assert r.json()["detail"]["code"] == "not_eligible"
+        assert r.json()["detail"]["reason"] == "membership_type_not_allowed"
+        assert "membership type does not include" in r.json()["detail"]["message"]
 
     def test_member_with_no_tier_is_told_something_else(self, client, db):
         _org(db)
@@ -548,7 +600,9 @@ class TestMembershipGating:
             cookies=_auth(user),
         )
         assert r.status_code == 403
-        assert "no membership type assigned" in r.json()["detail"]
+        assert r.json()["detail"]["code"] == "not_eligible"
+        assert r.json()["detail"]["reason"] == "no_membership_type"
+        assert "no membership type assigned" in r.json()["detail"]["message"]
 
     def test_availability_reports_the_restriction(self, client, db):
         _org(db)

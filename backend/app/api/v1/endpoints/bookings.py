@@ -6,6 +6,7 @@ Admins manage spaces, slots and view all bookings; members book slots on the
 per-space week calendar and manage their own reservations.
 """
 
+import re
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -56,11 +57,26 @@ def _load_space_or_404(db: Session, space_id: int) -> "service.Space":
     return space
 
 
-def _slot_error_422(exc: Exception) -> HTTPException:
-    return HTTPException(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        detail=[{"loc": ["body"], "msg": str(exc), "type": "value_error"}],
-    )
+def _code_for(exc: service.BookingError) -> str:
+    """The error's class name as a snake_case code: ``SlotFull`` → ``slot_full``."""
+    return re.sub(r"(?<!^)(?=[A-Z])", "_", type(exc).__name__).lower()
+
+
+def _booking_error(exc: service.BookingError, status_code: int) -> HTTPException:
+    """A domain error as ``{"code", "message"}``, the shape the UI translates.
+
+    The message is the English literal from the raise site and is kept as the
+    developer-facing fallback; the code is what the UI keys its translations
+    on (#256). ``NotEligible`` adds its reason so the UI can tell "your tier
+    is not on the list" apart from "you have no tier"; a series check adds
+    the dates it failed on.
+    """
+    detail: dict = {"code": _code_for(exc), "message": str(exc)}
+    if isinstance(exc, service.NotEligible):
+        detail["reason"] = exc.reason
+    if exc.dates:
+        detail["dates"] = [d.isoformat() for d in exc.dates]
+    return HTTPException(status_code=status_code, detail=detail)
 
 
 # --- Admin: spaces --------------------------------------------------------
@@ -122,7 +138,7 @@ def update_space(
             },
         )
     except service.BookingError as exc:
-        raise _slot_error_422(exc)
+        raise _booking_error(exc, status.HTTP_422_UNPROCESSABLE_ENTITY)
     db.commit()
     db.refresh(space)
     return space
@@ -193,7 +209,7 @@ def create_slot(
     try:
         slots = service.create_slot(db, space, data)
     except service.BookingError as exc:
-        raise _slot_error_422(exc)
+        raise _booking_error(exc, status.HTTP_422_UNPROCESSABLE_ENTITY)
     db.commit()
     for slot in slots:
         db.refresh(slot)
@@ -217,7 +233,7 @@ def update_slot(
     try:
         service.update_slot(db, space, slot, data, apply_to=apply_to)
     except service.BookingError as exc:
-        raise _slot_error_422(exc)
+        raise _booking_error(exc, status.HTTP_422_UNPROCESSABLE_ENTITY)
     db.commit()
     db.refresh(slot)
     reads = _slot_reads(service.list_slots(db, space_id))
@@ -350,18 +366,14 @@ def create_booking(
         # A member who is not eligible never sees a book button — the week
         # availability already told the UI so. This is the race: the tier
         # changed after the calendar loaded.
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)
-        )
+        raise _booking_error(exc, status.HTTP_403_FORBIDDEN)
     except (service.SlotFull, service.DuplicateBooking) as exc:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
+        raise _booking_error(exc, status.HTTP_409_CONFLICT)
     except (
         service.BookingInPast,
         service.BookingWindowExceeded,
     ) as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
-        )
+        raise _booking_error(exc, status.HTTP_422_UNPROCESSABLE_ENTITY)
     db.commit()
     db.refresh(booking)
     return booking
@@ -407,9 +419,7 @@ def cancel_booking(
             notifier=_notifier,
         )
     except service.CancellationTooLate as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
-        )
+        raise _booking_error(exc, status.HTTP_422_UNPROCESSABLE_ENTITY)
     except service.NotCancellable as exc:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
+        raise _booking_error(exc, status.HTTP_409_CONFLICT)
     db.commit()

@@ -69,9 +69,22 @@ export type ValidationErrorDetail = {
   type: string;
 };
 
+/**
+ * A domain error the UI translates: `code` keys the translation, `message`
+ * is the backend's English fallback, and any other field is data the
+ * translation may interpolate (a reason, a list of dates).
+ */
+export type CodedErrorDetail = {
+  code: string;
+  message?: string;
+  [key: string]: unknown;
+};
+
+export type ErrorDetail = string | ValidationErrorDetail[] | CodedErrorDetail;
+
 export class ClientApiError extends Error {
-  public detail: string | ValidationErrorDetail[];
-  constructor(public status: number, detail: string | ValidationErrorDetail[]) {
+  public detail: ErrorDetail;
+  constructor(public status: number, detail: ErrorDetail) {
     super(typeof detail === "string" ? detail : "Validation error");
     this.name = "ClientApiError";
     this.detail = detail;

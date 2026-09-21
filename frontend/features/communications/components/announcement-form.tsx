@@ -100,7 +100,7 @@ export function AnnouncementForm({
         router.push(`/communications/${created.id}`);
       }
     } catch (error) {
-      toast.error(getErrorMessage(error));
+      toast.error(getErrorMessage(error, t));
     }
   }
 
@@ -118,7 +118,7 @@ export function AnnouncementForm({
       setConfirmOpen(false);
       router.push(`/communications/${id}`);
     } catch (error) {
-      toast.error(getErrorMessage(error));
+      toast.error(getErrorMessage(error, t));
       setConfirmOpen(false);
       // A just-created draft persisted even though the send failed (e.g. empty
       // audience) — take the user to it so they can fix targeting and retry.

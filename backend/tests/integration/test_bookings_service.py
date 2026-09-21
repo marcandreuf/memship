@@ -146,7 +146,7 @@ def test_create_space_rejects_equal_hours():
 def test_update_space_rejects_close_before_open(db):
     _org(db)
     space = _space(db)
-    with pytest.raises(service.SlotOutsideOpeningHours):
+    with pytest.raises(service.InvalidTimeRange):
         service.update_space(
             db, space, SpaceUpdate(open_time=time(22, 0), close_time=time(8, 0))
         )
@@ -160,14 +160,14 @@ def test_update_space_rejects_partial_open_time_crossing_close(db):
     """
     _org(db)
     space = _space(db)  # 08:00–22:00
-    with pytest.raises(service.SlotOutsideOpeningHours):
+    with pytest.raises(service.InvalidTimeRange):
         service.update_space(db, space, SpaceUpdate(open_time=time(23, 0)))
 
 
 def test_update_space_rejects_partial_close_time_crossing_open(db):
     _org(db)
     space = _space(db)  # 08:00–22:00
-    with pytest.raises(service.SlotOutsideOpeningHours):
+    with pytest.raises(service.InvalidTimeRange):
         service.update_space(db, space, SpaceUpdate(close_time=time(7, 0)))
 
 
