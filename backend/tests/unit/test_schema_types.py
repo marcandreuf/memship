@@ -60,6 +60,30 @@ class TestValidation:
         with pytest.raises(ValidationError):
             Model(email=value)
 
+    @pytest.mark.parametrize(
+        "value",
+        [
+            "İrem@example.com",  # İ: Python folds to i + U+0307, Postgres to i
+            "josé@example.com",
+            "marc@münchen.de",
+            "marc@example.cöm",
+        ],
+    )
+    def test_it_rejects_a_non_ascii_address(self, value):
+        """The application and the unique index fold case with different
+        rules, and they agree only on ASCII. Accepting the rest let one typed
+        address be stored twice, or stored once and never matched (#242).
+        """
+        with pytest.raises(ValidationError):
+            Model(email=value)
+
+    def test_every_accepted_character_is_ascii(self):
+        """The atom is the printable ASCII range less `@`; nothing outside it
+        gets through, whatever the surrounding shape."""
+        for code in range(0x80, 0x250):
+            with pytest.raises(ValidationError):
+                Model(email=f"a{chr(code)}b@example.com")
+
     def test_dev_domains_validate(self):
         """The reason this is a regex and not EmailStr."""
         assert Model(email="admin@memship.test").email == "admin@memship.test"
