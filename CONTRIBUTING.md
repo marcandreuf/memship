@@ -155,7 +155,7 @@ The flow is **build once, promote**:
    If an RC image is missing for the tagged commit, the release **fails** instead of building one from the tag. A rebuild would look like it worked while quietly shipping bytes nothing had tested, differing from the RC by whatever moved in the base image or the dependency tree in the meantime. Build the missing RC first (Actions → **Build Images** → Run workflow on that commit), then re-run the release. `allow_rebuild` overrides this for tags old enough that their RC images have been cleaned up.
 
 5. A maintainer deploys it: Actions → **Deploy** → `target: production`, `version: 1.3.0`, leaving `ref` empty. This is manual and always has been — every deploy this project has run has been of a released version.
-6. Explore the deployed instance, then finish and publish the drafted release notes. The images are already live either way, so an unpublished draft is a missing announcement, not a blocked release.
+6. Explore the deployed instance, then finish and publish the drafted release notes. The images are already live either way, so an unpublished draft is a missing announcement, not a blocked release. Edit the draft through the web UI, or pass `-f tag_name=vX.Y.Z` in any `gh api --method PATCH` call — GitHub treats an omitted `tag_name` on a draft as "clear it", and a draft published that way ends up attached to no tag (#94).
 
 `ref` is the escape hatch beside `version`: it deploys `sha-<commit>` for a commit with no tag, for the rare case where you want the instance on an RC without claiming a version number. Set one input or the other, never both.
 

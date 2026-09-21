@@ -258,6 +258,10 @@ jobs:
             --jq .id)"
 
           # A mis-bound release must fail here, not be found by whoever publishes it.
+          # `gh release create --draft` binds the tag correctly; what unbinds a
+          # draft is a later PATCH that omits tag_name, which GitHub treats as
+          # "clear it" (#94). This assertion guards creation; the notice below
+          # is what guards the editing that follows.
           BOUND="$(gh api "repos/${{ github.repository }}/releases/$RELEASE_ID" --jq .tag_name)"
           if [[ "$BOUND" != "$TAG" ]]; then
             echo "::error::Drafted release $RELEASE_ID is bound to '$BOUND', not '$TAG'. Fix it with: gh api --method PATCH repos/${{ github.repository }}/releases/$RELEASE_ID -f tag_name=$TAG"
@@ -266,7 +270,7 @@ jobs:
           echo "Draft $RELEASE_ID bound to $BOUND."
 
           echo "created=true" >> "$GITHUB_OUTPUT"
-          echo "::notice::Drafted $TAG — $HEADLINE. Finish the notes and publish it."
+          echo "::notice::Drafted $TAG — $HEADLINE. Finish the notes and publish it. Edit through the web UI, or include -f tag_name=$TAG in any API call: PATCHing a draft without tag_name detaches it from its tag."
 
       - name: Summary
         env:
