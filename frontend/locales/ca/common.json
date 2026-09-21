@@ -155,6 +155,12 @@
     }
   },
   "apiErrors": {
+    "forbidden": "No tens permís per fer això",
+    "pending_approval": "La teva alta encara està pendent d'aprovació",
+    "provider_unavailable": "El proveïdor de pagament no respon. Torna-ho a provar d'aquí a uns minuts",
+    "role_locked": "Els rols del sistema no es poden editar ni eliminar",
+    "unknown_permissions": "El rol fa referència a permisos que no existeixen: {keys}",
+    "mailing_test_no_recipient": "Indica una adreça on enviar el correu de prova",
     "invalid_time_range": "L'hora de fi ha de ser posterior a la d'inici",
     "slot_outside_opening_hours": "La franja queda fora de l'horari d'obertura de l'espai{dates_count, plural, =0 {} other { ({dates})}}",
     "slot_overlap": "La franja se solapa amb una altra d'existent{dates_count, plural, =0 {} other { ({dates})}}",
