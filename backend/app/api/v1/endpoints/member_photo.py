@@ -6,13 +6,13 @@ the local filesystem and served via the ``/uploads`` proxy, mirroring the
 activity cover-image pattern.
 """
 
-import glob
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.core.file_replace import remove_files, replace_file
 from app.core.security.dependencies import get_current_user
 from app.core.authorization import require_permission
 from app.db.session import get_db
@@ -58,17 +58,11 @@ async def upload_my_photo(
             detail=f"File exceeds maximum size of {settings.MAX_UPLOAD_SIZE_MB}MB",
         )
 
-    storage_dir = _photo_dir(person.id)
-    storage_dir.mkdir(parents=True, exist_ok=True)
-    for old_file in glob.glob(str(storage_dir / "photo.*")):
-        Path(old_file).unlink(missing_ok=True)
+    def commit(filename: str) -> None:
+        person.photo_url = f"/uploads/members/{person.id}/{filename}"
+        db.commit()
 
-    filename = f"photo.{ext}"
-    with open(storage_dir / filename, "wb") as f:
-        f.write(content)
-
-    person.photo_url = f"/uploads/members/{person.id}/{filename}"
-    db.commit()
+    replace_file(_photo_dir(person.id), "photo", ext, content, commit)
 
     return {"photo_url": person.photo_url}
 
@@ -86,8 +80,6 @@ def delete_my_photo(
             detail="No photo to delete",
         )
 
-    for old_file in glob.glob(str(_photo_dir(person.id) / "photo.*")):
-        Path(old_file).unlink(missing_ok=True)
-
     person.photo_url = None
     db.commit()
+    remove_files(_photo_dir(person.id), "photo")

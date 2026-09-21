@@ -1,6 +1,5 @@
 """Activity cover image upload and delete endpoints."""
 
-import glob
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
@@ -8,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.authorization import require_permission
 from app.core.config import settings
+from app.core.file_replace import remove_files, replace_file
 from app.core.db_utils import get_or_404
 from app.db.session import get_db
 from app.domains.activities.models import Activity
@@ -54,21 +54,14 @@ async def upload_cover_image(
             detail=f"File exceeds maximum size of {settings.MAX_UPLOAD_SIZE_MB}MB",
         )
 
-    # Delete existing cover files
-    storage_dir = Path(settings.STORAGE_LOCAL_PATH) / "activities" / str(activity_id)
-    storage_dir.mkdir(parents=True, exist_ok=True)
-    for old_file in glob.glob(str(storage_dir / "cover.*")):
-        Path(old_file).unlink(missing_ok=True)
+    def commit(filename: str) -> None:
+        activity.image_url = f"/uploads/activities/{activity_id}/{filename}"
+        db.commit()
 
-    # Save new file
-    filename = f"cover.{ext}"
-    file_path = storage_dir / filename
-    with open(file_path, "wb") as f:
-        f.write(content)
-
-    # Update activity
-    activity.image_url = f"/uploads/activities/{activity_id}/{filename}"
-    db.commit()
+    replace_file(
+        Path(settings.STORAGE_LOCAL_PATH) / "activities" / str(activity_id),
+        "cover", ext, content, commit,
+    )
     db.refresh(activity)
 
     return {"image_url": activity.image_url}
@@ -89,11 +82,8 @@ def delete_cover_image(
             detail="No cover image to delete",
         )
 
-    # Delete files from disk
-    storage_dir = Path(settings.STORAGE_LOCAL_PATH) / "activities" / str(activity_id)
-    for old_file in glob.glob(str(storage_dir / "cover.*")):
-        Path(old_file).unlink(missing_ok=True)
-
-    # Clear DB
     activity.image_url = None
     db.commit()
+    remove_files(
+        Path(settings.STORAGE_LOCAL_PATH) / "activities" / str(activity_id), "cover"
+    )
