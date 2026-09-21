@@ -3,10 +3,11 @@
  *
  * Every browser request reaches FastAPI through a route under `app/api/`,
  * which rebuilds the request and the response. What it does not copy across
- * is lost, and each route used to decide that on its own — so the caller's
- * address never reached the API: the login throttle keyed every member to
- * the frontend container and twenty-one bad passwords from anywhere locked
- * the whole club out (#241).
+ * is lost, and each route used to decide that on its own — so the API's
+ * `Retry-After` never reached the browser (#243), and the caller's address
+ * never reached the API: the login throttle keyed every member to the
+ * frontend container and twenty-one bad passwords from anywhere locked the
+ * whole club out (#241).
  *
  * `X-Forwarded-For` is forwarded verbatim and the proxy does not append its
  * own hop. Caddy already appended the browser's address before handing the
@@ -24,7 +25,7 @@ const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:8003";
 const REQUEST_HEADERS = ["cookie", "x-forwarded-for"] as const;
 
 /** Headers from the API's response that the browser needs to see. */
-const RESPONSE_HEADERS = ["set-cookie"] as const;
+const RESPONSE_HEADERS = ["set-cookie", "retry-after"] as const;
 
 /**
  * The headers for a call to the API on behalf of `request`, plus `extra`.
