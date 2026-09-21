@@ -34,13 +34,16 @@ export async function apiClient<T>(
   endpoint: string,
   options?: RequestInit
 ): Promise<T> {
+  // The caller's options go first so the merged headers and the credentials
+  // mode below win — spreading them last replaced `headers` wholesale, and a
+  // caller passing one header lost Content-Type.
   const res = await fetch(`/api${endpoint}`, {
+    ...options,
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...(options?.headers || {}),
     },
-    ...options,
   });
 
   if (!res.ok) {

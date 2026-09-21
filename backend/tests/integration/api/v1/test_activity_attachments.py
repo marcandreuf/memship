@@ -3,6 +3,8 @@
 import io
 from datetime import datetime, timedelta, timezone
 
+import pytest
+
 from app.core.security.jwt import create_access_token
 from app.core.security.password import hash_password
 from app.domains.activities.models import (
@@ -261,6 +263,38 @@ class TestFileUpload:
         )
         assert response.status_code == 400
         assert "maximum size" in response.json()["detail"].lower()
+
+    def test_failed_insert_removes_the_written_file(self, client, db, tmp_path, monkeypatch):
+        """The file lands on disk before the row is committed. When the commit
+        fails, the file is removed rather than left orphaned — a retry writes a
+        fresh uuid, so every failed attempt used to leak one more (#253)."""
+        from app.core.config import settings
+
+        monkeypatch.setattr(settings, "STORAGE_LOCAL_PATH", str(tmp_path))
+        admin = _create_user(db, "admin", suffix="-fu4")
+        user, member = _create_member_with_user(db, suffix="-fu4")
+        activity, price = _create_published_activity(db, admin.id)
+        reg = Registration(
+            activity_id=activity.id, member_id=member.id,
+            price_id=price.id, status="confirmed",
+        )
+        db.add(reg)
+        db.flush()
+
+        def failing_commit():
+            raise RuntimeError("connection lost")
+
+        monkeypatch.setattr(db, "commit", failing_commit)
+
+        client.cookies.update(_auth_cookie(user))
+        with pytest.raises(RuntimeError, match="connection lost"):
+            client.post(
+                f"/api/v1/registrations/{reg.id}/attachments",
+                files={"file": ("cert.txt", io.BytesIO(b"payload"), "text/plain")},
+            )
+
+        written = list((tmp_path / "registrations" / str(reg.id)).glob("*"))
+        assert written == []
 
     def test_list_registration_attachments(self, client, db):
         admin = _create_user(db, "admin", suffix="-fu4")

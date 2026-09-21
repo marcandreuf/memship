@@ -210,7 +210,15 @@ async def upload_registration_attachment(
         file_size=file_size,
         mime_type=file.content_type,
     )
-    db.add(attachment)
-    db.commit()
+    # The file is written before the row so no row ever points at a missing
+    # file. The cost is the other direction: a commit that fails would leave
+    # the file on disk with nothing pointing at it, and a retry writes a fresh
+    # uuid rather than overwriting, so every failed attempt leaked one more.
+    try:
+        db.add(attachment)
+        db.commit()
+    except Exception:
+        file_path.unlink(missing_ok=True)
+        raise
     db.refresh(attachment)
     return attachment

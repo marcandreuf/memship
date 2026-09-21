@@ -104,13 +104,13 @@ def list_provider_types(
 @router.get("/", response_model=dict)
 def list_providers(
     page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
+    per_page: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("settings.integrations.write")),
 ):
     """List all configured payment providers (config masked)."""
     query = db.query(PaymentProvider).order_by(PaymentProvider.id)
-    items, meta = paginate(query, page, page_size)
+    items, meta = paginate(query, page, per_page)
 
     return {
         "items": [_mask_provider(p) for p in items],

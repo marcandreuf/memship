@@ -227,6 +227,26 @@ class TestRemittanceCRUD:
         assert resp.status_code == 200
         assert resp.json()["total"] >= 1
 
+    def test_list_remittances_honours_per_page(self, client, db):
+        # The route took `page_size`, a name nothing sends (#255).
+        _ensure_org_settings(db)
+        admin = _create_user(db, suffix="rem-pp")
+        for i in range(2):
+            member, _ = _create_member_with_mandate(db, suffix=f"rem-pp{i}")
+            receipt = _create_receipt(db, member.id, admin.id, suffix=f"rem-pp{i}")
+            client.post(
+                "/api/v1/remittances/",
+                json={"receipt_ids": [receipt.id], "due_date": "2026-05-01"},
+                cookies=_auth_cookie(admin),
+            )
+
+        resp = client.get("/api/v1/remittances/?page=1&per_page=1", cookies=_auth_cookie(admin))
+        assert resp.status_code == 200
+        body = resp.json()
+        assert len(body["items"]) == 1
+        assert body["meta"]["per_page"] == 1
+        assert body["meta"]["total"] >= 2
+
     def test_get_remittance_detail(self, client, db):
         _ensure_org_settings(db)
         admin = _create_user(db, suffix="rem-g1")
