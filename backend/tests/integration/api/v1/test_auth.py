@@ -1,5 +1,7 @@
 """Integration tests for auth endpoints."""
 
+import time
+
 from app.core.security.password import hash_password
 from app.domains.auth.models import User
 from app.domains.members.models import Member, MembershipType
@@ -513,6 +515,43 @@ class TestPasswordReset:
             json={"email": "reset@examplee6e3b1.com", "password": "newpassword1"},
         )
         assert response.status_code == 200
+
+    def test_reset_ends_the_sessions_the_old_password_opened(self, client, db):
+        """A JWT is valid until it expires and `/auth/refresh` slides it, so a
+        session opened with the old password would otherwise outlive the reset
+        for as long as it kept being used. Whoever had that password keeps
+        nothing: their cookie is refused, and a fresh login with the new
+        password works."""
+        _create_test_user(db, email="revoke@examplee6e3b1.com", password="oldpassword1")
+        client.post(
+            "/api/v1/auth/login",
+            json={"email": "revoke@examplee6e3b1.com", "password": "oldpassword1"},
+        )
+        old_cookie = dict(client.cookies)
+        assert client.get("/api/v1/auth/me").status_code == 200
+
+        # Issued in the same second as the reset must still count as "before".
+        time.sleep(1.1)
+        token = client.post(
+            "/api/v1/auth/password-reset-request",
+            json={"email": "revoke@examplee6e3b1.com"},
+        ).json()["reset_token"]
+        assert client.post(
+            "/api/v1/auth/password-reset",
+            json={"token": token, "new_password": "newpassword1"},
+        ).status_code == 200
+
+        client.cookies.clear()
+        client.cookies.update(old_cookie)
+        assert client.get("/api/v1/auth/me").status_code == 401
+        assert client.post("/api/v1/auth/refresh").status_code == 401
+
+        client.cookies.clear()
+        assert client.post(
+            "/api/v1/auth/login",
+            json={"email": "revoke@examplee6e3b1.com", "password": "newpassword1"},
+        ).status_code == 200
+        assert client.get("/api/v1/auth/me").status_code == 200
 
     def test_reset_token_is_stored_as_a_digest(self, client, db):
         """The row never holds the token the member was mailed, and the mailed

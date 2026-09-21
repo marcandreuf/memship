@@ -49,7 +49,7 @@ def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
         )
-    user = _usable_user(db, user_id)
+    user = _usable_user(db, user_id, payload)
 
     if not user:
         raise HTTPException(
@@ -60,7 +60,7 @@ def get_current_user(
     return user
 
 
-def _usable_user(db: Session, user_id: int) -> User | None:
+def _usable_user(db: Session, user_id: int, payload: dict) -> User | None:
     """The account a valid token may act as, or None.
 
     Both dependencies resolve the token through this one query so the rules
@@ -69,12 +69,26 @@ def _usable_user(db: Session, user_id: int) -> User | None:
     out (#254). A locked account is simply not found — it needs no telling that
     it is locked, and the login endpoint already says so where that is useful.
     The column is nullable, so NULL must read as "not locked".
+
+    A token issued before ``sessions_valid_from`` is refused the same way. The
+    signature and expiry only say the token was ours and is not yet stale; a
+    password reset since then says every session that password opened is over.
+    A token with no ``iat`` predates the claim and is treated as older than any
+    reset.
     """
-    return (
+    user = (
         db.query(User)
         .filter(User.id == user_id, User.is_active == True, User.is_locked.isnot(True))
         .first()
     )
+    if user is None or user.sessions_valid_from is None:
+        return user
+    issued_at = payload.get("iat")
+    if not isinstance(issued_at, (int, float)):
+        return None
+    if issued_at < user.sessions_valid_from.timestamp():
+        return None
+    return user
 
 
 def require_approved_member(current_user: User = Depends(get_current_user)) -> User:
@@ -122,4 +136,4 @@ def get_optional_user(
     user_id = _subject_id(payload)
     if user_id is None:
         return None
-    return _usable_user(db, user_id)
+    return _usable_user(db, user_id, payload)

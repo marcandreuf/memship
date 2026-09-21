@@ -54,6 +54,11 @@ class User(Base):
     verification_token = Column(String(255))
     verification_token_expires_at = Column(DateTime(timezone=True))
     is_active = Column(Boolean, default=True)
+    # A session token issued before this instant is refused, whatever its own
+    # expiry says. Set when the password is reset, so the sessions a stolen or
+    # shared password opened die with it — a JWT is otherwise valid until it
+    # expires and `/auth/refresh` lets an active one slide forever.
+    sessions_valid_from = Column(DateTime(timezone=True))
     is_locked = Column(Boolean, default=False)
     locked_at = Column(DateTime(timezone=True))
     locked_reason = Column(Text)
