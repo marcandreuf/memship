@@ -1,6 +1,5 @@
 """Organization logo upload and delete endpoints."""
 
-import glob
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
@@ -8,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.authorization import require_permission
 from app.core.config import settings
+from app.core.file_replace import remove_files, replace_file
 from app.db.session import get_db
 from app.domains.auth.models import User
 from app.domains.organizations.models import OrganizationSettings
@@ -57,21 +57,11 @@ async def upload_logo(
             detail=f"File exceeds maximum size of {MAX_LOGO_SIZE_MB}MB",
         )
 
-    # Delete existing logo files
-    storage_dir = Path(settings.STORAGE_LOCAL_PATH) / "org"
-    storage_dir.mkdir(parents=True, exist_ok=True)
-    for old_file in glob.glob(str(storage_dir / "logo.*")):
-        Path(old_file).unlink(missing_ok=True)
+    def commit(filename: str) -> None:
+        org.logo_url = f"/uploads/org/{filename}"
+        db.commit()
 
-    # Save new file
-    filename = f"logo.{ext}"
-    file_path = storage_dir / filename
-    with open(file_path, "wb") as f:
-        f.write(content)
-
-    # Update settings
-    org.logo_url = f"/uploads/org/{filename}"
-    db.commit()
+    replace_file(Path(settings.STORAGE_LOCAL_PATH) / "org", "logo", ext, content, commit)
     db.refresh(org)
 
     return {"logo_url": org.logo_url}
@@ -90,11 +80,6 @@ def delete_logo(
             detail="No logo to delete",
         )
 
-    # Delete files from disk
-    storage_dir = Path(settings.STORAGE_LOCAL_PATH) / "org"
-    for old_file in glob.glob(str(storage_dir / "logo.*")):
-        Path(old_file).unlink(missing_ok=True)
-
-    # Clear DB
     org.logo_url = None
     db.commit()
+    remove_files(Path(settings.STORAGE_LOCAL_PATH) / "org", "logo")
