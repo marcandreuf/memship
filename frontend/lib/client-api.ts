@@ -82,10 +82,16 @@ export type CodedErrorDetail = {
 
 export type ErrorDetail = string | ValidationErrorDetail[] | CodedErrorDetail;
 
+function describe(detail: ErrorDetail): string {
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) return "Validation error";
+  return detail.message ?? detail.code;
+}
+
 export class ClientApiError extends Error {
   public detail: ErrorDetail;
   constructor(public status: number, detail: ErrorDetail) {
-    super(typeof detail === "string" ? detail : "Validation error");
+    super(describe(detail));
     this.name = "ClientApiError";
     this.detail = detail;
   }

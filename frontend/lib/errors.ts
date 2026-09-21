@@ -55,7 +55,10 @@ export function getErrorMessage(error: unknown, t?: ErrorTranslator): string {
       if (t?.has(key)) {
         return t(key, translationValues(error.detail));
       }
-      return error.detail.message ?? error.detail.code;
+      // A code with neither a translation nor a message is a developer
+      // identifier, not something to show a member.
+      if (error.detail.message) return error.detail.message;
+      return t ? t("toast.error.generic") : error.detail.code;
     }
     return error.message;
   }
