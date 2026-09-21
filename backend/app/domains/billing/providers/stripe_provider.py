@@ -6,12 +6,12 @@ Invoice flow (Send via Stripe) deferred to v0.4.5.
 
 import json
 import logging
-from datetime import date
 from decimal import Decimal
 
 import stripe
 from sqlalchemy.orm import Session
 
+from app.core.clock import org_today
 from app.domains.billing.providers.base import PaymentProviderAdapter
 
 logger = logging.getLogger(__name__)
@@ -274,7 +274,7 @@ class StripeAdapter(PaymentProviderAdapter):
 
         receipt.status = "returned"
         receipt.return_reason = "Stripe Checkout session expired"
-        receipt.return_date = date.today()
+        receipt.return_date = org_today(db)
         db.flush()
 
         return {"receipt_id": receipt.id}

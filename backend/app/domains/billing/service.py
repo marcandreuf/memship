@@ -9,6 +9,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import extract, func, or_
 from sqlalchemy.orm import Query, Session, joinedload, selectinload
 
+from app.core.clock import org_today
 from app.core.money import round_money
 from app.domains.billing.models import Concept, InvoiceSequence, Receipt
 from app.domains.billing.schemas import (
@@ -325,7 +326,7 @@ def mark_receipt_paid(
         # A Redsys notification only says the money came through Redsys;
         # create_payment already recorded 'bizum' when that is how it was paid.
         receipt.payment_method = payment_method
-    receipt.payment_date = payment_date or date.today()
+    receipt.payment_date = payment_date or org_today(db)
     if transaction_id is not None:
         receipt.transaction_id = transaction_id
     if stripe_payment_intent_id is not None:
@@ -417,7 +418,7 @@ def return_receipt(
     validate_status_transition(receipt.status, "returned")
     receipt.status = "returned"
     receipt.return_reason = data.return_reason
-    receipt.return_date = data.return_date or date.today()
+    receipt.return_date = data.return_date or org_today(db)
     db.flush()
     return receipt
 
@@ -542,7 +543,7 @@ def create_credit_note(
         vat_amount = amount - base_amount
 
     credit_note = Receipt(
-        receipt_number=generate_receipt_number(db, date.today()),
+        receipt_number=generate_receipt_number(db, org_today(db)),
         document_type="credit_note",
         rectifies_receipt_id=receipt.id,
         member_id=receipt.member_id,
@@ -557,7 +558,7 @@ def create_credit_note(
         total_amount=-amount,
         discount_amount=Decimal("0"),
         status="emitted",
-        emission_date=date.today(),
+        emission_date=org_today(db),
         # No due date: nobody is being asked to pay this, so the dunning sweeps
         # and the lapse check — all of which key off a due date — leave it alone.
         due_date=None,
@@ -752,7 +753,7 @@ def generate_activity_receipt(
 
     base_amount = Decimal(str(amount))
     vat_amount, total_amount = calculate_vat(base_amount, vat_rate)
-    today = date.today()
+    today = org_today(db)
 
     receipt_number = generate_receipt_number(db, today)
 
@@ -823,7 +824,7 @@ def generate_booking_receipt(
 
     base_amount = Decimal(str(amount))
     vat_amount, total_amount = calculate_vat(base_amount, vat_rate)
-    today = date.today()
+    today = org_today(db)
 
     receipt = Receipt(
         receipt_number=generate_receipt_number(db, today),

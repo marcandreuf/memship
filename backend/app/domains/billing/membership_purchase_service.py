@@ -35,6 +35,7 @@ from decimal import Decimal
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.clock import org_today
 from app.domains.billing.models import Concept, Receipt
 from app.domains.billing.proration import prorate_membership_price
 from app.domains.billing.recurring_billing_service import membership_fee_due_days
@@ -157,7 +158,7 @@ def quote_membership_purchase(
     organization default, which is the rate a concept created by the purchase
     would be given — so the quote and the receipt that follows it agree.
     """
-    today = today or date.today()
+    today = today or org_today(db)
     _assert_purchasable(member, mtype)
 
     concept = (
@@ -217,7 +218,7 @@ def purchase_membership(
 
     Does not commit — the caller owns the transaction.
     """
-    today = today or date.today()
+    today = today or org_today(db)
     _assert_purchasable(member, mtype)
 
     void_open_purchases(db, member.id)
@@ -320,7 +321,7 @@ def expire_unpaid_purchases(db: Session, today: date | None = None) -> int:
 
     Returns how many were voided. Does not commit.
     """
-    today = today or date.today()
+    today = today or org_today(db)
     expired = (
         db.query(Receipt)
         .filter(

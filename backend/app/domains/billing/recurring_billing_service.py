@@ -18,6 +18,7 @@ from datetime import date, timedelta
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.core.clock import org_today
 from app.domains.billing.models import BillingRun
 from app.domains.billing.schemas import GenerateMembershipFeesRequest
 from app.domains.billing.service import generate_membership_fees
@@ -154,7 +155,7 @@ def run_billing(
     in place (the underlying skip-if-exists logic avoids double-billing members who
     already got a receipt). Does not commit — the caller owns the transaction.
     """
-    today = today or date.today()
+    today = today or org_today(db)
     period_start, period_end = compute_period(frequency, today)
     due_date = today + timedelta(days=membership_fee_due_days(db))
 
@@ -220,7 +221,7 @@ def run_scheduled_billing(db: Session, today: date | None = None) -> list[Billin
     No-op (returns ``[]``) when recurring billing is disabled in org settings or when
     no frequency is due on the configured day. Does not commit.
     """
-    today = today or date.today()
+    today = today or org_today(db)
     org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
     features = (org.features if org else None) or {}
 

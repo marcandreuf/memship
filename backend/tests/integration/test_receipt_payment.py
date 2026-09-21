@@ -8,6 +8,7 @@ from unittest.mock import patch
 import pytest
 from fastapi import HTTPException
 
+from app.core.clock import org_today
 from app.core.security.jwt import create_access_token
 from app.core.security.password import hash_password
 from app.domains.auth.models import User
@@ -143,7 +144,9 @@ class TestMarkReceiptPaid:
 
         mark_receipt_paid(db, receipt, payment_method="bank_transfer")
 
-        assert receipt.payment_date == date.today()
+        # The club's date, not the container's: the two differ for two hours a
+        # day and this assertion was written on the wrong side of it (#271).
+        assert receipt.payment_date == org_today(db)
 
     def test_stripe_fields_are_recorded(self, db):
         member = _create_member(db, "stripe")

@@ -36,6 +36,7 @@ from datetime import date, timedelta
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
+from app.core.clock import org_today
 from app.domains.audit.models import AuditLog
 from app.domains.billing.models import Receipt
 from app.domains.members.models import Member, MembershipType
@@ -109,7 +110,7 @@ def lapsed_receipts(db: Session, today: date | None = None) -> list[Receipt]:
     from the due date would eat most of it before anyone knew the money had
     failed.
     """
-    today = today or date.today()
+    today = today or org_today(db)
     cutoff = today - timedelta(days=lapse_grace_days(db))
     return (
         db.query(Receipt)
@@ -170,7 +171,7 @@ def revert_lapsed_members(db: Session, today: date | None = None) -> dict:
 
     Returns a small summary. Does not commit — the caller owns the transaction.
     """
-    today = today or date.today()
+    today = today or org_today(db)
     if not lapse_enabled(db):
         return {"lapsed": 0, "skipped": 0}
 

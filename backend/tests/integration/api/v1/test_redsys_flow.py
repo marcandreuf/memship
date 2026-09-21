@@ -9,6 +9,7 @@ from redsys.client import RedirectClient
 from redsys.request import Request as _RedsysRequest
 from redsys.response import Response as _RedsysResponse
 
+from app.core.clock import org_today
 from app.core.encryption import encrypt_config
 from app.core.security.jwt import create_access_token
 from app.core.security.password import hash_password
@@ -377,7 +378,9 @@ class TestRedsysWebhookFlow:
         receipt = db.query(Receipt).filter(Receipt.id == receipt.id).first()
         assert receipt.status == "paid"
         assert receipt.payment_method == "redsys"
-        assert receipt.payment_date == date.today()
+        # The club's date, not the container's: the two differ for two hours a
+        # day and this assertion was written on the wrong side of it (#271).
+        assert receipt.payment_date == org_today(db)
         assert receipt.redsys_auth_code == "AUTH777"
         assert receipt.transaction_id == "AUTH777"
 

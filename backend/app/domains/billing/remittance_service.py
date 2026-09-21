@@ -7,6 +7,7 @@ from pathlib import Path
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.clock import org_today
 from app.core.config import settings
 from app.domains.billing.models import (
     Receipt,
@@ -172,7 +173,7 @@ def create_remittance(
     total = sum(Decimal(str(r.total_amount)) for r in receipts)
 
     # Create remittance
-    today = date.today()
+    today = org_today(db)
     remittance = Remittance(
         remittance_number=generate_remittance_number(db, today),
         remittance_type="sepa",
@@ -313,7 +314,7 @@ def import_returns(
         if receipt.status in ("emitted", "overdue"):
             receipt.status = "returned"
             receipt.return_reason = reason[:255]
-            receipt.return_date = date.today()
+            receipt.return_date = org_today(db)
             returned += 1
 
     if remittance.status == "submitted":
