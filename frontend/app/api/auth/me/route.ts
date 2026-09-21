@@ -1,14 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-
-const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:8003";
+import { NextRequest } from "next/server";
+import { proxyToApi } from "@/lib/proxy";
 
 export async function GET(request: NextRequest) {
-  const cookie = request.headers.get("cookie") || "";
-
-  const res = await fetch(`${API_BASE_URL}/api/v1/auth/me`, {
-    headers: { Cookie: cookie },
-  });
-
-  const data = await res.json();
-  return NextResponse.json(data, { status: res.status });
+  return proxyToApi(request, "/auth/me");
 }
