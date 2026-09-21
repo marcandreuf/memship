@@ -15,8 +15,10 @@ locally with pnpm, so you get Next.js hot reload without a container in the way.
 That is the complete list. **The backend never runs on the host**: no `uv sync`, no virtualenv, no
 Python version to match, so the same checkout behaves the same on any machine with Docker.
 `backend/app`, `backend/tests` and `backend/alembic` are bind-mounted into the containers — you
-edit them in your editor and the running code changes. The container is where the code executes,
-not where it lives.
+edit them in your editor and the running code changes. The API restarts itself on a change under
+`backend/app` (uvicorn's reloader, `APP_ENV=development` only; watch `dev.sh logs backend` for
+"Reloading..."). The worker and beat do not — restart them after editing a task. The container is
+where the code executes, not where it lives.
 
 Only the frontend stays on the host, and deliberately: the Next.js dev server is there for hot
 reload, which is the one thing a container does not do as well. Cypress needs a real browser, so
