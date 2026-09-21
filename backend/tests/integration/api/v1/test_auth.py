@@ -380,6 +380,22 @@ class TestMe:
         response = client.get("/api/v1/auth/me")
         assert response.status_code == 401
 
+    def test_me_locked_mid_session_is_signed_out(self, client, db):
+        """An account locked while its session is live is not found rather
+        than told it is locked — the same answer `get_optional_user` gives, so
+        the two cannot drift again (#254)."""
+        user = _create_test_user(db, email="locked-me@examplee6e3b1.com", password="password123")
+        client.post(
+            "/api/v1/auth/login",
+            json={"email": "locked-me@examplee6e3b1.com", "password": "password123"},
+        )
+        assert client.get("/api/v1/auth/me").status_code == 200
+
+        user.is_locked = True
+        db.flush()
+
+        assert client.get("/api/v1/auth/me").status_code == 401
+
     def test_me_reports_the_session_window(self, client, db, monkeypatch):
         """The frontend schedules its renewal off these, rather than
         re-deriving ACCESS_TOKEN_EXPIRE_MINUTES on its own."""

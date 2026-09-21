@@ -99,6 +99,20 @@ class TestMemberPhotos:
 
         assert client.get(f"/uploads/members/{person.id}/photo.png").status_code == 200
 
+    def test_locked_member_is_rejected_like_anonymous(self, client, db, storage):
+        """`get_optional_user` used to filter on `is_active` alone, so a locked
+        account kept downloading its files after every other route had shut it
+        out (#254). It now resolves the token through the same query as
+        `get_current_user`, and a locked account is simply not signed in.
+        """
+        user, person, _ = _make_user(db, "locked-photo@examplee6e3b1.com")
+        user.is_locked = True
+        db.flush()
+        storage(f"members/{person.id}/photo.png", b"\x89PNG")
+        client.cookies.update(_auth_cookie(user))
+
+        assert client.get(f"/uploads/members/{person.id}/photo.png").status_code == 401
+
     def test_member_cannot_read_another_members_photo(self, client, db, storage):
         _, other_person, _ = _make_user(db, "victim-photo@examplee6e3b1.com")
         attacker, _, _ = _make_user(db, "attacker-photo@examplee6e3b1.com")

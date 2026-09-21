@@ -49,7 +49,7 @@ def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
         )
-    user = db.query(User).filter(User.id == user_id, User.is_active == True).first()
+    user = _usable_user(db, user_id)
 
     if not user:
         raise HTTPException(
@@ -57,13 +57,24 @@ def get_current_user(
             detail="User not found or inactive",
         )
 
-    if user.is_locked:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Account is locked",
-        )
-
     return user
+
+
+def _usable_user(db: Session, user_id: int) -> User | None:
+    """The account a valid token may act as, or None.
+
+    Both dependencies resolve the token through this one query so the rules
+    cannot drift: `get_optional_user` used to filter on `is_active` alone and
+    kept serving a locked account's files after every other route had shut it
+    out (#254). A locked account is simply not found — it needs no telling that
+    it is locked, and the login endpoint already says so where that is useful.
+    The column is nullable, so NULL must read as "not locked".
+    """
+    return (
+        db.query(User)
+        .filter(User.id == user_id, User.is_active == True, User.is_locked.isnot(True))
+        .first()
+    )
 
 
 def require_approved_member(current_user: User = Depends(get_current_user)) -> User:
@@ -111,4 +122,4 @@ def get_optional_user(
     user_id = _subject_id(payload)
     if user_id is None:
         return None
-    return db.query(User).filter(User.id == user_id, User.is_active == True).first()
+    return _usable_user(db, user_id)
