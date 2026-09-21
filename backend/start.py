@@ -19,11 +19,17 @@ def main() -> None:
     # app.* loggers propagate to root, which needs its own level + handler.
     logging.basicConfig(level=log_level.upper())
 
+    # Reload in development only, and only on the application package: the
+    # default watches the working directory, which in the container includes
+    # the uploads volume, so every stored file would restart the API. Was
+    # `reload=False` for a while (#262) — the dev stack promised hot reload
+    # and silently served stale code until the container was restarted.
     uvicorn.run(
         "app.main:app",
         host=host,
         port=port,
-        reload=False,
+        reload=reload,
+        reload_dirs=["app"] if reload else None,
         log_level=log_level,
     )
 
