@@ -48,12 +48,13 @@ def test_what_the_application_stores_is_a_fixed_point_of_the_index(db):
 
 
 def test_space_padding_and_case_fold_the_same_from_raw(db):
-    """The migration folded rows that were written before the application
+    """``f5a6b7c8d9e0`` folded rows that were written before the application
     normalised, so on raw input the two should agree too. They do for spaces;
     ``btrim`` strips spaces only where ``str.strip`` strips every whitespace,
-    so a tab- or newline-padded legacy row would come out of the migration
-    still padded. No path in the application has ever written one, which is
-    why that is recorded here rather than fixed."""
+    so a tab- or newline-padded legacy row came out of that migration still
+    padded. ``7c1e2d3f4a5b`` trims the rest (#265); the index expression keeps
+    the narrower ``btrim`` because the application never writes a padded
+    value, which is why this corpus stays space-only."""
     for raw in [
         "  Marc.Andreu@Example.com  ",
         "a+b_c-d.e@Sub.Example.co.uk",
