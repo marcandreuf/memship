@@ -310,8 +310,17 @@ case "$ACTION" in
         # In the container, not on the host: the backend has no host-side
         # install step any more. `run --rm` starts db-test through depends_on
         # and builds the dev image on first use.
+        #
+        # db-test is removed first so every run starts on an empty database.
+        # It is tmpfs, but a container started by depends_on outlives the run,
+        # and the suite builds its schema with create_all — CREATE TABLE IF NOT
+        # EXISTS — which never alters a table that already exists. A column
+        # added to a model was invisible to the tests until someone restarted
+        # the container by hand, and the failures named the column as missing
+        # from the model (#274). Costs a Postgres start on tmpfs, ~2 s.
         echo -e "${BLUE}i${NC} Running backend tests (container)..."
         shift
+        docker compose -f "$BACKEND_COMPOSE" --profile test rm -sf db-test > /dev/null 2>&1 || true
         docker compose -f "$BACKEND_COMPOSE" --profile test run --rm tests \
             pytest "${@:-tests/}"
         ;;
