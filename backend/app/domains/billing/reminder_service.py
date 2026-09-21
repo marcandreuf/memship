@@ -21,6 +21,7 @@ from datetime import date, timedelta
 
 from sqlalchemy.orm import Session
 
+from app.core.clock import org_today
 from app.core.config import settings
 from app.core.email import EmailOutcome, send_payment_reminder_email
 from app.db.after_commit import run_after_commit
@@ -49,7 +50,7 @@ def mark_overdue(db: Session, today: date | None = None) -> int:
 
     Returns the number of receipts transitioned. Does not commit.
     """
-    today = today or date.today()
+    today = today or org_today(db)
     rows = (
         db.query(Receipt)
         .filter(
@@ -244,7 +245,7 @@ def send_reminder(
     For the worker (scheduled pass). Send-transport failures are recorded as a
     ``failed`` row rather than raised. Does not commit.
     """
-    today = today or date.today()
+    today = today or org_today(db)
     person, payload = _prepare_reminder(db, receipt, today)
     reminder = _new_reminder_row(receipt, person, triggered_by, user_id)
     record_outcome(reminder, *deliver(payload))
@@ -267,7 +268,7 @@ def queue_reminder(
     written, and a slow or failing mail server shows up on the row rather than
     as a timeout. Does not commit.
     """
-    today = today or date.today()
+    today = today or org_today(db)
     person, payload = _prepare_reminder(db, receipt, today)
     reminder = _new_reminder_row(receipt, person, triggered_by, user_id)
     db.add(reminder)
@@ -290,7 +291,7 @@ def run_scheduled_reminders(db: Session, today: date | None = None) -> dict:
     No-op (beyond the overdue transition being skipped too) when reminders are
     disabled in org settings. Does not commit.
     """
-    today = today or date.today()
+    today = today or org_today(db)
     org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
     features = (org.features if org else None) or {}
 

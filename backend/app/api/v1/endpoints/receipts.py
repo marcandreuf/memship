@@ -8,6 +8,7 @@ from fastapi.responses import Response
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.authorization import require_permission, user_has
+from app.core.clock import org_today
 from app.core.csv_export import stream_csv
 from app.core.db_utils import current_member_or_403
 from app.core.pagination import paginate
@@ -249,7 +250,7 @@ def receipt_stats(
     statuses = {s: c for s, c in status_counts}
 
     # Total amounts
-    today = date.today()
+    today = org_today(db)
     pending_amount = (
         db.query(sqlfunc.coalesce(sqlfunc.sum(R.total_amount), 0))
         .filter(

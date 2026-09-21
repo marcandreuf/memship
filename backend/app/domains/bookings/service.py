@@ -15,11 +15,11 @@ occurrence up front (bounded by the rule's count) and stamps them with a shared
 import logging
 from datetime import date, datetime, timedelta
 from uuid import uuid4
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from sqlalchemy import func
 from sqlalchemy.orm import Query, Session, joinedload
 
+from app.core.clock import org_timezone
 from app.domains.bookings.billing import (
     booking_price,
     ensure_booking_receipt,
@@ -156,15 +156,6 @@ def _locale(db: Session) -> str:
     return (org.locale if org and org.locale else "es")
 
 
-def _tz(db: Session) -> ZoneInfo:
-    org = _org(db)
-    name = (org.timezone if org and org.timezone else "Europe/Madrid")
-    try:
-        return ZoneInfo(name)
-    except ZoneInfoNotFoundError:
-        return ZoneInfo("Europe/Madrid")
-
-
 def _window_days(db: Session) -> int:
     return int(_features(db).get("booking_window_days", 14))
 
@@ -247,7 +238,7 @@ def update_space(
 def _slots_outside_hours(db: Session, space: Space) -> list[SpaceSlot]:
     """Upcoming active slots that start before the space opens or end after it
     closes. Past slots are history and stay as they are."""
-    today = datetime.now(_tz(db)).date()
+    today = datetime.now(org_timezone(db)).date()
     return (
         db.query(SpaceSlot)
         .filter(
@@ -273,7 +264,7 @@ def _affected_active_bookings(db: Session, slot_ids: list[int]) -> list[Booking]
     caller can notify before the rows cascade away."""
     if not slot_ids:
         return []
-    today = datetime.now(_tz(db)).date()
+    today = datetime.now(org_timezone(db)).date()
     return (
         db.query(Booking)
         .join(SpaceSlot, Booking.space_slot_id == SpaceSlot.id)
@@ -385,7 +376,7 @@ def _validate_slot_on_date(
 
 
 def _past_guard(db: Session, slot_date: date, start_time) -> None:
-    tz = _tz(db)
+    tz = org_timezone(db)
     now_local = datetime.now(tz)
     if datetime.combine(slot_date, start_time, tzinfo=tz) <= now_local:
         raise SlotInPast(
@@ -623,7 +614,7 @@ def space_week_availability(
 ) -> list[dict]:
     """One cell per active slot dated within the week starting at ``week_start``
     (which should be a Monday)."""
-    tz = _tz(db)
+    tz = org_timezone(db)
     now_local = datetime.now(tz)
     today = now_local.date()
     window_end = today + timedelta(days=_window_days(db))
@@ -728,7 +719,7 @@ def create_booking(
     if not eligibility.eligible:
         raise NotEligible(eligibility.reason, eligibility.message)
 
-    tz = _tz(db)
+    tz = org_timezone(db)
     now_local = datetime.now(tz)
     slot_start = datetime.combine(slot.slot_date, slot.start_time, tzinfo=tz)
     if slot_start <= now_local:
@@ -799,7 +790,7 @@ def cancel_booking(
         .with_for_update()
         .first()
     )
-    tz = _tz(db)
+    tz = org_timezone(db)
     now_local = datetime.now(tz)
 
     if not is_admin:
@@ -892,7 +883,7 @@ def _promote_next(
 
 def my_bookings(db: Session, member_id: int, *, scope: str) -> list[dict]:
     """A member's non-cancelled bookings, denormalized, upcoming or past."""
-    tz = _tz(db)
+    tz = org_timezone(db)
     today = datetime.now(tz).date()
 
     query = (

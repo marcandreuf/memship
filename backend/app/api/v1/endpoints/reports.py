@@ -1,11 +1,10 @@
 """Reports endpoints — admin analytics aggregates."""
 
-from datetime import date
-
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.core.authorization import require_permission
+from app.core.clock import org_today
 from app.db.session import get_db
 from app.domains.auth.models import User
 from app.domains.reports.schemas import AnnualSummary, PaidTierWithoutPurchase
@@ -21,7 +20,7 @@ def get_annual_summary(
     current_user: User = Depends(require_permission("reports.read")),
 ):
     """Annual financial + membership summary (defaults to the current year)."""
-    return annual_summary(db, year or date.today().year)
+    return annual_summary(db, year or org_today(db).year)
 
 
 @router.get("/paid-tier-without-purchase", response_model=PaidTierWithoutPurchase)
