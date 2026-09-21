@@ -302,6 +302,9 @@ def reset_password(db: Session, token: str, new_password: str) -> bool:
     user.password_hash = hash_password(new_password)
     user.reset_token = None
     user.reset_token_expires_at = None
+    # Whole seconds, because a token's `iat` is whole seconds: a login in the
+    # same second as the reset must not be refused by its own truncation.
+    user.sessions_valid_from = datetime.now(timezone.utc).replace(microsecond=0)
     db.flush()
 
     return True
