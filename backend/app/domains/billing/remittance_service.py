@@ -214,6 +214,7 @@ def generate_remittance_xml(db: Session, remittance: Remittance) -> bytes:
     receipts = (
         db.query(Receipt)
         .filter(Receipt.remittance_id == remittance.id, Receipt.is_active.is_(True))
+        .order_by(Receipt.id)
         .all()
     )
     if not receipts:
@@ -356,6 +357,7 @@ def close_remittance(db: Session, remittance: Remittance) -> tuple[Remittance, l
             Receipt.is_active.is_(True),
             Receipt.status.in_(AWAITING_SETTLEMENT),
         )
+        .order_by(Receipt.id)
         .all()
     )
     pending = mark_receipts_paid(
