@@ -284,6 +284,48 @@ class TestSepaXmlWorkflow:
         assert resp.json()["status"] == "ready"
         assert resp.json()["sepa_file_path"] is not None
 
+    def test_xml_orders_transactions_by_receipt_id(self, client, db):
+        """The receipts reach the SEPA file in a defined order.
+
+        The query behind it had no `ORDER BY`, so the bank received the batch in
+        whatever order PostgreSQL happened to return and two exports of the same
+        remittance could differ. See #277 — the same missing clause also made
+        the close fan-out non-deterministic.
+        """
+        _ensure_org_settings(db)
+        admin = _create_user(db, suffix="rem-xmlord")
+        m1, _ = _create_member_with_mandate(db, suffix="rem-xmlord")
+        receipts = [
+            _create_receipt(db, m1.id, admin.id, suffix=f"rem-xmlord-{n:02d}")
+            for n in range(1, 4)
+        ]
+
+        create_resp = client.post(
+            "/api/v1/remittances/",
+            json={
+                "receipt_ids": [r.id for r in receipts],
+                "due_date": "2026-05-01",
+            },
+            cookies=_auth_cookie(admin),
+        )
+        rem_id = create_resp.json()["id"]
+
+        resp = client.post(
+            f"/api/v1/remittances/{rem_id}/generate-xml", cookies=_auth_cookie(admin)
+        )
+        assert resp.status_code == 200
+
+        xml = client.get(
+            f"/api/v1/remittances/{rem_id}/download-xml", cookies=_auth_cookie(admin)
+        ).content.decode()
+
+        # Each transaction's description carries its receipt number, so the
+        # position of each number in the document is the transaction order.
+        positions = [xml.index(r.receipt_number) for r in receipts]
+        assert positions == sorted(positions), (
+            f"receipts appear out of id order: {positions}"
+        )
+
     def test_download_xml(self, client, db):
         _ensure_org_settings(db)
         admin = _create_user(db, suffix="rem-xml2")
