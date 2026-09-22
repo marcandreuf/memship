@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.core.authorization import require_permission
+from app.core.authorization import require_any_permission, require_permission
 from app.core.db_utils import get_or_404
 from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
@@ -22,7 +22,7 @@ router = APIRouter(prefix="/activities/{activity_id}/consents", tags=["activity-
 def list_consents(
     activity_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("self.activities.read")),
+    current_user: User = Depends(require_any_permission("activities.read", "self.activities.read")),
 ):
     """List consents for an activity (all authenticated users)."""
     get_or_404(db, Activity, activity_id)

@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from app.core.authorization import require_permission, user_has
+from app.core.authorization import require_any_permission, require_permission, user_has
 from app.core.db_utils import get_or_404
 from app.core.pagination import paginate
 from app.core.security.dependencies import get_current_user
@@ -122,7 +122,7 @@ def list_activities(
     search: str | None = None,
     status_filter: str | None = Query(None, alias="status"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("self.activities.read")),
+    current_user: User = Depends(require_any_permission("activities.read", "self.activities.read")),
 ):
     query = db.query(Activity).filter(Activity.is_active.is_(True))
 
@@ -149,7 +149,7 @@ def list_activities(
 def get_activity(
     activity_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("self.activities.read")),
+    current_user: User = Depends(require_any_permission("activities.read", "self.activities.read")),
 ):
     activity = db.query(Activity).filter(Activity.id == activity_id).first()
     if not activity:

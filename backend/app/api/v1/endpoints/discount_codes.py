@@ -5,7 +5,7 @@ from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.core.authorization import require_permission
+from app.core.authorization import require_any_permission, require_permission
 from app.core.db_utils import get_or_404
 from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
@@ -143,7 +143,7 @@ def validate_discount(
     data: ValidateDiscountRequest,
     price_id: int | None = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("self.activities.read")),
+    current_user: User = Depends(require_any_permission("activities.read", "self.activities.read")),
 ):
     """Validate a discount code and return the discount preview."""
     activity = get_or_404(db, Activity, activity_id)

@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
-from app.core.authorization import require_permission, user_has
+from app.core.authorization import require_any_permission, require_permission, user_has
 from app.core.csv_export import stream_csv
 from app.core.db_utils import current_member_or_403
 from app.core.pagination import paginate
@@ -256,7 +256,9 @@ def cancel_own_registration(
     registration_id: int,
     data: CancelRegistrationRequest | None = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("self.registrations.write")),
+    current_user: User = Depends(
+        require_any_permission("registrations.write", "self.registrations.write")
+    ),
 ):
     """Cancel a registration (own or admin)."""
     registration = (

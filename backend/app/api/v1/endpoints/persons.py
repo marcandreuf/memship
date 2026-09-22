@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.db_utils import get_or_404
 from app.core.security.dependencies import get_current_user
-from app.core.authorization import require_permission, user_has
+from app.core.authorization import require_any_permission, require_permission, user_has
 from app.db.session import get_db
 from app.domains.auth.models import User
 from app.domains.members.schemas import PersonResponse
@@ -18,7 +18,7 @@ router = APIRouter(prefix="/persons", tags=["persons"])
 def get_person(
     person_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("self.profile.read")),
+    current_user: User = Depends(require_any_permission("members.read", "self.profile.read")),
 ):
     person = get_or_404(db, Person, person_id)
 
@@ -34,7 +34,7 @@ def update_person(
     person_id: int,
     data: dict,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("self.profile.write")),
+    current_user: User = Depends(require_any_permission("members.write", "self.profile.write")),
 ):
     person = get_or_404(db, Person, person_id)
 

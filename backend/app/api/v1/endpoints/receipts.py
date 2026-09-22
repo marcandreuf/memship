@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import Response
 from sqlalchemy.orm import Session, joinedload
 
-from app.core.authorization import require_permission, user_has
+from app.core.authorization import require_any_permission, require_permission, user_has
 from app.core.clock import org_today
 from app.core.csv_export import stream_csv
 from app.core.db_utils import current_member_or_403
@@ -334,7 +334,7 @@ def get_receipt(
 def download_receipt_pdf(
     receipt_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("self.billing.read")),
+    current_user: User = Depends(require_any_permission("billing.read", "self.billing.read")),
 ):
     """Download a receipt as PDF. Admin can download any, member can download own."""
     receipt = (
@@ -640,7 +640,7 @@ def list_my_receipts(
 def create_stripe_checkout(
     receipt_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("self.billing.write")),
+    current_user: User = Depends(require_any_permission("billing.write", "self.billing.write")),
 ):
     """Create a Stripe Checkout session for a receipt.
 
@@ -735,7 +735,7 @@ def initiate_redsys_payment(
     receipt_id: int,
     payload: dict | None = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("self.billing.write")),
+    current_user: User = Depends(require_any_permission("billing.write", "self.billing.write")),
 ):
     """Build signed Redsys form params for a browser redirect.
 
@@ -825,7 +825,7 @@ def initiate_redsys_payment(
 def get_redsys_return_status(
     receipt_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("self.billing.read")),
+    current_user: User = Depends(require_any_permission("billing.read", "self.billing.read")),
 ):
     """Return the current receipt status for the Redsys return page to poll.
 
@@ -863,7 +863,7 @@ def get_redsys_return_status(
 def get_receipt_by_stripe_session(
     session_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("self.billing.read")),
+    current_user: User = Depends(require_any_permission("billing.read", "self.billing.read")),
 ):
     """Look up a receipt by Stripe Checkout session ID.
 

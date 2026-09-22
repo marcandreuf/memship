@@ -14,7 +14,12 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.core.authorization import require_permission, resolve_permissions, user_has
+from app.core.authorization import (
+    require_any_permission,
+    require_permission,
+    resolve_permissions,
+    user_has,
+)
 from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
 from app.domains.auth.models import User
@@ -83,7 +88,9 @@ def _duplicate_key_error(key: str) -> HTTPException:
 def list_custom_fields(
     include_inactive: bool = False,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("self.profile.read")),
+    current_user: User = Depends(
+        require_any_permission("members.read", "settings.read", "self.profile.read")
+    ),
 ):
     """List definitions the current user may see, in display order."""
     require_custom_fields_enabled(db)
@@ -251,7 +258,7 @@ def update_my_custom_fields(
 def get_person_custom_fields(
     person_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("self.profile.read")),
+    current_user: User = Depends(require_any_permission("members.read", "self.profile.read")),
 ):
     require_custom_fields_enabled(db)
     is_own = _resolve_person(db, person_id, current_user)
@@ -265,7 +272,7 @@ def update_person_custom_fields(
     person_id: int,
     values: dict[str, Any],
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("self.profile.write")),
+    current_user: User = Depends(require_any_permission("members.write", "self.profile.write")),
 ):
     """Replace this person's values. Fields the caller can't write are untouched."""
     require_custom_fields_enabled(db)
