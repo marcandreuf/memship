@@ -12,7 +12,7 @@ from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from app.core.authorization import require_permission, user_has
+from app.core.authorization import require_any_permission, require_permission, user_has
 from app.core.db_utils import current_member_or_403
 from app.core.pagination import paginate
 from app.core.security.dependencies import get_current_user
@@ -397,7 +397,7 @@ def get_my_bookings(
 def cancel_booking(
     booking_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("self.bookings.write")),
+    current_user: User = Depends(require_any_permission("bookings.write", "self.bookings.write")),
 ):
     _require_bookings_enabled(db)
     booking = service.get_booking(db, booking_id)

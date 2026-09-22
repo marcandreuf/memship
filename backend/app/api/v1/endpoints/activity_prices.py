@@ -5,7 +5,7 @@ from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from app.core.authorization import require_permission
+from app.core.authorization import require_any_permission, require_permission
 from app.core.db_utils import get_or_404
 from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
@@ -39,7 +39,7 @@ def list_prices(
     activity_id: int,
     modality_id: int | None = Query(None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("self.activities.read")),
+    current_user: User = Depends(require_any_permission("activities.read", "self.activities.read")),
 ):
     activity = get_or_404(db, Activity, activity_id)
     query = db.query(ActivityPrice).filter(ActivityPrice.activity_id == activity_id)

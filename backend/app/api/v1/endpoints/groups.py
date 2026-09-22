@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.core.authorization import require_permission
+from app.core.authorization import require_any_permission, require_permission
 from app.core.db_utils import get_or_404
 from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
@@ -17,7 +17,7 @@ router = APIRouter(prefix="/groups", tags=["groups"])
 @router.get("/", response_model=list[GroupResponse])
 def list_groups(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("self.activities.read")),
+    current_user: User = Depends(require_any_permission("membership.read", "self.activities.read")),
 ):
     return db.query(Group).order_by(Group.display_order).all()
 
@@ -26,7 +26,7 @@ def list_groups(
 def get_group(
     group_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("self.activities.read")),
+    current_user: User = Depends(require_any_permission("membership.read", "self.activities.read")),
 ):
     return get_or_404(db, Group, group_id)
 

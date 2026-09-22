@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 
-from app.core.authorization import require_permission
+from app.core.authorization import require_any_permission, require_permission
 from app.core.db_utils import get_or_404
 from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
@@ -39,7 +39,7 @@ def _to_response(mt: MembershipType) -> MembershipTypeResponse:
 @router.get("/", response_model=list[MembershipTypeResponse])
 def list_membership_types(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("self.activities.read")),
+    current_user: User = Depends(require_any_permission("membership.read", "self.activities.read")),
 ):
     types = (
         db.query(MembershipType)
@@ -54,7 +54,7 @@ def list_membership_types(
 def get_membership_type(
     type_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("self.activities.read")),
+    current_user: User = Depends(require_any_permission("membership.read", "self.activities.read")),
 ):
     mt = (
         db.query(MembershipType)

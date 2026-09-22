@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session, joinedload
 
-from app.core.authorization import require_permission, user_has
+from app.core.authorization import require_any_permission, require_permission, user_has
 from app.core.config import settings
 from app.core.db_utils import get_or_404
 from app.core.email import (
@@ -163,7 +163,7 @@ def export_members_csv(
 def get_member(
     member_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("self.profile.read")),
+    current_user: User = Depends(require_any_permission("members.read", "self.profile.read")),
 ):
     member = (
         db.query(Member)
@@ -231,7 +231,7 @@ def update_member(
     member_id: int,
     data: MemberUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("self.profile.write")),
+    current_user: User = Depends(require_any_permission("members.write", "self.profile.write")),
 ):
     member = (
         db.query(Member)

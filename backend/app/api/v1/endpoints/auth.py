@@ -16,7 +16,7 @@ from app.core.email import (
     send_verification_email,
 )
 from app.core.security.dependencies import get_current_user
-from app.core.authorization import require_permission, resolve_permissions
+from app.core.authorization import resolve_permissions
 from app.core.security.jwt import create_access_token
 from app.core.security.oauth import get_provider, provider_redirect_uri
 from app.core.security.password import spend_verify_work
@@ -448,7 +448,7 @@ def password_reset_confirm(data: PasswordReset, db: Session = Depends(get_db)):
 
 
 @router.get("/me", response_model=UserResponse)
-def get_me(current_user: User = Depends(require_permission("self.profile.read"))):
+def get_me(current_user: User = Depends(get_current_user)):
     member = current_user.person.member
     return UserResponse(
         id=current_user.id,

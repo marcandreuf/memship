@@ -7,7 +7,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
-from app.core.authorization import require_permission, user_has
+from app.core.authorization import require_any_permission, require_permission, user_has
 from app.core.config import settings
 from app.core.db_utils import get_or_404
 from app.core.security.dependencies import get_current_user
@@ -36,7 +36,7 @@ router = APIRouter(prefix="/activities/{activity_id}/attachment-types", tags=["a
 def list_attachment_types(
     activity_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("self.activities.read")),
+    current_user: User = Depends(require_any_permission("activities.read", "self.activities.read")),
 ):
     """List attachment types for an activity (all authenticated users)."""
     get_or_404(db, Activity, activity_id)
@@ -114,7 +114,9 @@ upload_router = APIRouter(tags=["registration-attachments"])
 def list_registration_attachments(
     registration_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("self.registrations.read")),
+    current_user: User = Depends(
+        require_any_permission("registrations.read", "self.registrations.read")
+    ),
 ):
     """List attachments for a registration."""
     registration = get_or_404(db, Registration, registration_id)
@@ -144,7 +146,9 @@ async def upload_registration_attachment(
     file: UploadFile,
     attachment_type_id: int | None = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("self.registrations.write")),
+    current_user: User = Depends(
+        require_any_permission("registrations.write", "self.registrations.write")
+    ),
 ):
     """Upload a file attachment for a registration."""
     registration = get_or_404(db, Registration, registration_id)

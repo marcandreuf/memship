@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from app.core.authorization import require_permission
+from app.core.authorization import require_any_permission, require_permission
 from app.core.encryption import decrypt_config, encrypt_config, mask_config
 from app.core.pagination import paginate
 from app.core.security.dependencies import get_current_user
@@ -67,7 +67,7 @@ def _mask_provider(provider: PaymentProvider) -> dict:
 @router.get("/active-methods")
 def list_active_methods(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("self.activities.read")),
+    current_user: User = Depends(require_any_permission("settings.read", "self.activities.read")),
 ):
     """Return the set of active payment provider types for member self-service.
 
