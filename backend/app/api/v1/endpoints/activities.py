@@ -21,6 +21,7 @@ from app.domains.activities.service import (
     archive_activity,
     cancel_activity,
     create_activity,
+    get_visible_activity_or_404,
     publish_activity,
     update_activity,
 )
@@ -151,15 +152,7 @@ def get_activity(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_any_permission("activities.read", "self.activities.read")),
 ):
-    activity = db.query(Activity).filter(Activity.id == activity_id).first()
-    if not activity:
-        raise HTTPException(status_code=404, detail="Activity not found")
-
-    # Members can only see published activities
-    if not user_has(current_user, "activities.read") and activity.status != "published":
-        raise HTTPException(status_code=404, detail="Activity not found")
-
-    return _to_response(activity)
+    return _to_response(get_visible_activity_or_404(db, activity_id, current_user))
 
 
 @router.post("/", response_model=ActivityResponse, status_code=status.HTTP_201_CREATED)
