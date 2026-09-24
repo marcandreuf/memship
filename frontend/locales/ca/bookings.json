@@ -125,6 +125,7 @@
       "rules": "Regles de reserva",
       "windowDays": "Finestra de reserva (dies d'antelació)",
       "deadlineHours": "Termini d'autocancel·lació (hores abans de l'inici)",
+      "invalidNumber": "Introdueix un nombre enter entre {min} i {max}.",
       "waitlist": "Activa la llista d'espera",
       "waitlistDesc": "Quan una franja és plena, permet als socis apuntar-se a una llista d'espera i ser promocionats automàticament."
     }

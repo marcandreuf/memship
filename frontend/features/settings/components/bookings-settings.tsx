@@ -10,6 +10,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormSkeleton } from "@/components/ui/skeletons";
 import { useSettings, useUpdateSettings } from "../hooks/use-settings";
 
+// Mirrors backend `app/domains/bookings/rules.py`.
+const WINDOW_DAYS = { min: 1, max: 365 };
+const DEADLINE_HOURS = { min: 0, max: 8760 };
+
+function parseRule(value: string, { min, max }: { min: number; max: number }) {
+  if (!/^\d+$/.test(value.trim())) return null;
+  const n = Number(value);
+  return n >= min && n <= max ? n : null;
+}
+
 export function BookingsSettings() {
   const t = useTranslations();
   const { data: settings, isLoading } = useSettings();
@@ -25,6 +35,9 @@ export function BookingsSettings() {
   const [deadlineHours, setDeadlineHours] = useState<string>(
     String(features.booking_cancellation_deadline_hours ?? 24)
   );
+
+  const [windowError, setWindowError] = useState(false);
+  const [deadlineError, setDeadlineError] = useState(false);
 
   if (isLoading) return <FormSkeleton fields={2} />;
 
@@ -80,15 +93,23 @@ export function BookingsSettings() {
                 <Input
                   className="h-8"
                   type="number"
-                  min={1}
+                  min={WINDOW_DAYS.min}
+                  max={WINDOW_DAYS.max}
                   value={windowDays}
+                  aria-invalid={windowError}
                   onChange={(e) => setWindowDays(e.target.value)}
                   onBlur={() => {
-                    const n = parseInt(windowDays, 10);
-                    if (!Number.isNaN(n) && n >= 1)
+                    const n = parseRule(windowDays, WINDOW_DAYS);
+                    setWindowError(n === null);
+                    if (n !== null && n !== features.booking_window_days)
                       save({ booking_window_days: n });
                   }}
                 />
+                {windowError && (
+                  <p className="text-xs text-destructive">
+                    {t("bookings.settings.invalidNumber", WINDOW_DAYS)}
+                  </p>
+                )}
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">
@@ -97,15 +118,26 @@ export function BookingsSettings() {
                 <Input
                   className="h-8"
                   type="number"
-                  min={0}
+                  min={DEADLINE_HOURS.min}
+                  max={DEADLINE_HOURS.max}
                   value={deadlineHours}
+                  aria-invalid={deadlineError}
                   onChange={(e) => setDeadlineHours(e.target.value)}
                   onBlur={() => {
-                    const n = parseInt(deadlineHours, 10);
-                    if (!Number.isNaN(n) && n >= 0)
+                    const n = parseRule(deadlineHours, DEADLINE_HOURS);
+                    setDeadlineError(n === null);
+                    if (
+                      n !== null &&
+                      n !== features.booking_cancellation_deadline_hours
+                    )
                       save({ booking_cancellation_deadline_hours: n });
                   }}
                 />
+                {deadlineError && (
+                  <p className="text-xs text-destructive">
+                    {t("bookings.settings.invalidNumber", DEADLINE_HOURS)}
+                  </p>
+                )}
               </div>
             </div>
 

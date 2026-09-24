@@ -125,6 +125,7 @@
       "rules": "Reglas de reserva",
       "windowDays": "Ventana de reserva (días de antelación)",
       "deadlineHours": "Plazo de autocancelación (horas antes del inicio)",
+      "invalidNumber": "Introduce un número entero entre {min} y {max}.",
       "waitlist": "Activar lista de espera",
       "waitlistDesc": "Cuando una franja está completa, permite a los socios apuntarse a una lista de espera y ser promocionados automáticamente."
     }
