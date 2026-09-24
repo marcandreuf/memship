@@ -11,6 +11,7 @@ from app.core.pagination import paginate
 from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
 from app.domains.activities.models import Activity
+from app.domains.activities.pricing import priced
 from app.domains.activities.schemas import (
     ActivityCreate,
     ActivityListResponse,
@@ -30,7 +31,7 @@ from app.domains.auth.models import User
 router = APIRouter(prefix="/activities", tags=["activities"])
 
 
-def _to_response(activity: Activity) -> ActivityResponse:
+def _to_response(db: Session, activity: Activity) -> ActivityResponse:
     now = datetime.now(timezone.utc)
     available_spots = max(0, activity.max_participants - (activity.current_participants or 0))
     is_registration_open = (
@@ -80,7 +81,7 @@ def _to_response(activity: Activity) -> ActivityResponse:
         created_at=activity.created_at,
         updated_at=activity.updated_at,
         modalities=[m for m in activity.modalities] if activity.modalities else [],
-        prices=[p for p in activity.prices] if activity.prices else [],
+        prices=[priced(db, activity, p) for p in activity.prices],
     )
 
 
@@ -152,7 +153,7 @@ def get_activity(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_any_permission("activities.read", "self.activities.read")),
 ):
-    return _to_response(get_visible_activity_or_404(db, activity_id, current_user))
+    return _to_response(db, get_visible_activity_or_404(db, activity_id, current_user))
 
 
 @router.post("/", response_model=ActivityResponse, status_code=status.HTTP_201_CREATED)
@@ -164,7 +165,7 @@ def create_activity_endpoint(
     activity = create_activity(db, data, current_user.id)
     db.commit()
     db.refresh(activity)
-    return _to_response(activity)
+    return _to_response(db, activity)
 
 
 @router.put("/{activity_id}", response_model=ActivityResponse)
@@ -178,7 +179,7 @@ def update_activity_endpoint(
     activity = update_activity(db, activity, data)
     db.commit()
     db.refresh(activity)
-    return _to_response(activity)
+    return _to_response(db, activity)
 
 
 @router.delete("/{activity_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -207,7 +208,7 @@ def publish_activity_endpoint(
     activity = publish_activity(db, activity)
     db.commit()
     db.refresh(activity)
-    return _to_response(activity)
+    return _to_response(db, activity)
 
 
 @router.put("/{activity_id}/archive", response_model=ActivityResponse)
@@ -220,7 +221,7 @@ def archive_activity_endpoint(
     activity = archive_activity(db, activity)
     db.commit()
     db.refresh(activity)
-    return _to_response(activity)
+    return _to_response(db, activity)
 
 
 @router.put("/{activity_id}/cancel", response_model=ActivityResponse)
@@ -233,4 +234,4 @@ def cancel_activity_endpoint(
     activity = cancel_activity(db, activity)
     db.commit()
     db.refresh(activity)
-    return _to_response(activity)
+    return _to_response(db, activity)

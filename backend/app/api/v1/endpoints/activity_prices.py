@@ -1,7 +1,5 @@
 """Activity price endpoints."""
 
-from decimal import Decimal
-
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
@@ -10,6 +8,7 @@ from app.core.db_utils import get_or_404
 from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
 from app.domains.activities.models import Activity, ActivityModality, ActivityPrice
+from app.domains.activities.pricing import priced
 from app.domains.activities.schemas import (
     ActivityPriceCreate,
     ActivityPriceResponse,
@@ -17,22 +16,8 @@ from app.domains.activities.schemas import (
 )
 from app.domains.activities.service import get_visible_activity_or_404
 from app.domains.auth.models import User
-from app.domains.billing.service import activity_vat_rate, calculate_vat
 
 router = APIRouter(prefix="/activities/{activity_id}/prices", tags=["activity-prices"])
-
-
-def _priced(db: Session, activity: Activity, price: ActivityPrice) -> ActivityPriceResponse:
-    """Attach what the member will actually be charged to a stored base price."""
-    rate = activity_vat_rate(db, activity.tax_rate)
-    vat, total = calculate_vat(Decimal(str(price.amount)), rate)
-    return ActivityPriceResponse.model_validate(price).model_copy(
-        update={
-            "vat_rate": float(rate),
-            "vat_amount": float(vat),
-            "total_amount": float(total),
-        }
-    )
 
 
 @router.get("/", response_model=list[ActivityPriceResponse])
@@ -47,7 +32,7 @@ def list_prices(
     if modality_id is not None:
         query = query.filter(ActivityPrice.modality_id == modality_id)
     return [
-        _priced(db, activity, p)
+        priced(db, activity, p)
         for p in query.order_by(ActivityPrice.display_order).all()
     ]
 
@@ -77,7 +62,7 @@ def create_price(
     db.add(price)
     db.commit()
     db.refresh(price)
-    return _priced(db, activity, price)
+    return priced(db, activity, price)
 
 
 @router.put("/{price_id}", response_model=ActivityPriceResponse)
@@ -98,7 +83,7 @@ def update_price(
         setattr(price, key, value)
     db.commit()
     db.refresh(price)
-    return _priced(db, activity, price)
+    return priced(db, activity, price)
 
 
 @router.delete("/{price_id}", status_code=status.HTTP_204_NO_CONTENT)
