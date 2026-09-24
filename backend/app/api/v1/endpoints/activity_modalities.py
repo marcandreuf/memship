@@ -13,6 +13,7 @@ from app.domains.activities.schemas import (
     ActivityModalityResponse,
     ActivityModalityUpdate,
 )
+from app.domains.activities.service import get_visible_activity_or_404
 from app.domains.auth.models import User
 
 router = APIRouter(prefix="/activities/{activity_id}/modalities", tags=["activity-modalities"])
@@ -24,7 +25,7 @@ def list_modalities(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_any_permission("activities.read", "self.activities.read")),
 ):
-    get_or_404(db, Activity, activity_id)
+    get_visible_activity_or_404(db, activity_id, current_user)
     return (
         db.query(ActivityModality)
         .filter(ActivityModality.activity_id == activity_id)

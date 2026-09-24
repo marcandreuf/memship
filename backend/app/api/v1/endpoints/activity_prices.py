@@ -15,6 +15,7 @@ from app.domains.activities.schemas import (
     ActivityPriceResponse,
     ActivityPriceUpdate,
 )
+from app.domains.activities.service import get_visible_activity_or_404
 from app.domains.auth.models import User
 from app.domains.billing.service import activity_vat_rate, calculate_vat
 
@@ -41,7 +42,7 @@ def list_prices(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_any_permission("activities.read", "self.activities.read")),
 ):
-    activity = get_or_404(db, Activity, activity_id)
+    activity = get_visible_activity_or_404(db, activity_id, current_user)
     query = db.query(ActivityPrice).filter(ActivityPrice.activity_id == activity_id)
     if modality_id is not None:
         query = query.filter(ActivityPrice.modality_id == modality_id)
