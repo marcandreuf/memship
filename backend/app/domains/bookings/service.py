@@ -32,6 +32,7 @@ from app.domains.bookings.notifications import (
     BookingNotifier,
     NullBookingNotifier,
 )
+from app.domains.bookings.rules import int_rule
 from app.domains.bookings.schemas import (
     SpaceCreate,
     SpaceSlotCreate,
@@ -157,11 +158,11 @@ def _locale(db: Session) -> str:
 
 
 def _window_days(db: Session) -> int:
-    return int(_features(db).get("booking_window_days", 14))
+    return int_rule(_features(db), "booking_window_days")
 
 
 def _deadline_hours(db: Session) -> int:
-    return int(_features(db).get("booking_cancellation_deadline_hours", 24))
+    return int_rule(_features(db), "booking_cancellation_deadline_hours")
 
 
 def _waitlist_enabled(db: Session) -> bool:

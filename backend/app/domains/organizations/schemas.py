@@ -2,9 +2,10 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.core.schema_types import Email
+from app.domains.bookings.rules import validate_booking_rules
 
 
 class OrganizationSettingsResponse(BaseModel):
@@ -98,3 +99,8 @@ class OrganizationSettingsUpdate(BaseModel):
     sepa_format: str | None = Field(default=None, pattern=r"^(pain\.008)$")
     features: dict | None = None
     custom_settings: dict | None = None
+
+    @field_validator("features")
+    @classmethod
+    def _check_booking_rules(cls, v: dict | None) -> dict | None:
+        return validate_booking_rules(v) if v is not None else v
