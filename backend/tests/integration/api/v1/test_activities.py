@@ -298,3 +298,47 @@ class TestUnpublishedActivityVisibility:
         client.cookies.update(_auth_cookie(admin))
 
         assert client.get(f"/api/v1/activities/{activity.id}{path}").status_code == 200
+
+
+class TestActivityDetailPrices:
+    """The detail endpoint carries the activity's prices, and the sign-up page
+    reads them from there — so they must say what the receipt will charge (#289).
+
+    Serialized straight from the rows, the schema's VAT defaults of 0 came
+    through and a 55 € + 10 % price read as 0,00 €."""
+
+    def test_detail_prices_carry_vat(self, client, db):
+        admin = _create_user(db, "admin", "-detail-vat")
+        member = _create_user(db, "member", "-detail-vat")
+        activity = _create_activity(
+            db, slug="detail-vat", status="published", tax_rate=10, created_by_id=admin.id
+        )
+        db.add(ActivityPrice(activity_id=activity.id, name="Per Person", amount=55))
+        db.flush()
+        client.cookies.update(_auth_cookie(member))
+
+        price = client.get(f"/api/v1/activities/{activity.id}").json()["prices"][0]
+
+        assert price["amount"] == 55
+        assert price["vat_rate"] == 10
+        assert price["vat_amount"] == 5.5
+        assert price["total_amount"] == 60.5
+
+    def test_detail_prices_match_the_prices_endpoint(self, client, db):
+        admin = _create_user(db, "admin", "-detail-match")
+        activity = _create_activity(
+            db, slug="detail-match", status="published", tax_rate=21, created_by_id=admin.id
+        )
+        db.add(ActivityPrice(activity_id=activity.id, name="A", amount=12.34, display_order=0))
+        db.add(ActivityPrice(activity_id=activity.id, name="B", amount=0, display_order=1))
+        db.flush()
+        client.cookies.update(_auth_cookie(admin))
+
+        detail = client.get(f"/api/v1/activities/{activity.id}").json()["prices"]
+        listed = client.get(f"/api/v1/activities/{activity.id}/prices").json()
+
+        fields = ("id", "amount", "vat_rate", "vat_amount", "total_amount")
+        by_id = {p["id"]: p for p in listed}
+        assert len(detail) == len(listed) == 2
+        for p in detail:
+            assert {f: p[f] for f in fields} == {f: by_id[p["id"]][f] for f in fields}
