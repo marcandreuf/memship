@@ -42,6 +42,7 @@ from app.domains.members.service import (
     is_minor_by_dob,
     reject_registration,
 )
+from app.domains.persons.gender import require_offered_gender
 from app.domains.persons.models import Contact, ContactType, Person
 
 router = APIRouter(prefix="/members", tags=["members"])
@@ -191,6 +192,7 @@ def create_member_endpoint(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("members.write")),
 ):
+    require_offered_gender(db, data.gender)
     member = create_member(
         db,
         first_name=data.first_name,
@@ -261,6 +263,9 @@ def update_member(
             )
 
     update_data = data.model_dump(exclude_unset=True)
+
+    if "gender" in update_data:
+        require_offered_gender(db, update_data["gender"], member.person.gender)
 
     # The address also lives on the User row, and login reads it from there.
     if "email" in update_data:
@@ -505,6 +510,7 @@ def update_my_profile(
     update_data = data.model_dump(exclude_unset=True)
 
     if "gender" in update_data:
+        require_offered_gender(db, update_data["gender"], person.gender)
         person.gender = update_data["gender"]
 
     if "phone" in update_data:
