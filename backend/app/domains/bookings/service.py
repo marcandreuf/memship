@@ -290,14 +290,16 @@ def delete_space(
 ) -> list[Booking]:
     """Destructively delete a space (slots + bookings cascade). Without force,
     refuses when members hold active future bookings; with force, every
-    affected member is notified before the rows are gone. Deactivation via
-    update is the non-destructive default path."""
+    affected member is notified and their unpaid receipts voided before the rows
+    are gone, as cancelling each booking would. Deactivation via update is the
+    non-destructive default path."""
     notifier = notifier or NullBookingNotifier()
     slot_ids = [s.id for s in space.slots]
     affected = _affected_active_bookings(db, slot_ids)
     if affected and not force:
         raise HasActiveBookings(len({b.member_id for b in affected}))
     for b in affected:
+        void_booking_receipts(db, b)
         notifier.send_admin_cancellation(
             _notification(db, b, b.slot, space, b.member)
         )
@@ -526,13 +528,15 @@ def delete_slot(
 ) -> list[Booking]:
     """Destructively delete a slot (bookings cascade). Without force, refuses
     when members hold active bookings on it (today or future); with force,
-    every affected member is notified before the rows are gone."""
+    every affected member is notified and their unpaid receipts voided before
+    the rows are gone, as cancelling each booking would."""
     notifier = notifier or NullBookingNotifier()
     affected = _affected_active_bookings(db, [slot.id])
     if affected and not force:
         raise HasActiveBookings(len({b.member_id for b in affected}))
     space = get_space(db, slot.space_id)
     for b in affected:
+        void_booking_receipts(db, b)
         notifier.send_admin_cancellation(
             _notification(db, b, slot, space, b.member)
         )
