@@ -53,7 +53,7 @@ def list_mandates(
             | SepaMandate.debtor_iban.ilike(f"%{search}%")
         )
 
-    query = query.order_by(SepaMandate.created_at.desc())
+    query = query.order_by(SepaMandate.created_at.desc(), SepaMandate.id.desc())
     items, meta = paginate(query, page, per_page)
 
     return {

@@ -1,5 +1,6 @@
 """Registration endpoints."""
 
+from datetime import datetime, timezone
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -343,18 +344,37 @@ def change_registration_status(
 def list_my_registrations(
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
+    upcoming: bool = Query(False),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("self.registrations.read")),
 ):
-    """List current user's registrations."""
+    """List current user's registrations, newest sign-up first.
+
+    ``upcoming`` narrows it to the activities still ahead of the member — held
+    (confirmed or waitlisted) and not yet over — soonest first, which is what
+    the dashboard's "Tus próximas actividades" card shows (#290). An activity
+    already running still counts: the member is still attending it.
+    """
     member = current_member_or_403(db, current_user)
 
     query = (
         db.query(Registration)
         .filter(Registration.member_id == member.id)
         .options(joinedload(Registration.activity))
-        .order_by(Registration.created_at.desc())
     )
+    if upcoming:
+        query = (
+            query.join(Activity, Registration.activity_id == Activity.id)
+            .filter(
+                Registration.status.in_(("confirmed", "waitlist")),
+                Activity.ends_at >= datetime.now(timezone.utc),
+            )
+            .order_by(Activity.starts_at.asc(), Registration.id.asc())
+        )
+    else:
+        query = query.order_by(
+            Registration.created_at.desc(), Registration.id.desc()
+        )
 
     items, meta = paginate(query, page, per_page)
 
