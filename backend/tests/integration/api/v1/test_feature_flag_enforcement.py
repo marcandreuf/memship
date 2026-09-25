@@ -10,9 +10,10 @@ guard. These tests hold that line — each asserts the refusal for one route of 
 router, so a new route added without the guard is not caught here; what is caught
 is a guard being removed from the route it protects.
 
-`gender_options` is the exception and the reason this file has an xfail: the org
+`gender_options` is the sixth, reached through a different mechanism: the org
 defines a closed list, the member forms render a select from it, and the API
-accepts any string. See the tripwire at the bottom.
+refuses a value outside it rather than gating a router. The last class holds
+that line.
 """
 
 import pytest
@@ -133,23 +134,15 @@ class TestSurfaceFlagsRefuseWhenOff:
 
 
 class TestGenderOptionsAreServerEnforced:
-    """`gender_options` is the one flag of the 21 with no backend read at all.
+    """`gender_options` is enforced by the server, not only by the select.
 
     The org stores a closed list of `{value, label_es, label_ca, label_en}`; the
-    member form and the profile form both render a select from it. The API takes
-    `gender: str | None = Field(max_length=20)` and validates nothing, so any
-    string within the length limit is stored. A value outside the list then has
-    no label in any locale and renders blank wherever it is shown.
+    member form and the profile form both render a select from it. A value
+    outside the list has no label in any locale and renders blank wherever it is
+    shown, so `require_offered_gender` in `domains/persons/gender.py` refuses it.
+    These tests pin that refusal.
     """
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason=(
-            "No server-side validation of `gender` against `features.gender_options`. "
-            "Remove this marker and invert nothing once the schema validates the "
-            "value — the assertion below is already the desired behaviour."
-        ),
-    )
     def test_gender_outside_the_configured_options_is_refused(self, client, db):
         _org(
             db,
@@ -174,8 +167,8 @@ class TestGenderOptionsAreServerEnforced:
         )
 
         assert response.status_code == 422, (
-            "the API stored a gender the organization does not offer; the select "
-            "in the UI is the only thing constraining it"
+            "the API accepted a gender the organization does not offer, leaving "
+            "the select in the UI as the only thing constraining it"
         )
 
     def test_a_configured_gender_is_accepted(self, client, db):
