@@ -111,13 +111,15 @@ export default function MemberDetailPage({
             onSubmit={async (data) => {
               await update({
                 id: memberId,
+                // An emptied field is sent as null: `undefined` is dropped by
+                // JSON.stringify, and the partial update then keeps the old value.
                 data: {
                   ...data,
-                  email: data.email || undefined,
-                  date_of_birth: data.date_of_birth || undefined,
-                  gender: data.gender || undefined,
-                  national_id: data.national_id || undefined,
-                  internal_notes: data.internal_notes || undefined,
+                  email: data.email || null,
+                  date_of_birth: data.date_of_birth || null,
+                  gender: data.gender || null,
+                  national_id: data.national_id || null,
+                  internal_notes: data.internal_notes || null,
                 },
               });
               toast.success(t("toast.success.saved"));

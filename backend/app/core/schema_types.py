@@ -56,3 +56,23 @@ Email = Annotated[
         max_length=255,
     ),
 ]
+
+
+def NonBlank(max_length: int):
+    """A required text field: surrounding whitespace is stripped before the
+    length check, so a value made only of spaces is refused like an empty one
+    instead of being stored and rendered as a blank name (#285)."""
+    return Annotated[
+        str,
+        StringConstraints(strip_whitespace=True, min_length=1, max_length=max_length),
+    ]
+
+
+def refuse_null(value: Any) -> Any:
+    """For an update schema's optional field backed by a NOT NULL column:
+    omitting it keeps the stored value, but an explicit ``null`` is refused
+    rather than reaching the database. Validators only run on values the body
+    actually carries, so omission is unaffected."""
+    if value is None:
+        raise ValueError("This field cannot be empty")
+    return value

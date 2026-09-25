@@ -4,7 +4,7 @@ from datetime import date, datetime
 
 from pydantic import BaseModel, Field, field_validator
 
-from app.core.schema_types import Email
+from app.core.schema_types import Email, NonBlank, refuse_null
 from app.domains.shared.enums import MemberStatus
 
 
@@ -51,8 +51,8 @@ class MembershipTypeResponse(BaseModel):
 # --- Member ---
 
 class MemberCreate(BaseModel):
-    first_name: str = Field(min_length=1, max_length=100)
-    last_name: str = Field(min_length=1, max_length=100)
+    first_name: NonBlank(100)
+    last_name: NonBlank(100)
     email: Email | None = None
     date_of_birth: date | None = None
     gender: str | None = Field(default=None, max_length=20)
@@ -102,8 +102,8 @@ class MemberSelfUpdate(BaseModel):
     callers holding ``members.write``.
     """
 
-    first_name: str | None = Field(default=None, min_length=1, max_length=100)
-    last_name: str | None = Field(default=None, min_length=1, max_length=100)
+    first_name: NonBlank(100) | None = None
+    last_name: NonBlank(100) | None = None
     date_of_birth: date | None = None
     gender: str | None = Field(default=None, max_length=20)
     national_id: str | None = Field(default=None, max_length=20)
@@ -112,6 +112,8 @@ class MemberSelfUpdate(BaseModel):
     # A member's own choice, so it belongs to the self-editable set rather than
     # to the staff-only fields ``MemberUpdate`` adds back.
     communication_preferences: CommunicationPreferences | None = None
+
+    _names_not_null = field_validator("first_name", "last_name")(refuse_null)
 
     @field_validator("date_of_birth")
     @classmethod

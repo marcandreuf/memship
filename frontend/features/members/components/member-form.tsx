@@ -30,8 +30,8 @@ import type { MemberData } from "../services/members-api";
 import type { GenderOption } from "@/features/settings/components/gender-options-settings";
 
 const memberSchema = z.object({
-  first_name: z.string().min(1).max(100),
-  last_name: z.string().min(1).max(100),
+  first_name: z.string().trim().min(1).max(100),
+  last_name: z.string().trim().min(1).max(100),
   email: optionalEmailSchema,
   date_of_birth: z.string().optional().or(z.literal("")),
   gender: z.string().optional().or(z.literal("")),

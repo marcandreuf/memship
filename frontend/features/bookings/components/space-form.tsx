@@ -30,7 +30,7 @@ const toTimeInput = (s: string | null | undefined) => (s ? s.slice(0, 5) : "");
 
 const spaceSchema = z
   .object({
-    name: z.string().min(1).max(200),
+    name: z.string().trim().min(1).max(200),
     space_type: z.string().max(50),
     description: z.string().max(2000),
     // Left empty the space is free. Kept as a string so "empty" and "0" stay

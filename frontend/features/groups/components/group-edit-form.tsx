@@ -51,7 +51,7 @@ export function GroupEditForm({ group, onSuccess, onCancel }: GroupEditFormProps
   async function onSubmit(data: GroupFormValues) {
     const payload = {
       ...data,
-      color: data.color || undefined,
+      color: data.color || null,
     };
     try {
       await updateMutation.mutateAsync({ id: group.id, data: payload });
