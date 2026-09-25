@@ -43,9 +43,17 @@ export interface PaginatedRegistrations {
   meta: RegistrationPageMeta;
 }
 
+export interface EligibilityReason {
+  code: string;
+  min_age: number | null;
+  max_age: number | null;
+}
+
 export interface EligibilityData {
   eligible: boolean;
+  /** English, as the API states it; `details` is what the UI shows. */
   reasons: string[];
+  details: EligibilityReason[];
 }
 
 export interface ConsentAcceptanceParam {

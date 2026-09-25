@@ -62,9 +62,7 @@ export default function RegisterPage({
   const visiblePrices = activity.prices.filter((p) => p.is_visible && p.is_active);
   const selectedPrice = visiblePrices.find((p) => p.id === selectedPriceId);
   const hasModalities = activity.modalities.length > 0;
-  const isAlreadyRegistered = eligibility?.reasons?.some((r) =>
-    r.toLowerCase().includes("already registered")
-  );
+  const isAlreadyRegistered = eligibility?.details?.some((d) => d.code === "already_registered");
 
   const mandatoryConsents = activityConsents.filter((c: ActivityConsentData) => c.is_mandatory);
   const allMandatoryAccepted = mandatoryConsents.every((c: ActivityConsentData) => acceptedConsents[c.id]);
@@ -140,7 +138,17 @@ export default function RegisterPage({
             <div>
               <Badge variant="destructive">{t("activities.registration.notEligible")}</Badge>
               <ul className="mt-2 text-sm text-muted-foreground list-disc list-inside">
-                {eligibility?.reasons.map((r, i) => <li key={i}>{r}</li>)}
+                {eligibility?.details.map((d, i) => {
+                  const key = `activities.eligibility.${d.code}`;
+                  // A code this build has no text for falls back to the API's own words.
+                  return (
+                    <li key={i}>
+                      {t.has(key)
+                        ? t(key, { min_age: d.min_age ?? 0, max_age: d.max_age ?? 0 })
+                        : eligibility.reasons[i]}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           )}

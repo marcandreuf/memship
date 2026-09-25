@@ -33,9 +33,18 @@ class AdminStatusChangeRequest(BaseModel):
     admin_notes: str | None = Field(default=None, max_length=2000)
 
 
+class EligibilityReason(BaseModel):
+    code: str
+    min_age: int | None = None
+    max_age: int | None = None
+
+
 class EligibilityResponse(BaseModel):
     eligible: bool
+    # English, for API callers and logs; ``details`` carries the same reasons
+    # as codes the UI translates.
     reasons: list[str] = []
+    details: list[EligibilityReason] = []
 
 
 class RegistrationMemberInfo(BaseModel):

@@ -50,7 +50,7 @@ describe("8. Eligibility Rules — Age Restrictions", () => {
     visitRegisterPage("Kids Dance Party");
 
     cy.contains("You are not eligible").should("be.visible");
-    cy.contains("Maximum age is 12").should("be.visible");
+    cy.contains("The maximum age is 12").should("be.visible");
   });
 
   it("8.2 — adult rejected from youth activity (max_age=17)", () => {
@@ -58,7 +58,7 @@ describe("8. Eligibility Rules — Age Restrictions", () => {
     visitRegisterPage("Summer Soccer Camp");
 
     cy.contains("You are not eligible").should("be.visible");
-    cy.contains("Maximum age is 17").should("be.visible");
+    cy.contains("The maximum age is 17").should("be.visible");
   });
 
   // Using member@examplee6e3b1.com — active, no DOB, has available activities
@@ -76,7 +76,7 @@ describe("8. Eligibility Rules — Age Restrictions", () => {
     visitRegisterPage("Summer Soccer Camp");
 
     cy.contains("You are not eligible").should("be.visible");
-    cy.contains("date of birth is required").should("be.visible");
+    cy.contains("add your date of birth").should("be.visible");
   });
 });
 
@@ -103,7 +103,7 @@ describe("8. Eligibility Rules — Member Status", () => {
     visitRegisterPage("Yoga Workshop");
 
     cy.contains("You are not eligible").should("be.visible");
-    cy.contains("Member status is not active").should("be.visible");
+    cy.contains("Your membership is not active").should("be.visible");
   });
 
   it("8.7c — expired member is not eligible", () => {
@@ -111,7 +111,7 @@ describe("8. Eligibility Rules — Member Status", () => {
     visitRegisterPage("Yoga Workshop");
 
     cy.contains("You are not eligible").should("be.visible");
-    cy.contains("Member status is not active").should("be.visible");
+    cy.contains("Your membership is not active").should("be.visible");
   });
 });
 

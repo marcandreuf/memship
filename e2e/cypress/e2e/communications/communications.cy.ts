@@ -12,7 +12,7 @@ describe("Communications (v0.5.0 + v0.5.1)", () => {
     // member announcements page are available for the rest of the suite.
     cy.loginAsSuperAdmin();
     cy.visit("/en/settings");
-    cy.contains('[role="tab"]', "Communications").click();
+    cy.settingsTab("Members", "Communications");
     cy.get('[role="switch"]').then(($sw) => {
       if ($sw.attr("aria-checked") !== "true") cy.wrap($sw).click();
     });
@@ -24,7 +24,7 @@ describe("Communications (v0.5.0 + v0.5.1)", () => {
   it("shows the Communications settings toggle (super admin)", () => {
     cy.loginAsSuperAdmin();
     cy.visit("/en/settings");
-    cy.contains('[role="tab"]', "Communications").click();
+    cy.settingsTab("Members", "Communications");
     cy.contains("Enable announcements").should("be.visible");
     cy.contains("button", "Save").should("be.visible");
   });

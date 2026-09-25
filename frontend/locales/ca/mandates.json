@@ -4,7 +4,7 @@
     "notFound": "Mandat no trobat",
     "info": "Un mandat SEPA és l'autorització signada pel soci per carregar al seu compte bancari. Un rebut només es pot cobrar per domiciliació si el seu soci té un mandat actiu.",
     "createMandate": "Nou mandat",
-    "mandateReference": "Referencia",
+    "mandateReference": "Referència",
     "member": "Soci",
     "debtorName": "Titular del compte",
     "debtorIban": "IBAN",

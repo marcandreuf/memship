@@ -29,14 +29,15 @@ class TestEligibilityResult:
 
     def test_add_reason_makes_ineligible(self):
         result = EligibilityResult()
-        result.add_reason("Too young")
+        result.add_reason("Minimum age is 18", "below_min_age", min_age=18)
         assert result.eligible is False
-        assert "Too young" in result.reasons
+        assert "Minimum age is 18" in result.reasons
+        assert result.details == [{"code": "below_min_age", "min_age": 18}]
 
     def test_multiple_reasons(self):
         result = EligibilityResult()
-        result.add_reason("Reason 1")
-        result.add_reason("Reason 2")
+        result.add_reason("Reason 1", "code_1")
+        result.add_reason("Reason 2", "code_2")
         assert result.eligible is False
         assert len(result.reasons) == 2
 
@@ -116,6 +117,7 @@ class TestCheckEligibility:
         result = check_eligibility(db, _make_activity(min_age=6, max_age=17), _make_member(dob=None))
         assert result.eligible is False
         assert any("date of birth is required" in r for r in result.reasons)
+        assert {"code": "birth_date_required"} in result.details
 
     def test_unknown_birth_date_is_fine_without_a_restriction(self):
         db = _mock_db()

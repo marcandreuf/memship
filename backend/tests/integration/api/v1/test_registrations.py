@@ -664,6 +664,22 @@ class TestEligibility:
         data = response.json()
         assert data["eligible"] is False
         assert any("not active" in r for r in data["reasons"])
+        assert {"code": "member_not_active", "min_age": None, "max_age": None} in data["details"]
+
+    def test_eligibility_details_carry_the_age_limit(self, client, db):
+        """The reasons reach the page as codes, so a member reads them in their
+        language rather than the API's English."""
+        admin = _create_user(db, "admin", suffix="-eligcode")
+        user, _ = _create_member_with_user(
+            db, suffix="-eligcode", date_of_birth=date(1980, 1, 1)
+        )
+        activity, _ = _create_published_activity(db, admin.id, max_age=17)
+
+        client.cookies.update(_auth_cookie(user))
+        data = client.get(f"/api/v1/activities/{activity.id}/eligibility").json()
+
+        assert data["reasons"] == ["Maximum age is 17"]
+        assert data["details"] == [{"code": "above_max_age", "min_age": None, "max_age": 17}]
 
     def test_capacity_counter_updates(self, client, db):
         admin = _create_user(db, "admin", suffix="-counter")

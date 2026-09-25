@@ -1,5 +1,16 @@
 {
   "activities": {
+    "eligibility": {
+      "not_open": "The activity is not open for registration",
+      "member_not_active": "Your membership is not active",
+      "membership_type_not_allowed": "Your membership type does not give access to this activity",
+      "birth_date_required": "This activity has an age restriction: add your date of birth on My profile",
+      "below_min_age": "The minimum age is {min_age}",
+      "above_max_age": "The maximum age is {max_age}",
+      "registration_not_open": "Registration has not opened yet",
+      "registration_closed": "Registration is closed",
+      "already_registered": "You are already registered for this activity"
+    },
     "title": "Activities",
     "info": "Activities are events, courses, workshops, or competitions that members can register for. Each activity can have modalities (variants), pricing tiers, and eligibility rules.",
     "createActivity": "New Activity",

@@ -244,7 +244,9 @@ def check_activity_eligibility(
     member = current_member_or_403(db, current_user)
 
     result = check_eligibility(db, activity, member)
-    return EligibilityResponse(eligible=result.eligible, reasons=result.reasons)
+    return EligibilityResponse(
+        eligible=result.eligible, reasons=result.reasons, details=result.details
+    )
 
 
 # --- Registration-level endpoints ---
