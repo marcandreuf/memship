@@ -6,11 +6,12 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 
 from fastapi import HTTPException, status
-from sqlalchemy import extract, func, or_
+from sqlalchemy import extract, func
 from sqlalchemy.orm import Query, Session, joinedload, selectinload
 
 from app.core.clock import org_today
 from app.core.money import round_money
+from app.core.search import match_words
 from app.domains.billing.models import Concept, InvoiceSequence, Receipt
 from app.domains.billing.schemas import (
     CreditNoteCreate,
@@ -72,13 +73,13 @@ def build_receipts_query(
     if emission_date_to is not None:
         query = query.filter(Receipt.emission_date <= emission_date_to)
     if search:
-        pattern = f"%{search}%"
         query = query.join(Receipt.member).join(Member.person).filter(
-            or_(
-                Receipt.receipt_number.ilike(pattern),
-                Receipt.description.ilike(pattern),
-                Person.first_name.ilike(pattern),
-                Person.last_name.ilike(pattern),
+            match_words(
+                search,
+                Receipt.receipt_number,
+                Receipt.description,
+                Person.first_name,
+                Person.last_name,
             )
         )
 

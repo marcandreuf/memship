@@ -5,6 +5,7 @@ from datetime import date, datetime, timezone
 from sqlalchemy import func
 from sqlalchemy.orm import Query, Session, joinedload
 
+from app.core.search import match_words
 from app.domains.auth.models import User
 from app.domains.members.models import Member, MembershipType
 from app.domains.organizations.models import OrganizationSettings
@@ -45,12 +46,14 @@ def build_members_query(
         ).filter(MembershipType.group_id == group_id)
 
     if search:
-        search_term = f"%{search}%"
         query = query.join(Person, Member.person_id == Person.id).filter(
-            (Person.first_name.ilike(search_term))
-            | (Person.last_name.ilike(search_term))
-            | (Person.email.ilike(search_term))
-            | (Member.member_number.ilike(search_term))
+            match_words(
+                search,
+                Person.first_name,
+                Person.last_name,
+                Person.email,
+                Member.member_number,
+            )
         )
 
     if status:
