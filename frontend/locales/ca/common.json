@@ -155,6 +155,9 @@
     }
   },
   "apiErrors": {
+    "plan_birth_date_required": "Indica la teva data de naixement al perfil per contractar aquest pla",
+    "plan_below_min_age": "Aquest pla és per a socis de {min_age} anys o més",
+    "plan_above_max_age": "Aquest pla és per a socis de fins a {max_age} anys",
     "forbidden": "No tens permís per fer això",
     "pending_approval": "La teva alta encara està pendent d'aprovació",
     "provider_unavailable": "El proveïdor de pagament no respon. Torna-ho a provar d'aquí a uns minuts",

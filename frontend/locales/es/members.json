@@ -1,5 +1,10 @@
 {
   "members": {
+    "typeAgeWarning": {
+      "belowMin": "Este socio tiene {age} años y {type} exige un mínimo de {limit}. Puedes asignarlo igualmente.",
+      "aboveMax": "Este socio tiene {age} años y {type} está limitado a {limit}. Puedes asignarlo igualmente.",
+      "birthDateRequired": "{type} tiene restricción de edad y este socio no tiene fecha de nacimiento. Puedes asignarlo igualmente."
+    },
     "createMember": "Nuevo socio",
     "editMember": "Editar socio",
     "memberNumber": "Nº socio",

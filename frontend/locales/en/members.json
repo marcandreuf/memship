@@ -1,5 +1,10 @@
 {
   "members": {
+    "typeAgeWarning": {
+      "belowMin": "This member is {age} and {type} requires a minimum of {limit}. You can still assign it.",
+      "aboveMax": "This member is {age} and {type} is capped at {limit}. You can still assign it.",
+      "birthDateRequired": "{type} has an age restriction and this member has no date of birth. You can still assign it."
+    },
     "createMember": "New member",
     "editMember": "Edit member",
     "memberNumber": "Member #",

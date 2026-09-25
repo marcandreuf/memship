@@ -221,3 +221,52 @@ class TestDefaultTier:
         defaults = {t["name"]: t["is_default"] for t in response.json()}
         assert defaults["Free"] is True
         assert defaults["Premium"] is False
+
+
+class TestAgeBand:
+    """The age limits could not be set from the API at all; seeded values were
+    the only way a tier got one (#291)."""
+
+    @pytest.fixture
+    def admin(self, client, db):
+        user = _create_user(db, "admin")
+        client.cookies.update(_auth_cookie(user))
+        return user
+
+    def test_created_with_an_age_band(self, client, admin):
+        r = client.post(
+            "/api/v1/membership-types/",
+            json={"name": "Student", "slug": "student-age", "min_age": 16, "max_age": 25},
+        )
+
+        assert r.status_code == 201
+        assert (r.json()["min_age"], r.json()["max_age"]) == (16, 25)
+
+    def test_an_inverted_band_is_refused_on_create(self, client, admin):
+        r = client.post(
+            "/api/v1/membership-types/",
+            json={"name": "Odd", "slug": "odd-age", "min_age": 30, "max_age": 20},
+        )
+
+        assert r.status_code == 422
+
+    def test_one_end_is_checked_against_the_stored_other(self, client, db, admin):
+        mt = MembershipType(name="Youth", slug="youth-age", max_age=15, is_active=True)
+        db.add(mt)
+        db.flush()
+
+        r = client.put(f"/api/v1/membership-types/{mt.id}", json={"min_age": 18})
+
+        assert r.status_code == 422
+        db.refresh(mt)
+        assert mt.min_age is None
+
+    def test_null_clears_a_limit(self, client, db, admin):
+        mt = MembershipType(name="Senior", slug="senior-age", min_age=65, is_active=True)
+        db.add(mt)
+        db.flush()
+
+        r = client.put(f"/api/v1/membership-types/{mt.id}", json={"min_age": None, "max_age": 99})
+
+        assert r.status_code == 200
+        assert (r.json()["min_age"], r.json()["max_age"]) == (None, 99)

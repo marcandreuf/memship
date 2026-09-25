@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFormatters } from "@/hooks/use-formatters";
+import { ClientApiError } from "@/lib/client-api";
+import { getErrorMessage } from "@/lib/errors";
 import {
   useMembershipQuote,
   usePurchaseMembership,
@@ -99,7 +101,16 @@ export function PurchasePlanDialog({
             <Skeleton className="h-4 w-1/2" />
           </div>
         ) : error || !quote ? (
-          <p className="text-sm text-destructive">{t("membership.quoteUnavailable")}</p>
+          <p className="text-sm text-destructive">
+            {/* A coded refusal (a plan outside the member's age range) says why;
+                anything else stays the generic message. */}
+            {error instanceof ClientApiError &&
+            typeof error.detail === "object" &&
+            error.detail !== null &&
+            !Array.isArray(error.detail)
+              ? getErrorMessage(error, t)
+              : t("membership.quoteUnavailable")}
+          </p>
         ) : (
           <div className="space-y-4">
             <dl className="space-y-1.5 rounded-md border p-3">

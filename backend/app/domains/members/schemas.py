@@ -2,13 +2,19 @@
 
 from datetime import date, datetime
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.core.schema_types import Email, NonBlank, refuse_null
 from app.domains.shared.enums import MemberStatus
 
 
 # --- MembershipType ---
+
+
+def check_age_range(min_age: int | None, max_age: int | None) -> None:
+    if min_age is not None and max_age is not None and min_age > max_age:
+        raise ValueError("The minimum age cannot be above the maximum age")
+
 
 class MembershipTypeCreate(BaseModel):
     name: NonBlank(255)
@@ -18,6 +24,13 @@ class MembershipTypeCreate(BaseModel):
     base_price: float = Field(default=0, ge=0)
     billing_frequency: str = "annual"
     is_active: bool = True
+    min_age: int | None = Field(default=None, ge=0, le=150)
+    max_age: int | None = Field(default=None, ge=0, le=150)
+
+    @model_validator(mode="after")
+    def _age_range(self):
+        check_age_range(self.min_age, self.max_age)
+        return self
 
 
 class MembershipTypeUpdate(BaseModel):
@@ -28,6 +41,10 @@ class MembershipTypeUpdate(BaseModel):
     billing_frequency: str | None = None
     is_active: bool | None = None
     is_default: bool | None = None
+    # null clears a limit. The range is checked against the stored values in
+    # the endpoint, since a partial body may carry only one end.
+    min_age: int | None = Field(default=None, ge=0, le=150)
+    max_age: int | None = Field(default=None, ge=0, le=150)
 
     _not_null = field_validator("name")(refuse_null)
 

@@ -263,6 +263,60 @@ class TestPurchase:
         assert r.status_code == 401
 
 
+class TestAgeRestrictedPlans:
+    """A plan's age range was stored and advertised but never applied: every
+    member could buy Youth or Senior (#291)."""
+
+    def _buy(self, client, db, suffix, *, dob, min_age=None, max_age=None, quote=False):
+        user, member, _, paid = _setup(db, suffix)
+        paid.min_age, paid.max_age = min_age, max_age
+        member.person.date_of_birth = dob
+        db.commit()
+        if quote:
+            return client.get(
+                f"/api/v1/members/me/membership/quote/{paid.id}", cookies=_auth(user)
+            )
+        return client.post(
+            "/api/v1/members/me/membership/purchase",
+            json={"membership_type_id": paid.id},
+            cookies=_auth(user),
+        )
+
+    def test_too_young_is_refused(self, client, db):
+        r = self._buy(client, db, "age-young", dob=date(2015, 1, 1), min_age=65)
+
+        assert r.status_code == 400
+        assert r.json()["detail"]["code"] == "plan_below_min_age"
+
+    def test_too_old_is_refused(self, client, db):
+        r = self._buy(client, db, "age-old", dob=date(1980, 1, 1), max_age=15)
+
+        assert r.status_code == 400
+        assert r.json()["detail"]["code"] == "plan_above_max_age"
+
+    def test_unknown_birth_date_is_refused_for_a_restricted_plan(self, client, db):
+        r = self._buy(client, db, "age-nodob", dob=None, min_age=16, max_age=25)
+
+        assert r.status_code == 400
+        assert r.json()["detail"]["code"] == "plan_birth_date_required"
+
+    def test_the_quote_is_refused_the_same_way(self, client, db):
+        r = self._buy(client, db, "age-quote", dob=date(1980, 1, 1), max_age=15, quote=True)
+
+        assert r.status_code == 400
+        assert r.json()["detail"]["code"] == "plan_above_max_age"
+
+    def test_within_the_range_is_sold(self, client, db):
+        r = self._buy(client, db, "age-ok", dob=date(2004, 6, 1), min_age=16, max_age=25)
+
+        assert r.status_code == 201
+
+    def test_unrestricted_plan_needs_no_birth_date(self, client, db):
+        r = self._buy(client, db, "age-free", dob=None)
+
+        assert r.status_code == 201
+
+
 class TestSelfUpdateStillGuarded:
     def test_a_member_cannot_write_their_own_tier(self, client, db):
         """The purchase endpoint exists because this stays closed."""

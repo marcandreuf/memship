@@ -1,12 +1,13 @@
 """Eligibility checking for activity registration."""
 
 from dataclasses import dataclass, field
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
 from app.domains.activities.models import Activity, Registration
 from app.domains.members.models import Member
+from app.domains.persons.age import age_restriction_problem
 
 
 @dataclass
@@ -43,13 +44,21 @@ def check_eligibility(
         ):
             result.add_reason("Membership type is not eligible for this activity")
 
-    # 4. Age restriction
-    if member.person and member.person.date_of_birth:
-        age = _calculate_age(member.person.date_of_birth, activity.starts_at.date())
-        if activity.min_age is not None and age < activity.min_age:
-            result.add_reason(f"Minimum age is {activity.min_age}")
-        if activity.max_age is not None and age > activity.max_age:
-            result.add_reason(f"Maximum age is {activity.max_age}")
+    # 4. Age restriction, on the day the activity starts
+    problem = age_restriction_problem(
+        member.person.date_of_birth if member.person else None,
+        activity.min_age,
+        activity.max_age,
+        activity.starts_at.date(),
+    )
+    if problem == "birth_date_required":
+        result.add_reason(
+            "Your date of birth is required: this activity has an age restriction"
+        )
+    elif problem == "below_min_age":
+        result.add_reason(f"Minimum age is {activity.min_age}")
+    elif problem == "above_max_age":
+        result.add_reason(f"Maximum age is {activity.max_age}")
 
     # 5. Registration window
     if now < activity.registration_starts_at:
@@ -72,13 +81,3 @@ def check_eligibility(
 
     return result
 
-
-def _calculate_age(date_of_birth: date, reference_date: date) -> int:
-    """Calculate age at a reference date."""
-    age = reference_date.year - date_of_birth.year
-    if (reference_date.month, reference_date.day) < (
-        date_of_birth.month,
-        date_of_birth.day,
-    ):
-        age -= 1
-    return age

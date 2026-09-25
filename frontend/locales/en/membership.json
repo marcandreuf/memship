@@ -9,6 +9,7 @@
     "revertedNotice": "You are on the free plan because a fee went unpaid. Paying it puts you back on \"{plan}\".",
     "availablePlans": "Available plans",
     "noPlans": "There are no plans available to buy.",
+    "birthDateForPlans": "{count, plural, one {# plan has an age restriction} other {# plans have an age restriction}}. Add your date of birth on <profile>My profile</profile> to buy {count, plural, one {it} other {them}}.",
     "beforeVat": "before VAT",
     "choosePlan": "Choose",
     "confirmPurchaseTitle": "Confirm purchase",

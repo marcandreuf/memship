@@ -3,21 +3,22 @@
 from datetime import date, datetime, timedelta, timezone
 from unittest.mock import MagicMock
 
-from app.domains.activities.eligibility import EligibilityResult, _calculate_age, check_eligibility
+from app.domains.activities.eligibility import EligibilityResult, check_eligibility
+from app.domains.persons.age import age_on
 
 
 class TestCalculateAge:
     def test_age_exact_birthday(self):
-        assert _calculate_age(date(2000, 6, 15), date(2026, 6, 15)) == 26
+        assert age_on(date(2000, 6, 15), date(2026, 6, 15)) == 26
 
     def test_age_before_birthday(self):
-        assert _calculate_age(date(2000, 6, 15), date(2026, 6, 14)) == 25
+        assert age_on(date(2000, 6, 15), date(2026, 6, 14)) == 25
 
     def test_age_after_birthday(self):
-        assert _calculate_age(date(2000, 6, 15), date(2026, 6, 16)) == 26
+        assert age_on(date(2000, 6, 15), date(2026, 6, 16)) == 26
 
     def test_age_child(self):
-        assert _calculate_age(date(2018, 3, 1), date(2026, 3, 19)) == 8
+        assert age_on(date(2018, 3, 1), date(2026, 3, 19)) == 8
 
 
 class TestEligibilityResult:
@@ -107,6 +108,19 @@ class TestCheckEligibility:
         result = check_eligibility(db, _make_activity(max_age=17), _make_member(dob=date(1990, 1, 1)))
         assert result.eligible is False
         assert any("Maximum age" in r for r in result.reasons)
+
+    def test_unknown_birth_date_does_not_pass_an_age_restriction(self):
+        """A member with no birth date on file used to pass every age gate —
+        an adult into a camp for ages 6–17 (#291)."""
+        db = _mock_db()
+        result = check_eligibility(db, _make_activity(min_age=6, max_age=17), _make_member(dob=None))
+        assert result.eligible is False
+        assert any("date of birth is required" in r for r in result.reasons)
+
+    def test_unknown_birth_date_is_fine_without_a_restriction(self):
+        db = _mock_db()
+        result = check_eligibility(db, _make_activity(), _make_member(dob=None))
+        assert result.eligible is True
 
     def test_ineligible_registration_not_open(self):
         db = _mock_db()

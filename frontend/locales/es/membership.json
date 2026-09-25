@@ -9,6 +9,7 @@
     "revertedNotice": "Estás en el plan gratuito porque quedó una cuota sin pagar. Al pagarla recuperarás «{plan}».",
     "availablePlans": "Planes disponibles",
     "noPlans": "No hay planes disponibles para contratar.",
+    "birthDateForPlans": "{count, plural, one {Hay # plan con restricción de edad} other {Hay # planes con restricción de edad}}. Indica tu fecha de nacimiento en <profile>Mi perfil</profile> para poder contratarlos.",
     "beforeVat": "sin IVA",
     "choosePlan": "Contratar",
     "confirmPurchaseTitle": "Confirmar contratación",

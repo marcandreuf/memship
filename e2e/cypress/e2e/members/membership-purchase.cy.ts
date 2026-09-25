@@ -38,7 +38,7 @@ describe("Membership purchase", () => {
   it("offers the paid plans", () => {
     cy.get('[data-testid="plan-catalogue"]').within(() => {
       cy.contains("Full Member").should("be.visible");
-      cy.contains("Student").should("be.visible");
+      cy.contains("Annual Member").should("be.visible");
       // Amounts render through the org's locale and currency settings, so the
       // symbol and its position are the club's choice — only the figure is ours.
       cy.contains(/50[.,]00/).should("exist");
@@ -51,6 +51,18 @@ describe("Membership purchase", () => {
     // activate. Honorary and Registered are the two the seed creates at 0.
     cy.get('[data-testid="plan-card-honorary"]').should("not.exist");
     cy.get('[data-testid="plan-card-registered"]').should("not.exist");
+  });
+
+  it("holds back age-restricted plans until the member gives a birth date", () => {
+    // The seeded member has no date of birth, and Student (16–25), Youth and
+    // Senior restrict age: the purchase endpoint refuses them, so the catalogue
+    // does not offer them and says what would change that (#291).
+    cy.get('[data-testid="plan-card-student"]').should("not.exist");
+    cy.get('[data-testid="plans-need-birth-date"]')
+      .should("contain.text", "age restriction")
+      .find("a")
+      .should("have.attr", "href")
+      .and("include", "/profile");
   });
 
   it("quotes the plan on the server before asking for confirmation", () => {
@@ -96,7 +108,7 @@ describe("Membership purchase", () => {
     cy.get('[data-testid="current-plan"]')
       .invoke("text")
       .then((before) => {
-        cy.get('[data-testid="plan-card-student"]')
+        cy.get('[data-testid="plan-card-full-member"]')
           .contains("button", /choose/i)
           .click();
 
@@ -107,7 +119,7 @@ describe("Membership purchase", () => {
         cy.get('[role="dialog"]').should("not.exist");
         cy.get('[data-testid="pending-purchase"]')
           .should("be.visible")
-          .and("contain.text", "Student")
+          .and("contain.text", "Full Member")
           .and("contain.text", "Awaiting payment");
 
         // Unpaid grants nothing.
@@ -115,6 +127,6 @@ describe("Membership purchase", () => {
       });
 
     cy.visit("/en/my-receipts");
-    cy.contains("Student").should("be.visible");
+    cy.contains("Full Member").should("be.visible");
   });
 });
