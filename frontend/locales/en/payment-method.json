@@ -14,7 +14,7 @@
     "bankDetails": "Bank Details",
     "iban": "IBAN",
     "bic": "BIC / SWIFT",
-    "bicHint": "Usually auto-detected from IBAN",
+    "bicHint": "Recommended. You can find it in your account details or on your bank's website.",
     "ibanOnFileHint": "Leave blank to keep the account on file",
     "holderName": "Account Holder Name",
     "mandate": "SEPA Mandate",

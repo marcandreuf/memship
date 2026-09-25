@@ -28,6 +28,24 @@ describe("Settings — Super Admin", () => {
     cy.contains("Full Member").should("be.visible");
     cy.contains("Student").should("be.visible");
   });
+
+  it("lists Communications and Member Card once, under Members", () => {
+    // Both used to be top-level tabs as well as Members sub-tabs, rendering
+    // the same panels twice (#288).
+    cy.get('[role="tablist"]')
+      .first()
+      .find('[role="tab"]')
+      .then(($tabs) => {
+        const labels = [...$tabs].map((tab) => tab.textContent?.trim());
+        expect(labels).to.include("Members");
+        expect(labels).not.to.include("Communications");
+        expect(labels).not.to.include("Member Card");
+      });
+    cy.settingsTab("Members", "Communications");
+    cy.contains("Enable announcements").should("be.visible");
+    cy.settingsTab("Members", "Member Card");
+    cy.contains("Enable member cards").should("be.visible");
+  });
 });
 
 describe("Settings — Admin (non-super)", () => {

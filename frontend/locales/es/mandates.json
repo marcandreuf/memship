@@ -25,7 +25,7 @@
     "uploadSigned": "Subir firmado",
     "uploadSignedDesc": "Sube el documento de mandato firmado (PDF, JPG, PNG)",
     "cancelMandate": "Cancelar mandato",
-    "confirmCancel": "Seguro que deseas cancelar este mandato? Esta accion no se puede deshacer.",
+    "confirmCancel": "¿Seguro que deseas cancelar este mandato? Esta acción no se puede deshacer.",
     "noMandates": "No se encontraron mandatos",
     "notes": "Notas",
     "documentUploaded": "Documento firmado subido",
@@ -36,6 +36,6 @@
     "docUploadedAt": "Subido",
     "detail": "Detalle del mandato",
     "creditorId": "ID del acreedor",
-    "cancelledAt": "Fecha de cancelacion"
+    "cancelledAt": "Fecha de cancelación"
   }
 }

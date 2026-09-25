@@ -36,5 +36,9 @@ export function useAssignMemberNumbers() {
 export function useScanCard() {
   return useMutation({
     mutationFn: (token: string) => scanCard(token),
+    // The scan panel renders the failure itself, translated. A hook-level
+    // onError replaces the global toast, which would repeat it in the API's
+    // English ("Invalid card code").
+    onError: () => {},
   });
 }

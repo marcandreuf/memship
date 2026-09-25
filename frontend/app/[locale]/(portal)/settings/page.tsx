@@ -166,8 +166,6 @@ export default function SettingsPage() {
   const tabItems = [
     isSuperAdmin && { value: "organization", label: t("settings.organization") },
     isSuperAdmin && { value: "payments", label: t("settings.payments") },
-    isSuperAdmin && { value: "communications", label: t("settings.communications.tab") },
-    isSuperAdmin && { value: "member-card", label: t("settings.memberCard.tab") },
     isSuperAdmin && { value: "integrations", label: t("settings.integrations.tab") },
     // Ungated: membership types is the one setting a plain admin can reach,
     // and it lives in here.
@@ -499,15 +497,6 @@ export default function SettingsPage() {
               <MembershipLapseSettings />
             </TabsContent>
           </Tabs>
-        </TabsContent>}
-
-        {isSuperAdmin && <TabsContent value="communications" className="space-y-3">
-          <CommunicationsSettings />
-          <EmailTemplatesSettings />
-        </TabsContent>}
-
-        {isSuperAdmin && <TabsContent value="member-card">
-          <MemberCardSettings />
         </TabsContent>}
 
         {isSuperAdmin && <TabsContent value="integrations">

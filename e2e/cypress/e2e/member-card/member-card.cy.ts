@@ -14,7 +14,7 @@ describe("Member Card + QR (v0.7.0)", () => {
     // Enable the module and configure a number prefix (persists in org settings).
     cy.loginAsSuperAdmin();
     cy.visit("/en/settings");
-    cy.contains('[role="tab"]', "Member Card").click();
+    cy.settingsTab("Members", "Member Card");
     cy.get('[role="switch"]').then(($sw) => {
       if ($sw.attr("aria-checked") !== "true") cy.wrap($sw).click();
     });
@@ -27,7 +27,7 @@ describe("Member Card + QR (v0.7.0)", () => {
   it("shows the Member Card settings toggle + numbering config (super admin)", () => {
     cy.loginAsSuperAdmin();
     cy.visit("/en/settings");
-    cy.contains('[role="tab"]', "Member Card").click();
+    cy.settingsTab("Members", "Member Card");
     cy.contains("Enable member cards").should("be.visible");
     cy.contains("Member numbering").should("be.visible");
     cy.contains("button", "Assign numbers to members without one").should("be.visible");
@@ -113,6 +113,14 @@ describe("Member Card + QR (v0.7.0)", () => {
     cy.get('input[aria-label="Enter code manually"]').type("1.deadbeefdeadbeef");
     cy.contains("button", "Verify").click();
     cy.contains("Invalid card code").should("be.visible");
+    // The panel states the error once, translated. The global mutation toast
+    // used to repeat it in the API's English (#287). Sonner mounts a toast a
+    // moment after the panel renders, and `should("not.exist")` would retry
+    // until a toast timed out, so this checks once, after the toast would be up.
+    cy.wait(1000);
+    cy.get("body").then(($body) => {
+      expect($body.find("[data-sonner-toast]")).to.have.length(0);
+    });
   });
 
   it("hides the scan page from members", () => {

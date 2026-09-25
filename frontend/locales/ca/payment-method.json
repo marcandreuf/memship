@@ -14,7 +14,7 @@
     "bankDetails": "Dades bancàries",
     "iban": "IBAN",
     "bic": "BIC / SWIFT",
-    "bicHint": "Normalment es detecta automàticament a partir de l'IBAN",
+    "bicHint": "Recomanat. El trobaràs a les dades del teu compte o al web del teu banc.",
     "ibanOnFileHint": "Deixa-ho en blanc per mantenir el compte registrat",
     "holderName": "Titular del compte",
     "mandate": "Mandat SEPA",
