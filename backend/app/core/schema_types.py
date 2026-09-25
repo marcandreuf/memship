@@ -8,7 +8,7 @@ columns.
 
 from typing import Annotated, Any
 
-from pydantic import BeforeValidator, StringConstraints
+from pydantic import AfterValidator, BeforeValidator, StringConstraints
 
 
 def normalize_email(value: Any) -> Any:
@@ -56,3 +56,40 @@ Email = Annotated[
         max_length=255,
     ),
 ]
+
+
+def NonBlank(max_length: int):
+    """A required text field: surrounding whitespace is stripped before the
+    length check, so a value made only of spaces is refused like an empty one
+    instead of being stored and rendered as a blank name (#285)."""
+    return Annotated[
+        str,
+        StringConstraints(strip_whitespace=True, min_length=1, max_length=max_length),
+    ]
+
+
+def _require_content(value: str) -> str:
+    if not value.strip():
+        raise ValueError("String should not be blank")
+    return value
+
+
+def NonBlankText(max_length: int | None = None):
+    """Required free text — a consent, an announcement body — that must say
+    something but is stored as typed: leading indentation and trailing line
+    breaks can be part of the text, so unlike ``NonBlank`` nothing is stripped."""
+    return Annotated[
+        str,
+        StringConstraints(min_length=1, max_length=max_length),
+        AfterValidator(_require_content),
+    ]
+
+
+def refuse_null(value: Any) -> Any:
+    """For an update schema's optional field backed by a NOT NULL column:
+    omitting it keeps the stored value, but an explicit ``null`` is refused
+    rather than reaching the database. Validators only run on values the body
+    actually carries, so omission is unaffected."""
+    if value is None:
+        raise ValueError("This field cannot be empty")
+    return value

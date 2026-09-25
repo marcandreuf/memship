@@ -29,7 +29,7 @@ import type { ActivityAttachmentTypeData } from "../services/activities-api";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
 
 const attachmentTypeSchema = z.object({
-  name: z.string().min(1).max(255),
+  name: z.string().trim().min(1).max(255),
   description: z.string().max(2000).optional().or(z.literal("")),
   allowed_extensions: z.string().optional().or(z.literal("")),
   max_file_size_mb: z.coerce.number().int().min(1).max(50),

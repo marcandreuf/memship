@@ -4,14 +4,14 @@ from datetime import date, datetime
 
 from pydantic import BaseModel, Field, field_validator
 
-from app.core.schema_types import Email
+from app.core.schema_types import Email, NonBlank, refuse_null
 from app.domains.shared.enums import MemberStatus
 
 
 # --- MembershipType ---
 
 class MembershipTypeCreate(BaseModel):
-    name: str = Field(min_length=1, max_length=255)
+    name: NonBlank(255)
     slug: str = Field(min_length=1, max_length=100, pattern=r"^[a-z0-9-]+$")
     description: str | None = Field(default=None, max_length=2000)
     group_id: int | None = None
@@ -21,13 +21,15 @@ class MembershipTypeCreate(BaseModel):
 
 
 class MembershipTypeUpdate(BaseModel):
-    name: str | None = Field(default=None, min_length=1, max_length=255)
+    name: NonBlank(255) | None = None
     description: str | None = Field(default=None, max_length=2000)
     group_id: int | None = None
     base_price: float | None = Field(default=None, ge=0)
     billing_frequency: str | None = None
     is_active: bool | None = None
     is_default: bool | None = None
+
+    _not_null = field_validator("name")(refuse_null)
 
 
 class MembershipTypeResponse(BaseModel):
@@ -51,8 +53,8 @@ class MembershipTypeResponse(BaseModel):
 # --- Member ---
 
 class MemberCreate(BaseModel):
-    first_name: str = Field(min_length=1, max_length=100)
-    last_name: str = Field(min_length=1, max_length=100)
+    first_name: NonBlank(100)
+    last_name: NonBlank(100)
     email: Email | None = None
     date_of_birth: date | None = None
     gender: str | None = Field(default=None, max_length=20)
@@ -102,8 +104,8 @@ class MemberSelfUpdate(BaseModel):
     callers holding ``members.write``.
     """
 
-    first_name: str | None = Field(default=None, min_length=1, max_length=100)
-    last_name: str | None = Field(default=None, min_length=1, max_length=100)
+    first_name: NonBlank(100) | None = None
+    last_name: NonBlank(100) | None = None
     date_of_birth: date | None = None
     gender: str | None = Field(default=None, max_length=20)
     national_id: str | None = Field(default=None, max_length=20)
@@ -112,6 +114,8 @@ class MemberSelfUpdate(BaseModel):
     # A member's own choice, so it belongs to the self-editable set rather than
     # to the staff-only fields ``MemberUpdate`` adds back.
     communication_preferences: CommunicationPreferences | None = None
+
+    _names_not_null = field_validator("first_name", "last_name")(refuse_null)
 
     @field_validator("date_of_birth")
     @classmethod
@@ -206,7 +210,7 @@ class MemberResponse(BaseModel):
 # --- Group ---
 
 class GroupCreate(BaseModel):
-    name: str = Field(min_length=1, max_length=255)
+    name: NonBlank(255)
     slug: str = Field(min_length=1, max_length=100, pattern=r"^[a-z0-9-]+$")
     description: str | None = Field(default=None, max_length=2000)
     is_billable: bool = True
@@ -215,12 +219,14 @@ class GroupCreate(BaseModel):
 
 
 class GroupUpdate(BaseModel):
-    name: str | None = Field(default=None, min_length=1, max_length=255)
+    name: NonBlank(255) | None = None
     description: str | None = Field(default=None, max_length=2000)
     is_billable: bool | None = None
     color: str | None = Field(default=None, pattern=r"^#[0-9a-fA-F]{6}$")
     icon: str | None = Field(default=None, max_length=50)
     is_active: bool | None = None
+
+    _not_null = field_validator("name")(refuse_null)
 
 
 class GroupResponse(BaseModel):

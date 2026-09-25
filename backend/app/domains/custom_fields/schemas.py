@@ -2,8 +2,9 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from app.core.schema_types import NonBlank, refuse_null
 from app.domains.shared.enums import (
     CustomFieldAdminAccess,
     CustomFieldMemberAccess,
@@ -16,8 +17,8 @@ SUPPORTED_LOCALES = {"es", "ca", "en"}
 
 
 class CustomFieldOption(BaseModel):
-    value: str = Field(min_length=1, max_length=100)
-    label: str = Field(min_length=1, max_length=100)
+    value: NonBlank(100)
+    label: NonBlank(100)
 
 
 def _check_options(field_type: str | None, options: list[CustomFieldOption] | None):
@@ -43,7 +44,7 @@ class CustomFieldDefinitionCreate(BaseModel):
     # Immutable after creation — it is the API key values are addressed by.
     key: str = Field(min_length=1, max_length=50, pattern=r"^[a-z][a-z0-9_]*$")
     field_type: CustomFieldType
-    label: str = Field(min_length=1, max_length=100)
+    label: NonBlank(100)
     labels: dict[str, str] = Field(default_factory=dict)
     help_text: str | None = Field(default=None, max_length=255)
     options: list[CustomFieldOption] | None = None
@@ -63,7 +64,7 @@ class CustomFieldDefinitionCreate(BaseModel):
 class CustomFieldDefinitionUpdate(BaseModel):
     """`key` and `field_type` are absent by design — both are immutable."""
 
-    label: str | None = Field(default=None, min_length=1, max_length=100)
+    label: NonBlank(100) | None = None
     labels: dict[str, str] | None = None
     help_text: str | None = Field(default=None, max_length=255)
     options: list[CustomFieldOption] | None = None
@@ -77,6 +78,8 @@ class CustomFieldDefinitionUpdate(BaseModel):
     def validate_shape(self):
         _check_labels(self.labels)
         return self
+
+    _not_null = field_validator("label")(refuse_null)
 
 
 class CustomFieldDefinitionRead(BaseModel):

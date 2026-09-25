@@ -2,6 +2,8 @@
 
 from pydantic import BaseModel, Field
 
+from app.core.schema_types import NonBlank
+
 
 class OrganizationAddressResponse(BaseModel):
     id: int
@@ -16,9 +18,9 @@ class OrganizationAddressResponse(BaseModel):
 
 
 class OrganizationAddressUpdate(BaseModel):
-    address_line1: str = Field(min_length=1, max_length=255)
+    address_line1: NonBlank(255)
     address_line2: str | None = Field(default=None, max_length=255)
-    city: str = Field(min_length=1, max_length=100)
+    city: NonBlank(100)
     state_province: str | None = Field(default=None, max_length=100)
     postal_code: str | None = Field(default=None, max_length=20)
     country: str = Field(default="ES", max_length=3)

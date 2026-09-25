@@ -2,7 +2,9 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from app.core.schema_types import NonBlank, NonBlankText, refuse_null
 
 TARGET_PATTERN = "^(all|group|membership_type)$"
 
@@ -17,8 +19,8 @@ def validate_target(target_type: str, target_id: int | None) -> None:
 
 
 class AnnouncementCreate(BaseModel):
-    subject: str = Field(..., min_length=1, max_length=200)
-    body: str = Field(..., min_length=1)
+    subject: NonBlank(200)
+    body: NonBlankText()
     target_type: str = Field(..., pattern=TARGET_PATTERN)
     target_id: int | None = None
 
@@ -31,10 +33,12 @@ class AnnouncementCreate(BaseModel):
 class AnnouncementUpdate(BaseModel):
     # All optional — a partial edit of a draft. The merged target is validated
     # in the service (a partial body can't be cross-checked here).
-    subject: str | None = Field(None, min_length=1, max_length=200)
-    body: str | None = Field(None, min_length=1)
+    subject: NonBlank(200) | None = None
+    body: NonBlankText() | None = None
     target_type: str | None = Field(None, pattern=TARGET_PATTERN)
     target_id: int | None = None
+
+    _not_null = field_validator("subject", "body")(refuse_null)
 
 
 class AnnouncementResponse(BaseModel):

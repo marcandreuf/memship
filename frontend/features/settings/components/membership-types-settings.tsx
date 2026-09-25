@@ -51,8 +51,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
 import { useFormatters } from "@/hooks/use-formatters";
 
+// Radix Select reserves "" for "nothing selected", so "no group" needs a value.
+const NO_GROUP = "none";
+
 const createSchema = z.object({
-  name: z.string().min(1).max(255),
+  name: z.string().trim().min(1).max(255),
   slug: z.string().min(1).max(100).regex(/^[a-z0-9-]+$/, "validation.invalidSlug"),
   description: z.string().max(2000).optional(),
   base_price: z.coerce.number().min(0),
@@ -104,7 +107,7 @@ export function MembershipTypesSettings() {
     try {
       const payload = {
         ...data,
-        group_id: data.group_id || undefined,
+        group_id: data.group_id || null,
       };
       if (editing) {
         await updateMutation.mutateAsync({ id: editing.id, data: payload });
@@ -214,8 +217,10 @@ export function MembershipTypesSettings() {
                     <FormItem>
                       <FormLabel>{t("members.group")}</FormLabel>
                       <Select
-                        onValueChange={(value) => field.onChange(value ? Number(value) : undefined)}
-                        value={field.value ? String(field.value) : ""}
+                        onValueChange={(value) =>
+                          field.onChange(value === NO_GROUP ? undefined : Number(value))
+                        }
+                        value={field.value ? String(field.value) : NO_GROUP}
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -223,6 +228,7 @@ export function MembershipTypesSettings() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
+                          <SelectItem value={NO_GROUP}>{t("members.noGroup")}</SelectItem>
                           {groups?.map((group) => (
                             <SelectItem key={group.id} value={String(group.id)}>
                               {group.name}

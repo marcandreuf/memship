@@ -3,14 +3,16 @@
 from datetime import date, datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from app.core.schema_types import NonBlank, refuse_null
 
 
 # --- Concept schemas ---
 
 
 class ConceptCreate(BaseModel):
-    name: str = Field(min_length=1, max_length=255)
+    name: NonBlank(255)
     code: str | None = Field(default=None, max_length=50)
     description: str | None = None
     concept_type: str = Field(pattern=r"^(membership|activity|manual|service)$")
@@ -24,7 +26,7 @@ class ConceptCreate(BaseModel):
 
 
 class ConceptUpdate(BaseModel):
-    name: str | None = Field(default=None, min_length=1, max_length=255)
+    name: NonBlank(255) | None = None
     code: str | None = Field(default=None, max_length=50)
     description: str | None = None
     default_amount: Decimal | None = Field(default=None, ge=0)
@@ -35,6 +37,8 @@ class ConceptUpdate(BaseModel):
     )
     accounting_code: str | None = Field(default=None, max_length=50)
     is_active: bool | None = None
+
+    _not_null = field_validator("name")(refuse_null)
 
 
 class ConceptResponse(BaseModel):
@@ -61,7 +65,7 @@ class ReceiptCreate(BaseModel):
     concept_id: int | None = None
     registration_id: int | None = None
     origin: str = Field(pattern=r"^(membership|activity|manual|service)$")
-    description: str = Field(min_length=1, max_length=500)
+    description: NonBlank(500)
     base_amount: Decimal = Field(ge=0)
     vat_rate: Decimal = Field(default=21.00, ge=0, le=100)
     discount_amount: Decimal | None = Field(default=None, ge=0)
@@ -77,7 +81,7 @@ class ReceiptCreate(BaseModel):
 
 
 class ReceiptUpdate(BaseModel):
-    description: str | None = Field(default=None, min_length=1, max_length=500)
+    description: NonBlank(500) | None = None
     base_amount: Decimal | None = Field(default=None, ge=0)
     vat_rate: Decimal | None = Field(default=None, ge=0, le=100)
     discount_amount: Decimal | None = Field(default=None, ge=0)
@@ -88,6 +92,8 @@ class ReceiptUpdate(BaseModel):
     notes: str | None = None
     is_batchable: bool | None = None
 
+    _not_null = field_validator("description")(refuse_null)
+
 
 class ReceiptPayRequest(BaseModel):
     payment_method: str = Field(pattern=r"^(cash|bank_transfer|card|direct_debit|stripe_checkout)$")
@@ -95,7 +101,7 @@ class ReceiptPayRequest(BaseModel):
 
 
 class ReceiptReturnRequest(BaseModel):
-    return_reason: str = Field(min_length=1, max_length=255)
+    return_reason: NonBlank(255)
     return_date: date | None = None
 
 
@@ -107,7 +113,7 @@ class CreditNoteCreate(BaseModel):
     it credits everything not yet credited.
     """
 
-    reason: str = Field(min_length=1, max_length=500)
+    reason: NonBlank(500)
     amount: Decimal | None = Field(default=None, gt=0)
     notes: str | None = None
 
@@ -180,7 +186,7 @@ class GenerateMembershipFeesRequest(BaseModel):
 
 class MandateCreate(BaseModel):
     member_id: int
-    debtor_name: str = Field(min_length=1, max_length=255)
+    debtor_name: NonBlank(255)
     debtor_iban: str = Field(
         min_length=5, max_length=34, pattern=r"^[A-Z]{2}\d{2}[A-Z0-9]{4,30}$"
     )
@@ -194,7 +200,7 @@ class MandateCreate(BaseModel):
 
 
 class MandateUpdate(BaseModel):
-    debtor_name: str | None = Field(default=None, min_length=1, max_length=255)
+    debtor_name: NonBlank(255) | None = None
     debtor_iban: str | None = Field(
         default=None, min_length=5, max_length=34,
         pattern=r"^[A-Z]{2}\d{2}[A-Z0-9]{4,30}$",
@@ -203,6 +209,8 @@ class MandateUpdate(BaseModel):
         default=None, max_length=11, pattern=r"^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$"
     )
     notes: str | None = None
+
+    _not_null = field_validator("debtor_name")(refuse_null)
 
 
 class DocumentInfo(BaseModel):
@@ -276,18 +284,20 @@ class RemittanceDetailResponse(RemittanceResponse):
 
 
 class PaymentProviderCreate(BaseModel):
-    provider_type: str = Field(min_length=1, max_length=50)
-    display_name: str = Field(min_length=1, max_length=255)
+    provider_type: NonBlank(50)
+    display_name: NonBlank(255)
     status: str = Field(default="disabled", pattern=r"^(active|test|disabled)$")
     config: dict = Field(default_factory=dict)
     is_default: bool = False
 
 
 class PaymentProviderUpdate(BaseModel):
-    display_name: str | None = Field(default=None, min_length=1, max_length=255)
+    display_name: NonBlank(255) | None = None
     status: str | None = Field(default=None, pattern=r"^(active|test|disabled)$")
     config: dict | None = None
     is_default: bool | None = None
+
+    _not_null = field_validator("display_name")(refuse_null)
 
 
 class PaymentProviderResponse(BaseModel):

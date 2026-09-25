@@ -243,7 +243,7 @@ export async function createMembershipType(data: {
   description?: string;
   base_price?: number;
   billing_frequency?: string;
-  group_id?: number;
+  group_id?: number | null;
 }): Promise<MembershipTypeData> {
   return apiClient("/membership-types", {
     method: "POST",

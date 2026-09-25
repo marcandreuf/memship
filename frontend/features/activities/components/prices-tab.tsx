@@ -45,7 +45,7 @@ import { useLocaleDate } from "@/hooks/use-locale-date";
 import { useFormatters } from "@/hooks/use-formatters";
 
 const priceSchema = z.object({
-  name: z.string().min(1).max(255),
+  name: z.string().trim().min(1).max(255),
   description: z.string().max(2000).optional().or(z.literal("")),
   amount: z.coerce.number().min(0),
   modality_id: z.coerce.number().int().optional().or(z.literal("")),

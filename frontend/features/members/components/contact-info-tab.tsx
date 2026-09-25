@@ -37,7 +37,7 @@ import { usePermissions } from "@/features/auth/hooks/use-permissions";
 
 const contactSchema = z.object({
   contact_type_id: z.string().optional(),
-  value: z.string().min(1).max(255),
+  value: z.string().trim().min(1).max(255),
   label: z.string().max(100).optional().or(z.literal("")),
   is_primary: z.boolean(),
 });

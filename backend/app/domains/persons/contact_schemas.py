@@ -2,7 +2,9 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from app.core.schema_types import NonBlank, refuse_null
 
 
 class ContactResponse(BaseModel):
@@ -18,13 +20,15 @@ class ContactResponse(BaseModel):
 
 class ContactCreate(BaseModel):
     contact_type_id: int | None = None
-    value: str = Field(min_length=1, max_length=255)
+    value: NonBlank(255)
     label: str | None = Field(default=None, max_length=100)
     is_primary: bool = False
 
 
 class ContactUpdate(BaseModel):
     contact_type_id: int | None = None
-    value: str | None = Field(default=None, min_length=1, max_length=255)
+    value: NonBlank(255) | None = None
     label: str | None = Field(default=None, max_length=100)
     is_primary: bool | None = None
+
+    _not_null = field_validator("value")(refuse_null)

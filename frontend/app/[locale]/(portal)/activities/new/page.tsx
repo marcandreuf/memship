@@ -30,7 +30,7 @@ import { useCreateActivity } from "@/features/activities/hooks/use-activities";
 import { useMembershipTypes } from "@/features/members/hooks/use-members";
 
 const activitySchema = z.object({
-  name: z.string().min(1).max(255),
+  name: z.string().trim().min(1).max(255),
   short_description: z.string().max(500).optional().or(z.literal("")),
   description: z.string().max(5000).optional().or(z.literal("")),
   starts_at: z.string().min(1),

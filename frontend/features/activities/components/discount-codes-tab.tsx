@@ -31,7 +31,7 @@ import { useLocaleDate } from "@/hooks/use-locale-date";
 import { useFormatters } from "@/hooks/use-formatters";
 
 const discountSchema = z.object({
-  code: z.string().min(1).max(50),
+  code: z.string().trim().min(1).max(50),
   description: z.string().max(2000).optional().or(z.literal("")),
   discount_type: z.enum(["percentage", "fixed"]),
   discount_value: z.coerce.number().gt(0),

@@ -3,16 +3,17 @@
 from datetime import date, datetime, time
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.core.pagination import PageMeta
+from app.core.schema_types import NonBlank, refuse_null
 
 
 # --- Spaces ---------------------------------------------------------------
 
 
 class SpaceCreate(BaseModel):
-    name: str = Field(min_length=1, max_length=200)
+    name: NonBlank(200)
     space_type: str | None = Field(default=None, max_length=50)
     description: str | None = None
     # Price per booking, before VAT. None or 0 means the space is free and no
@@ -32,7 +33,7 @@ class SpaceCreate(BaseModel):
 
 
 class SpaceUpdate(BaseModel):
-    name: str | None = Field(default=None, min_length=1, max_length=200)
+    name: NonBlank(200) | None = None
     space_type: str | None = Field(default=None, max_length=50)
     description: str | None = None
     price: float | None = Field(default=None, ge=0)
@@ -40,6 +41,8 @@ class SpaceUpdate(BaseModel):
     close_time: time | None = None
     allowed_membership_types: list[int] | None = None
     is_active: bool | None = None
+
+    _name_not_null = field_validator("name")(refuse_null)
 
 
 class SpaceRead(BaseModel):

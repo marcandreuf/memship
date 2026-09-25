@@ -20,7 +20,7 @@ import { useUpdateGroup } from "../hooks/use-groups";
 import type { GroupData } from "../services/groups-api";
 
 const groupSchema = z.object({
-  name: z.string().min(1).max(255),
+  name: z.string().trim().min(1).max(255),
   description: z.string().max(2000).optional(),
   is_billable: z.boolean().optional(),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/, "validation.invalidColor").optional().or(z.literal("")),
@@ -51,7 +51,7 @@ export function GroupEditForm({ group, onSuccess, onCancel }: GroupEditFormProps
   async function onSubmit(data: GroupFormValues) {
     const payload = {
       ...data,
-      color: data.color || undefined,
+      color: data.color || null,
     };
     try {
       await updateMutation.mutateAsync({ id: group.id, data: payload });
