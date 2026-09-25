@@ -23,6 +23,7 @@
       "refundPolicy": "If you cancel before paying, the charge is cancelled with it. Once paid, the money is not returned automatically \u2014 not if you cancel, and not if the club removes the slot. Arrange any refund with the club."
     },
     "my": {
+      "cancelClosed": "Too late to cancel",
       "title": "My bookings",
       "upcoming": "Upcoming",
       "past": "Past",

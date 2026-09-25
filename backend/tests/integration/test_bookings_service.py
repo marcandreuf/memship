@@ -907,6 +907,23 @@ def test_my_bookings_reports_occupancy(db):
     assert mine[0]["booked_count"] == 2
 
 
+def test_my_bookings_says_whether_the_member_can_still_cancel(db):
+    """The list offered Cancelar on a booking already inside the deadline, and
+    the click could only fail with `cancellation_too_late` (#296)."""
+    _org(db, booking_cancellation_deadline_hours=48)
+    space = _space(db)
+    soon = _slot(db, space, _future(1), capacity=1)
+    later = _slot(db, space, _future(5), capacity=1)
+    m1 = _member(db, 1)
+    service.create_booking(db, m1, soon.id)
+    service.create_booking(db, m1, later.id)
+
+    mine = {b["space_slot_id"]: b for b in service.my_bookings(db, m1.id, scope="upcoming")}
+
+    assert mine[soon.id]["can_cancel"] is False
+    assert mine[later.id]["can_cancel"] is True
+
+
 # --- Membership-type gating ------------------------------------------------
 #
 # `Space.allowed_membership_types` reads exactly like the activity column of the

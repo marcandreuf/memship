@@ -158,6 +158,7 @@ class MyBookingRead(BaseModel):
     capacity: int
     booked_count: int
     waitlist_position: int | None = None
+    can_cancel: bool
 
 
 class AdminBookingRead(BaseModel):

@@ -23,6 +23,7 @@
       "refundPolicy": "Si cancel·les abans de pagar, el càrrec s'anul·la amb la reserva. Un cop pagat, l'import no es retorna automàticament: ni si cancel·les, ni si el club elimina la franja. Qualsevol devolució s'acorda directament amb el club."
     },
     "my": {
+      "cancelClosed": "Fora de termini per cancel·lar",
       "title": "Les meves reserves",
       "upcoming": "Pròximes",
       "past": "Passades",

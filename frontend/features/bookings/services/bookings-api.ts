@@ -235,6 +235,8 @@ export interface MyBooking {
   capacity: number;
   booked_count: number;
   waitlist_position: number | null;
+  /** False once the self-cancellation deadline has passed. */
+  can_cancel: boolean;
 }
 
 export interface BookingResult {

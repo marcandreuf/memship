@@ -59,7 +59,14 @@ export function MyBookingsList({ scope }: { scope: "upcoming" | "past" }) {
                 ? ` #${b.waitlist_position}`
                 : ""}
             </Badge>
-            {scope === "upcoming" && (
+            {scope === "upcoming" && !b.can_cancel && (
+              // Past the deadline the server refuses a member's own
+              // cancellation, so the button would only produce an error.
+              <span className="text-xs text-muted-foreground">
+                {t("bookings.my.cancelClosed")}
+              </span>
+            )}
+            {scope === "upcoming" && b.can_cancel && (
               <Button
                 variant="outline"
                 size="sm"
