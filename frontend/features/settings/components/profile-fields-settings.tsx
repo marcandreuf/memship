@@ -75,15 +75,15 @@ const definitionSchema = z
       .max(50)
       .regex(/^[a-z][a-z0-9_]*$/, "validation.invalidKey"),
     field_type: z.enum(["text", "textarea", "number", "date", "boolean", "select"]),
-    label: z.string().min(1).max(100),
+    label: z.string().trim().min(1).max(100),
     label_es: z.string().max(100),
     label_ca: z.string().max(100),
     label_en: z.string().max(100),
     help_text: z.string().max(255),
     options: z.array(
       z.object({
-        value: z.string().min(1).max(100),
-        label: z.string().min(1).max(100),
+        value: z.string().trim().min(1).max(100),
+        label: z.string().trim().min(1).max(100),
       })
     ),
     required: z.boolean(),

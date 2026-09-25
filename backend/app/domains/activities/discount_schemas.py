@@ -4,6 +4,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from app.core.schema_types import NonBlank, refuse_null
 from app.domains.shared.enums import DiscountType
 
 
@@ -17,7 +18,7 @@ def normalize_code(value: str | None) -> str | None:
 
 
 class DiscountCodeCreate(BaseModel):
-    code: str = Field(min_length=1, max_length=50)
+    code: NonBlank(50)
 
     _normalize_code = field_validator("code")(normalize_code)
     description: str | None = Field(default=None, max_length=2000)
@@ -37,7 +38,7 @@ class DiscountCodeCreate(BaseModel):
 
 
 class DiscountCodeUpdate(BaseModel):
-    code: str | None = Field(default=None, min_length=1, max_length=50)
+    code: NonBlank(50) | None = None
 
     _normalize_code = field_validator("code")(normalize_code)
     description: str | None = Field(default=None, max_length=2000)
@@ -55,6 +56,8 @@ class DiscountCodeUpdate(BaseModel):
         if self.valid_from and self.valid_until and self.valid_until <= self.valid_from:
             raise ValueError("valid_until must be after valid_from")
         return self
+
+    _not_null = field_validator("code")(refuse_null)
 
 
 class DiscountCodeResponse(BaseModel):
@@ -75,7 +78,7 @@ class DiscountCodeResponse(BaseModel):
 
 
 class ValidateDiscountRequest(BaseModel):
-    code: str = Field(min_length=1, max_length=50)
+    code: NonBlank(50)
 
     _normalize_code = field_validator("code")(normalize_code)
 

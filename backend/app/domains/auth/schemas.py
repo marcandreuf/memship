@@ -1,11 +1,10 @@
 """Auth request/response schemas."""
 
 from datetime import datetime
-from typing import Annotated
 
-from pydantic import BaseModel, Field, StringConstraints
+from pydantic import BaseModel, Field, field_validator
 
-from app.core.schema_types import Email, NonBlank
+from app.core.schema_types import Email, NonBlank, refuse_null
 
 
 class LoginRequest(BaseModel):
@@ -127,15 +126,17 @@ class RoleRead(BaseModel):
 
 
 class RoleCreate(BaseModel):
-    name: Annotated[str, StringConstraints(min_length=1, max_length=100)]
+    name: NonBlank(100)
     description: str | None = None
     permission_keys: list[str] = []
 
 
 class RoleUpdate(BaseModel):
-    name: Annotated[str, StringConstraints(min_length=1, max_length=100)] | None = None
+    name: NonBlank(100) | None = None
     description: str | None = None
     permission_keys: list[str] | None = None
+
+    _not_null = field_validator("name")(refuse_null)
 
 
 class UserRolesUpdate(BaseModel):

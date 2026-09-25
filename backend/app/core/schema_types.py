@@ -8,7 +8,7 @@ columns.
 
 from typing import Annotated, Any
 
-from pydantic import BeforeValidator, StringConstraints
+from pydantic import AfterValidator, BeforeValidator, StringConstraints
 
 
 def normalize_email(value: Any) -> Any:
@@ -65,6 +65,23 @@ def NonBlank(max_length: int):
     return Annotated[
         str,
         StringConstraints(strip_whitespace=True, min_length=1, max_length=max_length),
+    ]
+
+
+def _require_content(value: str) -> str:
+    if not value.strip():
+        raise ValueError("String should not be blank")
+    return value
+
+
+def NonBlankText(max_length: int | None = None):
+    """Required free text — a consent, an announcement body — that must say
+    something but is stored as typed: leading indentation and trailing line
+    breaks can be part of the text, so unlike ``NonBlank`` nothing is stripped."""
+    return Annotated[
+        str,
+        StringConstraints(min_length=1, max_length=max_length),
+        AfterValidator(_require_content),
     ]
 
 

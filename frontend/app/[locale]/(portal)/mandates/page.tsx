@@ -222,7 +222,7 @@ function CreateMandateForm({ t, onSuccess }: { t: (key: string) => string; onSuc
         <label className="text-sm font-medium">{t("mandates.signedAt")}</label>
         <Input type="date" value={signedAt} onChange={(e) => setSignedAt(e.target.value)} />
       </div>
-      <Button type="submit" disabled={!memberId || !debtorName || !debtorIban || mutation.isPending} className="w-full">
+      <Button type="submit" disabled={!memberId || !debtorName.trim() || !debtorIban.trim() || mutation.isPending} className="w-full">
         {mutation.isPending ? t("common.loading") : t("mandates.createMandate")}
       </Button>
     </form>

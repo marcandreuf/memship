@@ -11,7 +11,7 @@ from app.domains.shared.enums import MemberStatus
 # --- MembershipType ---
 
 class MembershipTypeCreate(BaseModel):
-    name: str = Field(min_length=1, max_length=255)
+    name: NonBlank(255)
     slug: str = Field(min_length=1, max_length=100, pattern=r"^[a-z0-9-]+$")
     description: str | None = Field(default=None, max_length=2000)
     group_id: int | None = None
@@ -21,13 +21,15 @@ class MembershipTypeCreate(BaseModel):
 
 
 class MembershipTypeUpdate(BaseModel):
-    name: str | None = Field(default=None, min_length=1, max_length=255)
+    name: NonBlank(255) | None = None
     description: str | None = Field(default=None, max_length=2000)
     group_id: int | None = None
     base_price: float | None = Field(default=None, ge=0)
     billing_frequency: str | None = None
     is_active: bool | None = None
     is_default: bool | None = None
+
+    _not_null = field_validator("name")(refuse_null)
 
 
 class MembershipTypeResponse(BaseModel):
@@ -208,7 +210,7 @@ class MemberResponse(BaseModel):
 # --- Group ---
 
 class GroupCreate(BaseModel):
-    name: str = Field(min_length=1, max_length=255)
+    name: NonBlank(255)
     slug: str = Field(min_length=1, max_length=100, pattern=r"^[a-z0-9-]+$")
     description: str | None = Field(default=None, max_length=2000)
     is_billable: bool = True
@@ -217,12 +219,14 @@ class GroupCreate(BaseModel):
 
 
 class GroupUpdate(BaseModel):
-    name: str | None = Field(default=None, min_length=1, max_length=255)
+    name: NonBlank(255) | None = None
     description: str | None = Field(default=None, max_length=2000)
     is_billable: bool | None = None
     color: str | None = Field(default=None, pattern=r"^#[0-9a-fA-F]{6}$")
     icon: str | None = Field(default=None, max_length=50)
     is_active: bool | None = None
+
+    _not_null = field_validator("name")(refuse_null)
 
 
 class GroupResponse(BaseModel):

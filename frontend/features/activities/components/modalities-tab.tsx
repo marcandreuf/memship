@@ -43,7 +43,7 @@ import { usePermissions } from "@/features/auth/hooks/use-permissions";
 import { useLocaleDate } from "@/hooks/use-locale-date";
 
 const modalitySchema = z.object({
-  name: z.string().min(1).max(255),
+  name: z.string().trim().min(1).max(255),
   description: z.string().max(2000).optional().or(z.literal("")),
   max_participants: z.coerce.number().int().min(0).optional().or(z.literal("")),
   registration_deadline: z.string().optional().or(z.literal("")),

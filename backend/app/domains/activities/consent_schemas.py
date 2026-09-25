@@ -2,24 +2,28 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from app.core.schema_types import NonBlank, NonBlankText, refuse_null
 
 
 # --- ActivityConsent ---
 
 class ActivityConsentCreate(BaseModel):
-    title: str = Field(min_length=1, max_length=255)
-    content: str = Field(min_length=1, max_length=10000)
+    title: NonBlank(255)
+    content: NonBlankText(10000)
     is_mandatory: bool = True
     display_order: int = Field(default=1, ge=0)
 
 
 class ActivityConsentUpdate(BaseModel):
-    title: str | None = Field(default=None, min_length=1, max_length=255)
-    content: str | None = Field(default=None, min_length=1, max_length=10000)
+    title: NonBlank(255) | None = None
+    content: NonBlankText(10000) | None = None
     is_mandatory: bool | None = None
     display_order: int | None = None
     is_active: bool | None = None
+
+    _not_null = field_validator("title", "content")(refuse_null)
 
 
 class ActivityConsentResponse(BaseModel):

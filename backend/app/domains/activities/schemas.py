@@ -2,14 +2,16 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
+
+from app.core.schema_types import NonBlank, refuse_null
 
 
 # --- ActivityModality ---
 
 
 class ActivityModalityCreate(BaseModel):
-    name: str = Field(min_length=1, max_length=255)
+    name: NonBlank(255)
     description: str | None = Field(default=None, max_length=2000)
     max_participants: int | None = Field(default=None, ge=0)
     registration_deadline: datetime | None = None
@@ -17,11 +19,13 @@ class ActivityModalityCreate(BaseModel):
 
 
 class ActivityModalityUpdate(BaseModel):
-    name: str | None = Field(default=None, min_length=1, max_length=255)
+    name: NonBlank(255) | None = None
     description: str | None = Field(default=None, max_length=2000)
     max_participants: int | None = Field(default=None, ge=0)
     registration_deadline: datetime | None = None
     display_order: int | None = Field(default=None, ge=0)
+
+    _not_null = field_validator("name")(refuse_null)
 
 
 class ActivityModalityResponse(BaseModel):
@@ -43,7 +47,7 @@ class ActivityModalityResponse(BaseModel):
 
 
 class ActivityPriceCreate(BaseModel):
-    name: str = Field(default="General Price", min_length=1, max_length=255)
+    name: NonBlank(255) = "General Price"
     description: str | None = Field(default=None, max_length=2000)
     amount: float = Field(ge=0)
     modality_id: int | None = None
@@ -63,7 +67,7 @@ class ActivityPriceCreate(BaseModel):
 
 
 class ActivityPriceUpdate(BaseModel):
-    name: str | None = Field(default=None, min_length=1, max_length=255)
+    name: NonBlank(255) | None = None
     description: str | None = Field(default=None, max_length=2000)
     amount: float | None = Field(default=None, ge=0)
     modality_id: int | None = None
@@ -80,6 +84,8 @@ class ActivityPriceUpdate(BaseModel):
         if self.valid_from and self.valid_until and self.valid_until <= self.valid_from:
             raise ValueError("valid_until must be after valid_from")
         return self
+
+    _not_null = field_validator("name")(refuse_null)
 
 
 class ActivityPriceResponse(BaseModel):
@@ -120,7 +126,7 @@ class ActivityPriceResponse(BaseModel):
 
 
 class ActivityCreate(BaseModel):
-    name: str = Field(min_length=1, max_length=255)
+    name: NonBlank(255)
     description: str | None = Field(default=None, max_length=5000)
     short_description: str | None = Field(default=None, max_length=500)
     starts_at: datetime
@@ -160,7 +166,7 @@ class ActivityCreate(BaseModel):
 
 
 class ActivityUpdate(BaseModel):
-    name: str | None = Field(default=None, min_length=1, max_length=255)
+    name: NonBlank(255) | None = None
     description: str | None = Field(default=None, max_length=5000)
     short_description: str | None = Field(default=None, max_length=500)
     starts_at: datetime | None = None
@@ -196,6 +202,8 @@ class ActivityUpdate(BaseModel):
         if self.min_participants is not None and self.max_participants is not None and self.max_participants < self.min_participants:
             raise ValueError("max_participants must be greater than or equal to min_participants")
         return self
+
+    _not_null = field_validator("name")(refuse_null)
 
 
 class ActivityResponse(BaseModel):

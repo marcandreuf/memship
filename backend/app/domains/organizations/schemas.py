@@ -4,7 +4,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field, field_validator
 
-from app.core.schema_types import Email
+from app.core.schema_types import Email, NonBlank, refuse_null
 from app.domains.bookings.rules import validate_booking_rules
 
 
@@ -74,7 +74,7 @@ class OrganizationBrandingResponse(BaseModel):
 
 
 class OrganizationSettingsUpdate(BaseModel):
-    name: str | None = Field(default=None, min_length=1, max_length=255)
+    name: NonBlank(255) | None = None
     legal_name: str | None = Field(default=None, max_length=255)
     email: Email | None = None
     phone: str | None = Field(default=None, max_length=50)
@@ -104,3 +104,5 @@ class OrganizationSettingsUpdate(BaseModel):
     @classmethod
     def _check_booking_rules(cls, v: dict | None) -> dict | None:
         return validate_booking_rules(v) if v is not None else v
+
+    _not_null = field_validator("name")(refuse_null)

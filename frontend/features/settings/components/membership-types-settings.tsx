@@ -55,7 +55,7 @@ import { useFormatters } from "@/hooks/use-formatters";
 const NO_GROUP = "none";
 
 const createSchema = z.object({
-  name: z.string().min(1).max(255),
+  name: z.string().trim().min(1).max(255),
   slug: z.string().min(1).max(100).regex(/^[a-z0-9-]+$/, "validation.invalidSlug"),
   description: z.string().max(2000).optional(),
   base_price: z.coerce.number().min(0),

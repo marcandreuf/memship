@@ -30,8 +30,8 @@ import type { ActivityConsentData } from "../services/activities-api";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
 
 const consentSchema = z.object({
-  title: z.string().min(1).max(255),
-  content: z.string().min(1).max(10000),
+  title: z.string().trim().min(1).max(255),
+  content: z.string().min(1).max(10000).refine((v) => v.trim() !== "", "validation.required"),
   is_mandatory: z.boolean(),
   display_order: z.coerce.number().int().min(0),
 });

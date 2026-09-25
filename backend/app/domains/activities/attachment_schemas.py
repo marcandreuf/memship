@@ -2,13 +2,15 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from app.core.schema_types import NonBlank, refuse_null
 
 
 # --- ActivityAttachmentType ---
 
 class ActivityAttachmentTypeCreate(BaseModel):
-    name: str = Field(min_length=1, max_length=255)
+    name: NonBlank(255)
     description: str | None = Field(default=None, max_length=2000)
     allowed_extensions: list[str] = []
     max_file_size_mb: int = Field(default=5, ge=1, le=50)
@@ -17,13 +19,15 @@ class ActivityAttachmentTypeCreate(BaseModel):
 
 
 class ActivityAttachmentTypeUpdate(BaseModel):
-    name: str | None = Field(default=None, min_length=1, max_length=255)
+    name: NonBlank(255) | None = None
     description: str | None = Field(default=None, max_length=2000)
     allowed_extensions: list[str] | None = None
     max_file_size_mb: int | None = Field(default=None, ge=1, le=50)
     is_mandatory: bool | None = None
     display_order: int | None = None
     is_active: bool | None = None
+
+    _not_null = field_validator("name")(refuse_null)
 
 
 class ActivityAttachmentTypeResponse(BaseModel):

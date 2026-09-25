@@ -40,7 +40,7 @@ const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | 
 
 const createSchema = z.object({
   origin: z.string().min(1),
-  description: z.string().min(1).max(500),
+  description: z.string().trim().min(1).max(500),
   base_amount: z.coerce.number().min(0),
   vat_rate: z.coerce.number().min(0).max(100),
   emission_date: z.string().min(1),

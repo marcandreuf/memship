@@ -62,7 +62,7 @@ import { UsersSettings } from "@/features/roles/components/users-settings";
 import { FormSkeleton } from "@/components/ui/skeletons";
 
 const settingsSchema = z.object({
-  name: z.string().min(1).max(255),
+  name: z.string().trim().min(1).max(255),
   legal_name: z.string().max(255).optional().or(z.literal("")),
   email: optionalEmailSchema,
   phone: z.string().max(50).optional().or(z.literal("")),
