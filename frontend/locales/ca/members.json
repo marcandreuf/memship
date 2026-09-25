@@ -1,5 +1,10 @@
 {
   "members": {
+    "typeAgeWarning": {
+      "belowMin": "Aquest soci té {age} anys i {type} exigeix un mínim de {limit}. Pots assignar-lo igualment.",
+      "aboveMax": "Aquest soci té {age} anys i {type} està limitat a {limit}. Pots assignar-lo igualment.",
+      "birthDateRequired": "{type} té restricció d'edat i aquest soci no té data de naixement. Pots assignar-lo igualment."
+    },
     "createMember": "Nou soci",
     "editMember": "Editar soci",
     "memberNumber": "Nº soci",

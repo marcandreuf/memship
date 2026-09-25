@@ -27,23 +27,11 @@ import {
   useRejectMember,
 } from "../hooks/use-members";
 import type { MemberData, MembershipTypeData } from "../services/members-api";
+import { ageOn } from "@/lib/age";
 
 interface RegistrationReviewActionsProps {
   member: MemberData;
   size?: "sm" | "default";
-}
-
-function ageOn(dateOfBirth: string | null): number | null {
-  if (!dateOfBirth) return null;
-  const dob = new Date(dateOfBirth);
-  if (Number.isNaN(dob.getTime())) return null;
-  const today = new Date();
-  let age = today.getFullYear() - dob.getFullYear();
-  const beforeBirthday =
-    today.getMonth() < dob.getMonth() ||
-    (today.getMonth() === dob.getMonth() && today.getDate() < dob.getDate());
-  if (beforeBirthday) age -= 1;
-  return age;
 }
 
 /**

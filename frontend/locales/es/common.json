@@ -155,6 +155,9 @@
     }
   },
   "apiErrors": {
+    "plan_birth_date_required": "Indica tu fecha de nacimiento en tu perfil para contratar este plan",
+    "plan_below_min_age": "Este plan es para socios de {min_age} años o más",
+    "plan_above_max_age": "Este plan es para socios de hasta {max_age} años",
     "forbidden": "No tienes permiso para hacer esto",
     "pending_approval": "Tu alta todavía está pendiente de aprobación",
     "provider_unavailable": "El proveedor de pago no responde. Inténtalo de nuevo en unos minutos",

@@ -61,13 +61,22 @@ describe("8. Eligibility Rules — Age Restrictions", () => {
     cy.contains("Maximum age is 17").should("be.visible");
   });
 
-  // Using member@examplee6e3b1.com — active, no DOB (age checks skipped), has available activities
+  // Using member@examplee6e3b1.com — active, no DOB, has available activities
   it("8.3 — eligible member can access registration form", () => {
     cy.login("member@examplee6e3b1.com", PASSWORD);
     visitRegisterPage("Chess Club Tournament");
 
     cy.contains("You are eligible").should("be.visible");
     cy.contains("You are not eligible").should("not.exist");
+  });
+
+  // An unknown birth date used to skip the age gate entirely (#291).
+  it("8.4 — member with no birth date is stopped by an age restriction", () => {
+    cy.login("member@examplee6e3b1.com", PASSWORD);
+    visitRegisterPage("Summer Soccer Camp");
+
+    cy.contains("You are not eligible").should("be.visible");
+    cy.contains("date of birth is required").should("be.visible");
   });
 });
 

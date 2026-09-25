@@ -17,6 +17,8 @@ import type { MembershipPurchaseData } from "@/features/members/services/members
 import { useMyReceipts, useStripeCheckout } from "@/features/receipts/hooks/use-receipts";
 import { RedsysPayButton } from "@/features/receipts/components/redsys-pay-button";
 import { useActivePaymentMethods } from "@/features/settings/hooks/use-payment-providers";
+import { Link } from "@/lib/i18n/routing";
+import { ageRestrictionProblem } from "@/lib/age";
 
 /**
  * A purchase receipt still owes money in any of these. `paid` has already
@@ -96,18 +98,25 @@ export default function MyMembershipPage() {
     (plans || []).find((p) => p.id === id)?.name ?? `#${id}`;
 
   // What the member can actually buy, mirroring what the purchase endpoint
-  // accepts: an active plan that costs something and is not the one they hold.
-  // Offering anything else would quote a price the server then refuses.
-  const purchasable = useMemo(
-    () =>
-      (plans || []).filter(
-        (p) =>
-          p.is_active &&
-          Number(p.base_price) > 0 &&
-          p.id !== member?.membership_type_id
-      ),
-    [plans, member]
-  );
+  // accepts: an active plan that costs something, is not the one they hold,
+  // and whose age range fits them. Offering anything else would quote a price
+  // the server then refuses.
+  const { purchasable, needBirthDate } = useMemo(() => {
+    const onSale = (plans || []).filter(
+      (p) =>
+        p.is_active &&
+        Number(p.base_price) > 0 &&
+        p.id !== member?.membership_type_id
+    );
+    const problem = (p: (typeof onSale)[number]) =>
+      ageRestrictionProblem(member?.person.date_of_birth, p.min_age, p.max_age);
+    return {
+      purchasable: onSale.filter((p) => problem(p) === null),
+      // Plans held back only because the birth date is missing: the member can
+      // fix that on their profile, so they are told rather than left guessing.
+      needBirthDate: onSale.filter((p) => problem(p) === "birth_date_required").length,
+    };
+  }, [plans, member]);
 
   async function handleStripe(receiptId: number) {
     try {
@@ -207,6 +216,19 @@ export default function MyMembershipPage() {
       )}
 
       <h2 className="pt-2 text-lg font-semibold">{t("membership.availablePlans")}</h2>
+
+      {!plansLoading && needBirthDate > 0 && (
+        <p className="text-sm text-muted-foreground" data-testid="plans-need-birth-date">
+          {t.rich("membership.birthDateForPlans", {
+            count: needBirthDate,
+            profile: (chunks) => (
+              <Link href="/profile" className="text-primary underline">
+                {chunks}
+              </Link>
+            ),
+          })}
+        </p>
+      )}
 
       {plansLoading ? (
         <CardGridSkeleton cards={3} />

@@ -13,6 +13,7 @@ from app.domains.members.schemas import (
     MembershipTypeCreate,
     MembershipTypeResponse,
     MembershipTypeUpdate,
+    check_age_range,
 )
 
 router = APIRouter(prefix="/membership-types", tags=["membership-types"])
@@ -120,6 +121,16 @@ def update_membership_type(
             MembershipType.is_default == True, MembershipType.id != mt.id
         ).update({"is_default": False}, synchronize_session=False)
         db.flush()
+
+    try:
+        check_age_range(
+            update_data.get("min_age", mt.min_age),
+            update_data.get("max_age", mt.max_age),
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
+        )
 
     for key, value in update_data.items():
         setattr(mt, key, value)

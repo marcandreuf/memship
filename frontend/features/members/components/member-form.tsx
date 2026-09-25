@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { useZodResolver } from "@/hooks/use-zod-resolver";
 import { z } from "zod";
 import { optionalEmailSchema } from "@/lib/validation";
@@ -28,6 +28,7 @@ import { useMembershipTypes } from "../hooks/use-members";
 import { useSettings } from "@/features/settings/hooks/use-settings";
 import type { MemberData } from "../services/members-api";
 import type { GenderOption } from "@/features/settings/components/gender-options-settings";
+import { ageOn, ageRestrictionProblem } from "@/lib/age";
 
 const memberSchema = z.object({
   first_name: z.string().trim().min(1).max(100),
@@ -69,6 +70,30 @@ export function MemberForm({ member, onSubmit, isSubmitting, onCancel }: MemberF
       internal_notes: member?.internal_notes || "",
     },
   });
+
+  // An admin may assign a tier outside its age range — a club has its reasons —
+  // but is told, as when approving a sign-up. Only a member buying is refused.
+  const [watchedTypeId, watchedDob] = useWatch({
+    control: form.control,
+    name: ["membership_type_id", "date_of_birth"],
+  });
+  const watchedType = membershipTypes?.find((mt) => mt.id === watchedTypeId);
+  let typeAgeWarning: string | null = null;
+  if (watchedType) {
+    const problem = ageRestrictionProblem(watchedDob, watchedType.min_age, watchedType.max_age);
+    const age = ageOn(watchedDob) ?? 0;
+    if (problem === "birth_date_required") {
+      typeAgeWarning = t("members.typeAgeWarning.birthDateRequired", { type: watchedType.name });
+    } else if (problem === "below_min_age") {
+      typeAgeWarning = t("members.typeAgeWarning.belowMin", {
+        age, type: watchedType.name, limit: watchedType.min_age ?? 0,
+      });
+    } else if (problem === "above_max_age") {
+      typeAgeWarning = t("members.typeAgeWarning.aboveMax", {
+        age, type: watchedType.name, limit: watchedType.max_age ?? 0,
+      });
+    }
+  }
 
   const formContent = (
     <Form {...form}>
@@ -206,6 +231,11 @@ export function MemberForm({ member, onSubmit, isSubmitting, onCancel }: MemberF
                           ))}
                       </SelectContent>
                     </Select>
+                    {typeAgeWarning && (
+                      <p className="text-sm text-amber-600 dark:text-amber-500" data-testid="type-age-warning">
+                        {typeAgeWarning}
+                      </p>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}

@@ -60,7 +60,15 @@ const createSchema = z.object({
   description: z.string().max(2000).optional(),
   base_price: z.coerce.number().min(0),
   group_id: z.coerce.number().optional(),
+  min_age: z.coerce.number().int().min(0).max(150).optional().or(z.literal("")),
+  max_age: z.coerce.number().int().min(0).max(150).optional().or(z.literal("")),
+}).refine((data) => !data.min_age || !data.max_age || Number(data.max_age) >= Number(data.min_age), {
+  message: "validation.maxLessThanMin",
+  path: ["max_age"],
 });
+
+// An emptied age field clears that limit.
+const ageOrNull = (v: number | "" | undefined) => (v === "" || v === undefined ? null : Number(v));
 
 type CreateFormValues = z.infer<typeof createSchema>;
 
@@ -81,12 +89,12 @@ export function MembershipTypesSettings() {
 
   const form = useForm<CreateFormValues>({
     resolver: useZodResolver(createSchema),
-    defaultValues: { name: "", slug: "", description: "", base_price: 0 },
+    defaultValues: { name: "", slug: "", description: "", base_price: 0, min_age: "", max_age: "" },
   });
 
   function openCreate() {
     setEditing(null);
-    form.reset({ name: "", slug: "", description: "", base_price: 0 });
+    form.reset({ name: "", slug: "", description: "", base_price: 0, min_age: "", max_age: "" });
     setOpen(true);
   }
 
@@ -98,6 +106,8 @@ export function MembershipTypesSettings() {
       description: type.description || "",
       base_price: type.base_price,
       group_id: type.group_id || undefined,
+      min_age: type.min_age ?? "",
+      max_age: type.max_age ?? "",
     });
     setOpen(true);
   }
@@ -108,6 +118,8 @@ export function MembershipTypesSettings() {
       const payload = {
         ...data,
         group_id: data.group_id || null,
+        min_age: ageOrNull(data.min_age),
+        max_age: ageOrNull(data.max_age),
       };
       if (editing) {
         await updateMutation.mutateAsync({ id: editing.id, data: payload });
@@ -210,6 +222,30 @@ export function MembershipTypesSettings() {
                     </FormItem>
                   )}
                 />
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField
+                    control={form.control}
+                    name="min_age"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("activities.minAge")}</FormLabel>
+                        <FormControl><Input type="number" min={0} max={150} {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="max_age"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("activities.maxAge")}</FormLabel>
+                        <FormControl><Input type="number" min={0} max={150} {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
                 <FormField
                   control={form.control}
                   name="group_id"
@@ -260,6 +296,7 @@ export function MembershipTypesSettings() {
               <TableHead>{t("members.typeSlug")}</TableHead>
               <TableHead>{t("members.typePrice")}</TableHead>
               <TableHead>{t("members.group")}</TableHead>
+              <TableHead>{t("activities.ageRange")}</TableHead>
               <TableHead>{t("common.status")}</TableHead>
               <TableHead>{t("common.actions")}</TableHead>
             </TableRow>
@@ -271,6 +308,11 @@ export function MembershipTypesSettings() {
                 <TableCell className="font-mono text-sm">{type.slug}</TableCell>
                 <TableCell>{formatCurrency(type.base_price)}</TableCell>
                 <TableCell>{type.group_name || t("members.noGroup")}</TableCell>
+                <TableCell>
+                  {type.min_age == null && type.max_age == null
+                    ? "—"
+                    : `${type.min_age ?? 0}–${type.max_age ?? "∞"}`}
+                </TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
                     <Badge variant={type.is_active ? "default" : "outline"}>

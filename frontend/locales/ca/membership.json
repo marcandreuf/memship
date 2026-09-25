@@ -9,6 +9,7 @@
     "revertedNotice": "Ets al pla gratuït perquè va quedar una quota sense pagar. En pagar-la recuperaràs «{plan}».",
     "availablePlans": "Plans disponibles",
     "noPlans": "No hi ha plans disponibles per contractar.",
+    "birthDateForPlans": "{count, plural, one {Hi ha # pla amb restricció d'edat} other {Hi ha # plans amb restricció d'edat}}. Indica la teva data de naixement a <profile>El meu perfil</profile> per poder-los contractar.",
     "beforeVat": "sense IVA",
     "choosePlan": "Contractar",
     "confirmPurchaseTitle": "Confirmar la contractació",

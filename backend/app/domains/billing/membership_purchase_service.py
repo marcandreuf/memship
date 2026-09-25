@@ -47,6 +47,7 @@ from app.domains.billing.service import (
 )
 from app.domains.members.models import Member, MembershipType
 from app.domains.organizations.models import OrganizationSettings
+from app.domains.persons.age import age_restriction_problem
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +89,7 @@ class MembershipQuote:
         )
 
 
-def _assert_purchasable(member: Member, mtype: MembershipType) -> None:
+def _assert_purchasable(member: Member, mtype: MembershipType, today: date) -> None:
     """Reject the purchases that should never reach a receipt.
 
     Approval is checked here as well as on the router: the router's
@@ -117,6 +118,28 @@ def _assert_purchasable(member: Member, mtype: MembershipType) -> None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="This is already the current membership plan",
+        )
+    # A member buys for themselves, so a plan's age range is a rule here, not
+    # the warning an admin assigning a tier gets (#291).
+    problem = age_restriction_problem(
+        member.person.date_of_birth if member.person else None,
+        mtype.min_age,
+        mtype.max_age,
+        today,
+    )
+    if problem:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": f"plan_{problem}",
+                "message": (
+                    "Your date of birth is required to buy this plan"
+                    if problem == "birth_date_required"
+                    else "This plan is not available for your age"
+                ),
+                "min_age": mtype.min_age,
+                "max_age": mtype.max_age,
+            },
         )
 
 
@@ -159,7 +182,7 @@ def quote_membership_purchase(
     would be given — so the quote and the receipt that follows it agree.
     """
     today = today or org_today(db)
-    _assert_purchasable(member, mtype)
+    _assert_purchasable(member, mtype, today)
 
     concept = (
         db.query(Concept)
@@ -219,7 +242,7 @@ def purchase_membership(
     Does not commit — the caller owns the transaction.
     """
     today = today or org_today(db)
-    _assert_purchasable(member, mtype)
+    _assert_purchasable(member, mtype, today)
 
     void_open_purchases(db, member.id)
 
