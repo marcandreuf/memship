@@ -23,6 +23,7 @@ def list_reminders(db: Session, *, only_open: bool = False) -> list[Reminder]:
             Reminder.is_done.asc(),
             Reminder.due_date.asc().nulls_last(),
             Reminder.created_at.desc(),
+            Reminder.id.desc(),
         )
         .all()
     )

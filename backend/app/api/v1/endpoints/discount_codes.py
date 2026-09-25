@@ -39,7 +39,7 @@ def list_discount_codes(
     return (
         db.query(DiscountCode)
         .filter(DiscountCode.activity_id == activity_id)
-        .order_by(DiscountCode.created_at.desc())
+        .order_by(DiscountCode.created_at.desc(), DiscountCode.id.desc())
         .all()
     )
 

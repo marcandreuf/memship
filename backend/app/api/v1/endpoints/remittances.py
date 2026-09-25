@@ -44,7 +44,7 @@ def list_remittances(
     if status_filter:
         query = query.filter(Remittance.status == status_filter)
 
-    query = query.order_by(Remittance.created_at.desc())
+    query = query.order_by(Remittance.created_at.desc(), Remittance.id.desc())
     items, meta = paginate(query, page, per_page)
 
     return {

@@ -164,6 +164,6 @@ def get_active_mandate(db: Session, member_id: int) -> SepaMandate | None:
             SepaMandate.status == "active",
             SepaMandate.is_active.is_(True),
         )
-        .order_by(SepaMandate.created_at.desc())
+        .order_by(SepaMandate.created_at.desc(), SepaMandate.id.desc())
         .first()
     )

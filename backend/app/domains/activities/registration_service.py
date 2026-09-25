@@ -55,7 +55,7 @@ def build_activity_registrations_query(
     )
     if status:
         query = query.filter(Registration.status == status)
-    return query.order_by(Registration.created_at.desc())
+    return query.order_by(Registration.created_at.desc(), Registration.id.desc())
 
 
 def build_member_registrations_query(
@@ -67,7 +67,7 @@ def build_member_registrations_query(
     )
     if status:
         query = query.filter(Registration.status == status)
-    return query.order_by(Registration.created_at.desc())
+    return query.order_by(Registration.created_at.desc(), Registration.id.desc())
 
 
 def register_member(
@@ -529,7 +529,7 @@ def _promote_from_waitlist(
             Registration.status == "waitlist",
             modality_filter,
         )
-        .order_by(Registration.created_at.asc())
+        .order_by(Registration.created_at.asc(), Registration.id.asc())
     )
 
     next_in_line = query.first()

@@ -476,6 +476,86 @@ class TestMyRegistrations:
         assert data["meta"]["total"] >= 1
         assert data["items"][0]["activity_id"] == activity.id
 
+    def test_same_timestamp_sign_ups_keep_a_fixed_order(self, client, db):
+        """Rows sharing ``created_at`` — one transaction, a seed — came back in
+        whatever order Postgres chose, and pages could repeat or skip (#286)."""
+        admin = _create_user(db, "admin", suffix="-myreg-tie")
+        user, member = _create_member_with_user(db, suffix="-myreg-tie")
+        stamp = datetime.now(timezone.utc) - timedelta(days=1)
+        regs = []
+        for i in range(4):
+            activity, price = _create_published_activity(db, admin.id, slug=f"tie-{i}")
+            reg = Registration(
+                activity_id=activity.id, member_id=member.id,
+                price_id=price.id, status="confirmed", created_at=stamp,
+            )
+            db.add(reg)
+            db.flush()
+            regs.append(reg)
+
+        client.cookies.update(_auth_cookie(user))
+        pages = [
+            client.get(f"/api/v1/members/me/registrations?per_page=2&page={n}").json()["items"]
+            for n in (1, 2)
+        ]
+
+        ids = [r["id"] for page in pages for r in page]
+        assert ids == sorted((r.id for r in regs), reverse=True)
+
+
+class TestMyUpcomingRegistrations:
+    """The member dashboard's "Tus próximas actividades" card was the last five
+    sign-ups filtered client-side: ordered by sign-up time, including activities
+    already over, and missing upcoming ones signed up for early (#290)."""
+
+    def _sign_up(self, db, admin, member, slug, *, starts_in, ends_in, status="confirmed", signed_up_ago=0):
+        now = datetime.now(timezone.utc)
+        activity, price = _create_published_activity(
+            db, admin.id, slug=slug,
+            starts_at=now + timedelta(days=starts_in),
+            ends_at=now + timedelta(days=ends_in),
+            registration_starts_at=now - timedelta(days=60),
+            registration_ends_at=now + timedelta(days=starts_in),
+        )
+        reg = Registration(
+            activity_id=activity.id, member_id=member.id, price_id=price.id,
+            status=status, created_at=now - timedelta(days=signed_up_ago),
+        )
+        db.add(reg)
+        db.flush()
+        return activity
+
+    def test_upcoming_is_held_and_not_over_soonest_first(self, client, db):
+        admin = _create_user(db, "admin", suffix="-upc")
+        user, member = _create_member_with_user(db, suffix="-upc")
+        # Signed up long ago for something soon — the old card dropped it.
+        soon = self._sign_up(db, admin, member, "upc-soon", starts_in=1, ends_in=2, signed_up_ago=30)
+        later = self._sign_up(db, admin, member, "upc-later", starts_in=20, ends_in=21)
+        waitlisted = self._sign_up(db, admin, member, "upc-wl", starts_in=10, ends_in=11, status="waitlist")
+        running = self._sign_up(db, admin, member, "upc-running", starts_in=-3, ends_in=3)
+        self._sign_up(db, admin, member, "upc-over", starts_in=-10, ends_in=-9)
+        self._sign_up(db, admin, member, "upc-cancelled", starts_in=5, ends_in=6, status="cancelled")
+        self._sign_up(db, admin, member, "upc-pending", starts_in=6, ends_in=7, status="pending")
+
+        client.cookies.update(_auth_cookie(user))
+        data = client.get("/api/v1/members/me/registrations?upcoming=true&per_page=5").json()
+
+        assert [r["activity_id"] for r in data["items"]] == [
+            running.id, soon.id, waitlisted.id, later.id,
+        ]
+        assert data["meta"]["total"] == 4
+
+    def test_without_upcoming_every_sign_up_is_listed_newest_first(self, client, db):
+        admin = _create_user(db, "admin", suffix="-upc-all")
+        user, member = _create_member_with_user(db, suffix="-upc-all")
+        old = self._sign_up(db, admin, member, "upc-all-old", starts_in=-10, ends_in=-9, signed_up_ago=20)
+        new = self._sign_up(db, admin, member, "upc-all-new", starts_in=5, ends_in=6, status="cancelled")
+
+        client.cookies.update(_auth_cookie(user))
+        data = client.get("/api/v1/members/me/registrations").json()
+
+        assert [r["activity_id"] for r in data["items"]] == [new.id, old.id]
+
 
 class TestAutoReceipt:
     """Test that confirmed registrations auto-generate a receipt."""
@@ -658,6 +738,48 @@ class TestWaitlistAndCapacity:
         db.refresh(reg3)
         assert reg2.status == "confirmed"
         assert reg3.status == "waitlist"
+
+    def test_waitlist_tie_promotes_the_first_signed_up(self, client, db):
+        """Two waitlisted rows with the same ``created_at`` — the order of
+        promotion must not be left to Postgres (#286)."""
+        admin = _create_user(db, "admin", suffix="-wltie")
+        user1, member1 = _create_member_with_user(db, suffix="-wltie1")
+        _, member2 = _create_member_with_user(db, suffix="-wltie2")
+        _, member3 = _create_member_with_user(db, suffix="-wltie3")
+        activity, price = _create_published_activity(
+            db, admin.id, max_participants=1,
+            features={"waiting_list": True},
+            allow_self_cancellation=True,
+        )
+        reg1 = Registration(
+            activity_id=activity.id, member_id=member1.id,
+            price_id=price.id, status="confirmed",
+        )
+        db.add(reg1)
+        db.flush()
+        stamp = datetime.now(timezone.utc) - timedelta(minutes=10)
+        first = Registration(
+            activity_id=activity.id, member_id=member2.id,
+            price_id=price.id, status="waitlist", created_at=stamp,
+        )
+        db.add(first)
+        db.flush()
+        second = Registration(
+            activity_id=activity.id, member_id=member3.id,
+            price_id=price.id, status="waitlist", created_at=stamp,
+        )
+        db.add(second)
+        activity.current_participants = 1
+        activity.waitlist_count = 2
+        db.flush()
+
+        client.cookies.update(_auth_cookie(user1))
+        assert client.delete(f"/api/v1/registrations/{reg1.id}").status_code == 204
+
+        db.refresh(first)
+        db.refresh(second)
+        assert first.status == "confirmed"
+        assert second.status == "waitlist"
 
     def test_waitlist_counter_increments_on_waitlist_registration(self, client, db):
         """Waitlist counter increments when a member gets waitlisted."""

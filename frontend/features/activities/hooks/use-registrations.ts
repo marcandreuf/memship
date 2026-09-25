@@ -91,7 +91,7 @@ export function useRegistrationStats(enabled = true) {
 }
 
 export function useMyRegistrations(
-  params: { page?: number; per_page?: number } = {},
+  params: { page?: number; per_page?: number; upcoming?: boolean } = {},
   enabled = true,
 ) {
   return useQuery({

@@ -379,7 +379,7 @@ export default function DashboardPage() {
   // would be a pair of guaranteed 403s on every dashboard load.
   const isMember = user?.member_id != null;
   const { data: myRegistrations } = useMyRegistrations(
-    !isAdmin ? { per_page: 5 } : {},
+    !isAdmin ? { per_page: 5, upcoming: true } : {},
     !isAdmin && isMember
   );
   const myReceiptsParams = useMemo(() => {
@@ -422,9 +422,7 @@ export default function DashboardPage() {
     { label: t("receipts.statusReturned"), value: receiptStats?.returned ?? 0, color: RECEIPT_COLORS.returned },
   ], [receiptStats, t]);
 
-  const activeRegistrations = myRegistrations?.items.filter(
-    (r) => r.status === "confirmed" || r.status === "waitlist"
-  ) || [];
+  const upcomingRegistrations = myRegistrations?.items ?? [];
 
   return (
     <div className="space-y-3">
@@ -509,11 +507,11 @@ export default function DashboardPage() {
               <CardTitle className="text-base">{t("dashboard.upcomingActivities")}</CardTitle>
             </CardHeader>
             <CardContent className="px-4">
-              {activeRegistrations.length === 0 ? (
+              {upcomingRegistrations.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t("dashboard.noUpcoming")}</p>
               ) : (
                 <div className="divide-y">
-                  {activeRegistrations.map((reg) => (
+                  {upcomingRegistrations.map((reg) => (
                     <UpcomingActivityCard key={reg.id} registration={reg} />
                   ))}
                   {myRegistrations && myRegistrations.meta.total > 5 && (
