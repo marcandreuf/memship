@@ -39,6 +39,7 @@ import { TableSkeleton } from "@/components/ui/skeletons";
 import { useSearchParam } from "@/hooks/use-url-state";
 import { useGroups, useCreateGroup } from "@/features/groups/hooks/use-groups";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
+import { matchesSearch } from "@/lib/search";
 
 const groupSchema = z.object({
   name: z.string().trim().min(1).max(255),
@@ -79,15 +80,9 @@ export default function GroupsPage() {
   }
 
   // Client-side search filter
-  const filteredGroups = groups?.filter((g) => {
-    if (!search) return true;
-    const term = search.toLowerCase();
-    return (
-      g.name.toLowerCase().includes(term) ||
-      g.slug.toLowerCase().includes(term) ||
-      (g.description && g.description.toLowerCase().includes(term))
-    );
-  });
+  const filteredGroups = groups?.filter((g) =>
+    matchesSearch(search, g.name, g.slug, g.description)
+  );
 
   return (
     <div className="space-y-4">
@@ -177,7 +172,9 @@ export default function GroupsPage() {
       {isLoading ? (
         <TableSkeleton rows={4} columns={4} />
       ) : !filteredGroups?.length ? (
-        <div className="py-8 text-center text-muted-foreground">{t("groups.noGroups")}</div>
+        <div className="py-8 text-center text-muted-foreground">
+          {groups?.length ? t("common.noResults") : t("groups.noGroups")}
+        </div>
       ) : (
         <>
           {/* Desktop table */}

@@ -23,6 +23,7 @@
       "refundPolicy": "Si cancelas antes de pagar, el cargo se anula con la reserva. Una vez pagado, el importe no se devuelve automáticamente: ni al cancelar, ni si el club elimina la franja. Cualquier devolución se acuerda directamente con el club."
     },
     "my": {
+      "cancelClosed": "Fuera de plazo para cancelar",
       "title": "Mis reservas",
       "upcoming": "Próximas",
       "past": "Pasadas",

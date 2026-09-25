@@ -288,9 +288,11 @@ function SlotRow({
       <TableCell>{toTimeInput(slot.end_time)}</TableCell>
       <TableCell>{slot.capacity}</TableCell>
       <TableCell className="text-muted-foreground">
-        {slot.price != null
-          ? formatCurrency(slot.price)
-          : t("bookings.slots.priceFromSpace")}
+        {slot.price == null
+          ? t("bookings.slots.priceFromSpace")
+          : Number(slot.price) === 0
+            ? t("bookings.spaces.free")
+            : formatCurrency(slot.price)}
       </TableCell>
       <TableCell>
         <div className="flex gap-2">

@@ -11,7 +11,8 @@
 // =============================================================================
 
 const API = Cypress.env("API_URL") || "http://localhost:8003/api/v1";
-const SPACE = `E2E Court ${Date.now()}`;
+// Accented on purpose: the list search must find it typed without the accent.
+const SPACE = `E2E Pádel ${Date.now()}`;
 
 // A concrete future date: 2 days ahead is always future and within the default
 // 14-day booking window.
@@ -145,6 +146,42 @@ describe("Simple Bookings", () => {
     cy.contains("10:00").should("be.visible");
   });
 
+  it("admin finds the space without typing its accent", () => {
+    cy.loginAsAdmin();
+    cy.visit("/en/spaces");
+    cy.get('input[placeholder*="Search"]').type(SPACE.replace("á", "a"));
+    // The box is debounced: wait until the query is applied, or the row is
+    // found in the still-unfiltered list.
+    cy.url().should("include", "q=E2E");
+    cy.contains("tr", SPACE).should("be.visible");
+  });
+
+  it("a search matching nothing says so, not that there are no spaces", () => {
+    // It used to show the empty-club message, "No spaces yet" (#296).
+    cy.loginAsAdmin();
+    cy.visit("/en/spaces");
+    cy.get('input[placeholder*="Search"]').type("zzqq-no-such-space");
+    cy.contains("No results").should("be.visible");
+    cy.contains("No spaces yet").should("not.exist");
+  });
+
+  it("admin sees a slot priced at zero as free", () => {
+    cy.loginAsAdmin();
+    cy.request("POST", `${API}/spaces/${spaceId}/slots`, {
+      slot_date: SLOT_DATE,
+      start_time: "12:00:00",
+      end_time: "13:00:00",
+      capacity: 1,
+      price: 0,
+    }).then((s) => {
+      cy.visit(`/en/spaces/${spaceId}`);
+      cy.contains('[role="tab"]', "Slots").click();
+      // It read "€0.00" while the space itself reads "Free" (#296).
+      cy.contains("tr", "12:00").should("contain.text", "Free");
+      cy.request("DELETE", `${API}/spaces/${spaceId}/slots/${s.body[0].id}`);
+    });
+  });
+
   it("admin is told, in their language, why a slot was refused", () => {
     // A slot over the seeded 10:00-11:00 one. The API answers a code, not a
     // sentence, and the UI renders the translation — the English literal from
@@ -218,6 +255,21 @@ describe("Simple Bookings", () => {
     cy.contains("Booked").should("be.visible");
     // Occupancy shows seats taken / capacity.
     cy.contains("1/2").should("be.visible");
+
+    // Cancel is offered exactly when the API would accept it. The deadline is
+    // an org setting a dev database may have changed, so the expectation is
+    // read from the API rather than assumed (#296).
+    cy.request(`${API}/me/bookings?scope=upcoming`).then((r) => {
+      const mine = r.body.find((b: { id: number }) => b.id === bookingId);
+      cy.contains("div.rounded-lg", SPACE).within(() => {
+        if (mine.can_cancel) {
+          cy.contains("button", "Cancel").should("be.visible");
+        } else {
+          cy.contains("button", "Cancel").should("not.exist");
+          cy.contains("Too late to cancel").should("be.visible");
+        }
+      });
+    });
   });
 
   it("member sees the booking calendar", () => {

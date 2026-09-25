@@ -34,6 +34,7 @@ import { useSearchParam, useStatusParam } from "@/hooks/use-url-state";
 import { useSpaces } from "@/features/bookings/hooks/use-bookings";
 import { SpaceForm } from "@/features/bookings/components/space-form";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
+import { matchesSearch } from "@/lib/search";
 
 export default function SpacesPage() {
   const t = useTranslations();
@@ -50,13 +51,7 @@ export default function SpacesPage() {
   const filteredSpaces = spaces?.filter((space) => {
     if (statusFilter === "active" && !space.is_active) return false;
     if (statusFilter === "inactive" && space.is_active) return false;
-    if (!search) return true;
-    const term = search.toLowerCase();
-    return (
-      space.name.toLowerCase().includes(term) ||
-      (space.space_type?.toLowerCase().includes(term) ?? false) ||
-      (space.description?.toLowerCase().includes(term) ?? false)
-    );
+    return matchesSearch(search, space.name, space.space_type, space.description);
   });
 
   return (
@@ -106,8 +101,10 @@ export default function SpacesPage() {
       {isLoading ? (
         <TableSkeleton rows={4} columns={4} />
       ) : !filteredSpaces?.length ? (
+        // "No spaces yet" only when there are none; a filter that matches
+        // nothing says so instead of claiming the club has no spaces.
         <div className="py-8 text-center text-muted-foreground">
-          {t("bookings.spaces.noSpaces")}
+          {spaces?.length ? t("common.noResults") : t("bookings.spaces.noSpaces")}
         </div>
       ) : (
         <>

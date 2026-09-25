@@ -165,6 +165,12 @@ def _deadline_hours(db: Session) -> int:
     return int_rule(_features(db), "booking_cancellation_deadline_hours")
 
 
+def _self_cancel_deadline(slot: SpaceSlot, tz, deadline_hours: int) -> datetime:
+    """The last moment a member may cancel their own booking on ``slot``."""
+    slot_start = datetime.combine(slot.slot_date, slot.start_time, tzinfo=tz)
+    return slot_start - timedelta(hours=deadline_hours)
+
+
 def _waitlist_enabled(db: Session) -> bool:
     return bool(_features(db).get("booking_waitlist_enabled", True))
 
@@ -798,11 +804,8 @@ def cancel_booking(
     tz = org_timezone(db)
     now_local = datetime.now(tz)
 
-    if not is_admin:
-        slot_start = datetime.combine(slot.slot_date, slot.start_time, tzinfo=tz)
-        deadline = slot_start - timedelta(hours=_deadline_hours(db))
-        if now_local >= deadline:
-            raise CancellationTooLate("Past the cancellation deadline")
+    if not is_admin and now_local >= _self_cancel_deadline(slot, tz, _deadline_hours(db)):
+        raise CancellationTooLate("Past the cancellation deadline")
 
     was_booked = booking.status == BookingStatus.BOOKED
     booking.status = BookingStatus.CANCELLED
@@ -889,7 +892,9 @@ def _promote_next(
 def my_bookings(db: Session, member_id: int, *, scope: str) -> list[dict]:
     """A member's non-cancelled bookings, denormalized, upcoming or past."""
     tz = org_timezone(db)
-    today = datetime.now(tz).date()
+    now_local = datetime.now(tz)
+    today = now_local.date()
+    deadline_hours = _deadline_hours(db)
 
     query = (
         db.query(Booking)
@@ -939,6 +944,9 @@ def my_bookings(db: Session, member_id: int, *, scope: str) -> list[dict]:
                 "capacity": slot.capacity,
                 "booked_count": _count(db, slot.id, BookingStatus.BOOKED),
                 "waitlist_position": position,
+                # The same rule `cancel_booking` enforces, so the list only
+                # offers a cancellation the server will accept.
+                "can_cancel": now_local < _self_cancel_deadline(slot, tz, deadline_hours),
             }
         )
     return out
