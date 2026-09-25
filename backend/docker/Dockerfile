@@ -29,8 +29,8 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 # plain `docker build` still produces the runtime image, and CI stays unchanged.
 FROM base AS dev
 
-COPY pyproject.toml ./
-RUN uv sync --extra dev --no-install-project
+COPY pyproject.toml uv.lock ./
+RUN uv sync --locked --extra dev --no-install-project
 
 # Same reasoning as the production stage below: venv on PATH rather than
 # `uv run`, and PYTHONPATH because dependencies are installed with
@@ -59,10 +59,10 @@ ARG APP_VERSION=0.0.0
 ENV APP_VERSION=$APP_VERSION
 
 # Copy dependency files first (layer caching)
-COPY pyproject.toml ./
+COPY pyproject.toml uv.lock ./
 
 # Install dependencies
-RUN uv sync --no-dev --no-install-project
+RUN uv sync --locked --no-dev --no-install-project
 
 # Copy application code
 COPY . .
