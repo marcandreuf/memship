@@ -625,6 +625,32 @@ def test_booking_beyond_window_rejected(db):
         service.create_booking(db, m1, slot.id)
 
 
+@pytest.mark.parametrize("stored", ["abc", -5, 0, True, 10_000, "14", None])
+def test_invalid_stored_window_falls_back_to_default(db, stored):
+    """A value written before the API validated it must not fail every
+    availability and booking request (#295)."""
+    _org(db, booking_window_days=stored)
+    space = _space(db)
+    slot = _slot(db, space, _future(3), capacity=1)
+
+    assert service._window_days(db) == 14
+    assert service.create_booking(db, _member(db, 1), slot.id).status == "booked"
+
+
+@pytest.mark.parametrize("stored", ["abc", -1, 1_000_000, 1.5])
+def test_invalid_stored_deadline_falls_back_to_default(db, stored):
+    _org(db, booking_cancellation_deadline_hours=stored)
+    space = _space(db)
+    slot = _slot(db, space, _future(3), capacity=1)
+    booking = service.create_booking(db, _member(db, 1), slot.id)
+
+    assert service._deadline_hours(db) == 24
+    service.cancel_booking(
+        db, booking, cancelled_by_user_id=_user(db, 7).id, is_admin=False
+    )
+    assert booking.status == "cancelled"
+
+
 # --- Cancellation + promotion --------------------------------------------
 
 
@@ -651,7 +677,7 @@ def test_cancel_promotes_earliest_waitlisted(db):
 
 
 def test_owner_cancel_past_deadline_rejected(db):
-    _org(db, booking_cancellation_deadline_hours=1_000_000)
+    _org(db, booking_cancellation_deadline_hours=8760)
     space = _space(db)
     slot = _slot(db, space, _future(3), capacity=1)
     m1 = _member(db, 1)
@@ -662,7 +688,7 @@ def test_owner_cancel_past_deadline_rejected(db):
 
 
 def test_admin_cancel_ignores_deadline(db):
-    _org(db, booking_cancellation_deadline_hours=1_000_000)
+    _org(db, booking_cancellation_deadline_hours=8760)
     space = _space(db)
     slot = _slot(db, space, _future(3), capacity=1)
     m1 = _member(db, 1)

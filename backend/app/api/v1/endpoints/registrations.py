@@ -33,6 +33,7 @@ from app.domains.activities.registration_service import (
     check_self_cancellation_allowed,
     register_member,
 )
+from app.domains.activities.service import get_visible_activity_or_404
 from app.domains.auth.models import User
 from app.domains.billing.service import activity_vat_rate, calculate_vat
 from app.domains.members.models import Member
@@ -238,7 +239,7 @@ def check_activity_eligibility(
     current_user: User = Depends(require_permission("self.registrations.read")),
 ):
     """Check if current user is eligible to register."""
-    activity = _get_activity_or_404(db, activity_id)
+    activity = get_visible_activity_or_404(db, activity_id, current_user)
     member = current_member_or_403(db, current_user)
 
     result = check_eligibility(db, activity, member)

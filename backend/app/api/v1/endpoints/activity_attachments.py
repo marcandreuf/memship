@@ -24,6 +24,7 @@ from app.domains.activities.models import (
     Registration,
     RegistrationAttachment,
 )
+from app.domains.activities.service import get_visible_activity_or_404
 from app.domains.auth.models import User
 from app.domains.members.models import Member
 
@@ -38,8 +39,8 @@ def list_attachment_types(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_any_permission("activities.read", "self.activities.read")),
 ):
-    """List attachment types for an activity (all authenticated users)."""
-    get_or_404(db, Activity, activity_id)
+    """List attachment types for an activity the user can see."""
+    get_visible_activity_or_404(db, activity_id, current_user)
     return (
         db.query(ActivityAttachmentType)
         .filter(

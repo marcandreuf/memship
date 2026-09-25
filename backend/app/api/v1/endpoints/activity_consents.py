@@ -13,6 +13,7 @@ from app.domains.activities.consent_schemas import (
     ActivityConsentUpdate,
 )
 from app.domains.activities.models import Activity, ActivityConsent
+from app.domains.activities.service import get_visible_activity_or_404
 from app.domains.auth.models import User
 
 router = APIRouter(prefix="/activities/{activity_id}/consents", tags=["activity-consents"])
@@ -24,8 +25,8 @@ def list_consents(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_any_permission("activities.read", "self.activities.read")),
 ):
-    """List consents for an activity (all authenticated users)."""
-    get_or_404(db, Activity, activity_id)
+    """List consents for an activity the user can see."""
+    get_visible_activity_or_404(db, activity_id, current_user)
     return (
         db.query(ActivityConsent)
         .filter(

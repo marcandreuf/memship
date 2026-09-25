@@ -2,6 +2,8 @@
 
 from datetime import datetime, timedelta, timezone
 
+import pytest
+
 from app.core.security.jwt import create_access_token
 from app.core.security.password import hash_password
 from app.domains.activities.models import Activity, ActivityPrice
@@ -247,3 +249,96 @@ class TestActivityLifecycle:
 
         response = client.put(f"/api/v1/activities/{activity.id}/publish")
         assert response.status_code == 400
+
+
+SUBRESOURCES = ("", "/prices", "/consents", "/modalities", "/attachment-types")
+
+
+class TestUnpublishedActivityVisibility:
+    """What hangs off an activity is visible exactly when the activity is (#293).
+
+    A member got 404 on a draft activity but 200 on its prices, consents,
+    modalities and attachment types — walking the IDs read what the club had
+    not published yet."""
+
+    @pytest.mark.parametrize("state", ["draft", "archived", "cancelled"])
+    @pytest.mark.parametrize("path", SUBRESOURCES + ("/eligibility",))
+    def test_member_gets_404_off_an_unpublished_activity(self, client, db, state, path):
+        admin = _create_user(db, "admin", f"-vis-{state}{path.strip('/')}")
+        member = _create_user(db, "member", f"-vis-{state}{path.strip('/')}")
+        activity = _create_activity(
+            db, slug=f"vis-{state}-{path.strip('/')}", status=state, created_by_id=admin.id
+        )
+        db.add(ActivityPrice(activity_id=activity.id, name="Standard", amount=10))
+        db.flush()
+        client.cookies.update(_auth_cookie(member))
+
+        response = client.get(f"/api/v1/activities/{activity.id}{path}")
+
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Activity not found"
+
+    @pytest.mark.parametrize("path", SUBRESOURCES)
+    def test_member_reads_a_published_activity(self, client, db, path):
+        admin = _create_user(db, "admin", f"-vis-pub{path.strip('/')}")
+        member = _create_user(db, "member", f"-vis-pub{path.strip('/')}")
+        activity = _create_activity(
+            db, slug=f"vis-pub-{path.strip('/')}", status="published", created_by_id=admin.id
+        )
+        client.cookies.update(_auth_cookie(member))
+
+        assert client.get(f"/api/v1/activities/{activity.id}{path}").status_code == 200
+
+    @pytest.mark.parametrize("path", SUBRESOURCES)
+    def test_admin_reads_a_draft_activity(self, client, db, path):
+        admin = _create_user(db, "admin", f"-vis-adm{path.strip('/')}")
+        activity = _create_activity(
+            db, slug=f"vis-adm-{path.strip('/')}", status="draft", created_by_id=admin.id
+        )
+        client.cookies.update(_auth_cookie(admin))
+
+        assert client.get(f"/api/v1/activities/{activity.id}{path}").status_code == 200
+
+
+class TestActivityDetailPrices:
+    """The detail endpoint carries the activity's prices, and the sign-up page
+    reads them from there — so they must say what the receipt will charge (#289).
+
+    Serialized straight from the rows, the schema's VAT defaults of 0 came
+    through and a 55 € + 10 % price read as 0,00 €."""
+
+    def test_detail_prices_carry_vat(self, client, db):
+        admin = _create_user(db, "admin", "-detail-vat")
+        member = _create_user(db, "member", "-detail-vat")
+        activity = _create_activity(
+            db, slug="detail-vat", status="published", tax_rate=10, created_by_id=admin.id
+        )
+        db.add(ActivityPrice(activity_id=activity.id, name="Per Person", amount=55))
+        db.flush()
+        client.cookies.update(_auth_cookie(member))
+
+        price = client.get(f"/api/v1/activities/{activity.id}").json()["prices"][0]
+
+        assert price["amount"] == 55
+        assert price["vat_rate"] == 10
+        assert price["vat_amount"] == 5.5
+        assert price["total_amount"] == 60.5
+
+    def test_detail_prices_match_the_prices_endpoint(self, client, db):
+        admin = _create_user(db, "admin", "-detail-match")
+        activity = _create_activity(
+            db, slug="detail-match", status="published", tax_rate=21, created_by_id=admin.id
+        )
+        db.add(ActivityPrice(activity_id=activity.id, name="A", amount=12.34, display_order=0))
+        db.add(ActivityPrice(activity_id=activity.id, name="B", amount=0, display_order=1))
+        db.flush()
+        client.cookies.update(_auth_cookie(admin))
+
+        detail = client.get(f"/api/v1/activities/{activity.id}").json()["prices"]
+        listed = client.get(f"/api/v1/activities/{activity.id}/prices").json()
+
+        fields = ("id", "amount", "vat_rate", "vat_amount", "total_amount")
+        by_id = {p["id"]: p for p in listed}
+        assert len(detail) == len(listed) == 2
+        for p in detail:
+            assert {f: p[f] for f in fields} == {f: by_id[p["id"]][f] for f in fields}

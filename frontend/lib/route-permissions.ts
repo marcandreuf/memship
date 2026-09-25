@@ -61,6 +61,11 @@ export const ROUTE_PERMISSIONS: ReadonlyArray<readonly [string, readonly string[
 export const ROUTE_FEATURES: ReadonlyArray<readonly [string, string]> = [
   ["/communications", "communications"],
   ["/announcements", "communications"],
+  ["/spaces", "bookings"],
+  ["/book", "bookings"],
+  ["/my-bookings", "bookings"],
+  ["/scan", "member_card"],
+  ["/my-card", "member_card"],
 ];
 
 /** The keys that open `pathname`, or `null` when the route is unrestricted. */

@@ -82,15 +82,28 @@ export function PricesTab({ activityId, prices, modalities, activity, isAdmin }:
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<ActivityPriceData | null>(null);
 
-  // Member view: simple price summary
+  // Member view: what the receipt will charge, VAT included
   if (!isAdmin) {
     if (!prices.length) return null;
     return (
       <div className="space-y-2">
         {prices.filter(p => p.is_visible).map((p) => (
-          <div key={p.id} className="flex justify-between">
+          <div key={p.id} className="flex justify-between gap-4">
             <span>{p.name}</span>
-            <span className="font-medium">{formatAmount(p.amount) || t("activities.prices.free")}</span>
+            <div className="text-right">
+              <span className="font-medium">
+                {p.amount > 0 ? formatAmount(p.total_amount) : t("activities.prices.free")}
+              </span>
+              {p.amount > 0 && p.vat_amount > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {t("activities.prices.vatBreakdown", {
+                    base: formatAmount(p.amount) ?? "",
+                    rate: p.vat_rate,
+                    vat: formatAmount(p.vat_amount) ?? "",
+                  })}
+                </p>
+              )}
+            </div>
           </div>
         ))}
       </div>

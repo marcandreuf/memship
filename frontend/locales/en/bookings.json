@@ -125,6 +125,7 @@
       "rules": "Booking rules",
       "windowDays": "Booking window (days ahead)",
       "deadlineHours": "Self-cancellation deadline (hours before start)",
+      "invalidNumber": "Enter a whole number between {min} and {max}.",
       "waitlist": "Enable waitlist",
       "waitlistDesc": "When a slot is full, let members join a waitlist and be promoted automatically."
     }

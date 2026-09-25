@@ -1,5 +1,7 @@
 """Integration tests for organization settings endpoints."""
 
+import pytest
+
 from app.core.security.jwt import create_access_token
 from app.core.security.password import hash_password
 from app.domains.auth.models import User
@@ -138,6 +140,57 @@ class TestUpdateSettings:
             json={"brand_color": "not-a-color"},
         )
         assert response.status_code == 422
+
+
+class TestBookingRules:
+    """`features` is free-form JSON, but the booking rules in it are read as
+    integers by every availability, booking and cancellation request (#295)."""
+
+    @pytest.mark.parametrize(
+        "features",
+        [
+            {"booking_window_days": 0},
+            {"booking_window_days": -5},
+            {"booking_window_days": 366},
+            {"booking_window_days": "14"},
+            {"booking_window_days": 1.5},
+            {"booking_window_days": True},
+            {"booking_window_days": None},
+            {"booking_cancellation_deadline_hours": -1},
+            {"booking_cancellation_deadline_hours": "abc"},
+            {"booking_cancellation_deadline_hours": 8761},
+        ],
+    )
+    def test_invalid_booking_rule_rejected(self, client, db, features):
+        org = _ensure_org_settings(db)
+        org.features = {"bookings": True}
+        db.flush()
+        user = _create_user(db, "super_admin", "upd-bookrule")
+        client.cookies.update(_auth_cookie(user))
+
+        response = client.put("/api/v1/settings/", json={"features": features})
+
+        assert response.status_code == 422
+        db.refresh(org)
+        assert org.features == {"bookings": True}
+
+    @pytest.mark.parametrize(
+        "features",
+        [
+            {"booking_window_days": 1, "booking_cancellation_deadline_hours": 0},
+            {"booking_window_days": 365, "booking_cancellation_deadline_hours": 8760},
+            {"bookings": False},
+        ],
+    )
+    def test_valid_booking_rule_accepted(self, client, db, features):
+        _ensure_org_settings(db)
+        user = _create_user(db, "super_admin", "upd-bookok")
+        client.cookies.update(_auth_cookie(user))
+
+        response = client.put("/api/v1/settings/", json={"features": features})
+
+        assert response.status_code == 200
+        assert response.json()["features"] == features
 
 
 class TestBankingFields:

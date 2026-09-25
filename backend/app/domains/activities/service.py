@@ -6,6 +6,7 @@ from unicodedata import normalize
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.authorization import user_has
 from app.domains.activities.models import Activity
 from app.domains.activities.schemas import ActivityCreate, ActivityUpdate
 
@@ -32,6 +33,21 @@ def generate_slug(db: Session, name: str) -> str:
         counter += 1
 
     return slug
+
+
+def get_visible_activity_or_404(db: Session, activity_id: int, user) -> Activity:
+    """The activity, if this user may see it. Without ``activities.read`` only a
+    published activity exists; a draft, archived or cancelled one is a 404, and
+    so is everything hanging off it — prices, consents, modalities — or a
+    member could read what the club has not published by walking the IDs."""
+    activity = db.query(Activity).filter(Activity.id == activity_id).first()
+    if not activity or (
+        activity.status != "published" and not user_has(user, "activities.read")
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Activity not found"
+        )
+    return activity
 
 
 def create_activity(db: Session, data: ActivityCreate, created_by_id: int) -> Activity:

@@ -6,7 +6,9 @@ waitlist: a member promoted into a paid slot holds exactly what a member who
 booked it directly holds, and billing only the direct path leaks money silently,
 because nothing reconciles bookings against receipts. The second is deletion —
 ``bookings.space_slot_id`` cascades and ``delete_slot(force=True)`` deletes the
-slot row, so a receipt pointing at a booking has to survive its subject.
+slot row, so a receipt pointing at a booking has to survive its subject, and an
+unpaid one has to be voided first: once the booking is gone nothing links the
+charge back to a seat the member no longer has (#294).
 """
 
 from datetime import date, time, timedelta
@@ -288,7 +290,7 @@ def test_receipt_booking_fk_is_set_null_on_delete(db):
     assert rule == "n"
 
 
-def test_forced_slot_delete_succeeds_and_the_receipt_survives(db):
+def test_forced_slot_delete_voids_the_unpaid_receipt(db):
     _org(db)
     space = _space(db, price=PRICE)
     slot = _slot(db, space)
@@ -302,13 +304,31 @@ def test_forced_slot_delete_succeeds_and_the_receipt_survives(db):
     assert db.query(Booking).filter(Booking.id == booking.id).first() is None
     receipt = db.query(Receipt).filter(Receipt.id == receipt_id).one()
     assert receipt.booking_id is None
-    assert receipt.status == "emitted"
+    assert receipt.status == "cancelled"
     assert receipt.total_amount == TOTAL
     # The invoice line still says what was sold, with nothing left to join to.
     assert "Court 1" in receipt.description
 
 
-def test_forced_space_delete_succeeds_and_the_receipt_survives(db):
+def test_forced_slot_delete_leaves_a_paid_receipt_standing(db):
+    _org(db)
+    space = _space(db, price=PRICE)
+    slot = _slot(db, space)
+    booking = service.create_booking(db, _member(db, 1), slot.id)
+    receipt = _receipts(db, booking.id)[0]
+    mark_receipt_paid(db, receipt, payment_method="cash")
+    receipt_id = receipt.id
+
+    service.delete_slot(db, slot, force=True)
+    db.flush()
+    db.expire_all()
+
+    receipt = db.query(Receipt).filter(Receipt.id == receipt_id).one()
+    assert receipt.booking_id is None
+    assert receipt.status == "paid"
+
+
+def test_forced_space_delete_voids_the_unpaid_receipt(db):
     _org(db)
     space = _space(db, price=PRICE)
     slot = _slot(db, space)
@@ -321,4 +341,22 @@ def test_forced_space_delete_succeeds_and_the_receipt_survives(db):
 
     receipt = db.query(Receipt).filter(Receipt.id == receipt_id).one()
     assert receipt.booking_id is None
-    assert receipt.status == "emitted"
+    assert receipt.status == "cancelled"
+
+
+def test_forced_space_delete_leaves_a_paid_receipt_standing(db):
+    _org(db)
+    space = _space(db, price=PRICE)
+    slot = _slot(db, space)
+    booking = service.create_booking(db, _member(db, 1), slot.id)
+    receipt = _receipts(db, booking.id)[0]
+    mark_receipt_paid(db, receipt, payment_method="cash")
+    receipt_id = receipt.id
+
+    service.delete_space(db, space, force=True)
+    db.flush()
+    db.expire_all()
+
+    receipt = db.query(Receipt).filter(Receipt.id == receipt_id).one()
+    assert receipt.booking_id is None
+    assert receipt.status == "paid"

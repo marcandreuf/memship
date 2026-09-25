@@ -9,6 +9,7 @@ from app.core.authorization import require_any_permission, require_permission, u
 from app.db.session import get_db
 from app.domains.auth.models import User
 from app.domains.members.schemas import PersonResponse
+from app.domains.persons.gender import require_offered_gender
 from app.domains.persons.models import Person
 
 router = APIRouter(prefix="/persons", tags=["persons"])
@@ -44,6 +45,8 @@ def update_person(
     allowed_fields = {
         "first_name", "last_name", "email", "date_of_birth", "gender", "national_id"
     }
+    if "gender" in data:
+        require_offered_gender(db, data["gender"], person.gender)
     for key, value in data.items():
         if key in allowed_fields:
             setattr(person, key, value)
