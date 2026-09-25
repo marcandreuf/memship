@@ -70,7 +70,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push backend RC
+      - name: Build backend RC
         env:
           IMAGE: ${{ env.REGISTRY }}/${{ github.repository_owner }}/memship-backend
           SHA: ${{ needs.resolve.outputs.sha }}
@@ -84,6 +84,64 @@ jobs:
             -t $IMAGE:sha-$SHORT_SHA \
             -t $IMAGE:main \
             .
+
+      # Between build and push on purpose: a build succeeds whether or not the
+      # image it produced can start, because it never runs the application. The
+      # gap is not theoretical — an image was published whose dependency set had
+      # been resolved from PyPI rather than `uv.lock`, and it crash-looped in
+      # `alembic upgrade head` before serving anything, with a green build (#305).
+      # Running the migrations against a real Postgres is the point: that is
+      # where that failure landed, ahead of the first request.
+      - name: Smoke-test the backend image
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ github.repository_owner }}/memship-backend
+          SHORT_SHA: ${{ needs.resolve.outputs.short_sha }}
+        run: |
+          set -euo pipefail
+          docker network create smoke >/dev/null
+          docker run -d --name smoke-db --network smoke \
+            -e POSTGRES_USER=memship \
+            -e POSTGRES_PASSWORD=memship \
+            -e POSTGRES_DB=memship_db \
+            postgres:15-alpine >/dev/null
+          for _ in $(seq 1 30); do
+            if docker exec smoke-db pg_isready -U memship -q 2>/dev/null; then break; fi
+            sleep 1
+          done
+
+          # A throwaway secret for a container that is deleted seconds later and
+          # never reachable from outside the runner. It only has to satisfy the
+          # length check the app makes at startup.
+          docker run -d --name smoke-api --network smoke -p 127.0.0.1:8099:8000 \
+            -e DATABASE_URL=postgresql://memship:memship@smoke-db:5432/memship_db \
+            -e SECRET_KEY=smoke-test-secret-key-minimum-32-characters \
+            -e APP_ENV=development \
+            -e RUN_MIGRATIONS=1 \
+            "$IMAGE:sha-$SHORT_SHA" >/dev/null
+
+          for i in $(seq 1 60); do
+            if [ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8099/api/v1/health)" = "200" ]; then
+              echo "backend image answered /api/v1/health in ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+
+          echo "::error::the backend image never answered /api/v1/health - not pushing"
+          docker logs smoke-api 2>&1 | tail -50
+          exit 1
+
+      - name: Tear down the backend smoke stack
+        if: always()
+        run: |
+          docker rm -f smoke-api smoke-db >/dev/null 2>&1 || true
+          docker network rm smoke >/dev/null 2>&1 || true
+
+      - name: Push backend RC
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ github.repository_owner }}/memship-backend
+          SHORT_SHA: ${{ needs.resolve.outputs.short_sha }}
+        run: |
           docker push $IMAGE:sha-$SHORT_SHA
           docker push $IMAGE:main
 
@@ -106,7 +164,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push frontend RC
+      - name: Build frontend RC
         env:
           IMAGE: ${{ env.REGISTRY }}/${{ github.repository_owner }}/memship-frontend
           SHA: ${{ needs.resolve.outputs.sha }}
@@ -119,6 +177,41 @@ jobs:
             -t $IMAGE:sha-$SHORT_SHA \
             -t $IMAGE:main \
             .
+
+      # `/en/login` renders without reaching the API, so this needs no backend
+      # and stays a check on the image rather than on the pair. It is the
+      # standalone server the deployment runs, so a bundle that is assembled
+      # wrongly fails here instead of on someone's first page load.
+      - name: Smoke-test the frontend image
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ github.repository_owner }}/memship-frontend
+          SHORT_SHA: ${{ needs.resolve.outputs.short_sha }}
+        run: |
+          set -euo pipefail
+          docker run -d --name smoke-fe -p 127.0.0.1:3099:3000 \
+            "$IMAGE:sha-$SHORT_SHA" >/dev/null
+
+          for i in $(seq 1 60); do
+            if [ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3099/en/login)" = "200" ]; then
+              echo "frontend image served /en/login in ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+
+          echo "::error::the frontend image never served /en/login - not pushing"
+          docker logs smoke-fe 2>&1 | tail -50
+          exit 1
+
+      - name: Tear down the frontend smoke container
+        if: always()
+        run: docker rm -f smoke-fe >/dev/null 2>&1 || true
+
+      - name: Push frontend RC
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ github.repository_owner }}/memship-frontend
+          SHORT_SHA: ${{ needs.resolve.outputs.short_sha }}
+        run: |
           docker push $IMAGE:sha-$SHORT_SHA
           docker push $IMAGE:main
 
