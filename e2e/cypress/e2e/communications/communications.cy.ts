@@ -7,16 +7,25 @@ const SUBJECT = "E2E Broadcast Announcement";
 const SUBJECT_DIRECT = "E2E Direct Send Announcement";
 
 describe("Communications (v0.5.0 + v0.5.1)", () => {
+  // The tab carries the announcements master switch *and* the Member emails
+  // card below it, which renders a switch per template. A bare
+  // `cy.get('[role="switch"]')` therefore matches one element or nineteen
+  // depending on whether that second card has finished loading, and clicking
+  // the set fails once it has. Scope to the announcements form, which is the
+  // only `<form>` on the tab.
+  const announcementsSwitch = () =>
+    cy.contains("Enable announcements").parents("form").find('[role="switch"]');
+
   before(() => {
     // Enable the module (persists in org settings) so nav, bell, and the
     // member announcements page are available for the rest of the suite.
     cy.loginAsSuperAdmin();
     cy.visit("/en/settings");
     cy.settingsTab("Members", "Communications");
-    cy.get('[role="switch"]').then(($sw) => {
+    announcementsSwitch().then(($sw) => {
       if ($sw.attr("aria-checked") !== "true") cy.wrap($sw).click();
     });
-    cy.get('[role="switch"]').should("have.attr", "aria-checked", "true");
+    announcementsSwitch().should("have.attr", "aria-checked", "true");
     cy.contains("button", "Save").click();
     cy.contains(/saved successfully/i).should("be.visible");
   });
