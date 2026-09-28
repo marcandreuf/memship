@@ -69,11 +69,10 @@ export function RecurringBillingSettings() {
   if (isLoading) return <FormSkeleton fields={2} />;
 
   async function onSubmit(data: RecurringBillingFormValues) {
-    // PUT /settings replaces the whole features JSONB dict — merge to keep
-    // other feature flags (e.g. waiting_list) intact.
+    // `features` is a sparse update — send only what this form owns, so a
+    // snapshot taken before another tab's save cannot revert its flag (#314).
     const payload = {
       features: {
-        ...(settings?.features ?? {}),
         recurring_billing_enabled: data.recurring_billing_enabled,
         recurring_billing_day: data.recurring_billing_day,
         billing_notification_email: data.billing_notification_email || null,

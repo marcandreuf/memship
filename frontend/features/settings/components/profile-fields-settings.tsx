@@ -131,12 +131,10 @@ export function ProfileFieldsSettings() {
 
   async function onToggle(checked: boolean) {
     try {
-      // PUT /settings replaces the whole features dict — merge to keep siblings.
+      // `features` is a sparse update — send only what this form owns, so a
+      // snapshot taken before another tab's save cannot revert its flag (#314).
       await updateSettings.mutateAsync({
-        features: {
-          ...(settings?.features ?? {}),
-          custom_profile_fields: checked,
-        },
+        features: { custom_profile_fields: checked },
       });
       toast.success(t("toast.success.saved"));
     } catch {

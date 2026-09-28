@@ -4,8 +4,9 @@ describe("Stripe Checkout — Happy Path @smoke", () => {
 
   before(() => {
     // Ensure an active Stripe provider so the "Pay Now" button renders. The
-    // checkout call itself is stubbed via cy.intercept below, so the config
-    // values are irrelevant — only an active/test status is required.
+    // checkout call itself is stubbed via cy.intercept below, so these values
+    // never reach Stripe — but they must still satisfy the activation guard,
+    // which refuses a provider that could not take a payment.
     cy.apiLogin("super@examplee6e3b1.com", "TestSuper1!");
     cy.request({
       method: "GET",
@@ -15,13 +16,24 @@ describe("Stripe Checkout — Happy Path @smoke", () => {
       const stripe = listResp.body.items.find(
         (p: { provider_type: string }) => p.provider_type === "stripe"
       );
+      // Every required field, including `webhook_secret` — an empty one fails
+      // the guard exactly as a missing secret key does.
+      const config = {
+        secret_key: "sk_test_e2e",
+        publishable_key: "pk_test_e2e",
+        webhook_secret: "whsec_test_e2e",
+        mode: "webhook",
+      };
       if (stripe) {
-        if (stripe.status === "disabled") {
-          cy.request({
-            method: "POST",
-            url: `${API_URL}/payment-providers/${stripe.id}/toggle`,
-          });
-        }
+        // The seed leaves Stripe `disabled` with an empty config, so a bare
+        // toggle is refused (#218, #301). `_require_ready` judges the
+        // prospective config, so completing and activating in one request is
+        // accepted where activating alone is not.
+        cy.request({
+          method: "PUT",
+          url: `${API_URL}/payment-providers/${stripe.id}`,
+          body: { status: "test", config },
+        });
       } else {
         cy.request({
           method: "POST",
@@ -30,12 +42,7 @@ describe("Stripe Checkout — Happy Path @smoke", () => {
             provider_type: "stripe",
             display_name: "Stripe Test",
             status: "test",
-            config: {
-              secret_key: "sk_test_e2e",
-              publishable_key: "pk_test_e2e",
-              webhook_secret: "",
-              mode: "webhook",
-            },
+            config,
             is_default: false,
           },
         });

@@ -74,11 +74,10 @@ export function MembershipLapseSettings() {
   if (isLoading) return <FormSkeleton fields={3} />;
 
   async function onSubmit(data: MembershipLapseFormValues) {
-    // PUT /settings replaces the whole features JSONB dict — merge to keep
-    // other feature flags (e.g. recurring_billing_enabled) intact.
+    // `features` is a sparse update — send only what this form owns, so a
+    // snapshot taken before another tab's save cannot revert its flag (#314).
     const payload = {
       features: {
-        ...(settings?.features ?? {}),
         membership_lapse_enabled: data.membership_lapse_enabled,
         membership_fee_due_days: data.membership_fee_due_days,
         membership_lapse_grace_days: data.membership_lapse_grace_days,

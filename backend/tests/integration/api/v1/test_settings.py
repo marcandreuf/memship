@@ -359,3 +359,94 @@ class TestOrganizationAddress:
             json={"city": "Barcelona", "country": "ES"},
         )
         assert response.status_code == 422
+
+
+class TestFeaturesMerge:
+    """`features` is a sparse update: the keys sent are written, the rest stay.
+
+    Every flag the organization has lives in one JSONB column on one row, so a
+    whole-column replace made two clients a lost update — each settings form
+    posted back the snapshot its own browser had loaded, and the later save
+    silently reverted the earlier one's flag. It surfaced as three member-card
+    E2E tests failing under parallel load and passing alone (#314), and is
+    reachable by two administrators with a settings tab each.
+    """
+
+    def test_absent_key_is_left_alone(self, client, db):
+        org = _ensure_org_settings(db)
+        org.features = {"bookings": True, "member_card": True}
+        db.flush()
+        user = _create_user(db, "super_admin", "feat-keep")
+        client.cookies.update(_auth_cookie(user))
+
+        response = client.put("/api/v1/settings/", json={"features": {"bookings": False}})
+
+        assert response.status_code == 200
+        db.refresh(org)
+        # The flag nobody sent survives; the one that was sent is written.
+        assert org.features["member_card"] is True
+        assert org.features["bookings"] is False
+
+    def test_a_flag_is_switched_off_by_sending_false(self, client, db):
+        org = _ensure_org_settings(db)
+        org.features = {"member_card": True}
+        db.flush()
+        user = _create_user(db, "super_admin", "feat-off")
+        client.cookies.update(_auth_cookie(user))
+
+        response = client.put("/api/v1/settings/", json={"features": {"member_card": False}})
+
+        assert response.status_code == 200
+        db.refresh(org)
+        assert org.features["member_card"] is False
+
+    def test_a_new_flag_is_added(self, client, db):
+        org = _ensure_org_settings(db)
+        org.features = {"bookings": True}
+        db.flush()
+        user = _create_user(db, "super_admin", "feat-add")
+        client.cookies.update(_auth_cookie(user))
+
+        response = client.put("/api/v1/settings/", json={"features": {"member_card": True}})
+
+        assert response.status_code == 200
+        db.refresh(org)
+        assert org.features == {"bookings": True, "member_card": True}
+
+    def test_a_stale_snapshot_cannot_revert_a_sibling_flag(self, client, db):
+        """The #314 sequence, as a test.
+
+        A second client holds a snapshot taken before another switched
+        `member_card` on, then saves its own unrelated setting.
+        """
+        org = _ensure_org_settings(db)
+        org.features = {"bookings": True}
+        db.flush()
+        stale_snapshot = dict(org.features)
+
+        user = _create_user(db, "super_admin", "feat-stale")
+        client.cookies.update(_auth_cookie(user))
+
+        # Client A switches the card on.
+        client.put("/api/v1/settings/", json={"features": {"member_card": True}})
+        # Client B saves its own tab, posting back everything it loaded at t0.
+        response = client.put("/api/v1/settings/", json={"features": stale_snapshot})
+
+        assert response.status_code == 200
+        db.refresh(org)
+        assert org.features["member_card"] is True
+
+    def test_other_json_columns_are_unaffected(self, client, db):
+        """Only `features` merges; the rest of the payload still assigns."""
+        org = _ensure_org_settings(db)
+        org.features = {"bookings": True}
+        db.flush()
+        user = _create_user(db, "super_admin", "feat-other")
+        client.cookies.update(_auth_cookie(user))
+
+        response = client.put("/api/v1/settings/", json={"name": "Renamed Club"})
+
+        assert response.status_code == 200
+        db.refresh(org)
+        assert org.name == "Renamed Club"
+        assert org.features == {"bookings": True}
