@@ -59,6 +59,8 @@
     "info": "Informació",
     "toggleTheme": "Canviar tema",
     "toggleSidebar": "Mostrar o amagar el menú lateral",
+    "showPassword": "Mostrar contrasenya",
+    "hidePassword": "Amagar contrasenya",
     "more": "Més",
     "logoAlt": "Logotip"
   },
