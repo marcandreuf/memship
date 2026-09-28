@@ -21,6 +21,7 @@ New to Memship? Start here.
 Running Memship on your own server.
 
 - [Configuration reference](self-hosting/configuration.md) — every environment variable _(EN)_
+- [Feature flags](self-hosting/feature-flags.md) — the twenty-one module switches, what a fresh install starts with _(EN)_
 - [Email delivery](self-hosting/email.md) — SMTP or Resend _(EN)_
 - [Backups & restore](self-hosting/backups-and-restore.md) _(EN)_
 - [Upgrading](self-hosting/upgrading.md) — image tags and migrations _(EN)_
