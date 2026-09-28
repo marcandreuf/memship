@@ -23,6 +23,12 @@
 # skipped, and nothing downstream can see it. --skip-file-check proceeds anyway,
 # for a deployment that maintains those files itself.
 #
+# Everything this checks, it checks before anything on the instance is replaced,
+# and each refusal names the state it found: the version going backwards, the
+# settings .env is missing, the free disk against what is wanted, the deployment
+# files' checksums, and what the release's own migrations say about the data.
+# --skip-disk-check is the escape hatch for a host whose storage df misreports.
+#
 # Keep DATA_ROOT OUTSIDE this directory. Deployments deliver files here by
 # copying over the top of it, and persistent data must never sit in the path
 # something might one day mirror or clean.
@@ -31,17 +37,20 @@ set -euo pipefail
 
 ALLOW_DOWNGRADE=0
 SKIP_FILE_CHECK=0
+SKIP_DISK_CHECK=0
 VERSION=""
 while [ $# -gt 0 ]; do
     case "$1" in
         --allow-downgrade) ALLOW_DOWNGRADE=1; shift ;;
         --skip-file-check) SKIP_FILE_CHECK=1; shift ;;
+        --skip-disk-check) SKIP_DISK_CHECK=1; shift ;;
         -*) printf 'unknown option: %s\n' "$1" >&2; exit 2 ;;
         *)  VERSION="$1"; shift ;;
     esac
 done
 [ -n "$VERSION" ] || {
     printf 'usage: upgrade.sh <version> [--allow-downgrade] [--skip-file-check]\n' >&2
+    printf '                           [--skip-disk-check]\n' >&2
     exit 2
 }
 VERSION="${VERSION#v}"
@@ -78,6 +87,274 @@ if [ "$ALLOW_DOWNGRADE" -eq 0 ] && is_release "$CURRENT" && is_release "$VERSION
         printf '    docs/self-hosting/backups-and-restore.md\n\n' >&2
         printf '  If you know this release carried no migration, or you have already\n' >&2
         printf '  restored the database, pass --allow-downgrade.\n' >&2
+        exit 1
+    fi
+fi
+
+# Is the database up? Asked once, because three checks below branch on it and
+# `docker compose ps` is not free. An existing .env alongside a running db is a
+# running instance; anything else is a first install, which has no .env to
+# compare, no dump to size and no data to check.
+RUNNING=0
+if [ -f .env ] && [ -n "$(docker compose ps --quiet db 2>/dev/null)" ]; then
+    RUNNING=1
+fi
+
+env_value() {
+    [ -f .env ] || return 0
+    grep -E "^$1=" .env | tail -1 | cut -d= -f2- || true
+}
+
+# The data root, resolved the way db-backup.sh resolves it — environment first,
+# then .env, then ./data — because the dump this sizes for lands wherever that
+# script puts it.
+DATA_ROOT="${DATA_ROOT:-$(env_value MEMSHIP_DATA_ROOT)}"
+DATA_ROOT="${DATA_ROOT:-$REPO_ROOT/data}"
+case "$DATA_ROOT" in
+    /*) ;;
+    *) DATA_ROOT="$REPO_ROOT/${DATA_ROOT#./}" ;;
+esac
+
+# ------------------------------------------------ settings this release expects
+#
+# A release that starts reading a new setting says so in its release notes, and
+# the only thing enforcing that an operator read them is the operator. Nothing
+# compares an instance's .env against what the release in this directory expects
+# to find in it.
+#
+# "Expects" is narrow on purpose: the names install.sh writes into a .env it
+# generates. That is the installer's own statement of what a deployment needs,
+# it ships in this directory alongside the release, and a .env written by *this*
+# install.sh has every one of them — so on an up-to-date instance this says
+# nothing, which is the only way a check like this earns its place.
+#
+# Comparing against .env.example instead is the obvious idea and it is wrong:
+# nearly everything documented there is optional and deliberately left unset by
+# the installer, so it would report a dozen "missing" settings on every instance
+# ever installed. A check that always fires is a check nobody reads.
+#
+# Almost everything found here is worth saying and not worth refusing over — an
+# unset SMTP block is a documented state, not a broken one. IMAGE_TAG is the
+# exception, and the reason this block refuses at all: install.sh applies a
+# --tag with `sed s|^IMAGE_TAG=.*|...|`, and sed changes nothing when there is
+# no line to change. An .env without it therefore accepts the new tag in
+# silence and brings the stack up on ${IMAGE_TAG:-latest} — some other version
+# entirely. verify-deployment.sh does catch that, but only once the stack has
+# already been replaced by the wrong one.
+#
+# The heredoc's opening line is indented and its terminator is not, which is
+# what the two patterns below are anchored on. backend/tests/unit/
+# test_deployment_env.py reads the same heredoc to tie .env.example, the Compose
+# file and the installer together, so a change to its shape already fails a test
+# — but that test runs in another suite, so this reports rather than assumes.
+installer_env_names() {
+    awk '
+        /cat > "\$ENV_FILE" <<EOF$/ { inside = 1; next }
+        inside && /^EOF$/           { exit }
+        inside && match($0, /^[A-Z][A-Z0-9_]*=/) { print substr($0, RSTART, RLENGTH - 1) }
+    ' scripts/install.sh
+}
+
+if [ "$RUNNING" -eq 1 ]; then
+    step "Checking .env carries what $VERSION expects"
+
+    EXPECTED_NAMES="$(installer_env_names)"
+    if [ -z "$EXPECTED_NAMES" ]; then
+        # The heredoc was renamed or restructured. Saying nothing here would
+        # turn this check into a permanent silent pass.
+        printf '  cannot read install.sh'"'"'s .env template — skipping this check\n' >&2
+    else
+        PRESENT_NAMES="$(grep -oE '^[A-Z][A-Z0-9_]*=' .env | tr -d '=' | sort -u)"
+        MISSING_NAMES=""
+        for name in $EXPECTED_NAMES; do
+            printf '%s\n' "$PRESENT_NAMES" | grep -qx "$name" \
+                || MISSING_NAMES="$MISSING_NAMES $name"
+        done
+
+        case " $MISSING_NAMES " in
+            *' IMAGE_TAG '*)
+                printf '\nUpgrade stopped: .env has no IMAGE_TAG line.\n\n' >&2
+                printf '  IMAGE_TAG is how a version is pinned, and applying one rewrites\n' >&2
+                printf '  that line in place. With no line to rewrite the new tag is\n' >&2
+                printf '  accepted and dropped, and the stack comes up on whatever\n' >&2
+                printf '  `latest` points at rather than on %s.\n\n' "$VERSION" >&2
+                # CURRENT is read from IMAGE_TAG, so in this branch it is
+                # always empty and there is nothing to suggest. The running
+                # containers know, though, and that is a better answer than a
+                # file that has just been shown to be incomplete.
+                printf '  The version to put there is the one serving right now. Ask it,\n' >&2
+                printf '  then add the line and run this again:\n\n' >&2
+                api_port="$(env_value API_PORT)"
+                printf '    curl -s http://127.0.0.1:%s/api/v1/health\n' \
+                    "${api_port:-8003}" >&2
+                printf '    echo IMAGE_TAG=<that version> >> %s/.env\n\n' "$REPO_ROOT" >&2
+                printf '  Nothing has been changed and the instance is still serving what\n' >&2
+                printf '  it was.\n' >&2
+                exit 1 ;;
+        esac
+
+        if [ -n "$MISSING_NAMES" ]; then
+            printf '  .env does not mention:%s\n' "$MISSING_NAMES" >&2
+            printf '  %s'"'"'s installer writes those into a .env it creates, so this one\n' "$VERSION" >&2
+            printf '  predates them. Each falls back to a default, which may or may not\n' >&2
+            printf '  be what you want — check the release notes. Continuing.\n' >&2
+        else
+            printf '  every setting the installer writes is present\n'
+        fi
+    fi
+fi
+
+# ---------------------------------------------------------------- disk headroom
+#
+# An upgrade writes two things before it changes anything: the incoming images,
+# under Docker's data root, and the pre-upgrade dump, under the data root. This
+# runs before both, because running out of room part-way through either is worse
+# than a refusal — a pull that fills the filesystem Docker lives on takes the
+# *running* instance down with it, since Postgres and Caddy are writing to the
+# same disk.
+#
+# Two filesystems, and on a normal single-disk host they are the same one. That
+# is why what goes where is accumulated per filesystem and compared once: two
+# independent comparisons against one free figure would each pass while their
+# sum does not.
+#
+# THE NUMBERS, and why they are what they are. A threshold that blocks a valid
+# upgrade is worse than no check at all, so each is measured rather than picked:
+#
+#   Images. Measured on a clean host, Docker 29.8.1, amd64. The whole stack —
+#   backend 624 MB, frontend 338 MB, postgres 417, redis 58, caddy 89 — occupies
+#   1551 MB, so a first install budgets 1800. An upgrade re-pulls only what
+#   changed, which is much less than the full set but far more than "a layer or
+#   two": going 2.13.0 -> 2.14.0 added 771 MB on top of 2.13.0, because the
+#   backend's dependency layer is rebuilt every release. So an upgrade budgets
+#   1000 MB, ~30% over what was measured. Both figures ignore that the pull
+#   leaves the *old* images in place, which is correct — nothing here prunes
+#   them, and the free space they occupy was never ours to count.
+#
+#   Nothing at all when every image the target resolves to is already local.
+#   Re-running this to re-apply configuration against the version already
+#   installed is a documented gesture, and it pulls nothing.
+#
+#   The dump. Not estimated — read off this instance's own history. The largest
+#   dump still inside db-backup.sh's ten-day retention window is the same
+#   schema, the same data and the same compression as the one about to be
+#   written, which makes it a far better predictor than anything derivable from
+#   the database, and it is doubled to leave room for growth. When there is no
+#   dump to learn from, this asks for nothing and says so. The obvious
+#   substitute is pg_database_size, and it is not close: on a freshly seeded
+#   demo instance it reported 12,016,999 bytes against a 29,353-byte dump, 409
+#   times what was needed. It bounds the *uncompressed* dump, on a disk that
+#   also holds the indexes and the free-space map. Requiring it would be exactly
+#   the threshold that refuses an upgrade with ample room.
+#
+# --skip-disk-check proceeds anyway, for a host whose storage this cannot see —
+# a network filesystem df misreports, or thin provisioning underneath.
+IMAGE_BUDGET_FIRST_MB=1800
+IMAGE_BUDGET_STEP_MB=1000
+
+# Free bytes on the filesystem holding $1, and the device it is on, so two
+# paths on one disk are charged once. Both empty when df cannot answer.
+free_bytes() { df -PB1 "$1" 2>/dev/null | awk 'NR == 2 { print $4 }'; }
+device_of()  { df -P "$1" 2>/dev/null | awk 'NR == 2 { print $1 }'; }
+mount_of()   { df -P "$1" 2>/dev/null | awk 'NR == 2 { print $NF }'; }
+
+human() {
+    awk -v b="${1:-0}" 'BEGIN {
+        if (b >= 1073741824)   printf "%.1f GB", b / 1073741824
+        else if (b >= 1048576) printf "%.0f MB", b / 1048576
+        else                   printf "%.0f KB", b / 1024
+    }'
+}
+
+if [ "$SKIP_DISK_CHECK" -eq 0 ]; then
+    step "Checking disk space"
+
+    DOCKER_ROOT="$(docker info --format '{{.DockerRootDir}}' 2>/dev/null || true)"
+    DOCKER_ROOT="${DOCKER_ROOT:-/var/lib/docker}"
+
+    # Every image this version resolves to, and whether each is already here.
+    # `|| true` because a compose file this script is about to complain about
+    # being stale is still the one that has to answer, and it may not.
+    #
+    # `sort -u`: api, celery-worker and celery-beat are the same image, so
+    # compose lists the backend three times and an undeduplicated count says
+    # "4 not yet local" about two images.
+    IMAGES_NEEDED_MB=0
+    TARGET_IMAGES="$(IMAGE_TAG="$VERSION" docker compose config --images 2>/dev/null \
+        | sort -u || true)"
+    IMAGES_ABSENT=0
+    for ref in $TARGET_IMAGES; do
+        docker image inspect "$ref" >/dev/null 2>&1 || IMAGES_ABSENT=$((IMAGES_ABSENT + 1))
+    done
+    if [ "$IMAGES_ABSENT" -gt 0 ]; then
+        if [ "$RUNNING" -eq 1 ]; then
+            IMAGES_NEEDED_MB="$IMAGE_BUDGET_STEP_MB"
+        else
+            IMAGES_NEEDED_MB="$IMAGE_BUDGET_FIRST_MB"
+        fi
+    fi
+
+    # The dump, from the largest one this instance last wrote.
+    DUMP_NEEDED_BYTES=0
+    DUMP_BASIS="no snapshot is taken on a first install"
+    if [ "$RUNNING" -eq 1 ]; then
+        LAST_DUMP_BYTES="$(find "$DATA_ROOT/backups" -maxdepth 1 -name 'memship_*.sql.gz' \
+            -printf '%s\n' 2>/dev/null | sort -n | tail -1)"
+        if [ -n "$LAST_DUMP_BYTES" ]; then
+            DUMP_NEEDED_BYTES=$((LAST_DUMP_BYTES * 2))
+            DUMP_BASIS="twice the largest dump in $DATA_ROOT/backups ($(human "$LAST_DUMP_BYTES"))"
+        else
+            DUMP_BASIS="unknown — no previous dump to size it from"
+        fi
+    fi
+
+    # Charge each requirement to the filesystem it lands on, then compare once
+    # per filesystem. Keyed by device, so one disk holding both is one row.
+    DOCKER_DEV="$(device_of "$DOCKER_ROOT")"
+    DATA_DEV="$(device_of "$DATA_ROOT")"
+
+    printf '  images:   %s (%s)\n' \
+        "$(human $((IMAGES_NEEDED_MB * 1048576)))" \
+        "$([ "$IMAGES_ABSENT" -gt 0 ] && printf '%s not yet local' "$IMAGES_ABSENT" \
+            || printf 'all already local')"
+    printf '  snapshot: %s (%s)\n' "$(human "$DUMP_NEEDED_BYTES")" "$DUMP_BASIS"
+
+    disk_short=""
+    check_fs() {
+        # $1 label, $2 path, $3 bytes wanted
+        local free mount
+        free="$(free_bytes "$2")"
+        mount="$(mount_of "$2")"
+        if [ -z "$free" ]; then
+            printf '  %s (%s): df cannot report free space — not checked\n' "$1" "$2" >&2
+            return 0
+        fi
+        printf '  %s on %s: %s free, %s wanted\n' "$1" "${mount:-$2}" \
+            "$(human "$free")" "$(human "$3")"
+        [ "$free" -ge "$3" ] || disk_short="$disk_short $1"
+    }
+
+    if [ -n "$DOCKER_DEV" ] && [ "$DOCKER_DEV" = "$DATA_DEV" ]; then
+        check_fs "images and snapshot" "$DOCKER_ROOT" \
+            $((IMAGES_NEEDED_MB * 1048576 + DUMP_NEEDED_BYTES))
+    else
+        check_fs "images" "$DOCKER_ROOT" $((IMAGES_NEEDED_MB * 1048576))
+        check_fs "snapshot" "$DATA_ROOT" "$DUMP_NEEDED_BYTES"
+    fi
+
+    if [ -n "$disk_short" ]; then
+        printf '\nUpgrade stopped: not enough free disk for%s.\n\n' "$disk_short" >&2
+        printf '  The figures above are what this needs and what is there. An\n' >&2
+        printf '  upgrade that runs out part-way is worse than one that declines:\n' >&2
+        printf '  the database and the proxy are writing to the same disk the pull\n' >&2
+        printf '  fills, so it takes the running instance with it.\n\n' >&2
+        printf '  Free some space, then run this again:\n\n' >&2
+        printf '    docker image prune -a          # images no container uses\n' >&2
+        printf '    du -sh %s/backups/*    # old dumps, oldest first\n' "$DATA_ROOT" >&2
+        printf '\n  Nothing has been changed and the instance is still serving %s.\n\n' \
+            "${CURRENT:-the version it was on}" >&2
+        printf '  If df is wrong about this host — a network filesystem, or thin\n' >&2
+        printf '  provisioning underneath — pass --skip-disk-check.\n' >&2
         exit 1
     fi
 fi
@@ -221,7 +498,7 @@ fi
 # writes into $MEMSHIP_DATA_ROOT/backups, on this machine, beside the database it
 # just dumped. It also captures no uploads and no .env. Saying "backing up" here
 # would let a green deploy log stand in for disaster recovery, which it is not.
-if [ -f .env ] && [ -n "$(docker compose ps --quiet db 2>/dev/null)" ]; then
+if [ "$RUNNING" -eq 1 ]; then
     step "Pre-upgrade snapshot — rollback cover only, stays on this host"
     ./scripts/db-backup.sh
     printf '  This protects against a bad migration, not against losing this\n'
@@ -246,7 +523,7 @@ fi
 # A pass means no migration's declared data precondition is violated. It is not
 # a promise that the upgrade will succeed — disk, lock timeouts and a bug in a
 # migration are all outside what any check can see from here.
-if [ -f .env ] && [ -n "$(docker compose ps --quiet db 2>/dev/null)" ]; then
+if [ "$RUNNING" -eq 1 ]; then
     step "Pre-upgrade checks — $VERSION"
 
     set +e
