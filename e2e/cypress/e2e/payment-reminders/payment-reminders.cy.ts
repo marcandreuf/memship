@@ -41,6 +41,24 @@ describe("Payment Reminders — Settings tab (super admin)", () => {
 });
 
 describe("Payment Reminders — receipt detail (admin)", () => {
+  const API_URL = Cypress.env("API_URL") || "http://localhost:8003/api/v1";
+
+  before(() => {
+    // Outbound templates resolve DB-with-default and the default is off, so on
+    // a freshly seeded instance `payment_reminder` does not send and the
+    // endpoint refuses with 409 (#302). The default-off policy is deliberate,
+    // so the spec configures the instance the way an administrator would.
+    // This endpoint is a sparse update — it touches no sibling template.
+    cy.apiLogin("super@examplee6e3b1.com", "TestSuper1!");
+    cy.request({
+      method: "PUT",
+      url: `${API_URL}/settings/communications`,
+      body: { templates: { payment_reminder: true } },
+    })
+      .its("status")
+      .should("eq", 200);
+  });
+
   it("sends a manual reminder and records it in the history", () => {
     cy.loginAsAdmin();
     // Emitted receipts are remindable; the seed has several.
