@@ -363,6 +363,64 @@ def _next_date_for(weekday: int, min_ahead: int = 1) -> date:
     return today + timedelta(days=delta)
 
 
+# The flags a club that actually runs memship would have switched on. Applied on
+# the ``--demo`` path only: a real first install opts into each module one at a
+# time, `install.sh` produces exactly that, and #301 and #302 were both defects a
+# pre-configured seed would have hidden. What this adds is the other half — an
+# instance somebody can review, rather than one where nineteen of the twenty-one
+# flags are absent and seven routes redirect to the dashboard (#317).
+#
+# The numerics repeat the values the code already falls back to when the key is
+# absent — ``reminder_service.py`` (3/7/3), ``recurring_billing_service.py``
+# (day 1, 7 due days), ``lapse_service.py`` (21 grace days) and
+# ``bookings/rules.py`` (14 days, 24 hours). Repeating them rather than picking
+# new ones means the Settings form shows a reviewer the numbers the instance was
+# already running on, instead of a second set invented here.
+DEMO_FEATURES: dict[str, object] = {
+    "bookings": True,
+    "booking_window_days": 14,
+    "booking_cancellation_deadline_hours": 24,
+    "booking_waitlist_enabled": True,
+    "communications": True,
+    "member_card": True,
+    "custom_profile_fields": True,
+    "public_registration": True,
+    "registration_requires_approval": True,
+    "payment_reminders_enabled": True,
+    "reminder_days_after_due": 3,
+    "reminder_repeat_days": 7,
+    "reminder_max_count": 3,
+    "recurring_billing_enabled": True,
+    "recurring_billing_day": 1,
+    "membership_lapse_enabled": True,
+    "membership_fee_due_days": 7,
+    "membership_lapse_grace_days": 21,
+    # The one value here that is an address rather than a switch. The reserved
+    # `.example` TLD cannot receive mail — the same guarantee the member
+    # addresses in this module rely on — so a configured instance can be
+    # reviewed without anything being deliverable.
+    "billing_notification_email": "tesoreria@mediterrani.example",
+}
+
+
+def seed_demo_features(db) -> None:
+    """Switch on the modules a running club would use, on the demo path only.
+
+    Merged into what is already there rather than assigned over it, so the keys
+    this does *not* name — ``custom_roles``, ``gender_options``, anything a later
+    release adds — are left as the base install wrote them. The keys it does name
+    are set to the demo values on every run, which is what makes ``--demo``
+    reproducible rather than dependent on what the last person clicked.
+    """
+    org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
+    if org is None:
+        return
+    before = dict(org.features or {})
+    org.features = {**before, **DEMO_FEATURES}
+    added = [k for k in DEMO_FEATURES if k not in before]
+    print(f"  Demo features: {len(DEMO_FEATURES)} on ({len(added)} newly set)")
+
+
 def generate_bookings(db) -> None:
     """Enable Simple Bookings and seed spaces, dated slots and demo bookings.
 
@@ -375,19 +433,6 @@ def generate_bookings(db) -> None:
 
     if db.query(Space).first() is not None:
         return  # already seeded
-
-    org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
-    if org is not None:
-        features = dict(org.features or {})
-        features.update(
-            {
-                "bookings": True,
-                "booking_window_days": 14,
-                "booking_cancellation_deadline_hours": 24,
-                "booking_waitlist_enabled": True,
-            }
-        )
-        org.features = features
 
     members = demo_members(db)
     if not members:
@@ -482,6 +527,9 @@ def seed_demo_data(db, default_membership_type: MembershipType, created_by: int 
     year-spread members, billing, SEPA, and reminders on top.
     """
     from app.cli.seed import seed_activities, seed_registrations
+
+    print("\nSeeding demo features...")
+    seed_demo_features(db)
 
     print("\nSeeding demo members...")
     generate_members(db, default_membership_type)
