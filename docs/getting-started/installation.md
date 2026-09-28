@@ -108,9 +108,19 @@ already filled in. Work through it and delete it.
 **Your install is pinned to a version.** `--tag` becomes `IMAGE_TAG`, so the deployment stays on
 that version until you move it deliberately, and `/api/v1/health` reports which one it runs.
 
-**Pass `--tag` explicitly.** With no git checkout to read a release tag from, omitting it falls
-back to `latest` — a moving target, and an instance that reports its own version as the literal
-string `latest`.
+**`--tag` is required here, and the installer enforces it.** There is no git checkout on a
+deployment unpacked from a release tarball, so there is no tag to read a version from, and
+omitting `--tag` stops the install:
+
+```
+Error: --tag is required here: there is no git tag to read a version from.
+```
+
+It used to resolve to `latest` instead — a moving target, and an instance that reports its own
+version as the literal string `latest`. It refuses before writing `.env` or generating any
+secret, so name the version and run it again. In a git checkout `--tag` may still be omitted, where it defaults to
+the most recent release tag; `--tag latest` remains available for deliberately tracking whichever
+images are newest.
 
 **To upgrade later, follow [Upgrading](../self-hosting/upgrading.md).** Moving `IMAGE_TAG` on its
 own is not enough — `docker-compose.yml`, the `Caddyfile` and `scripts/` ship alongside the images
