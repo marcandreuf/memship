@@ -273,8 +273,7 @@ function UpcomingActivitiesCard() {
     const now = Date.now();
     return (data?.items ?? [])
       .filter((a) => new Date(a.starts_at).getTime() >= now)
-      .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime())
-      .slice(0, 3);
+      .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime());
   }, [data]);
 
   return (
@@ -286,20 +285,26 @@ function UpcomingActivitiesCard() {
         {upcoming.length === 0 ? (
           <p className="py-1 text-sm text-muted-foreground">{t("dashboard.noUpcoming")}</p>
         ) : (
-          <div className="space-y-2">
-            {upcoming.map((a) => (
-              <Link
-                key={a.id}
-                href={`/activities/${a.id}`}
-                className="block rounded-lg border p-2 hover:bg-accent transition-colors"
-              >
-                <p className="font-medium text-sm truncate">{a.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {formatDate(a.starts_at)}
-                  {a.location && ` · ${a.location}`}
-                </p>
-              </Link>
-            ))}
+          /* h-48 is three rows — measured at 52px each plus the 8px gap — with a
+             sliver of the fourth showing through the bottom edge, so it reads as
+             scrollable. The list used to be `.slice(0, 3)`, which held the card
+             at this size by throwing the rest away; now the rest is reachable. */
+          <div className="h-48 overflow-y-auto pr-1">
+            <div className="space-y-2">
+              {upcoming.map((a) => (
+                <Link
+                  key={a.id}
+                  href={`/activities/${a.id}`}
+                  className="block rounded-lg border p-2 hover:bg-accent transition-colors"
+                >
+                  <p className="font-medium text-sm truncate">{a.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatDate(a.starts_at)}
+                    {a.location && ` · ${a.location}`}
+                  </p>
+                </Link>
+              ))}
+            </div>
           </div>
         )}
       </CardContent>
@@ -479,8 +484,8 @@ export default function DashboardPage() {
 
             {/* Rail (1/3): actionable today/this-week widgets. */}
             <div className="space-y-3">
-              {canReadReminders && <ReminderList />}
               {canReadBilling && <NextBillingRunCard />}
+              {canReadReminders && <ReminderList />}
               {canReadActivities && <UpcomingActivitiesCard />}
             </div>
           </div>

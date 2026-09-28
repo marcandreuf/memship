@@ -161,10 +161,20 @@ export function ReminderList() {
             {t("notes.empty")}
           </p>
         ) : (
-          <div className="space-y-2">
-            {reminders.map((r) => (
-              <ReminderRow key={r.id} reminder={r} />
-            ))}
+          /* Fixed height, not max-height: the rest of the rail sits below this
+             card, and a list that grew and shrank with every note added or
+             ticked off dragged those cards up and down the page. h-58 is five
+             single-line rows exactly — measured at 40px each plus the 8px gap —
+             so a sixth scrolls rather than stretching the card. A note long
+             enough to wrap is taller, so five is the ceiling, not a promise.
+             The empty state keeps its natural height instead, so an instance
+             with no notes does not show an empty box. */
+          <div className="h-58 overflow-y-auto pr-1">
+            <div className="space-y-2">
+              {reminders.map((r) => (
+                <ReminderRow key={r.id} reminder={r} />
+              ))}
+            </div>
           </div>
         )}
       </CardContent>
