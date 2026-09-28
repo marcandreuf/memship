@@ -384,7 +384,15 @@ if [ -n "$DOMAIN" ]; then
     done
 fi
 if [ -n "$IMAGE_TAG" ]; then
-    sed -i "s|^IMAGE_TAG=.*|IMAGE_TAG=$IMAGE_TAG|" "$ENV_FILE"
+    # sed changes nothing when there is no line to change, and reporting the tag
+    # anyway brought the stack up on ${IMAGE_TAG:-latest} instead. An .env made
+    # with `cp .env.example .env` has the line commented out, so this was
+    # reachable. Backfill it, the way MEMSHIP_DATA_ROOT and HOST_UID do below.
+    if grep -qE '^IMAGE_TAG=' "$ENV_FILE"; then
+        sed -i "s|^IMAGE_TAG=.*|IMAGE_TAG=$IMAGE_TAG|" "$ENV_FILE"
+    else
+        printf 'IMAGE_TAG=%s\n' "$IMAGE_TAG" >> "$ENV_FILE"
+    fi
     info "IMAGE_TAG=$IMAGE_TAG"
 fi
 grep -qE '^MEMSHIP_DATA_ROOT=' "$ENV_FILE" || printf 'MEMSHIP_DATA_ROOT=%s\n' "$DATA_ROOT" >> "$ENV_FILE"
