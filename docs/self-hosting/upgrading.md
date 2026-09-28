@@ -29,11 +29,12 @@ Then two commands. Refresh the deployment files, then apply the version:
 
 ```bash
 MEMSHIP_VERSION=2.7.1
-cd /srv/openmemship/app          # wherever your install lives
+MEMSHIP_APP=/srv/openmemship/app          # wherever your install lives
 
 curl -fsSL "https://github.com/marcandreuf/memship/archive/refs/tags/v${MEMSHIP_VERSION}.tar.gz" \
-  | tar -xz --strip-components=1
+  | tar -xz -C "$MEMSHIP_APP" --strip-components=1
 
+cd "$MEMSHIP_APP"
 ./scripts/upgrade.sh "$MEMSHIP_VERSION"
 ```
 
@@ -43,31 +44,58 @@ install half-upgraded: the new backend running behind the old proxy configuratio
 over the directory replaces those files and leaves `.env` untouched, since `.env` is not in the
 archive. No git and no source checkout are involved.
 
+`tar -xz` writes into its `-C` directory, so name it rather than relying on the shell's current
+directory — a `curl | tar` pasted on its own, without the `cd`, unpacks a release wherever you
+happen to be standing and says nothing. Note also that unpacking *adds and replaces*; it never
+deletes, so a file a release removed stays behind until you remove it.
+
+**You do not have to remember this step.** `upgrade.sh` checks it — see step 1 below.
+
 **What the second one does**, in order, stopping if any step fails:
 
-1. **Backs up the database** with `scripts/db-backup.sh`. A release carrying a schema migration
+1. **Fetches the release's images.** Every one of them, before anything on the instance is
+   touched, so a version that does not exist — or a release whose images did not all publish —
+   is an upgrade that declines while the old one keeps serving. Nothing is replaced and no
+   snapshot is written yet, so this costs nothing when it stops.
+
+2. **Confirms the deployment files here are the release's.** It compares `docker-compose.yml`
+   and the `Caddyfile` in the install directory, by checksum, against what the release expects
+   them to be, and stops if they differ — which is what an upgrade whose first command was
+   skipped looks like. This runs before the snapshot, so a missed refresh costs nothing.
+
+   The expected checksums travel **in the image**, written as a label when it was built, and are
+   read out of the copy just pulled. Reading them needs the registry and nothing else, which the
+   upgrade needed anyway — so a deployment that can pull can also check, and no part of this
+   depends on reaching GitHub.
+
+   Two things follow. A release that ships deployment files identical to the previous one is
+   silent here, as it should be — the bytes match, so there is nothing to report. And a release
+   built before this label existed carries nothing to compare against; that is said plainly and
+   the upgrade continues, so older releases stay installable.
+
+   If you maintain these files yourself — a deployment that keeps a customised Compose file, say
+   — `--skip-file-check` proceeds without comparing them.
+
+3. **Backs up the database** with `scripts/db-backup.sh`. A release carrying a schema migration
    cannot be rolled back by re-pinning `IMAGE_TAG` — the images go back, the migrated schema
    does not — so this dump is the only way out of a bad upgrade. If it fails, the upgrade does
    not happen. On a first install there is no database yet and it says so instead.
-2. **Checks the release before anything is replaced.** It fetches every image for the target
-   version — so a version that does not exist, or one whose images did not all publish, stops
-   the upgrade here rather than after the stack has been torn down — and then runs the release's
-   own checks against the database the old version is still serving. A migration that would
-   refuse (see below) says so now, while the instance is still up, and nothing is changed. A
-   pass means no image is missing and no migration's declared data precondition is violated —
-   not that the upgrade cannot fail for other reasons.
+4. **Runs the release's own checks against the database** the old version is still serving. A
+   migration that would refuse (see below) says so now, while the instance is still up, and
+   nothing is changed. A pass means no migration's declared data precondition is violated — not
+   that the upgrade cannot fail for other reasons.
 
    **Going backwards is refused.** Re-pinning `IMAGE_TAG` moves the images back but not the
    schema, so an older release meets a database it does not understand. Restore the snapshot
    taken before you upgraded instead — see [Rolling back](#rolling-back). If you know the
    release you are leaving carried no migration, or you have already restored the database,
    `--allow-downgrade` proceeds.
-3. **Applies the version** through `scripts/install.sh --tag "$MEMSHIP_VERSION"`, which writes
+5. **Applies the version** through `scripts/install.sh --tag "$MEMSHIP_VERSION"`, which writes
    `IMAGE_TAG`, pulls, and recreates the stack. It never overwrites an existing `.env`. It also
    force-recreates Caddy, which matters: the `Caddyfile` is bind-mounted, so changing its
    contents gives `docker compose up -d` no reason to recreate the container, and it would
    otherwise keep serving the old configuration.
-4. **Verifies the result** with `scripts/verify-deployment.sh`, which waits for the API, checks
+6. **Verifies the result** with `scripts/verify-deployment.sh`, which waits for the API, checks
    that it reports the version you just deployed, and pings the Celery worker. `docker compose
    up -d` returning says only that containers were created — migrations run before the API
    serves, so a failed one looks like an API that never answers rather than a container that
