@@ -33,6 +33,7 @@ jobs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
       caddy: ${{ steps.filter.outputs.caddy }}
+      shell: ${{ steps.filter.outputs.shell }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -50,6 +51,17 @@ jobs:
               - 'Caddyfile'
               - 'docker-compose.quickstart.yml'
               - 'scripts/check-caddy-headers.sh'
+            # scripts/ matched nothing here until now, so a PR touching only the
+            # deployment scripts reported `Detect changes: pass` and every test
+            # job skipped — which is how the upgrade guards merged with nothing
+            # run against them (#215). The deployment files are in the filter
+            # too: the shell tests copy docker-compose.yml and the Caddyfile
+            # into their sandboxes and checksum them the way the release does.
+            shell:
+              - 'scripts/**'
+              - 'tests/shell/**'
+              - 'docker-compose.yml'
+              - 'Caddyfile'
 
   caddy-headers:
     name: Caddy Header Parity
@@ -62,6 +74,36 @@ jobs:
 
       - name: Compare the two Caddy header blocks
         run: ./scripts/check-caddy-headers.sh
+
+  shell:
+    name: Deployment Script Tests
+    needs: changes
+    if: ${{ needs.changes.outputs.shell == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      # Two different questions, both cheap. shellcheck asks whether the bash is
+      # correct; the suite asks whether the guards hold.
+      #
+      # --severity=warning rather than the default: the scripts are clean at
+      # warning and above, and the handful of `info`/`style` notes below that are
+      # all deliberate — pull-backup.sh's `$REMOTE_PATH` is *meant* to expand on
+      # the client side (SC2029), and a printf format that says `latest` in
+      # backticks is prose, not an unexpanded expression (SC2016). Gating on
+      # those would mean either three disable comments or changing correct code
+      # to satisfy a linter. Anything at warning or above is a real finding.
+      - name: Shellcheck
+        run: |
+          shellcheck --version
+          shellcheck -x --severity=warning scripts/*.sh
+          shellcheck -x --severity=warning tests/shell/*.sh
+
+      # No bats, no containers, no network, no database — see tests/shell/lib.sh
+      # for why the harness is a plain runner and what the stub docker answers.
+      - name: Run the deployment script tests
+        run: ./tests/shell/run.sh
 
   unit:
     name: Unit Tests

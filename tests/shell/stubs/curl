@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+#
+# Two callers: install.sh asks api.ipify.org what this host's public IP is, and
+# verify-deployment.sh polls /api/v1/health until it answers.
+#
+#   STUB_HEALTH_VERSION   version the health endpoint reports; empty → the API
+#                         never answers, which is how a refused migration looks
+#   STUB_PUBLIC_IP        what ipify returns; empty → it does not answer
+
+set -u
+
+[ -z "${STUB_LOG:-}" ] || printf 'curl %s\n' "$*" >>"$STUB_LOG"
+
+for arg in "$@"; do
+    case "$arg" in
+        *ipify*)
+            [ -n "${STUB_PUBLIC_IP:-}" ] || exit 7
+            printf '%s' "$STUB_PUBLIC_IP"
+            exit 0 ;;
+        *api/v1/health*)
+            [ -n "${STUB_HEALTH_VERSION:-}" ] || exit 7
+            printf '{"status":"healthy","version":"%s","environment":"production"}' \
+                "$STUB_HEALTH_VERSION"
+            exit 0 ;;
+    esac
+done
+exit 7

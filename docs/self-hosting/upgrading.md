@@ -49,16 +49,50 @@ directory — a `curl | tar` pasted on its own, without the `cd`, unpacks a rele
 happen to be standing and says nothing. Note also that unpacking *adds and replaces*; it never
 deletes, so a file a release removed stays behind until you remove it.
 
-**You do not have to remember this step.** `upgrade.sh` checks it — see step 1 below.
+**You do not have to remember this step.** `upgrade.sh` checks it — see step 5 below.
 
-**What the second one does**, in order, stopping if any step fails:
+**What the second one does**, in order, stopping if any step fails. Steps 1 to 7 all run **before
+anything on the instance is replaced**, so any of them stopping leaves the version you were on still
+serving, and each refusal names the state it found:
 
-1. **Fetches the release's images.** Every one of them, before anything on the instance is
+1. **Refuses to go backwards.** Re-pinning `IMAGE_TAG` moves the images back but not the schema,
+   so an older release meets a database it does not understand. Restore the snapshot taken before
+   you upgraded instead — see [Rolling back](#rolling-back). If you know the release you are
+   leaving carried no migration, or you have already restored the database, `--allow-downgrade`
+   proceeds. Compared only between two release versions: an RC or a `latest` install has no
+   ordering to reason about, so it is left alone rather than guessed at.
+
+2. **Checks `.env` carries what the release expects.** It compares the settings in your `.env`
+   against the ones this release's installer writes into a `.env` it creates. A `.env` written by
+   the same release has all of them, so on a current instance this says nothing; on an older one it
+   names what has been added since, which is the release-notes paragraph you might not have read.
+
+   Only one of them stops the upgrade: **a `.env` with no `IMAGE_TAG` line at all.** Applying a
+   version rewrites that line in place, and there is nothing to rewrite — so the tag would be
+   accepted, dropped, and the stack would come up on whatever `latest` points at. Add the line and
+   run it again.
+
+3. **Checks there is room on disk** for the images it is about to fetch and for the snapshot it is
+   about to write, before it does either. An upgrade that runs out of space part-way is worse than
+   one that declines: the database and the proxy are writing to the same disk the pull is filling.
+
+   The figures are measured rather than guessed. The images are budgeted at 1 GB for an upgrade and
+   1.8 GB for a first install — a first install pulls the whole stack (1.55 GB measured), an upgrade
+   only what changed (771 MB measured between two adjacent releases, because the backend's
+   dependency layer is rebuilt every release). Nothing is asked for on account of images that are
+   already local, so re-running this against the version already installed is never refused for want
+   of room to pull it. The snapshot is sized from **your own last dump**, doubled, and when there is
+   no dump to learn from nothing is asked for rather than a number invented.
+
+   `--skip-disk-check` proceeds anyway, for a host whose storage `df` misreports — a network
+   filesystem, or thin provisioning underneath.
+
+4. **Fetches the release's images.** Every one of them, before anything on the instance is
    touched, so a version that does not exist — or a release whose images did not all publish —
    is an upgrade that declines while the old one keeps serving. Nothing is replaced and no
    snapshot is written yet, so this costs nothing when it stops.
 
-2. **Confirms the deployment files here are the release's.** It compares `docker-compose.yml`
+5. **Confirms the deployment files here are the release's.** It compares `docker-compose.yml`
    and the `Caddyfile` in the install directory, by checksum, against what the release expects
    them to be, and stops if they differ — which is what an upgrade whose first command was
    skipped looks like. This runs before the snapshot, so a missed refresh costs nothing.
@@ -76,26 +110,23 @@ deletes, so a file a release removed stays behind until you remove it.
    If you maintain these files yourself — a deployment that keeps a customised Compose file, say
    — `--skip-file-check` proceeds without comparing them.
 
-3. **Backs up the database** with `scripts/db-backup.sh`. A release carrying a schema migration
+6. **Backs up the database** with `scripts/db-backup.sh`. A release carrying a schema migration
    cannot be rolled back by re-pinning `IMAGE_TAG` — the images go back, the migrated schema
    does not — so this dump is the only way out of a bad upgrade. If it fails, the upgrade does
    not happen. On a first install there is no database yet and it says so instead.
-4. **Runs the release's own checks against the database** the old version is still serving. A
+
+7. **Runs the release's own checks against the database** the old version is still serving. A
    migration that would refuse (see below) says so now, while the instance is still up, and
    nothing is changed. A pass means no migration's declared data precondition is violated — not
    that the upgrade cannot fail for other reasons.
 
-   **Going backwards is refused.** Re-pinning `IMAGE_TAG` moves the images back but not the
-   schema, so an older release meets a database it does not understand. Restore the snapshot
-   taken before you upgraded instead — see [Rolling back](#rolling-back). If you know the
-   release you are leaving carried no migration, or you have already restored the database,
-   `--allow-downgrade` proceeds.
-5. **Applies the version** through `scripts/install.sh --tag "$MEMSHIP_VERSION"`, which writes
+8. **Applies the version** through `scripts/install.sh --tag "$MEMSHIP_VERSION"`, which writes
    `IMAGE_TAG`, pulls, and recreates the stack. It never overwrites an existing `.env`. It also
    force-recreates Caddy, which matters: the `Caddyfile` is bind-mounted, so changing its
    contents gives `docker compose up -d` no reason to recreate the container, and it would
    otherwise keep serving the old configuration.
-6. **Verifies the result** with `scripts/verify-deployment.sh`, which waits for the API, checks
+
+9. **Verifies the result** with `scripts/verify-deployment.sh`, which waits for the API, checks
    that it reports the version you just deployed, and pings the Celery worker. `docker compose
    up -d` returning says only that containers were created — migrations run before the API
    serves, so a failed one looks like an API that never answers rather than a container that
