@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+#
+# Free space, on demand. The disk check is the one guard whose failure path
+# cannot be reached without either filling a real disk or lying about one, so
+# this lies about one.
+#
+#   STUB_DF_FREE_KB   1K-blocks free to report for every path. Unset → defer to
+#                     the real df, so a test that does not care about disk gets
+#                     the truth.
+#   STUB_DF_SPLIT     1 → report a different device for the data root than for
+#                     Docker's root, so the two-filesystem branch of the check
+#                     is the one exercised rather than the same-disk branch.
+
+set -u
+
+[ -z "${STUB_LOG:-}" ] || printf 'df %s\n' "$*" >>"$STUB_LOG"
+
+if [ -z "${STUB_DF_FREE_KB:-}" ]; then
+    for real in /usr/bin/df /bin/df; do
+        [ -x "$real" ] && exec "$real" "$@"
+    done
+    printf 'df: no real df to defer to\n' >&2
+    exit 1
+fi
+
+# The path is the last non-flag argument; these scripts always pass exactly one.
+path=""
+for arg in "$@"; do
+    case "$arg" in -*) ;; *) path="$arg" ;; esac
+done
+
+device="/dev/stub0"
+mount="/"
+if [ "${STUB_DF_SPLIT:-0}" = "1" ]; then
+    case "$path" in
+        *"${STUB_DATA_ROOT:-__nope__}"*) device="/dev/stubdata"; mount="/srv" ;;
+    esac
+fi
+
+# `-PB1` asks for bytes rather than 1K blocks, and the caller relies on getting
+# the unit it asked for.
+free="$STUB_DF_FREE_KB"
+case " $* " in
+    *' -PB1 '*|*' -B1 '*) free=$((STUB_DF_FREE_KB * 1024)) ;;
+esac
+
+printf 'Filesystem 1K-blocks Used Available Use%% Mounted on\n'
+printf '%s 99999999 0 %s 1%% %s\n' "$device" "$free" "$mount"
