@@ -238,70 +238,22 @@ Consulta [CONTRIBUTING](CONTRIBUTING.md) per a branques, versionat i com es publ
 
 ## Instal·lació (Docker)
 
-### Requisits previs
+L'autoallotjament en producció viu a la documentació, perquè només hi hagi una còpia per mantenir correcta:
 
-- Docker i Docker Compose instal·lats
-- Git (per clonar el repositori)
+- **[Instal·lació](docs/getting-started/installation.md)** — `vps-bootstrap.sh` en un servidor nou i
+  després `install.sh`, que genera secrets reals, fixa una versió i posa les teves dades en un únic
+  directori amb còpia de seguretat
+- **[Configuració inicial](docs/getting-started/first-setup.md)** — crear el super administrador i
+  l'organització
+- **[Referència de configuració](docs/self-hosting/configuration.md)** — totes les variables
+  d'entorn
+- **[Còpies de seguretat i restauració](docs/self-hosting/backups-and-restore.md)** — configura-ho
+  abans de posar-ho en producció
+- **[Actualitzacions](docs/self-hosting/upgrading.md)** — passar a una versió nova
+- **[Resolució de problemes](docs/self-hosting/troubleshooting.md)** — quan alguna cosa no arrenca
 
-### Opció A: Imatges precompilades (recomanat)
-
-Utilitza imatges publicades al [GitHub Container Registry](https://github.com/marcandreuf/memship/pkgs/container/memship-backend).
-
-```bash
-git clone https://github.com/marcandreuf/memship.git
-cd memship
-
-# Configuració
-cp .env.example .env
-# Editeu .env — com a mínim canvieu SECRET_KEY i DB_PASSWORD
-# Definiu la versió de la imatge:
-#   IMAGE_TAG=0.1.3
-
-# Descarregueu i inicieu tots els serveis (Caddy + API + Frontend + PostgreSQL)
-docker compose pull
-docker compose up -d
-
-# Executeu la configuració inicial (crea els comptes d'administrador)
-docker compose exec -it api python -m app.cli.seed
-
-# Obriu http://localhost
-```
-
-### Opció B: Compilar des del codi font
-
-Compila les imatges Docker localment a partir del codi font del repositori.
-
-```bash
-git clone https://github.com/marcandreuf/memship.git
-cd memship
-cp .env.example .env
-docker compose up -d --build
-docker compose exec -it api python -m app.cli.seed
-```
-
-### Serveis
-
-| Servei | URL | Descripció |
-|--------|-----|-----------|
-| Frontend | http://localhost | Portal del soci (via Caddy) |
-| API | http://localhost/api/v1/health | API del backend (via Caddy) |
-| API directa | http://localhost:8003 | API del backend (directa) |
-| Documentació de l'API | http://localhost:8003/api/docs | Swagger UI (només en mode dev) |
-
-### Còpies de seguretat
-
-```bash
-# Crear una còpia de seguretat
-./scripts/db-backup.sh
-
-# Llistar i restaurar des d'una còpia de seguretat (simulació per defecte)
-./scripts/db-restore.sh
-
-# Restaurar amb confirmació
-./scripts/db-restore.sh --confirm
-```
-
-Les còpies de seguretat s'emmagatzemen al directori `backups/`. Les còpies antigues s'eliminen automàticament al cap de 10 dies.
+L'[Inici ràpid](#inici-ràpid-docker) de dalt és només per avaluar: inclou una clau de signatura
+publicada en aquest repositori i guarda les dades en volums d'un sol ús.
 
 ## Contribucions
 

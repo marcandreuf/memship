@@ -238,70 +238,22 @@ Consulta [CONTRIBUTING](CONTRIBUTING.md) para ramas, versionado y cómo se publi
 
 ## Instalación (Docker)
 
-### Requisitos previos
+El autoalojamiento en producción vive en la documentación, para que haya una sola copia que mantener correcta:
 
-- Docker y Docker Compose instalados
-- Git (para clonar el repositorio)
+- **[Instalación](docs/getting-started/installation.md)** — `vps-bootstrap.sh` en un servidor
+  recién creado y después `install.sh`, que genera secretos reales, fija una versión y coloca tus
+  datos en un único directorio respaldado
+- **[Configuración inicial](docs/getting-started/first-setup.md)** — crear el super administrador y
+  la organización
+- **[Referencia de configuración](docs/self-hosting/configuration.md)** — todas las variables de
+  entorno
+- **[Copias de seguridad y restauración](docs/self-hosting/backups-and-restore.md)** — configúralo
+  antes de entrar en producción
+- **[Actualizaciones](docs/self-hosting/upgrading.md)** — pasar a una nueva versión
+- **[Resolución de problemas](docs/self-hosting/troubleshooting.md)** — cuando algo no arranca
 
-### Opción A: Imágenes preconstruidas (recomendado)
-
-Utiliza las imágenes publicadas en [GitHub Container Registry](https://github.com/marcandreuf/memship/pkgs/container/memship-backend).
-
-```bash
-git clone https://github.com/marcandreuf/memship.git
-cd memship
-
-# Configurar
-cp .env.example .env
-# Edita .env — como mínimo cambia SECRET_KEY y DB_PASSWORD
-# Establece la versión de la imagen:
-#   IMAGE_TAG=0.1.3
-
-# Descargar e iniciar todos los servicios (Caddy + API + Frontend + PostgreSQL)
-docker compose pull
-docker compose up -d
-
-# Ejecutar la configuración inicial (crea las cuentas de admin)
-docker compose exec -it api python -m app.cli.seed
-
-# Abre http://localhost
-```
-
-### Opción B: Compilar desde el código fuente
-
-Compila las imágenes Docker localmente a partir del código fuente del repositorio.
-
-```bash
-git clone https://github.com/marcandreuf/memship.git
-cd memship
-cp .env.example .env
-docker compose up -d --build
-docker compose exec -it api python -m app.cli.seed
-```
-
-### Servicios
-
-| Servicio | URL | Descripción |
-|----------|-----|-------------|
-| Frontend | http://localhost | Portal del socio (mediante Caddy) |
-| API | http://localhost/api/v1/health | API backend (mediante Caddy) |
-| API directa | http://localhost:8003 | API backend (acceso directo) |
-| Documentación API | http://localhost:8003/api/docs | Swagger UI (solo en modo desarrollo) |
-
-### Copias de seguridad
-
-```bash
-# Crear una copia de seguridad
-./scripts/db-backup.sh
-
-# Listar y restaurar desde una copia (simulación por defecto)
-./scripts/db-restore.sh
-
-# Restaurar con confirmación
-./scripts/db-restore.sh --confirm
-```
-
-Las copias de seguridad se almacenan en el directorio `backups/`. Las copias antiguas se eliminan automáticamente tras 10 días.
+El [Inicio rápido](#inicio-rápido-docker) de arriba es solo para evaluación: incluye una clave de
+firma publicada en este repositorio y guarda los datos en volúmenes desechables.
 
 ## Contribuir
 

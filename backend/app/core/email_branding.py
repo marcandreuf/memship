@@ -116,21 +116,32 @@ def normalize_color(value: str | None) -> str:
 def absolute_logo_url(stored: str | None) -> str | None:
     """Turn a stored ``/uploads/org/<file>`` path into a URL a mail client can fetch.
 
-    ``org`` is the one public prefix in ``app/api/uploads.py``, so no session is
-    involved. Returns None when the logo is unset, or when the public backend URL
-    is still a localhost default — a link the recipient could never resolve.
+    Built on ``FRONTEND_URL`` and the frontend's ``/api/uploads`` proxy rather than
+    on the backend origin. The bundled ``Caddyfile`` routes only ``/api/v1/*`` at
+    the API and has no ``/uploads`` rule on purpose, so a bare ``/uploads`` link on
+    the public host falls through to the frontend, which has no such route either,
+    and the recipient's mail client gets a 404. ``/api/uploads`` is the path all
+    twelve browser call sites already use.
+
+    ``org`` is the one public prefix in ``app/api/uploads.py`` and the proxy passes
+    an absent cookie through unchanged, so no session is involved. Returns None
+    when the logo is unset, or when the public URL is still a localhost default
+    — a link the recipient could never resolve.
     """
     if not stored:
         return None
     if stored.startswith(("http://", "https://")):
         return stored
-    base = (settings.BACKEND_PUBLIC_URL or "").strip().rstrip("/")
+    base = (settings.FRONTEND_URL or "").strip().rstrip("/")
     if not base:
         return None
     host = (urlsplit(base).hostname or "").lower()
     if host in _NON_PUBLIC_HOSTS:
         return None
-    return f"{base}/{stored.lstrip('/')}"
+    path = stored.lstrip("/")
+    if path.startswith("uploads/"):
+        path = f"api/{path}"
+    return f"{base}/{path}"
 
 
 def normalize_website(value: str | None) -> tuple[str | None, str | None]:

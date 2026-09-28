@@ -6,7 +6,7 @@
 #
 #   ./scripts/pull-backup.sh my-instance          # an ssh config Host entry
 #   ./scripts/pull-backup.sh deploy@203.0.113.10 --port 2222 --dump
-#   ./scripts/pull-backup.sh my-instance --with-data --dest ~/memship-backups
+#   ./scripts/pull-backup.sh my-instance --no-data --dest ~/memship-backups
 #
 # It fetches, in this order:
 #
@@ -15,8 +15,15 @@
 #                 in the database. Without this file a perfect database dump
 #                 restores those as unreadable ciphertext.
 #   backups/      the pg_dump archives db-backup.sh writes
-#   storage/      uploads, and secret.key   (--with-data)
-#   caddy/        TLS certificates          (--with-data)
+#   storage/      uploads, session.key and secret.key
+#   caddy/        TLS certificates          (skip both with --no-data)
+#
+# storage/ is not optional and used to be. On an install that did not run
+# install.sh — the tarball and quickstart paths — .env carries no key at all:
+# config.py mints SECRET_KEY into storage/session.key and MEMSHIP_SECRET_KEY
+# into storage/secret.key when the variables are blank, which is how
+# .env.example ships them. Skipping storage/ there copied a dump plus a
+# key-less .env and left behind the only thing that decrypts it.
 #
 # It deliberately does NOT copy $MEMSHIP_DATA_ROOT/postgres. Those files are
 # owned by uid 70 mode 0700, so copying them would need sudo on the far side,
@@ -36,7 +43,7 @@ PORT=""
 REMOTE_PATH="/srv/openmemship/app"
 DEST=""
 DO_DUMP=0
-WITH_DATA=0
+WITH_DATA=1
 
 die() { printf '\nError: %s\n' "$*" >&2; exit 1; }
 info() { printf '  %s\n' "$*"; }
@@ -55,7 +62,8 @@ while [ $# -gt 0 ]; do
         --remote-path) REMOTE_PATH="${2:?--remote-path needs a value}"; shift 2 ;;
         --dest) DEST="${2:?--dest needs a value}"; shift 2 ;;
         --dump) DO_DUMP=1; shift ;;
-        --with-data) WITH_DATA=1; shift ;;
+        --with-data) WITH_DATA=1; shift ;;   # accepted still; it is the default
+        --no-data) WITH_DATA=0; shift ;;
         -*) die "unknown option: $1" ;;
         *) [ -z "$TARGET" ] || die "give exactly one ssh target"; TARGET="$1"; shift ;;
     esac
@@ -106,7 +114,9 @@ if [ "$WITH_DATA" -eq 1 ]; then
     rsync -a --info=stats1 -e "$SSH_CMD" "$TARGET:$DATA_ROOT/caddy/" "$DEST/caddy/"
     info "$DEST/storage, $DEST/caddy"
 else
-    info "skipping uploads and certificates — pass --with-data to include them"
+    warn "skipping uploads and certificates — you asked for --no-data.
+    If this instance has no SECRET_KEY/MEMSHIP_SECRET_KEY in .env, the keys
+    that decrypt the dump live in storage/ and you are not copying them."
 fi
 
 printf '\nPulled to %s\n' "$DEST"

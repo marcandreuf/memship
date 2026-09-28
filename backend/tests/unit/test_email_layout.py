@@ -245,18 +245,34 @@ class TestHeaderTextStaysReadable:
 
 
 class TestLogoUrls:
-    def test_a_stored_path_becomes_absolute(self):
+    def test_a_stored_path_is_built_on_the_uploads_proxy(self):
+        """Not a bare ``/uploads`` link on the public host.
+
+        The bundled ``Caddyfile`` routes ``/api/v1/*`` at the API and nothing
+        else, so ``/uploads/org/logo.png`` reaches the frontend — which has no
+        such route — and every branded email's logo 404'd in the recipient's
+        mail client. ``/api/uploads`` is the proxy that serves it.
+        """
         with patch("app.core.email_branding.settings") as s:
-            s.BACKEND_PUBLIC_URL = "https://api.club.test/"
+            s.FRONTEND_URL = "https://club.test/"
             assert (
                 absolute_logo_url("/uploads/org/logo.png")
-                == "https://api.club.test/uploads/org/logo.png"
+                == "https://club.test/api/uploads/org/logo.png"
+            )
+
+    def test_a_path_outside_uploads_is_left_alone(self):
+        """``logo_url`` is a writable settings field, so it need not be an upload."""
+        with patch("app.core.email_branding.settings") as s:
+            s.FRONTEND_URL = "https://club.test"
+            assert (
+                absolute_logo_url("/static/logo.png")
+                == "https://club.test/static/logo.png"
             )
 
     def test_a_localhost_base_yields_no_logo(self):
         """A link the recipient could never resolve is worse than no image."""
         with patch("app.core.email_branding.settings") as s:
-            s.BACKEND_PUBLIC_URL = "http://localhost:8003"
+            s.FRONTEND_URL = "http://localhost:3000"
             assert absolute_logo_url("/uploads/org/logo.png") is None
 
     def test_an_already_absolute_url_passes_through(self):
