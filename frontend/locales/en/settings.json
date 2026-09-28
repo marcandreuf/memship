@@ -65,8 +65,6 @@
       "configured": "Already configured",
       "comingSoon": "Coming soon",
       "default": "Default",
-      "showValue": "Show",
-      "hideValue": "Hide",
       "status": {
         "active": "Active",
         "test": "Test",

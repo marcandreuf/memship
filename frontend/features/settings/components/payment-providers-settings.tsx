@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Plus, TestTube, Trash2, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -76,7 +77,6 @@ export function PaymentProvidersSettings() {
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [configValues, setConfigValues] = useState<Record<string, string>>({});
   const [displayName, setDisplayName] = useState("");
-  const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
 
   const providers = data?.items ?? [];
   const configuredTypes = new Set(providers.map((p) => p.provider_type));
@@ -86,7 +86,6 @@ export function PaymentProvidersSettings() {
     setSelectedType(null);
     setConfigValues({});
     setDisplayName("");
-    setShowPasswords({});
     setDialogOpen(true);
   }
 
@@ -95,7 +94,6 @@ export function PaymentProvidersSettings() {
     setSelectedType(provider.provider_type);
     setConfigValues({ ...provider.config });
     setDisplayName(provider.display_name);
-    setShowPasswords({});
     setDialogOpen(true);
   }
 
@@ -375,14 +373,9 @@ export function PaymentProvidersSettings() {
                         ))}
                       </SelectContent>
                     </Select>
-                  ) : (
-                    <Input
+                  ) : field.type === "password" ? (
+                    <PasswordInput
                       className="h-8 mt-1 font-mono"
-                      type={
-                        field.type === "password" && !showPasswords[field.key]
-                          ? "password"
-                          : "text"
-                      }
                       placeholder={field.placeholder}
                       value={configValues[field.key] || ""}
                       onChange={(e) =>
@@ -392,22 +385,19 @@ export function PaymentProvidersSettings() {
                         }))
                       }
                     />
-                  )}
-                  {field.type === "password" && (
-                    <button
-                      type="button"
-                      className="text-xs text-muted-foreground hover:text-foreground mt-0.5"
-                      onClick={() =>
-                        setShowPasswords((prev) => ({
+                  ) : (
+                    <Input
+                      className="h-8 mt-1 font-mono"
+                      type="text"
+                      placeholder={field.placeholder}
+                      value={configValues[field.key] || ""}
+                      onChange={(e) =>
+                        setConfigValues((prev) => ({
                           ...prev,
-                          [field.key]: !prev[field.key],
+                          [field.key]: e.target.value,
                         }))
                       }
-                    >
-                      {showPasswords[field.key]
-                        ? t("settings.providers.hideValue")
-                        : t("settings.providers.showValue")}
-                    </button>
+                    />
                   )}
                 </div>
               ))}

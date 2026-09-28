@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Check, Copy, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -255,8 +256,7 @@ export function SsoSettings() {
                     </Badge>
                   )}
                 </label>
-                <Input
-                  type="password"
+                <PasswordInput
                   className="h-8 font-mono text-xs"
                   placeholder={placeholder}
                   value={input.clear ? "" : input.value}

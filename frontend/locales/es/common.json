@@ -59,6 +59,8 @@
     "info": "Información",
     "toggleTheme": "Cambiar tema",
     "toggleSidebar": "Mostrar u ocultar el menú lateral",
+    "showPassword": "Mostrar contraseña",
+    "hidePassword": "Ocultar contraseña",
     "more": "Más",
     "logoAlt": "Logotipo"
   },

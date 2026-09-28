@@ -11,6 +11,9 @@ function PasswordInput({
   className,
   ...props
 }: Omit<React.ComponentProps<"input">, "type">) {
+  // `common.*`, not a feature's namespace: this is a primitive, and the Settings
+  // secret fields use it too. `dialog`, `sheet`, `tabs` and `sidebar` take their
+  // strings from the same place.
   const t = useTranslations()
   const [visible, setVisible] = React.useState(false)
 
@@ -26,7 +29,7 @@ function PasswordInput({
       <button
         type="button"
         tabIndex={-1}
-        aria-label={visible ? t("auth.hidePassword") : t("auth.showPassword")}
+        aria-label={visible ? t("common.hidePassword") : t("common.showPassword")}
         onClick={() => setVisible((v) => !v)}
         disabled={props.disabled}
         className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground disabled:pointer-events-none disabled:opacity-50"

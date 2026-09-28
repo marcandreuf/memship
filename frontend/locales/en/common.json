@@ -59,6 +59,8 @@
     "info": "Info",
     "toggleTheme": "Toggle theme",
     "toggleSidebar": "Toggle sidebar",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
     "more": "More",
     "logoAlt": "Logo"
   },
