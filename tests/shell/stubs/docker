@@ -1,0 +1,192 @@
+#!/usr/bin/env bash
+#
+# A stand-in for `docker`, for the shell tests.
+#
+# The deployment scripts are almost entirely decisions *about* docker: is the db
+# up, did the pull work, does the image carry the release's manifest, what does
+# the new image's preflight say. None of that can be exercised without either a
+# real instance — which is a machine, several minutes and a network — or a
+# docker that answers on command. This is the second one.
+#
+# It is the reusable part of the harness and the part worth reading. The
+# knowledge in here was rediscovered by hand every time somebody verified one of
+# these guards (#215): that compose takes global flags *before* its subcommand,
+# that `ps --quiet` and `ps --status running` are read by different callers
+# looking for different things, and that db-backup.sh checks the host for a file
+# its `exec` wrote inside the container, so a stub that does not create that file
+# fails the upgrade for the wrong reason.
+#
+# Every invocation is appended to $STUB_LOG as one line, argv joined by spaces,
+# before anything else happens. That log is how the ordering assertions work —
+# pull before apply, snapshot before the data check — and it is the only way to
+# assert on a flag that changes nothing observable, such as RUN_MIGRATIONS=0.
+#
+# Behaviour is set by environment variables, all optional:
+#
+#   STUB_LOG              file to append the call log to (required in practice)
+#   STUB_DB_RUNNING       1 → `compose ps` reports a db container, 0 → none
+#   STUB_PULL_FAIL        1 → `compose pull` exits 1 with a manifest error
+#   STUB_PREFLIGHT_EXIT   exit code for `compose run … app.cli.preflight`
+#   STUB_LABEL            value of the org.memship.deployment-files label;
+#                         unset → `<no value>`, which is a release built before
+#                         the label existed
+#   STUB_IMAGES_LOCAL     1 → `image inspect` finds every image, 0 → none
+#   STUB_HAS_USERS        1 → the `select 1 from users` probe returns a row
+#   STUB_DOCKER_ROOT      what `docker info` reports as its data root
+#
+# It is deliberately not a docker emulator. It answers the calls these scripts
+# make, and anything else it does not recognise exits 0 silently — a stub that
+# died on an unrecognised call would turn every new docker invocation in the
+# scripts into a test failure with no diagnosis.
+
+set -u
+
+if [ -n "${STUB_LOG:-}" ]; then
+    printf 'docker %s\n' "$*" >>"$STUB_LOG"
+fi
+
+# ---------------------------------------------------------------- top level
+
+case "${1:-}" in
+    version)
+        # install.sh reads this for its "docker <version>" line.
+        printf '29.8.1\n'
+        exit 0 ;;
+    info)
+        # `--format '{{.DockerRootDir}}'` is the only use.
+        printf '%s\n' "${STUB_DOCKER_ROOT:-${STUB_DIR:-/var/lib/docker}}"
+        exit 0 ;;
+    image)
+        # `docker image inspect [--format …] <ref>`
+        #
+        # A successful pull makes the images local, which the disk check depends
+        # on: it asks what is missing *before* the pull and the label is read
+        # out of the pulled copy *after* it. STUB_IMAGES_LOCAL=1 means they were
+        # already there to begin with.
+        if [ "${STUB_IMAGES_LOCAL:-0}" = "1" ] || [ -f "${STUB_LOG:-/nowhere}.pulled" ]; then
+            case " $* " in
+                *' --format '*)
+                    # The deployment-files manifest, read out of the image.
+                    if [ -n "${STUB_LABEL:-}" ]; then
+                        printf '%s\n' "$STUB_LABEL"
+                    else
+                        printf '<no value>\n'
+                    fi ;;
+                *) printf '[]\n' ;;
+            esac
+            exit 0
+        fi
+        printf 'Error: No such image\n' >&2
+        exit 1 ;;
+    inspect)
+        # verify-deployment.sh's failure report only.
+        printf '  state=running exit=0 restarts=0\n'
+        exit 0 ;;
+    compose) shift ;;
+    *) exit 0 ;;
+esac
+
+# ---------------------------------------------------------------- compose
+#
+# Global flags come before the subcommand, and db-backup.sh passes `-f <file>`
+# while everything else relies on the working directory. Strip them first or the
+# subcommand match below reads a filename.
+while [ $# -gt 0 ]; do
+    case "${1:-}" in
+        -f|--file|-p|--project-name|--project-directory|--env-file) shift 2 ;;
+        --ansi|--progress) shift 2 ;;
+        --*) shift ;;
+        *) break ;;
+    esac
+done
+
+SUB="${1:-}"
+shift || true
+
+case "$SUB" in
+    version) exit 0 ;;
+
+    ps)
+        # Two callers, two shapes. upgrade.sh and install.sh ask `--quiet db`
+        # and treat any output as "a db container exists"; db-backup.sh asks
+        # `--status running` and greps the output for `memship-db`.
+        [ "${STUB_DB_RUNNING:-0}" = "1" ] || exit 0
+        case " $* " in
+            *' --quiet '*|*' -q '*)
+                printf 'c0ffee00db00\n' ;;
+            *' --status '*)
+                printf 'NAME        IMAGE   STATUS\n'
+                printf 'memship-db  postgres:15-alpine   Up 2 hours\n' ;;
+            *)
+                printf 'memship-db  postgres:15-alpine   Up 2 hours\n' ;;
+        esac
+        exit 0 ;;
+
+    config)
+        case " $* " in
+            *' --images '*)
+                printf 'ghcr.io/marcandreuf/memship-backend:%s\n' "${IMAGE_TAG:-latest}"
+                printf 'ghcr.io/marcandreuf/memship-frontend:%s\n' "${IMAGE_TAG:-latest}"
+                printf 'postgres:15-alpine\nredis:7-alpine\ncaddy:2-alpine\n' ;;
+            *) printf 'services: {}\n' ;;
+        esac
+        exit 0 ;;
+
+    pull)
+        if [ "${STUB_PULL_FAIL:-0}" = "1" ]; then
+            # The real message, including the line compose adds that upgrade.sh
+            # filters out because following it would build an image no release
+            # ever published.
+            printf 'frontend Warning manifest unknown\n' >&2
+            printf 'api Error manifest for ghcr.io/marcandreuf/memship-backend:%s not found: manifest unknown\n' \
+                "${IMAGE_TAG:-latest}" >&2
+            printf 'Error: pull access denied, or the image must be built from source\n' >&2
+            exit 1
+        fi
+        [ -z "${STUB_LOG:-}" ] || : >"${STUB_LOG}.pulled"
+        exit 0 ;;
+
+    run)
+        # `compose run --rm --no-deps -e RUN_MIGRATIONS=0 api python -m app.cli.preflight`
+        case " $* " in
+            *'app.cli.preflight'*)
+                case "${STUB_PREFLIGHT_EXIT:-0}" in
+                    0) printf 'Pre-upgrade checks: 1 run, nothing blocking.\n' ;;
+                    1) printf '\nThis upgrade would be refused by 1 migration(s).\n' ;;
+                    *) printf 'Pre-upgrade checks could not run: connection refused\n' >&2 ;;
+                esac
+                exit "${STUB_PREFLIGHT_EXIT:-0}" ;;
+        esac
+        exit 0 ;;
+
+    exec)
+        # Two callers again.
+        #
+        # db-backup.sh runs `exec -T db sh -c "pg_dump … > /backups/<name> && …"`
+        # and then checks the HOST for that file, because /backups is a bind
+        # mount. A stub that only exits 0 makes the snapshot look like it failed
+        # and stops the upgrade for a reason no test asked about — so parse the
+        # destination out of the command and create it on the host side.
+        if printf '%s' "$*" | grep -q '/backups/'; then
+            name="$(printf '%s' "$*" | sed -n 's|.*/backups/\([A-Za-z0-9_.:-]*\).*|\1|p' | head -1)"
+            if [ -n "$name" ] && [ -n "${STUB_BACKUP_DIR:-}" ]; then
+                mkdir -p "$STUB_BACKUP_DIR"
+                # Non-empty: db-backup.sh rejects a zero-length dump.
+                printf 'not really a dump\n' | gzip >"$STUB_BACKUP_DIR/$name"
+            fi
+            exit 0
+        fi
+        # install.sh's `select 1 from users limit 1`, which decides whether it
+        # prints "run the setup" or "this instance is already set up".
+        if printf '%s' "$*" | grep -q 'from users'; then
+            [ "${STUB_HAS_USERS:-0}" = "1" ] && printf '1\n'
+            exit 0
+        fi
+        # verify-deployment.sh's celery ping.
+        exit 0 ;;
+
+    logs) exit 0 ;;
+    up)   exit 0 ;;
+    down) exit 0 ;;
+    *)    exit 0 ;;
+esac

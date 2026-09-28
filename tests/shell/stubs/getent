@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+#
+# install.sh's DNS check: `getent ahostsv4 <host>`, first field of the first
+# line. STUB_RESOLVES_TO empty means the name does not resolve, which is the
+# case install.sh refuses on rather than burning Let's Encrypt attempts.
+
+set -u
+
+[ -z "${STUB_LOG:-}" ] || printf 'getent %s\n' "$*" >>"$STUB_LOG"
+
+[ -n "${STUB_RESOLVES_TO:-}" ] || exit 2
+printf '%s STREAM %s\n' "$STUB_RESOLVES_TO" "${3:-${2:-host}}"

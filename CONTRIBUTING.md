@@ -84,6 +84,13 @@ The app is at http://localhost:3000 and the API docs at http://localhost:8003/ap
 
 Run the backend tests with `./scripts/dev.sh test` — they run in a throwaway container against a tmpfs database, and anything after `test` is passed straight to pytest (`./scripts/dev.sh test tests/unit -x`).
 
+**If you change anything under `scripts/`, run `./tests/shell/run.sh`.** Those scripts carry the
+guards that keep an upgrade from becoming an outage — the downgrade refusal, the already-installed
+guard, the pre-upgrade checks — and every one of them is a branch whose failure mode is silent. The
+suite exercises them against a stub `docker`, so it needs bash and nothing else: no containers, no
+network, no database. `tests/shell/mutate-check.sh` breaks each guard in turn and asserts the suite
+notices; run it when you add a guard, and add a mutation beside it.
+
 See the [Development section of the README](README.md#development) for the full command reference, service URLs, and the rest of the seeded test accounts.
 
 > **Note:** Python dependencies are installed into the image's virtualenv at build time. After adding or upgrading a backend dependency, rebuild or the running containers will not have it — the test container builds a different stage, so it needs its own:
