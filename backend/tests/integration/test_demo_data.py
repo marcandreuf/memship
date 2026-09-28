@@ -203,9 +203,14 @@ class TestFeatureFlagSeeding:
         """#317 read the nineteen absent flags as nineteen modules switched off.
 
         Two of them are not. `get_registration_settings` reads both with a `True`
-        default, so a fresh install accepts public sign-ups and holds them for
-        approval — documented in docs/self-hosting/feature-flags.md, pinned here
-        because the doc is only as good as the default it describes.
+        default, so sign-up is open *by policy* on a fresh install and each one
+        lands in the pending-approval queue.
+
+        Open by policy is not open in practice: `POST /auth/register` still 503s
+        until a mail transport is configured (`test_stuck_without_mail.py`), and
+        on a clean install that is the answer a visitor actually gets. This pins
+        the default; that pins the guard. Both are in
+        docs/self-hosting/feature-flags.md.
         """
         from app.domains.auth.service import get_registration_settings
 

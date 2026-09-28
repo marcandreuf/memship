@@ -36,11 +36,19 @@ redirects rather than rendering a shell over a dead API.
 
 **Absent does not always mean off.** Two keys default to *enabled* when missing —
 `public_registration` and `registration_requires_approval`, both read as
-`features.get(key, True)` in `domains/auth/service.py`. So a fresh install
-**accepts public sign-ups from day one**, and every one of them lands in the
-pending-approval queue rather than becoming an active member. If you do not want
-an open sign-up form, set `public_registration` to `false` explicitly; removing
-the key does the opposite of what it looks like.
+`features.get(key, True)` in `domains/auth/service.py`. So sign-up is open *by
+policy* on a fresh install, and each sign-up lands in the pending-approval queue
+rather than becoming an active member. If you do not want an open sign-up form,
+set `public_registration` to `false` explicitly — removing the key does the
+opposite of what it looks like.
+
+Open by policy is not the same as working. `POST /auth/register` refuses with
+**503 — "the club has not finished setting up email"** until a mail transport is
+configured, because confirming an address needs a link and the link needs a
+transport. That is deliberate: it is better than minting an account nobody can
+ever sign in to. On a fresh self-hosted install it is the answer every visitor
+gets, so the sign-up form is open in Settings and closed in practice until you
+configure Resend or SMTP. Verified on a clean install, not inferred.
 
 ## Want a configured instance instead?
 
@@ -76,7 +84,7 @@ Three different kinds of thing live in this column, and they do not behave alike
 | `member_card` | gate | off | `/scan`, `/my-card` |
 | `bookings` | gate | off | `/spaces`, `/book`, `/my-bookings` |
 | `custom_profile_fields` | gate | off | custom member fields |
-| `public_registration` | gate | **on** | self sign-up |
+| `public_registration` | gate | **on** | self sign-up — but 503s until email is configured |
 | `registration_requires_approval` | gate | **on** | the pending-approval queue |
 | `payment_reminders_enabled` | gate | off | the dunning run and manual reminders |
 | `recurring_billing_enabled` | gate | off | the scheduled membership-fee run |
