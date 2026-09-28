@@ -53,13 +53,10 @@ export function CommunicationsSettings() {
   if (isLoading) return <FormSkeleton fields={1} />;
 
   async function onSubmit(data: CommunicationsFormValues) {
-    // PUT /settings replaces the whole features JSONB dict — merge to keep
-    // sibling flags intact.
+    // `features` is a sparse update — send only what this form owns, so a
+    // snapshot taken before another tab's save cannot revert its flag (#314).
     const payload = {
-      features: {
-        ...(settings?.features ?? {}),
-        communications: data.communications,
-      },
+      features: { communications: data.communications },
     };
     try {
       await updateMutation.mutateAsync(payload);

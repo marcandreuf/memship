@@ -88,9 +88,25 @@ def update_settings(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("settings.write")),
 ):
+    """Update the organization's settings.
+
+    ``features`` is a **sparse** update — the keys present are written and the
+    rest are left alone, the same way ``PUT /settings/communications`` treats
+    the template dict. Every flag the organization has lives in that one JSONB
+    column on the one settings row, so replacing it wholesale made two clients
+    a lost update: each settings form sent back the snapshot its own browser
+    had loaded, and whichever saved last silently reverted the other's flag
+    (#314). Merging removes the hazard rather than asking nine forms to
+    compensate for it.
+
+    The cost is that a key cannot be deleted by omitting it. Nothing needs to:
+    a flag is switched off by sending ``false``, which this writes.
+    """
     settings_obj = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
+        if key == "features" and value is not None:
+            value = {**(settings_obj.features or {}), **value}
         setattr(settings_obj, key, value)
     db.commit()
     db.refresh(settings_obj)

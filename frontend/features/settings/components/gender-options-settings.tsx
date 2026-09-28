@@ -66,9 +66,8 @@ export function GenderOptionsSettings() {
     }));
 
     try {
-      const currentFeatures = settings?.features || {};
       await updateMutation.mutateAsync({
-        features: { ...currentFeatures, gender_options: normalized },
+        features: { gender_options: normalized },
       });
       toast.success(t("toast.success.saved"));
       setDirty(false);

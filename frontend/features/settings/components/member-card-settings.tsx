@@ -61,13 +61,10 @@ export function MemberCardSettings() {
   if (isLoading) return <FormSkeleton fields={3} />;
 
   async function onSubmit(data: MemberCardFormValues) {
-    // PUT /settings replaces the whole features JSONB dict — merge to keep
-    // sibling flags intact.
+    // `features` is a sparse update — send only what this form owns, so a
+    // snapshot taken before another tab's save cannot revert its flag (#314).
     const payload = {
-      features: {
-        ...(settings?.features ?? {}),
-        member_card: data.member_card,
-      },
+      features: { member_card: data.member_card },
       member_number_prefix: data.member_number_prefix,
       member_number_padding: data.member_number_padding,
     };

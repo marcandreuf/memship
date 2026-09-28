@@ -44,7 +44,7 @@ export function BookingsSettings() {
   async function save(partial: Record<string, unknown>) {
     try {
       await updateSettings.mutateAsync({
-        features: { ...(settings?.features ?? {}), ...partial },
+        features: partial,
       });
       toast.success(t("toast.success.saved"));
     } catch {

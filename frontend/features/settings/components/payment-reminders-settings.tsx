@@ -69,11 +69,10 @@ export function PaymentRemindersSettings() {
   if (isLoading) return <FormSkeleton fields={4} />;
 
   async function onSubmit(data: PaymentRemindersFormValues) {
-    // PUT /settings replaces the whole features JSONB dict — merge to keep
-    // other feature flags (e.g. recurring_billing_enabled) intact.
+    // `features` is a sparse update — send only what this form owns, so a
+    // snapshot taken before another tab's save cannot revert its flag (#314).
     const payload = {
       features: {
-        ...(settings?.features ?? {}),
         payment_reminders_enabled: data.payment_reminders_enabled,
         reminder_days_after_due: data.reminder_days_after_due,
         reminder_repeat_days: data.reminder_repeat_days,
