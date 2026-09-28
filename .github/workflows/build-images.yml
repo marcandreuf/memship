@@ -76,11 +76,22 @@ jobs:
           SHA: ${{ needs.resolve.outputs.sha }}
           SHORT_SHA: ${{ needs.resolve.outputs.short_sha }}
         run: |
+          # Part of a release ships beside the images rather than inside them,
+          # and an upgrade that does not refresh those files leaves a new
+          # backend behind an old proxy configuration. `scripts/upgrade.sh`
+          # compares what is on the deployment against this label, so the
+          # statement of what a release expects travels with the release and
+          # needs nothing but the registry to read. Built from the same
+          # checkout the images are built from, so it cannot disagree with them.
+          DEPLOYMENT_FILES="$(for f in docker-compose.yml Caddyfile; do
+            printf '%s:%s ' "$f" "$(sha256sum <"$f" | cut -d' ' -f1)"
+          done)"
           cd backend
           docker build -f docker/Dockerfile \
             --build-arg APP_VERSION=sha-$SHORT_SHA \
             --label org.opencontainers.image.revision=$SHA \
             --label org.opencontainers.image.source=https://github.com/${{ github.repository }} \
+            --label org.memship.deployment-files="$DEPLOYMENT_FILES" \
             -t $IMAGE:sha-$SHORT_SHA \
             -t $IMAGE:main \
             .

@@ -7,14 +7,15 @@
 # fresh server; on an existing box, `sudo usermod -aG docker $USER` then log out
 # and back in).
 #
-#   ./scripts/install.sh                                  # into ./data, plain HTTP
-#   ./scripts/install.sh --domain memship.example.com     # with automatic HTTPS
-#   ./scripts/install.sh --data-root /srv/openmemship --domain memship.example.com
-#   ./scripts/install.sh --tag 2.2.0                      # pin a specific version
+#   ./scripts/install.sh --tag 2.2.0                      # into ./data, plain HTTP
+#   ./scripts/install.sh --tag 2.2.0 --domain memship.example.com     # automatic HTTPS
+#   ./scripts/install.sh --tag 2.2.0 --data-root /srv/openmemship --domain memship.example.com
 #
-# A new install pins IMAGE_TAG to this checkout's most recent release tag, so the
-# deployment states which version it runs instead of tracking a moving `latest`.
-# Pass --tag to choose another, or edit IMAGE_TAG in .env and re-run.
+# --tag pins the version this install runs, and every example above carries it
+# because a deployment unpacked from a release tarball has no git tags to read
+# one from: there, omitting it is refused rather than quietly resolved. In a git
+# checkout it may be omitted, and defaults to the most recent release tag.
+# Afterwards, edit IMAGE_TAG in .env and re-run, or use scripts/upgrade.sh.
 #
 # Safe to re-run: it never overwrites an existing .env, and re-running is how you
 # pick up a new IMAGE_TAG. Everything it creates lives under one data root, so
@@ -149,22 +150,26 @@ gen_secret() { openssl rand -hex 32; }
 # Fernet needs urlsafe base64 of exactly 32 bytes — see backend/app/core/config.py.
 gen_fernet() { openssl rand -base64 32 | tr '+/' '-_'; }
 
-# An empty IMAGE_TAG resolves to `latest`, which leaves a production install
-# tracking a moving target and — because APP_VERSION is baked from the tag —
-# reporting its own version as the literal string "latest". Neither is what you
-# want on a box you have to reason about.
+# This checkout's most recent release tag, or nothing if there is none. Image
+# tags carry no leading `v` (the repository tags v2.2.0, the registry publishes
+# 2.2.0).
 #
-# So default to this checkout's most recent release tag. Image tags carry no
-# leading `v` (the repository tags v2.2.0, the registry publishes 2.2.0). No
-# tags reachable — a shallow clone, a source tarball, a fork — falls back to
-# `latest`, which is the old behaviour rather than a hard failure.
+# Nothing reachable is the normal case on a real deployment: the documented
+# install unpacks a release tarball, which carries no .git, and a shallow clone
+# or a fork can be just as tagless. That used to fall back to `latest` — which
+# leaves a production install tracking a moving target and, because APP_VERSION
+# is baked from the tag, reporting its own version as the literal string
+# "latest". Neither is what you want on a box you have to reason about, and the
+# only thing standing between an operator and both was a paragraph of prose.
+#
+# So an empty result is refused below instead. `--tag latest` still gets you the
+# old behaviour, deliberately and on the record.
 default_image_tag() {
     local t
     t="$(git -C "$REPO_ROOT" describe --tags --abbrev=0 2>/dev/null || true)"
     case "$t" in
         v[0-9]*) printf '%s' "${t#v}" ;;
         [0-9]*)  printf '%s' "$t" ;;
-        *)       printf 'latest' ;;
     esac
 }
 
@@ -183,7 +188,29 @@ else
     # Only a fresh .env gets the resolved default. Re-running must never
     # overwrite a tag the operator pinned by hand — that is the documented
     # upgrade path, and the sed below still applies an explicit --tag.
-    NEW_TAG="${IMAGE_TAG:-$(default_image_tag)}"
+    NEW_TAG="$IMAGE_TAG"
+    if [ -z "$NEW_TAG" ]; then
+        NEW_TAG="$(default_image_tag)"
+    fi
+    [ -n "$NEW_TAG" ] || die "--tag is required here: there is no git tag to read a version from.
+
+  This directory has no reachable release tag, which is what a release
+  tarball looks like — the documented install, and a fork or a shallow
+  clone too. Earlier versions of this script quietly pinned \`latest\`
+  instead. That is a moving target, and it makes the instance report its
+  own version as the literal string \`latest\`, so it is no longer the
+  default.
+
+  Name the release you are installing:
+
+    ./scripts/install.sh --tag <version>${DATA_ROOT:+ --data-root $DATA_ROOT}${DOMAIN:+ --domain $DOMAIN}
+
+  Versions are on the releases page:
+    https://github.com/marcandreuf/memship/releases
+
+  If you really do want to track whichever images are newest, ask for it
+  by name with \`--tag latest\`. No .env has been written, no secret has
+  been generated and nothing has been started."
 
     umask 077
     cat > "$ENV_FILE" <<EOF
