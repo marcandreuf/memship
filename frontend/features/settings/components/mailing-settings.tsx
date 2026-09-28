@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Lock, Mail, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -285,8 +286,7 @@ export function MailingSettings() {
                     </Badge>
                   )}
                 </label>
-                <Input
-                  type="password"
+                <PasswordInput
                   className="h-8 font-mono text-xs"
                   placeholder={placeholder}
                   value={input.clear ? "" : input.value}
