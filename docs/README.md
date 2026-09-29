@@ -53,6 +53,8 @@ Para el personal que gestiona la organización desde el panel de administración
 - [Campos de perfil](admin-guide/custom-fields.es.md) — campos personalizados _(ES)_
 - [Informes y panel](admin-guide/reports.es.md) — panel, resumen anual, exportaciones _(ES)_
 - [Configuración](admin-guide/settings.es.md) — organización, facturación, automatizaciones _(ES)_
+- [Integrations](admin-guide/integrations.md) — SSO (Google, Apple) and email, step by step _(EN)_
+- [Payment providers](admin-guide/payment-providers.md) — connecting Stripe, Redsys and Bizum _(EN)_
 
 ## Guía del socio (member guide)
 
