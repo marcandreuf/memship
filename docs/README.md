@@ -29,7 +29,8 @@ Running Memship on your own server.
 - Reverse proxy & TLS — the stack ships a Caddy that obtains and renews certificates on its own.
   Set up in [Installation](getting-started/installation.md), tuned via `SITE_ADDRESS` in the
   [Configuration reference](self-hosting/configuration.md)
-- Payment providers (Stripe, Redsys/Bizum) — _planned_
+- [Payment providers](admin-guide/payment-providers.md) — connecting Stripe, Redsys and Bizum:
+  which credential to get from where, the Stripe webhook, and why Redsys needs none _(EN)_
 
 ## Development (contributors)
 
@@ -53,6 +54,8 @@ Para el personal que gestiona la organización desde el panel de administración
 - [Campos de perfil](admin-guide/custom-fields.es.md) — campos personalizados _(ES)_
 - [Informes y panel](admin-guide/reports.es.md) — panel, resumen anual, exportaciones _(ES)_
 - [Configuración](admin-guide/settings.es.md) — organización, facturación, automatizaciones _(ES)_
+- [Integrations](admin-guide/integrations.md) — SSO (Google, Apple) and email, step by step _(EN)_
+- [Payment providers](admin-guide/payment-providers.md) — connecting Stripe, Redsys and Bizum _(EN)_
 
 ## Guía del socio (member guide)
 

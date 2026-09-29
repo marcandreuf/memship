@@ -67,8 +67,11 @@ pendientes y puede pagar con:
 
 > La confirmación definitiva de los pagos con pasarela llega por la **notificación asíncrona**
 > del proveedor, no por la vuelta del navegador. La configuración de proveedores se hace en
-> [Ajustes → Proveedores de pago](settings.es.md#proveedores-de-pago) y en la
-> [guía de self-hosting](../self-hosting/configuration.md).
+> [Ajustes → Proveedores de pago](settings.es.md#proveedores-de-pago).
+
+> **Para darlos de alta paso a paso** — qué credencial pedir a Stripe o al banco, cómo crear
+> el webhook de Stripe y por qué Redsys no lo necesita — consulta la
+> [guía de proveedores de pago](payment-providers.md) _(en inglés)_.
 
 ## Panel financiero
 
