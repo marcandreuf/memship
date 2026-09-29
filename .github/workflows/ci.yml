@@ -239,3 +239,7 @@ jobs:
       - name: Type check
         working-directory: frontend
         run: pnpm exec tsc --noEmit
+
+      - name: Proxy route coverage
+        working-directory: frontend
+        run: pnpm check:proxy-routes

@@ -76,7 +76,3 @@ export async function closeRemittance(id: number): Promise<RemittanceData> {
 export async function cancelRemittance(id: number): Promise<RemittanceData> {
   return apiClient(`/remittances/${id}/cancel`, { method: "POST" });
 }
-
-export async function getRemittanceStats(id: number): Promise<Record<string, number>> {
-  return apiClient(`/remittances/${id}/stats`);
-}
