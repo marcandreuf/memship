@@ -3,6 +3,7 @@
 import { useTranslations, useLocale } from "next-intl";
 import { DetailSection } from "@/components/entity/detail-section";
 import { useSettings } from "@/features/settings/hooks/use-settings";
+import { useFormatters } from "@/hooks/use-formatters";
 import type { MemberData } from "../services/members-api";
 import type { GenderOption } from "@/features/settings/components/gender-options-settings";
 
@@ -22,6 +23,7 @@ export function MemberDetailSection({ member }: MemberDetailSectionProps) {
   const t = useTranslations();
   const locale = useLocale();
   const { data: settings } = useSettings();
+  const { formatDate } = useFormatters();
   const genderOptions = (settings?.features?.gender_options as GenderOption[] | undefined) || [];
 
   const fields = [
@@ -32,12 +34,12 @@ export function MemberDetailSection({ member }: MemberDetailSectionProps) {
       inline: true,
     },
     { label: t("auth.email"), value: member.person.email },
-    { label: t("members.dateOfBirth"), value: member.person.date_of_birth, inline: true },
+    { label: t("members.dateOfBirth"), value: formatDate(member.person.date_of_birth), inline: true },
     { label: t("members.nationalId"), value: member.person.national_id, inline: true },
     { label: t("members.gender"), value: getGenderLabel(member.person.gender, genderOptions, locale), inline: true },
     { label: t("members.membershipType"), value: member.membership_type_name, inline: true },
     { label: t("common.status"), value: t(`status.${member.status}`), inline: true },
-    { label: t("members.joinedAt"), value: member.joined_at, inline: true },
+    { label: t("members.joinedAt"), value: formatDate(member.joined_at), inline: true },
     { label: t("members.internalNotes"), value: member.internal_notes },
   ];
 
