@@ -29,7 +29,8 @@ Running Memship on your own server.
 - Reverse proxy & TLS — the stack ships a Caddy that obtains and renews certificates on its own.
   Set up in [Installation](getting-started/installation.md), tuned via `SITE_ADDRESS` in the
   [Configuration reference](self-hosting/configuration.md)
-- Payment providers (Stripe, Redsys/Bizum) — _planned_
+- [Payment providers](admin-guide/payment-providers.md) — connecting Stripe, Redsys and Bizum:
+  which credential to get from where, the Stripe webhook, and why Redsys needs none _(EN)_
 
 ## Development (contributors)
 
