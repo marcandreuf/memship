@@ -19,7 +19,7 @@ only**: how memship works and how to run it. This repo is public; that one is no
 ## Tech stack
 
 - Backend: Python 3.12+ / FastAPI / SQLAlchemy 2.0 / Alembic
-- Frontend: Next.js 16 / React 19 / Tailwind 4 / Shadcn/ui / next-intl / next-themes
+- Frontend: Next.js 15 / React 19 / Tailwind 4 / Shadcn/ui / next-intl / next-themes
 - Database: PostgreSQL 15 (single-tenant, `CHECK (id = 1)` on organization_settings)
 - Package managers: uv (Python), pnpm (frontend)
 - Containerization: Docker + Docker Compose

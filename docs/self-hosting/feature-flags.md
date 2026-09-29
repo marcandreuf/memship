@@ -62,10 +62,22 @@ because it also creates demo members and receipts.
 
 > **It arms the scheduled jobs too.** `recurring_billing_enabled`,
 > `payment_reminders_enabled` and `membership_lapse_enabled` are switches that a
-> Celery beat task reads at 02:00, 03:00 and 04:00 UTC. On a demo instance left
-> running overnight, receipts are generated and members whose fees lapsed are
-> suspended — the instance is behaving correctly, but its data will not be
-> exactly as you left it.
+> Celery beat task reads at 02:00, 03:00 and 04:00 UTC. While they are on, a
+> running instance generates receipts, marks unpaid ones overdue, and moves
+> members whose fees lapsed onto the free tier. It is behaving correctly, but
+> its data will not be exactly as you left it.
+>
+> **Lapsing does not suspend anyone.** A lapsed member is a full member on the
+> free tier — `Member.status` is deliberately untouched, and the previous tier
+> is parked on `Member.membership_reverted_from_id` so that paying the fee
+> restores it (see `lapse_service.py` and memship#145). Member status counts on
+> the dashboard therefore do not move when a lapse run does.
+>
+> **Those are UTC hours, and UTC is not your working day.** At UTC+9 they fire
+> at 11:00, 12:00 and 13:00 — the middle of a working morning, not overnight. If
+> you are reviewing or demoing an instance and want its data to hold still,
+> switch these three off for the duration. They gate scheduled work and have no
+> screen of their own, so nothing you can look at is lost by doing so.
 
 ## The twenty-one
 
@@ -88,7 +100,7 @@ Three different kinds of thing live in this column, and they do not behave alike
 | `registration_requires_approval` | gate | **on** | the pending-approval queue |
 | `payment_reminders_enabled` | gate | off | the dunning run and manual reminders |
 | `recurring_billing_enabled` | gate | off | the scheduled membership-fee run |
-| `membership_lapse_enabled` | gate | off | the scheduled lapse/suspend run |
+| `membership_lapse_enabled` | gate | off | the scheduled run that reverts lapsed members to the free tier |
 | `reminder_days_after_due` | value | **3** | days after due before the first reminder |
 | `reminder_repeat_days` | value | **7** | days between repeats |
 | `reminder_max_count` | value | **3** | reminders per receipt |
