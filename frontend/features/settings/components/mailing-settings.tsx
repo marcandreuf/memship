@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { Lock, Mail, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PasswordInput } from "@/components/ui/password-input";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -27,8 +26,15 @@ import type {
   MailProvider,
   MailSecretStatus,
 } from "../services/mailing-api";
+import { StoredSecretField } from "./stored-secret-field";
 
-type SecretInput = { value: string; clear: boolean };
+// `replacing` is the only thing that makes `value` a write: a stored secret has
+// no input until the admin asks to replace it, so nothing else can fill one.
+type SecretInput = { value: string; clear: boolean; replacing: boolean };
+
+function secretTyped(input: SecretInput): boolean {
+  return input.replacing && input.value.length > 0;
+}
 
 interface ProviderForm {
   fields: Record<string, string>; // non-secret fields
@@ -74,7 +80,10 @@ export function MailingSettings() {
       const fields: Record<string, string> = {};
       for (const f of schema.fields) fields[f] = (view[f] as string) ?? "";
       const secrets: Record<string, SecretInput> = {};
-      for (const s of schema.secrets) secrets[s] = { value: "", clear: false };
+      for (const s of schema.secrets) {
+        const status = view[s] as MailSecretStatus;
+        secrets[s] = { value: "", clear: false, replacing: !status.configured };
+      }
       return { fields, secrets };
     };
     const next = { resend: build("resend"), gmail: build("gmail") };
@@ -106,7 +115,7 @@ export function MailingSettings() {
     for (const s of schema.secrets) {
       if (!required.includes(s)) continue;
       const status = view[s] as MailSecretStatus;
-      const typed = form.secrets[s].value.length > 0;
+      const typed = secretTyped(form.secrets[s]);
       const cleared = form.secrets[s].clear;
       if (cleared || (!status.configured && !typed)) return false;
     }
@@ -119,7 +128,7 @@ export function MailingSettings() {
     const schema = PROVIDER_SCHEMA[name];
     for (const f of schema.fields) if (form.fields[f] !== initial.fields[f]) return true;
     for (const s of schema.secrets) {
-      if (form.secrets[s].value.length > 0 || form.secrets[s].clear) return true;
+      if (secretTyped(form.secrets[s]) || form.secrets[s].clear) return true;
     }
     return false;
   }
@@ -135,7 +144,7 @@ export function MailingSettings() {
     for (const s of schema.secrets) {
       const input = form.secrets[s];
       if (input.clear) payload[s] = { clear: true };
-      else if (input.value.length > 0) payload[s] = { value: input.value, secret: true };
+      else if (secretTyped(input)) payload[s] = { value: input.value, secret: true };
     }
     return payload;
   }
@@ -144,7 +153,7 @@ export function MailingSettings() {
     if (encryptionOff) {
       for (const name of PROVIDERS) {
         for (const s of PROVIDER_SCHEMA[name].secrets) {
-          if (forms![name].secrets[s].value.length > 0) {
+          if (secretTyped(forms![name].secrets[s])) {
             toast.error(t("settings.mailing.encryptionKeyRequired"));
             return;
           }
@@ -268,9 +277,8 @@ export function MailingSettings() {
             const status = view[s] as MailSecretStatus;
             const input = form.secrets[s];
             const source = data!.sources[`${name}.${s}`];
-            const placeholder = status.configured
-              ? `•••• ${status.last4 ?? ""}`
-              : t("settings.mailing.notConfigured");
+            const setSecret = (next: Partial<SecretInput>) =>
+              update(name, { secrets: { ...form.secrets, [s]: { ...input, ...next } } });
             return (
               <div key={s} className="space-y-0.5">
                 <label className="text-xs font-medium flex items-center gap-2">
@@ -280,22 +288,19 @@ export function MailingSettings() {
                       {t("settings.mailing.fromEnv")}
                     </Badge>
                   )}
-                  {status.configured && (
-                    <Badge variant="outline" className="text-[10px]">
-                      {t("settings.mailing.stored")}
-                    </Badge>
-                  )}
                 </label>
-                <PasswordInput
+                <StoredSecretField
+                  name={`mailing-${name}-credential`}
                   className="h-8 font-mono text-xs"
-                  placeholder={placeholder}
-                  value={input.clear ? "" : input.value}
-                  disabled={input.clear}
-                  onChange={(e) =>
-                    update(name, {
-                      secrets: { ...form.secrets, [s]: { value: e.target.value, clear: false } },
-                    })
-                  }
+                  stored={status.configured}
+                  last4={status.last4}
+                  replacing={input.replacing}
+                  cleared={input.clear}
+                  value={input.value}
+                  placeholder={t("settings.mailing.notConfigured")}
+                  onReplace={() => setSecret({ replacing: true, value: "" })}
+                  onCancel={() => setSecret({ replacing: false, value: "" })}
+                  onChange={(value) => setSecret({ value })}
                 />
                 <p className="text-[11px] text-muted-foreground">
                   {name === "gmail" && s === "app_password"
@@ -306,9 +311,7 @@ export function MailingSettings() {
                       type="button"
                       className="ml-2 underline hover:text-foreground"
                       onClick={() =>
-                        update(name, {
-                          secrets: { ...form.secrets, [s]: { value: "", clear: !input.clear } },
-                        })
+                        setSecret({ clear: !input.clear, replacing: false, value: "" })
                       }
                     >
                       {input.clear ? t("settings.mailing.undoClear") : t("settings.mailing.clear")}

@@ -175,7 +175,6 @@
         "private_key": "Private key (.p8)"
       },
       "fromEnv": "from environment",
-      "stored": "stored",
       "notConfigured": "Not configured",
       "secretHint": "Leave blank to keep the stored value; enter a new one to replace it.",
       "clear": "Clear",
@@ -189,6 +188,10 @@
       "encryptionActive": "Encryption active — secrets are stored encrypted with a server-managed key and are never shown here."
     },
     "paymentsGeneral": "General",
+    "secretField": {
+      "stored": "stored",
+      "replace": "Replace"
+    },
     "integrations": {
       "tab": "Integrations",
       "description": "Third-party service configuration."
@@ -220,7 +223,6 @@
       "appPasswordHint": "Use a Google app password, not your account password. Leave blank to keep the stored one.",
       "secretHint": "Leave blank to keep the stored value; enter a new one to replace it.",
       "fromEnv": "from environment",
-      "stored": "stored",
       "notConfigured": "Not configured",
       "clear": "Clear",
       "undoClear": "Undo",
