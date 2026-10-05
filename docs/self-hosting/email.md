@@ -111,6 +111,13 @@ Which templates sit in which tier is **Settings → Communications**, and the
 organization's own switch is checked first: a template switched off there does not
 send to anybody, whatever the member chose.
 
+Apart from the mandatory mails, templates start **switched off**, with one exception: a new
+install starts with the **registration approval** email on, because an approved applicant has
+no other way to learn they were let in. It can be switched off like any other. An install
+created before this default existed keeps whatever it had; if approval emails never arrive,
+check that switch first. Approving a registration also tells the admin whether the email was
+sent, switched off, or failed, and why.
+
 ## Members cannot sign in before email works
 
 Signing in requires a confirmed address, and the only self-service way to confirm one

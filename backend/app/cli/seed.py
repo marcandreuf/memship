@@ -267,6 +267,12 @@ def create_org_settings(db, details: dict, address: dict | None = None) -> None:
             ],
         },
         custom_settings={},
+        # On for a new install only; an existing club's choice is never touched.
+        # Approval is the one member-facing mail with no in-app substitute: a
+        # pending applicant has no other way to learn they were let in (#337).
+        communications_config={
+            "templates": {"registration_approved": {"enabled": True}},
+        },
     )
     db.add(org)
     db.flush()

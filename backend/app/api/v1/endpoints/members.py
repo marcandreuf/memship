@@ -404,6 +404,10 @@ def confirm_member_email(
     return _to_response(member)
 
 
+# How the approval mail names a provider; matches the sign-in page's buttons.
+_SSO_PROVIDER_NAMES = {"google": "Google", "apple": "Apple"}
+
+
 @router.post("/{member_id}/approve", response_model=MemberApprovalResponse)
 def approve_member_registration(
     member_id: int,
@@ -432,11 +436,16 @@ def approve_member_registration(
     # act, telling the applicant is not. What happened to the mail is returned
     # so the admin is not shown a success that only half happened (#332).
     if member.person and member.person.email:
+        user = member.user
         result = send_registration_approved_email(
             member.person.email,
             member.person.first_name,
             member.member_number or "",
             f"{settings.FRONTEND_URL}/{settings.DEFAULT_LOCALE}/login",
+            sso_providers=sorted(
+                _SSO_PROVIDER_NAMES[i.provider] for i in (user.identities if user else [])
+            ),
+            has_password=bool(user and user.password_hash),
         )
         notification = ApprovalNotification(
             status=result.outcome.value,

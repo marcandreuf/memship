@@ -7,5 +7,8 @@
 <h1 style="{{ s.h1 }}">Bones notícies, {{ first_name }}!</h1>
 <p style="{{ s.p }}">La teva sol·licitud d'alta ha estat aprovada.</p>
 {{ c.highlight("Número de soci", member_number) }}
+{% if sso_providers %}
+<p style="{{ s.p }}">A la pàgina d'accés, fes servir {% for p in sso_providers %}<strong>Continuar amb {{ p }}</strong>{% if not loop.last %} o {% endif %}{% endfor %}{% if has_password %}, o el teu correu i contrasenya.{% else %}. El teu compte no té contrasenya, així que el formulari de correu i contrasenya no et deixarà entrar.{% endif %}</p>
+{% endif %}
 {{ c.button(login_url, "Accedir al portal") }}
 {% endblock %}

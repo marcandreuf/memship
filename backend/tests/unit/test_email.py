@@ -125,6 +125,36 @@ class TestTemplateRendering:
         assert "John" in html
         assert "Good news" in html
 
+    @pytest.mark.parametrize(
+        ("locale", "button"),
+        [("en", "Continue with Google"), ("es", "Continuar con Google"), ("ca", "Continuar amb Google")],
+    )
+    def test_approval_names_the_provider_for_an_sso_only_account(self, locale, button):
+        # #337: an account created through Google has no password, and a mail
+        # that only says "sign in" sends the member to a form that refuses them.
+        html = render_template("registration_approved", locale, {
+            "first_name": "Ana", "member_number": "M-1", "login_url": LOGIN_URL,
+            "sso_providers": ["Google"], "has_password": False,
+        })
+        assert button in html
+        assert "password" in html.lower() or "contraseña" in html or "contrasenya" in html
+
+    def test_approval_names_every_route_when_the_account_has_both(self):
+        html = render_template("registration_approved", "en", {
+            "first_name": "Ana", "member_number": "M-1", "login_url": LOGIN_URL,
+            "sso_providers": ["Apple", "Google"], "has_password": True,
+        })
+        assert "<strong>Continue with Apple</strong> or <strong>Continue with Google</strong>" in html
+        assert "or your email and password" in html
+        assert "has no password" not in html
+
+    def test_approval_for_a_password_account_names_no_provider(self):
+        html = render_template("registration_approved", "en", {
+            "first_name": "Ana", "member_number": "M-1", "login_url": LOGIN_URL,
+            "sso_providers": [], "has_password": True,
+        })
+        assert "Continue with" not in html
+
     def test_render_template_fallback_to_es(self):
         """Unknown locale falls back to ES."""
         html = render_template(

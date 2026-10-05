@@ -25,6 +25,11 @@ Resolution is DB-with-default, and the default is **off**: a key absent from
 a fresh install until someone switches it on, so an organization opts
 into each channel rather than discovering it after members have been mailed. A
 key with no catalogue entry is not configurable and always sends.
+
+One exception, made by the seed rather than here: a new install starts with
+``registration_approved`` stored as on, because an approved applicant has no
+other way to learn they were let in (#337). It is an ordinary stored value, so
+the club can switch it off, and no existing install is changed.
 """
 
 from dataclasses import dataclass
