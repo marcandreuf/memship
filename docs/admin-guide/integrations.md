@@ -238,7 +238,9 @@ You need an **API key**, and ideally a **From address** on a domain you have ver
 
 You need the **Gmail address** and a Google **app password** — a 16-character password generated for one application. Your normal account password will not work; Google blocks it.
 
-1. The account must have **2-Step Verification enabled**: [myaccount.google.com/security](https://myaccount.google.com/security) → *2-Step Verification*. App passwords do not exist without it.
+1. The account must have **2-Step Verification enabled with a phone number or an authenticator app**: [myaccount.google.com/security](https://myaccount.google.com/security) → *2-Step Verification*. App passwords do not exist without it.
+   - **A passkey or security key alone is not enough.** Google reports 2-Step Verification as on, but the app-password page stays unavailable. Add a second method — a phone number (SMS/voice) or Google Authenticator — alongside the passkey; you can keep the passkey.
+   - The Gmail route is **not available at all**, with no workaround, when the account is enrolled in **Advanced Protection**, or when it is a **work, school or other organisation account** whose administrator does not allow app passwords. Use Resend, or a different Google account.
 2. Go to **[myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)**.
 3. Give the app a name (e.g. `memship`) and create it.
 4. Google shows a 16-character password such as `abcd efgh ijkl mnop`. Copy it — like every secret here, it is displayed once. Spaces are cosmetic; with or without them works.
@@ -248,7 +250,7 @@ Things to know about the Gmail route:
 - The server, port and encryption are fixed (`smtp.gmail.com`, port `587`, TLS). You do not enter them, and they cannot be changed from this screen.
 - **Sending limits:** roughly 500 messages per day for a free Gmail account, ~2,000 for Google Workspace. Exceeding them gets the account temporarily blocked for sending. A club with a few hundred members doing a mass communication can hit this.
 - Gmail **rewrites the From address** to the account's own address unless the alternative address is registered in that Gmail account ("Send mail as"). So the *From address* field is best left blank, in which case the Gmail address is used.
-- If a Workspace administrator has disabled app passwords for the organisation, this route is not available.
+- On a work, school or Google Workspace account, app passwords exist only if that organisation's administrator allows them. If they do not, this route is not available for that account — see step 1.
 
 ### 4.4 Filling in the screen, testing and activating
 
@@ -273,6 +275,7 @@ Switching providers later is a two-click operation: select the other provider, s
 | Symptom | Cause and fix |
 | ------- | ------------- |
 | Test fails with an SMTP authentication error (`535`, "Username and Password not accepted") | The Gmail app password is wrong, or was revoked, or 2-Step Verification was turned off (which invalidates all app passwords). Generate a new one. |
+| [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords) says *"The setting that you are looking for is not available for your account."* | No app password can be created for this account. Either 2-Step Verification is enrolled only with passkeys/security keys (add a phone number or authenticator app and reload the page), or the account has Advanced Protection, or it is a work/school account whose administrator blocks app passwords (no workaround — use Resend or another account). See 4.3 step 1. |
 | Test fails: Resend "domain is not verified" / 403 | The From address is not on a domain verified in Resend, or the DNS records have not propagated. Check *Domains* in Resend. |
 | Test fails: Resend 401 / "API key is invalid" | Key mistyped, revoked, or created without sending permission. Create a new key. |
 | Test reports success but nothing arrives | Check spam. For Resend, check the *Emails* log in its dashboard for a bounce. For Gmail, check the sending account's *Sent* folder. |
