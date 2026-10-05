@@ -26,7 +26,11 @@ import {
   useMembershipTypes,
   useRejectMember,
 } from "../hooks/use-members";
-import type { MemberData, MembershipTypeData } from "../services/members-api";
+import type {
+  ApprovalNotification,
+  MemberData,
+  MembershipTypeData,
+} from "../services/members-api";
 import { ageOn } from "@/lib/age";
 
 interface RegistrationReviewActionsProps {
@@ -101,14 +105,30 @@ export function RegistrationReviewActions({
     }
   }
 
+  // The approval itself succeeded in every branch; only the mail varies, and
+  // the admin is the one person who can still tell the applicant another way.
+  function announceApproval({ status, reason }: ApprovalNotification) {
+    if (status === "sent") {
+      toast.success(t("members.registration.approved"));
+    } else if (status === "failed") {
+      toast.warning(t("members.registration.approvedNotNotified"), {
+        description: t(`members.registration.notifyFailure.${reason ?? "unknown"}`),
+      });
+    } else if (status === "no_email") {
+      toast.warning(t("members.registration.approvedNoEmail"));
+    } else {
+      toast.warning(t("members.registration.approvedMailOff"));
+    }
+  }
+
   async function handleApprove() {
     try {
-      await approve({
+      const result = await approve({
         id: member.id,
         membershipTypeId: typeId ? Number(typeId) : undefined,
       });
       setApproveOpen(false);
-      toast.success(t("members.registration.approved"));
+      announceApproval(result.notification);
     } catch {
       /* global handler shows the error toast */
     }

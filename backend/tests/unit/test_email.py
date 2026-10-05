@@ -1,10 +1,16 @@
 """Unit tests for email service."""
 
+import smtplib
 from unittest.mock import MagicMock, patch
 
 import pytest
+from resend import exceptions as resend_errors
 
 from app.core.email import (
+    EmailFailure,
+    EmailOutcome,
+    EmailResult,
+    classify_transport_error,
     render_template,
     send_email,
     send_password_reset_email,
@@ -194,7 +200,7 @@ class TestHighLevelEmails:
         result = send_registration_approved_email(
             "user@example.com", "Maria", "M-0001", LOGIN_URL
         )
-        assert result is True
+        assert result.outcome is EmailOutcome.SENT
         mock_send.assert_called_once()
         args = mock_send.call_args[0]
         assert args[0] == "user@example.com"
@@ -207,7 +213,7 @@ class TestHighLevelEmails:
         result = send_registration_approved_email(
             "user@example.com", "Joan", "M-0002", LOGIN_URL, locale="ca"
         )
-        assert result is True
+        assert result.outcome is EmailOutcome.SENT
         subject = mock_send.call_args[0][1]
         assert "sol·licitud" in subject
 
@@ -373,3 +379,59 @@ class TestPaymentConfirmationSend:
 
         assert result is False
         mock_send.assert_not_called()
+
+
+class TestTransportFailureClassification:
+    """A failure is mapped to a reason an admin can be shown, never passed raw (#332)."""
+
+    @pytest.mark.parametrize(
+        ("error", "expected"),
+        [
+            (smtplib.SMTPAuthenticationError(535, b"Username and Password not accepted"),
+             EmailFailure.INVALID_CREDENTIALS),
+            (smtplib.SMTPRecipientsRefused({"x@example.com": (550, b"no such user")}),
+             EmailFailure.REJECTED_RECIPIENT),
+            (smtplib.SMTPServerDisconnected("gone"), EmailFailure.TRANSPORT_UNAVAILABLE),
+            (ConnectionRefusedError(), EmailFailure.TRANSPORT_UNAVAILABLE),
+            (smtplib.SMTPDataError(554, b"rejected"), EmailFailure.UNKNOWN),
+            (resend_errors.ValidationError("API key is invalid", "validation_error", 400),
+             EmailFailure.INVALID_CREDENTIALS),
+            (resend_errors.InvalidApiKeyError("bad key", "invalid_api_key", 403),
+             EmailFailure.INVALID_CREDENTIALS),
+            (resend_errors.RateLimitError("slow down", "rate_limit_exceeded", 429),
+             EmailFailure.RATE_LIMITED),
+            (resend_errors.ValidationError("Invalid `to` field", "validation_error", 422),
+             EmailFailure.UNKNOWN),
+            (RuntimeError("boom"), EmailFailure.UNKNOWN),
+        ],
+    )
+    def test_classifies(self, error, expected):
+        assert classify_transport_error(error) is expected
+
+
+class TestApprovedEmailResult:
+    @pytest.fixture(autouse=True)
+    def _templates_enabled(self):
+        with patch("app.core.email._template_enabled", return_value=True):
+            yield
+
+    def test_a_raising_transport_is_a_failure_with_its_reason(self):
+        refused = resend_errors.ValidationError("API key is invalid", "validation_error", 400)
+        with patch("app.core.email.send_email", side_effect=refused):
+            result = send_registration_approved_email("u@example.com", "Ana", "M-1", LOGIN_URL)
+        assert result == EmailResult(EmailOutcome.FAILED, EmailFailure.INVALID_CREDENTIALS)
+
+    def test_the_transport_is_asked_to_raise(self):
+        with patch("app.core.email.send_email", return_value=True) as send:
+            result = send_registration_approved_email("u@example.com", "Ana", "M-1", LOGIN_URL)
+        assert result == EmailResult(EmailOutcome.SENT)
+        assert send.call_args.kwargs == {"raise_errors": True}
+
+    def test_a_switched_off_template_is_suppressed_with_no_reason(self):
+        with (
+            patch("app.core.email._template_enabled", return_value=False),
+            patch("app.core.email.send_email") as send,
+        ):
+            result = send_registration_approved_email("u@example.com", "Ana", "M-1", LOGIN_URL)
+        send.assert_not_called()
+        assert result == EmailResult(EmailOutcome.SUPPRESSED)
