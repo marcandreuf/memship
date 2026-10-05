@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { Plus, TestTube, Trash2, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PasswordInput } from "@/components/ui/password-input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -46,12 +45,17 @@ import type {
   ProviderField,
 } from "../services/payment-providers-api";
 import { useProviderErrors } from "../hooks/use-provider-errors";
+import { StoredSecretField } from "./stored-secret-field";
 
 const STATUS_VARIANT: Record<string, "default" | "secondary" | "outline"> = {
   active: "default",
   test: "secondary",
   disabled: "outline",
 };
+
+// The API returns a stored secret as `****` plus its last four characters, and
+// keeps the stored value when that mask comes back unchanged.
+const MASK = "****";
 
 const PROVIDER_ICONS: Record<string, string> = {
   sepa_direct_debit: "🏦",
@@ -77,6 +81,7 @@ export function PaymentProvidersSettings() {
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [configValues, setConfigValues] = useState<Record<string, string>>({});
   const [displayName, setDisplayName] = useState("");
+  const [replacing, setReplacing] = useState<Set<string>>(new Set());
 
   const providers = data?.items ?? [];
   const configuredTypes = new Set(providers.map((p) => p.provider_type));
@@ -94,7 +99,24 @@ export function PaymentProvidersSettings() {
     setSelectedType(provider.provider_type);
     setConfigValues({ ...provider.config });
     setDisplayName(provider.display_name);
+    setReplacing(new Set());
     setDialogOpen(true);
+  }
+
+  function storedMask(key: string): string | null {
+    const value = editingProvider?.config[key];
+    return typeof value === "string" && value.startsWith(MASK) ? value : null;
+  }
+
+  function setReplacingKey(key: string, on: boolean) {
+    setReplacing((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(key);
+      else next.delete(key);
+      return next;
+    });
+    // Back to the mask on cancel, so the save leaves the stored value alone.
+    setConfigValues((prev) => ({ ...prev, [key]: on ? "" : storedMask(key) ?? "" }));
   }
 
   function selectType(type: string) {
@@ -374,17 +396,22 @@ export function PaymentProvidersSettings() {
                       </SelectContent>
                     </Select>
                   ) : field.type === "password" ? (
-                    <PasswordInput
-                      className="h-8 mt-1 font-mono"
-                      placeholder={field.placeholder}
-                      value={configValues[field.key] || ""}
-                      onChange={(e) =>
-                        setConfigValues((prev) => ({
-                          ...prev,
-                          [field.key]: e.target.value,
-                        }))
-                      }
-                    />
+                    <div className="mt-1">
+                      <StoredSecretField
+                        name={`provider-${field.key}-credential`}
+                        className="h-8 font-mono"
+                        stored={storedMask(field.key) !== null}
+                        last4={storedMask(field.key)?.slice(MASK.length) || null}
+                        replacing={replacing.has(field.key)}
+                        placeholder={field.placeholder}
+                        value={configValues[field.key] || ""}
+                        onReplace={() => setReplacingKey(field.key, true)}
+                        onCancel={() => setReplacingKey(field.key, false)}
+                        onChange={(value) =>
+                          setConfigValues((prev) => ({ ...prev, [field.key]: value }))
+                        }
+                      />
+                    </div>
                   ) : (
                     <Input
                       className="h-8 mt-1 font-mono"

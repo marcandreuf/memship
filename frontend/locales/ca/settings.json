@@ -175,7 +175,6 @@
         "private_key": "Clau privada (.p8)"
       },
       "fromEnv": "de l'entorn",
-      "stored": "desat",
       "notConfigured": "Sense configurar",
       "secretHint": "Deixa-ho en blanc per mantenir el valor desat; introdueix-ne un de nou per reemplaçar-lo.",
       "clear": "Esborra",
@@ -189,6 +188,10 @@
       "encryptionActive": "Xifratge actiu: els secrets es desen xifrats amb una clau gestionada pel servidor i mai no es mostren aquí."
     },
     "paymentsGeneral": "General",
+    "secretField": {
+      "stored": "desat",
+      "replace": "Substitueix"
+    },
     "integrations": {
       "tab": "Integracions",
       "description": "Configuració de serveis de tercers."
@@ -220,7 +223,6 @@
       "appPasswordHint": "Fes servir una contrasenya d'aplicació de Google, no la del compte. Deixa-ho en blanc per mantenir la desada.",
       "secretHint": "Deixa-ho en blanc per mantenir el valor desat; introdueix-ne un de nou per reemplaçar-lo.",
       "fromEnv": "de l'entorn",
-      "stored": "desat",
       "notConfigured": "Sense configurar",
       "clear": "Esborra",
       "undoClear": "Desfés",

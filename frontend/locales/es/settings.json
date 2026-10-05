@@ -175,7 +175,6 @@
         "private_key": "Clave privada (.p8)"
       },
       "fromEnv": "del entorno",
-      "stored": "guardado",
       "notConfigured": "Sin configurar",
       "secretHint": "Déjalo en blanco para mantener el valor guardado; introduce uno nuevo para reemplazarlo.",
       "clear": "Borrar",
@@ -189,6 +188,10 @@
       "encryptionActive": "Cifrado activo: los secretos se guardan cifrados con una clave gestionada por el servidor y nunca se muestran aquí."
     },
     "paymentsGeneral": "General",
+    "secretField": {
+      "stored": "guardado",
+      "replace": "Reemplazar"
+    },
     "integrations": {
       "tab": "Integraciones",
       "description": "Configuración de servicios de terceros."
@@ -220,7 +223,6 @@
       "appPasswordHint": "Usa una contraseña de aplicación de Google, no la contraseña de la cuenta. Déjalo en blanco para mantener la guardada.",
       "secretHint": "Déjalo en blanco para mantener el valor guardado; introduce uno nuevo para reemplazarlo.",
       "fromEnv": "del entorno",
-      "stored": "guardado",
       "notConfigured": "Sin configurar",
       "clear": "Borrar",
       "undoClear": "Deshacer",

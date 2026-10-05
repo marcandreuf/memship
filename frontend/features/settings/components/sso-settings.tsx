@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { Check, Copy, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PasswordInput } from "@/components/ui/password-input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -23,8 +22,15 @@ import type {
   SsoConfigView,
   SsoSecretStatus,
 } from "../services/sso-api";
+import { StoredSecretField } from "./stored-secret-field";
 
-type SecretInput = { value: string; clear: boolean };
+// `replacing` is the only thing that makes `value` a write: a stored secret has
+// no input until the admin asks to replace it, so nothing else can fill one.
+type SecretInput = { value: string; clear: boolean; replacing: boolean };
+
+function secretTyped(input: SecretInput): boolean {
+  return input.replacing && input.value.length > 0;
+}
 
 interface ProviderForm {
   enabled: boolean;
@@ -90,7 +96,10 @@ export function SsoSettings() {
       const fields: Record<string, string> = {};
       for (const f of schema.fields) fields[f] = (view[f] as string) ?? "";
       const secrets: Record<string, SecretInput> = {};
-      for (const s of schema.secrets) secrets[s] = { value: "", clear: false };
+      for (const s of schema.secrets) {
+        const status = view[s] as SsoSecretStatus;
+        secrets[s] = { value: "", clear: false, replacing: !status.configured };
+      }
       return { enabled: view.enabled as boolean, fields, secrets };
     };
     const next = { google: build("google"), apple: build("apple") };
@@ -113,7 +122,7 @@ export function SsoSettings() {
     for (const f of schema.fields) if (!form.fields[f]) return false;
     for (const s of schema.secrets) {
       const status = view[s] as SsoSecretStatus;
-      const typed = form.secrets[s].value.length > 0;
+      const typed = secretTyped(form.secrets[s]);
       const cleared = form.secrets[s].clear;
       if (cleared || (!status.configured && !typed)) return false;
     }
@@ -134,7 +143,7 @@ export function SsoSettings() {
     for (const s of schema.secrets) {
       const input = form.secrets[s];
       if (input.clear) payload[s] = { clear: true };
-      else if (input.value.length > 0)
+      else if (secretTyped(input))
         payload[s] = { value: input.value, secret: true };
     }
     return payload;
@@ -145,7 +154,7 @@ export function SsoSettings() {
     if (encryptionOff) {
       for (const name of ["google", "apple"] as ProviderName[]) {
         for (const s of PROVIDER_SCHEMA[name].secrets) {
-          if (forms![name].secrets[s].value.length > 0) {
+          if (secretTyped(forms![name].secrets[s])) {
             toast.error(t("settings.sso.encryptionKeyRequired"));
             return;
           }
@@ -238,9 +247,8 @@ export function SsoSettings() {
             const status = view[s] as SsoSecretStatus;
             const input = form.secrets[s];
             const source = data!.sources[`${name}.${s}`];
-            const placeholder = status.configured
-              ? `•••• ${status.last4 ?? ""}`
-              : t("settings.sso.notConfigured");
+            const setSecret = (next: Partial<SecretInput>) =>
+              update(name, { secrets: { ...form.secrets, [s]: { ...input, ...next } } });
             return (
               <div key={s} className="space-y-0.5">
                 <label className="text-xs font-medium flex items-center gap-2">
@@ -250,22 +258,19 @@ export function SsoSettings() {
                       {t("settings.sso.fromEnv")}
                     </Badge>
                   )}
-                  {status.configured && (
-                    <Badge variant="outline" className="text-[10px]">
-                      {t("settings.sso.stored")}
-                    </Badge>
-                  )}
                 </label>
-                <PasswordInput
+                <StoredSecretField
+                  name={`sso-${name}-credential`}
                   className="h-8 font-mono text-xs"
-                  placeholder={placeholder}
-                  value={input.clear ? "" : input.value}
-                  disabled={input.clear}
-                  onChange={(e) =>
-                    update(name, {
-                      secrets: { ...form.secrets, [s]: { value: e.target.value, clear: false } },
-                    })
-                  }
+                  stored={status.configured}
+                  last4={status.last4}
+                  replacing={input.replacing}
+                  cleared={input.clear}
+                  value={input.value}
+                  placeholder={t("settings.sso.notConfigured")}
+                  onReplace={() => setSecret({ replacing: true, value: "" })}
+                  onCancel={() => setSecret({ replacing: false, value: "" })}
+                  onChange={(value) => setSecret({ value })}
                 />
                 <p className="text-[11px] text-muted-foreground">
                   {t("settings.sso.secretHint")}
@@ -274,9 +279,7 @@ export function SsoSettings() {
                       type="button"
                       className="ml-2 underline hover:text-foreground"
                       onClick={() =>
-                        update(name, {
-                          secrets: { ...form.secrets, [s]: { value: "", clear: !input.clear } },
-                        })
+                        setSecret({ clear: !input.clear, replacing: false, value: "" })
                       }
                     >
                       {input.clear ? t("settings.sso.undoClear") : t("settings.sso.clear")}
