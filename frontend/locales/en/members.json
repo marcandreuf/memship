@@ -62,10 +62,21 @@
     "registration": {
       "approve": "Approve",
       "reject": "Reject",
-      "approved": "Registration approved",
+      "approved": "Registration approved. The applicant has been notified by email.",
+      "approvedNotNotified": "Registration approved, but the applicant was NOT notified",
+      "approvedMailOff": "Registration approved. No email was sent: the approval notice is switched off in Settings → Communications. Let the applicant know another way.",
+      "approvedNoEmail": "Registration approved. No email was sent: the applicant has no email address on file.",
+      "notifyFailure": {
+        "no_provider": "No mail provider is active. Choose one in Settings → Integrations → Mailing, then let the applicant know.",
+        "invalid_credentials": "The mail provider rejected its credentials. Check them with Send test in Settings → Integrations → Mailing.",
+        "rejected_recipient": "The mail provider refused the applicant's address. Check that it is correct.",
+        "rate_limited": "The mail provider's sending limit was reached. Let the applicant know another way.",
+        "transport_unavailable": "The mail provider could not be reached. Let the applicant know another way.",
+        "unknown": "The mail provider returned an error. Use Send test in Settings → Integrations → Mailing to see it."
+      },
       "rejected": "Registration rejected",
       "approveTitle": "Approve this registration?",
-      "approveDescription": "The applicant becomes an active member, gets a member number and is notified by email.",
+      "approveDescription": "The applicant becomes an active member and gets a member number. If the approval email is switched on in Settings, they are notified by email.",
       "rejectTitle": "Reject this registration?",
       "rejectDescription": "The applicant will not be able to access the portal. They are notified by email.",
       "membershipTypeHelp": "The applicant joins on this membership type. The free sign-up tier is proposed by default.",

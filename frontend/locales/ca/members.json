@@ -62,10 +62,21 @@
     "registration": {
       "approve": "Aprovar",
       "reject": "Rebutjar",
-      "approved": "Alta aprovada",
+      "approved": "Alta aprovada. S'ha avisat el sol·licitant per correu.",
+      "approvedNotNotified": "Alta aprovada, però NO s'ha avisat el sol·licitant",
+      "approvedMailOff": "Alta aprovada. No s'ha enviat cap correu: l'avís d'aprovació està desactivat a Configuració → Comunicacions. Avisa el sol·licitant per una altra via.",
+      "approvedNoEmail": "Alta aprovada. No s'ha enviat cap correu: el sol·licitant no té adreça de correu.",
+      "notifyFailure": {
+        "no_provider": "No hi ha cap proveïdor de correu actiu. Tria'n un a Configuració → Integracions → Correu i avisa el sol·licitant.",
+        "invalid_credentials": "El proveïdor de correu ha rebutjat les seves credencials. Comprova-les amb Envia una prova a Configuració → Integracions → Correu.",
+        "rejected_recipient": "El proveïdor de correu ha rebutjat l'adreça del sol·licitant. Comprova que sigui correcta.",
+        "rate_limited": "S'ha arribat al límit d'enviament del proveïdor de correu. Avisa el sol·licitant per una altra via.",
+        "transport_unavailable": "No s'ha pogut contactar amb el proveïdor de correu. Avisa el sol·licitant per una altra via.",
+        "unknown": "El proveïdor de correu ha retornat un error. Fes servir Envia una prova a Configuració → Integracions → Correu per veure'l."
+      },
       "rejected": "Alta rebutjada",
       "approveTitle": "Vols aprovar aquesta alta?",
-      "approveDescription": "El sol·licitant passa a ser soci actiu, rep un número de soci i se l'avisa per correu.",
+      "approveDescription": "El sol·licitant passa a ser soci actiu i rep un número de soci. Si l'avís d'aprovació està activat a Configuració, se l'avisa per correu.",
       "rejectTitle": "Vols rebutjar aquesta alta?",
       "rejectDescription": "El sol·licitant no podrà accedir al portal. Se l'avisa per correu.",
       "membershipTypeHelp": "El sol·licitant quedarà donat d'alta amb aquest tipus de soci. Per defecte es proposa el tipus gratuït d'alta.",

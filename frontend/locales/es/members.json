@@ -62,10 +62,21 @@
     "registration": {
       "approve": "Aprobar",
       "reject": "Rechazar",
-      "approved": "Alta aprobada",
+      "approved": "Alta aprobada. Se ha avisado al solicitante por correo.",
+      "approvedNotNotified": "Alta aprobada, pero NO se ha avisado al solicitante",
+      "approvedMailOff": "Alta aprobada. No se ha enviado ningún correo: el aviso de aprobación está desactivado en Configuración → Comunicaciones. Avisa al solicitante por otra vía.",
+      "approvedNoEmail": "Alta aprobada. No se ha enviado ningún correo: el solicitante no tiene dirección de correo.",
+      "notifyFailure": {
+        "no_provider": "No hay ningún proveedor de correo activo. Elige uno en Configuración → Integraciones → Correo y avisa al solicitante.",
+        "invalid_credentials": "El proveedor de correo ha rechazado sus credenciales. Compruébalas con Enviar prueba en Configuración → Integraciones → Correo.",
+        "rejected_recipient": "El proveedor de correo ha rechazado la dirección del solicitante. Comprueba que sea correcta.",
+        "rate_limited": "Se ha alcanzado el límite de envío del proveedor de correo. Avisa al solicitante por otra vía.",
+        "transport_unavailable": "No se ha podido contactar con el proveedor de correo. Avisa al solicitante por otra vía.",
+        "unknown": "El proveedor de correo ha devuelto un error. Usa Enviar prueba en Configuración → Integraciones → Correo para verlo."
+      },
       "rejected": "Alta rechazada",
       "approveTitle": "¿Aprobar esta alta?",
-      "approveDescription": "El solicitante pasa a ser socio activo, recibe un número de socio y se le avisa por correo.",
+      "approveDescription": "El solicitante pasa a ser socio activo y recibe un número de socio. Si el aviso de aprobación está activado en Configuración, se le avisa por correo.",
       "rejectTitle": "¿Rechazar esta alta?",
       "rejectDescription": "El solicitante no podrá acceder al portal. Se le avisa por correo.",
       "membershipTypeHelp": "El solicitante quedará dado de alta con este tipo de socio. Por defecto se propone el tipo gratuito de alta.",

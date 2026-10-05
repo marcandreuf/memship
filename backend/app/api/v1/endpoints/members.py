@@ -19,7 +19,9 @@ from app.domains.auth.models import User
 from app.domains.auth.service import confirm_email_without_token
 from app.domains.members.models import Member
 from app.domains.members.schemas import (
+    ApprovalNotification,
     GuardianResponse,
+    MemberApprovalResponse,
     MemberCreate,
     MemberRegistrationApproval,
     MemberRegistrationRejection,
@@ -402,7 +404,7 @@ def confirm_member_email(
     return _to_response(member)
 
 
-@router.post("/{member_id}/approve", response_model=MemberResponse)
+@router.post("/{member_id}/approve", response_model=MemberApprovalResponse)
 def approve_member_registration(
     member_id: int,
     data: MemberRegistrationApproval | None = None,
@@ -426,15 +428,24 @@ def approve_member_registration(
     db.commit()
     db.refresh(member)
 
+    # After the commit, and never able to undo it: approving is the durable
+    # act, telling the applicant is not. What happened to the mail is returned
+    # so the admin is not shown a success that only half happened (#332).
     if member.person and member.person.email:
-        send_registration_approved_email(
+        result = send_registration_approved_email(
             member.person.email,
             member.person.first_name,
             member.member_number or "",
             f"{settings.FRONTEND_URL}/{settings.DEFAULT_LOCALE}/login",
         )
+        notification = ApprovalNotification(
+            status=result.outcome.value,
+            reason=result.failure.value if result.failure else None,
+        )
+    else:
+        notification = ApprovalNotification(status="no_email")
 
-    return _to_response(member)
+    return MemberApprovalResponse(member=_to_response(member), notification=notification)
 
 
 @router.post("/{member_id}/reject", response_model=MemberResponse)

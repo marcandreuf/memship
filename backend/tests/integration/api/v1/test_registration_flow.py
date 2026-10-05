@@ -1,6 +1,9 @@
 """Integration tests for the v1.3.0 registration / approval flow."""
 
 from datetime import datetime, timedelta, timezone
+from unittest.mock import patch
+
+from resend.exceptions import ValidationError
 
 from app.core.security.password import hash_password
 from app.domains.auth.models import User
@@ -260,7 +263,7 @@ class TestAdminApproval:
         response = client.post(f"/api/v1/members/{pending.id}/approve")
 
         assert response.status_code == 200
-        body = response.json()
+        body = response.json()["member"]
         assert body["status"] == "active"
         assert body["member_number"]
 
@@ -277,7 +280,7 @@ class TestAdminApproval:
         response = client.post(f"/api/v1/members/{pending.id}/approve")
 
         assert response.status_code == 200
-        assert response.json()["membership_type_id"] == landing_tier_id
+        assert response.json()["member"]["membership_type_id"] == landing_tier_id
         db.refresh(pending)
         assert pending.membership_type_id == landing_tier_id
 
@@ -293,7 +296,7 @@ class TestAdminApproval:
         )
 
         assert response.status_code == 200
-        assert response.json()["membership_type_id"] == paid.id
+        assert response.json()["member"]["membership_type_id"] == paid.id
         db.refresh(pending)
         assert pending.status == "active"
         assert pending.membership_type_id == paid.id
@@ -309,7 +312,7 @@ class TestAdminApproval:
         response = client.post(f"/api/v1/members/{pending.id}/approve")
 
         assert response.status_code == 200
-        assert response.json()["membership_type_id"] == default_type.id
+        assert response.json()["member"]["membership_type_id"] == default_type.id
 
     def test_approve_rejects_an_inactive_tier(self, client, db):
         _create_user(db, email="admin@examplee6e3b1.com", role="admin")
@@ -343,6 +346,83 @@ class TestAdminApproval:
         assert response.status_code == 400
         db.refresh(pending)
         assert pending.status == "pending"
+
+    def test_approve_reports_a_failed_send_without_undoing_the_approval(self, client, db):
+        # The incident in #332: the provider refused the key, the endpoint
+        # answered a plain 200 and the admin was told the member was notified.
+        _create_user(db, email="admin@examplee6e3b1.com", role="admin")
+        _, pending = _create_user(db, email="pending@examplee6e3b1.com", status="pending")
+        _login(client, "admin@examplee6e3b1.com")
+        refused = ValidationError(
+            message="API key is invalid", error_type="validation_error", code=400
+        )
+
+        with (
+            patch("app.core.email._template_enabled", return_value=True),
+            patch("app.core.email.send_email", side_effect=refused),
+        ):
+            response = client.post(f"/api/v1/members/{pending.id}/approve")
+
+        assert response.status_code == 200
+        assert response.json()["notification"] == {
+            "status": "failed",
+            "reason": "invalid_credentials",
+        }
+        assert response.json()["member"]["status"] == "active"
+        db.refresh(pending)
+        assert pending.status == "active"
+
+    def test_approve_reports_a_sent_notification(self, client, db):
+        _create_user(db, email="admin@examplee6e3b1.com", role="admin")
+        _, pending = _create_user(db, email="pending@examplee6e3b1.com", status="pending")
+        _login(client, "admin@examplee6e3b1.com")
+
+        with (
+            patch("app.core.email._template_enabled", return_value=True),
+            patch("app.core.email.send_email", return_value=True),
+        ):
+            response = client.post(f"/api/v1/members/{pending.id}/approve")
+
+        assert response.json()["notification"] == {"status": "sent", "reason": None}
+
+    def test_approve_reports_a_switched_off_template(self, client, db):
+        _create_user(db, email="admin@examplee6e3b1.com", role="admin")
+        _, pending = _create_user(db, email="pending@examplee6e3b1.com", status="pending")
+        _login(client, "admin@examplee6e3b1.com")
+
+        with (
+            patch("app.core.email._template_enabled", return_value=False),
+            patch("app.core.email.send_email") as send,
+        ):
+            response = client.post(f"/api/v1/members/{pending.id}/approve")
+
+        send.assert_not_called()
+        assert response.json()["notification"] == {"status": "suppressed", "reason": None}
+
+    def test_approve_reports_no_active_provider(self, client, db):
+        _create_user(db, email="admin@examplee6e3b1.com", role="admin")
+        _, pending = _create_user(db, email="pending@examplee6e3b1.com", status="pending")
+        _login(client, "admin@examplee6e3b1.com")
+
+        with patch("app.core.email._template_enabled", return_value=True):
+            response = client.post(f"/api/v1/members/{pending.id}/approve")
+
+        assert response.json()["notification"] == {
+            "status": "failed",
+            "reason": "no_provider",
+        }
+
+    def test_approve_reports_an_applicant_with_no_email(self, client, db):
+        _create_user(db, email="admin@examplee6e3b1.com", role="admin")
+        _, pending = _create_user(db, email="pending@examplee6e3b1.com", status="pending")
+        pending.person.email = None
+        db.flush()
+        _login(client, "admin@examplee6e3b1.com")
+
+        response = client.post(f"/api/v1/members/{pending.id}/approve")
+
+        assert response.status_code == 200
+        assert response.json()["notification"] == {"status": "no_email", "reason": None}
 
     def test_approve_rejects_non_pending_member(self, client, db):
         _create_user(db, email="admin@examplee6e3b1.com", role="admin")

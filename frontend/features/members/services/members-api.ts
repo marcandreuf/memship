@@ -137,24 +137,42 @@ export async function changeMemberStatus(
   });
 }
 
-/**
- * Approving a pending self-registration goes through its own endpoint rather
- * than the generic status change: the backend also allocates the member number
- * here and emails the applicant.
- *
- * `membershipTypeId` is the tier the admin picked; leaving it out keeps the
- * free tier the sign-up landed on.
- */
 /** Confirm a member's email address without the link they never received.
  *  Needs `users.write` — it is an account credential, not a member detail. */
 export async function confirmMemberEmail(id: number): Promise<MemberData> {
   return apiClient(`/members/${id}/confirm-email`, { method: "POST" });
 }
 
+/** What happened to the approval mail. `reason` is set only on `failed`. */
+export interface ApprovalNotification {
+  status: "sent" | "suppressed" | "opted_out" | "failed" | "no_email";
+  reason:
+    | "no_provider"
+    | "invalid_credentials"
+    | "rejected_recipient"
+    | "rate_limited"
+    | "transport_unavailable"
+    | "unknown"
+    | null;
+}
+
+export interface MemberApprovalResponse {
+  member: MemberData;
+  notification: ApprovalNotification;
+}
+
+/**
+ * Approving a pending self-registration goes through its own endpoint rather
+ * than the generic status change: the backend also allocates the member number
+ * here and tries to email the applicant, reporting whether that worked.
+ *
+ * `membershipTypeId` is the tier the admin picked; leaving it out keeps the
+ * free tier the sign-up landed on.
+ */
 export async function approveMember(
   id: number,
   membershipTypeId?: number
-): Promise<MemberData> {
+): Promise<MemberApprovalResponse> {
   return apiClient(`/members/${id}/approve`, {
     method: "POST",
     body: JSON.stringify({ membership_type_id: membershipTypeId ?? null }),

@@ -8,6 +8,7 @@ Transport priority:
 
 import logging
 import smtplib
+from dataclasses import dataclass
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from enum import Enum
@@ -49,6 +50,59 @@ class EmailOutcome(str, Enum):
     SUPPRESSED = "suppressed"
     OPTED_OUT = "opted_out"
     FAILED = "failed"
+
+
+class EmailFailure(str, Enum):
+    """Why a send failed, coarse enough to show to an admin.
+
+    A transport's own exception text can carry request ids, endpoint URLs or a
+    fragment of a credential, and the screens that show it are reachable with
+    less than ``settings.integrations.write`` — so it is mapped, not passed on.
+    """
+
+    NO_PROVIDER = "no_provider"
+    INVALID_CREDENTIALS = "invalid_credentials"
+    REJECTED_RECIPIENT = "rejected_recipient"
+    RATE_LIMITED = "rate_limited"
+    TRANSPORT_UNAVAILABLE = "transport_unavailable"
+    UNKNOWN = "unknown"
+
+
+@dataclass(frozen=True)
+class EmailResult:
+    outcome: EmailOutcome
+    failure: EmailFailure | None = None
+
+
+def classify_transport_error(error: Exception) -> EmailFailure:
+    """Map a Resend or SMTP exception onto an ``EmailFailure``."""
+    # Before the OSError branch: every smtplib exception is an OSError.
+    if isinstance(error, smtplib.SMTPAuthenticationError):
+        return EmailFailure.INVALID_CREDENTIALS
+    if isinstance(error, smtplib.SMTPRecipientsRefused):
+        return EmailFailure.REJECTED_RECIPIENT
+    if isinstance(error, (smtplib.SMTPConnectError, smtplib.SMTPServerDisconnected)):
+        return EmailFailure.TRANSPORT_UNAVAILABLE
+    if isinstance(error, smtplib.SMTPException):
+        return EmailFailure.UNKNOWN
+    if isinstance(error, OSError):
+        return EmailFailure.TRANSPORT_UNAVAILABLE
+
+    try:
+        from resend import exceptions as resend_errors
+    except ImportError:  # pragma: no cover — resend is a hard dependency
+        return EmailFailure.UNKNOWN
+    if isinstance(error, (resend_errors.InvalidApiKeyError, resend_errors.MissingApiKeyError)):
+        return EmailFailure.INVALID_CREDENTIALS
+    if isinstance(error, resend_errors.RateLimitError):
+        return EmailFailure.RATE_LIMITED
+    if isinstance(error, resend_errors.ResendError):
+        # Resend reports a bad key as a 400 validation_error, so the type alone
+        # does not separate it from a malformed payload.
+        if str(getattr(error, "code", "")) in ("401", "403") or "api key" in str(error).lower():
+            return EmailFailure.INVALID_CREDENTIALS
+        return EmailFailure.UNKNOWN
+    return EmailFailure.UNKNOWN
 
 # Jinja2 template environment
 _template_dir = Path(__file__).resolve().parent.parent / "templates" / "email"
@@ -421,13 +475,15 @@ def _dispatch(
     return False
 
 
-def send_email(to: str, subject: str, html_body: str) -> bool:
+def send_email(to: str, subject: str, html_body: str, raise_errors: bool = False) -> bool:
     """Send an email through the active mail provider."""
     resolved = _resolve_transport()
     if not resolved.active:
         logger.info(f"Email skipped (no transport): to={to}, subject={subject}")
         return False
-    return _dispatch(resolved.active, resolved, to, subject, html_body)
+    return _dispatch(
+        resolved.active, resolved, to, subject, html_body, raise_errors=raise_errors
+    )
 
 
 def send_email_with_attachment(
@@ -437,6 +493,7 @@ def send_email_with_attachment(
     attachment: bytes,
     attachment_filename: str = "document.pdf",
     attachment_mime: str = "application/pdf",
+    raise_errors: bool = False,
 ) -> bool:
     """Send an email with a file attachment through the active mail provider."""
     resolved = _resolve_transport()
@@ -451,6 +508,7 @@ def send_email_with_attachment(
         attachment=attachment,
         attachment_filename=attachment_filename,
         attachment_mime=attachment_mime,
+        raise_errors=raise_errors,
     )
 
 
@@ -611,6 +669,32 @@ def _send_templated_outcome(
     attachment_filename: str = "document.pdf",
     attachment_mime: str = "application/pdf",
 ) -> EmailOutcome:
+    """The outcome alone, for callers that persist it but show no reason."""
+    return _send_templated_result(
+        template_key,
+        to,
+        locale,
+        context,
+        subject_args=subject_args,
+        subject=subject,
+        attachment=attachment,
+        attachment_filename=attachment_filename,
+        attachment_mime=attachment_mime,
+    ).outcome
+
+
+def _send_templated_result(
+    template_key: str,
+    to: str,
+    locale: str,
+    context: dict,
+    subject_args: dict | None = None,
+    subject: str | None = None,
+    attachment: bytes | None = None,
+    attachment_filename: str = "document.pdf",
+    attachment_mime: str = "application/pdf",
+    capture_failure: bool = False,
+) -> EmailResult:
     """Render and send one catalogued template, honouring the org's switches.
 
     The single place that decides whether a templated email happens. Every
@@ -630,40 +714,54 @@ def _send_templated_outcome(
 
     ``subject`` overrides the catalogue subject (announcements carry their own).
     Passing ``attachment`` routes through the attachment transport.
+
+    ``capture_failure`` asks the transport to raise instead of swallowing, so a
+    failure carries an ``EmailFailure`` for a caller that shows it to a human
+    (#332). It is opt-in so every other sender reaches the transport exactly as
+    before.
     """
     if not _template_enabled(template_key):
         logger.info(
             f"Email suppressed (template disabled in settings): "
             f"template={template_key}, to={to}"
         )
-        return EmailOutcome.SUPPRESSED
+        return EmailResult(EmailOutcome.SUPPRESSED)
 
     if honours_member_opt_out(template_key) and _member_opted_out(to):
         logger.info(
             f"Email suppressed (member opted out): "
             f"template={template_key}, to={to}"
         )
-        return EmailOutcome.OPTED_OUT
+        return EmailResult(EmailOutcome.OPTED_OUT)
 
     if subject is None:
         subject = _get_subject(template_key, locale, **(subject_args or {}))
     html_body = render_template(template_key, locale, context)
 
-    if attachment is not None:
-        ok = send_email_with_attachment(
-            to,
-            subject,
-            html_body,
-            attachment=attachment,
-            attachment_filename=attachment_filename,
-            attachment_mime=attachment_mime,
-        )
-    else:
-        ok = send_email(to, subject, html_body)
+    transport_opts = {"raise_errors": True} if capture_failure else {}
+    try:
+        if attachment is not None:
+            ok = send_email_with_attachment(
+                to,
+                subject,
+                html_body,
+                attachment=attachment,
+                attachment_filename=attachment_filename,
+                attachment_mime=attachment_mime,
+                **transport_opts,
+            )
+        else:
+            ok = send_email(to, subject, html_body, **transport_opts)
+    except Exception as e:  # noqa: BLE001 — only reachable with capture_failure
+        logger.warning(f"Email not delivered: template={template_key}, to={to}")
+        return EmailResult(EmailOutcome.FAILED, classify_transport_error(e))
 
     if not ok:
         logger.warning(f"Email not delivered: template={template_key}, to={to}")
-    return EmailOutcome.SENT if ok else EmailOutcome.FAILED
+        # With raising transports, a False return means nothing was attempted.
+        failure = EmailFailure.NO_PROVIDER if capture_failure else None
+        return EmailResult(EmailOutcome.FAILED, failure)
+    return EmailResult(EmailOutcome.SENT)
 
 
 # --- High-level email functions ---
@@ -710,12 +808,13 @@ def send_registration_approved_email(
     member_number: str,
     login_url: str,
     locale: str = "es",
-) -> bool:
-    return _send_templated("registration_approved", to, locale, {
+) -> EmailResult:
+    """The full result, not a bool: the admin who approved is told what happened."""
+    return _send_templated_result("registration_approved", to, locale, {
         "first_name": first_name,
         "member_number": member_number,
         "login_url": login_url,
-    })
+    }, capture_failure=True)
 
 
 def send_registration_rejected_email(

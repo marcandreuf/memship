@@ -1,6 +1,7 @@
 """Member and MembershipType schemas."""
 
 from datetime import date, datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -222,6 +223,29 @@ class MemberResponse(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class ApprovalNotification(BaseModel):
+    """Whether the approved applicant was told, and if not, why (#332).
+
+    ``status`` is an ``EmailOutcome`` value, plus ``no_email`` for an applicant
+    with no address on file. ``reason`` is an ``EmailFailure`` value, set only
+    when ``status`` is ``failed``.
+    """
+
+    status: Literal["sent", "suppressed", "opted_out", "failed", "no_email"]
+    reason: str | None = None
+
+
+class MemberApprovalResponse(BaseModel):
+    """Approve's answer: the member, and whether the approval mail went out.
+
+    The approval commits before the mail is attempted, so ``member`` reflects a
+    durable approval whatever ``notification`` says.
+    """
+
+    member: MemberResponse
+    notification: ApprovalNotification
 
 
 # --- Group ---
