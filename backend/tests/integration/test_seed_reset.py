@@ -40,6 +40,7 @@ from app.domains.audit.models import AuditLog
 from app.domains.auth.models import Role, User
 from app.domains.billing.models import InvoiceSequence, PaymentProvider, Receipt
 from app.domains.members.models import Member, MembershipType
+from app.domains.mailing.policy import is_enabled
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Person
 
@@ -324,6 +325,17 @@ class TestOrganizationDetails:
         org = db.query(OrganizationSettings).one()
         assert org.name == DEMO_ORG["name"]
         assert org.bank_iban == DEMO_ORG["bank_iban"]
+
+    def test_new_install_starts_with_the_approval_mail_on(self, db):
+        # #337: an approved applicant has no other way to learn they were let in.
+        _base_install(db)
+        create_org_settings(db, {"name": "Fresh Club"})
+
+        org = db.query(OrganizationSettings).one()
+        assert is_enabled(db, "registration_approved") is True
+        assert org.communications_config["templates"] == {
+            "registration_approved": {"enabled": True}
+        }
 
     def test_second_call_leaves_the_existing_organization_alone(self, db):
         _base_install(db)

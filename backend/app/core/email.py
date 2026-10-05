@@ -8,6 +8,7 @@ Transport priority:
 
 import logging
 import smtplib
+from collections.abc import Sequence
 from dataclasses import dataclass
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -808,12 +809,21 @@ def send_registration_approved_email(
     member_number: str,
     login_url: str,
     locale: str = "es",
+    sso_providers: Sequence[str] = (),
+    has_password: bool = True,
 ) -> EmailResult:
-    """The full result, not a bool: the admin who approved is told what happened."""
+    """The full result, not a bool: the admin who approved is told what happened.
+
+    ``sso_providers`` are the display names of the providers the account signs
+    in with. An account created through Google has no password, so a mail that
+    only says "sign in" sends that member to a form that refuses them (#337).
+    """
     return _send_templated_result("registration_approved", to, locale, {
         "first_name": first_name,
         "member_number": member_number,
         "login_url": login_url,
+        "sso_providers": list(sso_providers),
+        "has_password": has_password,
     }, capture_failure=True)
 
 

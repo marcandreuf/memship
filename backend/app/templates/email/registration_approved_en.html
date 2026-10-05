@@ -7,5 +7,8 @@
 <h1 style="{{ s.h1 }}">Good news, {{ first_name }}!</h1>
 <p style="{{ s.p }}">Your registration has been approved.</p>
 {{ c.highlight("Member number", member_number) }}
+{% if sso_providers %}
+<p style="{{ s.p }}">On the sign-in page, use {% for p in sso_providers %}<strong>Continue with {{ p }}</strong>{% if not loop.last %} or {% endif %}{% endfor %}{% if has_password %}, or your email and password.{% else %}. Your account has no password, so the email and password form will not let you in.{% endif %}</p>
+{% endif %}
 {{ c.button(login_url, "Sign in to the portal") }}
 {% endblock %}

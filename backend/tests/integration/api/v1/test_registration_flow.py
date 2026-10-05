@@ -6,7 +6,7 @@ from unittest.mock import patch
 from resend.exceptions import ValidationError
 
 from app.core.security.password import hash_password
-from app.domains.auth.models import User
+from app.domains.auth.models import User, UserIdentity
 from app.domains.auth.service import token_digest
 from app.domains.members.models import Member, MembershipType
 from app.domains.organizations.models import OrganizationSettings
@@ -411,6 +411,41 @@ class TestAdminApproval:
             "status": "failed",
             "reason": "no_provider",
         }
+
+    def test_approve_mail_names_google_for_an_account_without_a_password(self, client, db):
+        # #337: the mail used to say only "sign in", sending a Google-only
+        # member to a password form that answers "Invalid email or password".
+        _create_user(db, email="admin@examplee6e3b1.com", role="admin")
+        applicant, pending = _create_user(
+            db, email="pending@examplee6e3b1.com", status="pending"
+        )
+        applicant.password_hash = None
+        db.add(UserIdentity(user_id=applicant.id, provider="google", provider_subject="g-337"))
+        db.flush()
+        _login(client, "admin@examplee6e3b1.com")
+
+        with (
+            patch("app.core.email._template_enabled", return_value=True),
+            patch("app.core.email.send_email", return_value=True) as send,
+        ):
+            client.post(f"/api/v1/members/{pending.id}/approve")
+
+        html = send.call_args[0][2]
+        assert "Continuar con Google" in html
+        assert "no tiene contraseña" in html
+
+    def test_approve_mail_names_no_provider_for_a_password_account(self, client, db):
+        _create_user(db, email="admin@examplee6e3b1.com", role="admin")
+        _, pending = _create_user(db, email="pending@examplee6e3b1.com", status="pending")
+        _login(client, "admin@examplee6e3b1.com")
+
+        with (
+            patch("app.core.email._template_enabled", return_value=True),
+            patch("app.core.email.send_email", return_value=True) as send,
+        ):
+            client.post(f"/api/v1/members/{pending.id}/approve")
+
+        assert "Continuar con" not in send.call_args[0][2]
 
     def test_approve_reports_an_applicant_with_no_email(self, client, db):
         _create_user(db, email="admin@examplee6e3b1.com", role="admin")
