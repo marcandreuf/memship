@@ -1,6 +1,7 @@
 """Unit tests for Stripe provider adapter — mocked Stripe calls."""
 
 from decimal import Decimal
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -29,6 +30,100 @@ class TestMinorUnits:
 
     def test_case_insensitive(self):
         assert to_minor_units(Decimal("100"), "jpy") == 100
+
+
+class TestCreatePayment:
+    """Builds the Checkout session, and nothing else ran this.
+
+    Every other test of the Stripe payment path patches ``create_payment``
+    out — the endpoint tests mock the adapter, so the params this assembles
+    were never executed. A wrong ``unit_amount`` charges the member the wrong
+    sum, and a missing ``metadata.receipt_id`` leaves the webhook with no
+    receipt to mark paid: both are silent here and visible only to whoever
+    pays.
+    """
+
+    def _adapter(self):
+        return StripeAdapter({"secret_key": "sk_test", "webhook_secret": "whsec_test"})
+
+    def _call(self, *, currency="EUR", total="50.00", stripe_customer_id=None):
+        """Run create_payment against a mocked SDK; return (params, result)."""
+        receipt = SimpleNamespace(
+            id=42,
+            receipt_number="2026-0042",
+            description="Cuota anual 2026",
+            total_amount=Decimal(total),
+        )
+        person = SimpleNamespace(email="member@example.test")
+
+        with patch(
+            "app.domains.billing.providers.stripe_provider.stripe.StripeClient"
+        ) as client_cls:
+            sessions = client_cls.return_value.v1.checkout.sessions
+            sessions.create.return_value = MagicMock(
+                url="https://checkout.stripe.com/c/pay/cs_test_123", id="cs_test_123"
+            )
+            result = self._adapter().create_payment(
+                receipt=receipt,
+                person=person,
+                currency=currency,
+                success_url="https://example.test/ok",
+                cancel_url="https://example.test/ko",
+                stripe_customer_id=stripe_customer_id,
+            )
+            params = sessions.create.call_args.kwargs["params"]
+        return params, result
+
+    def test_builds_a_one_off_payment_for_the_receipt_total(self):
+        params, _ = self._call(total="50.00")
+
+        assert params["mode"] == "payment"
+        assert params["success_url"] == "https://example.test/ok"
+        assert params["cancel_url"] == "https://example.test/ko"
+
+        (item,) = params["line_items"]
+        assert item["quantity"] == 1
+        assert item["price_data"]["unit_amount"] == 5000
+        assert item["price_data"]["product_data"]["name"] == "Cuota anual 2026"
+
+    def test_metadata_carries_what_the_webhook_needs_to_find_the_receipt(self):
+        params, _ = self._call()
+
+        # `handle_webhook` reads `metadata.receipt_id` to locate the receipt, and
+        # Stripe stores metadata as strings.
+        assert params["metadata"] == {"receipt_id": "42", "receipt_number": "2026-0042"}
+        assert isinstance(params["metadata"]["receipt_id"], str)
+
+    def test_currency_is_lowercased_for_stripe(self):
+        params, _ = self._call(currency="EUR")
+
+        assert params["line_items"][0]["price_data"]["currency"] == "eur"
+
+    def test_a_zero_decimal_currency_is_not_scaled(self):
+        """JPY has no minor unit, so scaling it would charge 100x."""
+        params, _ = self._call(currency="JPY", total="1000")
+
+        assert params["line_items"][0]["price_data"]["unit_amount"] == 1000
+
+    def test_a_known_stripe_customer_is_passed_as_the_customer(self):
+        params, _ = self._call(stripe_customer_id="cus_abc123")
+
+        assert params["customer"] == "cus_abc123"
+        assert "customer_email" not in params, "both would conflict at Stripe"
+
+    def test_without_a_stripe_customer_the_email_is_sent_instead(self):
+        params, _ = self._call(stripe_customer_id=None)
+
+        assert params["customer_email"] == "member@example.test"
+        assert "customer" not in params
+
+    def test_returns_the_session_url_and_id(self):
+        _, result = self._call()
+
+        assert result == {
+            "redirect_url": "https://checkout.stripe.com/c/pay/cs_test_123",
+            "session_id": "cs_test_123",
+        }
 
 
 class TestVerifySignature:
