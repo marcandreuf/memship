@@ -133,7 +133,23 @@ class RedsysAdapter(PaymentProviderAdapter):
 
     @property
     def tpv_url(self) -> str:
-        return REDSYS_URLS.get(self.environment, REDSYS_URLS["test"])
+        """The gateway the signed form is POSTed to.
+
+        Raises on an unrecognised environment rather than falling back. Nothing
+        reaches here with one through the API: ``environment`` is a select
+        validated against its options, and every member-facing path gates on
+        ``_require_ready``. So an unknown value means the row was written around
+        the API, and defaulting would send a live payment to the test TPV, where
+        it does not exist. ``create_payment`` is the only caller and already
+        answers an exception with ``provider_unavailable``, logging the cause.
+        """
+        try:
+            return REDSYS_URLS[self.environment]
+        except KeyError:
+            raise ValueError(
+                f"Unknown Redsys environment {self.environment!r}; "
+                f"expected one of {sorted(REDSYS_URLS)}"
+            ) from None
 
     def _client(self) -> RedirectClient:
         return RedirectClient(self.secret_key)

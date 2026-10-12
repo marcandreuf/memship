@@ -196,6 +196,11 @@ class TestTestConnection:
         adapter = RedsysAdapter(VALID_CONFIG)
         assert "sis-t.redsys.es" in adapter.tpv_url
 
+    def test_unknown_env_raises_instead_of_falling_back(self):
+        config = {**VALID_CONFIG, "environment": "prod"}
+        with pytest.raises(ValueError, match="Unknown Redsys environment"):
+            RedsysAdapter(config).tpv_url
+
 
 # --- create_payment ---
 

@@ -193,7 +193,7 @@ If you ever need to know the address memship sends, it is `https://<your-memship
 | Environment | `test` while testing, `production` when live |
 | Currency Code | `978` for euro |
 
-> **Check the Environment field before every go-live.** memship falls back to the **test** gateway when the environment is anything it does not recognise. A typo does not raise an error — it quietly sends real members to the test TPV, where their payments do not exist.
+> **Confirm the Environment field says `production` before you go live.** memship refuses to activate a provider whose environment is neither `test` nor `production`, so a typo is rejected rather than quietly accepted. What it cannot catch is a valid value you did not mean: `test` activates without complaint and sends real members to the test TPV, where their payments do not exist.
 
 ### 5.5 Testing
 
