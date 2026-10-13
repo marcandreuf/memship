@@ -177,11 +177,24 @@ def validate_provider_config(provider_type: str, config: dict) -> list[dict]:
                     {"code": "invalid_option", "field": key, "options": options}
                 )
 
-    # Provider-specific format validation
-    if not errors:
-        errors.extend(_validate_format(provider_type, config))
+    errors.extend(_validate_format(provider_type, config))
 
     return errors
+
+
+def validate_provider_format(provider_type: str, config: dict) -> list[dict]:
+    """The format rules alone, with no opinion about missing fields.
+
+    A half-filled config is a normal thing to save: an administrator pastes the
+    keys as they find them and switches the provider on afterwards, and
+    activation is where `validate_provider_config` insists on the whole set. But
+    a value that *is* present can be checked the moment it arrives, and a stored
+    typo is worth refusing at the keystroke rather than at activation — or, for
+    a signing secret, never, since nothing local can tell it is wrong.
+    """
+    if provider_type not in PROVIDER_CONFIG_SCHEMAS:
+        return [{"code": "unknown_provider_type", "provider_type": provider_type}]
+    return _validate_format(provider_type, config)
 
 
 def _validate_format(provider_type: str, config: dict) -> list[dict]:
@@ -198,6 +211,16 @@ def _validate_format(provider_type: str, config: dict) -> list[dict]:
         if pk and not pk.startswith("pk_"):
             errors.append(
                 {"code": "must_start_with", "field": "publishable_key", "prefix": "pk_"}
+            )
+        # Only Stripe knows whether a signing secret is the right one, so a
+        # wrong-but-well-formed value still fails quietly at the webhook: every
+        # confirmation is discarded, the member sees success and the receipt
+        # stays unpaid. The prefix is the one part of it that can be checked
+        # here, and it catches the paste that grabbed the wrong field.
+        ws = config.get("webhook_secret", "")
+        if ws and not ws.startswith("whsec_"):
+            errors.append(
+                {"code": "must_start_with", "field": "webhook_secret", "prefix": "whsec_"}
             )
 
     elif provider_type == "redsys":

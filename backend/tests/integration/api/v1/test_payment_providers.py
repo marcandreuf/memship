@@ -607,6 +607,89 @@ class TestActivationRequiresCompleteConfig:
         } in resp.json()["detail"]["errors"]
 
 
+class TestMalformedValuesAreRefusedOnSave:
+    """A disabled provider used to store anything at all.
+
+    Format validation ran only through `_require_ready`, which fires when a
+    provider becomes member-facing — so a typo sat encrypted in the row until
+    activation, and a webhook secret's typo was never caught at all, because
+    nothing local can tell a wrong signing secret from a right one.
+    """
+
+    def test_a_disabled_provider_refuses_a_malformed_secret_key(self, client, db):
+        user = _create_user(db, suffix="pp-fmt1")
+
+        resp = client.post(
+            "/api/v1/payment-providers/",
+            json={
+                "provider_type": "stripe",
+                "display_name": "Stripe",
+                "status": "disabled",
+                "config": {"secret_key": "foo"},
+            },
+            cookies=_auth_cookie(user),
+        )
+
+        assert resp.status_code == 400
+        assert {
+            "code": "must_start_with",
+            "field": "secret_key",
+            "prefix": "sk_",
+        } in resp.json()["detail"]["errors"]
+
+    def test_a_disabled_provider_refuses_a_malformed_webhook_secret(self, client, db):
+        user = _create_user(db, suffix="pp-fmt2")
+        provider = _create_provider(db, provider_type="stripe", status="disabled", config={})
+
+        resp = client.put(
+            f"/api/v1/payment-providers/{provider.id}",
+            json={"config": {"webhook_secret": "nonsense"}},
+            cookies=_auth_cookie(user),
+        )
+
+        assert resp.status_code == 400
+        assert {
+            "code": "must_start_with",
+            "field": "webhook_secret",
+            "prefix": "whsec_",
+        } in resp.json()["detail"]["errors"]
+
+    def test_a_partial_config_is_still_savable(self, client, db):
+        """The point of the split: missing is fine while it is switched off."""
+        user = _create_user(db, suffix="pp-fmt3")
+
+        resp = client.post(
+            "/api/v1/payment-providers/",
+            json={
+                "provider_type": "stripe",
+                "display_name": "Stripe",
+                "status": "disabled",
+                "config": {"secret_key": "sk_test_abc"},
+            },
+            cookies=_auth_cookie(user),
+        )
+
+        assert resp.status_code == 201, resp.json()
+
+    def test_activation_still_demands_the_whole_set(self, client, db):
+        user = _create_user(db, suffix="pp-fmt4")
+
+        resp = client.post(
+            "/api/v1/payment-providers/",
+            json={
+                "provider_type": "stripe",
+                "display_name": "Stripe",
+                "status": "active",
+                "config": {"secret_key": "sk_test_abc"},
+            },
+            cookies=_auth_cookie(user),
+        )
+
+        assert resp.status_code == 400
+        codes = {e["code"] for e in resp.json()["detail"]["errors"]}
+        assert "missing_required_field" in codes
+
+
 # --- Test Connection ---
 
 

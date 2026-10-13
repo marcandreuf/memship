@@ -14,6 +14,7 @@ from app.domains.billing.provider_config import (
     PROVIDER_CONFIG_SCHEMAS,
     get_sensitive_fields,
     validate_provider_config,
+    validate_provider_format,
 )
 from app.domains.billing.providers.base import LocalValidationAdapter
 from app.domains.billing.schemas import (
@@ -27,6 +28,24 @@ router = APIRouter(prefix="/payment-providers", tags=["payment-providers"])
 # The statuses that put a provider in front of members: `/active-methods`
 # selects on these, and the member's pay buttons are built from that list alone.
 MEMBER_FACING_STATUSES = ("active", "test")
+
+
+def _require_valid_format(provider_type: str, config: dict) -> None:
+    """Refuse a malformed value on the way in, whatever the provider's status.
+
+    `_require_ready` runs only when a provider becomes member-facing, so a
+    disabled one used to store anything at all — a secret key reading `foo` was
+    accepted and kept, surfacing as a refusal much later or, for a webhook
+    secret, as silently discarded confirmations.
+    """
+    errors = validate_provider_format(
+        provider_type, decrypt_config(config or {}, get_sensitive_fields(provider_type))
+    )
+    if errors:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "provider_not_ready", "errors": errors},
+        )
 
 
 def _require_ready(provider_type: str, config: dict) -> None:
@@ -169,6 +188,7 @@ def create_provider(
         config=encrypted,
         is_default=data.is_default,
     )
+    _require_valid_format(provider.provider_type, encrypted)
     if provider.status in MEMBER_FACING_STATUSES:
         _require_ready(provider.provider_type, encrypted)
 
@@ -214,6 +234,7 @@ def update_provider(
     # Before any of it is applied, so a refusal leaves the live provider exactly
     # as it was — including the case of clearing a required field on one that is
     # already taking payments.
+    _require_valid_format(provider.provider_type, new_config)
     if new_status in MEMBER_FACING_STATUSES:
         _require_ready(provider.provider_type, new_config)
 
