@@ -1,5 +1,8 @@
 import { apiClient } from "@/lib/client-api";
-import type { ReceiptData } from "@/features/receipts/services/receipts-api";
+import type {
+  PaginatedReceipts,
+  ReceiptData,
+} from "@/features/receipts/services/receipts-api";
 
 export interface RemittanceData {
   id: number;
@@ -75,4 +78,10 @@ export async function closeRemittance(id: number): Promise<RemittanceData> {
 
 export async function cancelRemittance(id: number): Promise<RemittanceData> {
   return apiClient(`/remittances/${id}/cancel`, { method: "POST" });
+}
+
+export async function getEligibleReceipts(
+  params?: URLSearchParams
+): Promise<PaginatedReceipts> {
+  return apiClient(`/remittances/eligible-receipts${params ? `?${params}` : ""}`);
 }

@@ -693,3 +693,181 @@ class TestCloseReconcilesPayments:
 
         assert resp.status_code == 200
         delay.assert_not_called()
+
+
+class TestReturnedReceiptCanBeCollectedAgain:
+    """A returned direct debit must be re-collectable.
+
+    An insufficient-funds return is routine, not exceptional. `create_remittance`
+    refuses a receipt that already holds a `remittance_id`, and the only other
+    place that clears one is `cancel_remittance`, which a submitted or closed
+    batch cannot reach — so without re-emit releasing the receipt, retrying a
+    returned collection needed a hand-written UPDATE.
+    """
+
+    def _returned_receipt(self, client, db, suffix):
+        _ensure_org_settings(db)
+        admin = _create_user(db, suffix=suffix)
+        member, _ = _create_member_with_mandate(db, suffix=suffix)
+        receipt = _create_receipt(db, member.id, admin.id, suffix=f"{suffix}-01")
+
+        created = client.post(
+            "/api/v1/remittances/",
+            json={"receipt_ids": [receipt.id], "due_date": "2026-05-01"},
+            cookies=_auth_cookie(admin),
+        )
+        assert created.status_code == 201
+        remittance_id = created.json()["id"]
+
+        client.post(f"/api/v1/remittances/{remittance_id}/generate-xml", cookies=_auth_cookie(admin))
+        client.post(f"/api/v1/remittances/{remittance_id}/mark-submitted", cookies=_auth_cookie(admin))
+        returned = client.post(
+            f"/api/v1/remittances/{remittance_id}/import-returns",
+            json=[{"receipt_number": receipt.receipt_number, "reason": "MS03"}],
+            cookies=_auth_cookie(admin),
+        )
+        assert returned.status_code == 200
+        db.refresh(receipt)
+        assert receipt.status == "returned"
+        return admin, receipt, remittance_id
+
+    def test_reemitting_releases_the_receipt_from_its_batch(self, client, db):
+        admin, receipt, remittance_id = self._returned_receipt(client, db, "rem-ret1")
+
+        resp = client.post(f"/api/v1/receipts/{receipt.id}/reemit", cookies=_auth_cookie(admin))
+        assert resp.status_code == 200
+
+        db.refresh(receipt)
+        assert receipt.remittance_id is None
+
+    def test_a_reemitted_receipt_goes_into_a_new_batch(self, client, db):
+        admin, receipt, _ = self._returned_receipt(client, db, "rem-ret2")
+
+        client.post(f"/api/v1/receipts/{receipt.id}/reemit", cookies=_auth_cookie(admin))
+        client.post(f"/api/v1/receipts/{receipt.id}/emit", cookies=_auth_cookie(admin))
+
+        resp = client.post(
+            "/api/v1/remittances/",
+            json={"receipt_ids": [receipt.id], "due_date": "2026-06-01"},
+            cookies=_auth_cookie(admin),
+        )
+        assert resp.status_code == 201, resp.json()
+        assert resp.json()["receipt_count"] == 1
+
+    def test_the_submitted_batch_keeps_what_it_collected(self, client, db):
+        """The history is the batch's own totals plus the stored pain.008, not the link."""
+        admin, receipt, remittance_id = self._returned_receipt(client, db, "rem-ret3")
+        client.post(f"/api/v1/receipts/{receipt.id}/reemit", cookies=_auth_cookie(admin))
+
+        resp = client.get(f"/api/v1/remittances/{remittance_id}", cookies=_auth_cookie(admin))
+        assert resp.status_code == 200
+        assert resp.json()["receipt_count"] == 1
+        assert float(resp.json()["total_amount"]) == 60.50
+
+
+class TestEligibleReceipts:
+    """The picker asks the API what can be batched instead of deciding itself."""
+
+    def test_an_emitted_receipt_with_a_mandate_is_offered(self, client, db):
+        _ensure_org_settings(db)
+        admin = _create_user(db, suffix="rem-el1")
+        member, _ = _create_member_with_mandate(db, suffix="rem-el1")
+        receipt = _create_receipt(db, member.id, admin.id, suffix="rem-el1-01")
+
+        resp = client.get("/api/v1/remittances/eligible-receipts", cookies=_auth_cookie(admin))
+        assert resp.status_code == 200
+        assert receipt.id in [r["id"] for r in resp.json()["items"]]
+
+    def test_an_overdue_receipt_is_offered(self, client, db):
+        """The dialog's own text offers overdue receipts; they were never fetched."""
+        _ensure_org_settings(db)
+        admin = _create_user(db, suffix="rem-el2")
+        member, _ = _create_member_with_mandate(db, suffix="rem-el2")
+        receipt = _create_receipt(db, member.id, admin.id, suffix="rem-el2-01", status="overdue")
+
+        resp = client.get("/api/v1/remittances/eligible-receipts", cookies=_auth_cookie(admin))
+        assert receipt.id in [r["id"] for r in resp.json()["items"]]
+
+    def test_a_member_without_a_mandate_is_not_offered(self, client, db):
+        _ensure_org_settings(db)
+        admin = _create_user(db, suffix="rem-el3")
+        person = Person(first_name="No", last_name="Mandate", email="el3-no-mandate@examplee6e3b1.com")
+        db.add(person)
+        db.flush()
+        mtype = MembershipType(
+            name="Standard-el3", slug="standard-el3", base_price=50.00, billing_frequency="monthly"
+        )
+        db.add(mtype)
+        db.flush()
+        member = Member(
+            person_id=person.id, membership_type_id=mtype.id, member_number="M-el3", status="active"
+        )
+        db.add(member)
+        db.flush()
+        receipt = _create_receipt(db, member.id, admin.id, suffix="rem-el3-01")
+
+        resp = client.get("/api/v1/remittances/eligible-receipts", cookies=_auth_cookie(admin))
+        assert receipt.id not in [r["id"] for r in resp.json()["items"]]
+
+    def test_a_receipt_already_in_a_batch_is_not_offered(self, client, db):
+        _ensure_org_settings(db)
+        admin = _create_user(db, suffix="rem-el4")
+        member, _ = _create_member_with_mandate(db, suffix="rem-el4")
+        receipt = _create_receipt(db, member.id, admin.id, suffix="rem-el4-01")
+        client.post(
+            "/api/v1/remittances/",
+            json={"receipt_ids": [receipt.id], "due_date": "2026-05-01"},
+            cookies=_auth_cookie(admin),
+        )
+
+        resp = client.get("/api/v1/remittances/eligible-receipts", cookies=_auth_cookie(admin))
+        assert receipt.id not in [r["id"] for r in resp.json()["items"]]
+
+    def test_a_pending_receipt_is_not_offered(self, client, db):
+        _ensure_org_settings(db)
+        admin = _create_user(db, suffix="rem-el5")
+        member, _ = _create_member_with_mandate(db, suffix="rem-el5")
+        receipt = _create_receipt(db, member.id, admin.id, suffix="rem-el5-01", status="pending")
+
+        resp = client.get("/api/v1/remittances/eligible-receipts", cookies=_auth_cookie(admin))
+        assert receipt.id not in [r["id"] for r in resp.json()["items"]]
+
+    def test_it_is_not_read_as_a_remittance_id(self, client, db):
+        """Declared above `/{remittance_id}`, or the path 422s as a bad integer."""
+        _ensure_org_settings(db)
+        admin = _create_user(db, suffix="rem-el6")
+
+        resp = client.get("/api/v1/remittances/eligible-receipts", cookies=_auth_cookie(admin))
+        assert resp.status_code == 200
+
+
+class TestMandateErrorsNameTheMember:
+    """An error listing `[48]` is unresolvable from any screen."""
+
+    def test_a_missing_mandate_is_reported_as_a_code_with_member_labels(self, client, db):
+        _ensure_org_settings(db)
+        admin = _create_user(db, suffix="rem-lbl")
+        person = Person(first_name="Carlos", last_name="Blanch", email="lbl-no-mandate@examplee6e3b1.com")
+        db.add(person)
+        db.flush()
+        mtype = MembershipType(
+            name="Standard-lbl", slug="standard-lbl", base_price=50.00, billing_frequency="monthly"
+        )
+        db.add(mtype)
+        db.flush()
+        member = Member(
+            person_id=person.id, membership_type_id=mtype.id, member_number="D-0023", status="active"
+        )
+        db.add(member)
+        db.flush()
+        receipt = _create_receipt(db, member.id, admin.id, suffix="rem-lbl-01")
+
+        resp = client.post(
+            "/api/v1/remittances/",
+            json={"receipt_ids": [receipt.id], "due_date": "2026-05-01"},
+            cookies=_auth_cookie(admin),
+        )
+        assert resp.status_code == 400
+        detail = resp.json()["detail"]
+        assert detail["code"] == "members_without_mandate"
+        assert detail["members"] == ["D-0023 Carlos Blanch"]

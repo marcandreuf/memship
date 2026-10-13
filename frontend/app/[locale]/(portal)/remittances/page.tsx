@@ -20,8 +20,12 @@ import { Pagination } from "@/components/entity/pagination";
 import { PageInfo } from "@/components/page-info";
 import { TableSkeleton } from "@/components/ui/skeletons";
 import { toast } from "sonner";
-import { useRemittances, useCreateRemittance } from "@/features/remittances/hooks/use-remittances";
-import { useReceipts } from "@/features/receipts/hooks/use-receipts";
+import {
+  useRemittances,
+  useCreateRemittance,
+  useEligibleReceipts,
+} from "@/features/remittances/hooks/use-remittances";
+import { getErrorMessage } from "@/lib/errors";
 import { usePageParam, useStatusParam } from "@/hooks/use-url-state";
 import { useFormatters } from "@/hooks/use-formatters";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
@@ -185,17 +189,20 @@ function CreateRemittanceForm({ onSuccess }: { onSuccess: () => void }) {
   const [dueDate, setDueDate] = useState("");
   const [notes, setNotes] = useState("");
 
-  // Fetch eligible receipts (emitted/overdue, batchable)
+  // What can be batched is the backend's rule, not this dialog's: it also
+  // covers the document type and the member's mandate, and it includes overdue
+  // receipts — which this screen offers in writing and never used to fetch.
+  const [page, setPage] = useState(1);
   const receiptParams = useMemo(() => {
     const p = new URLSearchParams();
     p.set("per_page", "100");
-    p.set("status", "emitted");
+    p.set("page", String(page));
     return p;
-  }, []);
-  const { data: receiptData, isLoading } = useReceipts(receiptParams);
-  const eligibleReceipts = (receiptData?.items || []).filter(
-    (r) => r.is_batchable && !r.remittance_id
-  );
+  }, [page]);
+  const { data: receiptData, isLoading } = useEligibleReceipts(receiptParams);
+  const eligibleReceipts = receiptData?.items || [];
+  const totalEligible = receiptData?.meta?.total ?? eligibleReceipts.length;
+  const totalPages = receiptData?.meta?.total_pages ?? 1;
 
   function toggleReceipt(id: number) {
     setSelectedIds((prev) =>
@@ -218,8 +225,8 @@ function CreateRemittanceForm({ onSuccess }: { onSuccess: () => void }) {
       });
       toast.success(t("toast.success.saved"));
       onSuccess();
-    } catch {
-      toast.error(t("toast.error.generic"));
+    } catch (err) {
+      toast.error(getErrorMessage(err, t));
     }
   }
 
@@ -257,6 +264,17 @@ function CreateRemittanceForm({ onSuccess }: { onSuccess: () => void }) {
           </Table>
         </div>
       )}
+
+      {/* The dialog used to ask for 100 rows and show whatever came back, so a
+          club with more emitted receipts than that silently could not reach
+          them. */}
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        total={totalEligible}
+        perPage={100}
+        onPageChange={setPage}
+      />
 
       {selectedIds.length > 0 && (
         <div className="text-sm font-medium">

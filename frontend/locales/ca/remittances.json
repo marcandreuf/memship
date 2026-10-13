@@ -15,17 +15,17 @@
     "statusSubmitted": "Enviada",
     "statusProcessed": "Processada",
     "statusClosed": "Tancada",
-    "statusCancelled": "Cancel\u00b7lada",
+    "statusCancelled": "Cancel·lada",
     "generateXml": "Generar XML",
     "downloadXml": "Descarregar XML",
     "markSubmitted": "Marcar enviada",
     "importReturns": "Importar devolucions",
     "closeRemittance": "Tancar",
-    "cancelRemittance": "Cancel\u00b7lar",
+    "cancelRemittance": "Cancel·lar",
     "confirmSubmit": "Marcar aquesta remesa com a enviada al banc?",
     "confirmClose": "Tancar aquesta remesa? Es finalitzarà el lot.",
     "confirmCloseDescription": "Es marcaran com a cobrats {count} rebuts. Un cop tancada la remesa ja no es podran importar devolucions.",
-    "confirmCancel": "Cancel\u00b7lar aquesta remesa? Es desvincularan tots els rebuts.",
+    "confirmCancel": "Cancel·lar aquesta remesa? Es desvincularan tots els rebuts.",
     "noRemittances": "No s'han trobat remeses",
     "detail": "Detall de la remesa",
     "receipts": "Rebuts del lot",
@@ -41,6 +41,7 @@
     "importReturned": "Retornats",
     "importNotFound": "No trobats",
     "creditor": "Creditor",
-    "noReceipts": "No hi ha rebuts en aquesta remesa"
+    "noReceipts": "No hi ha rebuts en aquesta remesa",
+    "importReturnsInvalidJson": "El text enganxat no és una llista JSON vàlida."
   }
 }

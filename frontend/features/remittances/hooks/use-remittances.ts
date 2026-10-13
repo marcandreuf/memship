@@ -10,6 +10,7 @@ import {
   importRemittanceReturns,
   closeRemittance,
   cancelRemittance,
+  getEligibleReceipts,
 } from "../services/remittances-api";
 
 export function useRemittances(params?: URLSearchParams) {
@@ -82,5 +83,20 @@ export function useCancelRemittance() {
       qc.invalidateQueries({ queryKey: ["remittances"] });
       qc.invalidateQueries({ queryKey: ["receipts"] });
     },
+  });
+}
+
+/**
+ * The receipts a new SEPA remittance will accept.
+ *
+ * The API decides. The batch dialog used to assemble its own guess — emitted
+ * receipts only, no document-type or mandate check — and offered rows the
+ * backend then refused.
+ */
+export function useEligibleReceipts(params?: URLSearchParams, enabled = true) {
+  return useQuery({
+    queryKey: ["remittances", "eligible-receipts", params?.toString()],
+    queryFn: () => getEligibleReceipts(params),
+    enabled,
   });
 }

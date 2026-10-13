@@ -8,19 +8,13 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.domains.billing.models import SepaMandate
-from app.domains.billing.schemas import MandateCreate, MandateUpdate
+from app.domains.billing.schemas import (
+    MandateCreate,
+    MandateUpdate,
+    validate_iban_format,
+)
 from app.domains.members.models import Member
 from app.domains.organizations.models import OrganizationSettings
-
-
-# --- IBAN Validation ---
-
-IBAN_PATTERN = re.compile(r"^[A-Z]{2}\d{2}[A-Z0-9]{4,30}$")
-
-
-def validate_iban_format(iban: str) -> bool:
-    """Basic IBAN format validation (structure only, not checksum)."""
-    return bool(IBAN_PATTERN.match(iban))
 
 
 # --- Mandate Reference Generation ---

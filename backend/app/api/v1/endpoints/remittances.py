@@ -24,6 +24,7 @@ from app.domains.billing.remittance_service import (
     generate_remittance_xml,
     import_returns,
     mark_submitted,
+    sepa_eligible_receipts_query,
 )
 from app.domains.billing.service import dispatch_payment_notifications
 
@@ -49,6 +50,26 @@ def list_remittances(
 
     return {
         "items": [RemittanceResponse.model_validate(r).model_dump() for r in items],
+        "meta": meta.model_dump(),
+        "total": meta.total,
+    }
+
+
+@router.get("/eligible-receipts", response_model=dict)
+def list_eligible_receipts(
+    page: int = Query(1, ge=1),
+    per_page: int = Query(100, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("billing.read")),
+):
+    """The receipts that can go into a new SEPA remittance.
+
+    Declared above `/{remittance_id}` so the path is not parsed as an id.
+    """
+    items, meta = paginate(sepa_eligible_receipts_query(db), page, per_page)
+
+    return {
+        "items": [ReceiptResponse.model_validate(r).model_dump() for r in items],
         "meta": meta.model_dump(),
         "total": meta.total,
     }
