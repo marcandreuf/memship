@@ -41,6 +41,7 @@
     "importReturned": "Devueltos",
     "importNotFound": "No encontrados",
     "creditor": "Acreedor",
-    "noReceipts": "No hay recibos en esta remesa"
+    "noReceipts": "No hay recibos en esta remesa",
+    "importReturnsInvalidJson": "El texto pegado no es una lista JSON válida."
   }
 }

@@ -441,11 +441,25 @@ def cancel_receipt(db: Session, receipt: Receipt) -> Receipt:
 
 
 def reemit_receipt(db: Session, receipt: Receipt) -> Receipt:
-    """Re-emit a returned receipt — moves back to 'pending'."""
+    """Re-emit a returned receipt — moves back to 'pending'.
+
+    The receipt also leaves its remittance. Without that it could never be
+    collected again: `create_remittance` refuses a receipt that already holds a
+    `remittance_id`, and the only other place that clears one is
+    `cancel_remittance`, which a submitted or closed batch cannot reach. A
+    returned direct debit — an insufficient-funds return is routine — would need
+    a hand-written UPDATE to retry.
+
+    What was sent to the bank is not lost by this: the submitted pain.008 is
+    stored under `storage/remittances/`, and the batch keeps its own
+    `receipt_count` and `total_amount`. The column says which remittance a
+    receipt is in *now*, which is why cancelling one frees its receipts too.
+    """
     validate_status_transition(receipt.status, "pending")
     receipt.status = "pending"
     receipt.return_date = None
     receipt.return_reason = None
+    receipt.remittance_id = None
     db.flush()
     return receipt
 

@@ -41,6 +41,7 @@
     "importReturned": "Returned",
     "importNotFound": "Not Found",
     "creditor": "Creditor",
-    "noReceipts": "No receipts in this remittance"
+    "noReceipts": "No receipts in this remittance",
+    "importReturnsInvalidJson": "The pasted text is not a valid JSON list."
   }
 }

@@ -5,7 +5,8 @@ from decimal import Decimal
 from pathlib import Path
 
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.orm import Query, Session, joinedload
 
 from app.core.clock import org_today
 from app.core.config import settings
@@ -19,7 +20,57 @@ from app.domains.billing.schemas import RemittanceCreate
 from app.domains.billing.sequences import next_yearly_number
 from app.domains.billing.sepa_xml import SepaExportError, generate_sepa_xml
 from app.domains.billing.service import mark_receipts_paid
+from app.domains.members.models import Member
 from app.domains.organizations.models import OrganizationSettings
+from app.domains.persons.models import Person
+
+
+def sepa_eligible_receipts_query(db: Session) -> Query:
+    """The receipts a new SEPA remittance will accept.
+
+    The same five conditions `create_remittance` enforces below, in one place
+    the batch picker can ask about. The screen used to decide for itself and got
+    three of them wrong: it ignored the document type, never checked for a
+    mandate, and asked the API for `emitted` only — so every *overdue* receipt
+    was unreachable from a dialog whose own text offers them, which is the set
+    most in need of collection.
+    """
+    mandated = select(SepaMandate.member_id).filter(
+        SepaMandate.status == "active",
+        SepaMandate.is_active.is_(True),
+    )
+    return (
+        db.query(Receipt)
+        .filter(
+            Receipt.is_active.is_(True),
+            # A credit note moves money back to the member; it is not collected.
+            Receipt.document_type == "invoice",
+            Receipt.status.in_(("emitted", "overdue")),
+            Receipt.is_batchable.is_(True),
+            Receipt.remittance_id.is_(None),
+            Receipt.member_id.in_(mandated),
+        )
+        .options(joinedload(Receipt.member).joinedload(Member.person))
+        .order_by(Receipt.due_date, Receipt.id)
+    )
+
+
+def label_members(db: Session, member_ids: list[int] | set[int]) -> list[str]:
+    """Name members the way an admin can find them.
+
+    An error that lists `[48]` is unresolvable from any screen — the member
+    number and the name are what the register, the search box and the receipt
+    all show.
+    """
+    rows = (
+        db.query(Member.member_number, Person.first_name, Person.last_name)
+        .join(Person, Member.person_id == Person.id)
+        .filter(Member.id.in_(list(member_ids)))
+        .all()
+    )
+    return sorted(
+        " ".join(filter(None, [number, first, last])) for number, first, last in rows
+    )
 
 
 # --- Remittance Number Generation ---
@@ -166,7 +217,10 @@ def create_remittance(
     if members_without_mandate:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Members without active mandate: {sorted(members_without_mandate)}",
+            detail={
+                "code": "members_without_mandate",
+                "members": label_members(db, members_without_mandate),
+            },
         )
 
     # Calculate total
@@ -248,7 +302,11 @@ def generate_remittance_xml(db: Session, remittance: Remittance) -> bytes:
     except SepaExportError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(exc),
+            detail={
+                "code": "sepa_mandate_cancelled",
+                "members": label_members(db, exc.member_ids),
+                "message": str(exc),
+            },
         ) from exc
 
     # Save to storage

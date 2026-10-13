@@ -80,9 +80,22 @@ class TestMandateCreate:
         with pytest.raises(ValidationError):
             MandateCreate(**_valid_mandate_data(debtor_iban="invalid"))
 
-    def test_iban_lowercase_rejected(self):
+    def test_iban_lowercase_is_normalised(self):
+        """Changed behaviour: the schema used to refuse this.
+
+        The field's pattern requires upper case, which made `es91...` a
+        validation error for the same account as `ES91...`. An IBAN is pasted
+        from a statement or a PDF, so case and grouping spaces are presentation;
+        they are normalised before validation now. `validate_iban_format` is
+        still strict, because it checks an IBAN as *stored* — see
+        `test_mandate_service.py`.
+        """
+        m = MandateCreate(**_valid_mandate_data(debtor_iban="es9121000418450200051332"))
+        assert m.debtor_iban == "ES9121000418450200051332"
+
+    def test_iban_with_broken_check_digits_rejected(self):
         with pytest.raises(ValidationError):
-            MandateCreate(**_valid_mandate_data(debtor_iban="es9121000418450200051332"))
+            MandateCreate(**_valid_mandate_data(debtor_iban="ES9121000418450200051333"))
 
     def test_empty_debtor_name_rejected(self):
         with pytest.raises(ValidationError):

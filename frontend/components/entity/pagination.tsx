@@ -32,6 +32,7 @@ export function Pagination({
       </p>
       <div className="flex gap-2">
         <Button
+          type="button"
           size="xs"
           disabled={page <= 1}
           onClick={() => onPageChange(page - 1)}
@@ -39,6 +40,7 @@ export function Pagination({
           {t("common.previous")}
         </Button>
         <Button
+          type="button"
           size="xs"
           disabled={page >= totalPages}
           onClick={() => onPageChange(page + 1)}

@@ -1,5 +1,6 @@
 """Billing domain schemas — concepts, receipts, mandates, remittances, providers."""
 
+import re
 from datetime import date, datetime
 from decimal import Decimal
 
@@ -184,12 +185,70 @@ class GenerateMembershipFeesRequest(BaseModel):
 # --- SEPA Mandate schemas ---
 
 
+IBAN_PATTERN = re.compile(r"^[A-Z]{2}\d{2}[A-Z0-9]{4,30}$")
+
+
+def normalize_pasted_iban(value: object) -> object:
+    """An IBAN as pasted, reduced to how it is stored.
+
+    People copy an IBAN in groups of four from a statement or a PDF, and the
+    grouping is presentation — the stored value is unbroken and upper-case.
+    Runs before the rest, so a correctly typed IBAN is not refused over
+    whitespace while the checks below stay strict about a stored value.
+    """
+    if isinstance(value, str):
+        return re.sub(r"\s+", "", value).upper()
+    return value
+
+
+def _check_digits_ok(iban: str) -> bool:
+    """The ISO 7064 mod-97 check digits every IBAN carries in positions 3-4.
+
+    Move the first four characters to the end, replace each letter by its
+    value in base 36 (A=10 ... Z=35), and the integer that spells is 1 mod 97.
+    """
+    rearranged = iban[4:] + iban[:4]
+    return int("".join(str(int(c, 36)) for c in rearranged)) % 97 == 1
+
+
+def validate_iban_format(iban: str) -> bool:
+    """IBAN structure *and* check digits.
+
+    The check digits are the point: without them a typo in an account number is
+    accepted, stored, and written into a pain.008 file — which the official
+    schema also accepts, because its IBAN type is a bare pattern — so the bank
+    is the first thing that notices, and it can return the whole batch.
+
+    Strict about case and spacing: this validates an IBAN as stored, not as
+    typed. `normalize_pasted_iban` is what turns one into the other.
+    """
+    if not IBAN_PATTERN.match(iban):
+        return False
+    return _check_digits_ok(iban)
+
+
+def refuse_invalid_iban(value: str | None) -> str | None:
+    """The field validator both mandate schemas apply after normalisation.
+
+    Lives on the schema so the rule is enforced at the boundary rather than
+    only in the service — a pattern on the field and a checksum in the service
+    is two rules disagreeing about what an IBAN is.
+    """
+    if value is not None and not validate_iban_format(value):
+        raise ValueError("Invalid IBAN")
+    return value
+
+
+
+
 class MandateCreate(BaseModel):
     member_id: int
     debtor_name: NonBlank(255)
     debtor_iban: str = Field(
         min_length=5, max_length=34, pattern=r"^[A-Z]{2}\d{2}[A-Z0-9]{4,30}$"
     )
+    _clean_iban = field_validator("debtor_iban", mode="before")(normalize_pasted_iban)
+    _check_iban = field_validator("debtor_iban")(refuse_invalid_iban)
     debtor_bic: str | None = Field(
         default=None, max_length=11, pattern=r"^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$"
     )
@@ -205,6 +264,9 @@ class MandateUpdate(BaseModel):
         default=None, min_length=5, max_length=34,
         pattern=r"^[A-Z]{2}\d{2}[A-Z0-9]{4,30}$",
     )
+
+    _clean_iban = field_validator("debtor_iban", mode="before")(normalize_pasted_iban)
+    _check_iban = field_validator("debtor_iban")(refuse_invalid_iban)
     debtor_bic: str | None = Field(
         default=None, max_length=11, pattern=r"^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$"
     )

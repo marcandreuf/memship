@@ -22,6 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
 import { useFormatters } from "@/hooks/use-formatters";
 import { toast } from "sonner";
+import { getErrorMessage, type ErrorTranslator } from "@/lib/errors";
 import {
   useRemittance,
   useGenerateRemittanceXml,
@@ -86,8 +87,8 @@ export default function RemittanceDetailPage() {
     try {
       await generateXmlMutation.mutateAsync(remittance!.id);
       toast.success(t("toast.success.saved"));
-    } catch {
-      toast.error(t("toast.error.generic"));
+    } catch (err) {
+      toast.error(getErrorMessage(err, t));
     }
   }
 
@@ -276,7 +277,9 @@ function ImportReturnsForm({
   remittanceId,
   onResult,
 }: {
-  t: (key: string) => string;
+  // The full translator, not a bare lookup: rendering an API error needs
+  // `t.has` to tell a translated code from one that has no message yet.
+  t: ErrorTranslator;
   remittanceId: number;
   onResult: (result: ImportReturnResult) => void;
 }) {
@@ -284,13 +287,25 @@ function ImportReturnsForm({
   const [jsonText, setJsonText] = useState("");
 
   async function handleImport() {
+    // A malformed paste is the user's own input, not a failed request: a raw
+    // JSON parse message says nothing they can act on, so it gets its own
+    // translated line. Everything past that point is the API's answer.
+    let data: unknown;
     try {
-      const data = JSON.parse(jsonText);
-      if (!Array.isArray(data)) throw new Error("Expected array");
+      data = JSON.parse(jsonText);
+    } catch {
+      toast.error(t("remittances.importReturnsInvalidJson"));
+      return;
+    }
+    if (!Array.isArray(data)) {
+      toast.error(t("remittances.importReturnsInvalidJson"));
+      return;
+    }
+    try {
       const result = await mutation.mutateAsync({ id: remittanceId, data });
       onResult(result);
-    } catch {
-      toast.error(t("toast.error.generic"));
+    } catch (err) {
+      toast.error(getErrorMessage(err, t));
     }
   }
 

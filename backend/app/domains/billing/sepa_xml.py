@@ -17,7 +17,15 @@ class SepaExportError(Exception):
     file quietly built from a subset means the bank collects less than the batch
     says while those receipts are excluded from future batches. Nothing
     reconciles the two afterwards.
+
+    ``member_ids`` carries the members the caller must name in its own error.
+    The message here is a fallback for a caller that has no session to resolve
+    them with.
     """
+
+    def __init__(self, message: str, member_ids: list[int] | None = None) -> None:
+        super().__init__(message)
+        self.member_ids = member_ids or []
 
 
 def _as_date(value: date | datetime) -> date:
@@ -65,11 +73,17 @@ def generate_sepa_xml(
     # failing on the first one and hiding the rest behind a second run.
     missing = sorted({r.member_id for r in receipts if r.member_id not in mandates})
     if missing:
+        # The ids travel on the exception so the caller, which has the session,
+        # can name these members the way the admin sees them. A cancelled
+        # mandate cannot be reinstated and a receipt cannot be taken out of a
+        # batch on its own, so the only way forward is a fresh mandate and a
+        # fresh remittance — which is what the message must say.
         raise SepaExportError(
             "Cannot generate the SEPA file: no active mandate for member(s) "
             f"{missing}. The mandate was most likely cancelled after this "
-            "remittance was created. Reinstate the mandate, or remove those "
-            "receipts and create the remittance again."
+            "remittance was created. Create a new mandate for those members, "
+            "then cancel this remittance and create it again.",
+            member_ids=missing,
         )
 
     for receipt in receipts:
