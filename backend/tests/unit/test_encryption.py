@@ -193,6 +193,26 @@ class TestConfigValidation:
         errors = validate_provider_config("stripe", config)
         assert {"code": "must_start_with", "field": "secret_key", "prefix": "sk_"} in errors
 
+    def test_stripe_webhook_secret_prefix(self):
+        """A signing secret memship cannot verify, in the one way it can.
+
+        Only Stripe knows whether the value is correct, and a wrong one fails
+        silently at the webhook — every confirmation discarded, the member shown
+        success, the receipt left unpaid. The prefix catches the paste that took
+        the wrong field off the dashboard.
+        """
+        config = {
+            "secret_key": "sk_live_xyz",
+            "publishable_key": "pk_live_xyz",
+            "webhook_secret": "nonsense",
+        }
+        errors = validate_provider_config("stripe", config)
+        assert {
+            "code": "must_start_with",
+            "field": "webhook_secret",
+            "prefix": "whsec_",
+        } in errors
+
     def test_valid_redsys_config(self):
         config = {
             "merchant_code": "123456789",
