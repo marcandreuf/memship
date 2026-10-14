@@ -841,6 +841,60 @@ class TestEligibleReceipts:
         assert resp.status_code == 200
 
 
+class TestAmountsSerialiseAsNumbers:
+    """A money field has to arrive as a number, not as a string.
+
+    Both list handlers build their own response dict out of `model_dump()`ed
+    rows, so the values in it are raw `Decimal`s. While they also declared
+    `response_model=dict`, FastAPI re-serialised that dict through Pydantic,
+    and Pydantic v2 renders a `Decimal` as a JSON *string* — so `total_amount`
+    went out as "60.50" while the frontend type said `number`. The batch dialog
+    called `.toFixed` on it and took the page down (#364).
+
+    No test caught it because every assertion compared values rather than
+    types, and `"60.50" == 60.5` is simply false in neither direction anyone
+    was looking. These assert the JSON type.
+    """
+
+    def test_an_eligible_receipt_amount_is_a_number(self, client, db):
+        _ensure_org_settings(db)
+        admin = _create_user(db, suffix="rem-num1")
+        member, _ = _create_member_with_mandate(db, suffix="rem-num1")
+        receipt = _create_receipt(db, member.id, admin.id, suffix="rem-num1-01")
+
+        resp = client.get(
+            "/api/v1/remittances/eligible-receipts", cookies=_auth_cookie(admin)
+        )
+        assert resp.status_code == 200
+        item = next(r for r in resp.json()["items"] if r["id"] == receipt.id)
+        assert isinstance(item["total_amount"], (int, float)), (
+            f"total_amount is {type(item['total_amount']).__name__}: "
+            f"{item['total_amount']!r}"
+        )
+        assert not isinstance(item["total_amount"], str)
+
+    def test_a_remittance_total_is_a_number(self, client, db):
+        _ensure_org_settings(db)
+        admin = _create_user(db, suffix="rem-num2")
+        member, _ = _create_member_with_mandate(db, suffix="rem-num2")
+        receipt = _create_receipt(db, member.id, admin.id, suffix="rem-num2-01")
+
+        created = client.post(
+            "/api/v1/remittances/",
+            json={"receipt_ids": [receipt.id], "due_date": "2026-12-01"},
+            cookies=_auth_cookie(admin),
+        )
+        assert created.status_code in (200, 201), created.text
+
+        resp = client.get("/api/v1/remittances/", cookies=_auth_cookie(admin))
+        assert resp.status_code == 200
+        assert resp.json()["items"], "expected at least one remittance"
+        for item in resp.json()["items"]:
+            assert not isinstance(item["total_amount"], str), (
+                f"total_amount is a string: {item['total_amount']!r}"
+            )
+
+
 class TestMandateErrorsNameTheMember:
     """An error listing `[48]` is unresolvable from any screen."""
 
