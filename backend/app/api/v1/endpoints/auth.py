@@ -165,8 +165,19 @@ def _verification_url(token: str) -> str:
     return f"{settings.FRONTEND_URL}/{settings.DEFAULT_LOCALE}/verify-email?token={token}"
 
 
-def _frontend_url(path: str) -> str:
-    return f"{settings.FRONTEND_URL}/{settings.DEFAULT_LOCALE}/{path}"
+def _frontend_url(path: str, **params: str) -> str:
+    """A locale-prefixed frontend URL. ``path`` carries its own leading slash.
+
+    One definition for the whole module. There were two — this one and an
+    earlier variant taking an unprefixed path — and because the later shadowed
+    the earlier, the two calls written against the earlier one produced
+    ``/eslogin`` rather than ``/es/login``, so the existing-account email's
+    only two links were 404s (#353).
+    """
+    base = f"{settings.FRONTEND_URL.rstrip('/')}/{settings.DEFAULT_LOCALE}{path}"
+    if params:
+        base += "?" + urlencode(params)
+    return base
 
 
 # The one thing /register says, whoever the address turns out to belong to.
@@ -217,8 +228,8 @@ def _notify_existing_account(db: Session, email: str) -> None:
         send_existing_account_email(
             user.email,
             user.person.first_name,
-            _frontend_url("login"),
-            _frontend_url("forgot-password"),
+            _frontend_url("/login"),
+            _frontend_url("/forgot-password"),
         )
     except Exception:  # noqa: BLE001 — never let a transport fault shape the reply
         logger.exception("Could not notify an existing account of a signup attempt")
@@ -507,13 +518,6 @@ def logout(response: Response):
 
 
 # --- Single sign-on ---
-
-
-def _frontend_url(path: str, **params: str) -> str:
-    base = f"{settings.FRONTEND_URL.rstrip('/')}/{settings.DEFAULT_LOCALE}{path}"
-    if params:
-        base += "?" + urlencode(params)
-    return base
 
 
 @router.get("/sso/providers", response_model=SsoProvidersResponse)

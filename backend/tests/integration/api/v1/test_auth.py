@@ -317,6 +317,15 @@ class TestRegister:
         # No token in either link: an attempt to sign up as someone must not be
         # able to mint or burn that person's recovery tokens.
         assert "token=" not in reset_url and "token=" not in login_url
+        # And the links have to be routes the frontend serves. This test held
+        # both URLs all along and only looked for a token, so it passed while
+        # they read `/eslogin` and `/esforgot-password` — the locale and the
+        # path concatenated with no separator (#353).
+        from app.core.config import settings as app_settings
+
+        locale = app_settings.DEFAULT_LOCALE
+        assert login_url.endswith(f"/{locale}/login")
+        assert reset_url.endswith(f"/{locale}/forgot-password")
 
     def test_an_unknown_address_mails_nobody_about_an_existing_account(
         self, client, db, monkeypatch
@@ -346,6 +355,25 @@ class TestRegister:
         )
 
         assert sent == []
+
+    def test_the_frontend_url_helper_keeps_the_locale_separate(self):
+        """One helper, one contract: ``path`` brings its own leading slash.
+
+        There were two definitions of ``_frontend_url`` in this module, 344
+        lines apart, disagreeing about that. Python bound the later one, so the
+        calls written against the earlier lost the separator (#353). Both
+        assertions below have to hold of a single function — a reintroduced
+        simple variant fails the second, and a reintroduced shadow of the
+        richer one fails the first.
+        """
+        import app.api.v1.endpoints.auth as auth_endpoint
+        from app.core.config import settings as app_settings
+
+        locale = app_settings.DEFAULT_LOCALE
+        assert auth_endpoint._frontend_url("/login").endswith(f"/{locale}/login")
+        assert auth_endpoint._frontend_url(
+            "/login", error="sso_failed"
+        ).endswith(f"/{locale}/login?error=sso_failed")
 
     def test_register_short_password(self, client):
         response = client.post(

@@ -28,6 +28,7 @@ from app.domains.activities.models import (
     RegistrationConsent,
 )
 from app.domains.members.models import Member
+from app.domains.organizations.models import OrganizationSettings
 
 
 class RegistrationError(Exception):
@@ -584,6 +585,19 @@ def _get_member_name(registration: Registration) -> str:
         return ""
 
 
+def _org_locale(db: Session) -> str:
+    """The language member-facing mail should render in.
+
+    It lives on the single ``organization_settings`` row — there is no
+    per-member language column — so this is the only locale available and the
+    one ``reminder_service`` already uses. ``settings.DEFAULT_LOCALE`` is an
+    env default and not what the club configured, which is why it is not the
+    source here (#359).
+    """
+    org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
+    return (org.locale if org else None) or "es"
+
+
 def _dispatch_registration_email(
     db: Session, registration: Registration, activity: Activity, member: "Member"
 ) -> None:
@@ -601,6 +615,7 @@ def _dispatch_registration_email(
             status=registration.status,
             activity_date=activity.starts_at.strftime("%d/%m/%Y") if activity.starts_at else None,
             location=activity.location,
+            locale=_org_locale(db),
         )
         run_after_commit(db, lambda: send_registration_email_task.delay(**payload))
     except Exception as e:
@@ -620,6 +635,7 @@ def _dispatch_cancellation_email(
             to=email,
             member_name=_get_member_name(registration),
             activity_name=activity.name,
+            locale=_org_locale(db),
         )
         run_after_commit(db, lambda: send_cancellation_email_task.delay(**payload))
     except Exception as e:
@@ -641,6 +657,7 @@ def _dispatch_promotion_email(
             activity_name=activity.name,
             activity_date=activity.starts_at.strftime("%d/%m/%Y") if activity.starts_at else None,
             location=activity.location,
+            locale=_org_locale(db),
         )
         run_after_commit(db, lambda: send_promotion_email_task.delay(**payload))
     except Exception as e:
