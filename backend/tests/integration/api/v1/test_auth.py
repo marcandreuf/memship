@@ -388,6 +388,152 @@ class TestRegister:
         assert response.status_code == 422
 
 
+class TestAuthMailUsesTheOrganizationLocale:
+    """The club's language has to reach its authentication mail.
+
+    All three send functions take a locale and default it to Spanish, and all
+    nine templates plus all three subject lines exist in `ca` and `en` — but no
+    call site passed one, so a club configured in Catalan got Catalan payment
+    reminders and Spanish verification, reset and existing-account mail, with
+    links into `/es/` (#362).
+    """
+
+    def _org(self, db, locale):
+        from app.domains.organizations.models import OrganizationSettings
+
+        org = (
+            db.query(OrganizationSettings)
+            .filter(OrganizationSettings.id == 1)
+            .first()
+        )
+        if not org:
+            org = OrganizationSettings(id=1, name="Locale Club", default_vat_rate=21)
+            db.add(org)
+        org.locale = locale
+        db.flush()
+        return org
+
+    def test_verification_mail_and_its_link_follow_the_org_locale(
+        self, client, db, monkeypatch
+    ):
+        import app.api.v1.endpoints.auth as auth_endpoint
+
+        self._org(db, "ca")
+        _default_tier(db)
+        sent: list[tuple] = []
+        monkeypatch.setattr(auth_endpoint, "mailing_enabled", lambda _db: True)
+        monkeypatch.setattr(
+            auth_endpoint,
+            "send_verification_email",
+            lambda *a, **k: sent.append((a, k)) or True,
+        )
+
+        client.post(
+            "/api/v1/auth/register",
+            json={
+                "first_name": "Loc",
+                "last_name": "Ale",
+                "email": "locale-verify@examplee6e3b1.com",
+                "password": "password123",
+            },
+        )
+
+        assert len(sent) == 1
+        args, kwargs = sent[0]
+        assert kwargs["locale"] == "ca"
+        # The link must open in the language the mail is written in.
+        assert "/ca/verify-email" in args[2]
+
+    def test_existing_account_mail_and_its_links_follow_the_org_locale(
+        self, client, db, monkeypatch
+    ):
+        import app.api.v1.endpoints.auth as auth_endpoint
+
+        self._org(db, "en")
+        _default_tier(db)
+        _create_test_user(db, email="locale-owner@examplee6e3b1.com")
+        sent: list[tuple] = []
+        monkeypatch.setattr(auth_endpoint, "mailing_enabled", lambda _db: True)
+        monkeypatch.setattr(
+            auth_endpoint, "send_verification_email", lambda *a, **k: True
+        )
+        monkeypatch.setattr(
+            auth_endpoint,
+            "send_existing_account_email",
+            lambda *a, **k: sent.append((a, k)) or True,
+        )
+
+        client.post(
+            "/api/v1/auth/register",
+            json={
+                "first_name": "Loc",
+                "last_name": "Ale",
+                "email": "locale-owner@examplee6e3b1.com",
+                "password": "password123",
+            },
+        )
+
+        assert len(sent) == 1
+        args, kwargs = sent[0]
+        assert kwargs["locale"] == "en"
+        assert args[2].endswith("/en/login")
+        assert args[3].endswith("/en/forgot-password")
+
+    def test_password_reset_mail_and_its_link_follow_the_org_locale(
+        self, client, db, monkeypatch
+    ):
+        import app.api.v1.endpoints.auth as auth_endpoint
+        from app.core.config import settings as app_settings
+
+        self._org(db, "ca")
+        _create_test_user(db, email="locale-reset@examplee6e3b1.com")
+        monkeypatch.setattr(app_settings, "RESEND_API_KEY", "re_test_key")
+        sent: list[tuple] = []
+        monkeypatch.setattr(
+            auth_endpoint,
+            "send_password_reset_email",
+            lambda *a, **k: sent.append((a, k)) or True,
+        )
+
+        client.post(
+            "/api/v1/auth/password-reset-request",
+            json={"email": "locale-reset@examplee6e3b1.com"},
+        )
+
+        assert len(sent) == 1
+        args, kwargs = sent[0]
+        assert kwargs["locale"] == "ca"
+        assert "/ca/reset-password" in args[2]
+
+    def test_an_unset_org_locale_still_falls_back_to_spanish(
+        self, client, db, monkeypatch
+    ):
+        import app.api.v1.endpoints.auth as auth_endpoint
+
+        self._org(db, None)
+        _default_tier(db)
+        sent: list[tuple] = []
+        monkeypatch.setattr(auth_endpoint, "mailing_enabled", lambda _db: True)
+        monkeypatch.setattr(
+            auth_endpoint,
+            "send_verification_email",
+            lambda *a, **k: sent.append((a, k)) or True,
+        )
+
+        client.post(
+            "/api/v1/auth/register",
+            json={
+                "first_name": "Loc",
+                "last_name": "Ale",
+                "email": "locale-none@examplee6e3b1.com",
+                "password": "password123",
+            },
+        )
+
+        assert sent[0][1]["locale"] == "es"
+        assert "/es/verify-email" in sent[0][0][2]
+
+
 class TestMe:
     def test_me_authenticated(self, client, db):
         _create_test_user(db, email="me@examplee6e3b1.com", password="password123")
@@ -644,7 +790,7 @@ class TestPasswordReset:
         monkeypatch.setattr(
             auth_endpoints,
             "send_password_reset_email",
-            lambda *args: sent.append(args) or True,
+            lambda *args, **kwargs: sent.append((args, kwargs)) or True,
         )
 
         response = client.post(
@@ -655,7 +801,7 @@ class TestPasswordReset:
         assert response.status_code == 200
         assert response.json()["reset_token"] is None
         assert len(sent) == 1
-        assert sent[0][0] == "resend-reset@examplee6e3b1.com"
+        assert sent[0][0][0] == "resend-reset@examplee6e3b1.com"
 
     def test_token_is_withheld_outside_development(self, client, db, monkeypatch):
         from app.core.config import settings as app_settings

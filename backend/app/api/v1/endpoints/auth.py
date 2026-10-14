@@ -10,6 +10,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.domains.organizations.service import org_locale
 from app.core.email import (
     send_existing_account_email,
     send_password_reset_email,
@@ -161,11 +162,11 @@ def login(
     return TokenResponse()
 
 
-def _verification_url(token: str) -> str:
-    return f"{settings.FRONTEND_URL}/{settings.DEFAULT_LOCALE}/verify-email?token={token}"
+def _verification_url(token: str, locale: str | None = None) -> str:
+    return _frontend_url("/verify-email", locale=locale, token=token)
 
 
-def _frontend_url(path: str, **params: str) -> str:
+def _frontend_url(path: str, *, locale: str | None = None, **params: str) -> str:
     """A locale-prefixed frontend URL. ``path`` carries its own leading slash.
 
     One definition for the whole module. There were two — this one and an
@@ -173,8 +174,17 @@ def _frontend_url(path: str, **params: str) -> str:
     the earlier, the two calls written against the earlier one produced
     ``/eslogin`` rather than ``/es/login``, so the existing-account email's
     only two links were 404s (#353).
+
+    ``locale`` defaults to the environment value rather than the organization's
+    because the SSO redirects below run before any settings lookup in the
+    request and have no session to read one from. A link that goes into an
+    email passes the organization's locale explicitly, so the page opens in the
+    language the mail is written in (#362).
     """
-    base = f"{settings.FRONTEND_URL.rstrip('/')}/{settings.DEFAULT_LOCALE}{path}"
+    base = (
+        f"{settings.FRONTEND_URL.rstrip('/')}/"
+        f"{locale or settings.DEFAULT_LOCALE}{path}"
+    )
     if params:
         base += "?" + urlencode(params)
     return base
@@ -225,11 +235,13 @@ def _notify_existing_account(db: Session, email: str) -> None:
     if user is None or user.person is None:
         return
     try:
+        locale = org_locale(db)
         send_existing_account_email(
             user.email,
             user.person.first_name,
-            _frontend_url("/login"),
-            _frontend_url("/forgot-password"),
+            _frontend_url("/login", locale=locale),
+            _frontend_url("/forgot-password", locale=locale),
+            locale=locale,
         )
     except Exception:  # noqa: BLE001 — never let a transport fault shape the reply
         logger.exception("Could not notify an existing account of a signup attempt")
@@ -317,8 +329,12 @@ def register(data: RegisterRequest, request: Request, db: Session = Depends(get_
     # No session cookie here: the account is not usable until the email is
     # confirmed and (when configured) an admin approves the registration.
     if can_mail:
+        locale = org_locale(db)
         send_verification_email(
-            user.email, user.person.first_name, _verification_url(verification_token)
+            user.email,
+            user.person.first_name,
+            _verification_url(verification_token, locale),
+            locale=locale,
         )
         return _registration_received(data.email, requires_approval)
 
@@ -390,8 +406,12 @@ def resend_verification_endpoint(
 
     if result and mailing_enabled(db):
         user, token = result
+        locale = org_locale(db)
         send_verification_email(
-            user.email, user.person.first_name, _verification_url(token)
+            user.email,
+            user.person.first_name,
+            _verification_url(token, locale),
+            locale=locale,
         )
         return MessageResponse(message=generic)
 
@@ -423,9 +443,12 @@ def password_reset_request(
         # handing the reset token to any anonymous caller.
         if mailing_enabled(db):
             user = db.query(User).filter(User.email == data.email).first()
-            reset_url = f"{settings.FRONTEND_URL}/{settings.DEFAULT_LOCALE}/reset-password?token={token}"
+            locale = org_locale(db)
+            reset_url = _frontend_url("/reset-password", locale=locale, token=token)
             if user:
-                send_password_reset_email(user.email, user.person.first_name, reset_url)
+                send_password_reset_email(
+                    user.email, user.person.first_name, reset_url, locale=locale
+                )
             return MessageResponse(message=generic)
 
         if _dev_tokens_allowed():
