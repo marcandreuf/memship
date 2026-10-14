@@ -31,7 +31,9 @@ from app.domains.billing.service import dispatch_payment_notifications
 router = APIRouter(prefix="/remittances", tags=["remittances"])
 
 
-@router.get("/", response_model=dict)
+# No `response_model` — see the note on `/eligible-receipts` below for why
+# declaring one turned this module's money fields into strings.
+@router.get("/")
 def list_remittances(
     status_filter: str | None = Query(None, alias="status"),
     page: int = Query(1, ge=1),
@@ -55,7 +57,15 @@ def list_remittances(
     }
 
 
-@router.get("/eligible-receipts", response_model=dict)
+# No `response_model`. Both list handlers here return a dict whose items are
+# already `model_dump()`ed, so their values are raw `Decimal`s. Declaring
+# `response_model=dict` made FastAPI re-serialise that dict through Pydantic,
+# and Pydantic v2 renders a `Decimal` as a JSON *string* — so `total_amount`
+# went out as "60.50" while the frontend type said `number`, and the batch
+# dialog called `.toFixed` on it (#364). With no annotation `jsonable_encoder`
+# runs instead and emits a float, which is what `GET /receipts/` has always
+# done for the same field. `dict` bought no documentation either way.
+@router.get("/eligible-receipts")
 def list_eligible_receipts(
     page: int = Query(1, ge=1),
     per_page: int = Query(100, ge=1, le=100),

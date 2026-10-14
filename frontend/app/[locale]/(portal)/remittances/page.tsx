@@ -184,6 +184,7 @@ export default function RemittancesPage() {
 
 function CreateRemittanceForm({ onSuccess }: { onSuccess: () => void }) {
   const t = useTranslations();
+  const { formatCurrency } = useFormatters();
   const mutation = useCreateRemittance();
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [dueDate, setDueDate] = useState("");
@@ -210,9 +211,12 @@ function CreateRemittanceForm({ onSuccess }: { onSuccess: () => void }) {
     );
   }
 
+  // `Number(...)` rather than a bare `+`: the API has sent this field as a
+  // string before now, and concatenating gives a wrong total instead of an
+  // error (#364).
   const selectedTotal = eligibleReceipts
     .filter((r) => selectedIds.includes(r.id))
-    .reduce((sum, r) => sum + r.total_amount, 0);
+    .reduce((sum, r) => sum + Number(r.total_amount), 0);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -257,7 +261,7 @@ function CreateRemittanceForm({ onSuccess }: { onSuccess: () => void }) {
                   </TableCell>
                   <TableCell className="font-mono text-sm">{r.receipt_number}</TableCell>
                   <TableCell>{r.member_name || "—"}</TableCell>
-                  <TableCell className="text-right font-mono">{r.total_amount.toFixed(2)}</TableCell>
+                  <TableCell className="text-right font-mono">{formatCurrency(r.total_amount)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -280,7 +284,7 @@ function CreateRemittanceForm({ onSuccess }: { onSuccess: () => void }) {
         <div className="text-sm font-medium">
           {t("remittances.selectedCount", { count: selectedIds.length })}
           {" — "}
-          {t("remittances.selectedTotal", { total: selectedTotal.toFixed(2) })}
+          {t("remittances.selectedTotal", { total: formatCurrency(selectedTotal) })}
         </div>
       )}
 
