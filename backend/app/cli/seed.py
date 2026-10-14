@@ -1528,20 +1528,10 @@ def seed_sepa_data(db) -> None:
             config={"merchant_code": "", "terminal_id": "", "secret_key": "", "environment": "test", "currency_code": "978"},
             is_default=False,
         ),
-        PaymentProvider(
-            provider_type="goCardless",
-            display_name="GoCardless",
-            status="disabled",
-            config={"access_token": "", "webhook_secret": "", "environment": "sandbox"},
-            is_default=False,
-        ),
-        PaymentProvider(
-            provider_type="paypal",
-            display_name="PayPal",
-            status="disabled",
-            config={"client_id": "", "client_secret": "", "environment": "sandbox"},
-            is_default=False,
-        ),
+        # No goCardless or paypal row. Both have a config schema and no adapter,
+        # so seeding them put two providers in the list that an admin could
+        # open, fill in, test and activate while no member would ever be offered
+        # them — see AVAILABLE_PROVIDER_TYPES and #340.
     ]
     for tmpl in provider_templates:
         db.add(tmpl)

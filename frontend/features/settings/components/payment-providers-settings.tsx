@@ -330,7 +330,11 @@ export function PaymentProvidersSettings() {
                     key={typeSchema.provider_type}
                     className="flex items-center gap-2 rounded-lg border p-3 text-left hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
                     onClick={() => selectType(typeSchema.provider_type)}
-                    disabled={configured}
+                    // An unavailable type has a form and no adapter behind it,
+                    // so offering the form is offering a method that cannot
+                    // take a payment (#340). The endpoint refuses it too — this
+                    // only stops the admin reaching a dead end.
+                    disabled={configured || !typeSchema.available}
                   >
                     <span className="text-xl">
                       {PROVIDER_ICONS[typeSchema.provider_type] ?? "💰"}

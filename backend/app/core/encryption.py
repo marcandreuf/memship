@@ -6,10 +6,13 @@ and decrypted on read. Masked versions are used in API responses.
 
 import base64
 import hashlib
+import logging
 
 from cryptography.fernet import Fernet
 
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 def get_fernet() -> Fernet:
@@ -52,16 +55,54 @@ def encrypt_config(config: dict, sensitive_fields: list[str]) -> dict:
     return result
 
 
+# Every Fernet token is base64url of a structure whose first byte is 0x80, so
+# it always begins with this. It is how a value that *was* encrypted and can no
+# longer be read is told apart from one that was never encrypted at all.
+_FERNET_PREFIX = "gAAAAA"
+
+
 def decrypt_config(config: dict, sensitive_fields: list[str]) -> dict:
-    """Decrypt sensitive fields in a provider config dict."""
+    """Decrypt sensitive fields in a provider config dict.
+
+    A field that was encrypted and can no longer be decrypted is **dropped**,
+    not passed through. The previous behaviour left the ciphertext in place, so
+    every caller received a Fernet token and used it as the credential — and
+    for a Stripe signing secret that is the quietest failure memship has: each
+    webhook fails verification and is discarded, the member is shown success,
+    and the receipt stays unpaid (#354).
+
+    Dropping rather than raising keeps the provider repairable from the UI. A
+    missing required field is a case the product already handles: the settings
+    screen renders it unset, ``_require_ready`` answers ``provider_not_ready``,
+    and the value can be re-entered. Raising would take the settings screen
+    down and leave no way to fix it there — which is exactly the state a key
+    rotation would create.
+
+    A value that does **not** look like a Fernet token is left alone. It was
+    never encrypted, so it is its own plaintext and returning it is correct;
+    dropping it would break a provider that works. That distinction is the
+    difference between fixing a silent failure and causing an outage on an
+    instance whose config predates encryption or was written directly.
+    """
     result = dict(config)
     for field in sensitive_fields:
         if field in result and result[field]:
             try:
                 result[field] = decrypt_value(result[field])
             except Exception:
-                # If decryption fails (e.g. key rotation), leave as-is
-                pass
+                value = result[field]
+                if isinstance(value, str) and value.startswith(_FERNET_PREFIX):
+                    logger.warning(
+                        "Could not decrypt %r — dropping it. The stored value "
+                        "is ciphertext the current key does not open (rotated "
+                        "or changed SECRET_KEY); it must be re-entered.",
+                        field,
+                    )
+                    del result[field]
+                else:
+                    logger.info(
+                        "%r is not encrypted; using it as stored.", field
+                    )
     return result
 
 
