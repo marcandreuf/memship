@@ -22,6 +22,7 @@ import { useBillingRuns, useRunBillingNow } from "@/features/settings/hooks/use-
 import type { BillingRun, BillingFrequency } from "@/features/settings/services/billing-runs-api";
 import { useFormatters } from "@/hooks/use-formatters";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
+import { getErrorMessage } from "@/lib/errors";
 
 const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   success: "default",
@@ -186,8 +187,8 @@ function RunNowButton({ t }: { t: ReturnType<typeof useTranslations> }) {
         t("billingRuns.runSuccess", { count: result.receipts_generated })
       );
       setOpen(false);
-    } catch {
-      toast.error(t("toast.error.generic"));
+    } catch (err) {
+      toast.error(getErrorMessage(err, t));
     }
   }
 

@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { FormSkeleton } from "@/components/ui/skeletons";
+import { getErrorMessage } from "@/lib/errors";
 import {
   usePaymentProviders,
   useProviderTypes,
@@ -145,7 +146,7 @@ export function PaymentProvidersSettings() {
       toast.error(t("settings.providers.notReady", { errors: describeAll(detail.errors) }));
       return;
     }
-    toast.error(t("toast.error.generic"));
+    toast.error(getErrorMessage(err, t));
   }
 
   async function handleSave() {
@@ -178,8 +179,8 @@ export function PaymentProvidersSettings() {
     try {
       await deleteMutation.mutateAsync(provider.id);
       toast.success(t("toast.success.deleted"));
-    } catch {
-      toast.error(t("toast.error.generic"));
+    } catch (err) {
+      toast.error(getErrorMessage(err, t));
     }
   }
 
@@ -204,8 +205,8 @@ export function PaymentProvidersSettings() {
           result.message ? `${described}: ${result.message}` : described,
         );
       }
-    } catch {
-      toast.error(t("toast.error.generic"));
+    } catch (err) {
+      toast.error(getErrorMessage(err, t));
     }
   }
 

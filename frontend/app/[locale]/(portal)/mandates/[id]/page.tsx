@@ -15,6 +15,7 @@ import { DetailSkeleton } from "@/components/ui/skeletons";
 import { useFormatters } from "@/hooks/use-formatters";
 import { toast } from "sonner";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
+import { getErrorMessage } from "@/lib/errors";
 import {
   useMandate,
   useCancelMandate,
@@ -69,8 +70,8 @@ export default function MandateDetailPage() {
     try {
       await uploadMutation.mutateAsync({ id: mandate!.id, file });
       toast.success(t("toast.success.saved"));
-    } catch {
-      toast.error(t("toast.error.generic"));
+    } catch (err) {
+      toast.error(getErrorMessage(err, t));
     }
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
