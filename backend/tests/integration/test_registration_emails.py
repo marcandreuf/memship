@@ -201,3 +201,74 @@ class TestRegistrationEmailsWaitForCommit:
             db.commit()
 
         delay.assert_not_called()
+
+
+class TestRegistrationEmailsCarryTheOrgLocale:
+    """The organization's language has to reach the mail that renders it.
+
+    All three templates ship in `ca` and `en` as well as `es`, and so do their
+    subjects, but none of the three dispatchers passed a locale — so the task
+    default of "es" applied and the Catalan and English versions never
+    rendered for anybody (#359). `reminder_service` had been reading
+    `org.locale` correctly all along.
+    """
+
+    def test_confirmation_uses_the_configured_locale(
+        self, db, org, membership_type
+    ):
+        org.locale = "ca"
+        db.flush()
+        activity, price = _activity(db)
+        member = _member(db, membership_type, "locale-confirm")
+
+        with patch(
+            "app.tasks.email_tasks.send_registration_email_task.delay"
+        ) as delay:
+            register_member(db, activity, member, price.id)
+            db.commit()
+
+        assert delay.call_args.kwargs["locale"] == "ca"
+
+    def test_cancellation_and_promotion_use_the_configured_locale(
+        self, db, org, membership_type
+    ):
+        org.locale = "en"
+        db.flush()
+        activity, price = _activity(db, max_participants=1)
+        first = _member(db, membership_type, "locale-first")
+        second = _member(db, membership_type, "locale-second")
+
+        with patch("app.tasks.email_tasks.send_registration_email_task.delay"):
+            held = register_member(db, activity, first, price.id)
+            register_member(db, activity, second, price.id)
+            db.commit()
+
+        with (
+            patch(
+                "app.tasks.email_tasks.send_cancellation_email_task.delay"
+            ) as cancel_delay,
+            patch(
+                "app.tasks.email_tasks.send_promotion_email_task.delay"
+            ) as promote_delay,
+        ):
+            cancel_registration(db, held)
+            db.commit()
+
+        assert cancel_delay.call_args.kwargs["locale"] == "en"
+        assert promote_delay.call_args.kwargs["locale"] == "en"
+
+    def test_an_unset_org_locale_falls_back_to_spanish(
+        self, db, org, membership_type
+    ):
+        org.locale = None
+        db.flush()
+        activity, price = _activity(db)
+        member = _member(db, membership_type, "locale-null")
+
+        with patch(
+            "app.tasks.email_tasks.send_registration_email_task.delay"
+        ) as delay:
+            register_member(db, activity, member, price.id)
+            db.commit()
+
+        assert delay.call_args.kwargs["locale"] == "es"
