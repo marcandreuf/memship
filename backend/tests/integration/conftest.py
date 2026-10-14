@@ -1,6 +1,7 @@
 """Integration test fixtures — requires a running PostgreSQL database."""
 
 import os
+from pathlib import Path
 
 import pytest
 from argon2 import PasswordHasher
@@ -11,7 +12,43 @@ import app.core.security.password as _pw_module
 from app.core.config import settings
 from app.db.base import Base
 from app.db.session import get_db
-from app.main import app
+
+
+def _worker_storage_path(base_path: str) -> str:
+    """Give each pytest-xdist worker its own storage root.
+
+    The per-worker databases below mean every worker's sequences and primary
+    keys start from 1 again, and the storage layout keys paths off exactly
+    those values -- ``remittances/{year}/{remittance_number}.xml``,
+    ``members/{person_id}``, ``mandates/{member_id}``,
+    ``registrations/{registration_id}``, ``activities/{activity_id}``. Two
+    workers therefore pick the *same* path for unrelated rows while sharing one
+    directory, and the second write silently replaces the first.
+
+    Worse, the write is to the filesystem, so the per-test transaction rollback
+    does not undo it while it *does* rewind the sequence -- which is why every
+    remittance test writes ``REM-2026-0001.xml``, not just the first one.
+
+    This surfaced as ``test_xml_orders_transactions_by_receipt_id`` failing
+    with ``ValueError: substring not found`` roughly one CI run in three: the
+    test read back a file another worker had overwritten, so its own receipt
+    numbers were absent. The sibling XML tests assert on status codes and
+    document structure rather than on their own receipt numbers, so they kept
+    passing on the wrong file's bytes. See #370.
+
+    No-op when running without xdist.
+    """
+    worker = os.getenv("PYTEST_XDIST_WORKER")
+    if not worker:
+        return base_path
+    return str(Path(base_path) / f"_test_{worker}")
+
+
+# Must precede the `app.main` import: it reads STORAGE_LOCAL_PATH at import
+# time to create the storage root.
+settings.STORAGE_LOCAL_PATH = _worker_storage_path(settings.STORAGE_LOCAL_PATH)
+
+from app.main import app  # noqa: E402
 
 # Stub password hashing for tests: use fast argon2 params and cache results.
 # Production argon2 uses time_cost=3, memory_cost=65536 (~60ms/hash on dev, ~300ms on CI).

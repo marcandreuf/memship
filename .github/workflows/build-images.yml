@@ -34,6 +34,33 @@ on:
 env:
   REGISTRY: ghcr.io
 
+# One build at a time, and NEVER cancel a running one.
+#
+# Three merges inside 30s put three runs in flight at once. Two of them pushed
+# overlapping layers to the same GHCR repositories within ~20s and the registry
+# answered `unknown blob`, failing the frontend RC for 7223f6cf18cc. Serialising
+# removes the contention.
+#
+# `cancel-in-progress: false` is the default, but it is spelled out because the
+# usual idiom here is `true` and that would be wrong: a cancelled run leaves its
+# commit with no RC set, and release.yml then rebuilds the missing service from
+# the tag instead of promoting validated bytes -- the exact v2.0.0 failure the
+# header above describes. Every main commit gets its images; they just queue.
+concurrency:
+  group: build-images
+  cancel-in-progress: false
+
+# The moving `main` tag follows the NEWEST commit, not whichever build finishes
+# last, so each push step moves it only when its commit is still the tip of
+# main. CI durations differ per commit -- a frontend-only change skips the
+# backend suite -- so runs complete out of order. On 2026-10-14 the build for
+# 5dc9a5422e1d finished first and the older 7223f6cf18cc overwrote
+# `memship-backend:main` behind it, leaving `:main` a mismatched pair: backend
+# one commit behind frontend, with nothing in either run reported as failed.
+# The frontend escaped only because its push had already died on `unknown blob`.
+# Serialising runs alone would not fix this -- it is the completion ORDER that
+# is wrong, not the overlap.
+
 jobs:
   resolve:
     runs-on: ubuntu-latest
@@ -152,9 +179,18 @@ jobs:
         env:
           IMAGE: ${{ env.REGISTRY }}/${{ github.repository_owner }}/memship-backend
           SHORT_SHA: ${{ needs.resolve.outputs.short_sha }}
+          SHA: ${{ needs.resolve.outputs.sha }}
         run: |
           docker push $IMAGE:sha-$SHORT_SHA
-          docker push $IMAGE:main
+
+          # Move `main` only if this commit is still the tip -- see the note on
+          # the moving tag in the header.
+          TIP="$(git ls-remote origin refs/heads/main | cut -f1)"
+          if [ "$TIP" = "$SHA" ]; then
+            docker push $IMAGE:main
+          else
+            echo "::notice::main is now ${TIP:0:12}, not ${SHORT_SHA}; leaving :main alone."
+          fi
 
   build-frontend:
     needs: resolve
@@ -222,9 +258,18 @@ jobs:
         env:
           IMAGE: ${{ env.REGISTRY }}/${{ github.repository_owner }}/memship-frontend
           SHORT_SHA: ${{ needs.resolve.outputs.short_sha }}
+          SHA: ${{ needs.resolve.outputs.sha }}
         run: |
           docker push $IMAGE:sha-$SHORT_SHA
-          docker push $IMAGE:main
+
+          # Move `main` only if this commit is still the tip -- see the note on
+          # the moving tag in the header.
+          TIP="$(git ls-remote origin refs/heads/main | cut -f1)"
+          if [ "$TIP" = "$SHA" ]; then
+            docker push $IMAGE:main
+          else
+            echo "::notice::main is now ${TIP:0:12}, not ${SHORT_SHA}; leaving :main alone."
+          fi
 
   # A release can only promote what exists, so an incomplete RC set is a failure,
   # not a footnote — release.yml refuses to rebuild and would stop dead.
