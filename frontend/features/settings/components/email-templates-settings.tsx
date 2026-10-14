@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/card";
 import { FormSkeleton } from "@/components/ui/skeletons";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
+import { getErrorMessage } from "@/lib/errors";
 import {
   useCommunicationsConfig,
   useUpdateCommunicationsConfig,
@@ -125,8 +126,8 @@ export function EmailTemplatesSettings() {
     try {
       await updateMutation.mutateAsync({ templates });
       toast.success(t("toast.success.saved"));
-    } catch {
-      toast.error(t("toast.error.generic"));
+    } catch (err) {
+      toast.error(getErrorMessage(err, t));
     }
   }
 

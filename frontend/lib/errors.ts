@@ -43,6 +43,17 @@ function translationValues(detail: CodedErrorDetail): Record<string, string | nu
  * with no translation yet, the backend's English message is shown.
  */
 export function getErrorMessage(error: unknown, t?: ErrorTranslator): string {
+  const message = describeError(error, t);
+  // Never hand back nothing. `client-api` falls back to `res.statusText` when a
+  // body carries no `detail`, and HTTP/2 dropped the reason phrase — so behind
+  // Caddy that is the empty string for every response. An empty message is a
+  // toast sonner declines to render, which turns a failed save into silence.
+  // The generic text is a poor message; no message is a bug.
+  if (message.trim()) return message;
+  return t ? t("toast.error.generic") : "An unexpected error occurred";
+}
+
+function describeError(error: unknown, t?: ErrorTranslator): string {
   if (error instanceof ClientApiError) {
     if (typeof error.detail === "string") {
       return error.detail;

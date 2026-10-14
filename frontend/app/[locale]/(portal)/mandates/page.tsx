@@ -24,6 +24,7 @@ import { useMandates, useCreateMandate } from "@/features/mandates/hooks/use-man
 import { useSearchParam, usePageParam, useStatusParam } from "@/hooks/use-url-state";
 import { useFormatters } from "@/hooks/use-formatters";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
+import { getErrorMessage, type ErrorTranslator } from "@/lib/errors";
 
 const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   active: "default",
@@ -172,7 +173,7 @@ export default function MandatesPage() {
   );
 }
 
-function CreateMandateForm({ t, onSuccess }: { t: (key: string) => string; onSuccess: () => void }) {
+function CreateMandateForm({ t, onSuccess }: { t: ErrorTranslator; onSuccess: () => void }) {
   const mutation = useCreateMandate();
   const [memberId, setMemberId] = useState("");
   const [debtorName, setDebtorName] = useState("");
@@ -193,8 +194,8 @@ function CreateMandateForm({ t, onSuccess }: { t: (key: string) => string; onSuc
       });
       toast.success(t("toast.success.saved"));
       onSuccess();
-    } catch {
-      toast.error(t("toast.error.generic"));
+    } catch (err) {
+      toast.error(getErrorMessage(err, t));
     }
   }
 
