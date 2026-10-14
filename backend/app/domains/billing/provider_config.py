@@ -4,6 +4,20 @@ Defines the expected config fields for each provider type.
 Used by both backend validation and frontend form rendering.
 """
 
+# The provider types that have an adapter behind them. `PROVIDER_CONFIG_SCHEMAS`
+# describes the *form* for a type; this says whether anything will process a
+# payment once it is filled in. `goCardless` and `paypal` have a schema and no
+# adapter, so a provider of either type could be created, tested and activated
+# while being incapable of taking a payment — an administrator told a method was
+# live that is not offered to any member (#340).
+#
+# Kept beside the schemas so the two cannot drift: adding a schema without an
+# adapter is the mistake this guards.
+AVAILABLE_PROVIDER_TYPES: frozenset[str] = frozenset(
+    {"sepa_direct_debit", "stripe", "redsys"}
+)
+
+
 PROVIDER_CONFIG_SCHEMAS: dict[str, dict] = {
     "sepa_direct_debit": {
         "fields": [

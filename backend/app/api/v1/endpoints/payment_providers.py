@@ -11,6 +11,7 @@ from app.db.session import get_db
 from app.domains.auth.models import User
 from app.domains.billing.models import PaymentProvider, Receipt
 from app.domains.billing.provider_config import (
+    AVAILABLE_PROVIDER_TYPES,
     PROVIDER_CONFIG_SCHEMAS,
     get_sensitive_fields,
     validate_provider_config,
@@ -106,16 +107,13 @@ def list_provider_types(
     current_user: User = Depends(require_permission("settings.integrations.write")),
 ):
     """List available provider types with config schemas and availability status."""
-    # Providers with real payment processing implemented
-    available_types = {"sepa_direct_debit", "stripe", "redsys"}
-
     result = []
     for provider_type, schema in PROVIDER_CONFIG_SCHEMAS.items():
         result.append({
             "provider_type": provider_type,
             "fields": schema["fields"],
             "sensitive_fields": schema["sensitive_fields"],
-            "available": provider_type in available_types,
+            "available": provider_type in AVAILABLE_PROVIDER_TYPES,
         })
     return result
 
@@ -175,6 +173,18 @@ def create_provider(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Unknown provider type: {data.provider_type}",
+        )
+
+    # A schema without an adapter is a form that leads nowhere. Refused here
+    # rather than only in the UI, because the UI disabling a button is not a
+    # boundary — the endpoint is (#340).
+    if data.provider_type not in AVAILABLE_PROVIDER_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "provider_type_unavailable",
+                "provider_type": data.provider_type,
+            },
         )
 
     # Encrypt sensitive fields
@@ -296,6 +306,16 @@ def toggle_provider(
     if provider.status == "active":
         provider.status = "disabled"
     else:
+        # Rows for unavailable types exist on instances seeded before #340, so
+        # the create guard alone would not stop one being switched on.
+        if provider.provider_type not in AVAILABLE_PROVIDER_TYPES:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "code": "provider_type_unavailable",
+                    "provider_type": provider.provider_type,
+                },
+            )
         _require_ready(provider.provider_type, provider.config or {})
         provider.status = "active"
 

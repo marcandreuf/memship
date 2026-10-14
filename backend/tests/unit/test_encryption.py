@@ -55,12 +55,44 @@ class TestEncryptDecrypt:
         assert decrypted["secret_key"] == "sk_live_abc"
         assert decrypted["mode"] == "webhook"
 
-    def test_decrypt_config_handles_invalid_token(self):
-        config = {"secret_key": "not-a-valid-fernet-token"}
-        sensitive = ["secret_key"]
-        result = decrypt_config(config, sensitive)
-        # Should leave invalid value as-is
-        assert result["secret_key"] == "not-a-valid-fernet-token"
+    def test_a_field_encrypted_under_another_key_is_dropped(self):
+        """The ciphertext must never reach a caller as if it were the secret.
+
+        This is #354. A rotated or changed SECRET_KEY is the real trigger. The
+        old behaviour left the token in place, so a caller used a Fernet blob as
+        the credential — and for a Stripe signing secret that means every
+        webhook fails verification and is discarded while the member is shown
+        success. Dropping it puts the provider into the missing-required-field
+        state the product already handles, so the value can be re-entered.
+        """
+        from cryptography.fernet import Fernet
+
+        other_key = Fernet(Fernet.generate_key())
+        token = other_key.encrypt(b"sk_live_abc").decode()
+        config = {"secret_key": token, "mode": "webhook"}
+
+        result = decrypt_config(config, ["secret_key"])
+
+        assert "secret_key" not in result
+        assert token not in result.values()
+        # Non-sensitive fields are untouched.
+        assert result["mode"] == "webhook"
+
+    def test_a_value_that_was_never_encrypted_is_left_alone(self):
+        """Not every undecryptable value is ciphertext.
+
+        A value that does not look like a Fernet token was never encrypted, so
+        it is its own plaintext and returning it is correct. Dropping it would
+        break a provider that works — on an instance whose config predates
+        encryption, or was written directly — which would turn the #354 fix
+        into an outage. Every Fernet token starts "gAAAAA"; this does not.
+        """
+        config = {"secret_key": "sk_live_plain", "mode": "webhook"}
+
+        result = decrypt_config(config, ["secret_key"])
+
+        assert result["secret_key"] == "sk_live_plain"
+        assert result["mode"] == "webhook"
 
     def test_encrypt_config_no_sensitive_fields(self):
         config = {"format": "pain.008.001.02"}

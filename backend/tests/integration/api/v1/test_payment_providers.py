@@ -336,20 +336,24 @@ class TestUpdateProvider:
     def test_update_masked_value_keeps_existing(self, client, db):
         user = _create_user(db, suffix="pp-upd3")
         cookies = _auth_cookie(user)
-        # Create via API
+        # Create via API. Uses `stripe` rather than `paypal`: an adapterless
+        # type is refused at create now (#340), and the behaviour under test
+        # here — a masked value sent back means "unchanged" — has nothing to do
+        # with which provider it is.
         create_resp = client.post(
             "/api/v1/payment-providers/",
             json={
-                "provider_type": "paypal",
-                "display_name": "PayPal",
+                "provider_type": "stripe",
+                "display_name": "Stripe",
                 "config": {
-                    "client_id": "pp_client",
-                    "client_secret": "pp_secret_original",
-                    "environment": "sandbox",
+                    "publishable_key": "pk_test_original",
+                    "secret_key": "sk_test_original",
+                    "webhook_secret": "whsec_original",
                 },
             },
             cookies=cookies,
         )
+        assert create_resp.status_code == 201, create_resp.text
         provider_id = create_resp.json()["id"]
 
         # Update sending masked value back — should keep original
@@ -357,22 +361,22 @@ class TestUpdateProvider:
             f"/api/v1/payment-providers/{provider_id}",
             json={
                 "config": {
-                    "client_id": "pp_client_new",
-                    "client_secret": "****inal",  # masked value
-                    "environment": "sandbox",
+                    "publishable_key": "pk_test_new",
+                    "secret_key": "****inal",  # masked value
+                    "webhook_secret": "whsec_original",
                 },
             },
             cookies=cookies,
         )
-        assert resp.status_code == 200
+        assert resp.status_code == 200, resp.text
 
         # Verify original secret is preserved
         provider = db.query(PaymentProvider).filter(
             PaymentProvider.id == provider_id
         ).first()
-        sensitive = get_sensitive_fields("paypal")
+        sensitive = get_sensitive_fields("stripe")
         decrypted = decrypt_config(provider.config, sensitive)
-        assert decrypted["client_secret"] == "pp_secret_original"
+        assert decrypted["secret_key"] == "sk_test_original"
 
     def test_update_not_found(self, client, db):
         user = _create_user(db, suffix="pp-upd4")
@@ -795,6 +799,77 @@ class TestTestProvider:
 
 
 # --- Types ---
+
+
+class TestAdapterlessTypesCannotGoLive:
+    """A config schema is not an adapter.
+
+    `goCardless` and `paypal` have a schema and no implementation, so before
+    #340 one could be created, validated, tested and switched to `active` —
+    leaving an administrator told a method was live that no member is ever
+    offered, because the member-facing pages gate on `stripe`/`redsys` by name.
+    """
+
+    def test_creating_an_adapterless_provider_is_refused(self, client, db):
+        user = _create_user(db, suffix="pp-unavail1")
+        payload = {
+            "provider_type": "goCardless",
+            "display_name": "GoCardless",
+            "status": "disabled",
+            "config": {
+                "access_token": "token",
+                "webhook_secret": "secret",
+                "environment": "sandbox",
+            },
+        }
+        resp = client.post(
+            "/api/v1/payment-providers/", json=payload, cookies=_auth_cookie(user)
+        )
+        assert resp.status_code == 400
+        assert resp.json()["detail"]["code"] == "provider_type_unavailable"
+        assert resp.json()["detail"]["provider_type"] == "goCardless"
+
+    def test_paypal_is_refused_too(self, client, db):
+        user = _create_user(db, suffix="pp-unavail2")
+        payload = {
+            "provider_type": "paypal",
+            "display_name": "PayPal",
+            "status": "disabled",
+            "config": {
+                "client_id": "id",
+                "client_secret": "secret",
+                "environment": "sandbox",
+            },
+        }
+        resp = client.post(
+            "/api/v1/payment-providers/", json=payload, cookies=_auth_cookie(user)
+        )
+        assert resp.status_code == 400
+        assert resp.json()["detail"]["code"] == "provider_type_unavailable"
+
+    def test_an_existing_adapterless_row_cannot_be_activated(self, client, db):
+        """Instances seeded before #340 already hold these rows."""
+        user = _create_user(db, suffix="pp-unavail3")
+        provider = _create_provider(
+            db, provider_type="goCardless", status="disabled"
+        )
+        resp = client.post(
+            f"/api/v1/payment-providers/{provider.id}/toggle",
+            cookies=_auth_cookie(user),
+        )
+        assert resp.status_code == 400
+        assert resp.json()["detail"]["code"] == "provider_type_unavailable"
+
+    def test_an_available_type_still_activates(self, client, db):
+        """The guard must not catch the three types that do work."""
+        user = _create_user(db, suffix="pp-unavail4")
+        provider = _create_provider(db, provider_type="stripe", status="disabled")
+        resp = client.post(
+            f"/api/v1/payment-providers/{provider.id}/toggle",
+            cookies=_auth_cookie(user),
+        )
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "active"
 
 
 class TestProviderTypes:
