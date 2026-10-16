@@ -127,6 +127,7 @@ Memship follows [semantic versioning](https://semver.org/), and **version number
 | v2.15.0 | Reachability and the upgrade path — three shipped features that could not be used, and the guards that would have caught them. | Done |
 | v2.16.0 | The money-path release — the SEPA collection flow a club runs every month, found by working through it by hand rather than by reading it. | Done |
 | v2.17.0 | The review release — eleven defects found by reading the tree and working the screens, none of them reported by anybody, and the build pipeline that was quietly shipping mismatched images. | Done |
+| v2.18.0 | The SEPA validation release — sixteen defects found by driving the collection flow on a deployed instance in a browser. A return against an already-paid receipt no longer reads as handled, a member holds one active mandate, and a generated bank file is never overwritten. **Breaking:** `import-returns` reports named buckets, not counts, and refuses an empty body. **Migration:** duplicate active mandates are cancelled, newest kept. | Done |
 
 ## Roadmap
 
