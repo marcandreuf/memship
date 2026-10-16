@@ -228,9 +228,18 @@ jobs:
           # and wrong as a release note — and one keystroke away from being the
           # published one. A summary and a compare link are useful either way.
           {
-            echo "<!-- Seeded from the README release table row. Replace this with real notes:"
-            echo "     lead on why the change matters, not what changed. Body starts at ##, no H1."
-            echo "     Publishing it unedited is not a disaster, but it is not the story either. -->"
+            echo "<!-- Seeded from the README release table row: its lead line, and a compare"
+            echo "     link. That is the whole row now — the detail belongs here, not in a table"
+            echo "     cell. Replace this with real notes in two parts, and no H1:"
+            echo ""
+            echo "       ## Summary   — the lead line, then one bullet per change, each saying"
+            echo "                      what it means for whoever runs the instance."
+            echo "       ## Details   — a ### section per area, carrying the why: what an"
+            echo "                      exposure meant, what a default used to hand out."
+            echo ""
+            echo "     A reader deciding whether to upgrade reads the bullets and stops; the"
+            echo "     sections are there for whoever needs them. Publishing this unedited is"
+            echo "     not a disaster, but it is not the story either. -->"
             echo ""
             echo "## Summary"
             echo ""
