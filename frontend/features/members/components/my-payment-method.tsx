@@ -15,7 +15,6 @@ import { apiClient } from "@/lib/client-api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useFormatters } from "@/hooks/use-formatters";
-import { getErrorMessage } from "@/lib/errors";
 
 interface PaymentMethodData {
   payment_method: string | null;
@@ -94,8 +93,8 @@ export function MyPaymentMethod() {
       });
       toast.success(t("paymentMethod.saved"));
       setDirty(false);
-    } catch (err) {
-      toast.error(getErrorMessage(err, t));
+    } catch {
+      // Reported once by the mutation cache in react-query-provider (#378).
     }
   }
 

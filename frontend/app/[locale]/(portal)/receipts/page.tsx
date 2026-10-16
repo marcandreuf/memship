@@ -27,7 +27,6 @@ import { useSearchParam, usePageParam, useStatusParam } from "@/hooks/use-url-st
 import { useFormatters } from "@/hooks/use-formatters";
 import type { ReceiptData } from "@/features/receipts/services/receipts-api";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
-import { getErrorMessage } from "@/lib/errors";
 
 const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   new: "outline",
@@ -227,8 +226,8 @@ function GenerateFeesButton({ t }: { t: ReturnType<typeof useTranslations> }) {
       const result = await mutation.mutateAsync(payload);
       toast.success(t("receipts.generated", { count: result.generated }));
       setOpen(false);
-    } catch (err) {
-      toast.error(getErrorMessage(err, t));
+    } catch {
+      // Reported once by the mutation cache in react-query-provider (#378).
     }
   }
 

@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/card";
 import { FormSkeleton } from "@/components/ui/skeletons";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
-import { getErrorMessage } from "@/lib/errors";
 import {
   useCommunicationsConfig,
   useUpdateCommunicationsConfig,
@@ -126,8 +125,8 @@ export function EmailTemplatesSettings() {
     try {
       await updateMutation.mutateAsync({ templates });
       toast.success(t("toast.success.saved"));
-    } catch (err) {
-      toast.error(getErrorMessage(err, t));
+    } catch {
+      // Reported once by the mutation cache in react-query-provider (#378).
     }
   }
 

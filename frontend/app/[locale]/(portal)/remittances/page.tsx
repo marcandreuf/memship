@@ -25,7 +25,6 @@ import {
   useCreateRemittance,
   useEligibleReceipts,
 } from "@/features/remittances/hooks/use-remittances";
-import { getErrorMessage } from "@/lib/errors";
 import { usePageParam, useStatusParam } from "@/hooks/use-url-state";
 import { useFormatters } from "@/hooks/use-formatters";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
@@ -229,8 +228,8 @@ function CreateRemittanceForm({ onSuccess }: { onSuccess: () => void }) {
       });
       toast.success(t("toast.success.saved"));
       onSuccess();
-    } catch (err) {
-      toast.error(getErrorMessage(err, t));
+    } catch {
+      // Reported once by the mutation cache in react-query-provider (#378).
     }
   }
 

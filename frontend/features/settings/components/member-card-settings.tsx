@@ -23,7 +23,6 @@ import { mapApiErrorsToForm } from "@/lib/errors";
 import { useOrgSettings, useUpdateSettings } from "../hooks/use-settings";
 import { useAssignMemberNumbers } from "@/features/member-card/hooks/use-member-card";
 import { FormSkeleton } from "@/components/ui/skeletons";
-import { getErrorMessage } from "@/lib/errors";
 
 const memberCardSchema = z.object({
   member_card: z.boolean(),
@@ -81,8 +80,8 @@ export function MemberCardSettings() {
     try {
       const result = await assignMutation.mutateAsync();
       toast.success(t("settings.memberCard.assignedCount", { count: result.assigned }));
-    } catch (err) {
-      toast.error(getErrorMessage(err, t));
+    } catch {
+      // Reported once by the mutation cache in react-query-provider (#378).
     }
   }
 

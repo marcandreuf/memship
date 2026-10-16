@@ -7,7 +7,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/client-api";
-import { getErrorMessage } from "@/lib/errors";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -80,8 +79,8 @@ export function MemberPhotoUpload({ photoUrl, fullName }: MemberPhotoUploadProps
     try {
       await uploadMutation.mutateAsync(file);
       toast.success(t("toast.success.saved"));
-    } catch (err) {
-      toast.error(getErrorMessage(err, t));
+    } catch {
+      // Reported once by the mutation cache in react-query-provider (#378).
     }
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -95,8 +94,8 @@ export function MemberPhotoUpload({ photoUrl, fullName }: MemberPhotoUploadProps
         try {
           await deleteMutation.mutateAsync();
           toast.success(t("toast.success.deleted"));
-        } catch (err) {
-          toast.error(getErrorMessage(err, t));
+        } catch {
+      // Reported once by the mutation cache in react-query-provider (#378).
         }
       },
     });

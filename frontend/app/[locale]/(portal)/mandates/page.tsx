@@ -24,7 +24,7 @@ import { useMandates, useCreateMandate } from "@/features/mandates/hooks/use-man
 import { useSearchParam, usePageParam, useStatusParam } from "@/hooks/use-url-state";
 import { useFormatters } from "@/hooks/use-formatters";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
-import { getErrorMessage, type ErrorTranslator } from "@/lib/errors";
+import { type ErrorTranslator } from "@/lib/errors";
 
 const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   active: "default",
@@ -194,8 +194,8 @@ function CreateMandateForm({ t, onSuccess }: { t: ErrorTranslator; onSuccess: ()
       });
       toast.success(t("toast.success.saved"));
       onSuccess();
-    } catch (err) {
-      toast.error(getErrorMessage(err, t));
+    } catch {
+      // Reported once by the mutation cache in react-query-provider (#378).
     }
   }
 

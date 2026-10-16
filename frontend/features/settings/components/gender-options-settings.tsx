@@ -14,7 +14,6 @@ import { X, Plus, GripVertical } from "lucide-react";
 import { toast } from "sonner";
 import { useSettings, useUpdateSettings } from "../hooks/use-settings";
 import { locales } from "@/lib/i18n/config";
-import { getErrorMessage } from "@/lib/errors";
 
 export interface GenderOption {
   value: string;
@@ -72,8 +71,8 @@ export function GenderOptionsSettings() {
       });
       toast.success(t("toast.success.saved"));
       setDirty(false);
-    } catch (err) {
-      toast.error(getErrorMessage(err, t));
+    } catch {
+      // Reported once by the mutation cache in react-query-provider (#378).
     }
   }
 

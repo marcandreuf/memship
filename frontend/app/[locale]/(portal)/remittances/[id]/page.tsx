@@ -22,7 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
 import { useFormatters } from "@/hooks/use-formatters";
 import { toast } from "sonner";
-import { getErrorMessage, type ErrorTranslator } from "@/lib/errors";
+import { type ErrorTranslator } from "@/lib/errors";
 import {
   useRemittance,
   useGenerateRemittanceXml,
@@ -87,8 +87,8 @@ export default function RemittanceDetailPage() {
     try {
       await generateXmlMutation.mutateAsync(remittance!.id);
       toast.success(t("toast.success.saved"));
-    } catch (err) {
-      toast.error(getErrorMessage(err, t));
+    } catch {
+      // Reported once by the mutation cache in react-query-provider (#378).
     }
   }
 
@@ -304,8 +304,8 @@ function ImportReturnsForm({
     try {
       const result = await mutation.mutateAsync({ id: remittanceId, data });
       onResult(result);
-    } catch (err) {
-      toast.error(getErrorMessage(err, t));
+    } catch {
+      // Reported once by the mutation cache in react-query-provider (#378).
     }
   }
 
