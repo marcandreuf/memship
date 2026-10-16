@@ -83,12 +83,41 @@ export default function RemittanceDetailPage() {
   const canCancel = canWrite && ["draft", "ready"].includes(remittance.status);
   const isTerminal = ["closed", "cancelled"].includes(remittance.status);
 
+  // The import's non-returns, in the order they are worth reading: receipts the
+  // bank told us about twice, then the ones this batch never held. Empty buckets
+  // are dropped so a clean import shows the count and nothing else.
+  const receiptStatusLabel = (value: string) =>
+    t(`receipts.status${value.charAt(0).toUpperCase()}${value.slice(1)}`);
+  const importBuckets = (
+    importResult
+      ? [
+          { label: t("remittances.importAlreadyReturned"), entries: importResult.already_returned },
+          {
+            label: t("remittances.importIgnored"),
+            entries: importResult.ignored.map(
+              (item) => `${item.receipt_number} (${receiptStatusLabel(item.status)})`
+            ),
+          },
+          { label: t("remittances.importDuplicate"), entries: importResult.duplicate },
+          {
+            label: t("remittances.importNotInBatch"),
+            entries: importResult.not_in_batch.map((item) =>
+              item.remittance_number
+                ? `${item.receipt_number} (${item.remittance_number})`
+                : item.receipt_number
+            ),
+          },
+          { label: t("remittances.importNotFound"), entries: importResult.not_found },
+        ]
+      : []
+  ).filter((bucket) => bucket.entries.length > 0);
+
   async function handleGenerateXml() {
     try {
       await generateXmlMutation.mutateAsync(remittance!.id);
       toast.success(t("toast.success.saved"));
     } catch {
-      // Reported once by the mutation cache in react-query-provider (#378).
+      // Reported once by the mutation default in react-query-provider (#378).
     }
   }
 
@@ -247,22 +276,29 @@ export default function RemittanceDetailPage() {
             <DialogTitle>{t("remittances.importReturnsTitle")}</DialogTitle>
           </DialogHeader>
           {importResult ? (
-            <div className="space-y-3">
+            <div className="space-y-4">
               <h3 className="text-sm font-medium">{t("remittances.importResults")}</h3>
-              <div className="grid grid-cols-1 gap-3 text-center @md:grid-cols-3">
-                <div className="border rounded-md p-3">
-                  <p className="text-2xl font-bold">{importResult.processed}</p>
-                  <p className="text-xs text-muted-foreground">{t("remittances.importProcessed")}</p>
-                </div>
-                <div className="border rounded-md p-3">
-                  <p className="text-2xl font-bold text-destructive">{importResult.returned}</p>
-                  <p className="text-xs text-muted-foreground">{t("remittances.importReturned")}</p>
-                </div>
-                <div className="border rounded-md p-3">
-                  <p className="text-2xl font-bold">{importResult.not_found}</p>
-                  <p className="text-xs text-muted-foreground">{t("remittances.importNotFound")}</p>
-                </div>
+              <div className="border rounded-md p-3 text-center">
+                <p className="text-2xl font-bold text-destructive">{importResult.returned.length}</p>
+                <p className="text-xs text-muted-foreground">{t("remittances.importReturned")}</p>
+                {importResult.returned.length > 0 && (
+                  <p className="mt-1 font-mono text-xs break-words">{importResult.returned.join(", ")}</p>
+                )}
               </div>
+              {/* Every line that changed nothing, named and said why. A count of
+                  "processed" covered three different outcomes — including a
+                  return against an already-paid receipt, which did nothing at
+                  all (#391). */}
+              {importBuckets.length > 0 && (
+                <dl className="space-y-2">
+                  {importBuckets.map((bucket) => (
+                    <div key={bucket.label}>
+                      <dt className="text-xs text-muted-foreground">{bucket.label}</dt>
+                      <dd className="font-mono text-xs break-words">{bucket.entries.join(", ")}</dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
               <Button variant="outline" className="w-full" onClick={() => { setImportOpen(false); setImportResult(null); }}>
                 {t("common.close")}
               </Button>
@@ -313,7 +349,7 @@ function ImportReturnsForm({
       const result = await mutation.mutateAsync({ id: remittanceId, data });
       onResult(result);
     } catch {
-      // Reported once by the mutation cache in react-query-provider (#378).
+      // Reported once by the mutation default in react-query-provider (#378).
     }
   }
 

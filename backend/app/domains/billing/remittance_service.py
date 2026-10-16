@@ -1,5 +1,6 @@
 """Remittance service layer — batch creation, SEPA XML generation, return import."""
 
+import logging
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
@@ -19,6 +20,7 @@ from app.domains.billing.models import (
 from app.domains.billing.schemas import (
     EligibleReceiptResponse,
     RemittanceCreate,
+    ReturnEntry,
 )
 from app.domains.billing.sequences import next_yearly_number
 from app.domains.billing.sepa_xml import SepaExportError, generate_sepa_xml
@@ -27,11 +29,13 @@ from app.domains.members.models import Member
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Person
 
+logger = logging.getLogger(__name__)
+
 
 def sepa_eligible_receipts_query(db: Session) -> Query:
     """The receipts a new SEPA remittance will accept.
 
-    The same five conditions `create_remittance` enforces below, in one place
+    The same six conditions `create_remittance` enforces below, in one place
     the batch picker can ask about. The screen used to decide for itself and got
     three of them wrong: it ignored the document type, never checked for a
     mandate, and asked the API for `emitted` only — so every *overdue* receipt
@@ -52,6 +56,12 @@ def sepa_eligible_receipts_query(db: Session) -> Query:
             Receipt.is_batchable.is_(True),
             Receipt.remittance_id.is_(None),
             Receipt.member_id.in_(mandated),
+            # A direct debit for zero collects nothing, and the bank file has no
+            # way to express it — `sepaxml` fails on the empty amount with a bare
+            # ValueError, which reached the admin as a 500 (#392). Zero is a
+            # legitimate receipt total, so it is refused here rather than
+            # forbidden outright.
+            Receipt.total_amount > 0,
         )
         .options(joinedload(Receipt.member).joinedload(Member.person))
         .order_by(Receipt.due_date, Receipt.id)
@@ -214,6 +224,11 @@ def create_remittance(
             errors.append(f"Receipt {r.receipt_number}: not batchable")
         if r.remittance_id:
             errors.append(f"Receipt {r.receipt_number}: already in remittance #{r.remittance_id}")
+        if Decimal(str(r.total_amount)) <= 0:
+            errors.append(
+                f"Receipt {r.receipt_number}: total is {r.total_amount} — a direct "
+                "debit collects nothing and the bank file cannot express it"
+            )
         member_ids.add(r.member_id)
 
     if errors:
@@ -342,6 +357,20 @@ def generate_remittance_xml(db: Session, remittance: Remittance) -> bytes:
         if m.member_id not in mandate_map or m.created_at > mandate_map[m.member_id].created_at:
             mandate_map[m.member_id] = m
 
+    # A batch created before the eligibility gate existed can still hold a
+    # 0,00 € receipt (#392). Name it here rather than let `sepaxml` fail on the
+    # empty amount, because its ValueError says nothing about which receipt.
+    without_amount = [r for r in receipts if Decimal(str(r.total_amount)) <= 0]
+    if without_amount:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "receipts_without_amount",
+                "remittance_number": remittance.remittance_number,
+                "receipts": [r.receipt_number for r in without_amount],
+            },
+        )
+
     # Generate XML. Mandates are re-read above, so one cancelled between
     # create_remittance and now is missing here even though creation checked for
     # it. Refuse rather than write a file that collects less than the remittance
@@ -355,6 +384,22 @@ def generate_remittance_xml(db: Session, remittance: Remittance) -> bytes:
                 "code": "sepa_mandate_cancelled",
                 "members": label_members(db, exc.member_ids),
                 "message": str(exc),
+            },
+        ) from exc
+    except Exception as exc:
+        # `SepaExportError` covers what memship anticipates. Everything else out
+        # of `sepaxml` is a library-level failure that used to surface as a bare
+        # 500 with no message (#392): log the cause, and leave the admin the
+        # remittance number to report.
+        logger.exception(
+            "SEPA file generation failed for remittance %s",
+            remittance.remittance_number,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "code": "sepa_file_build_failed",
+                "remittance_number": remittance.remittance_number,
             },
         ) from exc
 
@@ -381,16 +426,39 @@ def mark_submitted(db: Session, remittance: Remittance) -> Remittance:
     return remittance
 
 
+# The only statuses a return can act on. A receipt in any other status is
+# reported rather than changed — and `paid` refuses the import outright, see
+# below.
+RETURNABLE_STATUSES = ("emitted", "overdue")
+
+DEFAULT_RETURN_REASON = "Returned by bank"
+
+
 def import_returns(
-    db: Session, remittance: Remittance, return_data: list[dict]
+    db: Session, remittance: Remittance, return_data: list[ReturnEntry]
 ) -> dict:
     """Process return/rejection data for a remittance.
 
-    Args:
-        return_data: List of dicts with 'receipt_number' and 'reason'.
+    Reports what *happened* to each entry rather than how many of them were
+    recognised, and names the receipts in every bucket: the summary is the only
+    feedback the screen gives, and `processed` used to count every matched
+    receipt whether or not anything changed — so a return landing on a receipt
+    that was already paid read as handled and silently did nothing (#391).
 
-    Returns:
-        Summary: {processed, returned, not_found}.
+    A return against a `paid` receipt refuses the whole import. The bank is
+    saying it took the money back while memship is saying it collected it, and
+    that is a contradiction for someone to resolve rather than a line in a
+    summary — the same refuse-and-name shape `create_remittance` uses for a
+    member without a mandate. It is reachable without anything exotic: a member
+    paying by card while the direct debit is in flight has the provider webhook
+    mark the receipt paid, and webhooks are deliberately exempt from the
+    in-flight guard in `refuse_if_collection_in_flight` (#383), because a
+    webhook means the money really did move.
+
+    Returns the receipt numbers in each bucket: `returned`, `already_returned`,
+    `ignored` (matched, but in a status a return cannot act on), `duplicate`,
+    `not_in_batch` (the number exists, but belongs to another batch or none) and
+    `not_found`.
     """
     if remittance.status not in ("submitted", "processed"):
         raise HTTPException(
@@ -405,31 +473,88 @@ def import_returns(
     )
     receipt_map = {r.receipt_number: r for r in receipts}
 
-    processed = 0
-    returned = 0
-    not_found = 0
+    # Numbers this batch does not hold. Reporting them all as "not found"
+    # implied they were unknown; most are real receipts that are simply
+    # somewhere else, and saying where is the more useful answer.
+    unmatched = {e.receipt_number for e in return_data} - receipt_map.keys()
+    elsewhere = {}
+    if unmatched:
+        elsewhere = {
+            r.receipt_number: r.remittance.remittance_number if r.remittance else None
+            for r in db.query(Receipt)
+            .filter(Receipt.receipt_number.in_(unmatched))
+            .options(joinedload(Receipt.remittance))
+            .all()
+        }
+
+    # Refuse before writing anything, so the import is all-or-nothing.
+    conflicting = sorted(
+        {
+            e.receipt_number
+            for e in return_data
+            if e.receipt_number in receipt_map
+            and receipt_map[e.receipt_number].status == "paid"
+        }
+    )
+    if conflicting:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "return_against_paid_receipt",
+                "remittance_number": remittance.remittance_number,
+                "receipts": conflicting,
+            },
+        )
+
+    returned: list[str] = []
+    already_returned: list[str] = []
+    ignored: list[dict] = []
+    duplicate: list[str] = []
+    not_in_batch: list[dict] = []
+    not_found: list[str] = []
+    seen: set[str] = set()
 
     for entry in return_data:
-        receipt_number = entry.get("receipt_number", "")
-        reason = entry.get("reason", "Returned by bank")
+        number = entry.receipt_number
+        if number in seen:
+            duplicate.append(number)
+            continue
+        seen.add(number)
 
-        receipt = receipt_map.get(receipt_number)
-        if not receipt:
-            not_found += 1
+        receipt = receipt_map.get(number)
+        if receipt is None:
+            if number in elsewhere:
+                not_in_batch.append(
+                    {"receipt_number": number, "remittance_number": elsewhere[number]}
+                )
+            else:
+                not_found.append(number)
             continue
 
-        processed += 1
-        if receipt.status in ("emitted", "overdue"):
-            receipt.status = "returned"
-            receipt.return_reason = reason[:255]
-            receipt.return_date = org_today(db)
-            returned += 1
+        if receipt.status == "returned":
+            already_returned.append(number)
+            continue
+        if receipt.status not in RETURNABLE_STATUSES:
+            ignored.append({"receipt_number": number, "status": receipt.status})
+            continue
+
+        receipt.status = "returned"
+        receipt.return_reason = (entry.reason or DEFAULT_RETURN_REASON)[:255]
+        receipt.return_date = org_today(db)
+        returned.append(number)
 
     if remittance.status == "submitted":
         remittance.status = "processed"
 
     db.flush()
-    return {"processed": processed, "returned": returned, "not_found": not_found}
+    return {
+        "returned": returned,
+        "already_returned": already_returned,
+        "ignored": ignored,
+        "duplicate": duplicate,
+        "not_in_batch": not_in_batch,
+        "not_found": not_found,
+    }
 
 
 # Statuses a receipt is left in while its collection is still in flight. Anything

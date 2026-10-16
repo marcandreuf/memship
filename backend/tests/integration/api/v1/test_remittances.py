@@ -103,7 +103,9 @@ def _create_member_with_mandate(db, suffix="rem"):
     return member, mandate
 
 
-def _create_receipt(db, member_id, user_id, suffix="rem", status="emitted"):
+def _create_receipt(
+    db, member_id, user_id, suffix="rem", status="emitted", base_amount=Decimal("50.00")
+):
     """Create a receipt for a member."""
     concept = Concept(
         name=f"Fee-{suffix}",
@@ -115,16 +117,17 @@ def _create_receipt(db, member_id, user_id, suffix="rem", status="emitted"):
     db.add(concept)
     db.flush()
 
+    vat_amount = (base_amount * Decimal("0.21")).quantize(Decimal("0.01"))
     receipt = Receipt(
         receipt_number=f"FAC-2026-{suffix}",
         member_id=member_id,
         concept_id=concept.id,
         origin="membership",
         description=f"Monthly fee {suffix}",
-        base_amount=Decimal("50.00"),
+        base_amount=base_amount,
         vat_rate=Decimal("21.00"),
-        vat_amount=Decimal("10.50"),
-        total_amount=Decimal("60.50"),
+        vat_amount=vat_amount,
+        total_amount=base_amount + vat_amount,
         status=status,
         emission_date=date.today(),
         is_batchable=True,
@@ -406,9 +409,12 @@ class TestImportReturns:
         )
         assert resp.status_code == 200
         result = resp.json()
-        assert result["processed"] == 1
-        assert result["returned"] == 1
-        assert result["not_found"] == 0
+        assert result["returned"] == [receipt_number]
+        assert result["already_returned"] == []
+        assert result["ignored"] == []
+        assert result["duplicate"] == []
+        assert result["not_in_batch"] == []
+        assert result["not_found"] == []
 
     def test_import_returns_not_found(self, client, db):
         _ensure_org_settings(db)
@@ -431,7 +437,8 @@ class TestImportReturns:
             cookies=_auth_cookie(admin),
         )
         assert resp.status_code == 200
-        assert resp.json()["not_found"] == 1
+        assert resp.json()["not_found"] == ["FAKE-0000"]
+        assert resp.json()["returned"] == []
 
 
 class TestRemittanceLifecycle:
@@ -1196,3 +1203,335 @@ class TestBatchedReceiptIntegrity:
         remittance = db.query(Remittance).filter(Remittance.id == rem_id).first()
         assert remittance.receipt_count == 2
         assert Decimal(str(remittance.total_amount)) == Decimal("121.00")
+
+
+class TestReturnImportShape:
+    """The body's entries are validated, not just the fact that it is a list.
+
+    `import_returns_endpoint` read the body off the request and checked only
+    `isinstance(..., list)`, then called `.get` on each element — so an array of
+    plain receipt numbers, which is the obvious guess for "return data" and what
+    a bank's own export most resembles, came back as a 500 with nothing naming
+    the problem (#396).
+    """
+
+    def _submitted(self, client, db, suffix):
+        _ensure_org_settings(db)
+        admin = _create_user(db, suffix=suffix)
+        member, _ = _create_member_with_mandate(db, suffix=suffix)
+        receipt = _create_receipt(db, member.id, admin.id, suffix=f"{suffix}-01")
+        number = receipt.receipt_number
+        created = client.post(
+            "/api/v1/remittances/",
+            json={"receipt_ids": [receipt.id], "due_date": "2026-05-01"},
+            cookies=_auth_cookie(admin),
+        )
+        rem_id = created.json()["id"]
+        client.post(f"/api/v1/remittances/{rem_id}/generate-xml", cookies=_auth_cookie(admin))
+        client.post(f"/api/v1/remittances/{rem_id}/mark-submitted", cookies=_auth_cookie(admin))
+        return admin, rem_id, number
+
+    def test_an_array_of_bare_receipt_numbers_is_refused_not_crashed(self, client, db):
+        admin, rem_id, number = self._submitted(client, db, "ret-shape1")
+
+        resp = client.post(
+            f"/api/v1/remittances/{rem_id}/import-returns",
+            json=[number],
+            cookies=_auth_cookie(admin),
+        )
+
+        assert resp.status_code == 422, resp.text
+        # The index is the point: a 50-line paste needs to say which line.
+        assert any(0 in item["loc"] for item in resp.json()["detail"])
+
+    def test_a_null_entry_is_refused_not_crashed(self, client, db):
+        admin, rem_id, _ = self._submitted(client, db, "ret-shape2")
+
+        resp = client.post(
+            f"/api/v1/remittances/{rem_id}/import-returns",
+            json=[None],
+            cookies=_auth_cookie(admin),
+        )
+
+        assert resp.status_code == 422, resp.text
+
+    def test_an_entry_without_a_receipt_number_is_refused(self, client, db):
+        admin, rem_id, _ = self._submitted(client, db, "ret-shape3")
+
+        resp = client.post(
+            f"/api/v1/remittances/{rem_id}/import-returns",
+            json=[{"reason": "Insufficient funds"}],
+            cookies=_auth_cookie(admin),
+        )
+
+        assert resp.status_code == 422, resp.text
+
+    def test_a_body_that_is_not_a_list_is_still_refused(self, client, db):
+        admin, rem_id, number = self._submitted(client, db, "ret-shape4")
+
+        resp = client.post(
+            f"/api/v1/remittances/{rem_id}/import-returns",
+            json={"receipt_number": number},
+            cookies=_auth_cookie(admin),
+        )
+
+        assert resp.status_code == 422, resp.text
+
+    def test_the_reason_is_optional(self, client, db):
+        admin, rem_id, number = self._submitted(client, db, "ret-shape5")
+
+        resp = client.post(
+            f"/api/v1/remittances/{rem_id}/import-returns",
+            json=[{"receipt_number": number}],
+            cookies=_auth_cookie(admin),
+        )
+
+        assert resp.status_code == 200, resp.text
+        assert resp.json()["returned"] == [number]
+        receipt = db.query(Receipt).filter(Receipt.receipt_number == number).first()
+        db.refresh(receipt)
+        assert receipt.return_reason == "Returned by bank"
+
+
+class TestReturnImportReportsOutcomes:
+    """What the import says happened, rather than how many entries it matched.
+
+    `processed` counted every recognised receipt whether or not anything
+    changed, so three different outcomes read identically — and a return
+    landing on an already-paid receipt read as handled while doing nothing at
+    all (#391).
+    """
+
+    def _batch(self, client, db, suffix, count=2):
+        _ensure_org_settings(db)
+        admin = _create_user(db, suffix=suffix)
+        member, _ = _create_member_with_mandate(db, suffix=suffix)
+        receipts = [
+            _create_receipt(db, member.id, admin.id, suffix=f"{suffix}-{i:02d}")
+            for i in range(1, count + 1)
+        ]
+        created = client.post(
+            "/api/v1/remittances/",
+            json={"receipt_ids": [r.id for r in receipts], "due_date": "2026-05-01"},
+            cookies=_auth_cookie(admin),
+        )
+        assert created.status_code == 201, created.text
+        rem_id = created.json()["id"]
+        client.post(f"/api/v1/remittances/{rem_id}/generate-xml", cookies=_auth_cookie(admin))
+        client.post(f"/api/v1/remittances/{rem_id}/mark-submitted", cookies=_auth_cookie(admin))
+        return admin, receipts, rem_id
+
+    def test_a_return_against_a_paid_receipt_refuses_the_whole_import(self, client, db):
+        """The bank taking money back that memship says it collected is a
+        contradiction for someone to resolve, not a line in a summary.
+
+        Reachable without anything exotic: a member paying by card while the
+        direct debit is in flight has the provider webhook mark the receipt
+        paid, and webhooks are exempt from the in-flight guard (#383) because a
+        webhook means the money really did move.
+        """
+        admin, receipts, rem_id = self._batch(client, db, "ret-paid")
+        paid, bounced = receipts
+        paid.status = "paid"
+        paid.payment_date = date.today()
+        db.flush()
+
+        resp = client.post(
+            f"/api/v1/remittances/{rem_id}/import-returns",
+            json=[
+                {"receipt_number": paid.receipt_number, "reason": "MS03"},
+                {"receipt_number": bounced.receipt_number, "reason": "MS03"},
+            ],
+            cookies=_auth_cookie(admin),
+        )
+
+        assert resp.status_code == 409, resp.text
+        detail = resp.json()["detail"]
+        assert detail["code"] == "return_against_paid_receipt"
+        assert detail["receipts"] == [paid.receipt_number]
+        # All-or-nothing: the other receipt must not have been returned behind
+        # the refusal, or re-importing the corrected file would double up.
+        db.expire_all()
+        assert db.query(Receipt).filter(Receipt.id == bounced.id).first().status == "emitted"
+
+    def test_a_receipt_the_batch_cannot_return_is_named_with_its_status(self, client, db):
+        admin, receipts, rem_id = self._batch(client, db, "ret-ignored")
+        cancelled, bounced = receipts
+        cancelled.status = "cancelled"
+        db.flush()
+
+        resp = client.post(
+            f"/api/v1/remittances/{rem_id}/import-returns",
+            json=[
+                {"receipt_number": cancelled.receipt_number, "reason": "MS03"},
+                {"receipt_number": bounced.receipt_number, "reason": "MS03"},
+            ],
+            cookies=_auth_cookie(admin),
+        )
+
+        assert resp.status_code == 200, resp.text
+        result = resp.json()
+        assert result["returned"] == [bounced.receipt_number]
+        assert result["ignored"] == [
+            {"receipt_number": cancelled.receipt_number, "status": "cancelled"}
+        ]
+
+    def test_re_importing_the_same_file_reports_already_returned(self, client, db):
+        admin, receipts, rem_id = self._batch(client, db, "ret-again", count=1)
+        number = receipts[0].receipt_number
+        entries = [{"receipt_number": number, "reason": "MS03"}]
+
+        first = client.post(
+            f"/api/v1/remittances/{rem_id}/import-returns",
+            json=entries,
+            cookies=_auth_cookie(admin),
+        )
+        second = client.post(
+            f"/api/v1/remittances/{rem_id}/import-returns",
+            json=entries,
+            cookies=_auth_cookie(admin),
+        )
+
+        assert first.json()["returned"] == [number]
+        assert second.status_code == 200, second.text
+        assert second.json()["returned"] == []
+        assert second.json()["already_returned"] == [number]
+
+    def test_a_line_repeated_in_the_file_is_counted_once(self, client, db):
+        admin, receipts, rem_id = self._batch(client, db, "ret-dup", count=1)
+        number = receipts[0].receipt_number
+
+        resp = client.post(
+            f"/api/v1/remittances/{rem_id}/import-returns",
+            json=[
+                {"receipt_number": number, "reason": "MS03"},
+                {"receipt_number": number, "reason": "MS03"},
+            ],
+            cookies=_auth_cookie(admin),
+        )
+
+        assert resp.status_code == 200, resp.text
+        assert resp.json()["returned"] == [number]
+        assert resp.json()["duplicate"] == [number]
+
+    def test_a_receipt_from_another_batch_says_which_batch(self, client, db):
+        """Calling a real receipt number "not found" implied it was unknown.
+
+        What is wrong is that it is somewhere else, and naming where is the
+        answer the operator can act on.
+        """
+        admin, receipts, rem_id = self._batch(client, db, "ret-other", count=1)
+        other_member, _ = _create_member_with_mandate(db, suffix="ret-other-b")
+        stranger = _create_receipt(db, other_member.id, admin.id, suffix="ret-other-b-01")
+        other = client.post(
+            "/api/v1/remittances/",
+            json={"receipt_ids": [stranger.id], "due_date": "2026-05-01"},
+            cookies=_auth_cookie(admin),
+        )
+        other_number = other.json()["remittance_number"]
+
+        resp = client.post(
+            f"/api/v1/remittances/{rem_id}/import-returns",
+            json=[{"receipt_number": stranger.receipt_number, "reason": "MS03"}],
+            cookies=_auth_cookie(admin),
+        )
+
+        assert resp.status_code == 200, resp.text
+        assert resp.json()["not_in_batch"] == [
+            {
+                "receipt_number": stranger.receipt_number,
+                "remittance_number": other_number,
+            }
+        ]
+        assert resp.json()["not_found"] == []
+
+    def test_an_unknown_number_is_still_not_found(self, client, db):
+        admin, _, rem_id = self._batch(client, db, "ret-unknown", count=1)
+
+        resp = client.post(
+            f"/api/v1/remittances/{rem_id}/import-returns",
+            json=[{"receipt_number": "FAC-9999-9999", "reason": "MS03"}],
+            cookies=_auth_cookie(admin),
+        )
+
+        assert resp.status_code == 200, resp.text
+        assert resp.json()["not_found"] == ["FAC-9999-9999"]
+        assert resp.json()["not_in_batch"] == []
+
+
+class TestZeroAmountReceiptsStayOutOfBatches:
+    """A direct debit for zero collects nothing, and `sepaxml` cannot write it.
+
+    Nothing about a 0,00 € receipt is malformed — `base_amount` is `ge=0` by
+    design, and a fee fully covered by a discount lands there. Every gate on the
+    way to the batch passed it, and the file generation then died on a bare
+    `ValueError` from inside `sepaxml`, which reached the admin as a 500 with
+    nothing naming the receipt (#392).
+    """
+
+    def _setup(self, client, db, suffix):
+        _ensure_org_settings(db)
+        admin = _create_user(db, suffix=suffix)
+        member, _ = _create_member_with_mandate(db, suffix=suffix)
+        free = _create_receipt(
+            db, member.id, admin.id, suffix=f"{suffix}-free", base_amount=Decimal("0.00")
+        )
+        assert Decimal(str(free.total_amount)) == Decimal("0.00")
+        return admin, member, free
+
+    def test_the_batch_picker_does_not_offer_it(self, client, db):
+        admin, member, free = self._setup(client, db, "zero-pick")
+        payable = _create_receipt(db, member.id, admin.id, suffix="zero-pick-02")
+
+        resp = client.get("/api/v1/remittances/eligible-receipts", cookies=_auth_cookie(admin))
+
+        assert resp.status_code == 200, resp.text
+        offered = {item["receipt_number"] for item in resp.json()["items"]}
+        assert payable.receipt_number in offered
+        assert free.receipt_number not in offered
+
+    def test_creating_a_batch_with_one_names_the_receipt(self, client, db):
+        admin, _, free = self._setup(client, db, "zero-create")
+
+        resp = client.post(
+            "/api/v1/remittances/",
+            json={"receipt_ids": [free.id], "due_date": "2026-05-01"},
+            cookies=_auth_cookie(admin),
+        )
+
+        assert resp.status_code == 400, resp.text
+        assert any(free.receipt_number in line for line in resp.json()["detail"])
+
+    def test_a_batch_that_already_holds_one_refuses_to_build_the_file(self, client, db):
+        """A batch created before the gates existed is still out there.
+
+        The refusal has to name the receipt, because `sepaxml`'s own
+        `ValueError` on the empty amount says nothing about which one.
+        """
+        admin, member, free = self._setup(client, db, "zero-legacy")
+        payable = _create_receipt(db, member.id, admin.id, suffix="zero-legacy-02")
+        created = client.post(
+            "/api/v1/remittances/",
+            json={"receipt_ids": [payable.id], "due_date": "2026-05-01"},
+            cookies=_auth_cookie(admin),
+        )
+        rem_id = created.json()["id"]
+
+        # Put the zero-amount receipt in by hand, the way a batch created before
+        # the eligibility gate holds one. The stored total is unchanged because
+        # zero adds nothing, so the reconciliation guard (#384) stays quiet and
+        # this is the check under test.
+        free.remittance_id = rem_id
+        remittance = db.query(Remittance).filter(Remittance.id == rem_id).first()
+        remittance.receipt_count = 2
+        db.flush()
+
+        resp = client.post(
+            f"/api/v1/remittances/{rem_id}/generate-xml", cookies=_auth_cookie(admin)
+        )
+
+        assert resp.status_code == 400, resp.text
+        detail = resp.json()["detail"]
+        assert detail["code"] == "receipts_without_amount"
+        assert detail["receipts"] == [free.receipt_number]
+        assert detail["remittance_number"] == remittance.remittance_number

@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
@@ -16,6 +16,7 @@ from app.domains.billing.schemas import (
     RemittanceDetailResponse,
     RemittanceResponse,
     ReceiptResponse,
+    ReturnEntry,
 )
 from app.domains.billing.remittance_service import (
     cancel_remittance,
@@ -191,9 +192,9 @@ def mark_submitted_endpoint(
 
 
 @router.post("/{remittance_id}/import-returns")
-async def import_returns_endpoint(
+def import_returns_endpoint(
     remittance_id: int,
-    request: Request,
+    return_data: list[ReturnEntry],
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("billing.write")),
 ):
@@ -201,26 +202,15 @@ async def import_returns_endpoint(
 
     Accepts a JSON body with format:
     [{"receipt_number": "FAC-2026-0001", "reason": "Insufficient funds"}, ...]
+
+    The body is declared rather than read off the request, so a malformed entry
+    answers with a 422 naming its index instead of a 500 (#396).
     """
     remittance = db.query(Remittance).filter(
         Remittance.id == remittance_id, Remittance.is_active.is_(True)
     ).first()
     if not remittance:
         raise HTTPException(status_code=404, detail="Remittance not found")
-
-    try:
-        return_data = await request.json()
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Invalid JSON body",
-        )
-
-    if not isinstance(return_data, list):
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Expected a JSON array of return entries",
-        )
 
     result = import_returns(db, remittance, return_data)
     db.commit()

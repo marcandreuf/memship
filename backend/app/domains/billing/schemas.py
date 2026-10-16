@@ -352,6 +352,22 @@ class RemittanceCreate(BaseModel):
     notes: str | None = None
 
 
+class ReturnEntry(BaseModel):
+    """One line of a bank's return file.
+
+    The endpoint used to check only that the body was a list and then call
+    `.get` on each element, so an array of plain receipt numbers — the obvious
+    guess for "return data", and what a bank's own export most resembles — came
+    back as a 500 with nothing naming the problem (#396). Declaring the entry
+    turns that into a 422 pointing at the offending index, and documents the
+    shape in the OpenAPI schema, which is where anyone scripting against it
+    would look.
+    """
+
+    receipt_number: NonBlank(50)
+    reason: str | None = Field(default=None, max_length=255)
+
+
 class RemittanceResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
