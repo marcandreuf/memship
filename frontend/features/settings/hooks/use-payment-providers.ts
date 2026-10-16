@@ -38,11 +38,12 @@ export function useCreatePaymentProvider() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: createPaymentProvider,
-    // `showSaveError` names the fields an incomplete provider is missing,
-    // which is more than the generic handler can say — so it reports, and the
-    // cache-level handler stays quiet rather than adding a vaguer second
-    // toast beside it (#378).
-    meta: { ownErrorMessage: true },
+    // `showSaveError` on the settings screen names the fields an incomplete
+    // provider is missing, which is more than the generic handler can say. A
+    // hook-level onError replaces the global toast, the same way `useScanCard`
+    // opts out, so the specific message no longer arrives beside a vaguer one
+    // (#378).
+    onError: () => {},
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["payment-providers"] }),
   });
@@ -53,11 +54,12 @@ export function useUpdatePaymentProvider() {
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: Record<string, unknown> }) =>
       updatePaymentProvider(id, data),
-    // `showSaveError` names the fields an incomplete provider is missing,
-    // which is more than the generic handler can say — so it reports, and the
-    // cache-level handler stays quiet rather than adding a vaguer second
-    // toast beside it (#378).
-    meta: { ownErrorMessage: true },
+    // `showSaveError` on the settings screen names the fields an incomplete
+    // provider is missing, which is more than the generic handler can say. A
+    // hook-level onError replaces the global toast, the same way `useScanCard`
+    // opts out, so the specific message no longer arrives beside a vaguer one
+    // (#378).
+    onError: () => {},
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["payment-providers"] }),
   });
@@ -76,11 +78,12 @@ export function useTogglePaymentProvider() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: togglePaymentProvider,
-    // `showSaveError` names the fields an incomplete provider is missing,
-    // which is more than the generic handler can say — so it reports, and the
-    // cache-level handler stays quiet rather than adding a vaguer second
-    // toast beside it (#378).
-    meta: { ownErrorMessage: true },
+    // `showSaveError` on the settings screen names the fields an incomplete
+    // provider is missing, which is more than the generic handler can say. A
+    // hook-level onError replaces the global toast, the same way `useScanCard`
+    // opts out, so the specific message no longer arrives beside a vaguer one
+    // (#378).
+    onError: () => {},
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["payment-providers"] }),
   });
