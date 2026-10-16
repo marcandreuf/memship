@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { useFormatters } from "@/hooks/use-formatters";
-import { getErrorMessage } from "@/lib/errors";
 import {
   useReminders,
   useCreateReminder,
@@ -88,7 +87,8 @@ function ReminderRow({ reminder }: { reminder: Reminder }) {
         onClick={() =>
           remove.mutate(reminder.id, {
             onSuccess: () => toast.success(t("notes.deletedToast")),
-            onError: (e) => toast.error(getErrorMessage(e, t)),
+            // No onError: a per-call callback runs *in addition* to the
+            // mutation's, so this toasted beside the default handler's (#378).
           })
         }
       >
@@ -120,7 +120,7 @@ export function ReminderList() {
           setDueDate("");
           toast.success(t("notes.addedToast"));
         },
-        onError: (err) => toast.error(getErrorMessage(err, t)),
+        // As above — the default handler reports the failure once (#378).
       }
     );
   };
