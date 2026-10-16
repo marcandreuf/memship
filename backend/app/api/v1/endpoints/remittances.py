@@ -21,6 +21,7 @@ from app.domains.billing.remittance_service import (
     cancel_remittance,
     close_remittance,
     create_remittance,
+    describe_eligible_receipt,
     generate_remittance_xml,
     import_returns,
     mark_submitted,
@@ -79,7 +80,7 @@ def list_eligible_receipts(
     items, meta = paginate(sepa_eligible_receipts_query(db), page, per_page)
 
     return {
-        "items": [ReceiptResponse.model_validate(r).model_dump() for r in items],
+        "items": [describe_eligible_receipt(r) for r in items],
         "meta": meta.model_dump(),
         "total": meta.total,
     }

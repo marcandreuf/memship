@@ -8,6 +8,7 @@ from app.core.security.jwt import create_access_token
 from app.core.security.password import hash_password
 from app.domains.auth.models import User
 from app.domains.billing.models import Concept, Receipt, Remittance, SepaMandate
+from app.domains.billing.remittance_service import label_members
 from app.domains.members.models import Member, MembershipType
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Person
@@ -925,3 +926,48 @@ class TestMandateErrorsNameTheMember:
         detail = resp.json()["detail"]
         assert detail["code"] == "members_without_mandate"
         assert detail["members"] == ["D-0023 Carlos Blanch"]
+
+
+class TestEligibleReceiptCarriesItsMember:
+    """The batch picker has to be able to say whose receipt a row is.
+
+    Its `SOCIO` column rendered `—` on every row because this endpoint returned
+    `member_id` and nothing else, so there was nothing to render (#379). This is
+    the screen that decides whose bank account gets debited.
+    """
+
+    def test_an_eligible_receipt_names_its_member(self, client, db):
+        _ensure_org_settings(db)
+        admin = _create_user(db, suffix="rem-who1")
+        member, _ = _create_member_with_mandate(db, suffix="rem-who1")
+        receipt = _create_receipt(db, member.id, admin.id, suffix="rem-who1-01")
+
+        resp = client.get(
+            "/api/v1/remittances/eligible-receipts", cookies=_auth_cookie(admin)
+        )
+        assert resp.status_code == 200
+        item = next(r for r in resp.json()["items"] if r["id"] == receipt.id)
+
+        assert item["member_number"] == member.member_number
+        # A name an admin can find in the register, not an internal id.
+        assert item["member_name"]
+        assert str(member.id) != item["member_name"]
+        person = db.query(Person).filter(Person.id == member.person_id).first()
+        assert person.first_name in item["member_name"]
+        assert person.last_name in item["member_name"]
+
+    def test_the_picker_and_the_refusal_name_a_member_the_same_way(self, client, db):
+        """`label_members` formats the no-mandate refusal; the picker should
+        agree with it, or the same person reads as two people."""
+        _ensure_org_settings(db)
+        admin = _create_user(db, suffix="rem-who2")
+        member, _ = _create_member_with_mandate(db, suffix="rem-who2")
+        receipt = _create_receipt(db, member.id, admin.id, suffix="rem-who2-01")
+
+        resp = client.get(
+            "/api/v1/remittances/eligible-receipts", cookies=_auth_cookie(admin)
+        )
+        item = next(r for r in resp.json()["items"] if r["id"] == receipt.id)
+
+        label = label_members(db, [member.id])[0]
+        assert label == f"{item['member_number']} {item['member_name']}"

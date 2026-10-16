@@ -257,6 +257,28 @@ def refuse_invalid_iban(value: str | None) -> str | None:
 
 
 
+class EligibleReceiptResponse(ReceiptResponse):
+    """A receipt in the SEPA batch picker, with the member it belongs to.
+
+    `ReceiptResponse` carries `member_id` and nothing else about the member, so
+    the picker's `SOCIO` column had nothing to render and showed `—` on every
+    row (#379). That is the screen deciding whose bank account gets debited: a
+    receipt number is a document reference, not a person. The frontend had been
+    written for these fields all along and was rendering the fallback.
+
+    The same two fields as `ReceiptDetailResponse`, deliberately without its
+    `concept_name`, `rectifies_receipt_number` and `credit_note_ids`: the
+    receipts list builds those through `concept`, `rectifies` and
+    `credit_notes`, which `sepa_eligible_receipts_query` does not eager-load, so
+    reusing that serialiser would add three lazy loads per row to a dialog that
+    shows a hundred. `member` and its `person` *are* already loaded, so these
+    two cost nothing — the response was dropping what the query had fetched.
+    """
+
+    member_number: str | None = None
+    member_name: str | None = None
+
+
 class MandateCreate(BaseModel):
     member_id: int
     debtor_name: NonBlank(255)

@@ -259,7 +259,20 @@ function CreateRemittanceForm({ onSuccess }: { onSuccess: () => void }) {
                     <Checkbox checked={selectedIds.includes(r.id)} onCheckedChange={() => toggleReceipt(r.id)} />
                   </TableCell>
                   <TableCell className="font-mono text-sm">{r.receipt_number}</TableCell>
-                  <TableCell>{r.member_name || "—"}</TableCell>
+                  <TableCell>
+                    {r.member_name || r.member_number ? (
+                      <>
+                        {r.member_name}
+                        {r.member_number && (
+                          <span className="ml-2 font-mono text-xs text-muted-foreground">
+                            {r.member_number}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      "—"
+                    )}
+                  </TableCell>
                   <TableCell className="text-right font-mono">{formatCurrency(r.total_amount)}</TableCell>
                 </TableRow>
               ))}
