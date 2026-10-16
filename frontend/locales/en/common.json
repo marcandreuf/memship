@@ -174,6 +174,8 @@
     "plan_below_min_age": "This plan is for members aged {min_age} or over",
     "plan_birth_date_required": "Add your date of birth on your profile to buy this plan",
     "provider_unavailable": "The payment provider is not responding. Try again in a few minutes",
+    "receipt_collection_in_flight": "This receipt is in remittance {remittance_number}, already sent to the bank: the collection is in progress. Wait for the bank to return it, or close the remittance, before changing it.",
+    "remittance_out_of_step": "Remittance {remittance_number} no longer matches the receipts it holds ({live_count} instead of {stored_count}). The file is not generated, so the bank is never asked to collect a different amount from the one the remittance states.",
     "role_locked": "Built-in roles cannot be edited or deleted",
     "sepa_mandate_cancelled": "Cannot generate the SEPA file: these members no longer have an active mandate: {members}. It was most likely cancelled after the remittance was created. Create a new mandate for each one, then cancel this remittance and create it again.",
     "slot_full": "The slot is full and the waitlist is off",

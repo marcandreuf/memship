@@ -302,6 +302,30 @@ def generate_remittance_xml(db: Session, remittance: Remittance) -> bytes:
             detail="Remittance has no receipts",
         )
 
+    # The batch's own numbers against what it actually holds. Everything that
+    # takes a receipt out of an open batch recounts it, so this cannot fire in
+    # normal operation — it is here because the file is the thing the bank acts
+    # on, and a future path that forgets to recount must not be able to produce
+    # one that collects less than the batch says (#384). `SepaExportError`
+    # already refuses for a vanished mandate; this is the same refusal for a
+    # vanished receipt.
+    live_total = sum(
+        (Decimal(str(r.total_amount)) for r in receipts), Decimal("0")
+    )
+    stored_total = Decimal(str(remittance.total_amount))
+    if len(receipts) != remittance.receipt_count or live_total != stored_total:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "remittance_out_of_step",
+                "remittance_number": remittance.remittance_number,
+                "stored_count": remittance.receipt_count,
+                "stored_total": str(stored_total),
+                "live_count": len(receipts),
+                "live_total": str(live_total),
+            },
+        )
+
     # Load mandates
     member_ids = {r.member_id for r in receipts}
     mandates = (

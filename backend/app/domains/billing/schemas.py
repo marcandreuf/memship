@@ -169,6 +169,12 @@ class ReceiptDetailResponse(ReceiptResponse):
     member_name: str | None = None
     member_number: str | None = None
     concept_name: str | None = None
+    # `remittance_id` alone is not something to put on a screen. The number is
+    # what the admin sees everywhere else, and the status says whether the batch
+    # has gone to the bank — which is what decides whether this receipt can
+    # still be cancelled or settled another way (#383).
+    remittance_number: str | None = None
+    remittance_status: str | None = None
     # The rectification link read from whichever end the caller is holding: the
     # document this one corrects, and the credit notes correcting it.
     rectifies_receipt_number: str | None = None

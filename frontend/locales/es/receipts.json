@@ -95,6 +95,9 @@
     "redirectingToPayment": "Redirigiendo al pago...",
     "noOnlinePayment": "El pago online no está disponible",
     "percentage": "Porcentaje",
-    "fixed": "Fijo"
+    "fixed": "Fijo",
+    "inRemittance": "En remesa",
+    "inRemittanceSent": "enviada al banco, cobro en curso",
+    "inRemittanceOpen": "aún no enviada"
   }
 }

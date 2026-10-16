@@ -117,6 +117,15 @@ def _to_detail(receipt: Receipt) -> dict:
     data["rectifies_receipt_number"] = (
         receipt.rectifies.receipt_number if receipt.rectifies else None
     )
+    # Which batch is queued to collect this, and whether that batch has gone to
+    # the bank yet. The screen where a receipt is cancelled or settled said
+    # nothing about it before, so an admin could not see the conflict (#383).
+    data["remittance_number"] = (
+        receipt.remittance.remittance_number if receipt.remittance else None
+    )
+    data["remittance_status"] = (
+        receipt.remittance.status if receipt.remittance else None
+    )
     data["credit_note_ids"] = [note.id for note in receipt.credit_notes]
     data["credited_amount"] = credited_amount(receipt)
     return data
@@ -322,6 +331,7 @@ def get_receipt(
         .options(
             joinedload(Receipt.member).joinedload(Member.person),
             joinedload(Receipt.concept),
+            joinedload(Receipt.remittance),
         )
         .first()
     )
@@ -450,6 +460,10 @@ def pay_receipt_endpoint(
         receipt,
         payment_method=data.payment_method,
         payment_date=data.payment_date,
+        # An administrator asserting a settlement, not money arriving on its
+        # own — so a receipt already out for direct debit is refused, and one
+        # in a batch still being assembled leaves it (#383).
+        by_hand=True,
     )
     db.commit()
     dispatch_payment_notifications(pending)

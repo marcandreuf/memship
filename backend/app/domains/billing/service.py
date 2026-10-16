@@ -12,7 +12,7 @@ from sqlalchemy.orm import Query, Session, joinedload, selectinload
 from app.core.clock import org_today
 from app.core.money import round_money
 from app.core.search import match_words
-from app.domains.billing.models import Concept, InvoiceSequence, Receipt
+from app.domains.billing.models import Concept, InvoiceSequence, Receipt, Remittance
 from app.domains.billing.schemas import (
     CreditNoteCreate,
     GenerateMembershipFeesRequest,
@@ -57,6 +57,9 @@ def build_receipts_query(
             # loaded up front rather than one query per row.
             joinedload(Receipt.rectifies),
             selectinload(Receipt.credit_notes),
+            # So `_to_detail` can name the batch a receipt is queued in without
+            # a query per row (#383).
+            joinedload(Receipt.remittance),
         )
     )
 
@@ -216,6 +219,74 @@ VALID_TRANSITIONS = {
 }
 
 
+# A batch that has gone to the bank versus one still being assembled. The
+# distinction decides what may happen to a receipt inside it: before the file
+# is sent, the selection is still editable; after, the collection is in flight
+# and memship's records must not contradict it.
+BATCH_SENT_STATUSES = ("submitted", "processed")
+BATCH_OPEN_STATUSES = ("draft", "ready")
+
+
+def recount_remittance(db: Session, remittance: Remittance) -> None:
+    """Make a batch's own counters describe what it actually holds.
+
+    Only for a batch that has not been sent. Once it has, `receipt_count` and
+    `total_amount` are the record of what went to the bank and must not move —
+    which is why `reemit_receipt` releases a returned receipt without touching
+    them (see its docstring).
+    """
+    rows = (
+        db.query(Receipt)
+        .filter(Receipt.remittance_id == remittance.id, Receipt.is_active.is_(True))
+        .all()
+    )
+    remittance.receipt_count = len(rows)
+    remittance.total_amount = sum(
+        (Decimal(str(r.total_amount)) for r in rows), Decimal("0")
+    )
+
+
+def release_from_open_batch(db: Session, receipt: Receipt) -> None:
+    """Take a receipt out of a batch that has not been sent, and recount it.
+
+    A receipt whose status changes after it was batched must not stay in the
+    batch: the file is built from `remittance_id` with no status filter, so a
+    cancelled or otherwise-settled receipt would still be collected (#383), and
+    a batch left short of what its counters claim produces a file that collects
+    less than it says (#384).
+    """
+    remittance = receipt.remittance
+    receipt.remittance_id = None
+    if remittance is not None and remittance.status in BATCH_OPEN_STATUSES:
+        db.flush()
+        recount_remittance(db, remittance)
+
+
+def refuse_if_collection_in_flight(receipt: Receipt, action: str) -> None:
+    """Refuse to rewrite a receipt the bank is in the middle of collecting.
+
+    Between a batch being submitted and being closed, the money is moving on an
+    instruction memship has already sent. Cancelling the receipt, or recording
+    it as paid by some other method, would leave the product asserting one thing
+    while the bank does another — and the receipt is still collected either way,
+    because the file is gone (#383).
+
+    The honest routes forward are the ones that already exist: import the bank's
+    return, or close the batch once it has settled.
+    """
+    remittance = receipt.remittance
+    if remittance is not None and remittance.status in BATCH_SENT_STATUSES:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "receipt_collection_in_flight",
+                "action": action,
+                "remittance_number": remittance.remittance_number,
+                "remittance_status": remittance.status,
+            },
+        )
+
+
 def validate_status_transition(current: str, target: str) -> None:
     """Validate that a receipt status transition is allowed."""
     allowed = VALID_TRANSITIONS.get(current, set())
@@ -297,6 +368,7 @@ def mark_receipt_paid(
     transaction_id: str | None = None,
     stripe_payment_intent_id: str | None = None,
     redsys_auth_code: str | None = None,
+    by_hand: bool = False,
 ) -> list[int]:
     """Record a payment against a receipt — the one place a receipt becomes paid.
 
@@ -316,9 +388,20 @@ def mark_receipt_paid(
 
     Idempotent — an already-paid receipt is left untouched and nothing is
     returned. Both webhook paths can and do deliver the same payment twice.
+
+    `by_hand` marks the one caller that is an administrator asserting a
+    settlement rather than money arriving on its own: a receipt already out for
+    direct debit is refused, and one in a batch still being assembled leaves it
+    (#383). The automated callers are deliberately exempt. A webhook means the
+    money *has* moved, so refusing it would discard a real payment; and closing
+    a batch is the batch settling its own receipts, which must not release them
+    from the record of what was collected.
     """
     if receipt.status == "paid":
         return []
+
+    if by_hand:
+        refuse_if_collection_in_flight(receipt, "pay")
 
     validate_status_transition(receipt.status, "paid")
 
@@ -334,6 +417,13 @@ def mark_receipt_paid(
         receipt.stripe_payment_intent_id = stripe_payment_intent_id
     if redsys_auth_code is not None:
         receipt.redsys_auth_code = redsys_auth_code
+
+    if by_hand:
+        # Settled another way, so it must not also be collected by the batch it
+        # is sitting in. `refuse_if_collection_in_flight` above has already
+        # ruled out a batch that has gone to the bank, so this only ever
+        # releases one still being assembled (#383).
+        release_from_open_batch(db, receipt)
 
     db.flush()
 
@@ -434,8 +524,12 @@ def cancel_receipt(db: Session, receipt: Receipt) -> Receipt:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="A credit note cannot be cancelled",
         )
+    refuse_if_collection_in_flight(receipt, "cancel")
     validate_status_transition(receipt.status, "cancelled")
     receipt.status = "cancelled"
+    # A cancelled receipt must not stay in a batch that has not gone out: the
+    # file is built from the link alone, so it would be collected anyway (#383).
+    release_from_open_batch(db, receipt)
     db.flush()
     return receipt
 
@@ -451,15 +545,20 @@ def reemit_receipt(db: Session, receipt: Receipt) -> Receipt:
     a hand-written UPDATE to retry.
 
     What was sent to the bank is not lost by this: the submitted pain.008 is
-    stored under `storage/remittances/`, and the batch keeps its own
-    `receipt_count` and `total_amount`. The column says which remittance a
-    receipt is in *now*, which is why cancelling one frees its receipts too.
+    stored under `storage/remittances/`, and a batch that has gone out keeps its
+    own `receipt_count` and `total_amount` as the record of what it collected.
+    The column says which remittance a receipt is in *now*, which is why
+    cancelling one frees its receipts too.
+
+    A batch that has **not** gone out is recounted instead, because a file can
+    still be generated from it and would otherwise collect less than the batch
+    claims (#384). `release_from_open_batch` draws that line in one place.
     """
     validate_status_transition(receipt.status, "pending")
     receipt.status = "pending"
     receipt.return_date = None
     receipt.return_reason = None
-    receipt.remittance_id = None
+    release_from_open_batch(db, receipt)
     db.flush()
     return receipt
 

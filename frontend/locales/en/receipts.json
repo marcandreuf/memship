@@ -95,6 +95,9 @@
     "redirectingToPayment": "Redirecting to payment...",
     "noOnlinePayment": "Online payment is not available",
     "percentage": "Percentage",
-    "fixed": "Fixed"
+    "fixed": "Fixed",
+    "inRemittance": "In remittance",
+    "inRemittanceSent": "sent to the bank, collection in progress",
+    "inRemittanceOpen": "not sent yet"
   }
 }
