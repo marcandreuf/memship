@@ -203,11 +203,20 @@
     "createGroup": "Crear grupo",
     "editGroup": "Editar grupo",
     "deleteConfirm": "¿Estás seguro de que deseas eliminar este grupo?",
+    "deleteConfirmDescription": "Los socios que pertenecen a él no se eliminan: solo dejan de estar agrupados.",
     "noGroups": "No hay grupos todavía",
     "info": "Los grupos permiten organizar los tipos de membresía en categorías (p. ej. Programas Juveniles, Socios Adultos, Honorarios). Ayudan a mantener el orden cuando hay muchos tipos de membresía.",
     "membershipTypes": "Tipos de membresía",
     "members": "Socios",
     "noMembershipTypes": "No hay tipos de membresía en este grupo",
     "noMembers": "No hay socios en este grupo"
+  },
+  "membershipTypesSettings": {
+    "confirmDelete": "¿Eliminar este tipo de membresía?",
+    "confirmDeleteDescription": "Los socios que lo tengan asignado se quedan sin tipo. Esta acción no se puede deshacer."
+  },
+  "organizationLogo": {
+    "confirmRemove": "¿Eliminar el logotipo de la organización?",
+    "confirmRemoveDescription": "Las pantallas y los correos volverán a mostrar el nombre. Puedes subir otro cuando quieras."
   }
 }

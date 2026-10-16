@@ -129,6 +129,7 @@ export default function RemittanceDetailPage() {
   function handleSubmit() {
     confirmAction({
       title: t("remittances.confirmSubmit"),
+      description: t("remittances.confirmSubmitDescription"),
       cancelLabel: t("common.cancel"),
       confirmLabel: t("remittances.markSubmitted"),
       onConfirm: async () => {
@@ -154,6 +155,7 @@ export default function RemittanceDetailPage() {
   function handleCancel() {
     confirmAction({
       title: t("remittances.confirmCancel"),
+      description: t("remittances.confirmCancelDescription"),
       cancelLabel: t("common.cancel"),
       // Not `cancelRemittance`: that is the word "Cancel" in all three locales,
       // so the dialog offered two buttons reading the same on a destructive

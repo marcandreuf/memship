@@ -9,6 +9,7 @@
     "create": "Afegir camp",
     "edit": "Editar camp",
     "confirmDelete": "Voleu eliminar aquest camp? Si ja té dades desades, s'arxivarà en lloc d'esborrar-se.",
+    "confirmDeleteDescription": "Un camp arxivat deixa de demanar-se als formularis i les seves dades es conserven.",
     "retired": "Arxivat",
     "key": "Clau",
     "keyHint": "Identificador estable, en minúscules. No es pot canviar després.",

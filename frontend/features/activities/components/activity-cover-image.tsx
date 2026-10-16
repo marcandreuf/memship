@@ -54,6 +54,7 @@ export function ActivityCoverImage({ activity, isAdmin }: ActivityCoverImageProp
   const handleDelete = () => {
     confirmAction({
       title: t("activities.coverImage.confirmRemove"),
+      description: t("activities.coverImage.confirmRemoveDescription"),
       cancelLabel: t("common.cancel"),
       confirmLabel: t("activities.coverImage.remove"),
       onConfirm: async () => {

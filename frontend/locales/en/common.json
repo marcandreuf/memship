@@ -203,11 +203,20 @@
     "createGroup": "Create Group",
     "editGroup": "Edit Group",
     "deleteConfirm": "Are you sure you want to delete this group?",
+    "deleteConfirmDescription": "The members in it are not deleted — they simply stop being grouped.",
     "noGroups": "No groups yet",
     "info": "Groups let you organize your membership types into categories (e.g. Youth Programs, Adult Members, Honorary). They help keep things tidy when you have many membership types.",
     "membershipTypes": "Membership Types",
     "members": "Members",
     "noMembershipTypes": "No membership types in this group",
     "noMembers": "No members in this group"
+  },
+  "membershipTypesSettings": {
+    "confirmDelete": "Delete this membership type?",
+    "confirmDeleteDescription": "Members assigned to it are left with none. This cannot be undone."
+  },
+  "organizationLogo": {
+    "confirmRemove": "Remove the organisation logo?",
+    "confirmRemoveDescription": "Screens and emails will show the name again. You can upload another one at any time."
   }
 }

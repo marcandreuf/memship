@@ -26,6 +26,7 @@
     "uploadSignedDesc": "Sube el documento de mandato firmado (PDF, JPG, PNG)",
     "cancelMandate": "Cancelar mandato",
     "confirmCancel": "¿Seguro que deseas cancelar este mandato? Esta acción no se puede deshacer.",
+    "confirmCancelDescription": "Sus recibos dejarán de poder cobrarse por domiciliación. Para cambiar de cuenta, anula este mandato y registra uno nuevo.",
     "noMandates": "No se encontraron mandatos",
     "notes": "Notas",
     "documentUploaded": "Documento firmado subido",

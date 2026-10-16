@@ -126,6 +126,7 @@ function BookingRow({
             onClick={() =>
               confirmAction({
                 title: t("bookings.adminBookings.confirmCancel"),
+                description: t("bookings.adminBookings.confirmCancelDescription"),
                 cancelLabel: t("common.cancel"),
                 confirmLabel: t("bookings.adminBookings.cancel"),
                 onConfirm: async () => {

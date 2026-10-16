@@ -70,9 +70,13 @@
       "archive": "Arxivar",
       "cancel": "Cancel·lar activitat",
       "confirmPublish": "Publicar aquesta activitat? Serà visible per als socis.",
+      "confirmPublishDescription": "Els socis podran veure-la i inscriure-s'hi des del portal.",
       "confirmArchive": "Arxivar aquesta activitat?",
+      "confirmArchiveDescription": "Deixa d'aparèixer als llistats i no admet inscripcions noves. Les que ja existeixen es conserven.",
       "confirmCancel": "Cancel·lar aquesta activitat? Aquesta acció no es pot desfer.",
-      "confirmDelete": "Eliminar aquesta activitat?"
+      "confirmCancelDescription": "Les inscripcions queden cancel·lades i l'activitat no torna a obrir-se.",
+      "confirmDelete": "Eliminar aquesta activitat?",
+      "confirmDeleteDescription": "S'esborra amb les seves modalitats, preus i inscripcions. Per retirar-la conservant l'historial, arxiva-la."
     },
     "modalities": {
       "title": "Modalitats",
@@ -83,7 +87,9 @@
       "deadline": "Data límit d'inscripció",
       "create": "Afegir modalitat",
       "edit": "Editar modalitat",
-      "noModalities": "No hi ha modalitats configurades"
+      "noModalities": "No hi ha modalitats configurades",
+      "confirmDelete": "Vols eliminar aquesta modalitat?",
+      "confirmDeleteDescription": "També se n'eliminen els preus. Aquesta acció no es pot desfer."
     },
     "prices": {
       "title": "Preus",
@@ -99,7 +105,9 @@
       "edit": "Editar preu",
       "noPrices": "No hi ha preus configurats",
       "free": "Gratuït",
-      "vatBreakdown": "{base} + {rate}% IVA ({vat})"
+      "vatBreakdown": "{base} + {rate}% IVA ({vat})",
+      "confirmDelete": "Vols eliminar aquest preu?",
+      "confirmDeleteDescription": "Les inscripcions ja cobrades amb aquest preu no canvien."
     },
     "discounts": {
       "title": "Descomptes",
@@ -119,7 +127,9 @@
       "enterCode": "Introdueix el codi",
       "apply": "Aplicar",
       "discountApplied": "descompte aplicat",
-      "validationFailed": "No s'ha pogut validar el codi"
+      "validationFailed": "No s'ha pogut validar el codi",
+      "confirmDelete": "Vols eliminar aquest codi de descompte?",
+      "confirmDeleteDescription": "Deixarà de poder-se bescanviar. Les inscripcions que ja el van fer servir no canvien."
     },
     "consents": {
       "title": "Consentiments",
@@ -130,7 +140,9 @@
       "order": "Ordre",
       "create": "Afegir consentiment",
       "edit": "Editar consentiment",
-      "noConsents": "No hi ha consentiments configurats"
+      "noConsents": "No hi ha consentiments configurats",
+      "confirmDelete": "Vols eliminar aquest consentiment?",
+      "confirmDeleteDescription": "Deixarà de demanar-se en inscriure's. Aquesta acció no es pot desfer."
     },
     "attachments": {
       "title": "Documents adjunts",
@@ -142,7 +154,9 @@
       "create": "Afegir tipus de document",
       "edit": "Editar tipus de document",
       "noAttachments": "No hi ha tipus de document configurats",
-      "uploadFailed": "Error en pujar el fitxer"
+      "uploadFailed": "Error en pujar el fitxer",
+      "confirmDelete": "Vols eliminar aquest tipus de document?",
+      "confirmDeleteDescription": "Deixarà de demanar-se en inscriure's. Aquesta acció no es pot desfer."
     },
     "coverImage": {
       "title": "Imatge de portada",
@@ -154,6 +168,7 @@
       "maxSizeHint": "Màx. {size} MB. JPG, PNG, WebP o GIF.",
       "uploading": "Pujant...",
       "confirmRemove": "Eliminar la imatge de portada?",
+      "confirmRemoveDescription": "L'activitat es mostrarà sense imatge. Pots pujar-ne una altra quan vulguis.",
       "invalidType": "Tipus de fitxer no permès. Usa JPG, PNG, WebP o GIF."
     },
     "allStatuses": "Tots els estats",
@@ -163,6 +178,7 @@
       "register": "Inscriure's",
       "cancelRegistration": "Cancel·lar inscripció",
       "confirmCancel": "Cancel·lar aquesta inscripció?",
+      "confirmCancelDescription": "El soci deixa d'estar inscrit i la seva plaça queda lliure.",
       "registered": "Inscrit",
       "myActivities": "Les meves activitats",
       "noRegistrations": "Encara no hi ha inscripcions",

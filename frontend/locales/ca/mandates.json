@@ -14,7 +14,7 @@
     "signedAt": "Data de signatura",
     "status": "Estat",
     "statusActive": "Actiu",
-    "statusCancelled": "Cancel\u00b7lat",
+    "statusCancelled": "Cancel·lat",
     "statusExpired": "Expirat",
     "typeRecurrent": "Recurrent",
     "typeOneOff": "Puntual",
@@ -24,8 +24,9 @@
     "downloadPdf": "Descarregar PDF",
     "uploadSigned": "Pujar signat",
     "uploadSignedDesc": "Puja el document de mandat signat (PDF, JPG, PNG)",
-    "cancelMandate": "Cancel\u00b7lar mandat",
-    "confirmCancel": "Segur que vols cancel\u00b7lar aquest mandat? Aquesta accio no es pot desfer.",
+    "cancelMandate": "Cancel·lar mandat",
+    "confirmCancel": "Segur que vols cancel·lar aquest mandat? Aquesta accio no es pot desfer.",
+    "confirmCancelDescription": "Els seus rebuts deixaran de poder-se cobrar per domiciliació. Per canviar de compte, anul·la aquest mandat i registra'n un de nou.",
     "noMandates": "No s'han trobat mandats",
     "notes": "Notes",
     "documentUploaded": "Document signat pujat",
@@ -36,6 +37,6 @@
     "docUploadedAt": "Pujat",
     "detail": "Detall del mandat",
     "creditorId": "ID del creditor",
-    "cancelledAt": "Data de cancel\u00b7lacio"
+    "cancelledAt": "Data de cancel·lacio"
   }
 }

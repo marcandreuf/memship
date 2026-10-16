@@ -70,9 +70,13 @@
       "archive": "Archive",
       "cancel": "Cancel Activity",
       "confirmPublish": "Publish this activity? It will be visible to members.",
+      "confirmPublishDescription": "Members will be able to see it and register from the portal.",
       "confirmArchive": "Archive this activity?",
+      "confirmArchiveDescription": "It stops appearing in listings and takes no new registrations. The ones it already has are kept.",
       "confirmCancel": "Cancel this activity? This cannot be undone.",
-      "confirmDelete": "Delete this activity?"
+      "confirmCancelDescription": "Its registrations are cancelled and the activity does not open again.",
+      "confirmDelete": "Delete this activity?",
+      "confirmDeleteDescription": "It is deleted along with its modalities, prices and registrations. To retire it and keep the history, archive it instead."
     },
     "modalities": {
       "title": "Modalities",
@@ -83,7 +87,9 @@
       "deadline": "Registration Deadline",
       "create": "Add Modality",
       "edit": "Edit Modality",
-      "noModalities": "No modalities configured"
+      "noModalities": "No modalities configured",
+      "confirmDelete": "Delete this modality?",
+      "confirmDeleteDescription": "Its prices are deleted with it. This cannot be undone."
     },
     "prices": {
       "title": "Prices",
@@ -99,7 +105,9 @@
       "edit": "Edit Price",
       "noPrices": "No prices configured",
       "free": "Free",
-      "vatBreakdown": "{base} + {rate}% VAT ({vat})"
+      "vatBreakdown": "{base} + {rate}% VAT ({vat})",
+      "confirmDelete": "Delete this price?",
+      "confirmDeleteDescription": "Registrations already charged at this price are unaffected."
     },
     "discounts": {
       "title": "Discounts",
@@ -119,7 +127,9 @@
       "enterCode": "Enter code",
       "apply": "Apply",
       "discountApplied": "discount applied",
-      "validationFailed": "Could not validate the code"
+      "validationFailed": "Could not validate the code",
+      "confirmDelete": "Delete this discount code?",
+      "confirmDeleteDescription": "It can no longer be redeemed. Registrations that already used it are unaffected."
     },
     "consents": {
       "title": "Consents",
@@ -130,7 +140,9 @@
       "order": "Order",
       "create": "Add Consent",
       "edit": "Edit Consent",
-      "noConsents": "No consents configured"
+      "noConsents": "No consents configured",
+      "confirmDelete": "Delete this consent?",
+      "confirmDeleteDescription": "It stops being asked for at registration. This cannot be undone."
     },
     "attachments": {
       "title": "Attachments",
@@ -142,7 +154,9 @@
       "create": "Add Attachment Type",
       "edit": "Edit Attachment Type",
       "noAttachments": "No attachment types configured",
-      "uploadFailed": "Upload failed"
+      "uploadFailed": "Upload failed",
+      "confirmDelete": "Delete this document type?",
+      "confirmDeleteDescription": "It stops being asked for at registration. This cannot be undone."
     },
     "coverImage": {
       "title": "Cover Image",
@@ -154,6 +168,7 @@
       "maxSizeHint": "Max {size}MB. JPG, PNG, WebP, or GIF.",
       "uploading": "Uploading...",
       "confirmRemove": "Remove the cover image?",
+      "confirmRemoveDescription": "The activity will show with no image. You can upload another one at any time.",
       "invalidType": "File type not allowed. Use JPG, PNG, WebP, or GIF."
     },
     "allStatuses": "All statuses",
@@ -163,6 +178,7 @@
       "register": "Register",
       "cancelRegistration": "Cancel Registration",
       "confirmCancel": "Cancel this registration?",
+      "confirmCancelDescription": "The member is no longer registered and their place is freed.",
       "registered": "Registered",
       "myActivities": "My Activities",
       "noRegistrations": "No registrations yet",

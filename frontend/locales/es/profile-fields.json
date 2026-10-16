@@ -9,6 +9,7 @@
     "create": "Añadir campo",
     "edit": "Editar campo",
     "confirmDelete": "¿Eliminar este campo? Si ya tiene datos guardados, se archivará en lugar de borrarse.",
+    "confirmDeleteDescription": "Un campo archivado deja de pedirse en los formularios y sus datos se conservan.",
     "retired": "Archivado",
     "key": "Clave",
     "keyHint": "Identificador estable, en minúsculas. No se puede cambiar después.",

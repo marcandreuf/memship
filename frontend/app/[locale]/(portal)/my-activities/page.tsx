@@ -84,6 +84,7 @@ function RegistrationCard({ registration }: { registration: RegistrationData }) 
                 e.preventDefault();
                 confirmAction({
                     title: t("activities.registration.confirmCancel"),
+                    description: t("activities.registration.confirmCancelDescription"),
                     cancelLabel: t("common.cancel"),
                     confirmLabel: t("common.confirm"),
                     onConfirm: async () => {

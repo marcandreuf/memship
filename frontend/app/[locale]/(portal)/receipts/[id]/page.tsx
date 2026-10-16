@@ -87,6 +87,7 @@ export default function ReceiptDetailPage() {
   function handleEmit() {
     confirmAction({
       title: t("receipts.confirmEmit"),
+      description: t("receipts.confirmEmitDescription"),
       cancelLabel: t("common.cancel"),
       confirmLabel: t("receipts.emit"),
       onConfirm: async () => {
@@ -99,6 +100,7 @@ export default function ReceiptDetailPage() {
   function handleCancel() {
     confirmAction({
       title: t("receipts.confirmCancel"),
+      description: t("receipts.confirmCancelDescription"),
       cancelLabel: t("common.cancel"),
       confirmLabel: t("receipts.cancel"),
       onConfirm: async () => {
@@ -111,6 +113,7 @@ export default function ReceiptDetailPage() {
   function handleReemit() {
     confirmAction({
       title: t("receipts.confirmReemit"),
+      description: t("receipts.confirmReemitDescription"),
       cancelLabel: t("common.cancel"),
       confirmLabel: t("receipts.reemit"),
       onConfirm: async () => {

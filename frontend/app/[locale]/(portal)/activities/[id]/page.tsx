@@ -108,6 +108,7 @@ export default function ActivityDetailPage({
                   onClick={() => {
                     confirmAction({
                       title: t("activities.actions.confirmPublish"),
+                      description: t("activities.actions.confirmPublishDescription"),
                       cancelLabel: t("common.cancel"),
                       confirmLabel: t("activities.actions.publish"),
                       variant: "default",
@@ -131,6 +132,7 @@ export default function ActivityDetailPage({
                   onClick={() => {
                     confirmAction({
                       title: t("activities.actions.confirmArchive"),
+                      description: t("activities.actions.confirmArchiveDescription"),
                       cancelLabel: t("common.cancel"),
                       confirmLabel: t("activities.actions.archive"),
                       onConfirm: async () => {
@@ -154,6 +156,7 @@ export default function ActivityDetailPage({
                   onClick={() => {
                     confirmAction({
                       title: t("activities.actions.confirmCancel"),
+                      description: t("activities.actions.confirmCancelDescription"),
                       cancelLabel: t("common.cancel"),
                       confirmLabel: t("activities.actions.cancel"),
                       onConfirm: async () => {
@@ -176,6 +179,7 @@ export default function ActivityDetailPage({
                   onClick={() => {
                     confirmAction({
                       title: t("activities.actions.confirmDelete"),
+                      description: t("activities.actions.confirmDeleteDescription"),
                       cancelLabel: t("common.cancel"),
                       confirmLabel: t("common.delete"),
                       onConfirm: async () => {

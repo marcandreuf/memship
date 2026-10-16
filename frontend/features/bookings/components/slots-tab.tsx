@@ -328,6 +328,7 @@ function SlotRow({
             onClick={() =>
               confirmAction({
                 title: t("bookings.slots.confirmDelete"),
+                description: t("bookings.slots.confirmDeleteDescription"),
                 cancelLabel: t("common.cancel"),
                 confirmLabel: t("common.delete"),
                 onConfirm: onDelete,

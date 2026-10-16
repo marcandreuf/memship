@@ -79,7 +79,8 @@ export function LogoUpload({ logoUrl }: LogoUploadProps) {
 
   const handleDelete = () => {
     confirmAction({
-      title: t("activities.coverImage.confirmRemove"),
+      title: t("organizationLogo.confirmRemove"),
+      description: t("organizationLogo.confirmRemoveDescription"),
       cancelLabel: t("common.cancel"),
       confirmLabel: t("activities.coverImage.remove"),
       onConfirm: async () => {

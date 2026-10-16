@@ -20,7 +20,7 @@
       "noMembershipType": "This space is reserved for certain membership types and your record has none assigned. Ask the club to assign you one.",
       "price": "This booking costs {price} before tax; the receipt will show the final amount.",
       "priceOnPromotion": "If a place frees up you are booked automatically and charged {price} before tax; the receipt will show the final amount.",
-      "refundPolicy": "If you cancel before paying, the charge is cancelled with it. Once paid, the money is not returned automatically \u2014 not if you cancel, and not if the club removes the slot. Arrange any refund with the club."
+      "refundPolicy": "If you cancel before paying, the charge is cancelled with it. Once paid, the money is not returned automatically — not if you cancel, and not if the club removes the slot. Arrange any refund with the club."
     },
     "my": {
       "cancelClosed": "Too late to cancel",
@@ -30,7 +30,8 @@
       "empty": "No bookings.",
       "cancel": "Cancel",
       "keep": "Keep",
-      "confirmCancel": "Cancel this booking?"
+      "confirmCancel": "Cancel this booking?",
+      "confirmCancelDescription": "Your place is freed for another member. If you change your mind you will have to book it again."
     },
     "spaces": {
       "title": "Spaces",
@@ -42,7 +43,7 @@
       "typePlaceholder": "pitch, court, room…",
       "description": "Description",
       "price": "Price per booking",
-      "priceHint": "Before tax. Leave it empty, or 0, and the space is free \u2014 no receipt is raised.",
+      "priceHint": "Before tax. Leave it empty, or 0, and the space is free — no receipt is raised.",
       "free": "Free",
       "openTime": "Opens",
       "closeTime": "Closes",
@@ -54,6 +55,7 @@
       "noSpaces": "No spaces yet. Create one to start taking bookings.",
       "notFound": "Space not found.",
       "confirmDelete": "Delete this space? Its slots and bookings will be removed. To stop taking bookings without deleting anything, deactivate it from Edit.",
+      "confirmDeleteDescription": "This cannot be undone.",
       "deleteAffected": "{count, plural, one {# member has active bookings that will be cancelled and notified by email.} other {# members have active bookings that will be cancelled and notified by email.}}",
       "confirmHours": "Narrow the opening hours?",
       "hoursSlotsAffected": "{count, plural, one {# upcoming slot falls outside the new hours and will be deleted.} other {# upcoming slots fall outside the new hours and will be deleted.}}",
@@ -92,6 +94,7 @@
       "pastTime": "That time today has already passed.",
       "noSlots": "No slots yet. Add slots on concrete dates members can book.",
       "confirmDelete": "Delete this slot? Its bookings will be removed too. To stop taking bookings without deleting anything, use Deactivate.",
+      "confirmDeleteDescription": "This cannot be undone.",
       "deleteAffected": "{count, plural, one {# member has active bookings that will be cancelled and notified by email.} other {# members have active bookings that will be cancelled and notified by email.}}"
     },
     "adminBookings": {
@@ -102,7 +105,8 @@
       "status": "Status",
       "noBookings": "No bookings yet.",
       "cancel": "Cancel",
-      "confirmCancel": "Cancel this booking? A waitlisted member will be promoted."
+      "confirmCancel": "Cancel this booking? A waitlisted member will be promoted.",
+      "confirmCancelDescription": "The member loses their place."
     },
     "status": {
       "booked": "Booked",

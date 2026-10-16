@@ -70,9 +70,13 @@
       "archive": "Archivar",
       "cancel": "Cancelar actividad",
       "confirmPublish": "¿Publicar esta actividad? Será visible para los socios.",
+      "confirmPublishDescription": "Los socios podrán verla e inscribirse desde el portal.",
       "confirmArchive": "¿Archivar esta actividad?",
+      "confirmArchiveDescription": "Deja de aparecer en los listados y no admite inscripciones nuevas. Las que ya existen se conservan.",
       "confirmCancel": "¿Cancelar esta actividad? Esta acción no se puede deshacer.",
-      "confirmDelete": "¿Eliminar esta actividad?"
+      "confirmCancelDescription": "Las inscripciones quedan canceladas y la actividad no vuelve a abrirse.",
+      "confirmDelete": "¿Eliminar esta actividad?",
+      "confirmDeleteDescription": "Se borra con sus modalidades, precios e inscripciones. Para retirarla conservando el historial, archívala."
     },
     "modalities": {
       "title": "Modalidades",
@@ -83,7 +87,9 @@
       "deadline": "Fecha límite de inscripción",
       "create": "Añadir modalidad",
       "edit": "Editar modalidad",
-      "noModalities": "No hay modalidades configuradas"
+      "noModalities": "No hay modalidades configuradas",
+      "confirmDelete": "¿Eliminar esta modalidad?",
+      "confirmDeleteDescription": "Se eliminan también sus precios. Esta acción no se puede deshacer."
     },
     "prices": {
       "title": "Precios",
@@ -99,7 +105,9 @@
       "edit": "Editar precio",
       "noPrices": "No hay precios configurados",
       "free": "Gratis",
-      "vatBreakdown": "{base} + {rate}% IVA ({vat})"
+      "vatBreakdown": "{base} + {rate}% IVA ({vat})",
+      "confirmDelete": "¿Eliminar este precio?",
+      "confirmDeleteDescription": "Las inscripciones ya cobradas con él no cambian."
     },
     "discounts": {
       "title": "Descuentos",
@@ -119,7 +127,9 @@
       "enterCode": "Introduce el código",
       "apply": "Aplicar",
       "discountApplied": "descuento aplicado",
-      "validationFailed": "No se pudo validar el código"
+      "validationFailed": "No se pudo validar el código",
+      "confirmDelete": "¿Eliminar este código de descuento?",
+      "confirmDeleteDescription": "Dejará de poder canjearse. Las inscripciones que ya lo usaron no cambian."
     },
     "consents": {
       "title": "Consentimientos",
@@ -130,7 +140,9 @@
       "order": "Orden",
       "create": "Añadir consentimiento",
       "edit": "Editar consentimiento",
-      "noConsents": "No hay consentimientos configurados"
+      "noConsents": "No hay consentimientos configurados",
+      "confirmDelete": "¿Eliminar este consentimiento?",
+      "confirmDeleteDescription": "Dejará de pedirse al inscribirse. Esta acción no se puede deshacer."
     },
     "attachments": {
       "title": "Documentos adjuntos",
@@ -142,7 +154,9 @@
       "create": "Añadir tipo de documento",
       "edit": "Editar tipo de documento",
       "noAttachments": "No hay tipos de documento configurados",
-      "uploadFailed": "Error al subir el archivo"
+      "uploadFailed": "Error al subir el archivo",
+      "confirmDelete": "¿Eliminar este tipo de documento?",
+      "confirmDeleteDescription": "Dejará de pedirse al inscribirse. Esta acción no se puede deshacer."
     },
     "coverImage": {
       "title": "Imagen de portada",
@@ -154,6 +168,7 @@
       "maxSizeHint": "Máx. {size} MB. JPG, PNG, WebP o GIF.",
       "uploading": "Subiendo...",
       "confirmRemove": "¿Eliminar la imagen de portada?",
+      "confirmRemoveDescription": "La actividad se mostrará sin imagen. Puedes subir otra cuando quieras.",
       "invalidType": "Tipo de archivo no permitido. Usa JPG, PNG, WebP o GIF."
     },
     "allStatuses": "Todos los estados",
@@ -163,6 +178,7 @@
       "register": "Inscribirse",
       "cancelRegistration": "Cancelar inscripción",
       "confirmCancel": "¿Cancelar esta inscripción?",
+      "confirmCancelDescription": "El socio deja de estar inscrito y su plaza queda libre.",
       "registered": "Inscrito",
       "myActivities": "Mis actividades",
       "noRegistrations": "No hay inscripciones todavía",

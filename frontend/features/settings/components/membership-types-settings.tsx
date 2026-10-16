@@ -140,7 +140,8 @@ export function MembershipTypesSettings() {
 
   function handleDelete(id: number) {
     confirmAction({
-      title: t("members.confirmDelete"),
+      title: t("membershipTypesSettings.confirmDelete"),
+      description: t("membershipTypesSettings.confirmDeleteDescription"),
       cancelLabel: t("common.cancel"),
       confirmLabel: t("common.delete"),
       onConfirm: async () => {

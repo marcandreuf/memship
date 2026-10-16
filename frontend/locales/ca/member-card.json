@@ -34,6 +34,7 @@
     "dragOrClick": "Puja una foto",
     "hint": "JPG, PNG o WebP, fins a {size} MB",
     "remove": "Elimina",
-    "confirmRemove": "Vols eliminar la teva foto de perfil?"
+    "confirmRemove": "Vols eliminar la teva foto de perfil?",
+    "confirmRemoveDescription": "El teu carnet tornarà a mostrar les teves inicials. Pots pujar una altra foto quan vulguis."
   }
 }

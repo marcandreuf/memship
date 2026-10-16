@@ -203,11 +203,20 @@
     "createGroup": "Crear grup",
     "editGroup": "Editar grup",
     "deleteConfirm": "Estàs segur que vols eliminar aquest grup?",
+    "deleteConfirmDescription": "Els socis que hi pertanyen no s'eliminen: només deixen d'estar agrupats.",
     "noGroups": "Encara no hi ha grups",
     "info": "Els grups permeten organitzar els tipus de afiliació en categories (p. ex. Programes Juvenils, Socis Adults, Honoraris). Ajuden a mantenir l'ordre quan hi ha molts tipus de afiliació.",
     "membershipTypes": "Tipus de afiliació",
     "members": "Socis",
     "noMembershipTypes": "No hi ha tipus de afiliació en aquest grup",
     "noMembers": "No hi ha socis en aquest grup"
+  },
+  "membershipTypesSettings": {
+    "confirmDelete": "Vols eliminar aquest tipus de membre?",
+    "confirmDeleteDescription": "Els socis que el tinguin assignat es queden sense tipus. Aquesta acció no es pot desfer."
+  },
+  "organizationLogo": {
+    "confirmRemove": "Vols eliminar el logotip de l'organització?",
+    "confirmRemoveDescription": "Les pantalles i els correus tornaran a mostrar el nom. Pots pujar-ne un altre quan vulguis."
   }
 }

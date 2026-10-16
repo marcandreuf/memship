@@ -30,7 +30,8 @@
       "empty": "No hay reservas.",
       "cancel": "Cancelar",
       "keep": "Mantener",
-      "confirmCancel": "¿Cancelar esta reserva?"
+      "confirmCancel": "¿Cancelar esta reserva?",
+      "confirmCancelDescription": "La plaza queda libre para otro socio. Si cambias de idea, tendrás que reservarla de nuevo."
     },
     "spaces": {
       "title": "Espacios",
@@ -54,6 +55,7 @@
       "noSpaces": "Aún no hay espacios. Crea uno para empezar a aceptar reservas.",
       "notFound": "Espacio no encontrado.",
       "confirmDelete": "¿Eliminar este espacio? Se eliminarán sus franjas y reservas. Para dejar de aceptar reservas sin borrar nada, desactívalo desde Editar.",
+      "confirmDeleteDescription": "Esta acción no se puede deshacer.",
       "deleteAffected": "{count, plural, one {# socio tiene reservas activas que se cancelarán y se le avisará por correo.} other {# socios tienen reservas activas que se cancelarán y se les avisará por correo.}}",
       "confirmHours": "¿Reducir el horario de apertura?",
       "hoursSlotsAffected": "{count, plural, one {# franja próxima queda fuera del nuevo horario y se eliminará.} other {# franjas próximas quedan fuera del nuevo horario y se eliminarán.}}",
@@ -92,6 +94,7 @@
       "pastTime": "Esa hora de hoy ya ha pasado.",
       "noSlots": "Aún no hay franjas. Añade franjas en fechas concretas que los socios puedan reservar.",
       "confirmDelete": "¿Eliminar esta franja? También se eliminarán sus reservas. Para dejar de aceptar reservas sin borrar nada, usa Desactivar.",
+      "confirmDeleteDescription": "Esta acción no se puede deshacer.",
       "deleteAffected": "{count, plural, one {# socio tiene reservas activas que se cancelarán y se le avisará por correo.} other {# socios tienen reservas activas que se cancelarán y se les avisará por correo.}}"
     },
     "adminBookings": {
@@ -102,7 +105,8 @@
       "status": "Estado",
       "noBookings": "Aún no hay reservas.",
       "cancel": "Cancelar",
-      "confirmCancel": "¿Cancelar esta reserva? Se promocionará a un socio en lista de espera."
+      "confirmCancel": "¿Cancelar esta reserva? Se promocionará a un socio en lista de espera.",
+      "confirmCancelDescription": "El socio deja de tener la plaza."
     },
     "status": {
       "booked": "Reservada",

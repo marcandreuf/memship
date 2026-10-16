@@ -234,6 +234,7 @@ function RoleRow({
                   onClick={() =>
                     confirmAction({
                       title: t("roles.confirmDelete"),
+                      description: t("roles.confirmDeleteDescription"),
                       cancelLabel: t("common.cancel"),
                       confirmLabel: t("common.delete"),
                       onConfirm: async () => {

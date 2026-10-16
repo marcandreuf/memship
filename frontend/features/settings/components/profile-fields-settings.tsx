@@ -291,6 +291,7 @@ function DefinitionRow({
               confirmAction({
                 // A field that already holds values is retired, not erased.
                 title: t("profileFields.confirmDelete"),
+                description: t("profileFields.confirmDeleteDescription"),
                 cancelLabel: t("common.cancel"),
                 confirmLabel: t("common.delete"),
                 onConfirm: async () => {

@@ -325,7 +325,8 @@ function PriceRow({
             size="sm"
             onClick={() => {
               confirmAction({
-                title: t("activities.actions.confirmDelete"),
+                title: t("activities.prices.confirmDelete"),
+                description: t("activities.prices.confirmDeleteDescription"),
                 cancelLabel: t("common.cancel"),
                 confirmLabel: t("common.delete"),
                 onConfirm: async () => {
