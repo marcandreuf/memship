@@ -5,6 +5,12 @@ from datetime import datetime
 from pydantic import BaseModel, Field, field_validator
 
 from app.core.schema_types import Email, NonBlank, refuse_null
+from app.core.sepa_identifiers import (
+    blank_to_none,
+    normalize_pasted_iban,
+    refuse_invalid_creditor_id,
+    refuse_invalid_iban,
+)
 from app.domains.bookings.rules import validate_booking_rules
 
 
@@ -87,7 +93,10 @@ class OrganizationSettingsUpdate(BaseModel):
     date_format: str | None = Field(default=None, max_length=20)
     brand_color: str | None = Field(default=None, pattern=r"^#[0-9a-fA-F]{6}$")
     bank_name: str | None = Field(default=None, max_length=255)
-    bank_iban: str | None = Field(default=None, max_length=34, pattern=r"^[A-Z]{2}\d{2}[A-Z0-9]{4,30}$")
+    # The same rule a member's IBAN gets, not a looser one. This account is
+    # the `CdtrAcct` of every file memship generates, so a typo here costs
+    # every collection in every batch rather than one member's (#393).
+    bank_iban: str | None = Field(default=None, max_length=34)
     bank_bic: str | None = Field(default=None, max_length=11, pattern=r"^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$")
     invoice_prefix: str | None = Field(default=None, max_length=10)
     invoice_next_number: int | None = Field(default=None, ge=1)
@@ -104,5 +113,14 @@ class OrganizationSettingsUpdate(BaseModel):
     @classmethod
     def _check_booking_rules(cls, v: dict | None) -> dict | None:
         return validate_booking_rules(v) if v is not None else v
+
+    # Normalisation first, so an IBAN pasted in groups of four off a bank
+    # statement is not refused over whitespace, and an empty field still clears.
+    _blank_bank_fields = field_validator("bank_iban", "creditor_id", mode="before")(
+        blank_to_none
+    )
+    _normalize_iban = field_validator("bank_iban", mode="before")(normalize_pasted_iban)
+    _check_iban = field_validator("bank_iban")(refuse_invalid_iban)
+    _check_creditor_id = field_validator("creditor_id")(refuse_invalid_creditor_id)
 
     _not_null = field_validator("name")(refuse_null)

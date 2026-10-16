@@ -9,6 +9,7 @@
     "totalAmount": "Total",
     "emissionDate": "Data",
     "dueDate": "Venciment",
+    "dueDateWeekend": "Aquesta data cau en cap de setmana i els bancs no liquiden aquell dia. El banc pot avançar-la o rebutjar-la.",
     "status": "Estat",
     "statusDraft": "Esborrany",
     "statusReady": "Llesta",

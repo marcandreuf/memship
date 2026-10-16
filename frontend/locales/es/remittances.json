@@ -9,6 +9,7 @@
     "totalAmount": "Total",
     "emissionDate": "Fecha",
     "dueDate": "Vencimiento",
+    "dueDateWeekend": "Esa fecha cae en fin de semana y los bancos no liquidan ese día. El banco puede adelantarla o rechazarla.",
     "status": "Estado",
     "statusDraft": "Borrador",
     "statusReady": "Lista",

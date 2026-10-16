@@ -169,6 +169,35 @@ def validate_remittance_transition(current: str, target: str) -> None:
 # --- CRUD ---
 
 
+def refuse_past_collection_date(
+    db: Session, due_date: date, remittance_number: str | None = None
+) -> None:
+    """The SEPA collection date has to be a date the bank can still act on.
+
+    Nothing checked it: a batch dated 2020-01-05 was created and generated a
+    file carrying `<ReqdColltnDt>2020-01-05</ReqdColltnDt>`, which the bank
+    rejects whole (#395). Checked against the organisation's own today rather
+    than the server's, like every other date decision.
+
+    Deliberately only the past. A minimum lead time in business days and a
+    TARGET settlement calendar are both real requirements, but the number of
+    days varies by bank and sequence type and the holiday calendar is a
+    dependency decision — guessing either would refuse dates that are fine.
+    The weekend is surfaced as a warning on the form instead.
+    """
+    today = org_today(db)
+    if due_date >= today:
+        return
+    detail = {
+        "code": "collection_date_in_past",
+        "due_date": due_date.isoformat(),
+        "today": today.isoformat(),
+    }
+    if remittance_number:
+        detail["remittance_number"] = remittance_number
+    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
+
+
 def create_remittance(
     db: Session, data: RemittanceCreate, created_by_id: int
 ) -> Remittance:
@@ -190,6 +219,8 @@ def create_remittance(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Organization bank IBAN must be configured",
         )
+
+    refuse_past_collection_date(db, data.due_date)
 
     # Fetch receipts
     receipts = (
@@ -294,17 +325,8 @@ def create_remittance(
     return remittance
 
 
-def generate_remittance_xml(db: Session, remittance: Remittance) -> bytes:
-    """Generate SEPA XML for a remittance and save to storage.
-
-    Transitions status to 'ready'.
-    """
-    if remittance.status not in ("draft", "ready"):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Cannot generate XML for remittance in '{remittance.status}' status",
-        )
-
+def batch_receipts(db: Session, remittance: Remittance) -> list[Receipt]:
+    """What the batch actually holds right now, in file order."""
     receipts = (
         db.query(Receipt)
         .filter(Receipt.remittance_id == remittance.id, Receipt.is_active.is_(True))
@@ -316,30 +338,80 @@ def generate_remittance_xml(db: Session, remittance: Remittance) -> bytes:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Remittance has no receipts",
         )
+    return receipts
 
-    # The batch's own numbers against what it actually holds. Everything that
-    # takes a receipt out of an open batch recounts it, so this cannot fire in
-    # normal operation — it is here because the file is the thing the bank acts
-    # on, and a future path that forgets to recount must not be able to produce
-    # one that collects less than the batch says (#384). `SepaExportError`
-    # already refuses for a vanished mandate; this is the same refusal for a
-    # vanished receipt.
-    live_total = sum(
-        (Decimal(str(r.total_amount)) for r in receipts), Decimal("0")
-    )
+
+def refuse_if_out_of_step(remittance: Remittance, receipts: list[Receipt]) -> None:
+    """The batch's own numbers against what it actually holds.
+
+    Everything that takes a receipt out of an open batch recounts it, so this
+    cannot fire in normal operation — it is here because the file is the thing
+    the bank acts on, and a future path that forgets to recount must not be
+    able to produce one that collects less than the batch says (#384).
+    `SepaExportError` already refuses for a vanished mandate; this is the same
+    refusal for a vanished receipt.
+    """
+    live_total = sum((Decimal(str(r.total_amount)) for r in receipts), Decimal("0"))
     stored_total = Decimal(str(remittance.total_amount))
-    if len(receipts) != remittance.receipt_count or live_total != stored_total:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail={
-                "code": "remittance_out_of_step",
-                "remittance_number": remittance.remittance_number,
-                "stored_count": remittance.receipt_count,
-                "stored_total": str(stored_total),
-                "live_count": len(receipts),
-                "live_total": str(live_total),
-            },
+    if len(receipts) == remittance.receipt_count and live_total == stored_total:
+        return
+    raise HTTPException(
+        status_code=status.HTTP_409_CONFLICT,
+        detail={
+            "code": "remittance_out_of_step",
+            "remittance_number": remittance.remittance_number,
+            "stored_count": remittance.receipt_count,
+            "stored_total": str(stored_total),
+            "live_count": len(receipts),
+            "live_total": str(live_total),
+        },
+    )
+
+
+def refuse_if_mandates_withdrawn(
+    db: Session, remittance: Remittance, receipts: list[Receipt]
+) -> None:
+    """Every member in the batch still has an active mandate to collect under.
+
+    The same condition `generate_sepa_xml` refuses on, asked without building a
+    file — so a batch whose regeneration was correctly refused cannot be marked
+    as sent to the bank beside the stale file it still offers (#397).
+    """
+    member_ids = {r.member_id for r in receipts}
+    mandated = {
+        m.member_id
+        for m in db.query(SepaMandate).filter(
+            SepaMandate.member_id.in_(member_ids),
+            SepaMandate.status == "active",
+            SepaMandate.is_active.is_(True),
         )
+    }
+    withdrawn = member_ids - mandated
+    if not withdrawn:
+        return
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail={
+            "code": "sepa_mandate_cancelled",
+            "remittance_number": remittance.remittance_number,
+            "members": label_members(db, withdrawn),
+        },
+    )
+
+
+def generate_remittance_xml(db: Session, remittance: Remittance) -> bytes:
+    """Generate SEPA XML for a remittance and save to storage.
+
+    Transitions status to 'ready'.
+    """
+    if remittance.status not in ("draft", "ready"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot generate XML for remittance in '{remittance.status}' status",
+        )
+
+    receipts = batch_receipts(db, remittance)
+    refuse_if_out_of_step(remittance, receipts)
 
     # Load mandates
     member_ids = {r.member_id for r in receipts}
@@ -356,6 +428,8 @@ def generate_remittance_xml(db: Session, remittance: Remittance) -> bytes:
     for m in mandates:
         if m.member_id not in mandate_map or m.created_at > mandate_map[m.member_id].created_at:
             mandate_map[m.member_id] = m
+
+    refuse_past_collection_date(db, remittance.due_date, remittance.remittance_number)
 
     # A batch created before the eligibility gate existed can still hold a
     # 0,00 € receipt (#392). Name it here rather than let `sepaxml` fail on the
@@ -419,8 +493,18 @@ def generate_remittance_xml(db: Session, remittance: Remittance) -> bytes:
 
 
 def mark_submitted(db: Session, remittance: Remittance) -> Remittance:
-    """Mark remittance as submitted to bank."""
+    """Mark remittance as submitted to bank.
+
+    Re-runs the three conditions the file on disk asserts, because this is the
+    moment someone says that file went to the bank. Cancel both of a member's
+    mandates and generation refuses, correctly — but the page still offered the
+    *previous* file and a working *mark submitted* button beside it (#397).
+    """
     validate_remittance_transition(remittance.status, "submitted")
+    receipts = batch_receipts(db, remittance)
+    refuse_if_out_of_step(remittance, receipts)
+    refuse_if_mandates_withdrawn(db, remittance, receipts)
+    refuse_past_collection_date(db, remittance.due_date, remittance.remittance_number)
     remittance.status = "submitted"
     db.flush()
     return remittance

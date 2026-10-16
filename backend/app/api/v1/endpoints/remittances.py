@@ -32,6 +32,10 @@ from app.domains.billing.service import dispatch_payment_notifications
 
 router = APIRouter(prefix="/remittances", tags=["remittances"])
 
+# A batch whose file still stands for something a bank could act on, or did.
+# `draft` never has one, and `cancelled` released its receipts.
+DOWNLOADABLE_STATUSES = ("ready", "submitted", "processed", "closed")
+
 
 # No `response_model` — see the note on `/eligible-receipts` below for why
 # declaring one turned this module's money fields into strings.
@@ -157,6 +161,19 @@ def download_xml(
         raise HTTPException(status_code=404, detail="Remittance not found")
     if not remittance.sepa_file_path:
         raise HTTPException(status_code=404, detail="XML file not yet generated")
+    # Download was the one operation on a remittance with no opinion about its
+    # state: a cancelled batch still handed out the file it once generated,
+    # whose receipts were by then back in circulation and batched elsewhere.
+    # Only the button was hidden; the route was open (#397).
+    if remittance.status not in DOWNLOADABLE_STATUSES:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "remittance_file_withdrawn",
+                "remittance_number": remittance.remittance_number,
+                "status": remittance.status,
+            },
+        )
 
     file_path = Path(remittance.sepa_file_path)
     if not file_path.exists():

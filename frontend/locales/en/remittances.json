@@ -9,6 +9,7 @@
     "totalAmount": "Total",
     "emissionDate": "Date",
     "dueDate": "Due Date",
+    "dueDateWeekend": "That date falls on a weekend, which is not a settlement day. The bank may move it or reject it.",
     "status": "Status",
     "statusDraft": "Draft",
     "statusReady": "Ready",

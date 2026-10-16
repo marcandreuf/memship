@@ -181,6 +181,21 @@ export default function RemittancesPage() {
   );
 }
 
+// The collection date, in the two shapes this form needs it. Both read the
+// browser's local day rather than UTC: a date input is a local calendar date,
+// and `toISOString` would hand back yesterday for anyone east of Greenwich.
+function localIsoDate(value: Date): string {
+  return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(
+    value.getDate()
+  ).padStart(2, "0")}`;
+}
+
+function isWeekend(iso: string): boolean {
+  if (!iso) return false;
+  const day = new Date(`${iso}T00:00:00`).getDay();
+  return day === 0 || day === 6;
+}
+
 function CreateRemittanceForm({ onSuccess }: { onSuccess: () => void }) {
   const t = useTranslations();
   const { formatCurrency } = useFormatters();
@@ -188,6 +203,7 @@ function CreateRemittanceForm({ onSuccess }: { onSuccess: () => void }) {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [dueDate, setDueDate] = useState("");
   const [notes, setNotes] = useState("");
+  const todayIso = localIsoDate(new Date());
 
   // What can be batched is the backend's rule, not this dialog's: it also
   // covers the document type and the member's mandate, and it includes overdue
@@ -303,7 +319,24 @@ function CreateRemittanceForm({ onSuccess }: { onSuccess: () => void }) {
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
           <label className="text-sm font-medium">{t("remittances.dueDate")}</label>
-          <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+          {/* `min` stops the picker offering a date the bank cannot act on;
+              the API refuses one anyway (#395). No default is set, because any
+              lead time memship chose would be a claim about a particular
+              bank's cut-off that it has no way to know. */}
+          <Input
+            type="date"
+            min={todayIso}
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+          />
+          {/* A warning, not a refusal: a weekend is not a settlement day, but
+              the TARGET holiday calendar is not something memship carries, so
+              refusing on the weekend alone would be half a rule. */}
+          {isWeekend(dueDate) && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              {t("remittances.dueDateWeekend")}
+            </p>
+          )}
         </div>
         <div>
           <label className="text-sm font-medium">{t("remittances.notes")}</label>

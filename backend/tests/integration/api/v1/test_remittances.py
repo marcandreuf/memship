@@ -14,6 +14,11 @@ from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Person
 
 
+# The SEPA collection date has to be one the bank can still act on, so these
+# fixtures cannot carry a literal that quietly moves into the past (#395).
+COLLECTION_DATE = (date.today() + timedelta(days=14)).isoformat()
+
+
 def _create_user(db, role="admin", suffix="rem"):
     person = Person(first_name="Admin", last_name="User", email=f"{suffix}-{role}@examplee6e3b1.com")
     db.add(person)
@@ -147,7 +152,7 @@ class TestRemittanceCRUD:
 
         resp = client.post(
             "/api/v1/remittances/",
-            json={"receipt_ids": [r1.id], "due_date": "2026-05-01"},
+            json={"receipt_ids": [r1.id], "due_date": COLLECTION_DATE},
             cookies=_auth_cookie(admin),
         )
         assert resp.status_code == 201
@@ -165,7 +170,7 @@ class TestRemittanceCRUD:
 
         resp = client.post(
             "/api/v1/remittances/",
-            json={"receipt_ids": [r1.id], "due_date": "2026-05-01"},
+            json={"receipt_ids": [r1.id], "due_date": COLLECTION_DATE},
             cookies=_auth_cookie(admin),
         )
         assert resp.status_code == 400
@@ -188,7 +193,7 @@ class TestRemittanceCRUD:
 
         resp = client.post(
             "/api/v1/remittances/",
-            json={"receipt_ids": [r1.id], "due_date": "2026-05-01"},
+            json={"receipt_ids": [r1.id], "due_date": COLLECTION_DATE},
             cookies=_auth_cookie(admin),
         )
         assert resp.status_code == 400
@@ -203,14 +208,14 @@ class TestRemittanceCRUD:
         # Create first remittance
         client.post(
             "/api/v1/remittances/",
-            json={"receipt_ids": [r1.id], "due_date": "2026-05-01"},
+            json={"receipt_ids": [r1.id], "due_date": COLLECTION_DATE},
             cookies=_auth_cookie(admin),
         )
 
         # Try to batch same receipt again
         resp = client.post(
             "/api/v1/remittances/",
-            json={"receipt_ids": [r1.id], "due_date": "2026-05-01"},
+            json={"receipt_ids": [r1.id], "due_date": COLLECTION_DATE},
             cookies=_auth_cookie(admin),
         )
         assert resp.status_code == 400
@@ -223,7 +228,7 @@ class TestRemittanceCRUD:
 
         client.post(
             "/api/v1/remittances/",
-            json={"receipt_ids": [r1.id], "due_date": "2026-05-01"},
+            json={"receipt_ids": [r1.id], "due_date": COLLECTION_DATE},
             cookies=_auth_cookie(admin),
         )
 
@@ -240,7 +245,7 @@ class TestRemittanceCRUD:
             receipt = _create_receipt(db, member.id, admin.id, suffix=f"rem-pp{i}")
             client.post(
                 "/api/v1/remittances/",
-                json={"receipt_ids": [receipt.id], "due_date": "2026-05-01"},
+                json={"receipt_ids": [receipt.id], "due_date": COLLECTION_DATE},
                 cookies=_auth_cookie(admin),
             )
 
@@ -259,7 +264,7 @@ class TestRemittanceCRUD:
 
         create_resp = client.post(
             "/api/v1/remittances/",
-            json={"receipt_ids": [r1.id], "due_date": "2026-05-01"},
+            json={"receipt_ids": [r1.id], "due_date": COLLECTION_DATE},
             cookies=_auth_cookie(admin),
         )
         rem_id = create_resp.json()["id"]
@@ -278,7 +283,7 @@ class TestSepaXmlWorkflow:
 
         create_resp = client.post(
             "/api/v1/remittances/",
-            json={"receipt_ids": [r1.id], "due_date": "2026-05-01"},
+            json={"receipt_ids": [r1.id], "due_date": COLLECTION_DATE},
             cookies=_auth_cookie(admin),
         )
         rem_id = create_resp.json()["id"]
@@ -308,7 +313,7 @@ class TestSepaXmlWorkflow:
             "/api/v1/remittances/",
             json={
                 "receipt_ids": [r.id for r in receipts],
-                "due_date": "2026-05-01",
+                "due_date": COLLECTION_DATE,
             },
             cookies=_auth_cookie(admin),
         )
@@ -338,7 +343,7 @@ class TestSepaXmlWorkflow:
 
         create_resp = client.post(
             "/api/v1/remittances/",
-            json={"receipt_ids": [r1.id], "due_date": "2026-05-01"},
+            json={"receipt_ids": [r1.id], "due_date": COLLECTION_DATE},
             cookies=_auth_cookie(admin),
         )
         rem_id = create_resp.json()["id"]
@@ -358,7 +363,7 @@ class TestSepaXmlWorkflow:
 
         create_resp = client.post(
             "/api/v1/remittances/",
-            json={"receipt_ids": [r1.id], "due_date": "2026-05-01"},
+            json={"receipt_ids": [r1.id], "due_date": COLLECTION_DATE},
             cookies=_auth_cookie(admin),
         )
         rem_id = create_resp.json()["id"]
@@ -376,7 +381,7 @@ class TestSepaXmlWorkflow:
 
         create_resp = client.post(
             "/api/v1/remittances/",
-            json={"receipt_ids": [r1.id], "due_date": "2026-05-01"},
+            json={"receipt_ids": [r1.id], "due_date": COLLECTION_DATE},
             cookies=_auth_cookie(admin),
         )
         rem_id = create_resp.json()["id"]
@@ -395,7 +400,7 @@ class TestImportReturns:
 
         create_resp = client.post(
             "/api/v1/remittances/",
-            json={"receipt_ids": [r1.id], "due_date": "2026-05-01"},
+            json={"receipt_ids": [r1.id], "due_date": COLLECTION_DATE},
             cookies=_auth_cookie(admin),
         )
         rem_id = create_resp.json()["id"]
@@ -424,7 +429,7 @@ class TestImportReturns:
 
         create_resp = client.post(
             "/api/v1/remittances/",
-            json={"receipt_ids": [r1.id], "due_date": "2026-05-01"},
+            json={"receipt_ids": [r1.id], "due_date": COLLECTION_DATE},
             cookies=_auth_cookie(admin),
         )
         rem_id = create_resp.json()["id"]
@@ -452,7 +457,7 @@ class TestRemittanceLifecycle:
         # Create (draft)
         create_resp = client.post(
             "/api/v1/remittances/",
-            json={"receipt_ids": [r1.id], "due_date": "2026-05-01"},
+            json={"receipt_ids": [r1.id], "due_date": COLLECTION_DATE},
             cookies=_auth_cookie(admin),
         )
         rem_id = create_resp.json()["id"]
@@ -486,7 +491,7 @@ class TestRemittanceLifecycle:
 
         create_resp = client.post(
             "/api/v1/remittances/",
-            json={"receipt_ids": [r1.id], "due_date": "2026-05-01"},
+            json={"receipt_ids": [r1.id], "due_date": COLLECTION_DATE},
             cookies=_auth_cookie(admin),
         )
         rem_id = create_resp.json()["id"]
@@ -503,7 +508,7 @@ class TestRemittanceLifecycle:
 
         create_resp = client.post(
             "/api/v1/remittances/",
-            json={"receipt_ids": [r1.id], "due_date": "2026-05-01"},
+            json={"receipt_ids": [r1.id], "due_date": COLLECTION_DATE},
             cookies=_auth_cookie(admin),
         )
         rem_id = create_resp.json()["id"]
@@ -522,7 +527,7 @@ class TestRemittanceLifecycle:
 
         create_resp = client.post(
             "/api/v1/remittances/",
-            json={"receipt_ids": [r1.id], "due_date": "2026-05-01"},
+            json={"receipt_ids": [r1.id], "due_date": COLLECTION_DATE},
             cookies=_auth_cookie(admin),
         )
         rem_id = create_resp.json()["id"]
@@ -537,7 +542,7 @@ class TestRemittanceAuth:
         member_user = _create_user(db, role="member", suffix="rem-auth1")
         resp = client.post(
             "/api/v1/remittances/",
-            json={"receipt_ids": [1], "due_date": "2026-05-01"},
+            json={"receipt_ids": [1], "due_date": COLLECTION_DATE},
             cookies=_auth_cookie(member_user),
         )
         assert resp.status_code == 403
@@ -553,7 +558,7 @@ class TestCloseReconcilesPayments:
 
     FANOUT = "app.tasks.billing_tasks.payment_notifications_fanout.delay"
 
-    def _submitted_remittance(self, client, admin, receipt_ids, due_date="2026-05-01"):
+    def _submitted_remittance(self, client, admin, receipt_ids, due_date=COLLECTION_DATE):
         create_resp = client.post(
             "/api/v1/remittances/",
             json={"receipt_ids": receipt_ids, "due_date": due_date},
@@ -582,7 +587,8 @@ class TestCloseReconcilesPayments:
             receipt = db.query(Receipt).filter(Receipt.id == receipt_id).first()
             assert receipt.status == "paid"
             assert receipt.payment_method == "direct_debit"
-            assert receipt.payment_date == date(2026, 5, 1)
+            # The batch's own collection date, not the day it was closed.
+            assert receipt.payment_date == date.fromisoformat(COLLECTION_DATE)
 
     def test_returned_receipts_are_left_alone(self, client, db):
         _ensure_org_settings(db)
@@ -721,7 +727,7 @@ class TestReturnedReceiptCanBeCollectedAgain:
 
         created = client.post(
             "/api/v1/remittances/",
-            json={"receipt_ids": [receipt.id], "due_date": "2026-05-01"},
+            json={"receipt_ids": [receipt.id], "due_date": COLLECTION_DATE},
             cookies=_auth_cookie(admin),
         )
         assert created.status_code == 201
@@ -756,7 +762,7 @@ class TestReturnedReceiptCanBeCollectedAgain:
 
         resp = client.post(
             "/api/v1/remittances/",
-            json={"receipt_ids": [receipt.id], "due_date": "2026-06-01"},
+            json={"receipt_ids": [receipt.id], "due_date": COLLECTION_DATE},
             cookies=_auth_cookie(admin),
         )
         assert resp.status_code == 201, resp.json()
@@ -824,7 +830,7 @@ class TestEligibleReceipts:
         receipt = _create_receipt(db, member.id, admin.id, suffix="rem-el4-01")
         client.post(
             "/api/v1/remittances/",
-            json={"receipt_ids": [receipt.id], "due_date": "2026-05-01"},
+            json={"receipt_ids": [receipt.id], "due_date": COLLECTION_DATE},
             cookies=_auth_cookie(admin),
         )
 
@@ -889,7 +895,7 @@ class TestAmountsSerialiseAsNumbers:
 
         created = client.post(
             "/api/v1/remittances/",
-            json={"receipt_ids": [receipt.id], "due_date": "2026-12-01"},
+            json={"receipt_ids": [receipt.id], "due_date": COLLECTION_DATE},
             cookies=_auth_cookie(admin),
         )
         assert created.status_code in (200, 201), created.text
@@ -926,7 +932,7 @@ class TestMandateErrorsNameTheMember:
 
         resp = client.post(
             "/api/v1/remittances/",
-            json={"receipt_ids": [receipt.id], "due_date": "2026-05-01"},
+            json={"receipt_ids": [receipt.id], "due_date": COLLECTION_DATE},
             cookies=_auth_cookie(admin),
         )
         assert resp.status_code == 400
@@ -1002,7 +1008,7 @@ class TestBatchedReceiptIntegrity:
             "/api/v1/remittances/",
             json={
                 "receipt_ids": [r.id for r in receipts],
-                "due_date": "2026-12-01",
+                "due_date": COLLECTION_DATE,
             },
             cookies=_auth_cookie(admin),
         )
@@ -1223,7 +1229,7 @@ class TestReturnImportShape:
         number = receipt.receipt_number
         created = client.post(
             "/api/v1/remittances/",
-            json={"receipt_ids": [receipt.id], "due_date": "2026-05-01"},
+            json={"receipt_ids": [receipt.id], "due_date": COLLECTION_DATE},
             cookies=_auth_cookie(admin),
         )
         rem_id = created.json()["id"]
@@ -1312,7 +1318,7 @@ class TestReturnImportReportsOutcomes:
         ]
         created = client.post(
             "/api/v1/remittances/",
-            json={"receipt_ids": [r.id for r in receipts], "due_date": "2026-05-01"},
+            json={"receipt_ids": [r.id for r in receipts], "due_date": COLLECTION_DATE},
             cookies=_auth_cookie(admin),
         )
         assert created.status_code == 201, created.text
@@ -1425,7 +1431,7 @@ class TestReturnImportReportsOutcomes:
         stranger = _create_receipt(db, other_member.id, admin.id, suffix="ret-other-b-01")
         other = client.post(
             "/api/v1/remittances/",
-            json={"receipt_ids": [stranger.id], "due_date": "2026-05-01"},
+            json={"receipt_ids": [stranger.id], "due_date": COLLECTION_DATE},
             cookies=_auth_cookie(admin),
         )
         other_number = other.json()["remittance_number"]
@@ -1495,7 +1501,7 @@ class TestZeroAmountReceiptsStayOutOfBatches:
 
         resp = client.post(
             "/api/v1/remittances/",
-            json={"receipt_ids": [free.id], "due_date": "2026-05-01"},
+            json={"receipt_ids": [free.id], "due_date": COLLECTION_DATE},
             cookies=_auth_cookie(admin),
         )
 
@@ -1512,7 +1518,7 @@ class TestZeroAmountReceiptsStayOutOfBatches:
         payable = _create_receipt(db, member.id, admin.id, suffix="zero-legacy-02")
         created = client.post(
             "/api/v1/remittances/",
-            json={"receipt_ids": [payable.id], "due_date": "2026-05-01"},
+            json={"receipt_ids": [payable.id], "due_date": COLLECTION_DATE},
             cookies=_auth_cookie(admin),
         )
         rem_id = created.json()["id"]
@@ -1535,3 +1541,163 @@ class TestZeroAmountReceiptsStayOutOfBatches:
         assert detail["code"] == "receipts_without_amount"
         assert detail["receipts"] == [free.receipt_number]
         assert detail["remittance_number"] == remittance.remittance_number
+
+
+class TestCollectionDateMustBeCollectable:
+    """The SEPA collection date, checked (#395).
+
+    Nothing checked it: a batch dated 2020-01-05 was created and generated a
+    file carrying `<ReqdColltnDt>2020-01-05</ReqdColltnDt>`, which the bank
+    rejects whole.
+    """
+
+    def _receipt(self, client, db, suffix):
+        _ensure_org_settings(db)
+        admin = _create_user(db, suffix=suffix)
+        member, _ = _create_member_with_mandate(db, suffix=suffix)
+        return admin, _create_receipt(db, member.id, admin.id, suffix=f"{suffix}-01")
+
+    def test_a_batch_cannot_be_created_for_a_date_that_has_passed(self, client, db):
+        admin, receipt = self._receipt(client, db, "date-past")
+
+        resp = client.post(
+            "/api/v1/remittances/",
+            json={"receipt_ids": [receipt.id], "due_date": "2020-01-05"},
+            cookies=_auth_cookie(admin),
+        )
+
+        assert resp.status_code == 400, resp.text
+        assert resp.json()["detail"]["code"] == "collection_date_in_past"
+        assert resp.json()["detail"]["due_date"] == "2020-01-05"
+
+    def test_today_is_accepted(self, client, db):
+        """Only the past is refused. A same-day collection is the bank's call,
+        and a lead time memship invented would refuse dates that are fine."""
+        admin, receipt = self._receipt(client, db, "date-today")
+
+        resp = client.post(
+            "/api/v1/remittances/",
+            json={"receipt_ids": [receipt.id], "due_date": date.today().isoformat()},
+            cookies=_auth_cookie(admin),
+        )
+
+        assert resp.status_code == 201, resp.text
+
+    def test_a_batch_left_until_its_date_has_passed_will_not_build_a_file(self, client, db):
+        admin, receipt = self._receipt(client, db, "date-stale")
+        created = client.post(
+            "/api/v1/remittances/",
+            json={"receipt_ids": [receipt.id], "due_date": COLLECTION_DATE},
+            cookies=_auth_cookie(admin),
+        )
+        rem_id = created.json()["id"]
+
+        # The batch sat unsent until its collection date went by.
+        remittance = db.query(Remittance).filter(Remittance.id == rem_id).first()
+        remittance.due_date = date.today() - timedelta(days=1)
+        db.flush()
+
+        resp = client.post(
+            f"/api/v1/remittances/{rem_id}/generate-xml", cookies=_auth_cookie(admin)
+        )
+
+        assert resp.status_code == 400, resp.text
+        assert resp.json()["detail"]["code"] == "collection_date_in_past"
+
+
+class TestAFileOnlyStandsWhileTheBatchDoes:
+    """Download and *mark submitted* had no opinion about the batch's state.
+
+    A cancelled batch still handed out the file it once generated, whose
+    receipts were by then back in circulation; and a batch whose regeneration
+    was correctly refused still offered the stale file beside a working *mark
+    submitted* button (#397).
+    """
+
+    def _ready_batch(self, client, db, suffix):
+        _ensure_org_settings(db)
+        admin = _create_user(db, suffix=suffix)
+        member, _ = _create_member_with_mandate(db, suffix=suffix)
+        receipt = _create_receipt(db, member.id, admin.id, suffix=f"{suffix}-01")
+        created = client.post(
+            "/api/v1/remittances/",
+            json={"receipt_ids": [receipt.id], "due_date": COLLECTION_DATE},
+            cookies=_auth_cookie(admin),
+        )
+        rem_id = created.json()["id"]
+        generated = client.post(
+            f"/api/v1/remittances/{rem_id}/generate-xml", cookies=_auth_cookie(admin)
+        )
+        assert generated.status_code == 200, generated.text
+        return admin, member, receipt, rem_id
+
+    def test_a_ready_batch_still_serves_its_file(self, client, db):
+        admin, _, _, rem_id = self._ready_batch(client, db, "file-ready")
+
+        resp = client.get(
+            f"/api/v1/remittances/{rem_id}/download-xml", cookies=_auth_cookie(admin)
+        )
+
+        assert resp.status_code == 200, resp.text
+        assert b"<ReqdColltnDt>" in resp.content
+
+    def test_a_cancelled_batch_does_not(self, client, db):
+        admin, _, _, rem_id = self._ready_batch(client, db, "file-cancelled")
+        cancelled = client.post(
+            f"/api/v1/remittances/{rem_id}/cancel", cookies=_auth_cookie(admin)
+        )
+        assert cancelled.status_code == 200, cancelled.text
+
+        resp = client.get(
+            f"/api/v1/remittances/{rem_id}/download-xml", cookies=_auth_cookie(admin)
+        )
+
+        assert resp.status_code == 409, resp.text
+        assert resp.json()["detail"]["code"] == "remittance_file_withdrawn"
+        assert resp.json()["detail"]["status"] == "cancelled"
+
+    def test_a_batch_whose_mandate_went_away_cannot_be_marked_submitted(self, client, db):
+        """The sharper half: generation refuses, so the file on disk is the
+        previous one — and saying it went to the bank must refuse too."""
+        admin, member, _, rem_id = self._ready_batch(client, db, "file-nomandate")
+        for mandate in db.query(SepaMandate).filter(SepaMandate.member_id == member.id):
+            mandate.status = "cancelled"
+        db.flush()
+
+        regenerate = client.post(
+            f"/api/v1/remittances/{rem_id}/generate-xml", cookies=_auth_cookie(admin)
+        )
+        assert regenerate.status_code == 400, regenerate.text
+
+        resp = client.post(
+            f"/api/v1/remittances/{rem_id}/mark-submitted", cookies=_auth_cookie(admin)
+        )
+
+        assert resp.status_code == 400, resp.text
+        assert resp.json()["detail"]["code"] == "sepa_mandate_cancelled"
+
+    def test_a_batch_out_of_step_with_its_receipts_cannot_be_marked_submitted(self, client, db):
+        admin, _, receipt, rem_id = self._ready_batch(client, db, "file-outofstep")
+        remittance = db.query(Remittance).filter(Remittance.id == rem_id).first()
+        remittance.receipt_count = 7
+        db.flush()
+
+        resp = client.post(
+            f"/api/v1/remittances/{rem_id}/mark-submitted", cookies=_auth_cookie(admin)
+        )
+
+        assert resp.status_code == 409, resp.text
+        assert resp.json()["detail"]["code"] == "remittance_out_of_step"
+
+    def test_a_batch_whose_date_went_by_cannot_be_marked_submitted(self, client, db):
+        admin, _, _, rem_id = self._ready_batch(client, db, "file-datepast")
+        remittance = db.query(Remittance).filter(Remittance.id == rem_id).first()
+        remittance.due_date = date.today() - timedelta(days=1)
+        db.flush()
+
+        resp = client.post(
+            f"/api/v1/remittances/{rem_id}/mark-submitted", cookies=_auth_cookie(admin)
+        )
+
+        assert resp.status_code == 400, resp.text
+        assert resp.json()["detail"]["code"] == "collection_date_in_past"
