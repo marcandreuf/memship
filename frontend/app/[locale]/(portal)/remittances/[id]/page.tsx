@@ -22,7 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
 import { useFormatters } from "@/hooks/use-formatters";
 import { toast } from "sonner";
-import { getErrorMessage, type ErrorTranslator } from "@/lib/errors";
+import { type ErrorTranslator } from "@/lib/errors";
 import {
   useRemittance,
   useGenerateRemittanceXml,
@@ -87,8 +87,8 @@ export default function RemittanceDetailPage() {
     try {
       await generateXmlMutation.mutateAsync(remittance!.id);
       toast.success(t("toast.success.saved"));
-    } catch (err) {
-      toast.error(getErrorMessage(err, t));
+    } catch {
+      // Reported once by the mutation cache in react-query-provider (#378).
     }
   }
 
@@ -121,7 +121,10 @@ export default function RemittanceDetailPage() {
     confirmAction({
       title: t("remittances.confirmCancel"),
       cancelLabel: t("common.cancel"),
-      confirmLabel: t("remittances.cancelRemittance"),
+      // Not `cancelRemittance`: that is the word "Cancel" in all three locales,
+      // so the dialog offered two buttons reading the same on a destructive
+      // action and position was the only cue (#380).
+      confirmLabel: t("remittances.cancelConfirmAction"),
       onConfirm: async () => {
         await cancelMutation.mutateAsync(remittance!.id);
         toast.success(t("toast.success.saved"));
@@ -219,7 +222,12 @@ export default function RemittanceDetailPage() {
                     <TableCell className="text-right font-mono">{formatCurrency(r.total_amount)}</TableCell>
                     <TableCell>
                       <Badge variant={RECEIPT_STATUS_VARIANTS[r.status] || "outline"}>
-                        {r.status}
+                        {/* The database value was printed raw here, so this one
+                            table read `emitted` where every other list in the
+                            app reads `Emitido` (#380). */}
+                        {t(
+                          `receipts.status${r.status.charAt(0).toUpperCase()}${r.status.slice(1)}`
+                        )}
                       </Badge>
                     </TableCell>
                   </TableRow>
@@ -304,8 +312,8 @@ function ImportReturnsForm({
     try {
       const result = await mutation.mutateAsync({ id: remittanceId, data });
       onResult(result);
-    } catch (err) {
-      toast.error(getErrorMessage(err, t));
+    } catch {
+      // Reported once by the mutation cache in react-query-provider (#378).
     }
   }
 

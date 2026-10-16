@@ -16,7 +16,10 @@ from app.domains.billing.models import (
     RemittanceSequence,
     SepaMandate,
 )
-from app.domains.billing.schemas import RemittanceCreate
+from app.domains.billing.schemas import (
+    EligibleReceiptResponse,
+    RemittanceCreate,
+)
 from app.domains.billing.sequences import next_yearly_number
 from app.domains.billing.sepa_xml import SepaExportError, generate_sepa_xml
 from app.domains.billing.service import mark_receipts_paid
@@ -71,6 +74,28 @@ def label_members(db: Session, member_ids: list[int] | set[int]) -> list[str]:
     return sorted(
         " ".join(filter(None, [number, first, last])) for number, first, last in rows
     )
+
+
+def describe_eligible_receipt(receipt: Receipt) -> dict:
+    """A receipt for the batch picker, with the member it belongs to.
+
+    Reads the `member` and `person` that `sepa_eligible_receipts_query` already
+    eager-loads, so this adds no query — the identity was being fetched and
+    then dropped by the response schema (#379).
+
+    Composed the way `label_members` composes a refusal, so the picker and the
+    error name the same member the same way.
+    """
+    member = receipt.member
+    person = member.person if member is not None else None
+    data = EligibleReceiptResponse.model_validate(receipt).model_dump()
+    data["member_number"] = member.member_number if member is not None else None
+    if person is not None:
+        name = " ".join(filter(None, [person.first_name, person.last_name]))
+        data["member_name"] = name or None
+    else:
+        data["member_name"] = None
+    return data
 
 
 # --- Remittance Number Generation ---

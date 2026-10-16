@@ -30,7 +30,6 @@ import { toast } from "sonner";
 import type { GenderOption } from "@/features/settings/components/gender-options-settings";
 import { MyCustomFields } from "@/features/custom-fields/components/my-custom-fields-card";
 import { useFormatters } from "@/hooks/use-formatters";
-import { getErrorMessage } from "@/lib/errors";
 
 function Field({ label, value }: { label: string; value: string | null | undefined }) {
   if (!value) return null;
@@ -141,8 +140,8 @@ export default function ProfilePage() {
         },
       });
       toast.success(t("toast.success.saved"));
-    } catch (err) {
-      toast.error(getErrorMessage(err, t));
+    } catch {
+      // Reported once by the mutation cache in react-query-provider (#378).
     }
   }
 
@@ -151,8 +150,8 @@ export default function ProfilePage() {
       await updateMutation.mutateAsync({ gender: gender || null, phone: phone || null });
       toast.success(t("toast.success.saved"));
       setDirty(false);
-    } catch (err) {
-      toast.error(getErrorMessage(err, t));
+    } catch {
+      // Reported once by the mutation cache in react-query-provider (#378).
     }
   }
 

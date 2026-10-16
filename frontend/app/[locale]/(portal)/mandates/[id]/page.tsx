@@ -15,7 +15,6 @@ import { DetailSkeleton } from "@/components/ui/skeletons";
 import { useFormatters } from "@/hooks/use-formatters";
 import { toast } from "sonner";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
-import { getErrorMessage } from "@/lib/errors";
 import {
   useMandate,
   useCancelMandate,
@@ -70,8 +69,8 @@ export default function MandateDetailPage() {
     try {
       await uploadMutation.mutateAsync({ id: mandate!.id, file });
       toast.success(t("toast.success.saved"));
-    } catch (err) {
-      toast.error(getErrorMessage(err, t));
+    } catch {
+      // Reported once by the mutation cache in react-query-provider (#378).
     }
     if (fileInputRef.current) fileInputRef.current.value = "";
   }

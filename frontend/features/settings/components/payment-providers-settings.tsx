@@ -179,8 +179,8 @@ export function PaymentProvidersSettings() {
     try {
       await deleteMutation.mutateAsync(provider.id);
       toast.success(t("toast.success.deleted"));
-    } catch (err) {
-      toast.error(getErrorMessage(err, t));
+    } catch {
+      // Reported once by the mutation cache in react-query-provider (#378).
     }
   }
 
@@ -205,8 +205,8 @@ export function PaymentProvidersSettings() {
           result.message ? `${described}: ${result.message}` : described,
         );
       }
-    } catch (err) {
-      toast.error(getErrorMessage(err, t));
+    } catch {
+      // Reported once by the mutation cache in react-query-provider (#378).
     }
   }
 

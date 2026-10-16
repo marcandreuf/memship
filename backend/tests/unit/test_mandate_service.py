@@ -6,7 +6,11 @@ import pytest
 from pydantic import ValidationError
 
 from app.domains.billing.mandate_service import validate_iban_format
-from app.domains.billing.schemas import MandateCreate, normalize_pasted_iban
+from app.domains.billing.schemas import (
+    MandateCreate,
+    MandateUpdate,
+    normalize_pasted_iban,
+)
 
 
 class TestIbanValidation:
@@ -88,3 +92,54 @@ class TestPastedIbanNormalisation:
                 debtor_iban="ZZ00 NOTANIBAN 123",
                 signed_at=date(2026, 1, 1),
             )
+
+
+class TestIbanErrorCodes:
+    """The 422 a rejected IBAN produces has to be translatable.
+
+    A bare `ValueError` in a field validator reaches the administrator as
+    `Value error, Invalid IBAN`, and a failed `pattern=` as the regex itself —
+    English, on a screen that may be running in Catalan (#377). These assert on
+    the `type` the locale files key on, not on the English message.
+    """
+
+    def _error(self, iban: str) -> dict:
+        with pytest.raises(ValidationError) as exc:
+            MandateCreate(
+                member_id=1,
+                debtor_name="Test Debtor",
+                debtor_iban=iban,
+                signed_at=date(2026, 10, 16),
+            )
+        errors = [e for e in exc.value.errors() if e["loc"] == ("debtor_iban",)]
+        assert len(errors) == 1, exc.value.errors()
+        return errors[0]
+
+    def test_bad_check_digits_carry_the_invalid_iban_code(self):
+        # Structurally a Spanish IBAN; last digit changed so mod-97 fails.
+        assert self._error("ES9121000418450200051333")["type"] == "invalid_iban"
+
+    def test_not_shaped_like_an_iban_carries_the_malformed_code(self):
+        assert self._error("NOT-AN-IBAN-AT-ALL")["type"] == "malformed_iban"
+
+    def test_lowercase_is_normalised_rather_than_refused(self):
+        m = MandateCreate(
+            member_id=1,
+            debtor_name="Test Debtor",
+            debtor_iban="es91 2100 0418 4502 0005 1332",
+            signed_at=date(2026, 10, 16),
+        )
+        assert m.debtor_iban == "ES9121000418450200051332"
+
+    def test_no_message_reaches_the_screen_with_a_pydantic_prefix(self):
+        # `Value error, ` is what a bare ValueError adds. Nothing user-facing
+        # should carry it, and no message should be a regular expression.
+        for iban in ("ES9121000418450200051333", "NOT-AN-IBAN-AT-ALL"):
+            msg = self._error(iban)["msg"]
+            assert "Value error" not in msg
+            assert "[A-Z]" not in msg
+
+    def test_update_schema_refuses_the_same_way(self):
+        with pytest.raises(ValidationError) as exc:
+            MandateUpdate(debtor_iban="ES9121000418450200051333")
+        assert exc.value.errors()[0]["type"] == "invalid_iban"

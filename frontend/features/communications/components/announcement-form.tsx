@@ -29,7 +29,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { getErrorMessage } from "@/lib/errors";
 import { Markdown } from "@/lib/markdown";
 import { useGroups } from "@/features/groups/hooks/use-groups";
 import { useMembershipTypes } from "@/features/members/hooks/use-members";
@@ -99,8 +98,8 @@ export function AnnouncementForm({
         // Move to the draft's page where audience preview + Send are available.
         router.push(`/communications/${created.id}`);
       }
-    } catch (error) {
-      toast.error(getErrorMessage(error, t));
+    } catch {
+      // Reported once by the mutation cache in react-query-provider (#378).
     }
   }
 
@@ -117,8 +116,9 @@ export function AnnouncementForm({
       toast.success(t("communications.compose.sentToast"));
       setConfirmOpen(false);
       router.push(`/communications/${id}`);
-    } catch (error) {
-      toast.error(getErrorMessage(error, t));
+    } catch {
+      // The failure itself is reported by the mutation cache (#378); what is
+      // left here is the recovery.
       setConfirmOpen(false);
       // A just-created draft persisted even though the send failed (e.g. empty
       // audience) — take the user to it so they can fix targeting and retry.
