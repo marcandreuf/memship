@@ -14,6 +14,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
@@ -246,6 +247,16 @@ class SepaMandate(Base):
         ),
         Index("ix_sepa_mandates_member_id", "member_id"),
         Index("ix_sepa_mandates_status", "status"),
+        # A member has one account the club collects from. Two active mandates
+        # left the choice between them to whichever row the query returned
+        # first, so which account was debited was not decided by anything the
+        # product states (#394). Unrepresentable rather than guarded.
+        Index(
+            "uq_sepa_mandates_one_active_per_member",
+            "member_id",
+            unique=True,
+            postgresql_where=text("status = 'active' AND is_active = true"),
+        ),
     )
 
     id = Column(Integer, primary_key=True, index=True)

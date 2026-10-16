@@ -243,7 +243,8 @@ function DiscountRow({
             variant="outline" size="sm"
             onClick={() => {
               confirmAction({
-                title: t("activities.actions.confirmDelete"),
+                title: t("activities.discounts.confirmDelete"),
+                description: t("activities.discounts.confirmDeleteDescription"),
                 cancelLabel: t("common.cancel"),
                 confirmLabel: t("common.delete"),
                 onConfirm: async () => {

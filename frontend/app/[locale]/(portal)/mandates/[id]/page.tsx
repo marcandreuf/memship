@@ -54,6 +54,7 @@ export default function MandateDetailPage() {
   function handleCancel() {
     confirmAction({
       title: t("mandates.confirmCancel"),
+      description: t("mandates.confirmCancelDescription"),
       cancelLabel: t("common.cancel"),
       confirmLabel: t("mandates.cancelMandate"),
       onConfirm: async () => {

@@ -1,13 +1,17 @@
 """Billing domain schemas — concepts, receipts, mandates, remittances, providers."""
 
-import re
 from datetime import date, datetime
 from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-from pydantic_core import PydanticCustomError
 
 from app.core.schema_types import NonBlank, refuse_null
+from app.core.sepa_identifiers import (  # noqa: F401  (re-exported)
+    IBAN_PATTERN,
+    normalize_pasted_iban,
+    refuse_invalid_iban,
+    validate_iban_format,
+)
 
 
 # --- Concept schemas ---
@@ -192,76 +196,6 @@ class GenerateMembershipFeesRequest(BaseModel):
 # --- SEPA Mandate schemas ---
 
 
-IBAN_PATTERN = re.compile(r"^[A-Z]{2}\d{2}[A-Z0-9]{4,30}$")
-
-
-def normalize_pasted_iban(value: object) -> object:
-    """An IBAN as pasted, reduced to how it is stored.
-
-    People copy an IBAN in groups of four from a statement or a PDF, and the
-    grouping is presentation — the stored value is unbroken and upper-case.
-    Runs before the rest, so a correctly typed IBAN is not refused over
-    whitespace while the checks below stay strict about a stored value.
-    """
-    if isinstance(value, str):
-        return re.sub(r"\s+", "", value).upper()
-    return value
-
-
-def _check_digits_ok(iban: str) -> bool:
-    """The ISO 7064 mod-97 check digits every IBAN carries in positions 3-4.
-
-    Move the first four characters to the end, replace each letter by its
-    value in base 36 (A=10 ... Z=35), and the integer that spells is 1 mod 97.
-    """
-    rearranged = iban[4:] + iban[:4]
-    return int("".join(str(int(c, 36)) for c in rearranged)) % 97 == 1
-
-
-def validate_iban_format(iban: str) -> bool:
-    """IBAN structure *and* check digits.
-
-    The check digits are the point: without them a typo in an account number is
-    accepted, stored, and written into a pain.008 file — which the official
-    schema also accepts, because its IBAN type is a bare pattern — so the bank
-    is the first thing that notices, and it can return the whole batch.
-
-    Strict about case and spacing: this validates an IBAN as stored, not as
-    typed. `normalize_pasted_iban` is what turns one into the other.
-    """
-    if not IBAN_PATTERN.match(iban):
-        return False
-    return _check_digits_ok(iban)
-
-
-def refuse_invalid_iban(value: str | None) -> str | None:
-    """The field validator both mandate schemas apply after normalisation.
-
-    Lives on the schema so the rule is enforced at the boundary rather than
-    only in the service — a pattern on the field and a checksum in the service
-    is two rules disagreeing about what an IBAN is.
-
-    Raises `PydanticCustomError` rather than `ValueError` so the 422 carries a
-    stable `type` the locale files can key on. A bare `ValueError` reaches the
-    administrator as `Value error, Invalid IBAN` — Pydantic's own prefix, in
-    English, on a screen that may be running in Catalan (#377). The structural
-    check is here too, not a `pattern=` on the field, because a pattern failure
-    answers with the regex itself.
-
-    Two codes, because the remedies differ: `malformed_iban` is not shaped like
-    an account number at all, `invalid_iban` is shaped right but its check
-    digits do not agree with the rest.
-    """
-    if value is None:
-        return value
-    if not IBAN_PATTERN.match(value):
-        raise PydanticCustomError("malformed_iban", "Not an IBAN")
-    if not _check_digits_ok(value):
-        raise PydanticCustomError("invalid_iban", "Invalid IBAN")
-    return value
-
-
-
 
 class EligibleReceiptResponse(ReceiptResponse):
     """A receipt in the SEPA batch picker, with the member it belongs to.
@@ -350,6 +284,22 @@ class RemittanceCreate(BaseModel):
     receipt_ids: list[int] = Field(min_length=1)
     due_date: date
     notes: str | None = None
+
+
+class ReturnEntry(BaseModel):
+    """One line of a bank's return file.
+
+    The endpoint used to check only that the body was a list and then call
+    `.get` on each element, so an array of plain receipt numbers — the obvious
+    guess for "return data", and what a bank's own export most resembles — came
+    back as a 500 with nothing naming the problem (#396). Declaring the entry
+    turns that into a 422 pointing at the offending index, and documents the
+    shape in the OpenAPI schema, which is where anyone scripting against it
+    would look.
+    """
+
+    receipt_number: NonBlank(50)
+    reason: str | None = Field(default=None, max_length=255)
 
 
 class RemittanceResponse(BaseModel):

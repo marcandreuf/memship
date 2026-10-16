@@ -13,6 +13,7 @@
     "system": "System",
     "assignedUsers": "{count} accounts",
     "confirmDelete": "Delete this role? It must be unassigned first.",
+    "confirmDeleteDescription": "This cannot be undone.",
     "inUse": "Cannot delete: {count} accounts still hold it.",
     "slugExists": "A role with that name already exists ({name}).",
     "locked": "This is a system role: it cannot be renamed or deleted.",

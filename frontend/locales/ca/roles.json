@@ -13,6 +13,7 @@
     "system": "Del sistema",
     "assignedUsers": "{count} comptes",
     "confirmDelete": "Vols eliminar aquest rol? Ha d'estar sense assignar.",
+    "confirmDeleteDescription": "Aquesta acció no es pot desfer.",
     "inUse": "No es pot eliminar: {count} comptes encara el tenen.",
     "slugExists": "Ja existeix un rol amb aquest nom ({name}).",
     "locked": "Aquest rol és del sistema: no es pot reanomenar ni eliminar.",

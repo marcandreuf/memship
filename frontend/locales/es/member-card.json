@@ -34,6 +34,7 @@
     "dragOrClick": "Subir una foto",
     "hint": "JPG, PNG o WebP, hasta {size} MB",
     "remove": "Eliminar",
-    "confirmRemove": "¿Eliminar tu foto de perfil?"
+    "confirmRemove": "¿Eliminar tu foto de perfil?",
+    "confirmRemoveDescription": "Tu carnet volverá a mostrar tus iniciales. Puedes subir otra foto cuando quieras."
   }
 }

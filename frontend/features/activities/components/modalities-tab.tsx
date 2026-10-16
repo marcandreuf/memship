@@ -226,7 +226,8 @@ function ModalityRow({
             size="sm"
             onClick={() => {
               confirmAction({
-                title: t("activities.actions.confirmDelete"),
+                title: t("activities.modalities.confirmDelete"),
+                description: t("activities.modalities.confirmDeleteDescription"),
                 cancelLabel: t("common.cancel"),
                 confirmLabel: t("common.delete"),
                 onConfirm: async () => {

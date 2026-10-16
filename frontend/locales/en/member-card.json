@@ -34,6 +34,7 @@
     "dragOrClick": "Upload a photo",
     "hint": "JPG, PNG or WebP, up to {size} MB",
     "remove": "Remove",
-    "confirmRemove": "Remove your profile photo?"
+    "confirmRemove": "Remove your profile photo?",
+    "confirmRemoveDescription": "Your card will show your initials again. You can upload another photo at any time."
   }
 }

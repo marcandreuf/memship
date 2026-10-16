@@ -245,6 +245,7 @@ function ContactRow({
             onClick={() => {
               confirmAction({
                 title: t("members.deleteContactConfirm"),
+                description: t("members.deleteContactConfirmDescription"),
                 cancelLabel: t("common.cancel"),
                 confirmLabel: t("common.delete"),
                 onConfirm: async () => {

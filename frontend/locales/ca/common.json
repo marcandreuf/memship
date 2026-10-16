@@ -160,12 +160,15 @@
     "booking_in_past": "Aquesta franja ja ha començat",
     "booking_window_exceeded": "Aquesta data és fora del termini de reserva",
     "cancellation_too_late": "El termini de cancel·lació ha passat",
+    "collection_date_in_past": "La data de cobrament ({due_date}) ja ha passat. El banc rebutja un fitxer amb una data de cobrament anterior a avui ({today}). Tria una data futura.",
     "duplicate_booking": "Ja tens aquesta franja reservada",
     "forbidden": "No tens permís per fer això",
     "invalid_iban": "El número de compte no és vàlid: els seus dígits de control no concorden amb la resta. Comprova'l a l'extracte bancari.",
     "invalid_time_range": "L'hora de fi ha de ser posterior a la d'inici",
     "mailing_test_no_recipient": "Indica una adreça on enviar el correu de prova",
+    "malformed_creditor_id": "Això no té la forma d'un identificador de creditor SEPA. Són dues lletres de país, dos dígits, un codi de tres caràcters i l'identificador nacional, per exemple ES12ZZZ12345678.",
     "malformed_iban": "Això no té la forma d'un IBAN. Un IBAN comença per dues lletres de país i dos dígits, per exemple ES91 2100 0418 4502 0005 1332.",
+    "member_already_has_mandate": "Aquest soci ja té el mandat {mandate_reference} actiu sobre el compte {debtor_iban}. Un soci només pot tenir un mandat actiu: anul·la l'actual abans de registrar-ne un de nou.",
     "members_without_mandate": "Aquests socis no tenen un mandat SEPA actiu: {members}. Crea un mandat per a cadascun abans d'incloure els seus rebuts a la remesa.",
     "not_cancellable": "Aquesta reserva ja està cancel·lada",
     "not_eligible": "{reason, select, no_membership_type {No tens cap tipus de soci assignat} other {El teu tipus de soci no inclou aquest espai}}",
@@ -175,8 +178,13 @@
     "plan_birth_date_required": "Indica la teva data de naixement al perfil per contractar aquest pla",
     "provider_unavailable": "El proveïdor de pagament no respon. Torna-ho a provar d'aquí a uns minuts",
     "receipt_collection_in_flight": "Aquest rebut és a la remesa {remittance_number}, ja enviada al banc: el cobrament està en curs. Espera la devolució del banc o tanca la remesa abans de modificar-lo.",
+    "receipts_without_amount": "La remesa {remittance_number} conté rebuts de 0,00 €: {receipts}. Un càrrec directe per zero no cobra res i el fitxer del banc no l'admet. Cancel·la la remesa i torna a crear-la sense aquests rebuts.",
+    "remittance_file_already_generated": "La remesa {remittance_number} ja té el fitxer generat i no se sobreescriu: és el registre del que es va enviar al banc. Si en necessites un de diferent, cancel·la la remesa i torna a crear-la.",
+    "remittance_file_withdrawn": "La remesa {remittance_number} està en estat «{status}» i el seu fitxer ja no és vàlid. Si la vas cancel·lar, els seus rebuts han tornat a estar disponibles per a una altra remesa.",
     "remittance_out_of_step": "La remesa {remittance_number} ja no coincideix amb els rebuts que conté ({live_count} en lloc de {stored_count}). No es genera el fitxer per no cobrar un import diferent del de la remesa.",
+    "return_against_paid_receipt": "El banc retorna rebuts que a Memship consten com a pagats: {receipts}. Algú els va cobrar per una altra via mentre el càrrec estava en curs, així que la importació no s'ha fet. Revisa cada rebut i decideix quin cobrament és el real abans de tornar a importar el fitxer sense aquestes línies.",
     "role_locked": "Els rols del sistema no es poden editar ni eliminar",
+    "sepa_file_build_failed": "No s'ha pogut generar el fitxer de la remesa {remittance_number}. L'error ha quedat registrat; indica el número de remesa quan ho comuniquis.",
     "sepa_mandate_cancelled": "No es pot generar el fitxer SEPA: aquests socis ja no tenen un mandat actiu: {members}. El més probable és que es cancel·lés després de crear la remesa. Crea un mandat nou per a cadascun, després cancel·la aquesta remesa i torna a crear-la.",
     "slot_full": "La franja està completa i la llista d'espera està desactivada",
     "slot_in_past": "La data i hora de la franja ja han passat{dates_count, plural, =0 {} other { ({dates})}}",
@@ -195,11 +203,20 @@
     "createGroup": "Crear grup",
     "editGroup": "Editar grup",
     "deleteConfirm": "Estàs segur que vols eliminar aquest grup?",
+    "deleteConfirmDescription": "Els socis que hi pertanyen no s'eliminen: només deixen d'estar agrupats.",
     "noGroups": "Encara no hi ha grups",
     "info": "Els grups permeten organitzar els tipus de afiliació en categories (p. ex. Programes Juvenils, Socis Adults, Honoraris). Ajuden a mantenir l'ordre quan hi ha molts tipus de afiliació.",
     "membershipTypes": "Tipus de afiliació",
     "members": "Socis",
     "noMembershipTypes": "No hi ha tipus de afiliació en aquest grup",
     "noMembers": "No hi ha socis en aquest grup"
+  },
+  "membershipTypesSettings": {
+    "confirmDelete": "Vols eliminar aquest tipus de membre?",
+    "confirmDeleteDescription": "Els socis que el tinguin assignat es queden sense tipus. Aquesta acció no es pot desfer."
+  },
+  "organizationLogo": {
+    "confirmRemove": "Vols eliminar el logotip de l'organització?",
+    "confirmRemoveDescription": "Les pantalles i els correus tornaran a mostrar el nom. Pots pujar-ne un altre quan vulguis."
   }
 }

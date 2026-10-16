@@ -103,7 +103,8 @@ function describeError(error: unknown, t?: ErrorTranslator): string {
 
 export function mapApiErrorsToForm<T extends FieldValues>(
   error: unknown,
-  form: UseFormReturn<T>
+  form: UseFormReturn<T>,
+  t?: ErrorTranslator
 ): boolean {
   if (!(error instanceof ClientApiError) || error.status !== 422) {
     return false;
@@ -119,11 +120,15 @@ export function mapApiErrorsToForm<T extends FieldValues>(
     );
     if (fieldParts.length > 0) {
       const fieldName = fieldParts.join(".") as Path<T>;
-      // No translator here: this path has the same raw-`msg` leak the toast
-      // path had (#377), but no form currently maps an IBAN field, so wiring a
-      // translator through 40-odd callers would be change without a symptom.
-      // `describeFieldError` is what to call when one does.
-      form.setError(fieldName, { type: "server", message: item.msg });
+      // `t` is optional because most callers map fields whose backend message
+      // is already adequate. Pass it where a field has a coded validator —
+      // the organisation's IBAN and creditor id now do (#393), and without a
+      // translator they would reach the administrator as Pydantic's own
+      // English on a screen that may be running in Catalan (#377).
+      form.setError(fieldName, {
+        type: "server",
+        message: describeFieldError(item, t),
+      });
       mapped = true;
     }
   }

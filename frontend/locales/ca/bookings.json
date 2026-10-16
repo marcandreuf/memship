@@ -30,7 +30,8 @@
       "empty": "No hi ha reserves.",
       "cancel": "Cancel·la",
       "keep": "Mantén",
-      "confirmCancel": "Vols cancel·lar aquesta reserva?"
+      "confirmCancel": "Vols cancel·lar aquesta reserva?",
+      "confirmCancelDescription": "La plaça queda lliure per a un altre soci. Si canvies d'idea, l'hauràs de reservar de nou."
     },
     "spaces": {
       "title": "Espais",
@@ -54,6 +55,7 @@
       "noSpaces": "Encara no hi ha espais. Crea'n un per començar a acceptar reserves.",
       "notFound": "Espai no trobat.",
       "confirmDelete": "Vols eliminar aquest espai? Se n'eliminaran les franges i les reserves. Per deixar d'acceptar reserves sense esborrar res, desactiva'l des d'Edita.",
+      "confirmDeleteDescription": "Aquesta acció no es pot desfer.",
       "deleteAffected": "{count, plural, one {# soci té reserves actives que es cancel·laran i se l'avisarà per correu.} other {# socis tenen reserves actives que es cancel·laran i se'ls avisarà per correu.}}",
       "confirmHours": "Vols reduir l'horari d'obertura?",
       "hoursSlotsAffected": "{count, plural, one {# franja propera queda fora del nou horari i s'eliminarà.} other {# franges properes queden fora del nou horari i s'eliminaran.}}",
@@ -92,6 +94,7 @@
       "pastTime": "Aquesta hora d'avui ja ha passat.",
       "noSlots": "Encara no hi ha franges. Afegeix franges en dates concretes que els socis puguin reservar.",
       "confirmDelete": "Vols eliminar aquesta franja? També se n'eliminaran les reserves. Per deixar d'acceptar reserves sense esborrar res, fes servir Desactiva.",
+      "confirmDeleteDescription": "Aquesta acció no es pot desfer.",
       "deleteAffected": "{count, plural, one {# soci té reserves actives que es cancel·laran i se l'avisarà per correu.} other {# socis tenen reserves actives que es cancel·laran i se'ls avisarà per correu.}}"
     },
     "adminBookings": {
@@ -102,7 +105,8 @@
       "status": "Estat",
       "noBookings": "Encara no hi ha reserves.",
       "cancel": "Cancel·la",
-      "confirmCancel": "Vols cancel·lar aquesta reserva? Es promocionarà un soci de la llista d'espera."
+      "confirmCancel": "Vols cancel·lar aquesta reserva? Es promocionarà un soci de la llista d'espera.",
+      "confirmCancelDescription": "El soci deixa de tenir la plaça."
     },
     "status": {
       "booked": "Reservada",

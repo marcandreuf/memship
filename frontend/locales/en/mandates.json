@@ -26,6 +26,7 @@
     "uploadSignedDesc": "Upload the signed mandate document (PDF, JPG, PNG)",
     "cancelMandate": "Cancel Mandate",
     "confirmCancel": "Are you sure you want to cancel this mandate? This action cannot be undone.",
+    "confirmCancelDescription": "Its receipts can no longer be collected by direct debit. To change account, cancel this mandate and register a new one.",
     "noMandates": "No mandates found",
     "notes": "Notes",
     "documentUploaded": "Signed document uploaded",

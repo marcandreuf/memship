@@ -91,7 +91,9 @@ export function PaymentsSettings() {
       await updateMutation.mutateAsync(payload);
       toast.success(t("toast.success.saved"));
     } catch (error) {
-      mapApiErrorsToForm(error, form);
+      // With the translator: the IBAN and creditor-id validators answer with a
+      // coded `type`, which reads as Pydantic's English without one (#393).
+      mapApiErrorsToForm(error, form, t);
     }
   }
 

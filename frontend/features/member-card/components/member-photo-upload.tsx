@@ -88,6 +88,7 @@ export function MemberPhotoUpload({ photoUrl, fullName }: MemberPhotoUploadProps
   const handleDelete = () => {
     confirmAction({
       title: t("photo.confirmRemove"),
+      description: t("photo.confirmRemoveDescription"),
       cancelLabel: t("common.cancel"),
       confirmLabel: t("photo.remove"),
       onConfirm: async () => {

@@ -450,3 +450,99 @@ class TestFeaturesMerge:
         db.refresh(org)
         assert org.name == "Renamed Club"
         assert org.features == {"bookings": True}
+
+
+class TestOrganizationSepaIdentifiers:
+    """The organisation's own IBAN gets the rule a member's IBAN gets.
+
+    It was validated by shape alone — no mod-97 check digits — and the creditor
+    identifier was `max_length=35` and nothing else, so
+    `not-a-creditor-id-at-all` was accepted. Both appear in *every* file
+    memship generates (`CdtrAcct` and `CdtrSchmeId`), so a typo in either is
+    rejected by the bank for the whole remittance rather than one transaction
+    (#393).
+    """
+
+    GOOD_IBAN = "ES9121000418450200051332"
+    # The same number with its last digit changed: right shape, wrong checksum.
+    BAD_CHECKSUM_IBAN = "ES9121000418450200051333"
+
+    def _as_admin(self, client, db, suffix):
+        _ensure_org_settings(db)
+        user = _create_user(db, "super_admin", suffix)
+        client.cookies.update(_auth_cookie(user))
+        return user
+
+    def test_a_creditor_iban_with_bad_check_digits_is_refused(self, client, db):
+        self._as_admin(client, db, "sepa-iban-bad")
+
+        response = client.put(
+            "/api/v1/settings/", json={"bank_iban": self.BAD_CHECKSUM_IBAN}
+        )
+
+        assert response.status_code == 422, response.text
+        assert any(item["type"] == "invalid_iban" for item in response.json()["detail"])
+
+    def test_something_not_shaped_like_an_iban_says_so_differently(self, client, db):
+        self._as_admin(client, db, "sepa-iban-shape")
+
+        response = client.put("/api/v1/settings/", json={"bank_iban": "not an iban"})
+
+        assert response.status_code == 422, response.text
+        # Two codes because the remedies differ: check your statement, versus
+        # that is not an account number at all.
+        assert any(item["type"] == "malformed_iban" for item in response.json()["detail"])
+
+    def test_an_iban_pasted_in_groups_of_four_is_accepted(self, client, db):
+        self._as_admin(client, db, "sepa-iban-paste")
+
+        response = client.put(
+            "/api/v1/settings/", json={"bank_iban": "ES91 2100 0418 4502 0005 1332"}
+        )
+
+        assert response.status_code == 200, response.text
+        org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
+        db.refresh(org)
+        assert org.bank_iban == self.GOOD_IBAN
+
+    def test_a_creditor_id_that_is_not_one_is_refused(self, client, db):
+        self._as_admin(client, db, "sepa-cid-bad")
+
+        response = client.put(
+            "/api/v1/settings/", json={"creditor_id": "not-a-creditor-id-at-all"}
+        )
+
+        assert response.status_code == 422, response.text
+        assert any(
+            item["type"] == "malformed_creditor_id" for item in response.json()["detail"]
+        )
+
+    def test_a_well_formed_creditor_id_is_accepted(self, client, db):
+        self._as_admin(client, db, "sepa-cid-good")
+
+        response = client.put("/api/v1/settings/", json={"creditor_id": "ES12ZZZ12345678"})
+
+        assert response.status_code == 200, response.text
+
+    def test_both_fields_can_still_be_cleared(self, client, db):
+        """An empty optional field is the absence of a value, not a bad one.
+
+        The settings screen drops empty fields from its payload, but an API
+        caller clearing the IBAN with `""` was accepted before the validators
+        existed and must stay that way.
+        """
+        self._as_admin(client, db, "sepa-clear")
+        client.put(
+            "/api/v1/settings/",
+            json={"bank_iban": self.GOOD_IBAN, "creditor_id": "ES12ZZZ12345678"},
+        )
+
+        response = client.put(
+            "/api/v1/settings/", json={"bank_iban": "", "creditor_id": ""}
+        )
+
+        assert response.status_code == 200, response.text
+        org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
+        db.refresh(org)
+        assert org.bank_iban is None
+        assert org.creditor_id is None

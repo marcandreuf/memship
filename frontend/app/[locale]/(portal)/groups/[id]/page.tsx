@@ -59,6 +59,7 @@ export default function GroupDetailPage({
                 onClick={() => {
                   confirmAction({
                     title: t("groups.deleteConfirm"),
+                    description: t("groups.deleteConfirmDescription"),
                     cancelLabel: t("common.cancel"),
                     confirmLabel: t("common.delete"),
                     onConfirm: async () => {

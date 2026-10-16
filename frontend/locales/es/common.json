@@ -160,12 +160,15 @@
     "booking_in_past": "Esta franja ya ha empezado",
     "booking_window_exceeded": "Esta fecha está fuera del plazo de reserva",
     "cancellation_too_late": "El plazo de cancelación ha pasado",
+    "collection_date_in_past": "La fecha de cobro ({due_date}) ya ha pasado. El banco rechaza un fichero cuya fecha de cobro es anterior a hoy ({today}). Elige una fecha futura.",
     "duplicate_booking": "Ya tienes esta franja reservada",
     "forbidden": "No tienes permiso para hacer esto",
     "invalid_iban": "El número de cuenta no es válido: sus dígitos de control no concuerdan con el resto. Compruébalo en el extracto bancario.",
     "invalid_time_range": "La hora de fin debe ser posterior a la de inicio",
     "mailing_test_no_recipient": "Indica una dirección a la que enviar el correo de prueba",
+    "malformed_creditor_id": "Eso no tiene la forma de un identificador de acreedor SEPA. Son dos letras de país, dos dígitos, un código de tres caracteres y el identificador nacional, por ejemplo ES12ZZZ12345678.",
     "malformed_iban": "Eso no tiene la forma de un IBAN. Un IBAN empieza por dos letras de país y dos dígitos, por ejemplo ES91 2100 0418 4502 0005 1332.",
+    "member_already_has_mandate": "Este socio ya tiene el mandato {mandate_reference} activo sobre la cuenta {debtor_iban}. Un socio solo puede tener un mandato activo: anula el actual antes de registrar uno nuevo.",
     "members_without_mandate": "Estos socios no tienen un mandato SEPA activo: {members}. Crea un mandato para cada uno antes de incluir sus recibos en la remesa.",
     "not_cancellable": "Esta reserva ya está cancelada",
     "not_eligible": "{reason, select, no_membership_type {No tienes ningún tipo de socio asignado} other {Tu tipo de socio no incluye este espacio}}",
@@ -175,8 +178,13 @@
     "plan_birth_date_required": "Indica tu fecha de nacimiento en tu perfil para contratar este plan",
     "provider_unavailable": "El proveedor de pago no responde. Inténtalo de nuevo en unos minutos",
     "receipt_collection_in_flight": "Este recibo está en la remesa {remittance_number}, ya enviada al banco: el cobro está en curso. Espera la devolución del banco o cierra la remesa antes de modificarlo.",
+    "receipts_without_amount": "La remesa {remittance_number} contiene recibos de 0,00 €: {receipts}. Un adeudo directo por cero no cobra nada y el fichero del banco no lo admite. Cancela la remesa y vuelve a crearla sin esos recibos.",
+    "remittance_file_already_generated": "La remesa {remittance_number} ya tiene su fichero generado y no se sobrescribe: es el registro de lo que se envió al banco. Si necesitas uno distinto, cancela la remesa y vuelve a crearla.",
+    "remittance_file_withdrawn": "La remesa {remittance_number} está en estado «{status}» y su fichero ya no es válido. Si la cancelaste, sus recibos han vuelto a estar disponibles para otra remesa.",
     "remittance_out_of_step": "La remesa {remittance_number} ya no coincide con los recibos que contiene ({live_count} en lugar de {stored_count}). No se genera el fichero para no cobrar un importe distinto al de la remesa.",
+    "return_against_paid_receipt": "El banco devuelve recibos que en Memship constan como pagados: {receipts}. Alguien tuvo que cobrarlos por otra vía mientras el adeudo estaba en curso, así que la importación no se ha hecho. Revisa cada recibo y decide qué cobro es el real antes de volver a importar el fichero sin esas líneas.",
     "role_locked": "Los roles del sistema no se pueden editar ni eliminar",
+    "sepa_file_build_failed": "No se ha podido generar el fichero de la remesa {remittance_number}. El error ha quedado registrado; indica el número de remesa al comunicarlo.",
     "sepa_mandate_cancelled": "No se puede generar el archivo SEPA: estos socios ya no tienen un mandato activo: {members}. Lo más probable es que se cancelara después de crear la remesa. Crea un mandato nuevo para cada uno, después cancela esta remesa y vuelve a crearla.",
     "slot_full": "La franja está completa y la lista de espera está desactivada",
     "slot_in_past": "La fecha y hora de la franja ya han pasado{dates_count, plural, =0 {} other { ({dates})}}",
@@ -195,11 +203,20 @@
     "createGroup": "Crear grupo",
     "editGroup": "Editar grupo",
     "deleteConfirm": "¿Estás seguro de que deseas eliminar este grupo?",
+    "deleteConfirmDescription": "Los socios que pertenecen a él no se eliminan: solo dejan de estar agrupados.",
     "noGroups": "No hay grupos todavía",
     "info": "Los grupos permiten organizar los tipos de membresía en categorías (p. ej. Programas Juveniles, Socios Adultos, Honorarios). Ayudan a mantener el orden cuando hay muchos tipos de membresía.",
     "membershipTypes": "Tipos de membresía",
     "members": "Socios",
     "noMembershipTypes": "No hay tipos de membresía en este grupo",
     "noMembers": "No hay socios en este grupo"
+  },
+  "membershipTypesSettings": {
+    "confirmDelete": "¿Eliminar este tipo de membresía?",
+    "confirmDeleteDescription": "Los socios que lo tengan asignado se quedan sin tipo. Esta acción no se puede deshacer."
+  },
+  "organizationLogo": {
+    "confirmRemove": "¿Eliminar el logotipo de la organización?",
+    "confirmRemoveDescription": "Las pantallas y los correos volverán a mostrar el nombre. Puedes subir otro cuando quieras."
   }
 }

@@ -160,12 +160,15 @@
     "booking_in_past": "This slot has already started",
     "booking_window_exceeded": "This date is beyond the booking window",
     "cancellation_too_late": "The cancellation deadline has passed",
+    "collection_date_in_past": "The collection date ({due_date}) has passed. A bank rejects a file whose collection date is earlier than today ({today}). Choose a future date.",
     "duplicate_booking": "You already hold this slot",
     "forbidden": "You don't have permission to do this",
     "invalid_iban": "That account number is not valid: its check digits do not agree with the rest. Check it against the bank statement.",
     "invalid_time_range": "The end time must be after the start time",
     "mailing_test_no_recipient": "Enter an address to send the test email to",
+    "malformed_creditor_id": "That is not shaped like a SEPA creditor identifier. It is two country letters, two digits, a three-character business code and the national identifier — for example ES12ZZZ12345678.",
     "malformed_iban": "That is not shaped like an IBAN. An IBAN starts with a two-letter country code and two digits, for example ES91 2100 0418 4502 0005 1332.",
+    "member_already_has_mandate": "This member already holds mandate {mandate_reference} on account {debtor_iban}. A member can have only one active mandate: cancel the current one before registering a new one.",
     "members_without_mandate": "These members have no active SEPA mandate: {members}. Create a mandate for each one before putting their receipts in a remittance.",
     "not_cancellable": "This booking is already cancelled",
     "not_eligible": "{reason, select, no_membership_type {You have no membership type assigned} other {Your membership type does not include this space}}",
@@ -175,8 +178,13 @@
     "plan_birth_date_required": "Add your date of birth on your profile to buy this plan",
     "provider_unavailable": "The payment provider is not responding. Try again in a few minutes",
     "receipt_collection_in_flight": "This receipt is in remittance {remittance_number}, already sent to the bank: the collection is in progress. Wait for the bank to return it, or close the remittance, before changing it.",
+    "receipts_without_amount": "Remittance {remittance_number} holds receipts for 0.00: {receipts}. A direct debit for zero collects nothing and the bank file cannot express it. Cancel the remittance and create it again without those receipts.",
+    "remittance_file_already_generated": "Remittance {remittance_number} already has its file, and it is not overwritten: it is the record of what went to the bank. If you need a different one, cancel the remittance and create it again.",
+    "remittance_file_withdrawn": "Remittance {remittance_number} is '{status}' and its file is no longer valid. If you cancelled it, its receipts are available for another batch again.",
     "remittance_out_of_step": "Remittance {remittance_number} no longer matches the receipts it holds ({live_count} instead of {stored_count}). The file is not generated, so the bank is never asked to collect a different amount from the one the remittance states.",
+    "return_against_paid_receipt": "The bank is returning receipts Memship records as paid: {receipts}. Someone must have collected them another way while the direct debit was in flight, so nothing was imported. Check each receipt and decide which collection is the real one before importing the file again without those lines.",
     "role_locked": "Built-in roles cannot be edited or deleted",
+    "sepa_file_build_failed": "The file for remittance {remittance_number} could not be generated. The error has been logged; quote the remittance number when reporting it.",
     "sepa_mandate_cancelled": "Cannot generate the SEPA file: these members no longer have an active mandate: {members}. It was most likely cancelled after the remittance was created. Create a new mandate for each one, then cancel this remittance and create it again.",
     "slot_full": "The slot is full and the waitlist is off",
     "slot_in_past": "The slot's date and time are in the past{dates_count, plural, =0 {} other { ({dates})}}",
@@ -195,11 +203,20 @@
     "createGroup": "Create Group",
     "editGroup": "Edit Group",
     "deleteConfirm": "Are you sure you want to delete this group?",
+    "deleteConfirmDescription": "The members in it are not deleted — they simply stop being grouped.",
     "noGroups": "No groups yet",
     "info": "Groups let you organize your membership types into categories (e.g. Youth Programs, Adult Members, Honorary). They help keep things tidy when you have many membership types.",
     "membershipTypes": "Membership Types",
     "members": "Members",
     "noMembershipTypes": "No membership types in this group",
     "noMembers": "No members in this group"
+  },
+  "membershipTypesSettings": {
+    "confirmDelete": "Delete this membership type?",
+    "confirmDeleteDescription": "Members assigned to it are left with none. This cannot be undone."
+  },
+  "organizationLogo": {
+    "confirmRemove": "Remove the organisation logo?",
+    "confirmRemoveDescription": "Screens and emails will show the name again. You can upload another one at any time."
   }
 }

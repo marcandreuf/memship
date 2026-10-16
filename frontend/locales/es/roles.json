@@ -13,6 +13,7 @@
     "system": "Del sistema",
     "assignedUsers": "{count} cuentas",
     "confirmDelete": "¿Eliminar este rol? Debe estar sin asignar.",
+    "confirmDeleteDescription": "Esta acción no se puede deshacer.",
     "inUse": "No se puede eliminar: {count} cuentas todavía lo tienen.",
     "slugExists": "Ya existe un rol con ese nombre ({name}).",
     "locked": "Este rol es del sistema: no se puede renombrar ni eliminar.",

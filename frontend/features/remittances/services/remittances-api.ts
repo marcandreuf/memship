@@ -36,10 +36,17 @@ export interface PaginatedRemittances {
   };
 }
 
+// Outcomes, not matches. `processed` used to count every recognised receipt
+// whether or not anything changed, so a return against an already-paid receipt
+// read as handled (#391). Each bucket names its receipts, because the useful
+// next action is per receipt.
 export interface ImportReturnResult {
-  processed: number;
-  returned: number;
-  not_found: number;
+  returned: string[];
+  already_returned: string[];
+  ignored: Array<{ receipt_number: string; status: string }>;
+  duplicate: string[];
+  not_in_batch: Array<{ receipt_number: string; remittance_number: string | null }>;
+  not_found: string[];
 }
 
 export async function getRemittances(params?: URLSearchParams): Promise<PaginatedRemittances> {
@@ -65,7 +72,7 @@ export async function markRemittanceSubmitted(id: number): Promise<RemittanceDat
   return apiClient(`/remittances/${id}/mark-submitted`, { method: "POST" });
 }
 
-export async function importRemittanceReturns(id: number, data: Array<{ receipt_number: string; reason: string }>): Promise<ImportReturnResult> {
+export async function importRemittanceReturns(id: number, data: Array<{ receipt_number: string; reason?: string }>): Promise<ImportReturnResult> {
   return apiClient(`/remittances/${id}/import-returns`, {
     method: "POST",
     body: JSON.stringify(data),

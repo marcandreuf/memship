@@ -1,8 +1,9 @@
 """Remittance (SEPA batch) management endpoints."""
 
 from pathlib import Path
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
@@ -16,6 +17,7 @@ from app.domains.billing.schemas import (
     RemittanceDetailResponse,
     RemittanceResponse,
     ReceiptResponse,
+    ReturnEntry,
 )
 from app.domains.billing.remittance_service import (
     cancel_remittance,
@@ -30,6 +32,10 @@ from app.domains.billing.remittance_service import (
 from app.domains.billing.service import dispatch_payment_notifications
 
 router = APIRouter(prefix="/remittances", tags=["remittances"])
+
+# A batch whose file still stands for something a bank could act on, or did.
+# `draft` never has one, and `cancelled` released its receipts.
+DOWNLOADABLE_STATUSES = ("ready", "submitted", "processed", "closed")
 
 
 # No `response_model` — see the note on `/eligible-receipts` below for why
@@ -156,6 +162,19 @@ def download_xml(
         raise HTTPException(status_code=404, detail="Remittance not found")
     if not remittance.sepa_file_path:
         raise HTTPException(status_code=404, detail="XML file not yet generated")
+    # Download was the one operation on a remittance with no opinion about its
+    # state: a cancelled batch still handed out the file it once generated,
+    # whose receipts were by then back in circulation and batched elsewhere.
+    # Only the button was hidden; the route was open (#397).
+    if remittance.status not in DOWNLOADABLE_STATUSES:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "remittance_file_withdrawn",
+                "remittance_number": remittance.remittance_number,
+                "status": remittance.status,
+            },
+        )
 
     file_path = Path(remittance.sepa_file_path)
     if not file_path.exists():
@@ -191,9 +210,9 @@ def mark_submitted_endpoint(
 
 
 @router.post("/{remittance_id}/import-returns")
-async def import_returns_endpoint(
+def import_returns_endpoint(
     remittance_id: int,
-    request: Request,
+    return_data: Annotated[list[ReturnEntry], Body(min_length=1)],
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("billing.write")),
 ):
@@ -201,26 +220,18 @@ async def import_returns_endpoint(
 
     Accepts a JSON body with format:
     [{"receipt_number": "FAC-2026-0001", "reason": "Insufficient funds"}, ...]
+
+    The body is declared rather than read off the request, so a malformed entry
+    answers with a 422 naming its index instead of a 500 (#396). An empty array
+    is refused: it used to move the batch from `submitted` to `processed`, a
+    one-way door, on the strength of no information at all (#398). Pasting
+    nothing is a mistake, not an instruction that the bank reported nothing.
     """
     remittance = db.query(Remittance).filter(
         Remittance.id == remittance_id, Remittance.is_active.is_(True)
     ).first()
     if not remittance:
         raise HTTPException(status_code=404, detail="Remittance not found")
-
-    try:
-        return_data = await request.json()
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Invalid JSON body",
-        )
-
-    if not isinstance(return_data, list):
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Expected a JSON array of return entries",
-        )
 
     result = import_returns(db, remittance, return_data)
     db.commit()

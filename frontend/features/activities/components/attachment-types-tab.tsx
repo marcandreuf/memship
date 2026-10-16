@@ -218,7 +218,8 @@ function AttachmentTypeRow({
             variant="outline" size="sm"
             onClick={() => {
               confirmAction({
-                title: t("activities.actions.confirmDelete"),
+                title: t("activities.attachments.confirmDelete"),
+                description: t("activities.attachments.confirmDeleteDescription"),
                 cancelLabel: t("common.cancel"),
                 confirmLabel: t("common.delete"),
                 onConfirm: async () => {

@@ -104,6 +104,7 @@ export default function SpaceDetailPage() {
                 onClick={() =>
                   confirmAction({
                     title: t("bookings.spaces.confirmDelete"),
+                    description: t("bookings.spaces.confirmDeleteDescription"),
                     cancelLabel: t("common.cancel"),
                     confirmLabel: t("common.delete"),
                     onConfirm: onDelete,
