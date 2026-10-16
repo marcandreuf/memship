@@ -4,6 +4,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 from unittest.mock import patch
 
+from app.core.clock import org_today
 from app.core.security.jwt import create_access_token
 from app.core.security.password import hash_password
 from app.domains.auth.models import User
@@ -16,6 +17,8 @@ from app.domains.persons.models import Person
 
 # The SEPA collection date has to be one the bank can still act on, so these
 # fixtures cannot carry a literal that quietly moves into the past (#395).
+# Two weeks out, so it stays a future collection date whichever side of
+# midnight the organisation's timezone is on — see `org_today` below.
 COLLECTION_DATE = (date.today() + timedelta(days=14)).isoformat()
 
 
@@ -1578,7 +1581,13 @@ class TestCollectionDateMustBeCollectable:
 
         resp = client.post(
             "/api/v1/remittances/",
-            json={"receipt_ids": [receipt.id], "due_date": date.today().isoformat()},
+            json={
+                "receipt_ids": [receipt.id],
+                # The organisation's today, not the runner's: CI is UTC and the
+                # club is Europe/Madrid, so after 22:00 UTC they are different
+                # days and this assertion would be about the wrong one.
+                "due_date": org_today(db).isoformat(),
+            },
             cookies=_auth_cookie(admin),
         )
 
@@ -1595,7 +1604,7 @@ class TestCollectionDateMustBeCollectable:
 
         # The batch sat unsent until its collection date went by.
         remittance = db.query(Remittance).filter(Remittance.id == rem_id).first()
-        remittance.due_date = date.today() - timedelta(days=1)
+        remittance.due_date = org_today(db) - timedelta(days=1)
         db.flush()
 
         resp = client.post(
@@ -1697,7 +1706,7 @@ class TestAFileOnlyStandsWhileTheBatchDoes:
     def test_a_batch_whose_date_went_by_cannot_be_marked_submitted(self, client, db):
         admin, _, _, rem_id = self._ready_batch(client, db, "file-datepast")
         remittance = db.query(Remittance).filter(Remittance.id == rem_id).first()
-        remittance.due_date = date.today() - timedelta(days=1)
+        remittance.due_date = org_today(db) - timedelta(days=1)
         db.flush()
 
         resp = client.post(
