@@ -5,6 +5,7 @@ from datetime import date, datetime
 from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic_core import PydanticCustomError
 
 from app.core.schema_types import NonBlank, refuse_null
 
@@ -233,9 +234,24 @@ def refuse_invalid_iban(value: str | None) -> str | None:
     Lives on the schema so the rule is enforced at the boundary rather than
     only in the service — a pattern on the field and a checksum in the service
     is two rules disagreeing about what an IBAN is.
+
+    Raises `PydanticCustomError` rather than `ValueError` so the 422 carries a
+    stable `type` the locale files can key on. A bare `ValueError` reaches the
+    administrator as `Value error, Invalid IBAN` — Pydantic's own prefix, in
+    English, on a screen that may be running in Catalan (#377). The structural
+    check is here too, not a `pattern=` on the field, because a pattern failure
+    answers with the regex itself.
+
+    Two codes, because the remedies differ: `malformed_iban` is not shaped like
+    an account number at all, `invalid_iban` is shaped right but its check
+    digits do not agree with the rest.
     """
-    if value is not None and not validate_iban_format(value):
-        raise ValueError("Invalid IBAN")
+    if value is None:
+        return value
+    if not IBAN_PATTERN.match(value):
+        raise PydanticCustomError("malformed_iban", "Not an IBAN")
+    if not _check_digits_ok(value):
+        raise PydanticCustomError("invalid_iban", "Invalid IBAN")
     return value
 
 
@@ -244,9 +260,7 @@ def refuse_invalid_iban(value: str | None) -> str | None:
 class MandateCreate(BaseModel):
     member_id: int
     debtor_name: NonBlank(255)
-    debtor_iban: str = Field(
-        min_length=5, max_length=34, pattern=r"^[A-Z]{2}\d{2}[A-Z0-9]{4,30}$"
-    )
+    debtor_iban: str = Field(min_length=5, max_length=34)
     _clean_iban = field_validator("debtor_iban", mode="before")(normalize_pasted_iban)
     _check_iban = field_validator("debtor_iban")(refuse_invalid_iban)
     debtor_bic: str | None = Field(
@@ -260,10 +274,7 @@ class MandateCreate(BaseModel):
 
 class MandateUpdate(BaseModel):
     debtor_name: NonBlank(255) | None = None
-    debtor_iban: str | None = Field(
-        default=None, min_length=5, max_length=34,
-        pattern=r"^[A-Z]{2}\d{2}[A-Z0-9]{4,30}$",
-    )
+    debtor_iban: str | None = Field(default=None, min_length=5, max_length=34)
 
     _clean_iban = field_validator("debtor_iban", mode="before")(normalize_pasted_iban)
     _check_iban = field_validator("debtor_iban")(refuse_invalid_iban)

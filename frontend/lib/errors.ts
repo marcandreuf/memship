@@ -21,6 +21,26 @@ function isCoded(detail: unknown): detail is CodedErrorDetail {
 }
 
 /**
+ * The text for one 422 field error. FastAPI's validation errors carry a `type`
+ * — Pydantic's own (`string_too_short`) or one a custom validator chose
+ * (`invalid_iban`) — so a hand-written rule can be translated by keying on it,
+ * the same way a coded error body is.
+ *
+ * Without a translation the backend's `msg` is shown, which is why validators
+ * that matter should raise `PydanticCustomError` with a real message rather
+ * than a bare `ValueError`: the latter arrives prefixed `Value error, ` and a
+ * failed `pattern=` arrives as the regex itself (#377).
+ */
+function describeFieldError(
+  item: ValidationErrorDetail,
+  t?: ErrorTranslator
+): string {
+  const key = `apiErrors.${item.type}`;
+  if (item.type && t?.has(key)) return t(key);
+  return item.msg;
+}
+
+/**
  * A coded error's fields as ICU values. A list becomes a joined string plus a
  * `<key>_count`, so a translation can say "(on 3 May, 10 May)" or nothing.
  */
@@ -59,7 +79,9 @@ function describeError(error: unknown, t?: ErrorTranslator): string {
       return error.detail;
     }
     if (Array.isArray(error.detail) && error.detail.length > 0) {
-      return error.detail.map((d) => d.msg).join(", ");
+      return (error.detail as ValidationErrorDetail[])
+        .map((d) => describeFieldError(d, t))
+        .join(", ");
     }
     if (isCoded(error.detail)) {
       const key = `apiErrors.${error.detail.code}`;
@@ -97,6 +119,10 @@ export function mapApiErrorsToForm<T extends FieldValues>(
     );
     if (fieldParts.length > 0) {
       const fieldName = fieldParts.join(".") as Path<T>;
+      // No translator here: this path has the same raw-`msg` leak the toast
+      // path had (#377), but no form currently maps an IBAN field, so wiring a
+      // translator through 40-odd callers would be change without a symptom.
+      // `describeFieldError` is what to call when one does.
       form.setError(fieldName, { type: "server", message: item.msg });
       mapped = true;
     }
