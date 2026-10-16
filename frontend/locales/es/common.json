@@ -174,6 +174,8 @@
     "plan_below_min_age": "Este plan es para socios de {min_age} años o más",
     "plan_birth_date_required": "Indica tu fecha de nacimiento en tu perfil para contratar este plan",
     "provider_unavailable": "El proveedor de pago no responde. Inténtalo de nuevo en unos minutos",
+    "receipt_collection_in_flight": "Este recibo está en la remesa {remittance_number}, ya enviada al banco: el cobro está en curso. Espera la devolución del banco o cierra la remesa antes de modificarlo.",
+    "remittance_out_of_step": "La remesa {remittance_number} ya no coincide con los recibos que contiene ({live_count} en lugar de {stored_count}). No se genera el fichero para no cobrar un importe distinto al de la remesa.",
     "role_locked": "Los roles del sistema no se pueden editar ni eliminar",
     "sepa_mandate_cancelled": "No se puede generar el archivo SEPA: estos socios ya no tienen un mandato activo: {members}. Lo más probable es que se cancelara después de crear la remesa. Crea un mandato nuevo para cada uno, después cancela esta remesa y vuelve a crearla.",
     "slot_full": "La franja está completa y la lista de espera está desactivada",

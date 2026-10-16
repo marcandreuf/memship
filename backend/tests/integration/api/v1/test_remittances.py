@@ -971,3 +971,228 @@ class TestEligibleReceiptCarriesItsMember:
 
         label = label_members(db, [member.id])[0]
         assert label == f"{item['member_number']} {item['member_name']}"
+
+
+class TestBatchedReceiptIntegrity:
+    """A batch has to still describe reality by the time its file is built.
+
+    The file is generated from `remittance_id` with no status filter, so before
+    this a receipt cancelled or settled another way after batching was still
+    collected — the member debited money they did not owe (#383) — and a receipt
+    released from a batch left the file collecting less than the batch claimed
+    (#384).
+    """
+
+    def _batch(self, client, db, suffix, count=2):
+        _ensure_org_settings(db)
+        admin = _create_user(db, suffix=suffix)
+        member, _ = _create_member_with_mandate(db, suffix=suffix)
+        receipts = [
+            _create_receipt(db, member.id, admin.id, suffix=f"{suffix}-{i}")
+            for i in range(count)
+        ]
+        created = client.post(
+            "/api/v1/remittances/",
+            json={
+                "receipt_ids": [r.id for r in receipts],
+                "due_date": "2026-12-01",
+            },
+            cookies=_auth_cookie(admin),
+        )
+        assert created.status_code == 201, created.text
+        return admin, member, receipts, created.json()["id"]
+
+    # --- #383: a receipt that stops being collectible leaves an open batch ---
+
+    def test_cancelling_a_batched_receipt_takes_it_out_of_the_batch(self, client, db):
+        admin, _, receipts, rem_id = self._batch(client, db, "integ-cancel")
+
+        resp = client.post(
+            f"/api/v1/receipts/{receipts[0].id}/cancel", cookies=_auth_cookie(admin)
+        )
+        assert resp.status_code == 200, resp.text
+        assert resp.json()["remittance_id"] is None
+
+        db.expire_all()
+        remittance = db.query(Remittance).filter(Remittance.id == rem_id).first()
+        assert remittance.receipt_count == 1
+        assert Decimal(str(remittance.total_amount)) == Decimal("60.50")
+
+    def test_a_cancelled_receipt_is_not_in_the_generated_file(self, client, db):
+        """The assertion that matters: the bank must not be told to collect it."""
+        admin, _, receipts, rem_id = self._batch(client, db, "integ-xml")
+        cancelled, kept = receipts[0], receipts[1]
+
+        client.post(
+            f"/api/v1/receipts/{cancelled.id}/cancel", cookies=_auth_cookie(admin)
+        )
+        gen = client.post(
+            f"/api/v1/remittances/{rem_id}/generate-xml", cookies=_auth_cookie(admin)
+        )
+        assert gen.status_code == 200, gen.text
+
+        xml = client.get(
+            f"/api/v1/remittances/{rem_id}/download-xml", cookies=_auth_cookie(admin)
+        ).text
+        assert cancelled.receipt_number not in xml
+        assert kept.receipt_number in xml
+        assert "<NbOfTxs>1</NbOfTxs>" in xml
+        assert "<CtrlSum>60.50</CtrlSum>" in xml
+
+    def test_paying_a_batched_receipt_by_hand_takes_it_out_of_the_batch(self, client, db):
+        admin, _, receipts, rem_id = self._batch(client, db, "integ-pay")
+
+        resp = client.post(
+            f"/api/v1/receipts/{receipts[0].id}/pay",
+            json={"payment_method": "cash"},
+            cookies=_auth_cookie(admin),
+        )
+        assert resp.status_code == 200, resp.text
+        assert resp.json()["remittance_id"] is None
+        assert resp.json()["status"] == "paid"
+
+        db.expire_all()
+        remittance = db.query(Remittance).filter(Remittance.id == rem_id).first()
+        assert remittance.receipt_count == 1
+
+    # --- #383: once the file is with the bank, the answer is no ---
+
+    def test_cancelling_is_refused_once_the_batch_has_been_submitted(self, client, db):
+        admin, _, receipts, rem_id = self._batch(client, db, "integ-flight-c")
+        client.post(
+            f"/api/v1/remittances/{rem_id}/generate-xml", cookies=_auth_cookie(admin)
+        )
+        client.post(
+            f"/api/v1/remittances/{rem_id}/mark-submitted", cookies=_auth_cookie(admin)
+        )
+
+        resp = client.post(
+            f"/api/v1/receipts/{receipts[0].id}/cancel", cookies=_auth_cookie(admin)
+        )
+        assert resp.status_code == 409, resp.text
+        detail = resp.json()["detail"]
+        assert detail["code"] == "receipt_collection_in_flight"
+        # Named so the admin can find the batch, not an internal id.
+        assert detail["remittance_number"].startswith("REM-")
+
+        db.expire_all()
+        assert db.query(Receipt).filter(Receipt.id == receipts[0].id).first().status == "emitted"
+
+    def test_paying_by_hand_is_refused_once_the_batch_has_been_submitted(self, client, db):
+        admin, _, receipts, rem_id = self._batch(client, db, "integ-flight-p")
+        client.post(
+            f"/api/v1/remittances/{rem_id}/generate-xml", cookies=_auth_cookie(admin)
+        )
+        client.post(
+            f"/api/v1/remittances/{rem_id}/mark-submitted", cookies=_auth_cookie(admin)
+        )
+
+        resp = client.post(
+            f"/api/v1/receipts/{receipts[0].id}/pay",
+            json={"payment_method": "cash"},
+            cookies=_auth_cookie(admin),
+        )
+        assert resp.status_code == 409, resp.text
+        assert resp.json()["detail"]["code"] == "receipt_collection_in_flight"
+
+    def test_closing_the_batch_still_settles_its_own_receipts(self, client, db):
+        """The guard must not block the batch paying its receipts (close calls
+        the same `mark_receipt_paid`), or a collected batch could never settle."""
+        admin, _, receipts, rem_id = self._batch(client, db, "integ-close")
+        client.post(
+            f"/api/v1/remittances/{rem_id}/generate-xml", cookies=_auth_cookie(admin)
+        )
+        client.post(
+            f"/api/v1/remittances/{rem_id}/mark-submitted", cookies=_auth_cookie(admin)
+        )
+
+        resp = client.post(
+            f"/api/v1/remittances/{rem_id}/close", cookies=_auth_cookie(admin)
+        )
+        assert resp.status_code == 200, resp.text
+
+        db.expire_all()
+        for r in receipts:
+            row = db.query(Receipt).filter(Receipt.id == r.id).first()
+            assert row.status == "paid"
+            # Still linked: the batch is the record of what collected it.
+            assert row.remittance_id == rem_id
+
+    # --- #384: the file never collects less than the batch says ---
+
+    def test_reemitting_from_an_open_batch_recounts_it(self, client, db):
+        admin, _, receipts, rem_id = self._batch(client, db, "integ-recount")
+
+        client.post(
+            f"/api/v1/receipts/{receipts[0].id}/return",
+            json={"return_reason": "Insufficient funds"},
+            cookies=_auth_cookie(admin),
+        )
+        client.post(
+            f"/api/v1/receipts/{receipts[0].id}/reemit", cookies=_auth_cookie(admin)
+        )
+
+        db.expire_all()
+        remittance = db.query(Remittance).filter(Remittance.id == rem_id).first()
+        assert remittance.receipt_count == 1
+        assert Decimal(str(remittance.total_amount)) == Decimal("60.50")
+
+        # And the file it produces agrees with it.
+        gen = client.post(
+            f"/api/v1/remittances/{rem_id}/generate-xml", cookies=_auth_cookie(admin)
+        )
+        assert gen.status_code == 200, gen.text
+        xml = client.get(
+            f"/api/v1/remittances/{rem_id}/download-xml", cookies=_auth_cookie(admin)
+        ).text
+        assert "<NbOfTxs>1</NbOfTxs>" in xml
+        assert "<CtrlSum>60.50</CtrlSum>" in xml
+
+    def test_generation_refuses_when_the_batch_is_out_of_step(self, client, db):
+        """The invariant guard. Everything that releases a receipt recounts, so
+        this cannot happen through the API — it is here so a future path that
+        forgets cannot produce a file the bank would act on."""
+        admin, _, receipts, rem_id = self._batch(client, db, "integ-outofstep")
+
+        # Force the divergence the guard exists for.
+        db.query(Receipt).filter(Receipt.id == receipts[0].id).update(
+            {"remittance_id": None}
+        )
+        db.commit()
+
+        resp = client.post(
+            f"/api/v1/remittances/{rem_id}/generate-xml", cookies=_auth_cookie(admin)
+        )
+        assert resp.status_code == 409, resp.text
+        detail = resp.json()["detail"]
+        assert detail["code"] == "remittance_out_of_step"
+        assert detail["stored_count"] == 2
+        assert detail["live_count"] == 1
+
+    def test_a_submitted_batch_keeps_its_record_when_a_receipt_is_reemitted(
+        self, client, db
+    ):
+        """#343's cycle, and the deliberate asymmetry: a batch that has gone to
+        the bank keeps its own counters as the record of what it collected."""
+        admin, _, receipts, rem_id = self._batch(client, db, "integ-frozen")
+        client.post(
+            f"/api/v1/remittances/{rem_id}/generate-xml", cookies=_auth_cookie(admin)
+        )
+        client.post(
+            f"/api/v1/remittances/{rem_id}/mark-submitted", cookies=_auth_cookie(admin)
+        )
+        client.post(
+            f"/api/v1/remittances/{rem_id}/import-returns",
+            json=[{"receipt_number": receipts[0].receipt_number, "reason": "Insufficient funds"}],
+            cookies=_auth_cookie(admin),
+        )
+        reemit = client.post(
+            f"/api/v1/receipts/{receipts[0].id}/reemit", cookies=_auth_cookie(admin)
+        )
+        assert reemit.status_code == 200, reemit.text
+        assert reemit.json()["remittance_id"] is None
+
+        db.expire_all()
+        remittance = db.query(Remittance).filter(Remittance.id == rem_id).first()
+        assert remittance.receipt_count == 2
+        assert Decimal(str(remittance.total_amount)) == Decimal("121.00")

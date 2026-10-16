@@ -241,6 +241,18 @@ export default function ReceiptDetailPage() {
     fields.push({ label: t("receipts.billingPeriod"), value: `${formatDate(receipt.billing_period_start)} — ${formatDate(receipt.billing_period_end)}` });
   }
 
+  if (receipt.remittance_number) {
+    // The one screen where a receipt is cancelled or settled by hand, which
+    // until now said nothing about the direct debit queued to collect it (#383).
+    const sent = ["submitted", "processed"].includes(receipt.remittance_status ?? "");
+    fields.push({
+      label: t("receipts.inRemittance"),
+      value: `${receipt.remittance_number} — ${t(
+        sent ? "receipts.inRemittanceSent" : "receipts.inRemittanceOpen"
+      )}`,
+    });
+  }
+
   if (receipt.rectifies_receipt_number) {
     fields.push({ label: t("receipts.rectifies"), value: receipt.rectifies_receipt_number });
   }

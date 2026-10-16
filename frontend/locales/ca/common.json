@@ -174,6 +174,8 @@
     "plan_below_min_age": "Aquest pla és per a socis de {min_age} anys o més",
     "plan_birth_date_required": "Indica la teva data de naixement al perfil per contractar aquest pla",
     "provider_unavailable": "El proveïdor de pagament no respon. Torna-ho a provar d'aquí a uns minuts",
+    "receipt_collection_in_flight": "Aquest rebut és a la remesa {remittance_number}, ja enviada al banc: el cobrament està en curs. Espera la devolució del banc o tanca la remesa abans de modificar-lo.",
+    "remittance_out_of_step": "La remesa {remittance_number} ja no coincideix amb els rebuts que conté ({live_count} en lloc de {stored_count}). No es genera el fitxer per no cobrar un import diferent del de la remesa.",
     "role_locked": "Els rols del sistema no es poden editar ni eliminar",
     "sepa_mandate_cancelled": "No es pot generar el fitxer SEPA: aquests socis ja no tenen un mandat actiu: {members}. El més probable és que es cancel·lés després de crear la remesa. Crea un mandat nou per a cadascun, després cancel·la aquesta remesa i torna a crear-la.",
     "slot_full": "La franja està completa i la llista d'espera està desactivada",

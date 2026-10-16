@@ -37,6 +37,8 @@ export interface ReceiptData {
   // Detail fields
   member_name?: string | null;
   member_number?: string | null;
+  remittance_number?: string | null;
+  remittance_status?: string | null;
   concept_name?: string | null;
   rectifies_receipt_number?: string | null;
   credit_note_ids?: number[];
