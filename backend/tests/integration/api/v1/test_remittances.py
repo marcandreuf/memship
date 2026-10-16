@@ -471,10 +471,11 @@ class TestRemittanceLifecycle:
         resp = client.post(f"/api/v1/remittances/{rem_id}/mark-submitted", cookies=_auth_cookie(admin))
         assert resp.json()["status"] == "submitted"
 
-        # Import returns (-> processed)
+        # Import returns (-> processed). A real return, because an empty array
+        # is the absence of an answer and no longer moves the batch (#398).
         resp = client.post(
             f"/api/v1/remittances/{rem_id}/import-returns",
-            json=[],
+            json=[{"receipt_number": r1.receipt_number, "reason": "Insufficient funds"}],
             cookies=_auth_cookie(admin),
         )
         assert resp.status_code == 200
@@ -1664,10 +1665,14 @@ class TestAFileOnlyStandsWhileTheBatchDoes:
             mandate.status = "cancelled"
         db.flush()
 
+        # Regeneration refuses before it gets as far as the mandate, because
+        # the file already exists (#394) — either way the file on disk is the
+        # previous one, which is what makes marking it submitted a lie.
         regenerate = client.post(
             f"/api/v1/remittances/{rem_id}/generate-xml", cookies=_auth_cookie(admin)
         )
-        assert regenerate.status_code == 400, regenerate.text
+        assert regenerate.status_code == 409, regenerate.text
+        assert regenerate.json()["detail"]["code"] == "remittance_file_already_generated"
 
         resp = client.post(
             f"/api/v1/remittances/{rem_id}/mark-submitted", cookies=_auth_cookie(admin)
@@ -1701,3 +1706,245 @@ class TestAFileOnlyStandsWhileTheBatchDoes:
 
         assert resp.status_code == 400, resp.text
         assert resp.json()["detail"]["code"] == "collection_date_in_past"
+
+
+class TestOneActiveMandatePerMember:
+    """A member has one account the club collects from (#394).
+
+    Two active mandates were a normal save, and both selection sites then
+    picked between them with "latest by `created_at`", no tie-break and no
+    `ORDER BY` — `created_at` is a server default, so two mandates written in
+    the same transaction share a timestamp and the winner was whichever row the
+    query happened to return first.
+    """
+
+    def test_a_second_active_mandate_is_refused_and_names_the_first(self, client, db):
+        _ensure_org_settings(db)
+        admin = _create_user(db, suffix="one-mandate")
+        member, mandate = _create_member_with_mandate(db, suffix="one-mandate")
+
+        resp = client.post(
+            "/api/v1/mandates/",
+            json={
+                "member_id": member.id,
+                "debtor_name": "Test Member",
+                "debtor_iban": "DE89370400440532013000",
+                "mandate_type": "recurrent",
+                "signature_method": "paper",
+                "signed_at": date.today().isoformat(),
+            },
+            cookies=_auth_cookie(admin),
+        )
+
+        assert resp.status_code == 409, resp.text
+        detail = resp.json()["detail"]
+        assert detail["code"] == "member_already_has_mandate"
+        # Naming it is the point: the remedy is to cancel that one.
+        assert detail["mandate_reference"] == mandate.mandate_reference
+
+    def test_cancelling_the_first_lets_a_new_one_be_signed(self, client, db):
+        """Changing bank account is routine — it must not be blocked, only
+        made explicit."""
+        _ensure_org_settings(db)
+        admin = _create_user(db, suffix="remandate")
+        member, mandate = _create_member_with_mandate(db, suffix="remandate")
+
+        cancelled = client.post(
+            f"/api/v1/mandates/{mandate.id}/cancel", cookies=_auth_cookie(admin)
+        )
+        assert cancelled.status_code == 200, cancelled.text
+
+        resp = client.post(
+            "/api/v1/mandates/",
+            json={
+                "member_id": member.id,
+                "debtor_name": "Test Member",
+                "debtor_iban": "DE89370400440532013000",
+                "mandate_type": "recurrent",
+                "signature_method": "paper",
+                "signed_at": date.today().isoformat(),
+            },
+            cookies=_auth_cookie(admin),
+        )
+
+        assert resp.status_code == 201, resp.text
+        assert resp.json()["debtor_iban"] == "DE89370400440532013000"
+
+    def test_the_batch_and_the_file_agree_on_the_mandate(self, client, db):
+        """The two selection sites read the same rule, so the account the batch
+        was validated against is the account the file collects from."""
+        _ensure_org_settings(db)
+        admin = _create_user(db, suffix="same-mandate")
+        member, mandate = _create_member_with_mandate(db, suffix="same-mandate")
+        receipt = _create_receipt(db, member.id, admin.id, suffix="same-mandate-01")
+
+        created = client.post(
+            "/api/v1/remittances/",
+            json={"receipt_ids": [receipt.id], "due_date": COLLECTION_DATE},
+            cookies=_auth_cookie(admin),
+        )
+        rem_id = created.json()["id"]
+        client.post(f"/api/v1/remittances/{rem_id}/generate-xml", cookies=_auth_cookie(admin))
+
+        xml = client.get(
+            f"/api/v1/remittances/{rem_id}/download-xml", cookies=_auth_cookie(admin)
+        )
+        assert xml.status_code == 200, xml.text
+        assert mandate.mandate_reference.encode() in xml.content
+        assert mandate.debtor_iban.encode() in xml.content
+
+
+class TestAGeneratedFileIsNotOverwritten:
+    """The file is the record of what went to the bank (#394).
+
+    It was written under the remittance number with no versioning and no
+    refusal, and generation is allowed from `draft` *or* `ready` — so a second
+    generation replaced it with a different `MsgId`, and potentially a
+    different mandate and debtor IBAN, under the same name.
+    """
+
+    def _generated(self, client, db, suffix):
+        _ensure_org_settings(db)
+        admin = _create_user(db, suffix=suffix)
+        member, _ = _create_member_with_mandate(db, suffix=suffix)
+        receipt = _create_receipt(db, member.id, admin.id, suffix=f"{suffix}-01")
+        created = client.post(
+            "/api/v1/remittances/",
+            json={"receipt_ids": [receipt.id], "due_date": COLLECTION_DATE},
+            cookies=_auth_cookie(admin),
+        )
+        rem_id = created.json()["id"]
+        first = client.post(
+            f"/api/v1/remittances/{rem_id}/generate-xml", cookies=_auth_cookie(admin)
+        )
+        assert first.status_code == 200, first.text
+        # `generate-xml` answers with the remittance; the file itself comes
+        # back from `download-xml`.
+        stored = client.get(
+            f"/api/v1/remittances/{rem_id}/download-xml", cookies=_auth_cookie(admin)
+        )
+        assert stored.status_code == 200, stored.text
+        return admin, rem_id, stored.content
+
+    def test_a_second_generation_is_refused(self, client, db):
+        admin, rem_id, _ = self._generated(client, db, "nooverwrite")
+
+        resp = client.post(
+            f"/api/v1/remittances/{rem_id}/generate-xml", cookies=_auth_cookie(admin)
+        )
+
+        assert resp.status_code == 409, resp.text
+        assert resp.json()["detail"]["code"] == "remittance_file_already_generated"
+
+    def test_the_first_file_is_still_what_downloads(self, client, db):
+        admin, rem_id, generated = self._generated(client, db, "nooverwrite2")
+        client.post(f"/api/v1/remittances/{rem_id}/generate-xml", cookies=_auth_cookie(admin))
+
+        resp = client.get(
+            f"/api/v1/remittances/{rem_id}/download-xml", cookies=_auth_cookie(admin)
+        )
+
+        assert resp.status_code == 200, resp.text
+        assert resp.content == generated
+
+    def test_cancelling_and_rebuilding_is_still_the_way_through(self, client, db):
+        """The refusal has to leave a route, and this is the one the product
+        already documents for a changed mandate."""
+        admin, rem_id, _ = self._generated(client, db, "rebuild")
+        cancelled = client.post(
+            f"/api/v1/remittances/{rem_id}/cancel", cookies=_auth_cookie(admin)
+        )
+        assert cancelled.status_code == 200, cancelled.text
+
+        receipt = db.query(Receipt).filter(Receipt.receipt_number == "FAC-2026-rebuild-01").first()
+        db.refresh(receipt)
+        assert receipt.remittance_id is None
+
+        rebuilt = client.post(
+            "/api/v1/remittances/",
+            json={"receipt_ids": [receipt.id], "due_date": COLLECTION_DATE},
+            cookies=_auth_cookie(admin),
+        )
+        assert rebuilt.status_code == 201, rebuilt.text
+        regenerated = client.post(
+            f"/api/v1/remittances/{rebuilt.json()['id']}/generate-xml",
+            cookies=_auth_cookie(admin),
+        )
+        assert regenerated.status_code == 200, regenerated.text
+
+
+class TestAnEmptyImportIsNotAnAnswer:
+    """`processed` is a one-way door, and an empty array is no information.
+
+    The transition was applied after the loop whatever the loop did, so posting
+    `[]` moved a batch from `submitted` to `processed` — a state it cannot come
+    back from — on the strength of nothing (#398).
+    """
+
+    def _submitted(self, client, db, suffix):
+        _ensure_org_settings(db)
+        admin = _create_user(db, suffix=suffix)
+        member, _ = _create_member_with_mandate(db, suffix=suffix)
+        receipt = _create_receipt(db, member.id, admin.id, suffix=f"{suffix}-01")
+        created = client.post(
+            "/api/v1/remittances/",
+            json={"receipt_ids": [receipt.id], "due_date": COLLECTION_DATE},
+            cookies=_auth_cookie(admin),
+        )
+        rem_id = created.json()["id"]
+        client.post(f"/api/v1/remittances/{rem_id}/generate-xml", cookies=_auth_cookie(admin))
+        client.post(f"/api/v1/remittances/{rem_id}/mark-submitted", cookies=_auth_cookie(admin))
+        return admin, rem_id
+
+    def test_an_empty_array_is_refused(self, client, db):
+        admin, rem_id = self._submitted(client, db, "empty-import")
+
+        resp = client.post(
+            f"/api/v1/remittances/{rem_id}/import-returns",
+            json=[],
+            cookies=_auth_cookie(admin),
+        )
+
+        assert resp.status_code == 422, resp.text
+        remittance = db.query(Remittance).filter(Remittance.id == rem_id).first()
+        db.refresh(remittance)
+        assert remittance.status == "submitted"
+
+    def test_a_file_naming_nothing_this_batch_holds_leaves_the_status_alone(self, client, db):
+        admin, rem_id = self._submitted(client, db, "foreign-import")
+
+        resp = client.post(
+            f"/api/v1/remittances/{rem_id}/import-returns",
+            json=[{"receipt_number": "FAC-9999-9999", "reason": "MS03"}],
+            cookies=_auth_cookie(admin),
+        )
+
+        assert resp.status_code == 200, resp.text
+        assert resp.json()["not_found"] == ["FAC-9999-9999"]
+        remittance = db.query(Remittance).filter(Remittance.id == rem_id).first()
+        db.refresh(remittance)
+        assert remittance.status == "submitted"
+
+
+class TestACancelledBatchHoldsNothing:
+    """The detail page rendered "Recibos 1 · Total 30,25 €" directly above
+    "this batch has no receipts" — a stored counter over a live table (#398)."""
+
+    def test_cancelling_recounts_the_batch(self, client, db):
+        _ensure_org_settings(db)
+        admin = _create_user(db, suffix="cancel-count")
+        member, _ = _create_member_with_mandate(db, suffix="cancel-count")
+        receipt = _create_receipt(db, member.id, admin.id, suffix="cancel-count-01")
+        created = client.post(
+            "/api/v1/remittances/",
+            json={"receipt_ids": [receipt.id], "due_date": COLLECTION_DATE},
+            cookies=_auth_cookie(admin),
+        )
+        rem_id = created.json()["id"]
+        assert created.json()["receipt_count"] == 1
+
+        resp = client.post(f"/api/v1/remittances/{rem_id}/cancel", cookies=_auth_cookie(admin))
+
+        assert resp.status_code == 200, resp.text
+        assert resp.json()["receipt_count"] == 0
+        assert Decimal(str(resp.json()["total_amount"])) == Decimal("0")

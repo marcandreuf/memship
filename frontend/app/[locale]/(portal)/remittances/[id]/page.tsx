@@ -72,7 +72,12 @@ export default function RemittanceDetailPage() {
 
   const statusLabel = t(`remittances.status${remittance.status.charAt(0).toUpperCase() + remittance.status.slice(1)}`);
 
-  const canGenerateXml = canWrite && ["draft", "ready"].includes(remittance.status);
+  // Once the file exists it is the record of what went to the bank, and the
+  // API refuses to replace it (#394). Cancel and rebuild is the route.
+  const canGenerateXml =
+    canWrite &&
+    ["draft", "ready"].includes(remittance.status) &&
+    !remittance.sepa_file_path;
   const canDownloadXml = remittance.sepa_file_path !== null;
   const canSubmit = canWrite && remittance.status === "ready";
   const canImportReturns = canWrite && ["submitted", "processed"].includes(remittance.status);

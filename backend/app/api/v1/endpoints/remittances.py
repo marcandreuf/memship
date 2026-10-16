@@ -1,8 +1,9 @@
 """Remittance (SEPA batch) management endpoints."""
 
 from pathlib import Path
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
@@ -211,7 +212,7 @@ def mark_submitted_endpoint(
 @router.post("/{remittance_id}/import-returns")
 def import_returns_endpoint(
     remittance_id: int,
-    return_data: list[ReturnEntry],
+    return_data: Annotated[list[ReturnEntry], Body(min_length=1)],
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("billing.write")),
 ):
@@ -221,7 +222,10 @@ def import_returns_endpoint(
     [{"receipt_number": "FAC-2026-0001", "reason": "Insufficient funds"}, ...]
 
     The body is declared rather than read off the request, so a malformed entry
-    answers with a 422 naming its index instead of a 500 (#396).
+    answers with a 422 naming its index instead of a 500 (#396). An empty array
+    is refused: it used to move the batch from `submitted` to `processed`, a
+    one-way door, on the strength of no information at all (#398). Pasting
+    nothing is a mistake, not an instruction that the bank reported nothing.
     """
     remittance = db.query(Remittance).filter(
         Remittance.id == remittance_id, Remittance.is_active.is_(True)

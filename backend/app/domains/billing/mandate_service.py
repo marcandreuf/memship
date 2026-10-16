@@ -96,6 +96,31 @@ def create_mandate(db: Session, data: MandateCreate) -> SepaMandate:
             detail="Organization creditor ID must be configured before creating mandates",
         )
 
+    # One active mandate per member. The database makes a second one
+    # unrepresentable (#394); this is the same refusal with a message, so the
+    # admin is told which mandate to cancel rather than meeting an integrity
+    # error. A member changing bank account cancels the old mandate and signs
+    # a new one, which is what the paperwork does too.
+    existing = (
+        db.query(SepaMandate)
+        .filter(
+            SepaMandate.member_id == data.member_id,
+            SepaMandate.status == "active",
+            SepaMandate.is_active.is_(True),
+        )
+        .order_by(SepaMandate.created_at.desc(), SepaMandate.id.desc())
+        .first()
+    )
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "member_already_has_mandate",
+                "mandate_reference": existing.mandate_reference,
+                "debtor_iban": existing.debtor_iban,
+            },
+        )
+
     # Generate reference
     reference = generate_mandate_reference(db, member)
 

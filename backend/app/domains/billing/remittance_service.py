@@ -24,7 +24,7 @@ from app.domains.billing.schemas import (
 )
 from app.domains.billing.sequences import next_yearly_number
 from app.domains.billing.sepa_xml import SepaExportError, generate_sepa_xml
-from app.domains.billing.service import mark_receipts_paid
+from app.domains.billing.service import mark_receipts_paid, recount_remittance
 from app.domains.members.models import Member
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Person
@@ -268,22 +268,7 @@ def create_remittance(
             detail=errors,
         )
 
-    # Check mandates for all members
-    mandates = (
-        db.query(SepaMandate)
-        .filter(
-            SepaMandate.member_id.in_(member_ids),
-            SepaMandate.status == "active",
-            SepaMandate.is_active.is_(True),
-        )
-        .all()
-    )
-    mandate_map = {}
-    for m in mandates:
-        # Keep the latest mandate per member
-        if m.member_id not in mandate_map or m.created_at > mandate_map[m.member_id].created_at:
-            mandate_map[m.member_id] = m
-
+    mandate_map = active_mandate_map(db, member_ids)
     members_without_mandate = member_ids - set(mandate_map.keys())
     if members_without_mandate:
         raise HTTPException(
@@ -323,6 +308,38 @@ def create_remittance(
 
     db.flush()
     return remittance
+
+
+def active_mandate_map(db: Session, member_ids: set[int]) -> dict[int, SepaMandate]:
+    """The mandate each member is collected under.
+
+    `create_remittance` and `generate_remittance_xml` each used to do their own
+    "latest by created_at" pass with no tie-break and no ORDER BY — so two
+    mandates written in the same transaction share a server-default timestamp
+    and the winner was whichever row came back first, independently at each of
+    the two sites. A mandate added between them could change the answer, and
+    the batch could be validated against one account and the file written
+    against another (#394).
+
+    One active mandate per member is now a database constraint, so this returns
+    at most one row per member. The ordering is kept for the rows that predate
+    it: newest first, tie-broken on `id`, which is what the old rule meant to
+    say.
+    """
+    mandates = (
+        db.query(SepaMandate)
+        .filter(
+            SepaMandate.member_id.in_(member_ids),
+            SepaMandate.status == "active",
+            SepaMandate.is_active.is_(True),
+        )
+        .order_by(SepaMandate.created_at.desc(), SepaMandate.id.desc())
+        .all()
+    )
+    chosen: dict[int, SepaMandate] = {}
+    for mandate in mandates:
+        chosen.setdefault(mandate.member_id, mandate)
+    return chosen
 
 
 def batch_receipts(db: Session, remittance: Remittance) -> list[Receipt]:
@@ -410,24 +427,28 @@ def generate_remittance_xml(db: Session, remittance: Remittance) -> bytes:
             detail=f"Cannot generate XML for remittance in '{remittance.status}' status",
         )
 
+    # The file is written under the remittance number and was replaced in
+    # place, with no versioning and no refusal — so a second generation could
+    # produce a different `MsgId`, mandate and debtor IBAN under the same name
+    # (#394). `ready` is not a safe state to overwrite from: *mark submitted*
+    # is a manual step an operator takes *after* uploading the file, so the
+    # window where a file has gone to the bank while the status still says
+    # `ready` is the normal working sequence, not an edge case. Cancelling the
+    # batch and rebuilding it is the documented route for a changed mandate,
+    # and it leaves the record of what was sent intact.
+    if remittance.sepa_file_path and Path(remittance.sepa_file_path).exists():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "remittance_file_already_generated",
+                "remittance_number": remittance.remittance_number,
+            },
+        )
+
     receipts = batch_receipts(db, remittance)
     refuse_if_out_of_step(remittance, receipts)
 
-    # Load mandates
-    member_ids = {r.member_id for r in receipts}
-    mandates = (
-        db.query(SepaMandate)
-        .filter(
-            SepaMandate.member_id.in_(member_ids),
-            SepaMandate.status == "active",
-            SepaMandate.is_active.is_(True),
-        )
-        .all()
-    )
-    mandate_map = {}
-    for m in mandates:
-        if m.member_id not in mandate_map or m.created_at > mandate_map[m.member_id].created_at:
-            mandate_map[m.member_id] = m
+    mandate_map = active_mandate_map(db, {r.member_id for r in receipts})
 
     refuse_past_collection_date(db, remittance.due_date, remittance.remittance_number)
 
@@ -627,7 +648,13 @@ def import_returns(
         receipt.return_date = org_today(db)
         returned.append(number)
 
-    if remittance.status == "submitted":
+    # "Processed" means the bank's answer has been applied, and it is a one-way
+    # door — there is no transition back to `submitted`. It used to be set
+    # after the loop whatever the loop did, so an empty array moved the batch
+    # through it (#398). An empty body is now refused outright; this guards the
+    # remaining case, a file naming only receipts this batch never held.
+    applied = returned or already_returned or ignored
+    if remittance.status == "submitted" and applied:
         remittance.status = "processed"
 
     db.flush()
@@ -699,7 +726,16 @@ def cancel_remittance(db: Session, remittance: Remittance) -> Remittance:
     )
     for r in receipts:
         r.remittance_id = None
+    # Flush before recounting: the release above is still pending in the
+    # session, and `recount_remittance` asks the database what the batch holds.
+    db.flush()
 
     remittance.status = "cancelled"
+    # The counters were left as they were, so the detail page rendered
+    # "Recibos 1 · Total 30,25 €" directly above "this batch has no receipts" —
+    # a stored number over a live table (#398). Releasing a receipt from an
+    # open batch already recounts (#389); this loop was its own and so was not
+    # covered.
+    recount_remittance(db, remittance)
     db.flush()
     return remittance
