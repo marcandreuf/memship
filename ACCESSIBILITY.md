@@ -80,12 +80,11 @@ accessibility check — it catches removals, never anything else.
 
 ## Reporting accessibility issues
 
-**Open a public issue:
-[github.com/marcandreuf/memship/issues](https://github.com/marcandreuf/memship/issues)**, and
-say in the title that it is an accessibility barrier. The form that opens is the project's
-general bug-report template — fill in what is relevant and delete the rest. Its screenshot
-and device fields are prompts, not requirements; plain prose is fine, and so is a one-line
-report.
+**Open a public issue and pick the "Accessibility barrier" template:
+[new issue](https://github.com/marcandreuf/memship/issues/new/choose).** Every field on it is
+optional. It asks about the task, the page, your browser and your assistive technology because
+those are what usually make a barrier reproducible — not because a report missing them gets
+turned away. Plain prose is fine, and so is a single sentence saying what you could not do.
 
 **If GitHub itself is the barrier, email <marcandreuf@gmail.com>** with `memship
 accessibility` in the subject. A report that arrives by email is treated exactly like an
