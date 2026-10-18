@@ -56,7 +56,7 @@ You do not have to configure everything. Sign-in providers are optional (members
 Some of the values you type here are real secrets: a Google client secret, an Apple private key, a Resend API key, a Gmail app password.
 
 - They are **encrypted before being stored** in the database.
-- They are **never sent back to the browser**. After saving, the field shows only `•••• ` plus the last four characters. This is expected — it is not a bug and there is no way to read a stored secret back out of the interface.
+- They are **never sent back to the browser**. Once a secret is stored, the field stops being an input: it renders as text — `••••` plus the last four characters, and the word *stored* — beside a **Replace** button. This is expected; there is no way to read a stored secret back out of the interface, and no box for a password manager to fill, which is the point. A filled box used to hide the only sign that a value was already on file, and saving then sent whatever the browser had injected over a working credential.
 - The encryption key is **generated automatically** by the server on first use and written to a key file on the storage volume (never into the database). You do not have to create it.
 
 At the top of each Integrations screen you will see one of two banners:
@@ -68,8 +68,9 @@ At the top of each Integrations screen you will see one of two banners:
 
 **Editing rules for every secret field** (same in both sub-tabs):
 
-- Leave it **blank** → the stored value is kept unchanged.
-- Type a **new value** → it replaces the stored one.
+- **Leave it alone** → the stored value is kept unchanged. For a field with nothing stored yet, leaving it blank does the same.
+- Click **Replace** → an input appears, and only a value you type into it is sent as the new
+  secret. **Cancel** puts the field back without changing anything.
 - Click **Clear** → the stored value is wiped on save (click **Undo** to cancel before saving).
 
 ---

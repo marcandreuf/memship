@@ -46,7 +46,7 @@ You do not need to edit any file or restart anything. Every credential in this g
 The same rules apply here as everywhere else in Settings, and they are described in full in [Integrations → How secrets are protected](integrations.md#2-how-secrets-are-protected). In short:
 
 - Secret values are **encrypted before being stored** in the database.
-- They are **never sent back to the browser**. After saving, the field shows `****` plus the last four characters. That is expected, not a bug.
+- They are **never sent back to the browser**. A stored secret is not an input at all: it renders as text — `••••` plus the last four characters, and the word *stored* — beside a **Replace** button, and the input appears only once you press it. That is expected, not a bug, and it is deliberate: a password manager has no field to fill, so it cannot quietly overwrite a working credential on your next save.
 - **Back up the encryption key file together with your database.** Restoring a dump on a machine with a different key file leaves the stored secrets undecryptable and you will have to re-enter them.
 
 Which fields are treated as secret differs by provider, and it is not arbitrary — a publishable key is meant to be public, so it is stored in the clear and shown in full.
@@ -131,7 +131,7 @@ In **Settings → Payments → Providers**, add a Stripe provider and enter:
 
 A newly created provider starts **disabled**. Configure it first, test it, then activate it.
 
-> **The Webhook Secret is not format-checked.** Unlike the other two fields, memship accepts whatever you paste here. If you paste the wrong value — a secret key, an old secret from a deleted endpoint — nothing complains at save time and payments will silently fail to confirm. Check the value begins `whsec_` yourself.
+> **The Webhook Secret is format-checked, but only for its shape.** memship refuses to save a value that does not begin `whsec_`, so the common paste error — a secret key, a publishable key, something from the wrong box — is caught the moment you save it rather than at activation. What no local check can catch is a *correctly shaped* secret from the wrong endpoint: an old one, or one from an endpoint you deleted. It looks identical, saves cleanly, and then fails verification on every event — the member sees success, the receipt stays unpaid, and no screen reports anything. Only the end-to-end test in 4.5 tells you the value is the right one.
 
 ### 4.5 Testing
 

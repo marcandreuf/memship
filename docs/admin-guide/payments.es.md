@@ -12,6 +12,10 @@ Cada recibo tiene un **número**, un **socio**, una **descripción**, importes (
 Acciones disponibles según el estado: **Emitir**, **Cobrar**, **Devolver**, **Anular** y
 **Reemitir** (para un recibo devuelto). Desde el recibo también puedes **Descargar PDF**.
 
+Un recibo incluido en una remesa ya **Enviada** o **Procesada** no se puede **Cobrar** ni
+**Anular** a mano: el cobro está en curso en el banco. Importa la devolución o cierra la remesa
+— ver [Domiciliación SEPA](sepa.es.md#remesas).
+
 ## Corregir un recibo emitido
 
 Un recibo emitido no se edita: se corrige emitiendo una **factura rectificativa** desde el
