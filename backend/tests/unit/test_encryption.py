@@ -14,6 +14,8 @@ from app.domains.billing.provider_config import (
     PROVIDER_CONFIG_SCHEMAS,
     get_required_fields,
     get_sensitive_fields,
+    is_checkbox_true,
+    member_payment_methods,
     validate_provider_config,
 )
 
@@ -188,6 +190,59 @@ class TestProviderConfig:
 
     def test_get_required_fields_unknown(self):
         assert get_required_fields("unknown_type") == []
+
+
+class TestMemberPaymentMethods:
+    """`/active-methods` tells the portal which pay buttons to draw, and Bizum is
+    the one that depends on something memship cannot see — whether the club's bank
+    enabled it on the terminal (#405)."""
+
+    REDSYS = {
+        "merchant_code": "123456789",
+        "terminal_id": "001",
+        "secret_key": "secret123",
+        "environment": "test",
+        "currency_code": "978",
+    }
+
+    def test_redsys_offers_card_but_not_bizum_by_default(self):
+        """The default matters more than the toggle: a config saved before this
+        existed has no key, and must not keep offering a button that fails."""
+        assert member_payment_methods("redsys", self.REDSYS) == ["card"]
+
+    def test_redsys_offers_bizum_once_it_is_switched_on(self):
+        config = {**self.REDSYS, "enable_bizum": "true"}
+        assert member_payment_methods("redsys", config) == ["card", "bizum"]
+
+    def test_switching_bizum_off_leaves_card_alone(self):
+        config = {**self.REDSYS, "enable_bizum": "false"}
+        assert member_payment_methods("redsys", config) == ["card"]
+
+    def test_a_real_boolean_works_as_well_as_the_form_string(self):
+        """The settings form stores strings; the API accepts either."""
+        assert "bizum" in member_payment_methods(
+            "redsys", {**self.REDSYS, "enable_bizum": True}
+        )
+
+    def test_the_other_providers_report_their_own_method(self):
+        assert member_payment_methods("stripe", {}) == ["card"]
+        assert member_payment_methods("sepa_direct_debit", {}) == ["direct_debit"]
+
+    def test_a_provider_that_cannot_be_active_offers_nothing(self):
+        assert member_payment_methods("paypal", {}) == []
+        assert member_payment_methods("unknown", {}) == []
+
+    def test_a_missing_config_is_not_an_error(self):
+        """The column is nullable, and a row with no config at all is still a row."""
+        assert member_payment_methods("redsys", None) == ["card"]
+
+    @pytest.mark.parametrize("value", ["true", "True", " TRUE ", "1", "yes", "on", True])
+    def test_truthy_checkbox_values(self, value):
+        assert is_checkbox_true(value) is True
+
+    @pytest.mark.parametrize("value", ["false", "", "0", "no", "off", None, False, 0, []])
+    def test_everything_else_is_off(self, value):
+        assert is_checkbox_true(value) is False
 
 
 # --- Config Validation ---

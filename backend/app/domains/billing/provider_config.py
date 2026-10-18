@@ -91,6 +91,18 @@ PROVIDER_CONFIG_SCHEMAS: dict[str, dict] = {
                 "placeholder": "978 (EUR)",
                 "required": True,
             },
+            # Bizum rides on the same terminal as card, but the bank enables it
+            # per merchant and terminal and memship has no way to ask whether it
+            # did (#405). Offering it unconditionally meant a club whose bank had
+            # not enabled it showed members a button that always failed at the
+            # gateway with SIS0475. So this is the administrator's statement that
+            # the bank has confirmed it — off until they say so.
+            {
+                "key": "enable_bizum",
+                "label": "Offer Bizum",
+                "type": "checkbox",
+                "required": False,
+            },
         ],
         "sensitive_fields": ["secret_key"],
     },
@@ -159,6 +171,46 @@ def get_required_fields(provider_type: str) -> list[str]:
     if not schema:
         return []
     return [f["key"] for f in schema["fields"] if f.get("required")]
+
+
+def is_checkbox_true(value: object) -> bool:
+    """Read a ``checkbox`` config value.
+
+    The settings form keeps every field as a string, so the stored value is
+    ``"true"`` rather than ``True`` — but the same key set through the API, or by
+    a future seed, arrives as a real boolean. Both have to mean the same thing,
+    and anything else — absent, empty, ``"false"`` — means off.
+    """
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in ("true", "1", "yes", "on")
+    return False
+
+
+def member_payment_methods(provider_type: str, config: dict | None) -> list[str]:
+    """The methods a member may choose for this provider.
+
+    What the member portal needs in order to decide which pay buttons to draw,
+    and the one place that decision is made. Returning it from the provider row
+    rather than letting each page infer it from the provider type is what keeps
+    *My receipts* and *My membership* from drifting apart — they carry separate
+    copies of the gate (#405).
+
+    An empty list for a provider type that cannot be active is the truthful
+    answer: nothing can be paid through it.
+    """
+    config = config or {}
+    if provider_type == "sepa_direct_debit":
+        return ["direct_debit"]
+    if provider_type == "stripe":
+        return ["card"]
+    if provider_type == "redsys":
+        methods = ["card"]
+        if is_checkbox_true(config.get("enable_bizum")):
+            methods.append("bizum")
+        return methods
+    return []
 
 
 def validate_provider_config(provider_type: str, config: dict) -> list[dict]:

@@ -82,6 +82,7 @@
         "client_id": "ID de cliente",
         "client_secret": "Secreto de cliente",
         "currency_code": "Código de moneda",
+        "enable_bizum": "Ofrecer Bizum",
         "environment": "Entorno",
         "format": "Formato SEPA",
         "merchant_code": "Código de comercio (FUC)",
@@ -89,6 +90,9 @@
         "secret_key": "Clave secreta",
         "terminal_id": "ID de terminal",
         "webhook_secret": "Secreto del webhook"
+      },
+      "fieldHints": {
+        "enable_bizum": "Actívalo solo cuando tu banco haya confirmado que Bizum está habilitado en este terminal. Memship no puede comprobarlo."
       },
       "errors": {
         "missing_required_field": "{field} es obligatorio",

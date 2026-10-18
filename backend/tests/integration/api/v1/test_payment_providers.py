@@ -113,8 +113,12 @@ class TestActiveMethods:
         data = resp.json()
         types = {row["provider_type"] for row in data}
         assert types == {"stripe", "redsys"}
-        # Disabled providers omitted; no config leaked
-        assert all(set(row.keys()) == {"provider_type", "status"} for row in data)
+        # Disabled providers omitted; no config leaked. `methods` is derived from
+        # the config but is not part of it — it names payment methods, never a
+        # credential or a setting.
+        assert all(
+            set(row.keys()) == {"provider_type", "status", "methods"} for row in data
+        )
 
     def test_empty_when_no_active_providers(self, client, db):
         _create_provider(db, provider_type="stripe", status="disabled")
@@ -122,6 +126,31 @@ class TestActiveMethods:
         resp = client.get(self.url, cookies=_auth_cookie(member))
         assert resp.status_code == 200
         assert resp.json() == []
+
+    def test_redsys_does_not_offer_bizum_until_it_is_switched_on(self, client, db):
+        """A Redsys config saved before the switch existed has no key for it, and
+        the member must not be shown a Bizum button the bank may refuse (#405)."""
+        _create_provider(db, provider_type="redsys", status="active")
+        member = _create_user(db, role="member", suffix="pp-act3")
+
+        resp = client.get(self.url, cookies=_auth_cookie(member))
+
+        row = next(r for r in resp.json() if r["provider_type"] == "redsys")
+        assert row["methods"] == ["card"]
+
+    def test_redsys_offers_bizum_once_the_switch_is_on(self, client, db):
+        _create_provider(
+            db,
+            provider_type="redsys",
+            status="active",
+            config={**VALID_CONFIGS["redsys"], "enable_bizum": "true"},
+        )
+        member = _create_user(db, role="member", suffix="pp-act4")
+
+        resp = client.get(self.url, cookies=_auth_cookie(member))
+
+        row = next(r for r in resp.json() if r["provider_type"] == "redsys")
+        assert row["methods"] == ["card", "bizum"]
 
 
 # --- List ---

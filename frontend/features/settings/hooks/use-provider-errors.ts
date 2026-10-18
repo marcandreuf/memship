@@ -22,6 +22,17 @@ export function useProviderErrors() {
     return t.has(path) ? t(path) : key;
   }
 
+  /**
+   * The one-line explanation under a field, where the label alone cannot carry
+   * it — a Bizum switch has to say that the bank enables it, not memship (#405).
+   * Absent for most fields, and absent is the normal case.
+   */
+  function fieldHint(key: string | undefined): string {
+    if (!key) return "";
+    const path = `settings.providers.fieldHints.${key}`;
+    return t.has(path) ? t(path) : "";
+  }
+
   function describe(error: ProviderConfigError): string {
     const path = `settings.providers.errors.${error.code}`;
     if (!t.has(path)) return error.code;
@@ -40,5 +51,5 @@ export function useProviderErrors() {
     return (errors ?? []).map(describe).join("; ");
   }
 
-  return { describe, describeAll, fieldLabel };
+  return { describe, describeAll, fieldLabel, fieldHint };
 }

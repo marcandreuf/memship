@@ -763,6 +763,7 @@ def initiate_redsys_payment(
     from app.api.v1.endpoints.webhooks import _decrypt_provider_config, get_adapter
     from app.core.config import settings as app_settings
     from app.domains.billing.models import PaymentProvider
+    from app.domains.billing.provider_config import member_payment_methods
 
     method = (payload or {}).get("method", "card")
     locale = (payload or {}).get("locale", "es")
@@ -797,6 +798,16 @@ def initiate_redsys_payment(
         raise HTTPException(status_code=400, detail="No active Redsys provider configured")
 
     config = _decrypt_provider_config(provider)
+
+    # The button is already hidden when Bizum is off, but the endpoint has to
+    # agree with it: `method` arrives in the request body, so a caller could ask
+    # for Bizum on a terminal whose bank never enabled it and meet SIS0475 at the
+    # gateway instead of an answer from memship (#405).
+    if method == "bizum" and "bizum" not in member_payment_methods("redsys", config):
+        raise HTTPException(
+            status_code=400, detail="Bizum is not enabled for this Redsys provider"
+        )
+
     adapter = get_adapter("redsys", config)
     if not adapter:
         raise HTTPException(status_code=500, detail="Redsys adapter not available")

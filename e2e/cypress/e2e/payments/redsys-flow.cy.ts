@@ -31,6 +31,11 @@ describe("Redsys — Happy Path @smoke", () => {
               secret_key: "sq7HjrUOBfKmC576ILgskD5srU870gJ7",
               environment: "test",
               currency_code: "978",
+              // Off on a real provider, because the bank enables Bizum per
+              // terminal (#405). This suite asserts the Bizum path, so it opts
+              // in; `hides the Bizum button when the switch is off` turns it
+              // back off and restores it.
+              enable_bizum: "true",
             },
           },
         }).then((putResp) => {
@@ -50,6 +55,11 @@ describe("Redsys — Happy Path @smoke", () => {
               secret_key: "sq7HjrUOBfKmC576ILgskD5srU870gJ7",
               environment: "test",
               currency_code: "978",
+              // Off on a real provider, because the bank enables Bizum per
+              // terminal (#405). This suite asserts the Bizum path, so it opts
+              // in; `hides the Bizum button when the switch is off` turns it
+              // back off and restores it.
+              enable_bizum: "true",
             },
             is_default: false,
           },
@@ -250,6 +260,59 @@ describe("Redsys — Visibility gate @smoke", () => {
           url: `${API_URL}/payment-providers/${redsys.id}/toggle`,
         });
       }
+    });
+  });
+
+  it("hides the Bizum button, but not Card, when the switch is off", () => {
+    // The switch is what a club whose bank has not enabled Bizum needs (#405):
+    // card payments keep working and the button that would fail is simply not
+    // drawn. Asserting both halves is the point — hiding Bizum by turning
+    // Redsys off would "pass" a Bizum-only assertion and break card payments.
+    const base = {
+      merchant_code: "100000001",
+      terminal_id: "1",
+      secret_key: "sq7HjrUOBfKmC576ILgskD5srU870gJ7",
+      environment: "test",
+      currency_code: "978",
+    };
+
+    cy.apiLogin("super@examplee6e3b1.com", "TestSuper1!");
+    cy.request({
+      method: "GET",
+      url: `${API_URL}/payment-providers/`,
+    }).then((listResp) => {
+      const redsys = listResp.body.items.find(
+        (p: { provider_type: string }) => p.provider_type === "redsys"
+      );
+      expect(redsys, "a Redsys provider to switch Bizum off on").to.exist;
+
+      cy.request({
+        method: "PUT",
+        url: `${API_URL}/payment-providers/${redsys.id}`,
+        body: { status: "test", config: { ...base, enable_bizum: "false" } },
+      });
+
+      cy.loginAsMember();
+      cy.visit("/en/my-receipts");
+      cy.get("body").then(($body) => {
+        if ($body.find("tr").length > 1) {
+          cy.get("tr")
+            .not(":first")
+            .first()
+            .within(() => {
+              cy.get('button[aria-label="Card (Redsys)"]').should("exist");
+              cy.get('button[aria-label="Pay with Bizum"]').should("not.exist");
+            });
+        }
+      });
+
+      // Back on, so the specs above this one are not left depending on order.
+      cy.apiLogin("super@examplee6e3b1.com", "TestSuper1!");
+      cy.request({
+        method: "PUT",
+        url: `${API_URL}/payment-providers/${redsys.id}`,
+        body: { status: "test", config: { ...base, enable_bizum: "true" } },
+      });
     });
   });
 });
