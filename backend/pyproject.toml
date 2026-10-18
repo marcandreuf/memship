@@ -22,7 +22,12 @@ dependencies = [
     "cryptography>=42.0",
     "sepaxml>=2.6",
     "stripe>=10.0",
-    "python-redsys>=1.2",
+    # 1.2.2 or newer, not 1.2: in 1.2.0 `Request._parameters` is a class
+    # attribute, so every Request in the process shares one dict. A Bizum
+    # payment sets `Ds_Merchant_PayMethods` and every later request — card
+    # included — kept sending it, so once any member chose Bizum the whole
+    # worker sent card payments to the Bizum flow until it restarted.
+    "python-redsys>=1.2.2",
     "segno>=1.6",
     "authlib>=1.3",
     # authlib.integrations.starlette_client imports httpx at import time, so it

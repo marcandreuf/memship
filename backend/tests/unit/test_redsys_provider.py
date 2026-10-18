@@ -24,15 +24,21 @@ from app.domains.billing.providers.redsys_provider import (
 )
 
 
-@pytest.fixture(autouse=True)
-def _reset_redsys_library_state():
-    """python-redsys 1.2 stores ``_parameters`` on the class, leaking state
-    between tests. Reset to a fresh dict before and after each test."""
-    _RedsysRequest._parameters = {}
-    _RedsysResponse._parameters = {}
-    yield
-    _RedsysRequest._parameters = {}
-    _RedsysResponse._parameters = {}
+def test_the_library_keeps_parameters_per_request_not_per_class():
+    """The dependency floor is load-bearing, so it is asserted rather than trusted.
+
+    python-redsys 1.2.0 stored ``_parameters`` on the class, so every ``Request``
+    in the process shared one dict. This file used to reset it between tests with
+    an autouse fixture — which kept the suite green and hid the real defect,
+    because production resets nothing between *requests*. A Bizum payment set
+    ``Ds_Merchant_PayMethods`` and every later payment from that worker, card
+    included, carried it until the process restarted.
+
+    The fixture is gone and this takes its place: if the floor is ever lowered
+    below 1.2.2, this fails instead of the leak reappearing in the payment path.
+    """
+    assert "_parameters" not in vars(_RedsysRequest)
+    assert "_parameters" not in vars(_RedsysResponse)
 
 
 def _sign_notification(
@@ -240,6 +246,41 @@ class TestCreatePayment:
             result["form_params"]["Ds_MerchantParameters"].encode()
         )
         assert decoded.get("Ds_Merchant_PayMethods") == METHOD_BIZUM
+
+    def test_a_card_payment_after_a_bizum_one_is_not_sent_as_bizum(self):
+        """The order of these two calls is the whole test.
+
+        `Ds_Merchant_PayMethods` is the only parameter `create_payment` sets
+        conditionally, so it was the one that leaked: with a shared parameter
+        dict the key set by a Bizum payment stayed set for every card payment
+        that followed, and the member who pressed *pay by card* was sent to the
+        Bizum flow. Reproduced on a deployed instance on 2026-10-18.
+        """
+        adapter = RedsysAdapter(VALID_CONFIG)
+        client = RedirectClient(VALID_CONFIG["secret_key"])
+        common = dict(
+            person=fake_person(),
+            success_url="https://example.test/ok",
+            cancel_url="https://example.test/ko",
+            merchant_url="https://example.test/webhook",
+        )
+
+        bizum = adapter.create_payment(
+            receipt=fake_receipt(receipt_id=1), method="bizum", **common
+        )
+        assert client.decode_parameters(
+            bizum["form_params"]["Ds_MerchantParameters"].encode()
+        ).get("Ds_Merchant_PayMethods") == METHOD_BIZUM
+
+        card = adapter.create_payment(
+            receipt=fake_receipt(receipt_id=2), method="card", **common
+        )
+        assert (
+            "Ds_Merchant_PayMethods"
+            not in client.decode_parameters(
+                card["form_params"]["Ds_MerchantParameters"].encode()
+            )
+        )
 
 
 # --- verify_signature roundtrip + known-answer ---

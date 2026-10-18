@@ -4,10 +4,7 @@ from datetime import date
 from decimal import Decimal
 from urllib.parse import urlencode
 
-import pytest
 from redsys.client import RedirectClient
-from redsys.request import Request as _RedsysRequest
-from redsys.response import Response as _RedsysResponse
 
 from app.core.clock import org_today
 from app.core.encryption import encrypt_config
@@ -31,14 +28,13 @@ from app.domains.persons.models import Person
 REDSYS_SECRET = "sq7HjrUOBfKmC576ILgskD5srU870gJ7"
 
 
-@pytest.fixture(autouse=True)
-def _reset_redsys_library_state():
-    """python-redsys 1.2 stores ``_parameters`` on the class; reset for isolation."""
-    _RedsysRequest._parameters = {}
-    _RedsysResponse._parameters = {}
-    yield
-    _RedsysRequest._parameters = {}
-    _RedsysResponse._parameters = {}
+# The autouse fixture that used to sit here reset python-redsys's class-level
+# `_parameters` between tests. It kept this file isolated and hid the defect it
+# was working around: production resets nothing between requests, so a Bizum
+# payment's `Ds_Merchant_PayMethods` stayed set for every later card payment in
+# that worker. The floor is now `python-redsys>=1.2.2`, which keeps the dict per
+# instance, and `test_the_library_keeps_parameters_per_request_not_per_class`
+# in `tests/unit/test_redsys_provider.py` fails if that is ever lowered.
 
 
 # --- helpers ---
