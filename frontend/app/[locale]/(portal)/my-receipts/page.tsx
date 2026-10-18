@@ -47,6 +47,12 @@ export default function MyReceiptsPage() {
   const activeTypes = new Set((activeMethods || []).map((m) => m.provider_type));
   const stripeActive = activeTypes.has("stripe");
   const redsysActive = activeTypes.has("redsys");
+  // Bizum is a method of the Redsys provider, not a provider of its own, and the
+  // bank enables it per terminal — so it is offered only where the endpoint says
+  // the administrator has turned it on (#405).
+  const bizumActive = (activeMethods || []).some(
+    (m) => m.provider_type === "redsys" && m.methods?.includes("bizum")
+  );
 
   async function handlePayNow(receiptId: number) {
     try {
@@ -112,10 +118,10 @@ export default function MyReceiptsPage() {
                             </Tooltip>
                           )}
                           {redsysActive && (
-                            <>
-                              <RedsysPayButton receiptId={r.id} method="card" />
-                              <RedsysPayButton receiptId={r.id} method="bizum" variant="outline" />
-                            </>
+                            <RedsysPayButton receiptId={r.id} method="card" />
+                          )}
+                          {bizumActive && (
+                            <RedsysPayButton receiptId={r.id} method="bizum" variant="outline" />
                           )}
                         </>
                       )}

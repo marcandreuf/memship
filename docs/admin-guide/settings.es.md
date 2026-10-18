@@ -29,7 +29,8 @@ Ver [Domiciliación SEPA](sepa.es.md) para el flujo de mandatos y remesas.
 ## Proveedores de pago
 
 Configura las credenciales de las pasarelas de **pago en línea** que verán los socios en
-*Pagar ahora*: **Stripe**, **Redsys**, **Bizum** (vía Redsys) y **domiciliación SEPA**. Cada
+*Pagar ahora*: **Stripe**, **Redsys**, **Bizum** (vía Redsys, con su propio interruptor
+**Ofrecer Bizum**, desactivado por defecto) y **domiciliación SEPA**. Cada
 proveedor tiene un **nombre visible**, un **estado** (Activo / Pruebas / Desactivado) y la
 opción **Probar conexión** para validar la configuración.
 

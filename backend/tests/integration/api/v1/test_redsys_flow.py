@@ -128,7 +128,7 @@ def _create_receipt(db, member, status="emitted", ds_order=None):
     return receipt
 
 
-def _create_redsys_provider(db, status="active"):
+def _create_redsys_provider(db, status="active", enable_bizum=False):
     config = {
         "merchant_code": "100000001",
         "terminal_id": "1",
@@ -136,6 +136,10 @@ def _create_redsys_provider(db, status="active"):
         "environment": "test",
         "currency_code": "978",
     }
+    # Off by default, as a real provider is: the bank enables Bizum per terminal
+    # and memship cannot ask (#405). A test that wants it says so.
+    if enable_bizum:
+        config["enable_bizum"] = "true"
     encrypted = encrypt_config(config, ["secret_key"])
     provider = PaymentProvider(
         provider_type="redsys",
@@ -230,7 +234,7 @@ class TestRedsysInitiate:
         user = _create_user(db, person=person, role="admin", suffix="ini-biz")
         member = _create_member(db, person)
         receipt = _create_receipt(db, member)
-        _create_redsys_provider(db)
+        _create_redsys_provider(db, enable_bizum=True)
 
         resp = client.post(
             f"/api/v1/receipts/{receipt.id}/redsys/initiate",
@@ -240,6 +244,48 @@ class TestRedsysInitiate:
         assert resp.status_code == 200
         db.refresh(receipt)
         assert receipt.payment_method == "bizum"
+        assert receipt.redsys_ds_order is not None
+
+    def test_bizum_is_refused_while_the_switch_is_off(self, client, db):
+        """`method` arrives in the body, so hiding the button is not enough: a
+        caller could otherwise reach SIS0475 at the gateway instead of an answer
+        from memship (#405)."""
+        _create_org(db)
+        person = _create_person(db, suffix="ini-bizoff")
+        user = _create_user(db, person=person, role="admin", suffix="ini-bizoff")
+        member = _create_member(db, person)
+        receipt = _create_receipt(db, member)
+        _create_redsys_provider(db)
+
+        resp = client.post(
+            f"/api/v1/receipts/{receipt.id}/redsys/initiate",
+            cookies=_auth_cookie(user),
+            json={"method": "bizum"},
+        )
+
+        assert resp.status_code == 400
+        db.refresh(receipt)
+        assert receipt.payment_method != "bizum"
+        assert receipt.redsys_ds_order is None
+
+    def test_card_still_works_while_bizum_is_off(self, client, db):
+        """The switch governs Bizum alone — turning it off must not take card
+        payments with it, which is the whole reason it exists."""
+        _create_org(db)
+        person = _create_person(db, suffix="ini-cardoff")
+        user = _create_user(db, person=person, role="admin", suffix="ini-cardoff")
+        member = _create_member(db, person)
+        receipt = _create_receipt(db, member)
+        _create_redsys_provider(db)
+
+        resp = client.post(
+            f"/api/v1/receipts/{receipt.id}/redsys/initiate",
+            cookies=_auth_cookie(user),
+            json={"method": "card"},
+        )
+
+        assert resp.status_code == 200, resp.text
+        db.refresh(receipt)
         assert receipt.redsys_ds_order is not None
 
     def test_a_second_attempt_gets_a_fresh_order(self, client, db):

@@ -3,7 +3,7 @@ import { apiClient } from "@/lib/client-api";
 export interface ProviderField {
   key: string;
   label: string;
-  type: "text" | "password" | "select";
+  type: "text" | "password" | "select" | "checkbox";
   placeholder?: string;
   options?: string[];
   required?: boolean;
@@ -58,6 +58,10 @@ export async function getPaymentProviders(): Promise<PaymentProviderListResponse
 export interface ActivePaymentMethod {
   provider_type: string;
   status: string;
+  // The methods a member may choose for this provider. Redsys reports `bizum`
+  // only where the administrator has confirmed the bank enabled it (#405), so
+  // the pay buttons come from here rather than from the provider type.
+  methods: string[];
 }
 
 export async function getActivePaymentMethods(): Promise<ActivePaymentMethod[]> {

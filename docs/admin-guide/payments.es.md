@@ -67,7 +67,8 @@ pendientes y puede pagar con:
 
 - **Stripe** — pago con tarjeta.
 - **Redsys** — pasarela bancaria española con 3D Secure.
-- **Bizum** — a través de Redsys.
+- **Bizum** — a través de Redsys, y solo si **Ofrecer Bizum** está activado en ese proveedor.
+  Tu banco tiene que habilitarlo antes en el terminal.
 
 > La confirmación definitiva de los pagos con pasarela llega por la **notificación asíncrona**
 > del proveedor, no por la vuelta del navegador. La configuración de proveedores se hace en

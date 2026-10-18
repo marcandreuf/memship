@@ -14,6 +14,7 @@ from app.domains.billing.provider_config import (
     AVAILABLE_PROVIDER_TYPES,
     PROVIDER_CONFIG_SCHEMAS,
     get_sensitive_fields,
+    member_payment_methods,
     validate_provider_config,
     validate_provider_format,
 )
@@ -91,15 +92,32 @@ def list_active_methods(
 ):
     """Return the set of active payment provider types for member self-service.
 
-    No config fields — just the types and whether each is active/test. Safe for
-    members to call so UI can conditionally render pay buttons.
+    No config fields — just the types, whether each is active/test, and the
+    methods a member may choose for it. Safe for members to call so UI can
+    conditionally render pay buttons.
+
+    ``methods`` is derived from the config but exposes none of it: Redsys offers
+    card always and Bizum only where the administrator has said the bank enabled
+    it (#405), and the portal needs that distinction without being handed a
+    provider config it has no business reading.
     """
     rows = (
-        db.query(PaymentProvider.provider_type, PaymentProvider.status)
-        .filter(PaymentProvider.status.in_(["active", "test"]))
+        db.query(
+            PaymentProvider.provider_type,
+            PaymentProvider.status,
+            PaymentProvider.config,
+        )
+        .filter(PaymentProvider.status.in_(MEMBER_FACING_STATUSES))
         .all()
     )
-    return [{"provider_type": pt, "status": s} for pt, s in rows]
+    return [
+        {
+            "provider_type": pt,
+            "status": st,
+            "methods": member_payment_methods(pt, config),
+        }
+        for pt, st, config in rows
+    ]
 
 
 @router.get("/types")

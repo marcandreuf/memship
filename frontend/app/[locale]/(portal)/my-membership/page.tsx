@@ -66,6 +66,12 @@ export default function MyMembershipPage() {
   const activeTypes = new Set((activeMethods || []).map((m) => m.provider_type));
   const stripeActive = activeTypes.has("stripe");
   const redsysActive = activeTypes.has("redsys");
+  // Bizum is a method of the Redsys provider, not a provider of its own, and the
+  // bank enables it per terminal — so it is offered only where the endpoint says
+  // the administrator has turned it on (#405).
+  const bizumActive = (activeMethods || []).some(
+    (m) => m.provider_type === "redsys" && m.methods?.includes("bizum")
+  );
 
   const openPurchase = useMemo(() => {
     const found = (receipts?.items || []).find(
@@ -196,14 +202,14 @@ export default function MyMembershipPage() {
                 </Button>
               )}
               {redsysActive && (
-                <>
-                  <RedsysPayButton receiptId={openPurchase.receiptId} method="card" />
-                  <RedsysPayButton
-                    receiptId={openPurchase.receiptId}
-                    method="bizum"
-                    variant="outline"
-                  />
-                </>
+                <RedsysPayButton receiptId={openPurchase.receiptId} method="card" />
+              )}
+              {bizumActive && (
+                <RedsysPayButton
+                  receiptId={openPurchase.receiptId}
+                  method="bizum"
+                  variant="outline"
+                />
               )}
               {!stripeActive && !redsysActive && (
                 <p className="text-sm text-muted-foreground">

@@ -160,13 +160,15 @@ A delivery showing `400` with a signature error means the Webhook Secret is wron
 
 ## 5. Redsys and Bizum
 
-Redsys is the gateway used by most Spanish banks, operating the *TPV Virtual*. The same provider entry also serves **Bizum** — it is a payment method within Redsys, not a separate connection to configure.
+Redsys is the gateway used by most Spanish banks, operating the *TPV Virtual*. The same provider entry also serves **Bizum** — it is a payment method within Redsys, not a separate connection to configure. There are no second credentials for it; there is one switch, **Offer Bizum**, and it is off until you turn it on.
 
 ### 5.1 What you need
 
 Your bank must have issued you a TPV Virtual. From the contract or the bank's portal you need four values: the **merchant code (FUC)**, a **terminal number**, a **signing key**, and to know whether you are working against the test or production environment.
 
-**If you want Bizum, ask your bank to enable it on that terminal.** Bizum is activated per merchant and terminal by the bank, not by anything you enter here — the same credentials serve both card and Bizum once it is switched on. It is worth asking for at the same time as the TPV, and worth confirming before you go live, because a terminal without Bizum rejects Bizum payments at the gateway. Ask for your **test** credentials too: those are what you use while the Environment field says `test`.
+**If you want Bizum, ask your bank to enable it on that terminal.** Bizum is activated per merchant and terminal by the bank, not by anything you enter here — the same credentials serve both card and Bizum once it is switched on. It is worth asking for at the same time as the TPV, because a terminal without Bizum rejects Bizum payments at the gateway. Ask for your **test** credentials too: those are what you use while the Environment field says `test`.
+
+Once the bank confirms it, turn on **Offer Bizum** in the Redsys entry. memship cannot check the terminal itself — the gateway offers no way to ask — so that switch is your statement that the bank has done it, and the first real Bizum payment is still the proof.
 
 ### 5.2 Obtaining the credentials from your bank
 
@@ -227,7 +229,9 @@ A provider has three states:
 | **test** | Offered, for trying the flow end to end |
 | **active** | Offered to members as a real payment method |
 
-**Activating Redsys offers card *and* Bizum.** They are one provider, so members see both buttons — *Tarjeta* and *Bizum* — on their receipts and on their membership page as soon as the Redsys entry is active. There is no separate switch for Bizum. If your bank has not enabled Bizum on the terminal, use the **test** status first and complete one payment of each kind before going active.
+**Activating Redsys offers card. Bizum is a separate switch.** Members see *Tarjeta* on their receipts and on their membership page as soon as the Redsys entry is active; *Bizum* appears only when **Offer Bizum** is on as well. Leave it off until your bank has confirmed Bizum on the terminal — a Bizum button on a terminal without it fails at the gateway for every member who presses it, and nothing on their screen explains why.
+
+Whichever you offer, use the **test** status first and complete one real payment of each kind you intend to accept before going active.
 
 **memship refuses to activate a provider that could not take a payment.** Activation is the last moment an incomplete configuration is still a settings problem — past it, the missing field resurfaces as a failed payment on a member's screen. If activation is refused, the message names the fields at fault.
 
@@ -254,6 +258,7 @@ This check is local. It confirms your configuration is internally coherent; it c
 | Signing Key | yes | yes | no | your bank, per environment |
 | Environment | yes | no | `test` or `production` | your choice |
 | Currency Code | yes | no | exactly 3 digits | ISO 4217 — `978` for euro |
+| Offer Bizum | no | no | — | your bank, once it confirms Bizum on the terminal. Off by default |
 
 ---
 
