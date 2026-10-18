@@ -271,6 +271,8 @@ Memship is in its early stages. Code contributions will be welcome once the proj
 
 In the meantime, feel free to [open an issue](https://github.com/marcandreuf/memship/issues) to share ideas, suggest features, or ask questions. All feedback is welcome.
 
+[Accessibility](ACCESSIBILITY.md) covers what the project aims for, what contributors are expected to check, and how to report a barrier — including what has and has not actually been tested. If you hit one, that page has the reporting path and an email route for when GitHub itself is in the way.
+
 ## License
 
 Memship is licensed under the [Elastic License 2.0 (ELv2)](LICENSE). You are free to use, modify, and self-host Memship. The license restricts offering it as a managed service to third parties.
