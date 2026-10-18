@@ -257,9 +257,13 @@ publicada en aquest repositori i guarda les dades en volums d'un sol ús.
 
 ## Contribucions
 
-Memship està en les seves fases inicials. Les contribucions de codi seran benvingudes un cop la base del projecte estigui consolidada — estigueu atents.
+Les contribucions de codi són benvingudes. La base del projecte — infraestructura, CI/CD i l'arquitectura central — ja està consolidada, i [CONTRIBUTING](CONTRIBUTING.md) explica el model de branques, les convencions de commits i pull requests, el versionatge i com es publica una release _(en anglès)_. En resum: creeu una branca `feature/*` de vida curta a partir de `main` i obriu un pull request cap a `main`. Per preparar l'entorn, comenceu per [Local development environment](docs/development/local-environment.md) _(en anglès)_.
 
-Mentrestant, no dubteu a [obrir una issue](https://github.com/marcandreuf/memship/issues) per compartir idees, suggerir funcionalitats o fer preguntes. Qualsevol retroalimentació és benvinguda.
+No escriviu codi? [Obriu una issue](https://github.com/marcandreuf/memship/issues) — els informes d'errors, les propostes de funcionalitats, les preguntes i explicar com faríeu servir Memship són igual de benvinguts, i per als dos primers hi ha plantilles.
+
+Les vulnerabilitats de seguretat es comuniquen per un canal privat, no en una issue pública — vegeu [SECURITY](SECURITY.md). Qui participa en el projecte queda cobert pel [Codi de conducta](CODE_OF_CONDUCT.md).
+
+[Accessibilitat](ACCESSIBILITY.md) explica a què aspira el projecte, què s'espera que comprovi qui hi contribueix i com informar d'una barrera — inclòs què s'ha provat de debò i què no _(en anglès)_. Si us topeu amb una, allà hi ha la via per informar, amb una adreça de correu per quan GitHub sigui precisament l'obstacle.
 
 ## Llicència
 

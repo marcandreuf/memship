@@ -267,9 +267,11 @@ published in this repository and keeps data in throwaway volumes.
 
 ## Contributing
 
-Memship is in its early stages. Code contributions will be welcome once the project foundation is in place — stay tuned.
+Code contributions are welcome. The foundation — infrastructure, CI/CD and the core architecture — is in place, and [CONTRIBUTING](CONTRIBUTING.md) covers the branching model, the commit and pull-request conventions, versioning and how a release is cut. The short version: take a short-lived `feature/*` branch off `main`, and open a pull request back into it. To get set up, start with [Local development environment](docs/development/local-environment.md).
 
-In the meantime, feel free to [open an issue](https://github.com/marcandreuf/memship/issues) to share ideas, suggest features, or ask questions. All feedback is welcome.
+Not writing code? [Open an issue](https://github.com/marcandreuf/memship/issues) — bug reports, feature requests, questions and an account of how you would use Memship are all welcome, and there are templates for the first two.
+
+Security vulnerabilities go through a private channel rather than a public issue — see [SECURITY](SECURITY.md). Everyone taking part is covered by the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 [Accessibility](ACCESSIBILITY.md) covers what the project aims for, what contributors are expected to check, and how to report a barrier — including what has and has not actually been tested. If you hit one, that page has the reporting path and an email route for when GitHub itself is in the way.
 

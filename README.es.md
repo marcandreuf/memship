@@ -257,9 +257,13 @@ firma publicada en este repositorio y guarda los datos en volúmenes desechables
 
 ## Contribuir
 
-Memship está en sus primeras fases. Las contribuciones de código serán bienvenidas una vez que la base del proyecto esté asentada — permanece atento.
+Las contribuciones de código son bienvenidas. La base del proyecto — infraestructura, CI/CD y la arquitectura central — ya está asentada, y [CONTRIBUTING](CONTRIBUTING.md) explica el modelo de ramas, las convenciones de commits y pull requests, el versionado y cómo se publica una release _(en inglés)_. En resumen: crea una rama `feature/*` de vida corta a partir de `main` y abre un pull request de vuelta a `main`. Para preparar el entorno, empieza por [Local development environment](docs/development/local-environment.md) _(en inglés)_.
 
-Mientras tanto, no dudes en [abrir un issue](https://github.com/marcandreuf/memship/issues) para compartir ideas, sugerir funcionalidades o hacer preguntas. Todo feedback es bienvenido.
+¿No escribes código? [Abre un issue](https://github.com/marcandreuf/memship/issues) — los informes de errores, las propuestas de funcionalidades, las preguntas y contar cómo usarías Memship son igual de bienvenidos, y para los dos primeros hay plantillas.
+
+Las vulnerabilidades de seguridad se comunican por un canal privado, no en un issue público — consulta [SECURITY](SECURITY.md). Quien participa en el proyecto queda cubierto por el [Código de conducta](CODE_OF_CONDUCT.md).
+
+[Accesibilidad](ACCESSIBILITY.md) explica a qué aspira el proyecto, qué se espera que compruebe quien contribuye y cómo informar de una barrera — incluido qué se ha probado de verdad y qué no _(en inglés)_. Si te topas con una, ahí está la vía para informar, con una dirección de correo para cuando GitHub sea precisamente el obstáculo.
 
 ## Licencia
 
