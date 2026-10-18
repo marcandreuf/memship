@@ -47,7 +47,7 @@ membresía**. Es la forma de emitir la cuota periódica de forma masiva sin crea
 ## IVA y facturación
 
 - El **tipo de IVA** se calcula sobre la base; el tipo por defecto se configura en
-  [Ajustes → Facturación](settings.es.md#facturación).
+  [Ajustes → Banca y facturación](settings.es.md#banca-y-facturación).
 - La **numeración** usa un prefijo configurable y, opcionalmente, se reinicia cada año
   (p. ej. `FAC-2026-0001`).
 - El **PDF** del recibo incluye la cabecera de la organización, los datos del socio y el

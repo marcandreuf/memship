@@ -215,6 +215,8 @@ Les variacions complexes es construeixen sota demanda, quan una implementació r
 | Backend | Python 3.12+ / FastAPI / SQLAlchemy / Alembic |
 | Frontend | Next.js / React / Tailwind CSS / Shadcn/ui |
 | Base de dades | PostgreSQL 15 |
+| Tasques en segon pla | Celery worker + beat, amb Redis com a broker |
+| Proxy invers | Caddy — obté i renova els certificats TLS pel seu compte |
 | Contenidors | Docker + Docker Compose |
 | CI | GitHub Actions |
 | Registre | GitHub Container Registry (ghcr.io) |

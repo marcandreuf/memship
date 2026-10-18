@@ -76,14 +76,29 @@ Para las personas socias que usan el portal.
 > in the API and the setup command seeds spaces, slots and a waitlist — but it has **no admin or
 > member guide page yet**. That is a documentation gap, not a missing feature.
 
+## Project policies
+
+These live at the repository root rather than here, because `docs/` is product
+documentation — how memship works and how to run it — and these are the project's own
+rules. GitHub also surfaces them from the root on its own.
+
+- [Contributing](../CONTRIBUTING.md) — branching, versioning and how a release is cut _(EN)_
+- [Code of conduct](../CODE_OF_CONDUCT.md) — what is expected of everyone taking part _(EN)_
+- [Security policy](../SECURITY.md) — reporting a vulnerability privately, and what counts as
+  one rather than an ordinary bug _(EN)_
+- [Accessibility](../ACCESSIBILITY.md) — what the project aims for, what has and has not been
+  tested, and how to report a barrier _(EN)_
+
 ---
 
 ## Contributing to the docs
 
 - **Docs live with the code.** When a feature PR changes behaviour, update its page in the
   same PR. Each admin/member guide page maps 1:1 to a feature module in the app.
-- **Keep heading anchors stable.** In-app help links point at specific headings
-  (e.g. `admin-guide/activities#lista-de-espera`). Renaming a heading breaks those links, so
-  change anchors deliberately.
+- **Keep heading anchors stable.** Pages link into each other's headings (e.g.
+  `settings.es.md#banca-y-facturación`), the READMEs and the issue templates link in from
+  outside the folder, and GitHub does not redirect a renamed anchor. So rename headings
+  deliberately and fix what pointed at them — nothing warns you. The app itself does not yet
+  link to these pages; when it does, its links will be the ones hardest to find and fix.
 - **Plain Markdown, tool-agnostic.** These files render on GitHub today and can be published
   by a docs-site generator later without rework. Avoid tool-specific syntax.

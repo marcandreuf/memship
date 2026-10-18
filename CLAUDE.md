@@ -160,12 +160,32 @@ docker compose down              # Stop all
 ```
 memship/
 ├── CLAUDE.md                    # This file
-├── README.md
+├── README.md                    # Plus README.es.md and README.ca.md
 ├── LICENSE                      # ELv2
-├── CONTRIBUTING.md
-├── scripts/                     # Dev scripts (no Makefiles)
-│   ├── release.sh               # Tag a validated commit → triggers image promotion
-│   └── dev.sh
+├── CONTRIBUTING.md              # Branching, versioning, release flow
+├── CODE_OF_CONDUCT.md
+├── SECURITY.md                  # Private vulnerability reporting
+├── ACCESSIBILITY.md             # Targets, what is tested, how to report a barrier
+├── docker-compose.yml           # Production stack: caddy, api, worker, beat, frontend, redis, db
+├── docker-compose.quickstart.yml  # Evaluation only — published signing key, throwaway volumes
+├── Caddyfile
+├── docs/                        # Product documentation only (see docs/README.md)
+│   ├── getting-started/         # quickstart, installation, first-setup
+│   ├── self-hosting/            # configuration, feature flags, email, backups, upgrading, troubleshooting
+│   ├── admin-guide/             # ES-first, one page per feature module
+│   ├── member-guide/            # ES-first, the member portal
+│   ├── development/             # local-environment.md — the dev stack in full
+│   └── reference/               # roles-and-permissions
+├── scripts/                     # Dev and operations scripts (no Makefiles)
+│   ├── dev.sh                   # Local dev: start/stop/status/logs/seed/test/shell/migration/e2e
+│   ├── install.sh               # First install — writes POST-INSTALL.md on the server
+│   ├── upgrade.sh               # Pulls, migrates, and refuses a downgrade
+│   ├── verify-deployment.sh     # Post-deploy checks
+│   ├── db-backup.sh             # Plus db-restore.sh and pull-backup.sh
+│   ├── vps-bootstrap.sh         # Prepares a bare host
+│   └── release.sh               # Tag a validated commit → triggers image promotion
+├── tests/
+│   └── shell/                   # run.sh + mutate-check.sh — guards in scripts/ (run after any change there)
 ├── backend/
 │   ├── pyproject.toml           # Python deps (uv)
 │   ├── start.py                 # Uvicorn entry point
@@ -183,39 +203,61 @@ memship/
 │   │   │   ├── auth/            # Users, authentication
 │   │   │   ├── billing/         # Receipts, concepts, mandates, remittances, payment providers, webhooks, Stripe, Redsys
 │   │   │   │   └── providers/   # Payment provider adapters (Stripe, Redsys/Bizum, base)
+│   │   │   ├── bookings/        # Spaces, slots, bookings, waitlist, rules
+│   │   │   ├── communications/  # Announcements and member-facing messages
+│   │   │   ├── custom_fields/   # Custom member profile fields
+│   │   │   ├── mailing/         # Transport (SMTP/Resend), templates, delivery
+│   │   │   ├── member_card/     # Digital card, QR token, scan verification
 │   │   │   ├── members/         # Members, membership types, groups
-│   │   │   ├── organizations/   # Organization settings
-│   │   │   └── persons/         # Persons, addresses, contacts
-│   │   └── cli/                 # CLI commands (seed)
+│   │   │   ├── organizations/   # Organization settings, feature flags (one row, CHECK (id = 1))
+│   │   │   ├── persons/         # Persons, addresses, contacts
+│   │   │   ├── reminders/       # Payment reminders (the dunning run)
+│   │   │   ├── reports/         # Dashboard and annual summary
+│   │   │   └── shared/          # Cross-domain helpers
+│   │   └── cli/                 # CLI commands (seed, demo_data)
 │   ├── tests/
 │   │   ├── unit/
 │   │   └── integration/
 │   └── docker/
 │       ├── Dockerfile
-│       ├── docker-compose.yml
+│       ├── docker-compose.yml   # Dev backend: api, db, redis, worker, beat (+ test, tools profiles)
 │       └── entrypoint.sh
 ├── frontend/
 │   ├── package.json             # pnpm
 │   ├── app/                     # Next.js app router
 │   │   └── [locale]/            # i18n routes
-│   ├── features/                # Feature modules
+│   ├── features/                # Feature modules, mirroring the backend domains
 │   │   ├── activities/          # Activities, registrations, discounts, consents, attachments
 │   │   ├── auth/                # Login, register, password reset
+│   │   ├── bookings/            # Spaces, week calendar, slots, my-bookings
+│   │   ├── communications/      # Announcements
+│   │   ├── custom-fields/       # Profile field definitions
 │   │   ├── groups/              # Group management
+│   │   ├── mandates/            # SEPA mandates
+│   │   ├── member-card/         # Card, photo upload, scan panel
 │   │   ├── members/             # Member CRUD
-│   │   └── settings/            # Organization settings, membership types
+│   │   ├── receipts/            # Receipts, online payment buttons
+│   │   ├── reminders/           # Reminder configuration and history
+│   │   ├── remittances/         # SEPA remittance runs
+│   │   ├── reports/             # Dashboard and annual summary (Recharts)
+│   │   ├── roles/               # Custom roles and account management
+│   │   ├── settings/            # Organization settings, membership types
+│   │   └── system/              # Instance-level screens
 │   ├── components/
 │   │   ├── ui/                  # Shadcn components (sidebar, sheet, dropdown-menu, avatar, skeleton, breadcrumb, etc.)
-│   │   ├── entity/              # Shared entity pattern (search, pagination, detail, tabs)
+│   │   ├── entity/              # Shared entity pattern (search, pagination, detail, tabs, export)
 │   │   └── layout/              # Sidebar (Shadcn collapsible), header (SidebarTrigger + theme toggle), theme-toggle
 │   ├── hooks/                   # Shared hooks (use-mobile)
 │   ├── lib/                     # API clients, providers, status variants
-│   └── locales/                 # Translation files (es, ca, en)
+│   └── locales/                 # Translation files (es, ca, en) — kept at key parity
+├── e2e/                         # Cypress suite (see the E2E section above)
 └── .github/
+    ├── ISSUE_TEMPLATE/          # bug_report, feature_request, accessibility
     └── workflows/
         ├── ci.yml                # Tests on PRs + main
         ├── build-images.yml      # RC images (sha-<commit>, main) after CI on main
-        └── release.yml           # Promote RC → :X.Y.Z + :latest on tag push
+        ├── release.yml           # Promote RC → :X.Y.Z + :latest on tag push
+        └── deploy.yml            # Manual workflow_dispatch — the only thing that deploys
 ```
 
 ## Key Conventions

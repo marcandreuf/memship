@@ -228,6 +228,8 @@ Complex variations are built on demand, when a real deployment needs them: GoCar
 | Backend | Python 3.12+ / FastAPI / SQLAlchemy / Alembic |
 | Frontend | Next.js / React / Tailwind CSS / Shadcn/ui |
 | Database | PostgreSQL 15 |
+| Background jobs | Celery worker + beat, Redis as the broker |
+| Reverse proxy | Caddy — obtains and renews TLS certificates itself |
 | Containers | Docker + Docker Compose |
 | CI | GitHub Actions |
 | Registry | GitHub Container Registry (ghcr.io) |

@@ -215,6 +215,8 @@ Las variaciones complejas se construyen bajo demanda, cuando una implementación
 | Backend | Python 3.12+ / FastAPI / SQLAlchemy / Alembic |
 | Frontend | Next.js / React / Tailwind CSS / Shadcn/ui |
 | Base de datos | PostgreSQL 15 |
+| Tareas en segundo plano | Celery worker + beat, con Redis como broker |
+| Proxy inverso | Caddy — obtiene y renueva los certificados TLS por su cuenta |
 | Contenedores | Docker + Docker Compose |
 | CI | GitHub Actions |
 | Registro | GitHub Container Registry (ghcr.io) |
