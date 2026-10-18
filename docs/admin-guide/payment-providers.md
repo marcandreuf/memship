@@ -166,6 +166,8 @@ Redsys is the gateway used by most Spanish banks, operating the *TPV Virtual*. T
 
 Your bank must have issued you a TPV Virtual. From the contract or the bank's portal you need four values: the **merchant code (FUC)**, a **terminal number**, a **signing key**, and to know whether you are working against the test or production environment.
 
+**If you want Bizum, ask your bank to enable it on that terminal.** Bizum is activated per merchant and terminal by the bank, not by anything you enter here — the same credentials serve both card and Bizum once it is switched on. It is worth asking for at the same time as the TPV, and worth confirming before you go live, because a terminal without Bizum rejects Bizum payments at the gateway. Ask for your **test** credentials too: those are what you use while the Environment field says `test`.
+
 ### 5.2 Obtaining the credentials from your bank
 
 These do not come from a self-service dashboard the way Stripe's do — they are issued by whichever bank sold you the TPV, and the portal differs by bank. Redsys publishes the technical documentation at [pagosonline.redsys.es](https://pagosonline.redsys.es/).
@@ -210,6 +212,8 @@ Real testing means a payment against the test environment, with the test signing
 | Payments succeed but land nowhere you can find | Environment is `test` (or a typo falling back to it) while you believed it was production |
 | Receipt stays unpaid after a successful payment | The notification could not reach your installation — check that it is reachable from the internet |
 | `SIS0051 — Pedido repetido` | A duplicate order number. memship generates a fresh random prefix per attempt, so this should be rare; retrying issues a new one |
+| `SIS0475` on a Bizum payment, card payments fine | Bizum is not enabled on that merchant and terminal. Ask your bank to activate it — nothing in memship's configuration changes this |
+| `SIS0027`, and the gateway shows the amount in another currency | The terminal is not set up for the currency you are sending. Check the Currency Code field, and check with your bank which terminal to use for euro |
 
 ---
 
@@ -222,6 +226,8 @@ A provider has three states:
 | **disabled** | Configured but not offered. Members see no button for it |
 | **test** | Offered, for trying the flow end to end |
 | **active** | Offered to members as a real payment method |
+
+**Activating Redsys offers card *and* Bizum.** They are one provider, so members see both buttons — *Tarjeta* and *Bizum* — on their receipts and on their membership page as soon as the Redsys entry is active. There is no separate switch for Bizum. If your bank has not enabled Bizum on the terminal, use the **test** status first and complete one payment of each kind before going active.
 
 **memship refuses to activate a provider that could not take a payment.** Activation is the last moment an incomplete configuration is still a settings problem — past it, the missing field resurfaces as a failed payment on a member's screen. If activation is refused, the message names the fields at fault.
 
