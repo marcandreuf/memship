@@ -1003,7 +1003,7 @@ requires-dist = [
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5.0" },
     { name = "pytest-xdist", marker = "extra == 'dev'", specifier = ">=3.5" },
     { name = "python-multipart", specifier = ">=0.0.9" },
-    { name = "python-redsys", specifier = ">=1.2" },
+    { name = "python-redsys", specifier = ">=1.2.2" },
     { name = "pyyaml", marker = "extra == 'dev'", specifier = ">=6.0" },
     { name = "resend", specifier = ">=2.0" },
     { name = "segno", specifier = ">=1.6" },
@@ -1405,14 +1405,14 @@ wheels = [
 
 [[package]]
 name = "python-redsys"
-version = "1.2.0"
+version = "1.2.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pycryptodome" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f1/ea/a9ef0cd444b7700aebb87042e22d1d9cd9823ca1950000505fef0b0b4ae1/python_redsys-1.2.0.tar.gz", hash = "sha256:3347d2803004f9b0541961e22e55a4c294d3bd693f9064699d67a30a3ed14e21", size = 11270, upload-time = "2023-10-27T23:50:20.442Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/67/dd/59c9dc572d7ce42bcd2b56fa8f2cd22aed419a8fcdf6270036426b2bf898/python_redsys-1.2.2.tar.gz", hash = "sha256:8c6668f5f2d01b41c26e6aa4cc9156b523d93d3e5c72b5dc93f17737188c3d6b", size = 11791, upload-time = "2026-10-17T02:31:14.286Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c9/e0/604190e83bda79806cb16cba1890a669cd3ee015616db2f9ce1ad4baac80/python_redsys-1.2.0-py3-none-any.whl", hash = "sha256:fce3efe43628508889faec9661a29be76b5d20822829ab02197dfeacc6a412c2", size = 12798, upload-time = "2023-10-27T23:50:19.021Z" },
+    { url = "https://files.pythonhosted.org/packages/e7/76/5dbc144982bbd4a464221a353862e7b52c83539c93ce6ad764963fd1c577/python_redsys-1.2.2-py3-none-any.whl", hash = "sha256:71f5e04659560e58ef6f8963f5557ce8efc36b8e6510eda80cc1dfe0e140605c", size = 13821, upload-time = "2026-10-17T02:31:12.893Z" },
 ]
 
 [[package]]
