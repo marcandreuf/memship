@@ -1,0 +1,74 @@
+# Publish the documentation site
+#
+# Pings the Cloudflare Pages deploy hook so the website rebuilds from this
+# repository's docs. The hook URL is a credential — anyone holding it can
+# trigger builds — so it lives in the CLOUDFLARE_PAGES_DEPLOY_HOOK secret and
+# never in this file.
+#
+# Why a push to main rather than a release: the site publishes from main, not
+# from a tag. v2.19.0 made that concrete — the docs for an organisation's domain
+# and the Spanish and Catalan release tables both landed on main after the tag
+# was cut, so a release-triggered publish would have left them unpublished until
+# the next release, which is the opposite of what a docs change wants.
+#
+# The paths below are deliberately generous. A publish that was not needed costs
+# one rebuild; a docs change that never reaches the site is invisible until
+# somebody reads the old page and believes it.
+name: Publish docs
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "docs/**"
+      - "README.md"
+      - "README.es.md"
+      - "README.ca.md"
+      - "ACCESSIBILITY.md"
+      - "CONTRIBUTING.md"
+      - "CODE_OF_CONDUCT.md"
+      - "SECURITY.md"
+      - ".github/workflows/publish-docs.yml"
+  workflow_dispatch:
+
+# Only the newest content matters: if two docs merges land together, the second
+# build supersedes the first, and cancelling the first saves a build minute
+# rather than losing anything.
+concurrency:
+  group: publish-docs
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    name: Trigger the site rebuild
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping the deploy hook
+        env:
+          HOOK: ${{ secrets.CLOUDFLARE_PAGES_DEPLOY_HOOK }}
+        run: |
+          set -euo pipefail
+
+          # A fork, or an installation that does not publish a site, has no
+          # secret. Say so and succeed: this workflow is not a gate on anything.
+          if [ -z "${HOOK}" ]; then
+            echo "::notice::CLOUDFLARE_PAGES_DEPLOY_HOOK is not set — nothing to publish."
+            exit 0
+          fi
+
+          # -f so a non-2xx fails the job rather than passing quietly. The URL is
+          # never echoed; only the status code and Cloudflare's own reply are.
+          code=$(curl -fsS -o response.json -w '%{http_code}' -X POST "$HOOK")
+          echo "Deploy hook accepted the request (HTTP $code)."
+
+          # Cloudflare answers {"success":true,...}. Checked explicitly, because
+          # a 200 carrying success:false would otherwise read as a publish that
+          # happened.
+          if ! grep -q '"success":[[:space:]]*true' response.json; then
+            echo "::error::The deploy hook returned HTTP $code but did not report success."
+            cat response.json
+            exit 1
+          fi
+
+          echo "The site will rebuild from $GITHUB_SHA."
