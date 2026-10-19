@@ -60,6 +60,7 @@
       "test": "Provar connexió",
       "testSuccess": "La configuració és vàlida",
       "notReady": "No es pot activar: {errors}",
+      "notSaved": "No s'han desat els canvis: {errors}",
       "displayName": "Nom visible",
       "empty": "No hi ha proveïdors de pagament configurats",
       "configured": "Ja configurat",
@@ -103,7 +104,9 @@
         "must_be_digits_between": "{field} ha de tenir entre {min} i {max} dígits",
         "unknown_provider_type": "Tipus de proveïdor desconegut: {provider_type}",
         "authentication_failed": "El proveïdor ha rebutjat aquestes credencials",
-        "connection_failed": "No s'ha pogut connectar amb el proveïdor"
+        "connection_failed": "No s'ha pogut connectar amb el proveïdor",
+        "cannot_clear_stored_secret": "{field} no es pot buidar: enganxa-hi el valor nou a sobre o elimina el proveïdor",
+        "prefix_only": "{field} només conté el prefix: enganxa la clau completa"
       }
     },
     "recurringBilling": {

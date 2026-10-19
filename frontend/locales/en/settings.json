@@ -60,6 +60,7 @@
       "test": "Test Connection",
       "testSuccess": "Configuration is valid",
       "notReady": "Cannot activate: {errors}",
+      "notSaved": "The changes were not saved: {errors}",
       "displayName": "Display Name",
       "empty": "No payment providers configured",
       "configured": "Already configured",
@@ -103,7 +104,9 @@
         "must_be_digits_between": "{field} must be between {min} and {max} digits",
         "unknown_provider_type": "Unknown provider type: {provider_type}",
         "authentication_failed": "The provider rejected these credentials",
-        "connection_failed": "Could not reach the provider"
+        "connection_failed": "Could not reach the provider",
+        "cannot_clear_stored_secret": "{field} cannot be emptied — paste the new value over it, or delete the provider",
+        "prefix_only": "{field} is only the prefix — paste the whole key"
       }
     },
     "recurringBilling": {

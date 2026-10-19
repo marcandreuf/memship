@@ -723,6 +723,201 @@ class TestMalformedValuesAreRefusedOnSave:
         assert "missing_required_field" in codes
 
 
+class TestAStoredSecretCannotBeErased:
+    """Blanking a sensitive field used to store the empty string over it.
+
+    The stored value is encrypted, so overwriting it with nothing destroyed the
+    only copy — and on a disabled row it answered 200, because the presence
+    check runs only for member-facing providers. The form sends `****` for a
+    field the administrator did not touch, so an empty one is a lost paste
+    rather than an instruction (#406).
+    """
+
+    def _create_stripe(self, client, cookies, status="disabled"):
+        resp = client.post(
+            "/api/v1/payment-providers/",
+            json={
+                "provider_type": "stripe",
+                "display_name": "Stripe",
+                "status": status,
+                "config": VALID_CONFIGS["stripe"],
+            },
+            cookies=cookies,
+        )
+        assert resp.status_code == 201, resp.text
+        return resp.json()["id"]
+
+    def test_blanking_a_secret_on_a_disabled_provider_is_refused(self, client, db):
+        user = _create_user(db, suffix="pp-clr1")
+        cookies = _auth_cookie(user)
+        provider_id = self._create_stripe(client, cookies)
+
+        resp = client.put(
+            f"/api/v1/payment-providers/{provider_id}",
+            json={"config": {**VALID_CONFIGS["stripe"], "secret_key": ""}},
+            cookies=cookies,
+        )
+
+        assert resp.status_code == 400, resp.text
+        detail = resp.json()["detail"]
+        assert detail["code"] == "provider_config_rejected"
+        assert {"code": "cannot_clear_stored_secret", "field": "secret_key"} in detail["errors"]
+
+    def test_the_stored_secret_survives_the_refusal(self, client, db):
+        """The point of the guard: the encrypted value is the only copy."""
+        user = _create_user(db, suffix="pp-clr2")
+        cookies = _auth_cookie(user)
+        provider_id = self._create_stripe(client, cookies)
+
+        client.put(
+            f"/api/v1/payment-providers/{provider_id}",
+            json={"config": {**VALID_CONFIGS["stripe"], "secret_key": ""}},
+            cookies=cookies,
+        )
+
+        provider = db.query(PaymentProvider).filter(
+            PaymentProvider.id == provider_id
+        ).first()
+        db.refresh(provider)
+        decrypted = decrypt_config(provider.config, get_sensitive_fields("stripe"))
+        assert decrypted["secret_key"] == VALID_CONFIGS["stripe"]["secret_key"]
+
+    def test_every_blanked_secret_is_named_at_once(self, client, db):
+        """Three fields emptied by one paste-gone-wrong report as three."""
+        user = _create_user(db, suffix="pp-clr3")
+        cookies = _auth_cookie(user)
+        provider_id = self._create_stripe(client, cookies)
+
+        resp = client.put(
+            f"/api/v1/payment-providers/{provider_id}",
+            json={"config": {"secret_key": "", "publishable_key": "", "webhook_secret": ""}},
+            cookies=cookies,
+        )
+
+        assert resp.status_code == 400
+        fields = {e["field"] for e in resp.json()["detail"]["errors"]}
+        # `publishable_key` is not sensitive — it is readable on the screen and
+        # recoverable, so emptying it stays a normal edit.
+        assert fields == {"secret_key", "webhook_secret"}
+
+    def test_blanking_a_secret_on_a_live_provider_is_refused(self, client, db):
+        user = _create_user(db, suffix="pp-clr4")
+        cookies = _auth_cookie(user)
+        provider_id = self._create_stripe(client, cookies, status="active")
+
+        resp = client.put(
+            f"/api/v1/payment-providers/{provider_id}",
+            json={"config": {**VALID_CONFIGS["stripe"], "webhook_secret": ""}},
+            cookies=cookies,
+        )
+
+        assert resp.status_code == 400, resp.text
+        provider = db.query(PaymentProvider).filter(
+            PaymentProvider.id == provider_id
+        ).first()
+        db.refresh(provider)
+        decrypted = decrypt_config(provider.config, get_sensitive_fields("stripe"))
+        assert decrypted["webhook_secret"] == VALID_CONFIGS["stripe"]["webhook_secret"]
+
+    def test_a_field_with_nothing_stored_may_still_be_left_empty(self, client, db):
+        """The half-filled config stays savable: this guards a *stored* value,
+        not the act of saving a blank."""
+        user = _create_user(db, suffix="pp-clr5")
+        cookies = _auth_cookie(user)
+        create_resp = client.post(
+            "/api/v1/payment-providers/",
+            json={
+                "provider_type": "stripe",
+                "display_name": "Stripe",
+                "status": "disabled",
+                "config": {"secret_key": "sk_test_abc123"},
+            },
+            cookies=cookies,
+        )
+        assert create_resp.status_code == 201, create_resp.text
+        provider_id = create_resp.json()["id"]
+
+        resp = client.put(
+            f"/api/v1/payment-providers/{provider_id}",
+            json={"config": {"secret_key": "****c123", "webhook_secret": ""}},
+            cookies=cookies,
+        )
+
+        assert resp.status_code == 200, resp.text
+
+    def test_replacing_a_secret_outright_still_works(self, client, db):
+        """The documented way to remove a secret is to paste another over it."""
+        user = _create_user(db, suffix="pp-clr6")
+        cookies = _auth_cookie(user)
+        provider_id = self._create_stripe(client, cookies)
+
+        resp = client.put(
+            f"/api/v1/payment-providers/{provider_id}",
+            json={"config": {**VALID_CONFIGS["stripe"], "secret_key": "sk_test_replaced"}},
+            cookies=cookies,
+        )
+
+        assert resp.status_code == 200, resp.text
+        provider = db.query(PaymentProvider).filter(
+            PaymentProvider.id == provider_id
+        ).first()
+        db.refresh(provider)
+        decrypted = decrypt_config(provider.config, get_sensitive_fields("stripe"))
+        assert decrypted["secret_key"] == "sk_test_replaced"
+
+
+class TestAnOutOfRangeOptionIsRefusedOnSave:
+    """The other half of #406: option membership was checked only when a
+    provider became member-facing, so a disabled row stored an environment no
+    adapter knows and it surfaced at activation, or at a payment."""
+
+    def test_a_disabled_provider_refuses_an_unknown_environment(self, client, db):
+        user = _create_user(db, suffix="pp-opt1")
+
+        resp = client.post(
+            "/api/v1/payment-providers/",
+            json={
+                "provider_type": "redsys",
+                "display_name": "Redsys",
+                "status": "disabled",
+                "config": {**VALID_CONFIGS["redsys"], "environment": "staging"},
+            },
+            cookies=_auth_cookie(user),
+        )
+
+        assert resp.status_code == 400, resp.text
+        assert {
+            "code": "invalid_option",
+            "field": "environment",
+            "options": ["test", "production"],
+        } in resp.json()["detail"]["errors"]
+
+    def test_the_refused_option_is_not_stored(self, client, db):
+        user = _create_user(db, suffix="pp-opt2")
+        provider = _create_provider(db, provider_type="redsys", status="disabled")
+
+        client.put(
+            f"/api/v1/payment-providers/{provider.id}",
+            json={"config": {**VALID_CONFIGS["redsys"], "environment": "staging"}},
+            cookies=_auth_cookie(user),
+        )
+
+        db.refresh(provider)
+        assert provider.config["environment"] == "test"
+
+    def test_a_known_environment_still_saves(self, client, db):
+        user = _create_user(db, suffix="pp-opt3")
+        provider = _create_provider(db, provider_type="redsys", status="disabled")
+
+        resp = client.put(
+            f"/api/v1/payment-providers/{provider.id}",
+            json={"config": {**VALID_CONFIGS["redsys"], "environment": "production"}},
+            cookies=_auth_cookie(user),
+        )
+
+        assert resp.status_code == 200, resp.text
+
+
 # --- Test Connection ---
 
 
