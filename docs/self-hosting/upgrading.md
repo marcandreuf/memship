@@ -9,7 +9,7 @@ automatically on startup.
 
 Memship follows [semantic versioning](https://semver.org/). **Git tags are the single source
 of truth** for the version — there is no `VERSION` file. Published images are tagged with the
-release version (e.g. `2.7.1`) and `latest`.
+release version (e.g. `2.19.0`) and `latest`.
 
 Every install is pinned to a version rather than tracking `latest`, so upgrades are deliberate
 and an instance can say which release it runs. `IMAGE_TAG` in `.env` holds it; `install.sh
@@ -17,7 +17,7 @@ and an instance can say which release it runs. `IMAGE_TAG` in `.env` holds it; `
 
 ```bash
 curl -s http://127.0.0.1:8003/api/v1/health
-{"status":"healthy","version":"2.7.1","environment":"production"}
+{"status":"healthy","version":"2.19.0","environment":"production"}
 ```
 
 ## Upgrade procedure
@@ -28,7 +28,7 @@ settings are called out there, on the [releases page](https://github.com/marcand
 Then two commands. Refresh the deployment files, then apply the version:
 
 ```bash
-MEMSHIP_VERSION=2.7.1
+MEMSHIP_VERSION=2.19.0
 MEMSHIP_APP=/srv/openmemship/app          # wherever your install lives
 
 curl -fsSL "https://github.com/marcandreuf/memship/archive/refs/tags/v${MEMSHIP_VERSION}.tar.gz" \

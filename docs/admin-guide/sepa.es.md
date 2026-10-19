@@ -73,7 +73,16 @@ Una **remesa** agrupa recibos domiciliados en un lote para enviarlo al banco.
    nada.** El banco dice que ha devuelto el dinero y Memship dice que lo cobró: alguien lo cobró
    por otra vía mientras el adeudo estaba en curso. Revisa esos recibos, decide qué cobro es el
    real y vuelve a importar el fichero sin esas líneas.
-5. **Cerrar** la remesa cuando haya pasado el plazo de devoluciones. SEPA solo informa de los
+5. **Volver a cobrar lo devuelto** — una devolución por saldo insuficiente es rutina, y
+   recuperarla son **dos pasos**, no uno. En el recibo devuelto pulsa **Reemitir**: vuelve al
+   estado **Pendiente** y sale de la remesa en la que estaba, porque un recibo no puede entrar
+   en una remesa nueva mientras pertenezca a otra. Un recibo **Pendiente** todavía no se ofrece
+   para cobrar, así que pulsa después **Emitir** — ahí aparece ya en el selector de **Nueva
+   remesa**. No consume un número de documento nuevo: es el mismo recibo, con el mismo número.
+
+   Si vas a *Nueva remesa* justo después de **Reemitir** y el recibo no aparece, es que falta
+   ese segundo paso.
+6. **Cerrar** la remesa cuando haya pasado el plazo de devoluciones. SEPA solo informa de los
    cobros que fallan, así que al cerrar se marcan como **Cobrados** todos los recibos del lote
    que sigan pendientes, con la fecha de cobro de la remesa. Antes de confirmar verás cuántos
    recibos se van a marcar: **una vez cerrada la remesa ya no se pueden importar devoluciones**,
@@ -83,3 +92,21 @@ Estados de una remesa: **Borrador → Lista → Enviada → Procesada → Cerrad
 al cancelar se desvinculan todos los recibos). Una remesa **Enviada** se puede cerrar
 directamente, sin pasar por **Procesada**: el lote en el que ha pagado todo el mundo no tiene
 devoluciones que importar.
+
+### Qué ves en una remesa ya enviada
+
+Los contadores de la ficha — **Recibos** e **Importe** — son el registro de **lo que se envió al
+banco** y no se recalculan: el banco tiene ese fichero, y cambiar la cifra después reescribiría lo
+que se le pidió. Una remesa en **Borrador** o **Lista** sí se recalcula, porque de ahí todavía
+puede salir un fichero y tiene que pedir exactamente lo que dice.
+
+Por eso la tabla de recibos de una remesa enviada incluye también los que **ya han salido de
+ella** — el devuelto que has reemitido, por ejemplo. Cada línea así lo indica, con la fecha y el
+motivo (*devuelto y reemitido*, *recibo anulado*, *cobrado por otra vía*, *remesa cancelada*), y
+muestra el estado que el recibo tiene **ahora**, que es lo que te dice qué te queda por hacer: un
+recibo reemitido aparece como **Pendiente**, lo que significa que falta emitirlo otra vez. El
+importe de la línea es el que llevaba la remesa, no el que tenga el recibo hoy.
+
+Si la remesa se envió desde una instalación anterior a la 2.19.0, de los recibos que ya habían
+salido no queda registro: esa tabla no existía, así que esas remesas muestran solo lo que
+conservan.

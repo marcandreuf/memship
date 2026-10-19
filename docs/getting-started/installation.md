@@ -29,7 +29,7 @@ under `/srv`, but nothing can write there until the bootstrap has run. Pick a re
 [releases page](https://github.com/marcandreuf/memship/releases) and use it throughout:
 
 ```bash
-MEMSHIP_VERSION=2.6.0
+MEMSHIP_VERSION=2.19.0
 
 curl -fsSLO "https://raw.githubusercontent.com/marcandreuf/memship/v${MEMSHIP_VERSION}/scripts/vps-bootstrap.sh"
 chmod +x vps-bootstrap.sh
@@ -220,7 +220,7 @@ Debian and Ubuntu hosts are unaffected.
 If you would rather not use `install.sh`, the equivalent manual steps are:
 
 ```bash
-MEMSHIP_VERSION=2.6.0
+MEMSHIP_VERSION=2.19.0
 
 mkdir -p memship
 curl -fsSL "https://github.com/marcandreuf/memship/archive/refs/tags/v${MEMSHIP_VERSION}.tar.gz" \
