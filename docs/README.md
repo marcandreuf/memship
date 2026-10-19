@@ -20,6 +20,8 @@ New to Memship? Start here.
 
 Running Memship on your own server.
 
+- [Your organisation's domain](self-hosting/domain-and-dns.md) — choosing a hostname and the DNS
+  records behind it, when the domain belongs to a club rather than to you _(EN)_
 - [Configuration reference](self-hosting/configuration.md) — every environment variable _(EN)_
 - [Feature flags](self-hosting/feature-flags.md) — the twenty-one module switches, what a fresh install starts with _(EN)_
 - [Email delivery](self-hosting/email.md) — SMTP or Resend _(EN)_
@@ -28,7 +30,8 @@ Running Memship on your own server.
 - [Troubleshooting](self-hosting/troubleshooting.md) — when something will not start _(EN)_
 - Reverse proxy & TLS — the stack ships a Caddy that obtains and renews certificates on its own.
   Set up in [Installation](getting-started/installation.md), tuned via `SITE_ADDRESS` in the
-  [Configuration reference](self-hosting/configuration.md)
+  [Configuration reference](self-hosting/configuration.md); the DNS side is
+  [Your organisation's domain](self-hosting/domain-and-dns.md)
 - [Payment providers](admin-guide/payment-providers.md) — connecting Stripe, Redsys and Bizum:
   which credential to get from where, the Stripe webhook, and why Redsys needs none _(EN)_
 
