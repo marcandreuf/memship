@@ -143,7 +143,7 @@ Version numbers follow [semantic versioning](https://semver.org/) and are **chos
 - **Patch** (`x.y.Z`) — bug fixes and small polish, no new feature.
 - **Major** (`X.0.0`) — a breaking change to the API, data model, or deployment/upgrade contract.
 
-Because features are built in parallel, **the number is claimed at release, not when you branch.** Whoever releases first takes the next number; the next feature to ship takes the one after — so don't hard-code a target version into your branch, commits, or the roadmap while the work is in flight. When your feature is ready, add its row to the [release table](README.md#releases) *in the same PR as the feature code*, then tag. That is also what satisfies the release guard (step 4 below): the tagged commit must already carry the released version's README row. **Keep the row to three lines at most** — a milestone name, an em dash, a sentence, and any `**Breaking:**` or `**Migration:**` note an upgrader must not miss. It seeds the release-notes draft, and the detail belongs in those notes rather than in a table cell.
+Because features are built in parallel, **the number is claimed at release, not when you branch.** Whoever releases first takes the next number; the next feature to ship takes the one after — so don't hard-code a target version into your branch, commits, or the roadmap while the work is in flight. When your feature is ready, add its row to the [release table](README.md#releases) *in the same PR as the feature code*, then tag. That is also what satisfies the release guard (step 4 below): the tagged commit must already carry the released version's README row, and `docs/README.md` must already say it describes that version — the docs are published from `main`, so that sentence is the only thing telling a website reader which release the page in front of them applies to. **Keep the row to three lines at most** — a milestone name, an em dash, a sentence, and any `**Breaking:**` or `**Migration:**` note an upgrader must not miss. It seeds the release-notes draft, and the detail belongs in those notes rather than in a table cell.
 
 The flow is **build once, promote**:
 
@@ -157,7 +157,7 @@ The flow is **build once, promote**:
    ```
 
    This creates an annotated `v1.3.0` tag and pushes it.
-4. The Release workflow **promotes the exact RC image** for that commit to `:1.3.0` and `:latest` — it does not rebuild, so what ships is the bytes CI tested. It also checks that the released version has a row in the README's [release table](README.md#releases), and drafts the GitHub release seeded from that row.
+4. The Release workflow **promotes the exact RC image** for that commit to `:1.3.0` and `:latest` — it does not rebuild, so what ships is the bytes CI tested. It also checks two things about the tagged commit — that the released version has a row in the README's [release table](README.md#releases), and that [`docs/README.md`](docs/README.md) states it describes that version — then drafts the GitHub release seeded from the row.
 
    If an RC image is missing for the tagged commit, the release **fails** instead of building one from the tag. A rebuild would look like it worked while quietly shipping bytes nothing had tested, differing from the RC by whatever moved in the base image or the dependency tree in the meantime. Build the missing RC first (Actions → **Build Images** → Run workflow on that commit), then re-run the release. `allow_rebuild` overrides this for tags old enough that their RC images have been cleaned up.
 

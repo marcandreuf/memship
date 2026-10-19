@@ -84,6 +84,25 @@ jobs:
             exit 1
           fi
 
+      # The docs are published from main, so a reader of the website has no tag to
+      # look at and no way to tell which release the page in front of them
+      # describes. docs/README.md says it in a sentence; this keeps that sentence
+      # from becoming the thing it is there to prevent. Checked at release time
+      # rather than in CI for the same reason as the guard above: until the tag
+      # exists, naming the version being released is correct and would fail a
+      # comparison against the latest existing tag.
+      - name: Docs version guard
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          if grep -qF "These docs describe memship $VERSION" docs/README.md; then
+            echo "docs/README.md states $VERSION."
+          else
+            stated="$(grep -oE 'These docs describe memship [0-9]+\.[0-9]+\.[0-9]+' docs/README.md | head -1 || true)"
+            echo "::error::docs/README.md does not say it describes $VERSION${stated:+ (it says \"$stated\")}. Update the 'Which version these docs describe' section before releasing."
+            exit 1
+          fi
+
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v3
 
