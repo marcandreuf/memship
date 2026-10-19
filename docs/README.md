@@ -8,6 +8,32 @@ Documentation for **self-hosting operators**, **organization admins**, and **mem
 > primarily Spanish-speaking; Catalan (`.ca.md`) and English (`.md`) translations are added
 > on demand.
 
+## Which version these docs describe
+
+These docs describe memship 2.19.0 — the current release — plus anything merged since it was
+tagged. They are published from the main branch, so a change lands here when it is merged rather
+than when the next version ships.
+
+**To check what your own instance runs**, ask it:
+
+```bash
+curl -s http://localhost/api/v1/health   # {"status":"healthy","version":"2.19.0",...}
+```
+
+`version` is the image tag the instance was deployed with. If it reads `latest` you are on an
+unpinned install and cannot tell from here — see [Upgrading](self-hosting/upgrading.md).
+
+**If your instance is older than the version above**, read the docs as they stood for your
+release rather than these. Every tag carries its own copy, so swap the version into the path:
+
+```
+https://github.com/marcandreuf/memship/blob/v2.18.0/docs/README.md
+```
+
+What changed between your version and this one is on the
+[releases page](https://github.com/marcandreuf/memship/releases), where each release's notes carry
+the behaviour changes and migrations an upgrader must not miss.
+
 ## Getting started
 
 New to Memship? Start here.
