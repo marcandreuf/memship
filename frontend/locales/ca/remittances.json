@@ -7,6 +7,7 @@
     "remittanceNumber": "Remesa #",
     "receiptCount": "Rebuts",
     "totalAmount": "Total",
+    "countersAreWhatWasSent": "{released, plural, one {Un rebut s'ha retornat i s'ha reemès} other {# rebuts s'han retornat i s'han reemès}} fora d'aquesta remesa. Els imports de dalt són el que es va enviar al banc; {held, plural, =0 {la remesa ja no en retén cap} one {la remesa retén un rebut ara} other {la remesa retén # rebuts ara}}.",
     "emissionDate": "Data",
     "dueDate": "Venciment",
     "dueDateWeekend": "Aquesta data cau en cap de setmana i els bancs no liquiden aquell dia. El banc pot avançar-la o rebutjar-la.",

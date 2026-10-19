@@ -168,6 +168,19 @@ export default function RemittanceDetailPage() {
     });
   }
 
+  // A sent batch keeps the counters of what it sent: `release_from_open_batch`
+  // recounts `draft` and `ready` only, because once the bank has the file the
+  // counters are the record of what actually went out (#394). The table beside
+  // them lists what the batch holds *now*, which is a smaller number as soon as
+  // a returned receipt is re-emitted out of it (#343) — so the screen showed
+  // "Recibos 2" above one row with nothing saying they measure different
+  // things, and the arithmetic read as broken (#402). Explained only where it
+  // diverges: in every other state the two are the same by construction, and a
+  // permanent label would describe a discrepancy that is not there.
+  const heldCount = remittance.receipts?.length ?? 0;
+  const countersAreFrozen = ["submitted", "processed", "closed"].includes(remittance.status);
+  const releasedCount = countersAreFrozen ? remittance.receipt_count - heldCount : 0;
+
   const fields = [
     { label: t("remittances.remittanceNumber"), value: remittance.remittance_number },
     { label: t("remittances.emissionDate"), value: formatDate(remittance.emission_date) },
@@ -231,6 +244,14 @@ export default function RemittanceDetailPage() {
         </CardHeader>
         <CardContent className="px-4 pb-4 pt-0">
           <DetailSection fields={fields} columns={2} />
+          {releasedCount > 0 && (
+            <p className="mt-3 text-xs text-muted-foreground">
+              {t("remittances.countersAreWhatWasSent", {
+                released: releasedCount,
+                held: heldCount,
+              })}
+            </p>
+          )}
         </CardContent>
       </Card>
 

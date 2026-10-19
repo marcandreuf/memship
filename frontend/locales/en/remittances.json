@@ -7,6 +7,7 @@
     "remittanceNumber": "Remittance #",
     "receiptCount": "Receipts",
     "totalAmount": "Total",
+    "countersAreWhatWasSent": "{released, plural, one {One receipt was returned and re-emitted} other {# receipts were returned and re-emitted}} out of this batch. The counters above are what was sent to the bank; {held, plural, =0 {the batch now holds none} one {the batch now holds one receipt} other {the batch now holds # receipts}}.",
     "emissionDate": "Date",
     "dueDate": "Due Date",
     "dueDateWeekend": "That date falls on a weekend, which is not a settlement day. The bank may move it or reject it.",
