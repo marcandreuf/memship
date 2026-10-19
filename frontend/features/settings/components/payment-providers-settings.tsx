@@ -154,6 +154,12 @@ export function PaymentProvidersSettings() {
       toast.error(t("settings.providers.notReady", { errors: describeAll(detail.errors) }));
       return;
     }
+    if (detail?.code === "provider_config_rejected") {
+      // A save that did not happen, on a provider nobody asked to switch on —
+      // so it says what was not stored, not that activation failed.
+      toast.error(t("settings.providers.notSaved", { errors: describeAll(detail.errors) }));
+      return;
+    }
     toast.error(getErrorMessage(err, t));
   }
 

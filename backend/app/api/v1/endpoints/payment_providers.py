@@ -32,6 +32,21 @@ router = APIRouter(prefix="/payment-providers", tags=["payment-providers"])
 MEMBER_FACING_STATUSES = ("active", "test")
 
 
+def _refuse_save(errors: list[dict]) -> None:
+    """Refuse the save itself, as distinct from refusing to advertise.
+
+    Carries its own code because nothing is being activated: a disabled
+    provider rejecting a typo is a save that did not happen, and
+    `provider_not_ready` makes the screen say the provider cannot be switched
+    on — true but beside the point, and confusing on a row the administrator
+    never asked to switch on.
+    """
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail={"code": "provider_config_rejected", "errors": errors},
+    )
+
+
 def _require_valid_format(provider_type: str, config: dict) -> None:
     """Refuse a malformed value on the way in, whatever the provider's status.
 
@@ -44,10 +59,7 @@ def _require_valid_format(provider_type: str, config: dict) -> None:
         provider_type, decrypt_config(config or {}, get_sensitive_fields(provider_type))
     )
     if errors:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"code": "provider_not_ready", "errors": errors},
-        )
+        _refuse_save(errors)
 
 
 def _require_ready(provider_type: str, config: dict) -> None:
@@ -248,6 +260,7 @@ def update_provider(
         # If a sensitive field is masked (starts with ****), keep the existing encrypted value
         existing_config = provider.config or {}
         new_config = dict(data.config)
+        cleared: list[dict] = []
         for field in sensitive:
             new_val = new_config.get(field, "")
             if isinstance(new_val, str) and new_val.startswith("****"):
@@ -257,7 +270,17 @@ def update_provider(
                 # Encrypt the new value
                 from app.core.encryption import encrypt_value
                 new_config[field] = encrypt_value(new_val)
-            # else: empty string, store as-is
+            elif existing_config.get(field):
+                # An empty string used to be stored as-is, which overwrote the
+                # encrypted value with nothing — unrecoverable, and accepted
+                # with 200 on a disabled row because the presence check runs
+                # only for member-facing ones (#406). Blanking is not how a
+                # stored secret is removed: the form sends `****` for a field
+                # left alone, so an empty one is a lost paste, not an
+                # instruction. Replace the value, or delete the provider.
+                cleared.append({"code": "cannot_clear_stored_secret", "field": field})
+        if cleared:
+            _refuse_save(cleared)
 
     # Before any of it is applied, so a refusal leaves the live provider exactly
     # as it was — including the case of clearing a required field on one that is

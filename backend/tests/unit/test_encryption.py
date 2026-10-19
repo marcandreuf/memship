@@ -17,6 +17,7 @@ from app.domains.billing.provider_config import (
     is_checkbox_true,
     member_payment_methods,
     validate_provider_config,
+    validate_provider_format,
 )
 
 
@@ -358,6 +359,77 @@ class TestConfigValidation:
     def test_unknown_provider_type(self):
         errors = validate_provider_config("unknown", {})
         assert errors == [{"code": "unknown_provider_type", "provider_type": "unknown"}]
+
+
+class TestAPrefixAloneIsNotAKey:
+    """A paste that grabbed only the first characters of a Stripe key keeps the
+    prefix, so the prefix rule accepted it and stored it; it then failed at
+    Stripe when a member tried to pay. Caught here as far as it honestly can
+    be — the length of a real key is Stripe's business, not memship's."""
+
+    @pytest.mark.parametrize(
+        "field,prefix",
+        [
+            ("secret_key", "sk_"),
+            ("publishable_key", "pk_"),
+            ("webhook_secret", "whsec_"),
+        ],
+    )
+    def test_the_bare_prefix_is_refused(self, field, prefix):
+        errors = validate_provider_format("stripe", {field: prefix})
+        assert {"code": "prefix_only", "field": field, "prefix": prefix} in errors
+
+    def test_one_character_past_the_prefix_is_accepted(self):
+        """Not a length rule: anything beyond the prefix is Stripe's to judge."""
+        assert validate_provider_format("stripe", {"secret_key": "sk_x"}) == []
+
+    def test_a_wrong_prefix_still_reports_the_prefix_rule(self):
+        """The two codes must not both fire — the screen would say the value is
+        the prefix and does not start with it."""
+        errors = validate_provider_format("stripe", {"secret_key": "pk_live_abc"})
+        assert errors == [
+            {"code": "must_start_with", "field": "secret_key", "prefix": "sk_"}
+        ]
+
+
+class TestOptionMembershipIsAFormatRule:
+    """A select's value is either one of its options or nonsense, whatever the
+    provider's status — so it is checked by the format pass, which runs on every
+    save, not only by the readiness pass that runs at activation (#406)."""
+
+    def test_format_alone_rejects_an_unknown_option(self):
+        errors = validate_provider_format("redsys", {"environment": "staging"})
+        assert errors == [
+            {
+                "code": "invalid_option",
+                "field": "environment",
+                "options": ["test", "production"],
+            }
+        ]
+
+    def test_format_alone_accepts_a_known_option(self):
+        assert validate_provider_format("redsys", {"environment": "production"}) == []
+
+    def test_format_alone_stays_silent_about_a_missing_option(self):
+        """Missing is the readiness pass's business: a half-filled config is a
+        normal thing to save while the provider is switched off."""
+        assert validate_provider_format("redsys", {}) == []
+
+    def test_readiness_still_reports_an_unknown_option(self):
+        errors = validate_provider_config(
+            "sepa_direct_debit", {"format": "pain.001.001.03"}
+        )
+        assert {
+            "code": "invalid_option",
+            "field": "format",
+            "options": ["pain.008.001.02"],
+        } in errors
+
+    def test_a_missing_required_select_reports_once(self):
+        """Presence and membership must not both fire for the same empty field:
+        the screen would say it is required and not one of the options."""
+        errors = validate_provider_config("sepa_direct_debit", {"format": ""})
+        assert errors == [{"code": "missing_required_field", "field": "format"}]
 
 
 class TestValidationErrorsAreTranslatable:

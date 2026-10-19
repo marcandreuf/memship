@@ -234,14 +234,6 @@ def validate_provider_config(provider_type: str, config: dict) -> list[dict]:
 
         if required and (value is None or value == ""):
             errors.append({"code": "missing_required_field", "field": key})
-            continue
-
-        if value and field_def["type"] == "select":
-            options = field_def.get("options", [])
-            if options and value not in options:
-                errors.append(
-                    {"code": "invalid_option", "field": key, "options": options}
-                )
 
     errors.extend(_validate_format(provider_type, config))
 
@@ -256,7 +248,9 @@ def validate_provider_format(provider_type: str, config: dict) -> list[dict]:
     activation is where `validate_provider_config` insists on the whole set. But
     a value that *is* present can be checked the moment it arrives, and a stored
     typo is worth refusing at the keystroke rather than at activation — or, for
-    a signing secret, never, since nothing local can tell it is wrong.
+    a signing secret, never, since nothing local can tell it is wrong. Option
+    membership counts as format: a select's value is either one of its options
+    or nonsense, whatever the provider's status (#406).
     """
     if provider_type not in PROVIDER_CONFIG_SCHEMAS:
         return [{"code": "unknown_provider_type", "provider_type": provider_type}]
@@ -267,6 +261,26 @@ def _validate_format(provider_type: str, config: dict) -> list[dict]:
     """Provider-specific format validation rules."""
     errors: list[dict] = []
 
+    # A select carrying something that is not one of its options is a malformed
+    # value, not a missing one — no status makes it legitimate. It used to be
+    # checked only by `validate_provider_config`, which runs when a provider
+    # becomes member-facing, so a disabled row accepted and stored an
+    # out-of-range environment that surfaced much later (#406).
+    schema = PROVIDER_CONFIG_SCHEMAS.get(provider_type, {})
+    for field_def in schema.get("fields", []):
+        if field_def["type"] != "select":
+            continue
+        value = config.get(field_def["key"])
+        options = field_def.get("options", [])
+        if value and options and value not in options:
+            errors.append(
+                {
+                    "code": "invalid_option",
+                    "field": field_def["key"],
+                    "options": options,
+                }
+            )
+
     if provider_type == "stripe":
         sk = config.get("secret_key", "")
         pk = config.get("publishable_key", "")
@@ -274,10 +288,22 @@ def _validate_format(provider_type: str, config: dict) -> list[dict]:
             errors.append(
                 {"code": "must_start_with", "field": "secret_key", "prefix": "sk_"}
             )
+        elif sk == "sk_":
+            errors.append({"code": "prefix_only", "field": "secret_key", "prefix": "sk_"})
         if pk and not pk.startswith("pk_"):
             errors.append(
                 {"code": "must_start_with", "field": "publishable_key", "prefix": "pk_"}
             )
+        elif pk == "pk_":
+            errors.append(
+                {"code": "prefix_only", "field": "publishable_key", "prefix": "pk_"}
+            )
+        # The prefix alone is not a key: a paste that grabbed only the first
+        # characters keeps `sk_` and would otherwise be stored, then fail at
+        # Stripe when a member tries to pay. This is as far as the rule can
+        # honestly go — a minimum length would be a guess at a format Stripe
+        # owns and may change, and *Probar conexión* is the check that knows.
+        #
         # Only Stripe knows whether a signing secret is the right one, so a
         # wrong-but-well-formed value still fails quietly at the webhook: every
         # confirmation is discarded, the member sees success and the receipt
@@ -287,6 +313,10 @@ def _validate_format(provider_type: str, config: dict) -> list[dict]:
         if ws and not ws.startswith("whsec_"):
             errors.append(
                 {"code": "must_start_with", "field": "webhook_secret", "prefix": "whsec_"}
+            )
+        elif ws == "whsec_":
+            errors.append(
+                {"code": "prefix_only", "field": "webhook_secret", "prefix": "whsec_"}
             )
 
     elif provider_type == "redsys":

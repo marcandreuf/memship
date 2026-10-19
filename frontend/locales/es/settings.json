@@ -60,6 +60,7 @@
       "test": "Probar conexión",
       "testSuccess": "La configuración es válida",
       "notReady": "No se puede activar: {errors}",
+      "notSaved": "No se han guardado los cambios: {errors}",
       "displayName": "Nombre visible",
       "empty": "No hay proveedores de pago configurados",
       "configured": "Ya configurado",
@@ -103,7 +104,9 @@
         "must_be_digits_between": "{field} debe tener entre {min} y {max} dígitos",
         "unknown_provider_type": "Tipo de proveedor desconocido: {provider_type}",
         "authentication_failed": "El proveedor ha rechazado estas credenciales",
-        "connection_failed": "No se ha podido conectar con el proveedor"
+        "connection_failed": "No se ha podido conectar con el proveedor",
+        "cannot_clear_stored_secret": "{field} no se puede vaciar: pega el valor nuevo encima o elimina el proveedor",
+        "prefix_only": "{field} solo contiene el prefijo: pega la clave completa"
       }
     },
     "recurringBilling": {
