@@ -11,7 +11,10 @@ This guide covers a **production** self-hosted install. For a quick local evalua
   sometimes lack `curl`: `sudo apt-get update && sudo apt-get install -y curl`
 - **Not `git`.** A release is fetched as a tarball, and the server holds no source checkout —
   nothing in a running instance uses git, so there is no reason to install it
-- A domain name, with a DNS A record already pointing at the server, if you want automatic HTTPS
+- A domain name, with a DNS A record already pointing at the server, if you want automatic HTTPS.
+  If the domain belongs to an organisation rather than to you — so the hostname, the DNS zone and
+  the mail domain are three different people's business — read
+  [Your organisation's domain](../self-hosting/domain-and-dns.md) first
 
 > **One memship instance per host.** The Compose file names its containers explicitly
 > (`memship-db`, `memship-api`, …), which is what makes the scripts and the docs able to refer to
