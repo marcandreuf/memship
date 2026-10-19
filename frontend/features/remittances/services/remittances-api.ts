@@ -4,6 +4,22 @@ import type {
   ReceiptData,
 } from "@/features/receipts/services/receipts-api";
 
+/**
+ * A receipt as one line of a batch.
+ *
+ * `status` is the receipt's status now — a returned direct debit that has been
+ * re-emitted reads `pending`, which is what the admin needs to see. The three
+ * added fields come from `remittance_receipts`: a sent batch lists what it
+ * sent, including receipts that have since left it, because the one the admin
+ * is looking for is precisely the one that left (#402). They are absent on a
+ * batch sent before that table existed.
+ */
+export interface BatchReceiptData extends ReceiptData {
+  amount_sent?: number | null;
+  released_at?: string | null;
+  release_reason?: string | null;
+}
+
 export interface RemittanceData {
   id: number;
   remittance_number: string;
@@ -23,7 +39,7 @@ export interface RemittanceData {
   is_active: boolean;
   created_at: string | null;
   updated_at: string | null;
-  receipts?: ReceiptData[];
+  receipts?: BatchReceiptData[];
 }
 
 export interface PaginatedRemittances {

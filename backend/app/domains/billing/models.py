@@ -324,7 +324,65 @@ class Remittance(Base):
 
     # ORM relationships
     receipts = relationship("Receipt", back_populates="remittance")
+    receipt_history = relationship(
+        "RemittanceReceipt",
+        back_populates="remittance",
+        cascade="all, delete-orphan",
+    )
     creator = relationship("User", foreign_keys=[created_by])
+
+
+class RemittanceReceipt(Base):
+    """One receipt's membership of one batch, kept after the link is gone.
+
+    `Receipt.remittance_id` says which batch a receipt is in *now*, and a
+    returned receipt has to leave its batch to be collected again (#343) — so
+    the only record that a sent batch ever contained it was its own frozen
+    `receipt_count`, a number with no names in it. The detail page could say
+    two receipts went to the bank while listing one, and not say which one was
+    missing or why (#402).
+
+    A row is written when the batch is built and marked released when the
+    receipt leaves, rather than deleted: what a batch sent is a historical fact
+    and does not stop being true. One receipt can therefore appear in several
+    batches' histories, which is what happens when a direct debit is returned,
+    re-emitted and collected again.
+
+    Rows written before this table existed cannot be recovered — nothing
+    recorded them — so a batch sent before the upgrade lists what it still
+    holds, as it did.
+    """
+
+    __tablename__ = "remittance_receipts"
+    __table_args__ = (
+        UniqueConstraint("remittance_id", "receipt_id", name="uq_remittance_receipt"),
+        CheckConstraint(
+            "release_reason IS NULL OR release_reason IN "
+            "('reemitted', 'cancelled', 'paid_by_other_means', 'batch_cancelled')",
+            name="valid_release_reason",
+        ),
+        CheckConstraint("amount_sent >= 0", name="remittance_receipt_amount_non_negative"),
+        Index("ix_remittance_receipts_remittance_id", "remittance_id"),
+        Index("ix_remittance_receipts_receipt_id", "receipt_id"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    remittance_id = Column(
+        Integer, ForeignKey("remittances.id", ondelete="CASCADE"), nullable=False
+    )
+    receipt_id = Column(
+        Integer, ForeignKey("receipts.id", ondelete="CASCADE"), nullable=False
+    )
+    # The amount as the batch carried it. `Receipt.total_amount` is the amount
+    # now, and the two differ once a receipt is re-emitted and reissued at
+    # another figure; what went to the bank is this one.
+    amount_sent = Column(Numeric(10, 2), nullable=False)
+    released_at = Column(DateTime(timezone=True))
+    release_reason = Column(String(30))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    remittance = relationship("Remittance", back_populates="receipt_history")
+    receipt = relationship("Receipt")
 
 
 class PaymentProvider(Base):
