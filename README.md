@@ -2,11 +2,11 @@
 
 # Memship
 
-> **This project is under active development and open to any feedback via gihub [issues or feature requests](https://github.com/marcandreuf/memship/issues).**
+> **Memship is ready to deploy in production.** It runs in production on the maintainer's own instance, installs and upgrades through scripts that check before they act, and its payment paths (SEPA direct debit, and cards through Stripe and Redsys) have each been driven through a real payment by hand. Development is active and [issues and feature requests](https://github.com/marcandreuf/memship/issues) are welcome; the first entities to deploy it get support directly from the maintainer.
 
 **Membership management for everyone.**
 
-Memship is a self-hosted, open-source membership management system designed for professional associations, sports clubs, cultural organizations, and any member-based entity. Deploy it on your own infrastructure, own your data, and manage your community with modern tooling.
+Memship is a self-hosted membership management system, source-available under the [Elastic License 2.0](LICENSE), designed for professional associations, sports clubs, cultural organizations, and any member-based entity. Deploy it on your own infrastructure, own your data, and manage your community with modern tooling.
 
 ---
 

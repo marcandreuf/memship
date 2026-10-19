@@ -2,11 +2,11 @@
 
 🌐 [English](README.md) | [Español](README.es.md) | **Català**
 
-> **Aquest projecte està en desenvolupament actiu, encara no està preparat per a producció, i està obert a [sol·licituds de funcionalitats](https://github.com/marcandreuf/memship/issues).**
+> **Memship ja es pot desplegar en producció.** Funciona en producció a la instància del mateix mantenidor, s'instal·la i s'actualitza amb scripts que comproven abans d'actuar, i les seves vies de cobrament (domiciliació SEPA, i targeta amb Stripe i Redsys) s'han portat a mà fins a un pagament real. El desenvolupament és actiu i s'agraeixen [incidències i sol·licituds de funcionalitats](https://github.com/marcandreuf/memship/issues); les primeres entitats que el despleguin tenen suport directe del mantenidor.
 
 **Gestió de socis per a tothom.**
 
-Memship és un programari de codi obert i autohospedable per a la gestió de socis, dissenyat per a associacions culturals, clubs esportius, entitats esportives, col·legis professionals i qualsevol organització basada en membres. Desplegeu-lo a la vostra pròpia infraestructura, manteniu el control de les vostres dades i gestioneu la vostra comunitat amb eines modernes. Amb Memship podeu portar el control de socis, la gestió de quotes, la facturació de socis, les inscripcions a activitats i molt més — tot des d'una única plataforma autohospedable.
+Memship és un programari autohospedable de gestió de socis, de **codi font obert** i amb llicència [Elastic License 2.0](LICENSE), dissenyat per a associacions culturals, clubs esportius, entitats esportives, col·legis professionals i qualsevol organització basada en membres. Desplegeu-lo a la vostra pròpia infraestructura, manteniu el control de les vostres dades i gestioneu la vostra comunitat amb eines modernes. Amb Memship podeu portar el control de socis, la gestió de quotes, la facturació de socis, les inscripcions a activitats i molt més, tot des d'una única plataforma autohospedable.
 
 ---
 

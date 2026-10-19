@@ -2,11 +2,11 @@
 
 🌐 [English](README.md) | **Español** | [Català](README.ca.md)
 
-> **Este proyecto está en desarrollo activo, aún no está preparado para producción, y acepta [solicitudes de funcionalidades](https://github.com/marcandreuf/memship/issues).**
+> **Memship ya se puede desplegar en producción.** Funciona en producción en la instancia del propio mantenedor, se instala y se actualiza con scripts que comprueban antes de actuar, y sus vías de cobro (domiciliación SEPA, y tarjeta con Stripe y Redsys) se han llevado a mano hasta un pago real. El desarrollo está activo y se agradecen [incidencias y solicitudes de funcionalidades](https://github.com/marcandreuf/memship/issues); las primeras entidades que lo desplieguen tienen soporte directo del mantenedor.
 
 **Gestión de socios para todo tipo de entidades.**
 
-Memship es un **software de gestión de socios** open source y autohospedable, diseñado para **asociaciones culturales**, **clubs deportivos**, **colegios profesionales** y cualquier entidad basada en membresías. Controla las **cuotas**, las **inscripciones**, la **facturación de socios** y los **recibos** desde tu propia infraestructura. Con soporte para **domiciliación SEPA**, gestión de actividades y un portal completo para socios, Memship ofrece una solución moderna de **control de socios** y **gestión de clubs** sin depender de terceros. Despliega en tu servidor, mantén tus datos bajo tu control y gestiona tu comunidad con herramientas actuales.
+Memship es un **software de gestión de socios** autohospedable y de **código fuente abierto**, con licencia [Elastic License 2.0](LICENSE), diseñado para **asociaciones culturales**, **clubs deportivos**, **colegios profesionales** y cualquier entidad basada en membresías. Controla las **cuotas**, las **inscripciones**, la **facturación de socios** y los **recibos** desde tu propia infraestructura. Con soporte para **domiciliación SEPA**, gestión de actividades y un portal completo para socios, Memship ofrece una solución moderna de **control de socios** y **gestión de clubs** sin depender de terceros. Despliega en tu servidor, mantén tus datos bajo tu control y gestiona tu comunidad con herramientas actuales.
 
 ---
 
