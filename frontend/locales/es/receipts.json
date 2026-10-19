@@ -55,7 +55,7 @@
     "confirmCancel": "¿Anular este recibo?",
     "confirmCancelDescription": "Un recibo anulado no se cobra y no se puede reactivar. Si ya está pagado, lo que corresponde es una factura rectificativa.",
     "confirmReemit": "¿Reemitir este recibo devuelto?",
-    "confirmReemitDescription": "Vuelve al estado emitido y queda disponible para incluirlo en una remesa nueva.",
+    "confirmReemitDescription": "Vuelve al estado pendiente. Para poder incluirlo en una remesa nueva, emítelo otra vez.",
     "selectMember": "Seleccionar socio...",
     "selectPaymentMethod": "Seleccionar método...",
     "enterReturnReason": "Introducir motivo de devolución...",

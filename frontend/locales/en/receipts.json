@@ -55,7 +55,7 @@
     "confirmCancel": "Cancel this receipt?",
     "confirmCancelDescription": "A voided receipt is not collected and cannot be reinstated. If it is already paid, a credit note is the right route.",
     "confirmReemit": "Re-emit this returned receipt?",
-    "confirmReemitDescription": "It goes back to issued and becomes available for a new batch.",
+    "confirmReemitDescription": "It goes back to pending. Emit it again to make it available for a new batch.",
     "selectMember": "Select member...",
     "selectPaymentMethod": "Select method...",
     "enterReturnReason": "Enter return reason...",
