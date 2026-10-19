@@ -8,7 +8,7 @@ First, two commands worth running before anything else:
 
 ```bash
 docker compose ps                       # what is up, and what is restarting
-curl -s http://localhost/api/v1/health  # {"status":"healthy","version":"2.3.0",...}
+curl -s http://localhost/api/v1/health  # {"status":"healthy","version":"2.19.0",...}
 ```
 
 `version` is the image tag you are on. If it reads `latest` you are on an unpinned install and

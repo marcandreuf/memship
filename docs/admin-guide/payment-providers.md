@@ -43,11 +43,14 @@ You do not need to edit any file or restart anything. Every credential in this g
 
 ## 2. How secrets are protected
 
-The same rules apply here as everywhere else in Settings, and they are described in full in [Integrations → How secrets are protected](integrations.md#2-how-secrets-are-protected). In short:
+Encryption, storage and backup work the same way as everywhere else in Settings, and are described in full in [Integrations → How secrets are protected](integrations.md#2-how-secrets-are-protected). Editing differs in one way, in the last point below. In short:
 
 - Secret values are **encrypted before being stored** in the database.
 - They are **never sent back to the browser**. A stored secret is not an input at all: it renders as text — `••••` plus the last four characters, and the word *stored* — beside a **Replace** button, and the input appears only once you press it. That is expected, not a bug, and it is deliberate: a password manager has no field to fill, so it cannot quietly overwrite a working credential on your next save.
 - **Back up the encryption key file together with your database.** Restoring a dump on a machine with a different key file leaves the stored secrets undecryptable and you will have to re-enter them.
+- **A stored secret cannot be emptied.** Saving a blank over one is refused, naming the field, and the stored value is left as it was. There is no *Clear* here — unlike the Integrations screens, which have one because an integration can legitimately be switched off by removing its credential. A payment provider's secret is only ever replaced: press **Replace** and paste the new value. If the provider is being retired, delete the provider row instead, which the screen refuses while receipts are linked to it.
+
+> **Why refuse rather than accept the blank?** The stored value is encrypted and it is the only copy — nothing can recover it once overwritten. A blank field is almost always a paste that went wrong rather than an instruction, and before v2.19.0 it was accepted: the secret was replaced with nothing, and on a provider that was still *disabled* the save reported success.
 
 Which fields are treated as secret differs by provider, and it is not arbitrary — a publishable key is meant to be public, so it is stored in the clear and shown in full.
 
