@@ -7,6 +7,14 @@
     "remittanceNumber": "Remesa #",
     "receiptCount": "Recibos",
     "totalAmount": "Total",
+    "countersAreWhatWasSent": "{released, plural, one {Un recibo se devolvió y se reemitió} other {# recibos se devolvieron y se reemitieron}} fuera de esta remesa. Los importes de arriba son lo que se envió al banco; {held, plural, =0 {la remesa ya no retiene ninguno} one {la remesa retiene un recibo ahora} other {la remesa retiene # recibos ahora}}.",
+    "releasedFromBatch": "Salió de esta remesa el {date}",
+    "releaseReason": {
+      "reemitted": "devuelto y reemitido",
+      "cancelled": "recibo anulado",
+      "paid_by_other_means": "cobrado por otra vía",
+      "batch_cancelled": "remesa cancelada"
+    },
     "emissionDate": "Fecha",
     "dueDate": "Vencimiento",
     "dueDateWeekend": "Esa fecha cae en fin de semana y los bancos no liquidan ese día. El banco puede adelantarla o rechazarla.",

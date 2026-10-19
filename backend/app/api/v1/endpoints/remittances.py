@@ -29,7 +29,10 @@ from app.domains.billing.remittance_service import (
     mark_submitted,
     sepa_eligible_receipts_query,
 )
-from app.domains.billing.service import dispatch_payment_notifications
+from app.domains.billing.service import (
+    batch_receipt_rows,
+    dispatch_payment_notifications,
+)
 
 router = APIRouter(prefix="/remittances", tags=["remittances"])
 
@@ -105,14 +108,16 @@ def get_remittance(
     if not remittance:
         raise HTTPException(status_code=404, detail="Remittance not found")
 
-    receipts = (
-        db.query(Receipt)
-        .filter(Receipt.remittance_id == remittance.id, Receipt.is_active.is_(True))
-        .all()
-    )
-
     data = RemittanceResponse.model_validate(remittance).model_dump()
-    data["receipts"] = [ReceiptResponse.model_validate(r).model_dump() for r in receipts]
+    data["receipts"] = [
+        {
+            **ReceiptResponse.model_validate(receipt).model_dump(),
+            "amount_sent": history.amount_sent if history else None,
+            "released_at": history.released_at if history else None,
+            "release_reason": history.release_reason if history else None,
+        }
+        for receipt, history in batch_receipt_rows(db, remittance)
+    ]
     return data
 
 

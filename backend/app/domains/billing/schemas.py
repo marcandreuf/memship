@@ -325,10 +325,24 @@ class RemittanceResponse(BaseModel):
     updated_at: datetime | None = None
 
 
+class BatchReceiptResponse(ReceiptResponse):
+    """A receipt as one line of a batch, with what the batch did with it.
+
+    `status` is the receipt's status now, which is the question the admin has —
+    a returned direct debit that has been re-emitted reads `pending`, not
+    `returned`. `amount_sent` is what the batch carried, which can differ from
+    `total_amount` once the receipt has been reissued at another figure.
+    """
+
+    amount_sent: Decimal | None = None
+    released_at: datetime | None = None
+    release_reason: str | None = None
+
+
 class RemittanceDetailResponse(RemittanceResponse):
     """Extended response with receipt list."""
 
-    receipts: list[ReceiptResponse] = []
+    receipts: list[BatchReceiptResponse] = []
 
 
 # --- Payment Provider schemas ---

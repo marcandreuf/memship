@@ -38,7 +38,8 @@ KNOWN_TABLES = frozenset({
     "notifications", "organization_settings", "payment_providers", "persons",
     "receipt_reminders", "receipts", "registration_attachments",
     "registration_consents", "registrations", "reminders",
-    "remittance_sequences", "remittances", "role_permissions", "roles", "sepa_mandates", "spaces", "space_slots",
+    "remittance_receipts", "remittance_sequences", "remittances",
+    "role_permissions", "roles", "sepa_mandates", "spaces", "space_slots",
     "user_identities", "user_roles", "users", "webhook_events",
 })
 

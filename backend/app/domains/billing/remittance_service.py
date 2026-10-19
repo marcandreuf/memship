@@ -14,6 +14,7 @@ from app.core.config import settings
 from app.domains.billing.models import (
     Receipt,
     Remittance,
+    RemittanceReceipt,
     RemittanceSequence,
     SepaMandate,
 )
@@ -24,7 +25,11 @@ from app.domains.billing.schemas import (
 )
 from app.domains.billing.sequences import next_yearly_number
 from app.domains.billing.sepa_xml import SepaExportError, generate_sepa_xml
-from app.domains.billing.service import mark_receipts_paid, recount_remittance
+from app.domains.billing.service import (
+    mark_receipts_paid,
+    mark_released_in_history,
+    recount_remittance,
+)
 from app.domains.members.models import Member
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Person
@@ -302,9 +307,18 @@ def create_remittance(
     db.add(remittance)
     db.flush()
 
-    # Link receipts
+    # Link receipts, and record the membership separately. The link says where
+    # a receipt is now and is cleared when it leaves; the history row is what
+    # the batch sent, which stays true afterwards (#402).
     for r in receipts:
         r.remittance_id = remittance.id
+        db.add(
+            RemittanceReceipt(
+                remittance_id=remittance.id,
+                receipt_id=r.id,
+                amount_sent=Decimal(str(r.total_amount)),
+            )
+        )
 
     db.flush()
     return remittance
@@ -725,6 +739,7 @@ def cancel_remittance(db: Session, remittance: Remittance) -> Remittance:
         .all()
     )
     for r in receipts:
+        mark_released_in_history(db, remittance.id, r.id, "batch_cancelled")
         r.remittance_id = None
     # Flush before recounting: the release above is still pending in the
     # session, and `recount_remittance` asks the database what the batch holds.

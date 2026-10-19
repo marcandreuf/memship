@@ -55,7 +55,7 @@
     "confirmCancel": "Anul·lar aquest rebut?",
     "confirmCancelDescription": "Un rebut anul·lat no es cobra i no es pot reactivar. Si ja està pagat, el que correspon és una factura rectificativa.",
     "confirmReemit": "Reemetre aquest rebut retornat?",
-    "confirmReemitDescription": "Torna a l'estat emès i queda disponible per incloure'l en una remesa nova.",
+    "confirmReemitDescription": "Torna a l'estat pendent. Per poder incloure'l en una remesa nova, emet-lo de nou.",
     "selectMember": "Seleccionar soci...",
     "selectPaymentMethod": "Seleccionar mètode...",
     "enterReturnReason": "Introduir motiu de devolució...",

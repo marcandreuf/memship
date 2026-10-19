@@ -8,7 +8,13 @@ from app.core.clock import org_today
 from app.core.security.jwt import create_access_token
 from app.core.security.password import hash_password
 from app.domains.auth.models import User
-from app.domains.billing.models import Concept, Receipt, Remittance, SepaMandate
+from app.domains.billing.models import (
+    Concept,
+    Receipt,
+    Remittance,
+    RemittanceReceipt,
+    SepaMandate,
+)
 from app.domains.billing.remittance_service import label_members
 from app.domains.members.models import Member, MembershipType
 from app.domains.organizations.models import OrganizationSettings
@@ -781,6 +787,186 @@ class TestReturnedReceiptCanBeCollectedAgain:
         assert resp.status_code == 200
         assert resp.json()["receipt_count"] == 1
         assert float(resp.json()["total_amount"]) == 60.50
+
+
+class TestASentBatchStillNamesWhatItSent:
+    """A returned receipt leaves its batch to be collected again (#343), so the
+    batch's `receipt_count` was the only record that it ever carried it — a
+    number with no names in it. The admin could see that two receipts went to
+    the bank and one is listed, with nothing saying which one came back or why
+    (#402). `remittance_receipts` keeps that membership after the link is gone.
+    """
+
+    def _sent_batch_of_two(self, client, db, suffix):
+        _ensure_org_settings(db)
+        admin = _create_user(db, suffix=suffix)
+        member, _ = _create_member_with_mandate(db, suffix=suffix)
+        kept = _create_receipt(db, member.id, admin.id, suffix=f"{suffix}-keep")
+        returned = _create_receipt(db, member.id, admin.id, suffix=f"{suffix}-ret")
+
+        created = client.post(
+            "/api/v1/remittances/",
+            json={"receipt_ids": [kept.id, returned.id], "due_date": COLLECTION_DATE},
+            cookies=_auth_cookie(admin),
+        )
+        assert created.status_code == 201, created.json()
+        rid = created.json()["id"]
+
+        client.post(f"/api/v1/remittances/{rid}/generate-xml", cookies=_auth_cookie(admin))
+        client.post(f"/api/v1/remittances/{rid}/mark-submitted", cookies=_auth_cookie(admin))
+        imported = client.post(
+            f"/api/v1/remittances/{rid}/import-returns",
+            json=[{"receipt_number": returned.receipt_number, "reason": "MS03"}],
+            cookies=_auth_cookie(admin),
+        )
+        assert imported.status_code == 200
+        return admin, kept, returned, rid
+
+    def test_building_a_batch_records_every_receipt_it_carries(self, client, db):
+        admin, kept, returned, rid = self._sent_batch_of_two(client, db, "rem-hist1")
+
+        rows = (
+            db.query(RemittanceReceipt)
+            .filter(RemittanceReceipt.remittance_id == rid)
+            .all()
+        )
+        assert {r.receipt_id for r in rows} == {kept.id, returned.id}
+        assert all(r.released_at is None for r in rows)
+        assert all(r.amount_sent == Decimal("60.50") for r in rows)
+
+    def test_a_reemitted_receipt_is_still_listed_by_the_batch(self, client, db):
+        admin, kept, returned, rid = self._sent_batch_of_two(client, db, "rem-hist2")
+        client.post(f"/api/v1/receipts/{returned.id}/reemit", cookies=_auth_cookie(admin))
+
+        resp = client.get(f"/api/v1/remittances/{rid}", cookies=_auth_cookie(admin))
+        assert resp.status_code == 200
+        numbers = [r["receipt_number"] for r in resp.json()["receipts"]]
+        assert numbers == sorted([kept.receipt_number, returned.receipt_number])
+
+    def test_the_released_line_says_when_and_why_it_left(self, client, db):
+        admin, kept, returned, rid = self._sent_batch_of_two(client, db, "rem-hist3")
+        client.post(f"/api/v1/receipts/{returned.id}/reemit", cookies=_auth_cookie(admin))
+
+        resp = client.get(f"/api/v1/remittances/{rid}", cookies=_auth_cookie(admin))
+        rows = {r["receipt_number"]: r for r in resp.json()["receipts"]}
+
+        left = rows[returned.receipt_number]
+        assert left["release_reason"] == "reemitted"
+        assert left["released_at"] is not None
+        # The status the admin needs is the one it has now: a re-emitted receipt
+        # is `pending` and has to be emitted again before it can be collected.
+        assert left["status"] == "pending"
+
+        stayed = rows[kept.receipt_number]
+        assert stayed["release_reason"] is None
+        assert stayed["released_at"] is None
+
+    def test_the_line_carries_what_the_batch_sent_for_it(self, client, db):
+        """`total_amount` is the receipt's figure now; `amount_sent` is the one
+        the bank was asked for, and a reissue can move the first."""
+        admin, kept, returned, rid = self._sent_batch_of_two(client, db, "rem-hist4")
+        client.post(f"/api/v1/receipts/{returned.id}/reemit", cookies=_auth_cookie(admin))
+
+        db.refresh(returned)
+        returned.total_amount = Decimal("12.25")
+        db.flush()
+
+        resp = client.get(f"/api/v1/remittances/{rid}", cookies=_auth_cookie(admin))
+        row = next(
+            r for r in resp.json()["receipts"]
+            if r["receipt_number"] == returned.receipt_number
+        )
+        assert float(row["amount_sent"]) == 60.50
+        assert float(row["total_amount"]) == 12.25
+
+    def test_the_counters_still_describe_what_went_to_the_bank(self, client, db):
+        """The list grows back to two; the counters were never the thing at
+        fault and must not move."""
+        admin, kept, returned, rid = self._sent_batch_of_two(client, db, "rem-hist5")
+        client.post(f"/api/v1/receipts/{returned.id}/reemit", cookies=_auth_cookie(admin))
+
+        body = client.get(f"/api/v1/remittances/{rid}", cookies=_auth_cookie(admin)).json()
+        assert body["receipt_count"] == 2
+        assert float(body["total_amount"]) == 121.00
+        assert len(body["receipts"]) == 2
+
+    def test_a_batch_still_being_assembled_lists_only_what_it_holds(self, client, db):
+        """The other half of the rule: a receipt released from an open batch was
+        taken out of the selection and the file will not carry it, so listing it
+        would contradict the counters, which are recounted."""
+        _ensure_org_settings(db)
+        admin = _create_user(db, suffix="rem-hist6")
+        member, _ = _create_member_with_mandate(db, suffix="rem-hist6")
+        kept = _create_receipt(db, member.id, admin.id, suffix="rem-hist6-keep")
+        dropped = _create_receipt(db, member.id, admin.id, suffix="rem-hist6-drop")
+
+        created = client.post(
+            "/api/v1/remittances/",
+            json={"receipt_ids": [kept.id, dropped.id], "due_date": COLLECTION_DATE},
+            cookies=_auth_cookie(admin),
+        )
+        rid = created.json()["id"]
+
+        cancelled = client.post(
+            f"/api/v1/receipts/{dropped.id}/cancel", cookies=_auth_cookie(admin)
+        )
+        assert cancelled.status_code == 200, cancelled.json()
+
+        body = client.get(f"/api/v1/remittances/{rid}", cookies=_auth_cookie(admin)).json()
+        assert [r["receipt_number"] for r in body["receipts"]] == [kept.receipt_number]
+        assert body["receipt_count"] == 1
+
+        # The history row is still written — the batch did hold it, and the
+        # reason is recorded even though this screen does not show it.
+        row = (
+            db.query(RemittanceReceipt)
+            .filter(
+                RemittanceReceipt.remittance_id == rid,
+                RemittanceReceipt.receipt_id == dropped.id,
+            )
+            .one()
+        )
+        assert row.release_reason == "cancelled"
+
+    def test_a_batch_sent_before_the_table_existed_lists_its_links(self, client, db):
+        """No history to read, so the current links are the only answer there
+        is — the behaviour an upgraded installation keeps for its old batches."""
+        admin, kept, returned, rid = self._sent_batch_of_two(client, db, "rem-hist7")
+        db.query(RemittanceReceipt).filter(
+            RemittanceReceipt.remittance_id == rid
+        ).delete()
+        db.flush()
+
+        body = client.get(f"/api/v1/remittances/{rid}", cookies=_auth_cookie(admin)).json()
+        assert [r["receipt_number"] for r in body["receipts"]] == sorted(
+            [kept.receipt_number, returned.receipt_number]
+        )
+        assert all(r["amount_sent"] is None for r in body["receipts"])
+
+    def test_cancelling_a_batch_records_why_its_receipts_left(self, client, db):
+        _ensure_org_settings(db)
+        admin = _create_user(db, suffix="rem-hist8")
+        member, _ = _create_member_with_mandate(db, suffix="rem-hist8")
+        receipt = _create_receipt(db, member.id, admin.id, suffix="rem-hist8-01")
+
+        created = client.post(
+            "/api/v1/remittances/",
+            json={"receipt_ids": [receipt.id], "due_date": COLLECTION_DATE},
+            cookies=_auth_cookie(admin),
+        )
+        rid = created.json()["id"]
+        cancelled = client.post(
+            f"/api/v1/remittances/{rid}/cancel", cookies=_auth_cookie(admin)
+        )
+        assert cancelled.status_code == 200
+
+        row = (
+            db.query(RemittanceReceipt)
+            .filter(RemittanceReceipt.remittance_id == rid)
+            .one()
+        )
+        assert row.release_reason == "batch_cancelled"
+        assert row.released_at is not None
 
 
 class TestEligibleReceipts:

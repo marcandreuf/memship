@@ -168,6 +168,17 @@ export default function RemittanceDetailPage() {
     });
   }
 
+  // A sent batch keeps the counters of what it sent: `release_from_open_batch`
+  // recounts `draft` and `ready` only, because once the bank has the file the
+  // counters are the record of what actually went out (#394). The table lists
+  // what the batch sent, released receipts included — so the counters and the
+  // list agree again, and the line below says which part of the list is no
+  // longer being collected. Without it the screen showed "Recibos 2" above one
+  // row and the arithmetic read as broken (#402).
+  const rows = remittance.receipts ?? [];
+  const releasedCount = rows.filter((r) => r.released_at).length;
+  const heldCount = rows.length - releasedCount;
+
   const fields = [
     { label: t("remittances.remittanceNumber"), value: remittance.remittance_number },
     { label: t("remittances.emissionDate"), value: formatDate(remittance.emission_date) },
@@ -231,6 +242,14 @@ export default function RemittanceDetailPage() {
         </CardHeader>
         <CardContent className="px-4 pb-4 pt-0">
           <DetailSection fields={fields} columns={2} />
+          {releasedCount > 0 && (
+            <p className="mt-3 text-xs text-muted-foreground">
+              {t("remittances.countersAreWhatWasSent", {
+                released: releasedCount,
+                held: heldCount,
+              })}
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -240,7 +259,7 @@ export default function RemittanceDetailPage() {
           <CardTitle className="text-base">{t("remittances.receipts")}</CardTitle>
         </CardHeader>
         <CardContent className="px-4 pb-4 pt-0">
-          {remittance.receipts && remittance.receipts.length > 0 ? (
+          {rows.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -251,12 +270,35 @@ export default function RemittanceDetailPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {remittance.receipts.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell className="font-mono text-sm">{r.receipt_number}</TableCell>
+                {rows.map((r) => (
+                  <TableRow key={r.id} className={r.released_at ? "text-muted-foreground" : undefined}>
+                    <TableCell className="font-mono text-sm">
+                      {r.receipt_number}
+                      {/* The batch sent it and no longer holds it. Said on the
+                          line itself, with the reason: a returned direct debit
+                          and a receipt paid in cash both leave a batch, and
+                          they are not the same event to whoever is
+                          reconciling it. */}
+                      {r.released_at && (
+                        <span className="mt-0.5 block font-sans text-xs">
+                          {t("remittances.releasedFromBatch", {
+                            date: formatDate(r.released_at),
+                          })}
+                          {r.release_reason &&
+                            ` · ${t(`remittances.releaseReason.${r.release_reason}`)}`}
+                        </span>
+                      )}
+                    </TableCell>
                     <TableCell className="max-w-[250px] truncate">{r.description}</TableCell>
-                    <TableCell className="text-right font-mono">{formatCurrency(r.total_amount)}</TableCell>
+                    <TableCell className="text-right font-mono">
+                      {formatCurrency(r.amount_sent ?? r.total_amount)}
+                    </TableCell>
                     <TableCell>
+                      {/* The receipt's status now, not the one it had when the
+                          batch went out: a re-emitted receipt reads `pending`
+                          and has to be emitted again before it can go into
+                          another batch, which is the thing the admin has to
+                          do next. */}
                       <Badge variant={RECEIPT_STATUS_VARIANTS[r.status] || "outline"}>
                         {/* The database value was printed raw here, so this one
                             table read `emitted` where every other list in the

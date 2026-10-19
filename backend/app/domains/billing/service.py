@@ -12,7 +12,13 @@ from sqlalchemy.orm import Query, Session, joinedload, selectinload
 from app.core.clock import org_today
 from app.core.money import round_money
 from app.core.search import match_words
-from app.domains.billing.models import Concept, InvoiceSequence, Receipt, Remittance
+from app.domains.billing.models import (
+    Concept,
+    InvoiceSequence,
+    Receipt,
+    Remittance,
+    RemittanceReceipt,
+)
 from app.domains.billing.schemas import (
     CreditNoteCreate,
     GenerateMembershipFeesRequest,
@@ -226,6 +232,12 @@ VALID_TRANSITIONS = {
 BATCH_SENT_STATUSES = ("submitted", "processed")
 BATCH_OPEN_STATUSES = ("draft", "ready")
 
+# The statuses whose counters are the record of what went to the bank rather
+# than a running total of what the batch holds — `recount_remittance` refuses
+# to touch these, and `cancel_remittance` recounts, so a cancelled batch is not
+# among them. These are the batches whose receipt list comes from history.
+BATCH_HISTORY_STATUSES = ("submitted", "processed", "closed")
+
 
 def recount_remittance(db: Session, remittance: Remittance) -> None:
     """Make a batch's own counters describe what it actually holds.
@@ -246,7 +258,31 @@ def recount_remittance(db: Session, remittance: Remittance) -> None:
     )
 
 
-def release_from_open_batch(db: Session, receipt: Receipt) -> None:
+def mark_released_in_history(
+    db: Session, remittance_id: int, receipt_id: int, reason: str
+) -> None:
+    """Record that a receipt has left a batch, and why.
+
+    The row stays: what a batch carried is a historical fact, and the detail
+    page of a sent batch lists it from here rather than from the link that no
+    longer exists (#402). Silent when there is no row — a batch built before
+    `remittance_receipts` existed has no history to amend.
+    """
+    row = (
+        db.query(RemittanceReceipt)
+        .filter(
+            RemittanceReceipt.remittance_id == remittance_id,
+            RemittanceReceipt.receipt_id == receipt_id,
+            RemittanceReceipt.released_at.is_(None),
+        )
+        .first()
+    )
+    if row is not None:
+        row.released_at = datetime.now(timezone.utc)
+        row.release_reason = reason
+
+
+def release_from_open_batch(db: Session, receipt: Receipt, reason: str) -> None:
     """Take a receipt out of a batch that has not been sent, and recount it.
 
     A receipt whose status changes after it was batched must not stay in the
@@ -254,12 +290,72 @@ def release_from_open_batch(db: Session, receipt: Receipt) -> None:
     cancelled or otherwise-settled receipt would still be collected (#383), and
     a batch left short of what its counters claim produces a file that collects
     less than it says (#384).
+
+    `reason` is recorded against the batch's history row, because the question
+    the detail page has to answer is not only which receipt left but why — a
+    returned direct debit and a receipt paid in cash are not the same event to
+    whoever is reconciling the batch.
     """
     remittance = receipt.remittance
+    if remittance is not None:
+        mark_released_in_history(db, remittance.id, receipt.id, reason)
     receipt.remittance_id = None
     if remittance is not None and remittance.status in BATCH_OPEN_STATUSES:
         db.flush()
         recount_remittance(db, remittance)
+
+
+def batch_receipt_rows(
+    db: Session, remittance: Remittance
+) -> list[tuple[Receipt, RemittanceReceipt | None]]:
+    """The receipts to show for a batch, each with its history row if there is one.
+
+    For a batch still being assembled this is what it holds: a receipt released
+    from it was taken out of the selection, the counters were recounted, and the
+    file will not carry it — showing it would say the opposite.
+
+    For a batch that has gone to the bank it is what it *sent*, released
+    receipts included. The counters are frozen at that figure, so a list of
+    current links contradicts them, and the receipt the admin is looking for is
+    precisely the one that left: a returned direct debit must leave its batch to
+    be collected again (#343), and the batch page was the one place that could
+    say which one came back and could not (#402).
+
+    A batch sent before `remittance_receipts` existed has no history, so its
+    current links are used — the old behaviour, for the only data there is.
+    """
+    links = (
+        db.query(Receipt)
+        .filter(Receipt.remittance_id == remittance.id, Receipt.is_active.is_(True))
+        .all()
+    )
+
+    if remittance.status not in BATCH_HISTORY_STATUSES:
+        history = {
+            row.receipt_id: row
+            for row in db.query(RemittanceReceipt).filter(
+                RemittanceReceipt.remittance_id == remittance.id
+            )
+        }
+        rows = [(r, history.get(r.id)) for r in links]
+        return sorted(rows, key=lambda pair: pair[0].receipt_number)
+
+    sent = (
+        db.query(RemittanceReceipt, Receipt)
+        .join(Receipt, Receipt.id == RemittanceReceipt.receipt_id)
+        .filter(
+            RemittanceReceipt.remittance_id == remittance.id,
+            Receipt.is_active.is_(True),
+        )
+        .all()
+    )
+    rows = [(receipt, history) for history, receipt in sent]
+    # A link with no history row is one the backfill could not have written —
+    # it predates the table. Added rather than dropped, so an old batch keeps
+    # listing what it holds.
+    recorded = {receipt.id for receipt, _ in rows}
+    rows.extend((r, None) for r in links if r.id not in recorded)
+    return sorted(rows, key=lambda pair: pair[0].receipt_number)
 
 
 def refuse_if_collection_in_flight(receipt: Receipt, action: str) -> None:
@@ -423,7 +519,7 @@ def mark_receipt_paid(
         # is sitting in. `refuse_if_collection_in_flight` above has already
         # ruled out a batch that has gone to the bank, so this only ever
         # releases one still being assembled (#383).
-        release_from_open_batch(db, receipt)
+        release_from_open_batch(db, receipt, "paid_by_other_means")
 
     db.flush()
 
@@ -529,7 +625,7 @@ def cancel_receipt(db: Session, receipt: Receipt) -> Receipt:
     receipt.status = "cancelled"
     # A cancelled receipt must not stay in a batch that has not gone out: the
     # file is built from the link alone, so it would be collected anyway (#383).
-    release_from_open_batch(db, receipt)
+    release_from_open_batch(db, receipt, "cancelled")
     db.flush()
     return receipt
 
@@ -545,8 +641,11 @@ def reemit_receipt(db: Session, receipt: Receipt) -> Receipt:
     a hand-written UPDATE to retry.
 
     What was sent to the bank is not lost by this: the submitted pain.008 is
-    stored under `storage/remittances/`, and a batch that has gone out keeps its
-    own `receipt_count` and `total_amount` as the record of what it collected.
+    stored under `storage/remittances/`, a batch that has gone out keeps its own
+    `receipt_count` and `total_amount` as the record of what it collected, and
+    `remittance_receipts` keeps the receipt named in that record, marked
+    released and with the reason — so the batch can still say which receipt
+    came back.
     The column says which remittance a receipt is in *now*, which is why
     cancelling one frees its receipts too.
 
@@ -558,7 +657,7 @@ def reemit_receipt(db: Session, receipt: Receipt) -> Receipt:
     receipt.status = "pending"
     receipt.return_date = None
     receipt.return_reason = None
-    release_from_open_batch(db, receipt)
+    release_from_open_batch(db, receipt, "reemitted")
     db.flush()
     return receipt
 
