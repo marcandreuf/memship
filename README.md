@@ -254,6 +254,9 @@ See [CONTRIBUTING](CONTRIBUTING.md) for branching, versioning and how a release 
 
 Production self-hosting lives in the docs, so there is one copy of it to keep correct:
 
+- **[What you need to run Memship](docs/getting-started/what-you-need.md)** — a 2 vCPU / 4 GB /
+  40 GB server, a domain and a way to send email, at about 8–12 € a month. Read this before
+  deciding; the figures are measured, not estimated
 - **[Installation](docs/getting-started/installation.md)** — `vps-bootstrap.sh` on a bare server,
   then `install.sh`, which generates real secrets, pins a version and puts your data under one
   backed-up directory
