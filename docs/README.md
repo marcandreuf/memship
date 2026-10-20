@@ -38,6 +38,8 @@ the behaviour changes and migrations an upgrader must not miss.
 
 New to Memship? Start here.
 
+- [What you need to run Memship](getting-started/what-you-need.md) — the server, the domain,
+  the email and what they cost, measured rather than estimated. For deciding, before installing _(EN)_
 - [Quick start](getting-started/quickstart.md) — try Memship with a single command _(EN)_
 - [Installation](getting-started/installation.md) — production Docker install _(EN)_
 - [First-time setup](getting-started/first-setup.md) — create your admin and organization _(EN)_
@@ -50,7 +52,7 @@ Running Memship on your own server.
   records behind it, when the domain belongs to a club rather than to you _(EN)_
 - [Configuration reference](self-hosting/configuration.md) — every environment variable _(EN)_
 - [Feature flags](self-hosting/feature-flags.md) — the twenty-one module switches, what a fresh install starts with _(EN)_
-- [Email delivery](self-hosting/email.md) — SMTP or Resend _(EN)_
+- [Email delivery](self-hosting/email.md) — Resend, Gmail or any SMTP server _(EN)_
 - [Backups & restore](self-hosting/backups-and-restore.md) _(EN)_
 - [Upgrading](self-hosting/upgrading.md) — image tags and migrations _(EN)_
 - [Troubleshooting](self-hosting/troubleshooting.md) — when something will not start _(EN)_
