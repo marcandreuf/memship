@@ -69,7 +69,7 @@ Working on Memship itself.
 
 - [Local development environment](development/local-environment.md) — the dev stack, commands,
   seeding and the test suites _(EN)_
-- [Contributing](../CONTRIBUTING.md) — branching, versioning and how a release is cut _(EN)_
+- [Contributing](https://github.com/marcandreuf/memship/blob/main/CONTRIBUTING.md) — branching, versioning and how a release is cut _(EN)_
 
 ## Guía del administrador (admin guide)
 
@@ -113,11 +113,11 @@ These live at the repository root rather than here, because `docs/` is product
 documentation — how memship works and how to run it — and these are the project's own
 rules. GitHub also surfaces them from the root on its own.
 
-- [Contributing](../CONTRIBUTING.md) — branching, versioning and how a release is cut _(EN)_
-- [Code of conduct](../CODE_OF_CONDUCT.md) — what is expected of everyone taking part _(EN)_
-- [Security policy](../SECURITY.md) — reporting a vulnerability privately, and what counts as
+- [Contributing](https://github.com/marcandreuf/memship/blob/main/CONTRIBUTING.md) — branching, versioning and how a release is cut _(EN)_
+- [Code of conduct](https://github.com/marcandreuf/memship/blob/main/CODE_OF_CONDUCT.md) — what is expected of everyone taking part _(EN)_
+- [Security policy](https://github.com/marcandreuf/memship/blob/main/SECURITY.md) — reporting a vulnerability privately, and what counts as
   one rather than an ordinary bug _(EN)_
-- [Accessibility](../ACCESSIBILITY.md) — what the project aims for, what has and has not been
+- [Accessibility](https://github.com/marcandreuf/memship/blob/main/ACCESSIBILITY.md) — what the project aims for, what has and has not been
   tested, and how to report a barrier _(EN)_
 
 ---
