@@ -981,3 +981,50 @@ def get_booking(db: Session, booking_id: int) -> Booking | None:
         .filter(Booking.id == booking_id)
         .first()
     )
+
+
+STATS_WINDOW_DAYS = 30
+
+
+def space_stats(db: Session) -> dict:
+    """Dashboard aggregate over active slots in ``[today, today + 30 days)``.
+
+    A rolling window rather than the calendar month, so the card always shows
+    the month ahead instead of mostly-finished slots late in the month.
+    ``active_spaces`` is not windowed.
+    """
+    today = datetime.now(org_timezone(db)).date()
+    in_window = (
+        SpaceSlot.is_active.is_(True),
+        SpaceSlot.slot_date >= today,
+        SpaceSlot.slot_date < today + timedelta(days=STATS_WINDOW_DAYS),
+    )
+
+    rows = (
+        db.query(Booking.status, func.count(Booking.id))
+        .join(SpaceSlot, Booking.space_slot_id == SpaceSlot.id)
+        .filter(*in_window)
+        .group_by(Booking.status)
+        .all()
+    )
+    counts = {status: count for status, count in rows}
+
+    slots, capacity = (
+        db.query(func.count(SpaceSlot.id), func.coalesce(func.sum(SpaceSlot.capacity), 0))
+        .filter(*in_window)
+        .one()
+    )
+    active_spaces = db.query(func.count(Space.id)).filter(Space.is_active.is_(True)).scalar()
+
+    booked = counts.get(BookingStatus.BOOKED, 0)
+    return {
+        "window_days": STATS_WINDOW_DAYS,
+        "booked": booked,
+        "waitlisted": counts.get(BookingStatus.WAITLISTED, 0),
+        "cancelled": counts.get(BookingStatus.CANCELLED, 0),
+        "total": sum(counts.values()),
+        "active_spaces": active_spaces,
+        "slots": slots,
+        "capacity": int(capacity),
+        "occupancy_pct": round(booked / capacity * 100, 1) if capacity else 0,
+    }

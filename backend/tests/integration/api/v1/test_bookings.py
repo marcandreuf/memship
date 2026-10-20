@@ -654,3 +654,128 @@ class TestMembershipGating:
             cookies=_auth(user),
         )
         assert r.status_code == 201
+
+
+class TestSpaceStats:
+    """``GET /spaces/stats`` — the dashboard card's aggregate (#431)."""
+
+    @staticmethod
+    def _today(db):
+        from datetime import datetime
+
+        from app.core.clock import org_timezone
+
+        return datetime.now(org_timezone(db)).date()
+
+    @staticmethod
+    def _space(db, *, is_active=True):
+        from datetime import time
+
+        from app.domains.bookings.models import Space
+
+        space = Space(
+            name="Court", open_time=time(8), close_time=time(22), is_active=is_active,
+        )
+        db.add(space)
+        db.flush()
+        return space
+
+    @staticmethod
+    def _slot(db, space, on, *, capacity=4, is_active=True):
+        from datetime import time
+
+        from app.domains.bookings.models import SpaceSlot
+
+        slot = SpaceSlot(
+            space_id=space.id, slot_date=on, start_time=time(10), end_time=time(11),
+            capacity=capacity, is_active=is_active,
+        )
+        db.add(slot)
+        db.flush()
+        return slot
+
+    @staticmethod
+    def _book(db, slot, member, status="booked"):
+        from app.domains.bookings.models import Booking
+
+        db.add(Booking(space_slot_id=slot.id, member_id=member.id, status=status))
+        db.flush()
+
+    def test_counts_cover_the_30_day_window_only(self, client, db):
+        _org(db)
+        admin = _user(db, "admin")
+        today = self._today(db)
+        space = self._space(db)
+        members = [_member_user(db, f"st{i}@examplee6e3b1.com")[1] for i in range(4)]
+
+        in_today = self._slot(db, space, today, capacity=4)
+        in_last = self._slot(db, space, today + timedelta(days=29), capacity=2)
+        past = self._slot(db, space, today - timedelta(days=1))
+        day_30 = self._slot(db, space, today + timedelta(days=30))
+        inactive = self._slot(db, space, today + timedelta(days=2), is_active=False)
+
+        self._book(db, in_today, members[0])
+        self._book(db, in_today, members[1])
+        self._book(db, in_today, members[2], "cancelled")
+        self._book(db, in_last, members[0])
+        self._book(db, in_last, members[3], "waitlisted")
+        for excluded in (past, day_30, inactive):
+            self._book(db, excluded, members[1])
+
+        r = client.get("/api/v1/spaces/stats", cookies=_auth(admin))
+        assert r.status_code == 200, r.text
+        assert r.json() == {
+            "window_days": 30,
+            "booked": 3,
+            "waitlisted": 1,
+            "cancelled": 1,
+            "total": 5,
+            "active_spaces": 1,
+            "slots": 2,
+            "capacity": 6,
+            "occupancy_pct": 50.0,
+        }
+
+    def test_occupancy_is_rounded_to_one_decimal(self, client, db):
+        _org(db)
+        admin = _user(db, "admin")
+        space = self._space(db)
+        slot = self._slot(db, space, self._today(db) + timedelta(days=1), capacity=3)
+        _, member = _member_user(db, "round@examplee6e3b1.com")
+        self._book(db, slot, member)
+
+        body = client.get("/api/v1/spaces/stats", cookies=_auth(admin)).json()
+        assert body["capacity"] == 3
+        assert body["occupancy_pct"] == 33.3
+
+    def test_zero_when_there_are_no_slots(self, client, db):
+        _org(db)
+        admin = _user(db, "admin")
+
+        body = client.get("/api/v1/spaces/stats", cookies=_auth(admin)).json()
+        assert body["slots"] == 0
+        assert body["capacity"] == 0
+        assert body["occupancy_pct"] == 0
+        assert body["total"] == 0
+
+    def test_active_spaces_ignores_inactive(self, client, db):
+        _org(db)
+        admin = _user(db, "admin")
+        self._space(db)
+        self._space(db)
+        self._space(db, is_active=False)
+
+        body = client.get("/api/v1/spaces/stats", cookies=_auth(admin)).json()
+        assert body["active_spaces"] == 2
+
+    def test_404_when_disabled(self, client, db):
+        _org(db, enabled=False)
+        admin = _user(db, "admin")
+        r = client.get("/api/v1/spaces/stats", cookies=_auth(admin))
+        assert r.status_code == 404
+
+    def test_403_without_bookings_read(self, client, db):
+        _org(db)
+        user, _ = _member_user(db, "st-nope@examplee6e3b1.com")
+        r = client.get("/api/v1/spaces/stats", cookies=_auth(user))
+        assert r.status_code == 403

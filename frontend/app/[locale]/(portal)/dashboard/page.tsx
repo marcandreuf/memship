@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/lib/i18n/routing";
 import {
@@ -25,6 +25,7 @@ import { useActivities } from "@/features/activities/hooks/use-activities";
 import { useMyRegistrations, useRegistrationStats } from "@/features/activities/hooks/use-registrations";
 import { useActivity } from "@/features/activities/hooks/use-activities";
 import { useReceiptStats, useMyReceipts } from "@/features/receipts/hooks/use-receipts";
+import { useSpaceStats } from "@/features/bookings/hooks/use-bookings";
 import { useAnnualSummary } from "@/features/reports/hooks/use-annual-summary";
 import { ReminderList } from "@/features/reminders/components/reminder-list";
 import { useFormatters } from "@/hooks/use-formatters";
@@ -62,6 +63,12 @@ const REGISTRATION_COLORS: Record<string, string> = {
   pending: "hsl(220, 9%, 64%)",
 };
 
+const BOOKING_COLORS: Record<string, string> = {
+  booked: "hsl(142, 71%, 45%)",
+  waitlisted: "hsl(48, 96%, 53%)",
+  cancelled: "hsl(0, 0%, 64%)",
+};
+
 const REVENUE_COLOR = "hsl(142, 71%, 45%)";
 const OUTSTANDING_COLOR = "hsl(48, 96%, 53%)";
 
@@ -81,21 +88,33 @@ interface CounterItem {
 
 // Condensed status distribution for the dashboard rail: a colored dot + label +
 // count per status, with the total in the header. Replaces the full-width bar
-// charts now that finance leads the dashboard.
+// charts now that finance leads the dashboard. `footer` sits below the rows and
+// is never summed into the total.
 function CounterCard({
   title,
   items,
   href,
+  badge,
+  footer,
 }: {
   title: string;
   items: CounterItem[];
   href?: string;
+  badge?: string;
+  footer?: ReactNode;
 }) {
   const total = items.reduce((sum, i) => sum + i.value, 0);
   const content = (
     <Card className={`h-full py-3 gap-2 ${href ? "hover:bg-accent/50 transition-colors" : ""}`}>
-      <CardHeader className="px-4 flex flex-row items-baseline justify-between">
-        <CardTitle className="text-sm">{title}</CardTitle>
+      <CardHeader className="px-4 flex flex-row items-baseline justify-between gap-2">
+        <span className="flex min-w-0 items-baseline gap-2">
+          <CardTitle className="truncate text-sm">{title}</CardTitle>
+          {badge && (
+            <Badge variant="outline" className="shrink-0 px-1.5 py-0 text-[10px] font-normal text-muted-foreground">
+              {badge}
+            </Badge>
+          )}
+        </span>
         <span className="text-lg font-bold">{total}</span>
       </CardHeader>
       <CardContent className="px-4">
@@ -113,12 +132,48 @@ function CounterCard({
             </li>
           ))}
         </ul>
+        {footer && <div className="mt-2 border-t pt-2">{footer}</div>}
       </CardContent>
     </Card>
   );
 
   if (href) return <Link href={href} className="block h-full">{content}</Link>;
   return content;
+}
+
+function OccupancyFooter({
+  occupancyPct,
+  activeSpaces,
+  slots,
+}: {
+  occupancyPct: number;
+  activeSpaces: number;
+  slots: number;
+}) {
+  const t = useTranslations();
+  const pct = Math.min(Math.max(occupancyPct, 0), 100);
+
+  return (
+    <div className="space-y-1 text-xs">
+      <div className="flex items-center justify-between">
+        <span className="text-muted-foreground">{t("dashboard.occupancy")}</span>
+        <span className="font-mono font-medium">{occupancyPct}%</span>
+      </div>
+      <div
+        className="h-1 w-full overflow-hidden rounded-full bg-muted"
+        role="progressbar"
+        aria-label={t("dashboard.occupancy")}
+        aria-valuenow={pct}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      >
+        <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
+      </div>
+      <p className="text-muted-foreground">
+        {t("dashboard.spacesAndSlots", { spaces: activeSpaces, slots })}
+      </p>
+    </div>
+  );
 }
 
 function StatCard({
@@ -352,6 +407,7 @@ export default function DashboardPage() {
   const t = useTranslations();
   const { user } = useAuth();
   const { isStaff: isAdmin, has } = usePermissions();
+  const { data: settings } = useSettings();
   const { formatCurrency, formatDate } = useFormatters();
 
   // Each card asks only for what its permission covers. Without this a
@@ -362,6 +418,9 @@ export default function DashboardPage() {
   const canReadBilling = has("billing.read");
   const canReadReports = has("reports.read");
   const canReadReminders = has("reminders.read");
+  // Every /spaces endpoint 404s while the module is off, so the flag gates the
+  // query as well as the card — the same AND the sidebar applies.
+  const canReadBookings = Boolean(settings?.features?.bookings) && has("bookings.read");
 
   // Member counts by status
   const { data: activeMembers } = useMembers({ status: "active", per_page: 1 }, canReadMembers);
@@ -378,6 +437,7 @@ export default function DashboardPage() {
 
   const { data: regStats } = useRegistrationStats(canReadRegistrations);
   const { data: receiptStats } = useReceiptStats(canReadBilling);
+  const { data: spaceStats } = useSpaceStats(canReadBookings);
 
   // Member: my registrations + receipts. Gated the same way the staff cards
   // above are — an operator account has no member record (#168), so these two
@@ -427,6 +487,22 @@ export default function DashboardPage() {
     { label: t("receipts.statusReturned"), value: receiptStats?.returned ?? 0, color: RECEIPT_COLORS.returned },
   ], [receiptStats, t]);
 
+  const bookingCounters = useMemo<CounterItem[]>(() => [
+    { label: t("bookings.status.booked"), value: spaceStats?.booked ?? 0, color: BOOKING_COLORS.booked },
+    { label: t("bookings.status.waitlisted"), value: spaceStats?.waitlisted ?? 0, color: BOOKING_COLORS.waitlisted },
+    { label: t("bookings.status.cancelled"), value: spaceStats?.cancelled ?? 0, color: BOOKING_COLORS.cancelled },
+  ], [spaceStats, t]);
+
+  // Five cards need their own grid: 1×5 from xl (at lg the sidebar leaves each
+  // card too narrow for its rows), 3 + 2 from md. Counted from what actually
+  // renders, since a user without billing.read who has bookings sees four.
+  const counterCount = [
+    canReadMembers, canReadBilling, canReadActivities, canReadRegistrations, canReadBookings,
+  ].filter(Boolean).length;
+  const counterGrid = counterCount >= 5
+    ? "grid-cols-1 md:grid-cols-3 xl:grid-cols-5"
+    : "grid-cols-1 sm:grid-cols-2 md:grid-cols-4";
+
   const upcomingRegistrations = myRegistrations?.items ?? [];
 
   return (
@@ -437,8 +513,9 @@ export default function DashboardPage() {
 
       {isAdmin && (
         <div className="space-y-3">
-          {/* Status counters on top: 1×4 (md+), 2×2 (sm), 1×1 (mobile). */}
-          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
+          {/* Status counters on top: up to four as 1×4 (md+), 2×2 (sm), 1×1
+              (mobile); five as 1×5 (xl+), 3 + 2 (md), 1×1 (mobile). */}
+          <div className={`grid gap-3 ${counterGrid}`}>
             {canReadMembers && (
               <CounterCard title={t("nav.members")} items={memberCounters} href="/members" />
             )}
@@ -450,6 +527,21 @@ export default function DashboardPage() {
             )}
             {canReadRegistrations && (
               <CounterCard title={t("dashboard.totalRegistrations")} items={registrationCounters} />
+            )}
+            {canReadBookings && (
+              <CounterCard
+                title={t("bookings.nav")}
+                items={bookingCounters}
+                href="/spaces"
+                badge={spaceStats ? t("dashboard.nextDays", { days: spaceStats.window_days }) : undefined}
+                footer={
+                  <OccupancyFooter
+                    occupancyPct={spaceStats?.occupancy_pct ?? 0}
+                    activeSpaces={spaceStats?.active_spaces ?? 0}
+                    slots={spaceStats?.slots ?? 0}
+                  />
+                }
+              />
             )}
           </div>
 
