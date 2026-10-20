@@ -32,6 +32,7 @@ from app.domains.bookings.schemas import (
     SpaceSlotCreate,
     SpaceSlotRead,
     SpaceSlotUpdate,
+    SpaceStats,
     SpaceUpdate,
     WeekAvailability,
 )
@@ -102,6 +103,17 @@ def create_space(
     db.commit()
     db.refresh(space)
     return space
+
+
+@router.get("/stats", response_model=SpaceStats)
+def space_stats(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("bookings.read")),
+):
+    """Booking counts, slots and occupancy over the next 30 days, for the
+    dashboard. Declared before ``/{space_id}`` so the path isn't captured."""
+    _require_bookings_enabled(db)
+    return service.space_stats(db)
 
 
 @router.get("/{space_id}", response_model=SpaceRead)

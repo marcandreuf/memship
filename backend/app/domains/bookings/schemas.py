@@ -208,3 +208,18 @@ class WeekAvailability(BaseModel):
     eligible: bool = True
     ineligible_reason: str | None = None
     cells: list[AvailabilityCell]
+
+
+# --- Dashboard stats ------------------------------------------------------
+
+
+class SpaceStats(BaseModel):
+    window_days: int
+    booked: int
+    waitlisted: int
+    cancelled: int
+    total: int
+    active_spaces: int
+    slots: int
+    capacity: int
+    occupancy_pct: float

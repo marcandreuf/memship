@@ -27,6 +27,9 @@
     "viewAnnualSummary": "Annual summary",
     "revenue": "Revenue",
     "outstanding": "Outstanding",
-    "upcomingEvents": "Upcoming activities"
+    "upcomingEvents": "Upcoming activities",
+    "nextDays": "Next {days} days",
+    "occupancy": "Occupancy",
+    "spacesAndSlots": "{spaces, plural, one {# space} other {# spaces}} · {slots, plural, one {# slot} other {# slots}}"
   }
 }

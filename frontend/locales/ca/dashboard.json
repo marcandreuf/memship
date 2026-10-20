@@ -27,6 +27,9 @@
     "viewAnnualSummary": "Resum anual",
     "revenue": "Ingressos",
     "outstanding": "Pendent",
-    "upcomingEvents": "Properes activitats"
+    "upcomingEvents": "Properes activitats",
+    "nextDays": "Propers {days} dies",
+    "occupancy": "Ocupació",
+    "spacesAndSlots": "{spaces, plural, one {# espai} other {# espais}} · {slots, plural, one {# franja} other {# franges}}"
   }
 }
