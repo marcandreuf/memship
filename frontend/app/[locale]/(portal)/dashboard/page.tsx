@@ -497,7 +497,7 @@ export default function DashboardPage() {
   // card too narrow for its rows), 3 + 2 from md. Counted from what actually
   // renders, since a user without billing.read who has bookings sees four.
   const counterCount = [
-    canReadMembers, canReadBilling, canReadActivities, canReadRegistrations, canReadBookings,
+    canReadMembers, canReadBilling, canReadRegistrations, canReadActivities, canReadBookings,
   ].filter(Boolean).length;
   const counterGrid = counterCount >= 5
     ? "grid-cols-1 md:grid-cols-3 xl:grid-cols-5"
@@ -522,11 +522,11 @@ export default function DashboardPage() {
             {canReadBilling && (
               <CounterCard title={t("receipts.title")} items={receiptCounters} href="/receipts" />
             )}
-            {canReadActivities && (
-              <CounterCard title={t("nav.activities")} items={activityCounters} href="/activities" />
-            )}
             {canReadRegistrations && (
               <CounterCard title={t("dashboard.totalRegistrations")} items={registrationCounters} />
+            )}
+            {canReadActivities && (
+              <CounterCard title={t("nav.activities")} items={activityCounters} href="/activities" />
             )}
             {canReadBookings && (
               <CounterCard
