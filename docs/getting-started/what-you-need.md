@@ -140,7 +140,7 @@ create for the domain propagating.
 - **No object storage.** Uploads go to a directory on the server's disk.
 - **No separate job queue service.** Redis and Celery are in the stack.
 - **No licence fee, and no per-member cost.** Memship is source-available under the
-  [Elastic License 2.0](../../LICENSE). You are free to use, modify and self-host it; the licence
+  [Elastic License 2.0](https://github.com/marcandreuf/memship/blob/main/LICENSE). You are free to use, modify and self-host it; the licence
   restricts offering it as a managed service to third parties, which is not what an association
   running it for its own members is doing.
 
