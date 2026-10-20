@@ -86,7 +86,25 @@ export interface AdminBookingPage {
   items: AdminBooking[];
 }
 
+// Dashboard aggregate over active slots in the next `window_days` days.
+// `active_spaces` is not windowed.
+export interface SpaceStats {
+  window_days: number;
+  booked: number;
+  waitlisted: number;
+  cancelled: number;
+  total: number;
+  active_spaces: number;
+  slots: number;
+  capacity: number;
+  occupancy_pct: number;
+}
+
 // --- Spaces (admin) ---
+
+export async function getSpaceStats(): Promise<SpaceStats> {
+  return apiClient<SpaceStats>("/spaces/stats");
+}
 
 export async function listSpaces(): Promise<Space[]> {
   return apiClient<Space[]>("/spaces");

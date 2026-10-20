@@ -27,6 +27,9 @@
     "viewAnnualSummary": "Resumen anual",
     "revenue": "Ingresos",
     "outstanding": "Pendiente",
-    "upcomingEvents": "Próximas actividades"
+    "upcomingEvents": "Próximas actividades",
+    "nextDays": "Próximos {days} días",
+    "occupancy": "Ocupación",
+    "spacesAndSlots": "{spaces, plural, one {# espacio} other {# espacios}} · {slots, plural, one {# franja} other {# franjas}}"
   }
 }

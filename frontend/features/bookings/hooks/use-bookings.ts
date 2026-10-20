@@ -11,6 +11,7 @@ import {
   getAvailability,
   getMyBookings,
   getSpace,
+  getSpaceStats,
   listAvailableSpaces,
   listSlots,
   listSpaceBookings,
@@ -26,6 +27,14 @@ export function useSpaces(enabled = true) {
   return useQuery({
     queryKey: ["spaces"],
     queryFn: listSpaces,
+    enabled,
+  });
+}
+
+export function useSpaceStats(enabled = true) {
+  return useQuery({
+    queryKey: ["space-stats"],
+    queryFn: getSpaceStats,
     enabled,
   });
 }
