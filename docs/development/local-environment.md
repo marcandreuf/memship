@@ -176,7 +176,7 @@ than the café's wifi.
 `seed test` creates the accounts the Cypress suite signs in as, plus 4 sample activities with
 modalities and prices, sample registrations, and ~22 extra members. Those addresses and passwords
 are a contract with the test suite rather than a seeding choice, so they live with it in
-[`e2e/cypress/support/commands.ts`](../../e2e/cypress/support/commands.ts).
+[`e2e/cypress/support/commands.ts`](https://github.com/marcandreuf/memship/blob/main/e2e/cypress/support/commands.ts).
 
 > **`seed test` refuses to run outside development.** It plants fixed, repository-visible
 > passwords, so it requires `APP_ENV=development` or `CI`. For anything real, use the interactive
