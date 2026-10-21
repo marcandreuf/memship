@@ -40,6 +40,8 @@ New to Memship? Start here.
 
 - [What you need to run Memship](getting-started/what-you-need.md) — the server, the domain,
   the email and what they cost, measured rather than estimated. For deciding, before installing _(EN)_
+- [Qué necesitas para ejecutar Memship](getting-started/es/what-you-need.md) — la misma página en
+  castellano: el servidor, el dominio, el correo y lo que cuestan, medido en vez de estimado _(ES)_
 - [Quick start](getting-started/quickstart.md) — try Memship with a single command _(EN)_
 - [Installation](getting-started/installation.md) — production Docker install _(EN)_
 - [First-time setup](getting-started/first-setup.md) — create your admin and organization _(EN)_

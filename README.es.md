@@ -255,6 +255,9 @@ Consulta [CONTRIBUTING](CONTRIBUTING.md) para ramas, versionado y cómo se publi
 
 El autoalojamiento en producción vive en la documentación, para que haya una sola copia que mantener correcta:
 
+- **[Qué necesitas para ejecutar Memship](docs/getting-started/es/what-you-need.md)** — un servidor
+  de 2 vCPU / 4 GB / 40 GB, un dominio y una forma de enviar correo, por unos 8–12 € al mes. Léelo
+  antes de decidir; las cifras están medidas, no estimadas
 - **[Instalación](docs/getting-started/installation.md)** — `vps-bootstrap.sh` en un servidor
   recién creado y después `install.sh`, que genera secretos reales, fija una versión y coloca tus
   datos en un único directorio respaldado
