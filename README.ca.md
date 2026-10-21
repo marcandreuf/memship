@@ -255,6 +255,9 @@ Consulta [CONTRIBUTING](CONTRIBUTING.md) per a branques, versionat i com es publ
 
 L'autoallotjament en producció viu a la documentació, perquè només hi hagi una còpia per mantenir correcta:
 
+- **[Què necessites per executar Memship](docs/getting-started/es/what-you-need.md)** — un servidor
+  de 2 vCPU / 4 GB / 40 GB, un domini i una manera d'enviar correu, per uns 8–12 € al mes. Llegeix-ho
+  abans de decidir; les xifres estan mesurades, no estimades. _De moment només en castellà_
 - **[Instal·lació](docs/getting-started/installation.md)** — `vps-bootstrap.sh` en un servidor nou i
   després `install.sh`, que genera secrets reals, fixa una versió i posa les teves dades en un únic
   directori amb còpia de seguretat
