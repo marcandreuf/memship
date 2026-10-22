@@ -66,6 +66,11 @@
       "reject": "Rebutjar",
       "approved": "Alta aprovada. S'ha avisat el sol·licitant per correu.",
       "approvedNotNotified": "Alta aprovada, però NO s'ha avisat el sol·licitant",
+      "approvedRetrying": "Alta aprovada. El correu encara no s'ha pogut enviar i es tornarà a intentar automàticament durant la propera mitja hora",
+      "retryReason": {
+        "rate_limited": "S'ha arribat al límit d'enviament del proveïdor de correu.",
+        "transport_unavailable": "No s'ha pogut contactar amb el proveïdor de correu."
+      },
       "approvedMailOff": "Alta aprovada. No s'ha enviat cap correu: l'avís d'aprovació està desactivat a Configuració → Comunicacions. Avisa el sol·licitant per una altra via.",
       "approvedNoEmail": "Alta aprovada. No s'ha enviat cap correu: el sol·licitant no té adreça de correu.",
       "notifyFailure": {

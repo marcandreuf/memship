@@ -37,6 +37,12 @@ Each provider card also shows whether its credentials are known to work: *Not ve
 *Working*, or *Failing* with a reason. It is updated by every email sent through that provider,
 the test included, and it applies to credentials that come from `.env` too.
 
+Approval and rejection emails are sent the moment the admin decides, so the admin can be told
+whether they went out. If the provider could not be reached or its sending limit was hit, they
+are tried again automatically after 1, 5 and 25 minutes, and the approval message says so. Any
+other failure, such as rejected credentials, is reported straight away and not retried, because
+it would fail the same way again. The retries run on the `worker` service, which must be up.
+
 ## Option B — `.env`
 
 Set the variables and recreate the backend so it picks them up:

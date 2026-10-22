@@ -1,7 +1,11 @@
 // Approving a registration says whether the applicant was told (#332). The
 // approval is real; only the notification in the response is stubbed, because
 // what the instance's mail transport does is not this spec's to decide.
-function approvePendingApplicant(notification: { status: string; reason: string | null }) {
+function approvePendingApplicant(notification: {
+  status: string;
+  reason: string | null;
+  retrying?: boolean;
+}) {
   const email = `approve-${Date.now()}-${Cypress._.random(1e6)}@examplee6e3b1.com`;
   cy.request("POST", "/api/auth/register", {
     first_name: "Approve",
@@ -16,7 +20,7 @@ function approvePendingApplicant(notification: { status: string; reason: string 
     .then((id) => {
       cy.intercept("POST", `/api/members/${id}/approve`, (req) => {
         req.continue((res) => {
-          res.body.notification = notification;
+          res.body.notification = { retrying: false, ...notification };
         });
       }).as("approve");
       cy.visit(`/en/members/${id}`);
@@ -39,6 +43,13 @@ describe("Approving a registration reports the notification", () => {
     cy.contains("Registration approved, but the applicant was NOT notified").should("be.visible");
     cy.contains("The mail provider rejected its credentials").should("be.visible");
     cy.contains("The applicant has been notified by email").should("not.exist");
+  });
+
+  it("says the mail will be retried after a transient failure (#449)", () => {
+    approvePendingApplicant({ status: "failed", reason: "transport_unavailable", retrying: true });
+    cy.contains("will be retried automatically").should("be.visible");
+    cy.contains("The mail provider could not be reached.").should("be.visible");
+    cy.contains("the applicant was NOT notified").should("not.exist");
   });
 
   it("warns when the approval notice is switched off", () => {

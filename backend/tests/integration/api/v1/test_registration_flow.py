@@ -367,6 +367,7 @@ class TestAdminApproval:
         assert response.json()["notification"] == {
             "status": "failed",
             "reason": "invalid_credentials",
+            "retrying": False,
         }
         assert response.json()["member"]["status"] == "active"
         db.refresh(pending)
@@ -383,7 +384,9 @@ class TestAdminApproval:
         ):
             response = client.post(f"/api/v1/members/{pending.id}/approve")
 
-        assert response.json()["notification"] == {"status": "sent", "reason": None}
+        assert response.json()["notification"] == {
+            "status": "sent", "reason": None, "retrying": False,
+        }
 
     def test_approve_reports_a_switched_off_template(self, client, db):
         _create_user(db, email="admin@examplee6e3b1.com", role="admin")
@@ -397,7 +400,9 @@ class TestAdminApproval:
             response = client.post(f"/api/v1/members/{pending.id}/approve")
 
         send.assert_not_called()
-        assert response.json()["notification"] == {"status": "suppressed", "reason": None}
+        assert response.json()["notification"] == {
+            "status": "suppressed", "reason": None, "retrying": False,
+        }
 
     def test_approve_reports_no_active_provider(self, client, db):
         _create_user(db, email="admin@examplee6e3b1.com", role="admin")
@@ -410,6 +415,92 @@ class TestAdminApproval:
         assert response.json()["notification"] == {
             "status": "failed",
             "reason": "no_provider",
+            "retrying": False,
+        }
+
+    def test_approve_queues_a_retry_after_a_transient_failure(self, client, db):
+        # #449: a provider outage used to lose the approval mail for good.
+        _create_user(db, email="admin@examplee6e3b1.com", role="admin")
+        _, pending = _create_user(db, email="pending@examplee6e3b1.com", status="pending")
+        _login(client, "admin@examplee6e3b1.com")
+
+        with (
+            patch("app.core.email._template_enabled", return_value=True),
+            patch("app.core.email.send_email", side_effect=ConnectionRefusedError("down")),
+            patch(
+                "app.tasks.email_tasks.retry_registration_approved_email_task.apply_async"
+            ) as queued,
+        ):
+            response = client.post(f"/api/v1/members/{pending.id}/approve")
+
+        assert response.json()["notification"] == {
+            "status": "failed",
+            "reason": "transport_unavailable",
+            "retrying": True,
+        }
+        queued.assert_called_once()
+        assert queued.call_args.kwargs["kwargs"]["to"] == "pending@examplee6e3b1.com"
+        assert queued.call_args.kwargs["countdown"] == 60
+
+    def test_approve_does_not_retry_a_refused_credential(self, client, db):
+        _create_user(db, email="admin@examplee6e3b1.com", role="admin")
+        _, pending = _create_user(db, email="pending@examplee6e3b1.com", status="pending")
+        _login(client, "admin@examplee6e3b1.com")
+        refused = ValidationError(
+            message="API key is invalid", error_type="validation_error", code=400
+        )
+
+        with (
+            patch("app.core.email._template_enabled", return_value=True),
+            patch("app.core.email.send_email", side_effect=refused),
+            patch(
+                "app.tasks.email_tasks.retry_registration_approved_email_task.apply_async"
+            ) as queued,
+        ):
+            client.post(f"/api/v1/members/{pending.id}/approve")
+
+        queued.assert_not_called()
+
+    def test_approve_says_no_retry_when_the_broker_is_down(self, client, db):
+        _create_user(db, email="admin@examplee6e3b1.com", role="admin")
+        _, pending = _create_user(db, email="pending@examplee6e3b1.com", status="pending")
+        _login(client, "admin@examplee6e3b1.com")
+
+        with (
+            patch("app.core.email._template_enabled", return_value=True),
+            patch("app.core.email.send_email", side_effect=ConnectionRefusedError("down")),
+            patch(
+                "app.tasks.email_tasks.retry_registration_approved_email_task.apply_async",
+                side_effect=ConnectionError("broker down"),
+            ),
+        ):
+            response = client.post(f"/api/v1/members/{pending.id}/approve")
+
+        assert response.status_code == 200
+        assert response.json()["notification"]["retrying"] is False
+
+    def test_reject_queues_a_retry_after_a_transient_failure(self, client, db):
+        _create_user(db, email="admin@examplee6e3b1.com", role="admin")
+        _, pending = _create_user(db, email="pending@examplee6e3b1.com", status="pending")
+        _login(client, "admin@examplee6e3b1.com")
+
+        with (
+            patch("app.core.email._template_enabled", return_value=True),
+            patch("app.core.email.send_email", side_effect=ConnectionRefusedError("down")),
+            patch(
+                "app.tasks.email_tasks.retry_registration_rejected_email_task.apply_async"
+            ) as queued,
+        ):
+            response = client.post(
+                f"/api/v1/members/{pending.id}/reject", json={"reason": "Not eligible"}
+            )
+
+        assert response.status_code == 200
+        queued.assert_called_once()
+        assert queued.call_args.kwargs["kwargs"] == {
+            "to": "pending@examplee6e3b1.com",
+            "first_name": "Test",
+            "reason": "Not eligible",
         }
 
     def test_approve_mail_names_google_for_an_account_without_a_password(self, client, db):
@@ -457,7 +548,9 @@ class TestAdminApproval:
         response = client.post(f"/api/v1/members/{pending.id}/approve")
 
         assert response.status_code == 200
-        assert response.json()["notification"] == {"status": "no_email", "reason": None}
+        assert response.json()["notification"] == {
+            "status": "no_email", "reason": None, "retrying": False,
+        }
 
     def test_approve_rejects_non_pending_member(self, client, db):
         _create_user(db, email="admin@examplee6e3b1.com", role="admin")
