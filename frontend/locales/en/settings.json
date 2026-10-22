@@ -209,11 +209,11 @@
       "description": "Choose and configure the provider your emails are sent through. Only one can be active at a time.",
       "providers": {
         "resend": "Resend",
-        "gmail": "Gmail"
+        "smtp": "SMTP server"
       },
       "hints": {
         "resend": "Managed delivery through the Resend API.",
-        "gmail": "SMTP delivery with a Gmail account and an app password."
+        "smtp": "Any SMTP server: your organisation's mail hosting, a sending service, or a Gmail account."
       },
       "activeProvider": "Active provider",
       "oneAtATime": "Only one provider can be active at a time.",
@@ -224,10 +224,16 @@
       "fields": {
         "api_key": "API key",
         "from_email": "From address",
-        "user": "Gmail address",
-        "app_password": "App password"
+        "host": "Server",
+        "port": "Port",
+        "tls": "Encrypt with STARTTLS",
+        "user": "SMTP user",
+        "password": "Password"
       },
-      "appPasswordHint": "Use a Google app password, not your account password. Leave blank to keep the stored one.",
+      "gmailPreset": "Use Gmail's settings",
+      "gmailPresetHint": "Fills in smtp.gmail.com, port 587 and STARTTLS. Gmail needs an app password, not the account password.",
+      "tlsHint": "Leave on unless your server says otherwise. Port 465, which encrypts from the first byte, is not supported: use 587.",
+      "invalidPort": "The port must be a number between 1 and 65535.",
       "secretHint": "Leave blank to keep the stored value; enter a new one to replace it.",
       "fromEnv": "from environment",
       "notConfigured": "Not configured",

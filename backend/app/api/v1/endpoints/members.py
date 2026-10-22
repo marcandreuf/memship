@@ -8,6 +8,7 @@ from app.core.authorization import require_any_permission, require_permission, u
 from app.core.config import settings
 from app.core.db_utils import get_or_404
 from app.core.email import (
+    TRANSIENT_FAILURES,
     send_registration_approved_email,
     send_registration_rejected_email,
 )
@@ -437,19 +438,33 @@ def approve_member_registration(
     # so the admin is not shown a success that only half happened (#332).
     if member.person and member.person.email:
         user = member.user
-        result = send_registration_approved_email(
-            member.person.email,
-            member.person.first_name,
-            member.member_number or "",
-            f"{settings.FRONTEND_URL}/{settings.DEFAULT_LOCALE}/login",
-            sso_providers=sorted(
+        mail = {
+            "to": member.person.email,
+            "first_name": member.person.first_name,
+            "member_number": member.member_number or "",
+            "login_url": f"{settings.FRONTEND_URL}/{settings.DEFAULT_LOCALE}/login",
+            "sso_providers": sorted(
                 _SSO_PROVIDER_NAMES[i.provider] for i in (user.identities if user else [])
             ),
-            has_password=bool(user and user.password_hash),
+            "has_password": bool(user and user.password_hash),
+        }
+        result = send_registration_approved_email(
+            mail["to"], mail["first_name"], mail["member_number"], mail["login_url"],
+            sso_providers=mail["sso_providers"], has_password=mail["has_password"],
         )
+        # Sent inline so the admin hears what happened; only a failure that may
+        # clear up on its own is handed to later attempts (#449).
+        retrying = False
+        if result.failure in TRANSIENT_FAILURES:
+            from app.tasks.email_tasks import (
+                queue_email_retry,
+                retry_registration_approved_email_task,
+            )
+            retrying = queue_email_retry(retry_registration_approved_email_task, **mail)
         notification = ApprovalNotification(
             status=result.outcome.value,
             reason=result.failure.value if result.failure else None,
+            retrying=retrying,
         )
     else:
         notification = ApprovalNotification(status="no_email")
@@ -477,7 +492,16 @@ def reject_member_registration(
     db.refresh(member)
 
     if email:
-        send_registration_rejected_email(email, first_name, data.reason)
+        result = send_registration_rejected_email(email, first_name, data.reason)
+        if result.failure in TRANSIENT_FAILURES:
+            from app.tasks.email_tasks import (
+                queue_email_retry,
+                retry_registration_rejected_email_task,
+            )
+            queue_email_retry(
+                retry_registration_rejected_email_task,
+                to=email, first_name=first_name, reason=data.reason,
+            )
 
     return _to_response(member)
 

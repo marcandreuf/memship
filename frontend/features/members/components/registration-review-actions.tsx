@@ -107,9 +107,13 @@ export function RegistrationReviewActions({
 
   // The approval itself succeeded in every branch; only the mail varies, and
   // the admin is the one person who can still tell the applicant another way.
-  function announceApproval({ status, reason }: ApprovalNotification) {
+  function announceApproval({ status, reason, retrying }: ApprovalNotification) {
     if (status === "sent") {
       toast.success(t("members.registration.approved"));
+    } else if (status === "failed" && retrying) {
+      toast.warning(t("members.registration.approvedRetrying"), {
+        description: t(`members.registration.retryReason.${reason}`),
+      });
     } else if (status === "failed") {
       toast.warning(t("members.registration.approvedNotNotified"), {
         description: t(`members.registration.notifyFailure.${reason ?? "unknown"}`),

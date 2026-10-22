@@ -7,9 +7,14 @@ resolver prefers the DB value and falls back to the matching mail env var from
 sending untouched while new installs configure everything from the UI.
 
 **Exactly one provider is active at a time.** A top-level ``active_provider``
-(``"resend" | "gmail" | null``) selects the transport — there is no per-provider
+(``"resend" | "smtp" | null``) selects the transport — there is no per-provider
 enable flag, so no shape can turn two providers on at once. A provider is only
 usable once its required fields resolve to non-empty values.
+
+There is one SMTP transport, and Gmail is a configuration of it — the settings
+screen offers Google's endpoint as a preset, nothing more (#442). Host, port and
+TLS are stored fields like the credentials, so any SMTP server is configurable
+from the running instance.
 
 ``active_provider`` resolution has three cases (mirrors ``sso_config`` adapted to
 one-of-N):
@@ -19,7 +24,7 @@ one-of-N):
   **no active provider** (saving credentials does not auto-activate);
 * **no DB node at all** → a pre-UI, env-only deployment: preserve the legacy
   ``send_email`` behaviour exactly — Resend if ``RESEND_API_KEY`` is set, else
-  Gmail/SMTP if ``SMTP_HOST`` is set, else none — with no required-field gate.
+  SMTP if ``SMTP_HOST`` is set, else none — with no required-field gate.
 """
 
 from __future__ import annotations
@@ -28,16 +33,14 @@ from dataclasses import dataclass, field
 
 from sqlalchemy.orm import Session
 
+from app.core.config import Settings
 from app.core.config import settings as app_settings
 from app.core.security import secrets_crypto
 from app.domains.organizations.models import OrganizationSettings
 
-# Gmail's SMTP endpoint is fixed for UI-configured accounts — the member only
-# supplies their address and a Google app password, never a host/port. (A legacy
-# env-only deployment keeps using whatever ``SMTP_HOST`` it already set.)
-GMAIL_SMTP_HOST = "smtp.gmail.com"
-GMAIL_SMTP_PORT = 587
-GMAIL_SMTP_TLS = True
+PROVIDERS = ("resend", "smtp")
+
+DEFAULT_SMTP_PORT = 587
 
 
 @dataclass(frozen=True)
@@ -54,26 +57,55 @@ PROVIDER_FIELDS: dict[str, list[FieldSpec]] = {
         FieldSpec("api_key", "RESEND_API_KEY", True),
         FieldSpec("from_email", "RESEND_FROM_EMAIL", False),
     ],
-    "gmail": [
+    "smtp": [
+        FieldSpec("host", "SMTP_HOST", False),
+        FieldSpec("port", "SMTP_PORT", False),
+        FieldSpec("tls", "SMTP_TLS", False),
         FieldSpec("user", "SMTP_USER", False),
-        FieldSpec("app_password", "SMTP_PASSWORD", True),
+        FieldSpec("password", "SMTP_PASSWORD", True),
         FieldSpec("from_email", "SMTP_FROM", False),
     ],
 }
 
-# The fields that must resolve non-empty for a provider to be usable. ``from_email``
-# is optional for both (Resend defaults to SMTP_FROM, Gmail to the account itself).
+# The fields that must resolve non-empty for a provider to be usable. SMTP also
+# needs a sender, which may be the from address or the account itself — see
+# ``ResolvedProvider.ready``. User and password are optional: a relay that
+# accepts mail from the server's address needs neither.
 PROVIDER_REQUIRED = {
     "resend": ["api_key"],
-    "gmail": ["user", "app_password"],
+    "smtp": ["host"],
 }
+
+
+def _env_value(spec: FieldSpec) -> tuple[str, str]:
+    """Return ``(value, source)`` for a field's env fallback.
+
+    Port and TLS are typed settings with defaults, so they always have a value.
+    When it is only the declared default, the source is ``"default"`` rather
+    than ``"env"``: nobody configured it, and the screen should not say so.
+    """
+    raw = getattr(app_settings, spec.env, "")
+    if isinstance(raw, bool):
+        value = "true" if raw else "false"
+    else:
+        value = str(raw if raw is not None else "").strip()
+    if not value:
+        return "", "none"
+    declared = Settings.model_fields[spec.env].default if spec.env in Settings.model_fields else None
+    if declared not in (None, "") and raw == declared and spec.env not in app_settings.model_fields_set:
+        return value, "default"
+    return value, "env"
+
+
+def parse_tls(value: str) -> bool:
+    return value.strip().lower() not in ("false", "0", "no", "off")
 
 
 @dataclass
 class ResolvedProvider:
     name: str
     values: dict[str, str]      # decrypted plaintext, only for non-empty fields
-    sources: dict[str, str]     # field -> "db" | "env" | "none"
+    sources: dict[str, str]     # field -> "db" | "env" | "default" | "none"
     secret_flags: dict[str, bool]
 
     @property
@@ -83,7 +115,11 @@ class ResolvedProvider:
     @property
     def ready(self) -> bool:
         """True when every required field resolves to a non-empty value."""
-        return all(self.values.get(f) for f in self.required)
+        if not all(self.values.get(f) for f in self.required):
+            return False
+        if self.name == "smtp":
+            return bool(self.values.get("from_email") or self.values.get("user"))
+        return True
 
     def get(self, field_name: str) -> str:
         return self.values.get(field_name, "")
@@ -101,33 +137,31 @@ class ResolvedProvider:
 
 @dataclass
 class ResolvedMailing:
-    active: str | None            # "resend" | "gmail" | None, already readiness-gated
+    active: str | None            # "resend" | "smtp" | None, already readiness-gated
     resend: ResolvedProvider
-    gmail: ResolvedProvider
+    smtp: ResolvedProvider
     _env_only: bool = field(default=False, repr=False)
 
     def provider(self, name: str) -> ResolvedProvider | None:
-        if name in ("resend", "gmail"):
+        if name in PROVIDERS:
             return getattr(self, name)
         return None
 
     def flat_sources(self) -> dict[str, str]:
         flat: dict[str, str] = {}
-        for provider in (self.resend, self.gmail):
+        for provider in (self.resend, self.smtp):
             for field_name, source in provider.sources.items():
                 flat[f"{provider.name}.{field_name}"] = source
         return flat
 
-    def gmail_smtp(self) -> tuple[str, int, bool]:
-        """Effective SMTP host/port/TLS for the Gmail transport.
-
-        UI-configured Gmail is pinned to Google's endpoint. A legacy env-only
-        deployment keeps whatever ``SMTP_HOST`` it already had, so a non-Gmail
-        SMTP server configured through ``.env`` still works unchanged.
-        """
-        if self.gmail.from_db("user") or self.gmail.from_db("app_password"):
-            return GMAIL_SMTP_HOST, GMAIL_SMTP_PORT, GMAIL_SMTP_TLS
-        return app_settings.SMTP_HOST, app_settings.SMTP_PORT, app_settings.SMTP_TLS
+    def smtp_endpoint(self) -> tuple[str, int, bool]:
+        """Effective SMTP host, port and TLS flag, each DB-then-env like any field."""
+        s = self.smtp
+        try:
+            port = int(s.get("port"))
+        except ValueError:
+            port = DEFAULT_SMTP_PORT
+        return s.get("host"), port, parse_tls(s.get("tls") or "true")
 
 
 def _read_db_field(node: object, spec: FieldSpec) -> tuple[str, bool]:
@@ -164,12 +198,10 @@ def _resolve_provider(name: str, node: object) -> ResolvedProvider:
             values[spec.name] = db_value
             sources[spec.name] = "db"
             continue
-        env_value = (getattr(app_settings, spec.env, "") or "").strip()
+        env_value, source = _env_value(spec)
         if env_value:
             values[spec.name] = env_value
-            sources[spec.name] = "env"
-        else:
-            sources[spec.name] = "none"
+        sources[spec.name] = source
 
     return ResolvedProvider(
         name=name,
@@ -179,12 +211,12 @@ def _resolve_provider(name: str, node: object) -> ResolvedProvider:
     )
 
 
-def _resolve_active(raw: dict, resend: ResolvedProvider, gmail: ResolvedProvider) -> tuple[str | None, bool]:
+def _resolve_active(raw: dict, resend: ResolvedProvider, smtp: ResolvedProvider) -> tuple[str | None, bool]:
     """Resolve which provider is active, and whether this is an env-only deployment.
 
     Returns ``(active, env_only)``.
     """
-    providers = {"resend": resend, "gmail": gmail}
+    providers = {"resend": resend, "smtp": smtp}
 
     if "active_provider" in raw:
         chosen = raw["active_provider"]
@@ -201,7 +233,7 @@ def _resolve_active(raw: dict, resend: ResolvedProvider, gmail: ResolvedProvider
     if app_settings.RESEND_API_KEY:
         return "resend", True
     if app_settings.SMTP_HOST:
-        return "gmail", True
+        return "smtp", True
     return None, True
 
 
@@ -210,10 +242,10 @@ def resolve_mailing_config(db: Session) -> ResolvedMailing:
     raw = (row.mailing_config if row and row.mailing_config else {}) or {}
 
     resend = _resolve_provider("resend", raw.get("resend", {}))
-    gmail = _resolve_provider("gmail", raw.get("gmail", {}))
-    active, env_only = _resolve_active(raw, resend, gmail)
+    smtp = _resolve_provider("smtp", raw.get("smtp", {}))
+    active, env_only = _resolve_active(raw, resend, smtp)
 
-    return ResolvedMailing(active=active, resend=resend, gmail=gmail, _env_only=env_only)
+    return ResolvedMailing(active=active, resend=resend, smtp=smtp, _env_only=env_only)
 
 
 def env_only_mailing_config() -> ResolvedMailing:
@@ -224,9 +256,9 @@ def env_only_mailing_config() -> ResolvedMailing:
     behaviour rather than failing the send outright.
     """
     resend = _resolve_provider("resend", {})
-    gmail = _resolve_provider("gmail", {})
-    active, env_only = _resolve_active({}, resend, gmail)
-    return ResolvedMailing(active=active, resend=resend, gmail=gmail, _env_only=env_only)
+    smtp = _resolve_provider("smtp", {})
+    active, env_only = _resolve_active({}, resend, smtp)
+    return ResolvedMailing(active=active, resend=resend, smtp=smtp, _env_only=env_only)
 
 
 def mailing_enabled(db: Session) -> bool:

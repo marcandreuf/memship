@@ -17,10 +17,13 @@ const MAILING_VIEW = {
     ready: true,
     health: UNVERIFIED,
   },
-  gmail: {
+  smtp: {
+    host: "",
+    port: 587,
+    tls: true,
     user: "",
     from_email: "",
-    app_password: { configured: false, last4: null },
+    password: { configured: false, last4: null },
     ready: false,
     health: UNVERIFIED,
   },
@@ -61,16 +64,16 @@ describe("Settings secret fields", () => {
     cy.intercept("PUT", "/api/settings/mailing", (req) => {
       req.reply(MAILING_VIEW);
     }).as("save");
-    cy.contains("label", "Gmail address").parent().find("input").type("club@example.org");
+    cy.contains("label", "SMTP user").parent().find("input").type("club@example.org");
     cy.contains("button", "Save").click();
     cy.wait("@save").its("request.body").should((body) => {
-      expect(body.gmail).to.deep.equal({ user: "club@example.org" });
+      expect(body.smtp).to.deep.equal({ user: "club@example.org" });
       expect(body).not.to.have.property("resend");
     });
   });
 
   it("marks an unstored secret input as a new password", () => {
-    cy.get('input[name="mailing-gmail-credential"]').should(
+    cy.get('input[name="mailing-smtp-credential"]').should(
       "have.attr",
       "autocomplete",
       "new-password",

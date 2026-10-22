@@ -44,14 +44,11 @@ def credential_fingerprint(resolved: ResolvedMailing, provider: str) -> str:
     """Keyed hash of everything that decides where a provider's mail goes.
 
     Keyed with ``SECRET_KEY`` so the stored value cannot be used to confirm a
-    guessed credential. For SMTP the endpoint is part of it: the same account
-    against another host is a different, unproven transport.
+    guessed credential. For SMTP the host, port and TLS flag are fields like the
+    rest: the same account against another server is an unproven transport.
     """
     p = resolved.provider(provider)
     parts = [provider] + [f"{spec.name}={p.get(spec.name)}" for spec in PROVIDER_FIELDS[provider]]
-    if provider == "gmail":
-        host, port, tls = resolved.gmail_smtp()
-        parts.append(f"smtp={host}:{port}:{tls}")
     return hmac.new(
         app_settings.SECRET_KEY.encode(), "\x1f".join(parts).encode(), hashlib.sha256
     ).hexdigest()

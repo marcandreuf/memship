@@ -1,1 +1,1 @@
-"""Mailing provider configuration (Resend / Gmail), resolved DB-then-env."""
+"""Mailing provider configuration (Resend / SMTP), resolved DB-then-env."""

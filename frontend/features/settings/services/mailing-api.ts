@@ -1,6 +1,6 @@
 import { apiClient } from "@/lib/client-api";
 
-export type MailProvider = "resend" | "gmail";
+export type MailProvider = "resend" | "smtp";
 
 export interface MailSecretStatus {
   configured: boolean;
@@ -23,10 +23,13 @@ export interface MailResendView {
   health: MailHealth;
 }
 
-export interface MailGmailView {
+export interface MailSmtpView {
+  host: string;
+  port: number;
+  tls: boolean;
   user: string;
   from_email: string;
-  app_password: MailSecretStatus;
+  password: MailSecretStatus;
   ready: boolean;
   health: MailHealth;
 }
@@ -34,7 +37,7 @@ export interface MailGmailView {
 export interface MailingConfigView {
   active_provider: MailProvider | null;
   resend: MailResendView;
-  gmail: MailGmailView;
+  smtp: MailSmtpView;
   secrets_encryption_available: boolean;
   sources: Record<string, string>;
 }
@@ -50,16 +53,19 @@ export interface MailResendUpdate {
   api_key?: MailSecretUpdate;
 }
 
-export interface MailGmailUpdate {
+export interface MailSmtpUpdate {
+  host?: string;
+  port?: number;
+  tls?: boolean;
   user?: string;
   from_email?: string;
-  app_password?: MailSecretUpdate;
+  password?: MailSecretUpdate;
 }
 
 export interface MailingConfigUpdate {
   active_provider?: MailProvider | null;
   resend?: MailResendUpdate;
-  gmail?: MailGmailUpdate;
+  smtp?: MailSmtpUpdate;
 }
 
 export interface MailingTestResult {

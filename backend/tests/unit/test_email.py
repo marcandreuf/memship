@@ -36,11 +36,11 @@ def _provider(name, values, sources=None):
     )
 
 
-def _resolved(active, resend_values=None, gmail_values=None, gmail_sources=None):
+def _resolved(active, resend_values=None, smtp_values=None, smtp_sources=None):
     return ResolvedMailing(
         active=active,
         resend=_provider("resend", resend_values or {}),
-        gmail=_provider("gmail", gmail_values or {}, gmail_sources),
+        smtp=_provider("smtp", smtp_values or {}, smtp_sources),
     )
 
 
@@ -54,12 +54,13 @@ class TestEmailTransport:
 
     @patch("app.core.email._resolve_transport")
     @patch("app.core.email.smtplib.SMTP")
-    def test_send_email_gmail_smtp_success(self, mock_smtp_class, mock_resolve):
+    def test_send_email_smtp_success(self, mock_smtp_class, mock_resolve):
         mock_resolve.return_value = _resolved(
-            active="gmail",
-            gmail_values={
+            active="smtp",
+            smtp_values={
+                "host": "smtp.gmail.com",
                 "user": "club@gmail.com",
-                "app_password": "app-pw",
+                "password": "app-pw",
                 "from_email": "club@gmail.com",
             },
         )
@@ -69,7 +70,7 @@ class TestEmailTransport:
         result = send_email("test@example.com", "Test Subject", "<p>Hello</p>")
 
         assert result is True
-        # UI-configured Gmail pins Google's SMTP endpoint.
+        # The stored host reaches smtplib, on the default port.
         mock_smtp_class.assert_called_once_with("smtp.gmail.com", 587)
         mock_server.starttls.assert_called_once()
         mock_server.login.assert_called_once_with("club@gmail.com", "app-pw")
@@ -79,8 +80,8 @@ class TestEmailTransport:
     @patch("app.core.email.smtplib.SMTP")
     def test_send_email_smtp_failure(self, mock_smtp_class, mock_resolve):
         mock_resolve.return_value = _resolved(
-            active="gmail",
-            gmail_values={"user": "club@gmail.com", "app_password": "pw"},
+            active="smtp",
+            smtp_values={"host": "smtp.gmail.com", "user": "club@gmail.com", "password": "pw"},
         )
         mock_smtp_class.side_effect = ConnectionRefusedError("Connection refused")
 
@@ -101,7 +102,7 @@ class TestEmailTransport:
 class TestTransportHealthRecording:
     """#338: every real send reports its outcome for the settings screen."""
 
-    GMAIL = {"user": "club@gmail.com", "app_password": "pw"}
+    SMTP = {"host": "smtp.club.example", "user": "club@club.example", "password": "pw"}
 
     @pytest.fixture
     def recorded(self, monkeypatch):
@@ -115,31 +116,31 @@ class TestTransportHealthRecording:
     @patch("app.core.email._resolve_transport")
     @patch("app.core.email.smtplib.SMTP")
     def test_delivered_send_is_recorded(self, mock_smtp_class, mock_resolve, recorded):
-        mock_resolve.return_value = _resolved(active="gmail", gmail_values=self.GMAIL)
+        mock_resolve.return_value = _resolved(active="smtp", smtp_values=self.SMTP)
 
         assert send_email("test@example.com", "Test", "<p>body</p>") is True
-        assert recorded == [("gmail", None)]
+        assert recorded == [("smtp", None)]
 
     @patch("app.core.email._resolve_transport")
     @patch("app.core.email.smtplib.SMTP")
     def test_refused_send_is_recorded_and_classified(self, mock_smtp_class, mock_resolve, recorded):
-        mock_resolve.return_value = _resolved(active="gmail", gmail_values=self.GMAIL)
+        mock_resolve.return_value = _resolved(active="smtp", smtp_values=self.SMTP)
         mock_smtp_class.return_value.__enter__.return_value.login.side_effect = (
             smtplib.SMTPAuthenticationError(535, b"bad")
         )
 
         assert send_email("test@example.com", "Test", "<p>body</p>") is False
-        assert recorded == [("gmail", EmailFailure.INVALID_CREDENTIALS)]
+        assert recorded == [("smtp", EmailFailure.INVALID_CREDENTIALS)]
 
     @patch("app.core.email._resolve_transport")
     @patch("app.core.email.smtplib.SMTP")
     def test_raising_caller_still_sees_the_error(self, mock_smtp_class, mock_resolve, recorded):
-        mock_resolve.return_value = _resolved(active="gmail", gmail_values=self.GMAIL)
+        mock_resolve.return_value = _resolved(active="smtp", smtp_values=self.SMTP)
         mock_smtp_class.side_effect = ConnectionRefusedError("down")
 
         with pytest.raises(ConnectionRefusedError):
             send_email("test@example.com", "Test", "<p>body</p>", raise_errors=True)
-        assert recorded == [("gmail", EmailFailure.TRANSPORT_UNAVAILABLE)]
+        assert recorded == [("smtp", EmailFailure.TRANSPORT_UNAVAILABLE)]
 
     @patch("app.core.email._resolve_transport")
     def test_skipped_send_records_nothing(self, mock_resolve, recorded):
@@ -153,7 +154,7 @@ class TestTransportHealthRecording:
         session.execute.side_effect = RuntimeError("lock timeout")
         monkeypatch.setattr(email_module.db_session, "SessionLocal", lambda: session)
 
-        real_record_send_outcome(_resolved(active="gmail"), "gmail", None)
+        real_record_send_outcome(_resolved(active="smtp"), "smtp", None)
 
         session.rollback.assert_called_once()
         session.close.assert_called_once()
