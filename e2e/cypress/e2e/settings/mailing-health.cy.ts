@@ -17,10 +17,13 @@ const view = (resendHealth: ReturnType<typeof health>) => ({
     ready: true,
     health: resendHealth,
   },
-  gmail: {
+  smtp: {
+    host: "",
+    port: 587,
+    tls: true,
     user: "",
     from_email: "",
-    app_password: { configured: false, last4: null },
+    password: { configured: false, last4: null },
     ready: false,
     health: health("unverified"),
   },
@@ -43,7 +46,7 @@ describe("Mailing provider health", () => {
       .should("have.attr", "data-status", "unverified")
       .and("contain.text", "Not verified");
     // A provider without credentials has nothing to verify.
-    cy.get('[data-testid="mailing-gmail-health"]').should("not.exist");
+    cy.get('[data-testid="mailing-smtp-health"]').should("not.exist");
   });
 
   it("reports working credentials", () => {
