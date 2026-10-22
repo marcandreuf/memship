@@ -115,15 +115,16 @@ Memship needs to send transactional email, and this is **not optional**: passwor
 verification and payment reminders all go through it, and a member cannot sign in for the first
 time until it works.
 
-Three options. Resend and Gmail can be configured from the Settings screen or from `.env`; any
-other SMTP server is set in `.env` only, as the Settings screen has no field for a server address:
+Three options, configured from the Settings screen or from `.env`:
 
 - **Resend** — an email API. Free tier: 3,000 messages a month, 3 domains, but **100 a day**. That
   daily cap is the one that bites: sending reminders to more than 100 members in a single run
   exceeds it. The paid tier is 20 USD a month.
 - **Gmail** — an ordinary Google account with an app password. Google applies its own daily sending
   limits.
-- **Any SMTP server** — including the one that comes with the association's existing mail hosting.
+- **Any SMTP server** — including the one that comes with the association's existing mail hosting,
+  as long as it accepts STARTTLS, usually on port 587. A server reachable only on port 465 is not
+  supported.
 
 [Email delivery](../self-hosting/email.md) covers all three, including the DNS records Resend needs.
 

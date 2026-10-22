@@ -21,7 +21,7 @@ You do not need to edit any file or restart anything. Every credential in this g
 4. [Mailing](#4-mailing)
    - [How it works](#41-how-it-works)
    - [Resend: obtaining the credentials](#42-resend-obtaining-the-credentials)
-   - [Gmail: obtaining the credentials](#43-gmail-obtaining-the-credentials)
+   - [SMTP: your server's details, or Gmail](#43-smtp-your-servers-details-or-gmail)
    - [Filling in the screen, testing and activating](#44-filling-in-the-screen-testing-and-activating)
    - [Mailing troubleshooting](#45-mailing-troubleshooting)
 5. [Registration options that go with these integrations](#5-registration-options-that-go-with-these-integrations)
@@ -45,7 +45,7 @@ You do not need to edit any file or restart anything. Every credential in this g
 | Google sign-in | A Google account (Google Cloud Console) | Free |
 | Apple sign-in | An **Apple Developer Program** membership | Paid annual fee |
 | Resend mail | A Resend account + a domain you control | Free tier available |
-| Gmail mail | A Google account with 2-Step Verification on | Free |
+| SMTP mail | Your existing mail hosting's SMTP details, or a Google account with 2-Step Verification on for Gmail | Usually already paid for / Free |
 
 You do not have to configure everything. Sign-in providers are optional (members can always use email + password). Mail is effectively required — without it, verification, approval and receipt emails are not delivered.
 
@@ -53,7 +53,7 @@ You do not have to configure everything. Sign-in providers are optional (members
 
 ## 2. How secrets are protected
 
-Some of the values you type here are real secrets: a Google client secret, an Apple private key, a Resend API key, a Gmail app password.
+Some of the values you type here are real secrets: a Google client secret, an Apple private key, a Resend API key, an SMTP password (for Gmail, an app password).
 
 - They are **encrypted before being stored** in the database.
 - They are **never sent back to the browser**. Once a secret is stored, the field stops being an input: it renders as text — `••••` plus the last four characters, and the word *stored* — beside a **Replace** button. This is expected; there is no way to read a stored secret back out of the interface, and no box for a password manager to fill, which is the point. A filled box used to hide the only sign that a value was already on file, and saving then sent whatever the browser had injected over a working credential.
@@ -213,9 +213,9 @@ memship sends email for registration verification, approval/rejection notices, p
 Two providers are supported:
 
 - **Resend** — a managed sending service, used through its API. Better deliverability, higher volume, needs a domain you control.
-- **Gmail** — a normal Gmail (or Google Workspace) account used over SMTP. Quickest to set up, low daily limits.
+- **SMTP server** — any mail server that accepts SMTP: the mail hosting your organisation already pays for, a sending service, or a Gmail account. Nothing to sign up for if you already have mail hosting.
 
-**Exactly one provider is active at a time.** The screen has a single *Active provider* selector with three positions — **None / Resend / Gmail**. There are no per-provider on/off switches, so the "both enabled" state cannot happen. You can keep credentials for both on file and switch between them at any moment.
+**Exactly one provider is active at a time.** The screen has a single *Active provider* selector with three positions — **None / Resend / SMTP server**. There are no per-provider on/off switches, so the "both enabled" state cannot happen. You can keep credentials for both on file and switch between them at any moment.
 
 With the active provider set to **None**, memship sends nothing at all. Emails are silently skipped (they are logged, not queued for later). Members will not receive verification links, approval notices or receipts, so treat *None* as a temporary state.
 
@@ -235,20 +235,29 @@ You need an **API key**, and ideally a **From address** on a domain you have ver
 
 > Just testing? Resend lets you send from `onboarding@resend.dev` without any domain, but only to the email address that owns the Resend account. Fine for a test send, not for real use.
 
-### 4.3 Gmail: obtaining the credentials
+### 4.3 SMTP: your server's details, or Gmail
 
-You need the **Gmail address** and a Google **app password** — a 16-character password generated for one application. Your normal account password will not work; Google blocks it.
+**Your own mail server.** Whoever provides your mail hosting publishes these values, usually under a heading like *SMTP*, *outgoing mail* or *email client setup*:
+
+- **Server** — e.g. `mail.myclub.org` or `smtp.yourprovider.com`.
+- **Port** — `587` in almost every case.
+- **Encryption** — *STARTTLS*. Leave the switch on unless the provider says the server is unencrypted.
+- **User and password** — usually the full address of a mailbox and its password. Some providers issue a separate SMTP password; use that one if so. A relay that accepts mail from your server's address needs neither — leave both blank.
+- **From address** — the address members see. Most servers only accept an address of a mailbox you own; leave it blank to send as the user.
+
+**Port 465 is not supported.** It encrypts from the first byte instead of using STARTTLS, and memship speaks STARTTLS. Nearly every provider that offers 465 also offers 587, so use 587.
+
+**Gmail.** Press **Use Gmail's settings** on the card: it fills in `smtp.gmail.com`, port `587` and STARTTLS. The user is the **Gmail address**, and the password is a Google **app password** — a 16-character password generated for one application. Your normal account password will not work; Google blocks it.
 
 1. The account must have **2-Step Verification enabled with a phone number or an authenticator app**: [myaccount.google.com/security](https://myaccount.google.com/security) → *2-Step Verification*. App passwords do not exist without it.
    - **A passkey or security key alone is not enough.** Google reports 2-Step Verification as on, but the app-password page stays unavailable. Add a second method — a phone number (SMS/voice) or Google Authenticator — alongside the passkey; you can keep the passkey.
-   - The Gmail route is **not available at all**, with no workaround, when the account is enrolled in **Advanced Protection**, or when it is a **work, school or other organisation account** whose administrator does not allow app passwords. Use Resend, or a different Google account.
+   - The Gmail route is **not available at all**, with no workaround, when the account is enrolled in **Advanced Protection**, or when it is a **work, school or other organisation account** whose administrator does not allow app passwords. Use Resend, your own mail server, or a different Google account.
 2. Go to **[myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)**.
 3. Give the app a name (e.g. `memship`) and create it.
 4. Google shows a 16-character password such as `abcd efgh ijkl mnop`. Copy it — like every secret here, it is displayed once. Spaces are cosmetic; with or without them works.
 
 Things to know about the Gmail route:
 
-- The server, port and encryption are fixed (`smtp.gmail.com`, port `587`, TLS). You do not enter them, and they cannot be changed from this screen.
 - **Sending limits:** roughly 500 messages per day for a free Gmail account, ~2,000 for Google Workspace. Exceeding them gets the account temporarily blocked for sending. A club with a few hundred members doing a mass communication can hit this.
 - Gmail **rewrites the From address** to the account's own address unless the alternative address is registered in that Gmail account ("Send mail as"). So the *From address* field is best left blank, in which case the Gmail address is used.
 - On a work, school or Google Workspace account, app passwords exist only if that organisation's administrator allows them. If they do not, this route is not available for that account — see step 1.
@@ -259,7 +268,7 @@ Recommended order — configure, **test**, then activate:
 
 1. Fill in the provider card:
    - **Resend**: *API key* (secret) and *From address*.
-   - **Gmail**: *Gmail address*, *App password* (secret), and optionally *From address* (leave blank to send as the Gmail address).
+   - **SMTP server**: *Server*, *Port*, the *STARTTLS* switch, *SMTP user*, *Password* (secret), and *From address* — or press **Use Gmail's settings** first and then add the Gmail address and app password. The server and a sender (a user or a From address) are required.
 2. Press **Save**. The card badge becomes **Ready**.
 3. Press **Send test** on that card. A test message is sent **through that provider specifically**, even if it is not the active one — that is the whole point of the button: verify credentials before switching real traffic to them. It goes to your own address (the signed-in superadmin's email).
    - Success → a "Test email sent" confirmation. Check your inbox, and your spam folder.
@@ -289,7 +298,8 @@ Switching providers later is a two-click operation: select the other provider, s
 
 | Symptom | Cause and fix |
 | ------- | ------------- |
-| Test fails with an SMTP authentication error (`535`, "Username and Password not accepted") | The Gmail app password is wrong, or was revoked, or 2-Step Verification was turned off (which invalidates all app passwords). Generate a new one. |
+| Test fails with an SMTP authentication error (`535`, "Username and Password not accepted") | The user or password is wrong. On Gmail: the app password is wrong, or was revoked, or 2-Step Verification was turned off (which invalidates all app passwords) — generate a new one. On your own server: check whether the provider issues a separate SMTP password. |
+| Test fails: connection refused, timed out, or the connection drops straight away | Wrong server or port, or the server only listens on 465 (not supported — use 587). Some hosting networks also block outgoing port 587; ask the server's administrator. |
 | [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords) says *"The setting that you are looking for is not available for your account."* | No app password can be created for this account. Either 2-Step Verification is enrolled only with passkeys/security keys (add a phone number or authenticator app and reload the page), or the account has Advanced Protection, or it is a work/school account whose administrator blocks app passwords (no workaround — use Resend or another account). See 4.3 step 1. |
 | Test fails: Resend "domain is not verified" / 403 | The From address is not on a domain verified in Resend, or the DNS records have not propagated. Check *Domains* in Resend. |
 | Test fails: Resend 401 / "API key is invalid" | Key mistyped, revoked, or created without sending permission. Create a new key. |
@@ -297,7 +307,7 @@ Switching providers later is a two-click operation: select the other provider, s
 | Nothing is being sent at all, no errors anywhere | Active provider is **None**. Select a provider and save. |
 | Members stop receiving mail after a working period | Gmail daily limit reached, or the app password was revoked; on Resend, a suspended domain. The provider card turns **Failing** and gives a short reason. Use **Send test** to get the actual error. |
 | The label says "from environment" | That value comes from the installation's `.env` file. It works, but anything you type in the screen takes precedence for that field. |
-| Emails arrive from an address you did not configure | Gmail rewrote the From to the account address (expected), or an env-file value is still supplying it. |
+| Emails arrive from an address you did not configure | Gmail rewrote the From to the account address (expected), your server only allows sending as the mailbox you signed in with, or an env-file value is still supplying it. |
 
 ---
 
@@ -332,9 +342,12 @@ Everything on the Integrations screen can also be supplied through the installat
 | Apple → Private key (.p8) | `APPLE_PRIVATE_KEY` |
 | Resend → API key | `RESEND_API_KEY` |
 | Resend → From address | `RESEND_FROM_EMAIL`, then `SMTP_FROM` |
-| Gmail → Gmail address | `SMTP_USER` |
-| Gmail → App password | `SMTP_PASSWORD` |
-| Gmail → From address | `SMTP_FROM` |
+| SMTP server → Server | `SMTP_HOST` |
+| SMTP server → Port | `SMTP_PORT` |
+| SMTP server → STARTTLS | `SMTP_TLS` |
+| SMTP server → SMTP user | `SMTP_USER` |
+| SMTP server → Password | `SMTP_PASSWORD` |
+| SMTP server → From address | `SMTP_FROM` |
 | Backend URL (read-only) | `BACKEND_PUBLIC_URL` |
 | — (secret encryption key) | `MEMSHIP_SECRET_KEY`, `SECRETS_KEY_FILE` |
 
@@ -367,11 +380,14 @@ All fields of a provider are required before it can be switched on.
 | -------- | ----- | ------ | -------- | ----- |
 | Resend | API key | **yes** | yes | Starts with `re_`; shown once at creation. |
 | Resend | From address | no | no | Must be on a domain verified in Resend. |
-| Gmail | Gmail address | no | yes | The full address, e.g. `club@gmail.com`. |
-| Gmail | App password | **yes** | yes | 16 characters, from Google app passwords. Not the account password. |
-| Gmail | From address | no | no | Leave blank to send as the Gmail address. |
+| SMTP server | Server | no | yes | e.g. `mail.myclub.org`; `smtp.gmail.com` for Gmail. |
+| SMTP server | Port | no | no | Defaults to `587`. Port 465 is not supported. |
+| SMTP server | STARTTLS | no | no | On by default. |
+| SMTP server | SMTP user | no | see notes | Usually a mailbox address; for Gmail, the Gmail address. |
+| SMTP server | Password | **yes** | no | For Gmail, a 16-character app password, not the account password. |
+| SMTP server | From address | no | see notes | Leave blank to send as the user. |
 
-Server, port and encryption for Gmail are fixed at `smtp.gmail.com:587` with TLS and are not configurable.
+An SMTP server needs a sender: a user or a From address. **Use Gmail's settings** fills in the server, port and STARTTLS for a Gmail account.
 
 ---
 

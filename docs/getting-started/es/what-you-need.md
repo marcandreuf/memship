@@ -120,16 +120,16 @@ Memship necesita enviar correo transaccional, y esto **no es opcional**: el rest
 contraseña, la verificación de la dirección y los avisos de pago van todos por ahí, y un socio no
 puede entrar por primera vez hasta que funcione.
 
-Tres opciones. Resend y Gmail se configuran desde la pantalla de Ajustes o desde el `.env`;
-cualquier otro servidor SMTP se indica solo en el `.env`, porque la pantalla de Ajustes no tiene
-campo para la dirección del servidor:
+Tres opciones, configurables desde la pantalla de Ajustes o desde el `.env`:
 
 - **Resend** — una API de correo. Plan gratuito: 3.000 mensajes al mes y 3 dominios, pero **100 al
   día**. Ese límite diario es el que molesta: mandar avisos a más de 100 socios de una tirada lo
   supera. El plan de pago son 20 USD al mes.
 - **Gmail** — una cuenta de Google normal con una contraseña de aplicación. Google aplica sus
   propios límites diarios de envío.
-- **Cualquier servidor SMTP** — incluido el del alojamiento de correo que ya tenga la entidad.
+- **Cualquier servidor SMTP** — incluido el del alojamiento de correo que ya tenga la entidad,
+  siempre que acepte STARTTLS, normalmente en el puerto 587. Un servidor accesible solo por el
+  puerto 465 no está soportado.
 
 [Envío de correo](../../self-hosting/email.md) cubre las tres, incluidos los registros DNS que
 necesita Resend.

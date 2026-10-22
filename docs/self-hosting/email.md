@@ -10,15 +10,19 @@ anything, especially on an installation that is already running.
 
 | Where | Providers | Best for |
 |-------|-----------|----------|
-| **Settings → Integrations → Mailing** | Resend, Gmail | Almost everyone. Takes effect on the next request, no restart. |
-| **`.env`** | Resend, any SMTP server | Preseeding credentials at deploy time, and installations older than the settings screen. The only way to use an SMTP server that is not Gmail. |
+| **Settings → Integrations → Mailing** | Resend, any SMTP server (Gmail is a preset) | Almost everyone. Takes effect on the next request, no restart. |
+| **`.env`** | Resend, any SMTP server | Preseeding credentials at deploy time, and installations older than the settings screen. |
+
+SMTP means a server that accepts **STARTTLS**, usually on port 587, or no encryption at all.
+A server reachable only on port 465, which encrypts from the first byte, is not supported.
 
 ## Option A — the settings screen
 
 Sign in as superadmin and go to **Settings → Integrations → Mailing**.
 
-The full walkthrough — obtaining the credentials, the DNS records Resend needs, the Gmail app
-password, the **Send test** button, and a troubleshooting table — is in the
+The full walkthrough — obtaining the credentials, the DNS records Resend needs, the details of
+your SMTP server (or a Gmail app password), the **Send test** button, and a troubleshooting
+table — is in the
 [Integrations setup guide, section 4](../admin-guide/integrations.md#4-mailing). Two points
 from it are worth repeating here because they are the ones that silently bite:
 
@@ -48,7 +52,7 @@ RESEND_API_KEY=re_your_key_here
 RESEND_FROM_EMAIL=noreply@yourdomain.org
 ```
 
-**SMTP** (any server — this is the only path for an SMTP host other than Gmail):
+**SMTP** (any server, Gmail included — for Gmail use `smtp.gmail.com` and an app password):
 
 ```bash
 SMTP_HOST=smtp.yourprovider.com
@@ -78,7 +82,20 @@ in the screen and later change `RESEND_API_KEY` in `.env`, the old key keeps sen
 field in the screen to fall back to the environment value.
 
 The screen marks fields it is reading from the environment with a **"from environment"** badge,
-which is the quickest way to see which source is live.
+which is the quickest way to see which source is live. Port and TLS always have a value, 587 and
+on, so they carry the badge only when `SMTP_PORT` or `SMTP_TLS` is actually set.
+
+**Upgrading from a version that offered "Gmail" as a provider:** it was always the SMTP
+transport, and is now called that. Mail keeps going where it went before:
+
+- An installation that set up Gmail in the screen becomes the SMTP provider with Google's server
+  (`smtp.gmail.com`, port 587, STARTTLS) saved explicitly. It does not start following
+  `SMTP_HOST`.
+- An installation configured only through `.env` keeps using its `SMTP_HOST`, and is now reported
+  as SMTP rather than Gmail.
+
+Either way, the card reads *Not verified* until the next email goes through, because its health
+record belonged to the old provider. It stays active meanwhile.
 
 ## Verify
 
