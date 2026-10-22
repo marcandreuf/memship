@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { CircleCheck, CircleHelp, Lock, Mail, Send, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -43,24 +44,42 @@ interface ProviderForm {
 }
 
 // Which fields each provider carries, which are secret, and which are required
-// for the provider to be activatable.
+// for the provider to be activatable. `sender` lists fields of which at least
+// one must be filled: SMTP sends as the From address, or else as the user.
 const PROVIDER_SCHEMA = {
   resend: {
     icon: "📧",
     fields: ["from_email"] as const,
     secrets: ["api_key"] as const,
     required: ["api_key"],
+    sender: [],
   },
-  gmail: {
+  smtp: {
     icon: "✉️",
-    fields: ["user", "from_email"] as const,
-    secrets: ["app_password"] as const,
-    required: ["user", "app_password"],
+    fields: ["host", "port", "tls", "user", "from_email"] as const,
+    secrets: ["password"] as const,
+    required: ["host"],
+    sender: ["from_email", "user"],
   },
 } as const;
 
 type ProviderName = keyof typeof PROVIDER_SCHEMA;
-const PROVIDERS: ProviderName[] = ["resend", "gmail"];
+const PROVIDERS: ProviderName[] = ["resend", "smtp"];
+
+// Gmail is a configuration of the SMTP provider, not a provider of its own.
+const GMAIL_PRESET = { host: "smtp.gmail.com", port: "587", tls: "true" };
+
+// The form keeps every field as text; the API takes port and TLS typed.
+function toPayloadValue(field: string, value: string): string | number | boolean {
+  if (field === "port") return Number(value);
+  if (field === "tls") return value === "true";
+  return value;
+}
+
+function validPort(value: string): boolean {
+  const port = Number(value);
+  return Number.isInteger(port) && port >= 1 && port <= 65535;
+}
 
 export function MailingSettings() {
   const t = useTranslations();
@@ -80,7 +99,7 @@ export function MailingSettings() {
       const schema = PROVIDER_SCHEMA[name];
       const view = data[name] as unknown as Record<string, unknown>;
       const fields: Record<string, string> = {};
-      for (const f of schema.fields) fields[f] = (view[f] as string) ?? "";
+      for (const f of schema.fields) fields[f] = String(view[f] ?? "");
       const secrets: Record<string, SecretInput> = {};
       for (const s of schema.secrets) {
         const status = view[s] as MailSecretStatus;
@@ -88,7 +107,7 @@ export function MailingSettings() {
       }
       return { fields, secrets };
     };
-    const next = { resend: build("resend"), gmail: build("gmail") };
+    const next = { resend: build("resend"), smtp: build("smtp") };
     setForms(next);
     setActive(data.active_provider);
     initialForms.current = JSON.parse(JSON.stringify(next));
@@ -119,6 +138,8 @@ export function MailingSettings() {
       const cleared = form.secrets[s].clear;
       if (cleared || (!status.configured && !typed)) return false;
     }
+    const sender = schema.sender as readonly string[];
+    if (sender.length && !sender.some((f) => form.fields[f])) return false;
     return true;
   }
 
@@ -151,7 +172,7 @@ export function MailingSettings() {
     const schema = PROVIDER_SCHEMA[name];
     const payload: Record<string, unknown> = {};
     for (const f of schema.fields) {
-      if (form.fields[f] !== initial.fields[f]) payload[f] = form.fields[f];
+      if (form.fields[f] !== initial.fields[f]) payload[f] = toPayloadValue(f, form.fields[f]);
     }
     for (const s of schema.secrets) {
       const input = form.secrets[s];
@@ -173,11 +194,16 @@ export function MailingSettings() {
       }
     }
 
+    if (!validPort(forms!.smtp.fields.port)) {
+      toast.error(t("settings.mailing.invalidPort"));
+      return;
+    }
+
     const body: MailingConfigUpdate = {};
     const r = buildProviderUpdate("resend");
-    const g = buildProviderUpdate("gmail");
+    const smtp = buildProviderUpdate("smtp");
     if (Object.keys(r).length) body.resend = r;
-    if (Object.keys(g).length) body.gmail = g;
+    if (Object.keys(smtp).length) body.smtp = smtp;
     if (active !== initialActive.current) body.active_provider = active;
 
     if (!Object.keys(body).length) {
@@ -305,11 +331,31 @@ export function MailingSettings() {
         <CardContent className="px-4 pb-3 pt-0 space-y-3">
           {view.ready && renderHealth(name)}
 
+          {name === "smtp" && (
+            <div className="space-y-0.5">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => update(name, { fields: { ...form.fields, ...GMAIL_PRESET } })}
+              >
+                {t("settings.mailing.gmailPreset")}
+              </Button>
+              <p className="text-[11px] text-muted-foreground">
+                {t("settings.mailing.gmailPresetHint")}
+              </p>
+            </div>
+          )}
+
           {schema.fields.map((f) => {
             const source = data!.sources[`${name}.${f}`];
+            const id = `mailing-${name}-${f}`;
+            const setField = (value: string) =>
+              update(name, { fields: { ...form.fields, [f]: value } });
             return (
               <div key={f} className="space-y-0.5">
-                <label className="text-xs font-medium flex items-center gap-2">
+                <label htmlFor={id} className="text-xs font-medium flex items-center gap-2">
                   {t(`settings.mailing.fields.${f}`)}
                   {source === "env" && (
                     <Badge variant="secondary" className="text-[10px]">
@@ -317,13 +363,29 @@ export function MailingSettings() {
                     </Badge>
                   )}
                 </label>
-                <Input
-                  className="h-8 font-mono text-xs"
-                  value={form.fields[f]}
-                  onChange={(e) =>
-                    update(name, { fields: { ...form.fields, [f]: e.target.value } })
-                  }
-                />
+                {f === "tls" ? (
+                  <>
+                    <Switch
+                      id={id}
+                      checked={form.fields[f] === "true"}
+                      onCheckedChange={(checked) => setField(checked ? "true" : "false")}
+                    />
+                    <p className="text-[11px] text-muted-foreground">
+                      {t("settings.mailing.tlsHint")}
+                    </p>
+                  </>
+                ) : (
+                  <Input
+                    id={id}
+                    className="h-8 font-mono text-xs"
+                    type={f === "port" ? "number" : "text"}
+                    inputMode={f === "port" ? "numeric" : undefined}
+                    min={f === "port" ? 1 : undefined}
+                    max={f === "port" ? 65535 : undefined}
+                    value={form.fields[f]}
+                    onChange={(e) => setField(e.target.value)}
+                  />
+                )}
               </div>
             );
           })}
@@ -358,9 +420,7 @@ export function MailingSettings() {
                   onChange={(value) => setSecret({ value })}
                 />
                 <p className="text-[11px] text-muted-foreground">
-                  {name === "gmail" && s === "app_password"
-                    ? t("settings.mailing.appPasswordHint")
-                    : t("settings.mailing.secretHint")}
+                  {t("settings.mailing.secretHint")}
                   {status.configured && (
                     <button
                       type="button"
@@ -400,7 +460,7 @@ export function MailingSettings() {
       )}
 
       {/* Active-provider selector — the mutual-exclusion control. Exactly one of
-          None / Resend / Gmail is active; switching to a provider needs its
+          None / Resend / SMTP is active; switching to a provider needs its
           saved credentials to have passed a send (see activationBlocker). */}
       <Card>
         <CardContent className="px-4 py-3 space-y-2">
@@ -409,7 +469,7 @@ export function MailingSettings() {
             <span className="text-sm font-medium">{t("settings.mailing.activeProvider")}</span>
           </div>
           <div className="inline-flex gap-1 rounded-lg border bg-muted p-1">
-            {([null, "resend", "gmail"] as (MailProvider | null)[]).map((opt) => {
+            {([null, ...PROVIDERS] as (MailProvider | null)[]).map((opt) => {
               const blocker = opt === null ? null : activationBlocker(opt);
               const disabled = blocker !== null;
               const label =

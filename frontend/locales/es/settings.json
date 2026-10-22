@@ -209,11 +209,11 @@
       "description": "Elige y configura el proveedor con el que se envían los correos. Solo puede haber uno activo a la vez.",
       "providers": {
         "resend": "Resend",
-        "gmail": "Gmail"
+        "smtp": "Servidor SMTP"
       },
       "hints": {
         "resend": "Entrega gestionada mediante la API de Resend.",
-        "gmail": "Envío por SMTP con una cuenta de Gmail y una contraseña de aplicación."
+        "smtp": "Cualquier servidor SMTP: el alojamiento de correo de la entidad, un servicio de envío o una cuenta de Gmail."
       },
       "activeProvider": "Proveedor activo",
       "oneAtATime": "Solo se puede activar un proveedor a la vez.",
@@ -224,10 +224,16 @@
       "fields": {
         "api_key": "Clave de API",
         "from_email": "Correo del remitente",
-        "user": "Dirección de Gmail",
-        "app_password": "Contraseña de aplicación"
+        "host": "Servidor",
+        "port": "Puerto",
+        "tls": "Cifrar con STARTTLS",
+        "user": "Usuario SMTP",
+        "password": "Contraseña"
       },
-      "appPasswordHint": "Usa una contraseña de aplicación de Google, no la contraseña de la cuenta. Déjalo en blanco para mantener la guardada.",
+      "gmailPreset": "Usar la configuración de Gmail",
+      "gmailPresetHint": "Rellena smtp.gmail.com, el puerto 587 y STARTTLS. Gmail necesita una contraseña de aplicación, no la de la cuenta.",
+      "tlsHint": "Déjalo activado salvo que tu servidor indique lo contrario. El puerto 465, que cifra desde el primer byte, no está soportado: usa el 587.",
+      "invalidPort": "El puerto debe ser un número entre 1 y 65535.",
       "secretHint": "Déjalo en blanco para mantener el valor guardado; introduce uno nuevo para reemplazarlo.",
       "fromEnv": "del entorno",
       "notConfigured": "Sin configurar",

@@ -209,11 +209,11 @@
       "description": "Tria i configura el proveïdor amb què s'envien els correus. Només n'hi pot haver un d'actiu alhora.",
       "providers": {
         "resend": "Resend",
-        "gmail": "Gmail"
+        "smtp": "Servidor SMTP"
       },
       "hints": {
         "resend": "Lliurament gestionat mitjançant l'API de Resend.",
-        "gmail": "Enviament per SMTP amb un compte de Gmail i una contrasenya d'aplicació."
+        "smtp": "Qualsevol servidor SMTP: l'allotjament de correu de l'entitat, un servei d'enviament o un compte de Gmail."
       },
       "activeProvider": "Proveïdor actiu",
       "oneAtATime": "Només es pot activar un proveïdor alhora.",
@@ -224,10 +224,16 @@
       "fields": {
         "api_key": "Clau d'API",
         "from_email": "Correu del remitent",
-        "user": "Adreça de Gmail",
-        "app_password": "Contrasenya d'aplicació"
+        "host": "Servidor",
+        "port": "Port",
+        "tls": "Xifrar amb STARTTLS",
+        "user": "Usuari SMTP",
+        "password": "Contrasenya"
       },
-      "appPasswordHint": "Fes servir una contrasenya d'aplicació de Google, no la del compte. Deixa-ho en blanc per mantenir la desada.",
+      "gmailPreset": "Fer servir la configuració de Gmail",
+      "gmailPresetHint": "Omple smtp.gmail.com, el port 587 i STARTTLS. Gmail necessita una contrasenya d'aplicació, no la del compte.",
+      "tlsHint": "Deixa-ho activat tret que el teu servidor indiqui el contrari. El port 465, que xifra des del primer byte, no està suportat: fes servir el 587.",
+      "invalidPort": "El port ha de ser un número entre 1 i 65535.",
       "secretHint": "Deixa-ho en blanc per mantenir el valor desat; introdueix-ne un de nou per reemplaçar-lo.",
       "fromEnv": "de l'entorn",
       "notConfigured": "Sense configurar",
