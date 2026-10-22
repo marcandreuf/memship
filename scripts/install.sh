@@ -242,6 +242,12 @@ BACKEND_PUBLIC_URL=$PUBLIC_URL
 # Email is disabled until one of these is filled in. Without it, registration,
 # receipt and announcement emails are dropped silently. Fill in EITHER the
 # Resend key OR the SMTP block — either transport sends every email.
+#
+# The sending address is left blank on purpose. It is usually on the domain
+# your organisation already sends mail from, not on this site's hostname, and
+# it needs your mail provider's DNS records on that domain. See "Email is a
+# separate domain decision" in docs/self-hosting/domain-and-dns.md. SMTP_FROM
+# is also Resend's sender when RESEND_FROM_EMAIL is blank.
 RESEND_API_KEY=
 RESEND_FROM_EMAIL=
 
@@ -249,7 +255,7 @@ SMTP_HOST=
 SMTP_PORT=587
 SMTP_USER=
 SMTP_PASSWORD=
-SMTP_FROM=noreply@${DOMAIN:-memship.local}
+SMTP_FROM=
 SMTP_TLS=true
 
 # Single sign-on (optional). A provider's button appears only once configured.
@@ -335,6 +341,14 @@ restore once. A backup you have never restored is a guess.
 Until a transport is set, registration, password-reset and receipt emails are
 **dropped silently**. Fill in either the Resend key or the SMTP block in
 \`.env\`, or configure it from Settings. See \`docs/self-hosting/email.md\`.
+
+The installer leaves the sending address blank. Choose it before you
+configure the provider: it is usually on the domain your organisation already
+sends mail from (\`no-reply@myclub.org\`), not on this site's hostname, and the
+provider's SPF and DKIM records go on **that** domain. A domain has one SPF
+record — add the provider's \`include:\` to the one that exists rather than
+publishing a second. See "Email is a separate domain decision" in
+\`docs/self-hosting/domain-and-dns.md\`.
 
 ## Where things are
 

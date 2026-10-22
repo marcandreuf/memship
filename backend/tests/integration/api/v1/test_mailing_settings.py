@@ -21,6 +21,9 @@ from app.domains.mailing.mailing_config import (
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Person
 
+# Resend has no account to send as, so a key alone is not a usable provider.
+SENDER = build_field_node("noreply@club.example", False)
+
 MAIL_ENV_VARS = (
     "RESEND_API_KEY",
     "RESEND_FROM_EMAIL",
@@ -154,7 +157,42 @@ class TestResolver:
             "resend": {"api_key": {"value": "k", "secret": False}},
         }
         db.flush()
+        assert resolve_mailing_config(db).active is None
+
+        org.mailing_config = {
+            "active_provider": "resend",
+            "resend": {"api_key": {"value": "k", "secret": False}, "from_email": SENDER},
+        }
+        db.flush()
         assert resolve_mailing_config(db).active == "resend"
+
+    def test_resend_needs_a_sender(self, db, monkeypatch):
+        """#439: a Resend key with no From address is refused on every send."""
+        _clear_env(monkeypatch)
+        org = _org(db)
+        org.mailing_config = {"resend": {"api_key": {"value": "k", "secret": False}}}
+        db.flush()
+
+        resend = resolve_mailing_config(db).resend
+        assert resend.ready is False
+        assert resend.sources["from_email"] == "none"
+
+    def test_resend_sender_falls_back_to_smtp_from(self, db, monkeypatch):
+        from app.core.config import settings
+
+        _clear_env(monkeypatch)
+        monkeypatch.setattr(settings, "SMTP_FROM", "noreply@club.example", raising=False)
+        org = _org(db)
+        org.mailing_config = {"resend": {"api_key": {"value": "k", "secret": False}}}
+        db.flush()
+
+        resend = resolve_mailing_config(db).resend
+        assert resend.get("from_email") == "noreply@club.example"
+        assert resend.sources["from_email"] == "env"
+        assert resend.ready is True
+
+        monkeypatch.setattr(settings, "RESEND_FROM_EMAIL", "club@resend.example", raising=False)
+        assert resolve_mailing_config(db).resend.get("from_email") == "club@resend.example"
 
     def test_stored_smtp_endpoint_wins_over_env(self, db, monkeypatch):
         from app.core.config import settings
@@ -320,7 +358,7 @@ class TestPutMailingEndpoint:
         _org(db)
         self._admin(client, db, "put-act")
 
-        client.put("/api/v1/settings/mailing", json={"resend": {"api_key": {"value": "re_key"}}})
+        client.put("/api/v1/settings/mailing", json={"resend": {"api_key": {"value": "re_key"}, "from_email": "noreply@club.example"}})
         self._verify(client, "resend")
         resp = client.put("/api/v1/settings/mailing", json={"active_provider": "resend"})
         assert resp.status_code == 200
@@ -330,7 +368,7 @@ class TestPutMailingEndpoint:
         _clear_env(monkeypatch)
         _set_key(monkeypatch)
         org = _org(db)
-        org.mailing_config = {"resend": {"api_key": build_field_node("re_key", True)}}
+        org.mailing_config = {"resend": {"api_key": build_field_node("re_key", True), "from_email": SENDER}}
         db.flush()
         self._admin(client, db, "put-untested")
 
@@ -343,7 +381,7 @@ class TestPutMailingEndpoint:
         _clear_env(monkeypatch)
         _set_key(monkeypatch)
         org = _org(db)
-        org.mailing_config = {"resend": {"api_key": build_field_node("re_key", True)}}
+        org.mailing_config = {"resend": {"api_key": build_field_node("re_key", True), "from_email": SENDER}}
         db.flush()
         self._admin(client, db, "put-failing")
 
@@ -362,7 +400,7 @@ class TestPutMailingEndpoint:
         _clear_env(monkeypatch)
         _set_key(monkeypatch)
         org = _org(db)
-        org.mailing_config = {"resend": {"api_key": build_field_node("re_old", True)}}
+        org.mailing_config = {"resend": {"api_key": build_field_node("re_old", True), "from_email": SENDER}}
         db.flush()
         self._admin(client, db, "put-swap")
         self._verify(client, "resend")
@@ -473,7 +511,7 @@ class TestPutMailingEndpoint:
 
         client.put(
             "/api/v1/settings/mailing",
-            json={"resend": {"api_key": {"value": "re_supersecret"}}},
+            json={"resend": {"api_key": {"value": "re_supersecret"}, "from_email": "noreply@club.example"}},
         )
         self._verify(client, "resend")
         client.put("/api/v1/settings/mailing", json={"active_provider": "resend"})
@@ -515,7 +553,7 @@ class TestMailingTestEndpoint:
         _set_key(monkeypatch)
         org = _org(db)
         # Resend has creds but is NOT the active provider.
-        org.mailing_config = {"resend": {"api_key": build_field_node("re_key", True)}}
+        org.mailing_config = {"resend": {"api_key": build_field_node("re_key", True), "from_email": SENDER}}
         db.flush()
         self._admin(client, db, "test-send")
 
@@ -538,7 +576,7 @@ class TestMailingTestEndpoint:
         _clear_env(monkeypatch)
         _set_key(monkeypatch)
         org = _org(db)
-        org.mailing_config = {"resend": {"api_key": build_field_node("re_key", True)}}
+        org.mailing_config = {"resend": {"api_key": build_field_node("re_key", True), "from_email": SENDER}}
         db.flush()
         self._admin(client, db, "test-fail")
 
@@ -565,7 +603,7 @@ class TestMailTransportHealth:
         _clear_env(monkeypatch)
         _set_key(monkeypatch)
         org = _org(db)
-        org.mailing_config = {"resend": {"api_key": build_field_node(key, True)}}
+        org.mailing_config = {"resend": {"api_key": build_field_node(key, True), "from_email": SENDER}}
         db.flush()
         return org
 
@@ -652,6 +690,7 @@ class TestMailTransportHealth:
         _clear_env(monkeypatch)
         _org(db)
         monkeypatch.setattr(settings, "RESEND_API_KEY", "env-key-1", raising=False)
+        monkeypatch.setattr(settings, "RESEND_FROM_EMAIL", "noreply@club.example", raising=False)
         self._admin(client, db, "health-env")
         client.post("/api/v1/settings/mailing/test", json={"provider": "resend"})
         assert self._health(client)["status"] == "ok"

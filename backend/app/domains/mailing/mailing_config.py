@@ -48,14 +48,17 @@ class FieldSpec:
     name: str
     env: str
     secret_default: bool
+    fallback_env: str | None = None
 
 
 # Field → env-var mapping mirrors the existing mail settings one-to-one so the
 # fallback is exact. ``secret_default`` marks which fields encrypt by default.
+# Resend's sender falls back to ``SMTP_FROM``, the one address both transports
+# have always shared, so an install that set only that keeps its sender.
 PROVIDER_FIELDS: dict[str, list[FieldSpec]] = {
     "resend": [
         FieldSpec("api_key", "RESEND_API_KEY", True),
-        FieldSpec("from_email", "RESEND_FROM_EMAIL", False),
+        FieldSpec("from_email", "RESEND_FROM_EMAIL", False, fallback_env="SMTP_FROM"),
     ],
     "smtp": [
         FieldSpec("host", "SMTP_HOST", False),
@@ -70,29 +73,30 @@ PROVIDER_FIELDS: dict[str, list[FieldSpec]] = {
 # The fields that must resolve non-empty for a provider to be usable. SMTP also
 # needs a sender, which may be the from address or the account itself — see
 # ``ResolvedProvider.ready``. User and password are optional: a relay that
-# accepts mail from the server's address needs neither.
+# accepts mail from the server's address needs neither. Resend has no account
+# to send as, so without a from address every send is refused (#439).
 PROVIDER_REQUIRED = {
-    "resend": ["api_key"],
+    "resend": ["api_key", "from_email"],
     "smtp": ["host"],
 }
 
 
-def _env_value(spec: FieldSpec) -> tuple[str, str]:
+def _env_value(env: str) -> tuple[str, str]:
     """Return ``(value, source)`` for a field's env fallback.
 
     Port and TLS are typed settings with defaults, so they always have a value.
     When it is only the declared default, the source is ``"default"`` rather
     than ``"env"``: nobody configured it, and the screen should not say so.
     """
-    raw = getattr(app_settings, spec.env, "")
+    raw = getattr(app_settings, env, "")
     if isinstance(raw, bool):
         value = "true" if raw else "false"
     else:
         value = str(raw if raw is not None else "").strip()
     if not value:
         return "", "none"
-    declared = Settings.model_fields[spec.env].default if spec.env in Settings.model_fields else None
-    if declared not in (None, "") and raw == declared and spec.env not in app_settings.model_fields_set:
+    declared = Settings.model_fields[env].default if env in Settings.model_fields else None
+    if declared not in (None, "") and raw == declared and env not in app_settings.model_fields_set:
         return value, "default"
     return value, "env"
 
@@ -198,7 +202,9 @@ def _resolve_provider(name: str, node: object) -> ResolvedProvider:
             values[spec.name] = db_value
             sources[spec.name] = "db"
             continue
-        env_value, source = _env_value(spec)
+        env_value, source = _env_value(spec.env)
+        if not env_value and spec.fallback_env:
+            env_value, source = _env_value(spec.fallback_env)
         if env_value:
             values[spec.name] = env_value
         sources[spec.name] = source
