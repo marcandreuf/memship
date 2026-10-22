@@ -122,7 +122,9 @@ Three options, configured from the Settings screen or from `.env`:
   exceeds it. The paid tier is 20 USD a month.
 - **Gmail** — an ordinary Google account with an app password. Google applies its own daily sending
   limits.
-- **Any SMTP server** — including the one that comes with the association's existing mail hosting.
+- **Any SMTP server** — including the one that comes with the association's existing mail hosting,
+  as long as it accepts STARTTLS, usually on port 587. A server reachable only on port 465 is not
+  supported.
 
 [Email delivery](../self-hosting/email.md) covers all three, including the DNS records Resend needs.
 

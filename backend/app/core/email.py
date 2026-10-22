@@ -71,6 +71,12 @@ class EmailFailure(str, Enum):
     UNKNOWN = "unknown"
 
 
+# Failures that may clear up on their own, so a later attempt is worth making
+# (#449). A refused credential or recipient fails the same way every time, and
+# retrying it only delays the admin learning that something needs fixing.
+TRANSIENT_FAILURES = frozenset({EmailFailure.TRANSPORT_UNAVAILABLE, EmailFailure.RATE_LIMITED})
+
+
 @dataclass(frozen=True)
 class EmailResult:
     outcome: EmailOutcome
@@ -441,7 +447,7 @@ def _dispatch(
     attachment_mime: str = "application/pdf",
     raise_errors: bool = False,
 ) -> bool:
-    """Send through a specific resolved provider (Resend or Gmail/SMTP).
+    """Send through a specific resolved provider (Resend or SMTP).
 
     The plain-text alternative is derived here rather than at each call site, so
     every sender — including the ones that hand over pre-built HTML — ships a
@@ -460,15 +466,15 @@ def _dispatch(
             attachment_mime=attachment_mime,
             raise_errors=raise_errors,
         )
-    if provider == "gmail":
-        g = resolved.gmail
-        host, port, tls = resolved.gmail_smtp()
+    if provider == "smtp":
+        s = resolved.smtp
+        host, port, tls = resolved.smtp_endpoint()
         return _send_via_smtp(
             to, subject, html_body,
             host=host, port=port, tls=tls,
-            user=g.get("user"),
-            password=g.get("app_password"),
-            from_email=g.get("from_email") or g.get("user"),
+            user=s.get("user"),
+            password=s.get("password"),
+            from_email=s.get("from_email") or s.get("user"),
             text_body=text_body,
             attachment=attachment,
             attachment_filename=attachment_filename,
@@ -883,11 +889,12 @@ def send_registration_approved_email(
 
 def send_registration_rejected_email(
     to: str, first_name: str, reason: str | None = None, locale: str = "es"
-) -> bool:
-    return _send_templated("registration_rejected", to, locale, {
+) -> EmailResult:
+    """The full result, so a transient failure can be retried (#449)."""
+    return _send_templated_result("registration_rejected", to, locale, {
         "first_name": first_name,
         "reason": reason,
-    })
+    }, capture_failure=True)
 
 
 def send_registration_confirmation_email(

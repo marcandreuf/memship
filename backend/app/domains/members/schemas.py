@@ -230,11 +230,13 @@ class ApprovalNotification(BaseModel):
 
     ``status`` is an ``EmailOutcome`` value, plus ``no_email`` for an applicant
     with no address on file. ``reason`` is an ``EmailFailure`` value, set only
-    when ``status`` is ``failed``.
+    when ``status`` is ``failed``. ``retrying`` is set when that failure was
+    transient and later attempts are queued (#449).
     """
 
     status: Literal["sent", "suppressed", "opted_out", "failed", "no_email"]
     reason: str | None = None
+    retrying: bool = False
 
 
 class MemberApprovalResponse(BaseModel):

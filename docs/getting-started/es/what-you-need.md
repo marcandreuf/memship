@@ -127,7 +127,9 @@ Tres opciones, configurables desde la pantalla de Ajustes o desde el `.env`:
   supera. El plan de pago son 20 USD al mes.
 - **Gmail** — una cuenta de Google normal con una contraseña de aplicación. Google aplica sus
   propios límites diarios de envío.
-- **Cualquier servidor SMTP** — incluido el del alojamiento de correo que ya tenga la entidad.
+- **Cualquier servidor SMTP** — incluido el del alojamiento de correo que ya tenga la entidad,
+  siempre que acepte STARTTLS, normalmente en el puerto 587. Un servidor accesible solo por el
+  puerto 465 no está soportado.
 
 [Envío de correo](../../self-hosting/email.md) cubre las tres, incluidos los registros DNS que
 necesita Resend.

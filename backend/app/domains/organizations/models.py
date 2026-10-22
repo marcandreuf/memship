@@ -58,8 +58,8 @@ class OrganizationSettings(Base):
     # Secret field values are Fernet ciphertext; non-secret are plaintext. Empty
     # fields fall back to the matching env var at resolve time.
     sso_config = Column(JSONB, nullable=False, server_default="{}", default=dict)
-    # Mailing provider configuration (Resend/Gmail) editable from the settings
-    # screen. Shape: {"active_provider": "resend"|"gmail"|null,
+    # Mailing provider configuration (Resend/SMTP) editable from the settings
+    # screen. Shape: {"active_provider": "resend"|"smtp"|null,
     # "<provider>": {"<field>": {"value": str, "secret": bool}}}. Exactly one
     # provider is active at a time. Secret field values are Fernet ciphertext;
     # empty fields fall back to the matching mail env var at resolve time.

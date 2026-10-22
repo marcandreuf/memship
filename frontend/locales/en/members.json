@@ -66,6 +66,11 @@
       "reject": "Reject",
       "approved": "Registration approved. The applicant has been notified by email.",
       "approvedNotNotified": "Registration approved, but the applicant was NOT notified",
+      "approvedRetrying": "Registration approved. The email could not be sent yet and will be retried automatically over the next half hour",
+      "retryReason": {
+        "rate_limited": "The mail provider's sending limit was reached.",
+        "transport_unavailable": "The mail provider could not be reached."
+      },
       "approvedMailOff": "Registration approved. No email was sent: the approval notice is switched off in Settings → Communications. Let the applicant know another way.",
       "approvedNoEmail": "Registration approved. No email was sent: the applicant has no email address on file.",
       "notifyFailure": {

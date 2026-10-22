@@ -62,7 +62,7 @@ def branded():
         yield BRANDING
 
 
-def _resolved_gmail():
+def _resolved_smtp():
     def provider(name, values):
         return ResolvedProvider(
             name=name,
@@ -72,10 +72,16 @@ def _resolved_gmail():
         )
 
     return ResolvedMailing(
-        active="gmail",
+        active="smtp",
         resend=provider("resend", {}),
-        gmail=provider(
-            "gmail", {"user": "club@gmail.com", "app_password": "pw", "from_email": "club@gmail.com"}
+        smtp=provider(
+            "smtp",
+            {
+                "host": "smtp.gmail.com",
+                "user": "club@gmail.com",
+                "password": "pw",
+                "from_email": "club@gmail.com",
+            },
         ),
     )
 
@@ -347,7 +353,7 @@ class TestBothTransportsShipTheTextPart:
     @patch("app.core.email.smtplib.SMTP")
     def test_smtp_sends_text_first_then_html(self, mock_smtp_class, mock_resolve):
         """In multipart/alternative the last part wins, so HTML must come second."""
-        mock_resolve.return_value = _resolved_gmail()
+        mock_resolve.return_value = _resolved_smtp()
         server = MagicMock()
         mock_smtp_class.return_value.__enter__.return_value = server
 
@@ -368,7 +374,7 @@ class TestBothTransportsShipTheTextPart:
                 sources={},
                 secret_flags={},
             ),
-            gmail=ResolvedProvider(name="gmail", values={}, sources={}, secret_flags={}),
+            smtp=ResolvedProvider(name="smtp", values={}, sources={}, secret_flags={}),
         )
         sent = {}
 

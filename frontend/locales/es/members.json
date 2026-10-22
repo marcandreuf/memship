@@ -66,6 +66,11 @@
       "reject": "Rechazar",
       "approved": "Alta aprobada. Se ha avisado al solicitante por correo.",
       "approvedNotNotified": "Alta aprobada, pero NO se ha avisado al solicitante",
+      "approvedRetrying": "Alta aprobada. El correo aún no se ha podido enviar y se reintentará automáticamente durante la próxima media hora",
+      "retryReason": {
+        "rate_limited": "Se ha alcanzado el límite de envío del proveedor de correo.",
+        "transport_unavailable": "No se ha podido contactar con el proveedor de correo."
+      },
       "approvedMailOff": "Alta aprobada. No se ha enviado ningún correo: el aviso de aprobación está desactivado en Configuración → Comunicaciones. Avisa al solicitante por otra vía.",
       "approvedNoEmail": "Alta aprobada. No se ha enviado ningún correo: el solicitante no tiene dirección de correo.",
       "notifyFailure": {
