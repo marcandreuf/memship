@@ -243,7 +243,20 @@
       "nothingToSave": "No changes to save.",
       "encryptionActive": "Encryption active: secrets are stored encrypted.",
       "encryptionKeyMissing": "Set MEMSHIP_SECRET_KEY to store provider secrets.",
-      "encryptionKeyRequired": "Secrets cannot be saved without an encryption key."
+      "encryptionKeyRequired": "Secrets cannot be saved without an encryption key.",
+      "health": {
+        "unverified": "Not verified: nothing has been sent with these credentials yet. Send a test to check them.",
+        "ok": "Working: the last email through these credentials was accepted on {date}.",
+        "failing": "Failing: the last email through these credentials was refused on {date}. {reason}",
+        "failures": {
+          "no_provider": "No provider was available.",
+          "invalid_credentials": "The provider rejected the credentials.",
+          "rejected_recipient": "The provider refused the recipient address.",
+          "rate_limited": "The provider's sending limit was reached.",
+          "transport_unavailable": "The provider could not be reached.",
+          "unknown": "The provider gave no recognisable reason; send a test to see its message."
+        }
+      }
     },
     "emailTemplates": {
       "title": "Member emails",

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Lock, Mail, Send } from "lucide-react";
+import { CircleCheck, CircleHelp, Lock, Mail, Send, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { FormSkeleton } from "@/components/ui/skeletons";
+import { useLocaleDate } from "@/hooks/use-locale-date";
 import { cn } from "@/lib/utils";
 import {
   useMailingConfig,
@@ -66,6 +67,7 @@ export function MailingSettings() {
   const { data, isLoading } = useMailingConfig();
   const updateMutation = useUpdateMailingConfig();
   const testMutation = useTestMailingProvider();
+  const { shortDateTime } = useLocaleDate();
 
   const [forms, setForms] = useState<Record<ProviderName, ProviderForm> | null>(null);
   const [active, setActive] = useState<MailProvider | null>(null);
@@ -206,6 +208,45 @@ export function MailingSettings() {
     }
   }
 
+  // Whether the saved credentials are known to work — judged by the backend
+  // against the credentials in effect now, so a replaced one reads unverified.
+  function renderHealth(name: ProviderName) {
+    const health = data![name].health;
+    const { icon: Icon, tone, message } =
+      health.status === "ok"
+        ? {
+            icon: CircleCheck,
+            tone: "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+            message: t("settings.mailing.health.ok", {
+              date: shortDateTime(health.last_success_at!),
+            }),
+          }
+        : health.status === "failing"
+          ? {
+              icon: TriangleAlert,
+              tone: "border-destructive/40 bg-destructive/10 text-destructive",
+              message: t("settings.mailing.health.failing", {
+                date: shortDateTime(health.last_failure_at!),
+                reason: t(`settings.mailing.health.failures.${health.last_failure ?? "unknown"}`),
+              }),
+            }
+          : {
+              icon: CircleHelp,
+              tone: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400",
+              message: t("settings.mailing.health.unverified"),
+            };
+    return (
+      <div
+        data-testid={`mailing-${name}-health`}
+        data-status={health.status}
+        className={cn("flex items-start gap-2 rounded-md border px-3 py-2 text-xs", tone)}
+      >
+        <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+        <span>{message}</span>
+      </div>
+    );
+  }
+
   function renderProvider(name: ProviderName) {
     const form = forms![name];
     const view = data![name] as unknown as {
@@ -250,6 +291,8 @@ export function MailingSettings() {
           </Button>
         </CardHeader>
         <CardContent className="px-4 pb-3 pt-0 space-y-3">
+          {view.ready && renderHealth(name)}
+
           {schema.fields.map((f) => {
             const source = data!.sources[`${name}.${f}`];
             return (

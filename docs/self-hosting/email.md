@@ -28,6 +28,10 @@ from it are worth repeating here because they are the ones that silently bite:
 - **With no active provider, mail is silently skipped** — logged, not queued, no error. Nothing
   in the interface reports a send that never happened.
 
+Each provider card also shows whether its credentials are known to work: *Not verified*,
+*Working*, or *Failing* with a reason. It is updated by every email sent through that provider,
+the test included, and it applies to credentials that come from `.env` too.
+
 ## Option B — `.env`
 
 Set the variables and recreate the backend so it picks them up:
