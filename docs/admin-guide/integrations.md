@@ -267,7 +267,13 @@ Recommended order — configure, **test**, then activate:
    - The button is disabled while you have unsaved changes ("Save your changes before sending the test") or while required fields are missing.
 4. Once the test arrives, set the **Active provider** selector to that provider and press **Save**. The badge becomes **Active**.
 
-A provider that is missing required fields cannot be selected as active — the option is greyed out with a "Fill in the credentials before activating it" hint.
+The order is enforced, not just recommended. The *Active provider* selector greys out a provider and says why on hover in three cases:
+
+- **Required fields are missing** — "Fill in the credentials before activating it".
+- **Its fields have unsaved edits** — "Save and test the new credentials before activating it". A test only proves saved credentials, so new ones need saving and testing first.
+- **No send has passed with its current credentials** — "Send a successful test before activating it". The test must be the most recent send, and a real email that went through counts too. If the latest send failed, the provider stays greyed out until a test passes again.
+
+The provider that is already active is never greyed out for this reason. Saving other changes does not deactivate it, even if it has never been tested. Setting the selector to **None** is always possible.
 
 Once a card has its credentials, a line under its header says whether they are known to work. Every email sent through that provider updates it: the test, and every real message as well.
 
@@ -277,7 +283,7 @@ Once a card has its credentials, a line under its header says whether they are k
 
 *Working* means the provider accepted the message. It does not mean the message reached the inbox: a bounce or a spam folder happens after that, so check the provider's own log for those.
 
-Switching providers later is a two-click operation: select the other provider, save. The credentials of the one you left are kept, so you can switch back.
+Switching providers later is a two-click operation: select the other provider, save. The credentials of the one you left are kept, so you can switch back — once they pass a test again, if they have changed since.
 
 ### 4.5 Mailing troubleshooting
 

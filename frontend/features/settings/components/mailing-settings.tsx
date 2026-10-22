@@ -103,9 +103,7 @@ export function MailingSettings() {
     setForms((prev) => (prev ? { ...prev, [name]: { ...prev[name], ...patch } } : prev));
   }
 
-  // Fields present locally (saved value kept, or freshly typed) — the gate for
-  // offering a provider as the active one. A save applies these field edits and
-  // the activation in one request, so typed-but-unsaved creds can still activate.
+  // Required fields present locally (saved value kept, or freshly typed).
   function isConfigurable(name: ProviderName): boolean {
     const form = forms![name];
     const view = data![name] as unknown as Record<string, MailSecretStatus | string>;
@@ -122,6 +120,18 @@ export function MailingSettings() {
       if (cleared || (!status.configured && !typed)) return false;
     }
     return true;
+  }
+
+  // Why a provider cannot be chosen as the active one, or null when it can.
+  // Mirrors the backend gate: switching to a provider needs a passing send
+  // through its saved credentials, so unsaved edits block it until saved and
+  // tested. The provider already active stays selectable.
+  function activationBlocker(name: ProviderName): string | null {
+    if (!isConfigurable(name)) return t("settings.mailing.fillCredsFirst");
+    if (name === initialActive.current) return null;
+    if (isDirty(name)) return t("settings.mailing.activationNeedsSave");
+    if (data![name].health.status !== "ok") return t("settings.mailing.activationNeedsTest");
+    return null;
   }
 
   function isDirty(name: ProviderName): boolean {
@@ -184,6 +194,8 @@ export function MailingSettings() {
         toast.error(t("settings.mailing.encryptionKeyRequired"));
       } else if (code === "mailing_provider_not_ready") {
         toast.error(t("settings.mailing.providerNotReady"));
+      } else if (code === "mailing_provider_not_verified") {
+        toast.error(t("settings.mailing.providerNotVerified"));
       } else {
         toast.error(t("toast.error.generic"));
       }
@@ -388,8 +400,8 @@ export function MailingSettings() {
       )}
 
       {/* Active-provider selector — the mutual-exclusion control. Exactly one of
-          None / Resend / Gmail is active; a provider is selectable only once its
-          required fields are present (saved or freshly typed). */}
+          None / Resend / Gmail is active; switching to a provider needs its
+          saved credentials to have passed a send (see activationBlocker). */}
       <Card>
         <CardContent className="px-4 py-3 space-y-2">
           <div className="flex items-center gap-2">
@@ -398,7 +410,8 @@ export function MailingSettings() {
           </div>
           <div className="inline-flex gap-1 rounded-lg border bg-muted p-1">
             {([null, "resend", "gmail"] as (MailProvider | null)[]).map((opt) => {
-              const disabled = opt !== null && !isConfigurable(opt);
+              const blocker = opt === null ? null : activationBlocker(opt);
+              const disabled = blocker !== null;
               const label =
                 opt === null ? t("settings.mailing.none") : t(`settings.mailing.providers.${opt}`);
               return (
@@ -414,7 +427,7 @@ export function MailingSettings() {
                       : "text-muted-foreground hover:text-foreground",
                     disabled && "cursor-not-allowed opacity-40 hover:text-muted-foreground",
                   )}
-                  title={disabled ? t("settings.mailing.fillCredsFirst") : undefined}
+                  title={blocker ?? undefined}
                 >
                   {label}
                 </button>

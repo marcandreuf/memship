@@ -422,6 +422,20 @@ def update_mailing_config(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail={"code": "mailing_provider_not_ready"},
                 )
+            # Switching real traffic onto a provider needs proof its current
+            # credentials deliver: a passing test, or a real send, through
+            # exactly these credentials. Credentials changed in this same
+            # request have no such proof yet. Keeping the provider already
+            # active is not an activation, so it is never blocked here.
+            if (
+                config.get("active_provider") != ap
+                and provider_health(db, resolved)[ap].status != "ok"
+            ):
+                settings_obj.mailing_config = original
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail={"code": "mailing_provider_not_verified"},
+                )
         if config.get("active_provider") != ap:
             config["active_provider"] = ap
             changed.append("active_provider")

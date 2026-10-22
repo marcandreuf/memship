@@ -67,3 +67,30 @@ describe("Mailing provider health", () => {
       .and("contain.text", "The provider rejected the credentials.");
   });
 });
+
+describe("Activating a mail provider", () => {
+  it("cannot switch to credentials that have not passed a test", () => {
+    visitWith(view(health("unverified")));
+    cy.contains("button", "Resend")
+      .should("be.disabled")
+      .and("have.attr", "title", "Send a successful test before activating it.");
+  });
+
+  it("switches to tested credentials", () => {
+    visitWith(view(health("ok", { last_success_at: "2026-10-20T09:30:00Z" })));
+    cy.intercept("PUT", "/api/settings/mailing", (req) => {
+      req.reply({ ...view(health("ok")), active_provider: "resend" });
+    }).as("save");
+    cy.contains("button", "Resend").should("be.enabled").click();
+    cy.contains("button", "Save").click();
+    cy.wait("@save").its("request.body").should("deep.equal", { active_provider: "resend" });
+  });
+
+  it("asks for a save and a new test once tested credentials are edited", () => {
+    visitWith(view(health("ok", { last_success_at: "2026-10-20T09:30:00Z" })));
+    cy.contains("label", "From address").parent().find("input").first().type("club@example.org");
+    cy.contains("button", "Resend")
+      .should("be.disabled")
+      .and("have.attr", "title", "Save and test the new credentials before activating it.");
+  });
+});
