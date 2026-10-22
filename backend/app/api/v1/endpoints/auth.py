@@ -437,7 +437,7 @@ def password_reset_request(
     generic = "If the email exists, a password reset link has been sent"
 
     if token:
-        # Whichever transport is active sends it — Resend and Gmail/SMTP are
+        # Whichever transport is active sends it — Resend and SMTP are
         # interchangeable here. This used to key off SMTP_HOST alone, so a
         # Resend install sent no mail and fell through to the dev branch below,
         # handing the reset token to any anonymous caller.

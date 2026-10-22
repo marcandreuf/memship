@@ -9,7 +9,7 @@ provider is active at a time, selected by ``active_provider``.
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 # --- GET (masked) view ---
@@ -37,20 +37,25 @@ class MailResendView(BaseModel):
     health: MailHealthView
 
 
-class MailGmailView(BaseModel):
+class MailSmtpView(BaseModel):
+    # Any SMTP server; Gmail is a preset the screen fills in (#442).
+    host: str
+    port: int
+    tls: bool
     user: str
     from_email: str
-    app_password: MailSecretStatus
+    password: MailSecretStatus
     ready: bool
     health: MailHealthView
 
 
 class MailingConfigView(BaseModel):
-    active_provider: Literal["resend", "gmail"] | None
+    active_provider: Literal["resend", "smtp"] | None
     resend: MailResendView
-    gmail: MailGmailView
+    smtp: MailSmtpView
     secrets_encryption_available: bool
-    # Per-field origin of the resolved value: "db" | "env" | "none".
+    # Per-field origin of the resolved value: "db" | "env" | "none", or
+    # "default" for a typed setting nobody configured (SMTP port and TLS).
     sources: dict[str, str]
 
 
@@ -71,25 +76,29 @@ class MailResendUpdate(BaseModel):
     api_key: MailSecretUpdate | None = None
 
 
-class MailGmailUpdate(BaseModel):
+class MailSmtpUpdate(BaseModel):
+    host: str | None = None
+    # Port and TLS: None = unchanged; a value is stored as text like any field.
+    port: int | None = Field(default=None, ge=1, le=65535)
+    tls: bool | None = None
     user: str | None = None
     from_email: str | None = None
-    app_password: MailSecretUpdate | None = None
+    password: MailSecretUpdate | None = None
 
 
 class MailingConfigUpdate(BaseModel):
     # Presence is checked via model_fields_set so an explicit null (clear active
     # provider) is distinguishable from "not provided".
-    active_provider: Literal["resend", "gmail"] | None = None
+    active_provider: Literal["resend", "smtp"] | None = None
     resend: MailResendUpdate | None = None
-    gmail: MailGmailUpdate | None = None
+    smtp: MailSmtpUpdate | None = None
 
 
 # --- Test send ---
 
 
 class MailingTestRequest(BaseModel):
-    provider: Literal["resend", "gmail"]
+    provider: Literal["resend", "smtp"]
     to: str | None = None
 
 

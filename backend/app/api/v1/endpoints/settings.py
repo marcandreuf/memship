@@ -40,7 +40,6 @@ from app.domains.mailing.mailing_schemas import (
     CommunicationsConfigUpdate,
     CommunicationsConfigView,
     CommunicationTemplateView,
-    MailGmailView,
     MailHealthView,
     MailingConfigUpdate,
     MailingConfigView,
@@ -49,6 +48,7 @@ from app.domains.mailing.mailing_schemas import (
     MailResendView,
     MailSecretStatus,
     MailSecretUpdate,
+    MailSmtpView,
 )
 from app.domains.mailing.policy import (
     BY_KEY as COMMUNICATION_TEMPLATES,
@@ -311,7 +311,8 @@ def _health_view(health: ProviderHealth) -> MailHealthView:
 
 def _build_mailing_view(db: Session) -> MailingConfigView:
     resolved = resolve_mailing_config(db)
-    r, g = resolved.resend, resolved.gmail
+    r, s = resolved.resend, resolved.smtp
+    host, port, tls = resolved.smtp_endpoint()
     health = provider_health(db, resolved)
     return MailingConfigView(
         active_provider=resolved.active,
@@ -324,15 +325,18 @@ def _build_mailing_view(db: Session) -> MailingConfigView:
             ready=r.ready,
             health=_health_view(health["resend"]),
         ),
-        gmail=MailGmailView(
-            user=g.get("user"),
-            from_email=g.get("from_email"),
-            app_password=MailSecretStatus(
-                configured=g.configured("app_password"),
-                last4=g.last4("app_password"),
+        smtp=MailSmtpView(
+            host=host,
+            port=port,
+            tls=tls,
+            user=s.get("user"),
+            from_email=s.get("from_email"),
+            password=MailSecretStatus(
+                configured=s.configured("password"),
+                last4=s.last4("password"),
             ),
-            ready=g.ready,
-            health=_health_view(health["gmail"]),
+            ready=s.ready,
+            health=_health_view(health["smtp"]),
         ),
         secrets_encryption_available=secrets_crypto.secrets_available(),
         sources=resolved.flat_sources(),
@@ -343,7 +347,8 @@ def _apply_mail_provider_update(pname: str, pupdate, node: dict, changed: list[s
     """Merge one provider's update into its JSONB node.
 
     Blank secret = unchanged; ``clear`` wipes; a secret write requires the
-    encryption key. Non-secret strings clear on ``""`` and set otherwise.
+    encryption key. Non-secret strings clear on ``""`` and set otherwise; SMTP
+    port and TLS arrive typed and are stored as text like every other field.
     """
     for spec in MAIL_PROVIDER_FIELDS[pname]:
         field_update = getattr(pupdate, spec.name)
@@ -368,7 +373,11 @@ def _apply_mail_provider_update(pname: str, pupdate, node: dict, changed: list[s
                 node[spec.name] = build_mail_field_node(field_update.value, secret)
                 changed.append(f"{pname}.{spec.name}")
             # value None/empty and not clearing → leave the stored secret untouched
-        else:  # non-secret string field
+        else:  # non-secret field
+            if isinstance(field_update, bool):
+                field_update = "true" if field_update else "false"
+            elif isinstance(field_update, int):
+                field_update = str(field_update)
             if field_update == "":
                 if node.pop(spec.name, None) is not None:
                     changed.append(f"{pname}.{spec.name}")
@@ -398,7 +407,7 @@ def update_mailing_config(
     config = copy.deepcopy(settings_obj.mailing_config or {})
     changed: list[str] = []
 
-    for pname, pupdate in (("resend", data.resend), ("gmail", data.gmail)):
+    for pname, pupdate in (("resend", data.resend), ("smtp", data.smtp)):
         if pupdate is None:
             continue
         node = config.setdefault(pname, {})
