@@ -115,7 +115,8 @@ Memship needs to send transactional email, and this is **not optional**: passwor
 verification and payment reminders all go through it, and a member cannot sign in for the first
 time until it works.
 
-Three options, configured from the Settings screen or from `.env`:
+Three options. Resend and Gmail can be configured from the Settings screen or from `.env`; any
+other SMTP server is set in `.env` only, as the Settings screen has no field for a server address:
 
 - **Resend** — an email API. Free tier: 3,000 messages a month, 3 domains, but **100 a day**. That
   daily cap is the one that bites: sending reminders to more than 100 members in a single run

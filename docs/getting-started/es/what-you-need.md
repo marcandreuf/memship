@@ -120,7 +120,9 @@ Memship necesita enviar correo transaccional, y esto **no es opcional**: el rest
 contraseña, la verificación de la dirección y los avisos de pago van todos por ahí, y un socio no
 puede entrar por primera vez hasta que funcione.
 
-Tres opciones, configurables desde la pantalla de Ajustes o desde el `.env`:
+Tres opciones. Resend y Gmail se configuran desde la pantalla de Ajustes o desde el `.env`;
+cualquier otro servidor SMTP se indica solo en el `.env`, porque la pantalla de Ajustes no tiene
+campo para la dirección del servidor:
 
 - **Resend** — una API de correo. Plan gratuito: 3.000 mensajes al mes y 3 dominios, pero **100 al
   día**. Ese límite diario es el que molesta: mandar avisos a más de 100 socios de una tirada lo
