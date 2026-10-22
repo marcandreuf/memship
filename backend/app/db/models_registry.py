@@ -12,6 +12,7 @@ from app.domains.billing import models as billing_models  # noqa: F401
 from app.domains.bookings import models as bookings_models  # noqa: F401
 from app.domains.communications import models as communications_models  # noqa: F401
 from app.domains.custom_fields import models as custom_fields_models  # noqa: F401
+from app.domains.mailing import models as mailing_models  # noqa: F401
 from app.domains.members import models as members_models  # noqa: F401
 from app.domains.organizations import models as organizations_models  # noqa: F401
 from app.domains.persons import models as persons_models  # noqa: F401

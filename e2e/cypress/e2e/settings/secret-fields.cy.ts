@@ -2,18 +2,27 @@
 // manager has no input to fill and an untouched secret is never sent (#333).
 // The mailing config is stubbed rather than written: it is global state, and a
 // real write would overwrite whatever credentials the instance has on file.
+const UNVERIFIED = {
+  status: "unverified",
+  last_success_at: null,
+  last_failure_at: null,
+  last_failure: null,
+};
+
 const MAILING_VIEW = {
   active_provider: null,
   resend: {
     from_email: "",
     api_key: { configured: true, last4: "4f2a" },
     ready: true,
+    health: UNVERIFIED,
   },
   gmail: {
     user: "",
     from_email: "",
     app_password: { configured: false, last4: null },
     ready: false,
+    health: UNVERIFIED,
   },
   secrets_encryption_available: true,
   sources: {},

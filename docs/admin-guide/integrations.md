@@ -269,6 +269,14 @@ Recommended order — configure, **test**, then activate:
 
 A provider that is missing required fields cannot be selected as active — the option is greyed out with a "Fill in the credentials before activating it" hint.
 
+Once a card has its credentials, a line under its header says whether they are known to work. Every email sent through that provider updates it: the test, and every real message as well.
+
+- **Not verified** (amber) — nothing has been sent with these credentials yet. Replacing a key or password, or changing it in `.env`, puts the card back here, because the earlier result was for different credentials.
+- **Working** (green) — the most recent email was accepted by the provider, with the date.
+- **Failing** (red) — the most recent email was refused, with the date and a short reason (credentials rejected, provider unreachable, sending limit reached…). **Send test** shows the provider's full error message.
+
+*Working* means the provider accepted the message. It does not mean the message reached the inbox: a bounce or a spam folder happens after that, so check the provider's own log for those.
+
 Switching providers later is a two-click operation: select the other provider, save. The credentials of the one you left are kept, so you can switch back.
 
 ### 4.5 Mailing troubleshooting
@@ -281,7 +289,7 @@ Switching providers later is a two-click operation: select the other provider, s
 | Test fails: Resend 401 / "API key is invalid" | Key mistyped, revoked, or created without sending permission. Create a new key. |
 | Test reports success but nothing arrives | Check spam. For Resend, check the *Emails* log in its dashboard for a bounce. For Gmail, check the sending account's *Sent* folder. |
 | Nothing is being sent at all, no errors anywhere | Active provider is **None**. Select a provider and save. |
-| Members stop receiving mail after a working period | Gmail daily limit reached, or the app password was revoked; on Resend, a suspended domain. Use **Send test** to get the actual error. |
+| Members stop receiving mail after a working period | Gmail daily limit reached, or the app password was revoked; on Resend, a suspended domain. The provider card turns **Failing** and gives a short reason. Use **Send test** to get the actual error. |
 | The label says "from environment" | That value comes from the installation's `.env` file. It works, but anything you type in the screen takes precedence for that field. |
 | Emails arrive from an address you did not configure | Gmail rewrote the From to the account address (expected), or an env-file value is still supplying it. |
 

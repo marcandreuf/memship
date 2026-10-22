@@ -428,3 +428,125 @@ class TestMailingTestEndpoint:
         body = resp.json()
         assert body["ok"] is False
         assert "smtp auth failed" in body["error"]
+
+class TestMailTransportHealth:
+    """#338: the screen tells a working credential from an untried or failing one."""
+
+    def _admin(self, client, db, suffix):
+        admin = _create_user(db, "super_admin", suffix)
+        client.cookies.update(_auth_cookie(admin))
+        return admin
+
+    def _resend_org(self, db, monkeypatch, key="re_key"):
+        _clear_env(monkeypatch)
+        _set_key(monkeypatch)
+        org = _org(db)
+        org.mailing_config = {"resend": {"api_key": build_field_node(key, True)}}
+        db.flush()
+        return org
+
+    def _health(self, client, provider="resend"):
+        return client.get("/api/v1/settings/mailing").json()[provider]["health"]
+
+    def test_untried_credentials_are_unverified(self, client, db, monkeypatch):
+        self._resend_org(db, monkeypatch)
+        self._admin(client, db, "health-new")
+
+        body = client.get("/api/v1/settings/mailing").json()
+        assert body["resend"]["ready"] is True
+        assert body["resend"]["health"] == {
+            "status": "unverified",
+            "last_success_at": None,
+            "last_failure_at": None,
+            "last_failure": None,
+        }
+        assert body["gmail"]["health"]["status"] == "unverified"
+
+    def test_passing_test_send_marks_provider_ok(self, client, db, monkeypatch):
+        self._resend_org(db, monkeypatch)
+        self._admin(client, db, "health-ok")
+
+        assert client.post("/api/v1/settings/mailing/test", json={"provider": "resend"}).json()["ok"]
+
+        health = self._health(client)
+        assert health["status"] == "ok"
+        assert health["last_success_at"] is not None
+        assert health["last_failure"] is None
+
+    def test_failing_test_send_marks_provider_failing(self, client, db, monkeypatch):
+        import smtplib
+
+        self._resend_org(db, monkeypatch)
+        self._admin(client, db, "health-fail")
+
+        def refuse(*args, **kwargs):
+            raise smtplib.SMTPAuthenticationError(535, b"bad credentials")
+
+        monkeypatch.setattr(email_module, "_dispatch", refuse)
+        client.post("/api/v1/settings/mailing/test", json={"provider": "resend"})
+
+        health = self._health(client)
+        assert health["status"] == "failing"
+        assert health["last_failure"] == "invalid_credentials"
+        assert health["last_success_at"] is None
+        # The classified reason only — never the transport's own text.
+        assert "bad credentials" not in client.get("/api/v1/settings/mailing").text
+
+    def test_recovery_keeps_the_last_failure_on_record(self, client, db, monkeypatch):
+        self._resend_org(db, monkeypatch)
+        self._admin(client, db, "health-recover")
+
+        def refuse(*args, **kwargs):
+            raise ConnectionRefusedError("down")
+
+        monkeypatch.setattr(email_module, "_dispatch", refuse)
+        client.post("/api/v1/settings/mailing/test", json={"provider": "resend"})
+        monkeypatch.setattr(email_module, "_dispatch", lambda *a, **k: True)
+        client.post("/api/v1/settings/mailing/test", json={"provider": "resend"})
+
+        health = self._health(client)
+        assert health["status"] == "ok"
+        assert health["last_failure"] == "transport_unavailable"
+
+    def test_replaced_credential_is_unverified_again(self, client, db, monkeypatch):
+        self._resend_org(db, monkeypatch)
+        self._admin(client, db, "health-replace")
+        client.post("/api/v1/settings/mailing/test", json={"provider": "resend"})
+        assert self._health(client)["status"] == "ok"
+
+        client.put(
+            "/api/v1/settings/mailing",
+            json={"resend": {"api_key": {"value": "re_other_key"}}},
+        )
+
+        assert self._health(client)["status"] == "unverified"
+
+    def test_changed_env_credential_is_unverified_again(self, client, db, monkeypatch):
+        """A key rotated in .env, not in the screen, must not inherit the old history."""
+        from app.core.config import settings
+
+        _clear_env(monkeypatch)
+        _org(db)
+        monkeypatch.setattr(settings, "RESEND_API_KEY", "env-key-1", raising=False)
+        self._admin(client, db, "health-env")
+        client.post("/api/v1/settings/mailing/test", json={"provider": "resend"})
+        assert self._health(client)["status"] == "ok"
+
+        monkeypatch.setattr(settings, "RESEND_API_KEY", "env-key-2", raising=False)
+
+        assert self._health(client)["status"] == "unverified"
+
+    def test_recording_leaves_an_env_only_install_env_only(self, db, monkeypatch):
+        """Health must not land in mailing_config: any key there switches off env mail."""
+        from app.core.config import settings
+        from app.domains.mailing.mailing_health import record_outcome
+
+        _clear_env(monkeypatch)
+        monkeypatch.setattr(settings, "RESEND_API_KEY", "env-key", raising=False)
+        org = _org(db)
+
+        record_outcome(db, resolve_mailing_config(db), "resend", None)
+        db.flush()
+
+        assert org.mailing_config == {}
+        assert resolve_mailing_config(db).active == "resend"

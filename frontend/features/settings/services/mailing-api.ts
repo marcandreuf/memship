@@ -7,10 +7,20 @@ export interface MailSecretStatus {
   last4: string | null;
 }
 
+export type MailHealthStatus = "unverified" | "ok" | "failing";
+
+export interface MailHealth {
+  status: MailHealthStatus;
+  last_success_at: string | null;
+  last_failure_at: string | null;
+  last_failure: string | null;
+}
+
 export interface MailResendView {
   from_email: string;
   api_key: MailSecretStatus;
   ready: boolean;
+  health: MailHealth;
 }
 
 export interface MailGmailView {
@@ -18,6 +28,7 @@ export interface MailGmailView {
   from_email: string;
   app_password: MailSecretStatus;
   ready: boolean;
+  health: MailHealth;
 }
 
 export interface MailingConfigView {
