@@ -161,4 +161,18 @@ done
 done_case
 
 
+it "leaves the sending address blank rather than deriving it from --domain"
+# The site's hostname is the address the DNS guide says not to send from, and
+# a provider verified on the organisation's own domain refuses it (#439).
+new_sandbox install-from
+STUB_DB_RUNNING=0 DATA_ROOT_OVERRIDE="$STUB_DATA_ROOT" \
+    STUB_RESOLVES_TO=203.0.113.7 STUB_PUBLIC_IP=203.0.113.7 \
+    run_script scripts/install.sh --tag 2.14.0 --domain socios.myclub.example
+assert_status 0
+grep -qx "SMTP_FROM=" "$SANDBOX/.env" || fail "SMTP_FROM was not left blank"
+grep -q "Email is a separate domain decision" "$SANDBOX/POST-INSTALL.md" \
+    || fail "POST-INSTALL.md does not point at the sending-domain decision"
+done_case
+
+
 summary

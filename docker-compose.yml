@@ -49,7 +49,7 @@ x-backend-env: &backend-env
   SMTP_PORT: ${SMTP_PORT:-587}
   SMTP_USER: ${SMTP_USER:-}
   SMTP_PASSWORD: ${SMTP_PASSWORD:-}
-  SMTP_FROM: ${SMTP_FROM:-noreply@memship.local}
+  SMTP_FROM: ${SMTP_FROM:-}
   SMTP_TLS: ${SMTP_TLS:-true}
   RESEND_API_KEY: ${RESEND_API_KEY:-}
   RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-}
