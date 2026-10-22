@@ -26,7 +26,7 @@ uno como **contacto principal**.
 ### Datos bancarios
 
 En la ficha se registran el **IBAN** y el **BIC/SWIFT** del socio, necesarios para la
-[domiciliación SEPA](sepa.es.md).
+[domiciliación SEPA](sepa.md).
 
 ## Estados del socio
 
@@ -44,13 +44,13 @@ Pleno*, *Estudiante*, *Senior*). Cada tipo tiene:
 - **Grupo** asociado (opcional).
 - Restricciones de edad (opcional).
 
-Los tipos de membresía son la base de la [generación de cuotas](payments.es.md#generar-cuotas)
-y de la [facturación recurrente](settings.es.md#facturación-recurrente).
+Los tipos de membresía son la base de la [generación de cuotas](payments.md#generar-cuotas)
+y de la [facturación recurrente](settings.md#facturación-recurrente).
 
 ## Grupos
 
 Los grupos permiten organizar a los socios en conjuntos (por equipo, categoría, sección…) que
-luego sirven, por ejemplo, para dirigir [comunicaciones](communications.es.md) a una audiencia
+luego sirven, por ejemplo, para dirigir [comunicaciones](communications.md) a una audiencia
 concreta.
 
 ## Menores y tutores

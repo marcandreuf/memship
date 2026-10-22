@@ -34,7 +34,7 @@
 # This is a STARTING POINT, not a backup system. It has no schedule, no
 # retention, no verification and no encryption at rest. Run it from cron on a
 # machine that stays on, point --dest at storage that is itself backed up, and
-# see docs/self-hosting/backups-and-restore.md.
+# see docs/en/self-hosting/backups-and-restore.md.
 
 set -euo pipefail
 

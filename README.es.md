@@ -24,7 +24,7 @@ La mayoría de herramientas de gestión de socios son plataformas SaaS caras o s
 > **Para probar Memship, no para usarlo.** Es la vía más rápida a una instancia
 > funcionando en tu propia máquina: imágenes publicadas, volúmenes desechables y una
 > contraseña de base de datos fija. Para gestionar una organización real, sigue
-> la [Instalación](docs/getting-started/installation.md) — el mismo producto,
+> la [Instalación](docs/en/getting-started/installation.md) — el mismo producto,
 > configurado para poder respaldarlo, actualizarlo y conservarlo.
 
 Prueba Memship con un solo comando, sin necesidad de clonar el repositorio:
@@ -58,7 +58,7 @@ puerto que prefieras (por defecto es el 80).
 Cuando termines de evaluarlo, vuelve a ejecutar el mismo comando y responde *sí* a la
 pregunta sobre los datos del club: borra el club de demostración conservando tu super
 admin y las pasarelas de pago que hayas configurado. Consulta
-[Configuración inicial](docs/getting-started/first-setup.md).
+[Configuración inicial](docs/en/getting-started/first-setup.md).
 
 ## Lanzamientos
 
@@ -247,7 +247,7 @@ El backend en Docker y el frontend en local con recarga en caliente de pnpm, gob
 
 La instalación completa, todos los comandos, las URL de los servicios, la carga de datos inicial y
 las suites de tests están en
-**[Entorno de desarrollo local](docs/development/local-environment.md)** _(en inglés)_.
+**[Entorno de desarrollo local](docs/en/development/local-environment.md)** _(en inglés)_.
 
 Consulta [CONTRIBUTING](CONTRIBUTING.md) para ramas, versionado y cómo se publica una versión.
 
@@ -255,27 +255,27 @@ Consulta [CONTRIBUTING](CONTRIBUTING.md) para ramas, versionado y cómo se publi
 
 El autoalojamiento en producción vive en la documentación, para que haya una sola copia que mantener correcta:
 
-- **[Qué necesitas para ejecutar Memship](docs/getting-started/es/what-you-need.md)** — un servidor
+- **[Qué necesitas para ejecutar Memship](docs/es/getting-started/what-you-need.md)** — un servidor
   de 2 vCPU / 4 GB / 40 GB, un dominio y una forma de enviar correo, por unos 8–12 € al mes. Léelo
   antes de decidir; las cifras están medidas, no estimadas
-- **[Instalación](docs/getting-started/installation.md)** — `vps-bootstrap.sh` en un servidor
+- **[Instalación](docs/en/getting-started/installation.md)** — `vps-bootstrap.sh` en un servidor
   recién creado y después `install.sh`, que genera secretos reales, fija una versión y coloca tus
   datos en un único directorio respaldado
-- **[Configuración inicial](docs/getting-started/first-setup.md)** — crear el super administrador y
+- **[Configuración inicial](docs/en/getting-started/first-setup.md)** — crear el super administrador y
   la organización
-- **[Referencia de configuración](docs/self-hosting/configuration.md)** — todas las variables de
+- **[Referencia de configuración](docs/en/self-hosting/configuration.md)** — todas las variables de
   entorno
-- **[Copias de seguridad y restauración](docs/self-hosting/backups-and-restore.md)** — configúralo
+- **[Copias de seguridad y restauración](docs/en/self-hosting/backups-and-restore.md)** — configúralo
   antes de entrar en producción
-- **[Actualizaciones](docs/self-hosting/upgrading.md)** — pasar a una nueva versión
-- **[Resolución de problemas](docs/self-hosting/troubleshooting.md)** — cuando algo no arranca
+- **[Actualizaciones](docs/en/self-hosting/upgrading.md)** — pasar a una nueva versión
+- **[Resolución de problemas](docs/en/self-hosting/troubleshooting.md)** — cuando algo no arranca
 
 El [Inicio rápido](#inicio-rápido-docker) de arriba es solo para evaluación: incluye una clave de
 firma publicada en este repositorio y guarda los datos en volúmenes desechables.
 
 ## Contribuir
 
-Las contribuciones de código son bienvenidas. La base del proyecto — infraestructura, CI/CD y la arquitectura central — ya está asentada, y [CONTRIBUTING](CONTRIBUTING.md) explica el modelo de ramas, las convenciones de commits y pull requests, el versionado y cómo se publica una release _(en inglés)_. En resumen: crea una rama `feature/*` de vida corta a partir de `main` y abre un pull request de vuelta a `main`. Para preparar el entorno, empieza por [Local development environment](docs/development/local-environment.md) _(en inglés)_.
+Las contribuciones de código son bienvenidas. La base del proyecto — infraestructura, CI/CD y la arquitectura central — ya está asentada, y [CONTRIBUTING](CONTRIBUTING.md) explica el modelo de ramas, las convenciones de commits y pull requests, el versionado y cómo se publica una release _(en inglés)_. En resumen: crea una rama `feature/*` de vida corta a partir de `main` y abre un pull request de vuelta a `main`. Para preparar el entorno, empieza por [Local development environment](docs/en/development/local-environment.md) _(en inglés)_.
 
 ¿No escribes código? [Abre un issue](https://github.com/marcandreuf/memship/issues) — los informes de errores, las propuestas de funcionalidades, las preguntas y contar cómo usarías Memship son igual de bienvenidos, y para los dos primeros hay plantillas.
 

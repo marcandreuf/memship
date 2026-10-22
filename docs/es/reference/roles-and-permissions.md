@@ -11,12 +11,12 @@ Memship distingue tres roles. El acceso a cada función depende del rol de la pe
 ## Notas
 
 - El acceso a algunas áreas depende además de que la función esté **activada** en la
-  [configuración](../admin-guide/settings.es.md) (comunicaciones, tarjeta de socio, campos de
+  [configuración](../admin-guide/settings.md) (comunicaciones, tarjeta de socio, campos de
   perfil, etc.).
 - En los **campos de perfil personalizados**, la visibilidad y edición se controlan por campo:
   los administradores **siempre pueden ver** un campo y el superadministrador **siempre puede
   editarlo**; para el socio, cada campo puede ser oculto, de solo lectura o editable. Ver
-  [Campos de perfil](../admin-guide/custom-fields.es.md).
+  [Campos de perfil](../admin-guide/custom-fields.md).
 - Memship es de **un solo inquilino** (single-tenant): una base de datos por organización.
 
 > Un modelo de **roles y permisos flexibles** (múltiples roles y permisos por rol, más allá de

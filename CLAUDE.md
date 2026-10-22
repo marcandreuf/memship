@@ -30,7 +30,7 @@ only**: how memship works and how to run it. This repo is public; that one is no
 
 ### Dev Environment (recommended)
 
-Full reference: [docs/development/local-environment.md](docs/development/local-environment.md).
+Full reference: [docs/en/development/local-environment.md](docs/en/development/local-environment.md).
 
 ```bash
 ./scripts/dev.sh start all       # Start backend (Docker) + frontend (local)

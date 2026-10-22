@@ -3,8 +3,8 @@
 Envío de anuncios a los socios por correo electrónico y con notificación en la app.
 
 > **Requisito previo.** Activa las comunicaciones en
-> [Ajustes → Comunicaciones](settings.es.md) y configura el
-> [envío de correo](../self-hosting/email.md).
+> [Ajustes → Comunicaciones](settings.md) y configura el
+> [envío de correo](../../en/self-hosting/email.md).
 
 ## Crear un anuncio
 
