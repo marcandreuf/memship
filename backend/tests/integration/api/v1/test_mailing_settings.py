@@ -274,21 +274,105 @@ class TestPutMailingEndpoint:
         assert resp.status_code == 200
         assert "api_key" not in org.mailing_config["resend"]
 
-    def test_activate_ready_provider(self, client, db, monkeypatch):
+    def _verify(self, client, provider):
+        resp = client.post("/api/v1/settings/mailing/test", json={"provider": provider})
+        assert resp.json()["ok"] is True
+
+    def test_activate_tested_provider(self, client, db, monkeypatch):
         _clear_env(monkeypatch)
         _set_key(monkeypatch)
         _org(db)
         self._admin(client, db, "put-act")
 
+        client.put("/api/v1/settings/mailing", json={"resend": {"api_key": {"value": "re_key"}}})
+        self._verify(client, "resend")
+        resp = client.put("/api/v1/settings/mailing", json={"active_provider": "resend"})
+        assert resp.status_code == 200
+        assert resp.json()["active_provider"] == "resend"
+
+    def test_cannot_activate_untested_provider(self, client, db, monkeypatch):
+        _clear_env(monkeypatch)
+        _set_key(monkeypatch)
+        org = _org(db)
+        org.mailing_config = {"resend": {"api_key": build_field_node("re_key", True)}}
+        db.flush()
+        self._admin(client, db, "put-untested")
+
+        resp = client.put("/api/v1/settings/mailing", json={"active_provider": "resend"})
+        assert resp.status_code == 400
+        assert resp.json()["detail"]["code"] == "mailing_provider_not_verified"
+        assert "active_provider" not in org.mailing_config
+
+    def test_cannot_activate_failing_provider(self, client, db, monkeypatch):
+        _clear_env(monkeypatch)
+        _set_key(monkeypatch)
+        org = _org(db)
+        org.mailing_config = {"resend": {"api_key": build_field_node("re_key", True)}}
+        db.flush()
+        self._admin(client, db, "put-failing")
+
+        def refuse(*args, **kwargs):
+            raise ConnectionRefusedError("down")
+
+        monkeypatch.setattr(email_module, "_dispatch", refuse)
+        client.post("/api/v1/settings/mailing/test", json={"provider": "resend"})
+
+        resp = client.put("/api/v1/settings/mailing", json={"active_provider": "resend"})
+        assert resp.status_code == 400
+        assert resp.json()["detail"]["code"] == "mailing_provider_not_verified"
+
+    def test_credentials_changed_with_activation_need_their_own_test(self, client, db, monkeypatch):
+        """The old key's passing test proves nothing about the one replacing it."""
+        _clear_env(monkeypatch)
+        _set_key(monkeypatch)
+        org = _org(db)
+        org.mailing_config = {"resend": {"api_key": build_field_node("re_old", True)}}
+        db.flush()
+        self._admin(client, db, "put-swap")
+        self._verify(client, "resend")
+
         resp = client.put(
             "/api/v1/settings/mailing",
-            json={
-                "resend": {"api_key": {"value": "re_key"}},
-                "active_provider": "resend",
-            },
+            json={"resend": {"api_key": {"value": "re_new"}}, "active_provider": "resend"},
+        )
+        assert resp.status_code == 400
+        assert resp.json()["detail"]["code"] == "mailing_provider_not_verified"
+        # The whole request is refused, credentials included.
+        assert secrets_crypto.decrypt(org.mailing_config["resend"]["api_key"]["value"]) == "re_old"
+
+    def test_keeping_the_active_provider_is_not_gated(self, client, db, monkeypatch):
+        """An install activated before the gate keeps working when its settings are saved."""
+        _clear_env(monkeypatch)
+        _set_key(monkeypatch)
+        org = _org(db)
+        org.mailing_config = {
+            "active_provider": "resend",
+            "resend": {"api_key": build_field_node("re_key", True)},
+        }
+        db.flush()
+        self._admin(client, db, "put-keep")
+
+        resp = client.put(
+            "/api/v1/settings/mailing",
+            json={"active_provider": "resend", "resend": {"from_email": "club@example.org"}},
         )
         assert resp.status_code == 200
         assert resp.json()["active_provider"] == "resend"
+
+    def test_deactivating_is_never_gated(self, client, db, monkeypatch):
+        _clear_env(monkeypatch)
+        _set_key(monkeypatch)
+        org = _org(db)
+        org.mailing_config = {
+            "active_provider": "resend",
+            "resend": {"api_key": build_field_node("re_key", True)},
+        }
+        db.flush()
+        self._admin(client, db, "put-off")
+
+        resp = client.put("/api/v1/settings/mailing", json={"active_provider": None})
+        assert resp.status_code == 200
+        assert resp.json()["active_provider"] is None
 
     def test_cannot_activate_unready_provider(self, client, db, monkeypatch):
         _clear_env(monkeypatch)
@@ -319,6 +403,7 @@ class TestPutMailingEndpoint:
         }
         db.flush()
         self._admin(client, db, "put-switch")
+        self._verify(client, "gmail")
 
         resp = client.put("/api/v1/settings/mailing", json={"active_provider": "gmail"})
         assert resp.status_code == 200
@@ -351,18 +436,20 @@ class TestPutMailingEndpoint:
 
         client.put(
             "/api/v1/settings/mailing",
-            json={"resend": {"api_key": {"value": "re_supersecret"}}, "active_provider": "resend"},
+            json={"resend": {"api_key": {"value": "re_supersecret"}}},
         )
+        self._verify(client, "resend")
+        client.put("/api/v1/settings/mailing", json={"active_provider": "resend"})
         entries = (
             db.query(AuditLog)
             .filter(AuditLog.table_name == "organization_settings", AuditLog.action == "update")
             .all()
         )
-        assert entries
-        latest = entries[-1]
-        assert "mailing_config.resend.api_key" in latest.changed_fields
-        assert "mailing_config.active_provider" in latest.changed_fields
-        assert "re_supersecret" not in str(latest.changed_fields)
+        assert len(entries) >= 2
+        saved, activated = entries[-2], entries[-1]
+        assert "mailing_config.resend.api_key" in saved.changed_fields
+        assert "mailing_config.active_provider" in activated.changed_fields
+        assert "re_supersecret" not in str([e.changed_fields for e in entries])
 
 
 class TestMailingTestEndpoint:
@@ -428,3 +515,125 @@ class TestMailingTestEndpoint:
         body = resp.json()
         assert body["ok"] is False
         assert "smtp auth failed" in body["error"]
+
+class TestMailTransportHealth:
+    """#338: the screen tells a working credential from an untried or failing one."""
+
+    def _admin(self, client, db, suffix):
+        admin = _create_user(db, "super_admin", suffix)
+        client.cookies.update(_auth_cookie(admin))
+        return admin
+
+    def _resend_org(self, db, monkeypatch, key="re_key"):
+        _clear_env(monkeypatch)
+        _set_key(monkeypatch)
+        org = _org(db)
+        org.mailing_config = {"resend": {"api_key": build_field_node(key, True)}}
+        db.flush()
+        return org
+
+    def _health(self, client, provider="resend"):
+        return client.get("/api/v1/settings/mailing").json()[provider]["health"]
+
+    def test_untried_credentials_are_unverified(self, client, db, monkeypatch):
+        self._resend_org(db, monkeypatch)
+        self._admin(client, db, "health-new")
+
+        body = client.get("/api/v1/settings/mailing").json()
+        assert body["resend"]["ready"] is True
+        assert body["resend"]["health"] == {
+            "status": "unverified",
+            "last_success_at": None,
+            "last_failure_at": None,
+            "last_failure": None,
+        }
+        assert body["gmail"]["health"]["status"] == "unverified"
+
+    def test_passing_test_send_marks_provider_ok(self, client, db, monkeypatch):
+        self._resend_org(db, monkeypatch)
+        self._admin(client, db, "health-ok")
+
+        assert client.post("/api/v1/settings/mailing/test", json={"provider": "resend"}).json()["ok"]
+
+        health = self._health(client)
+        assert health["status"] == "ok"
+        assert health["last_success_at"] is not None
+        assert health["last_failure"] is None
+
+    def test_failing_test_send_marks_provider_failing(self, client, db, monkeypatch):
+        import smtplib
+
+        self._resend_org(db, monkeypatch)
+        self._admin(client, db, "health-fail")
+
+        def refuse(*args, **kwargs):
+            raise smtplib.SMTPAuthenticationError(535, b"bad credentials")
+
+        monkeypatch.setattr(email_module, "_dispatch", refuse)
+        client.post("/api/v1/settings/mailing/test", json={"provider": "resend"})
+
+        health = self._health(client)
+        assert health["status"] == "failing"
+        assert health["last_failure"] == "invalid_credentials"
+        assert health["last_success_at"] is None
+        # The classified reason only — never the transport's own text.
+        assert "bad credentials" not in client.get("/api/v1/settings/mailing").text
+
+    def test_recovery_keeps_the_last_failure_on_record(self, client, db, monkeypatch):
+        self._resend_org(db, monkeypatch)
+        self._admin(client, db, "health-recover")
+
+        def refuse(*args, **kwargs):
+            raise ConnectionRefusedError("down")
+
+        monkeypatch.setattr(email_module, "_dispatch", refuse)
+        client.post("/api/v1/settings/mailing/test", json={"provider": "resend"})
+        monkeypatch.setattr(email_module, "_dispatch", lambda *a, **k: True)
+        client.post("/api/v1/settings/mailing/test", json={"provider": "resend"})
+
+        health = self._health(client)
+        assert health["status"] == "ok"
+        assert health["last_failure"] == "transport_unavailable"
+
+    def test_replaced_credential_is_unverified_again(self, client, db, monkeypatch):
+        self._resend_org(db, monkeypatch)
+        self._admin(client, db, "health-replace")
+        client.post("/api/v1/settings/mailing/test", json={"provider": "resend"})
+        assert self._health(client)["status"] == "ok"
+
+        client.put(
+            "/api/v1/settings/mailing",
+            json={"resend": {"api_key": {"value": "re_other_key"}}},
+        )
+
+        assert self._health(client)["status"] == "unverified"
+
+    def test_changed_env_credential_is_unverified_again(self, client, db, monkeypatch):
+        """A key rotated in .env, not in the screen, must not inherit the old history."""
+        from app.core.config import settings
+
+        _clear_env(monkeypatch)
+        _org(db)
+        monkeypatch.setattr(settings, "RESEND_API_KEY", "env-key-1", raising=False)
+        self._admin(client, db, "health-env")
+        client.post("/api/v1/settings/mailing/test", json={"provider": "resend"})
+        assert self._health(client)["status"] == "ok"
+
+        monkeypatch.setattr(settings, "RESEND_API_KEY", "env-key-2", raising=False)
+
+        assert self._health(client)["status"] == "unverified"
+
+    def test_recording_leaves_an_env_only_install_env_only(self, db, monkeypatch):
+        """Health must not land in mailing_config: any key there switches off env mail."""
+        from app.core.config import settings
+        from app.domains.mailing.mailing_health import record_outcome
+
+        _clear_env(monkeypatch)
+        monkeypatch.setattr(settings, "RESEND_API_KEY", "env-key", raising=False)
+        org = _org(db)
+
+        record_outcome(db, resolve_mailing_config(db), "resend", None)
+        db.flush()
+
+        assert org.mailing_config == {}
+        assert resolve_mailing_config(db).active == "resend"

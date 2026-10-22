@@ -31,11 +31,17 @@ from app.domains.mailing.mailing_config import (
     build_field_node as build_mail_field_node,
     resolve_mailing_config,
 )
+from app.domains.mailing.mailing_health import (
+    ProviderHealth,
+    provider_health,
+    record_outcome as record_send_outcome,
+)
 from app.domains.mailing.mailing_schemas import (
     CommunicationsConfigUpdate,
     CommunicationsConfigView,
     CommunicationTemplateView,
     MailGmailView,
+    MailHealthView,
     MailingConfigUpdate,
     MailingConfigView,
     MailingTestRequest,
@@ -294,9 +300,19 @@ def update_sso_config(
 # DB-then-env resolution) with the one-of-N active-provider rule on top.
 
 
+def _health_view(health: ProviderHealth) -> MailHealthView:
+    return MailHealthView(
+        status=health.status,
+        last_success_at=health.last_success_at,
+        last_failure_at=health.last_failure_at,
+        last_failure=health.last_failure,
+    )
+
+
 def _build_mailing_view(db: Session) -> MailingConfigView:
     resolved = resolve_mailing_config(db)
     r, g = resolved.resend, resolved.gmail
+    health = provider_health(db, resolved)
     return MailingConfigView(
         active_provider=resolved.active,
         resend=MailResendView(
@@ -306,6 +322,7 @@ def _build_mailing_view(db: Session) -> MailingConfigView:
                 last4=r.last4("api_key"),
             ),
             ready=r.ready,
+            health=_health_view(health["resend"]),
         ),
         gmail=MailGmailView(
             user=g.get("user"),
@@ -315,6 +332,7 @@ def _build_mailing_view(db: Session) -> MailingConfigView:
                 last4=g.last4("app_password"),
             ),
             ready=g.ready,
+            health=_health_view(health["gmail"]),
         ),
         secrets_encryption_available=secrets_crypto.secrets_available(),
         sources=resolved.flat_sources(),
@@ -404,6 +422,20 @@ def update_mailing_config(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail={"code": "mailing_provider_not_ready"},
                 )
+            # Switching real traffic onto a provider needs proof its current
+            # credentials deliver: a passing test, or a real send, through
+            # exactly these credentials. Credentials changed in this same
+            # request have no such proof yet. Keeping the provider already
+            # active is not an activation, so it is never blocked here.
+            if (
+                config.get("active_provider") != ap
+                and provider_health(db, resolved)[ap].status != "ok"
+            ):
+                settings_obj.mailing_config = original
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail={"code": "mailing_provider_not_verified"},
+                )
         if config.get("active_provider") != ap:
             config["active_provider"] = ap
             changed.append("active_provider")
@@ -453,7 +485,9 @@ def test_mailing_provider(
         )
 
     locale = getattr(current_user, "preferred_locale", None) or app_settings.DEFAULT_LOCALE
-    ok, error = send_test_email(resolved, data.provider, to, locale)
+    ok, error, failure = send_test_email(resolved, data.provider, to, locale)
+    record_send_outcome(db, resolved, data.provider, failure.value if failure else None)
+    db.commit()
     return MailingTestResult(ok=ok, error=error)
 
 
