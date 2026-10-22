@@ -24,9 +24,14 @@ from it are worth repeating here because they are the ones that silently bite:
 
 - **Saving credentials does not activate them.** The card badge goes to *Ready*, not *Active*.
   You must then set the **Active provider** selector and save again. Configure → test →
-  activate, in that order.
+  activate, in that order. The order is enforced: a provider cannot be activated until a send
+  through its current saved credentials has passed.
 - **With no active provider, mail is silently skipped** — logged, not queued, no error. Nothing
   in the interface reports a send that never happened.
+
+Each provider card also shows whether its credentials are known to work: *Not verified*,
+*Working*, or *Failing* with a reason. It is updated by every email sent through that provider,
+the test included, and it applies to credentials that come from `.env` too.
 
 ## Option B — `.env`
 

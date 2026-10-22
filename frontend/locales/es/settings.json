@@ -234,16 +234,32 @@
       "clear": "Borrar",
       "undoClear": "Deshacer",
       "fillCredsFirst": "Rellena las credenciales antes de activarlo.",
+      "activationNeedsSave": "Guarda y prueba las nuevas credenciales antes de activarlo.",
+      "activationNeedsTest": "Envía una prueba correcta antes de activarlo.",
       "sendTest": "Enviar prueba",
       "testSent": "Correo de prueba enviado.",
       "testFailed": "Ha fallado el envío de prueba: {error}",
       "testNeedsReady": "Configura y guarda las credenciales primero.",
       "testNeedsSave": "Guarda los cambios antes de enviar la prueba.",
       "providerNotReady": "Faltan credenciales para ese proveedor.",
+      "providerNotVerified": "Ese proveedor no ha superado una prueba con sus credenciales actuales. Guárdalas, envía una prueba y después actívalo.",
       "nothingToSave": "No hay cambios que guardar.",
       "encryptionActive": "Cifrado activo: los secretos se guardan cifrados.",
       "encryptionKeyMissing": "Configura MEMSHIP_SECRET_KEY para poder guardar secretos del proveedor.",
-      "encryptionKeyRequired": "No se pueden guardar secretos sin una clave de cifrado."
+      "encryptionKeyRequired": "No se pueden guardar secretos sin una clave de cifrado.",
+      "health": {
+        "unverified": "Sin verificar: todavía no se ha enviado nada con estas credenciales. Envía una prueba para comprobarlas.",
+        "ok": "Funciona: el último correo enviado con estas credenciales se aceptó el {date}.",
+        "failing": "Falla: el último correo enviado con estas credenciales se rechazó el {date}. {reason}",
+        "failures": {
+          "no_provider": "No había ningún proveedor disponible.",
+          "invalid_credentials": "El proveedor ha rechazado las credenciales.",
+          "rejected_recipient": "El proveedor ha rechazado la dirección del destinatario.",
+          "rate_limited": "Se ha alcanzado el límite de envío del proveedor.",
+          "transport_unavailable": "No se ha podido contactar con el proveedor.",
+          "unknown": "El proveedor no ha dado un motivo reconocible; envía una prueba para ver su mensaje."
+        }
+      }
     },
     "emailTemplates": {
       "title": "Correos a los miembros",

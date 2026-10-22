@@ -34,7 +34,8 @@ KNOWN_TABLES = frozenset({
     "announcement_recipients", "announcements", "audit_logs", "billing_runs",
     "bookings", "concepts", "contacts", "contact_types",
     "custom_field_definitions", "custom_field_values", "discount_codes",
-    "groups", "invoice_sequences", "members", "membership_types",
+    "groups", "invoice_sequences", "mail_transport_health", "members",
+    "membership_types",
     "notifications", "organization_settings", "payment_providers", "persons",
     "receipt_reminders", "receipts", "registration_attachments",
     "registration_consents", "registrations", "reminders",
@@ -50,6 +51,11 @@ KNOWN_TABLES = frozenset({
 # Nothing is reused either, because the documents those numbers belonged to are
 # gone in the same operation — the series restarts because the series it
 # continued no longer exists.
+
+# `mail_transport_health` goes with `organization_settings`, which holds the
+# mail credentials it reports on. Keeping it would be harmless, since a row only
+# counts against the credentials it was recorded for, but it would describe
+# credentials the reset has just removed.
 
 # Instance-level configuration and lookups. A club reset never touches these.
 PRESERVED_TABLES = frozenset({

@@ -6,6 +6,7 @@ field left as ``None`` is unchanged; ``clear=True`` wipes it. Exactly one
 provider is active at a time, selected by ``active_provider``.
 """
 
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel
@@ -19,10 +20,21 @@ class MailSecretStatus(BaseModel):
     last4: str | None = None
 
 
+class MailHealthView(BaseModel):
+    # Judged against the credentials resolved now: history recorded against
+    # credentials that have since changed reads as "unverified".
+    status: Literal["unverified", "ok", "failing"]
+    last_success_at: datetime | None = None
+    last_failure_at: datetime | None = None
+    # An ``EmailFailure`` value; never the transport's own error text.
+    last_failure: str | None = None
+
+
 class MailResendView(BaseModel):
     from_email: str
     api_key: MailSecretStatus
     ready: bool
+    health: MailHealthView
 
 
 class MailGmailView(BaseModel):
@@ -30,6 +42,7 @@ class MailGmailView(BaseModel):
     from_email: str
     app_password: MailSecretStatus
     ready: bool
+    health: MailHealthView
 
 
 class MailingConfigView(BaseModel):

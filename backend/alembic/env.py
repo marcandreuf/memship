@@ -33,6 +33,7 @@ from app.domains.communications.models import (  # noqa: F401
     Notification,
 )
 from app.domains.reminders.models import Reminder  # noqa: F401
+from app.domains.mailing.models import MailTransportHealth  # noqa: F401
 from app.domains.custom_fields.models import (  # noqa: F401
     CustomFieldDefinition,
     CustomFieldValue,

@@ -16,6 +16,7 @@ from enum import Enum
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound, select_autoescape
+from sqlalchemy import text
 
 from app.core.config import settings
 from app.core.email_branding import EmailBranding, get_email_branding
@@ -26,6 +27,7 @@ from app.domains.mailing.mailing_config import (
     env_only_mailing_config,
     resolve_mailing_config,
 )
+from app.domains.mailing.mailing_health import record_outcome as record_send_outcome
 from app.domains.mailing.policy import always_sends as template_always_sends
 from app.domains.mailing.policy import honours_member_opt_out
 from app.domains.mailing.policy import is_enabled as is_template_enabled
@@ -476,15 +478,64 @@ def _dispatch(
     return False
 
 
+def _record_send_outcome(
+    resolved: ResolvedMailing, provider: str, failure: EmailFailure | None
+) -> None:
+    """Persist a send's outcome for the settings screen, on a short-lived session.
+
+    Best effort: health is a report about mail, so failing to write it must
+    never fail the mail. ``lock_timeout`` bounds the wait should another
+    transaction be holding the provider's row.
+    """
+    try:
+        db = db_session.SessionLocal()
+    except Exception:  # noqa: BLE001 — never let health bookkeeping break a send
+        return
+    try:
+        db.execute(text("SET LOCAL lock_timeout = '2s'"))
+        record_send_outcome(db, resolved, provider, failure.value if failure else None)
+        db.commit()
+    except Exception as e:  # noqa: BLE001
+        db.rollback()
+        logger.warning(f"Could not record mail transport health: provider={provider}, error={e}")
+    finally:
+        db.close()
+
+
+def _deliver(
+    resolved: ResolvedMailing,
+    to: str,
+    subject: str,
+    html_body: str,
+    raise_errors: bool = False,
+    **attachment_opts,
+) -> bool:
+    """Dispatch through the active provider and record how it went.
+
+    The transport always raises here so the failure can be classified before
+    it is recorded; ``raise_errors`` then decides whether the caller sees it.
+    """
+    provider = resolved.active
+    try:
+        ok = _dispatch(
+            provider, resolved, to, subject, html_body, raise_errors=True, **attachment_opts
+        )
+    except Exception as e:
+        _record_send_outcome(resolved, provider, classify_transport_error(e))
+        if raise_errors:
+            raise
+        return False
+    _record_send_outcome(resolved, provider, None if ok else EmailFailure.UNKNOWN)
+    return ok
+
+
 def send_email(to: str, subject: str, html_body: str, raise_errors: bool = False) -> bool:
     """Send an email through the active mail provider."""
     resolved = _resolve_transport()
     if not resolved.active:
         logger.info(f"Email skipped (no transport): to={to}, subject={subject}")
         return False
-    return _dispatch(
-        resolved.active, resolved, to, subject, html_body, raise_errors=raise_errors
-    )
+    return _deliver(resolved, to, subject, html_body, raise_errors=raise_errors)
 
 
 def send_email_with_attachment(
@@ -504,29 +555,32 @@ def send_email_with_attachment(
             f"subject={subject}, file={attachment_filename}"
         )
         return False
-    return _dispatch(
-        resolved.active, resolved, to, subject, html_body,
+    return _deliver(
+        resolved, to, subject, html_body,
+        raise_errors=raise_errors,
         attachment=attachment,
         attachment_filename=attachment_filename,
         attachment_mime=attachment_mime,
-        raise_errors=raise_errors,
     )
 
 
-def send_test_email(resolved: ResolvedMailing, provider: str, to: str, locale: str = "es") -> tuple[bool, str | None]:
+def send_test_email(
+    resolved: ResolvedMailing, provider: str, to: str, locale: str = "es"
+) -> tuple[bool, str | None, EmailFailure | None]:
     """Send a test message through a specific provider, bypassing ``active``.
 
     Used by the settings screen so a superadmin can verify credentials before
-    switching the active provider to them. Returns ``(ok, error)`` where a
-    transport failure surfaces as a sanitized message rather than raising.
+    switching the active provider to them. Returns ``(ok, error, failure)``: a
+    transport failure surfaces as its message for the superadmin running the
+    test, and as a classified ``EmailFailure`` for the health record.
     """
     subject = _get_subject("mailing_test", locale)
     html_body = render_template("mailing_test", locale, {"provider": provider})
     try:
         ok = _dispatch(provider, resolved, to, subject, html_body, raise_errors=True)
-        return (True, None) if ok else (False, "send_failed")
+        return (True, None, None) if ok else (False, "send_failed", EmailFailure.UNKNOWN)
     except Exception as e:  # noqa: BLE001 — surface the transport error to the UI
-        return False, str(e)
+        return False, str(e), classify_transport_error(e)
 
 
 def _template_enabled(template_key: str) -> bool:

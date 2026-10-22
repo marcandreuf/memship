@@ -234,16 +234,32 @@
       "clear": "Esborra",
       "undoClear": "Desfés",
       "fillCredsFirst": "Emplena les credencials abans d'activar-lo.",
+      "activationNeedsSave": "Desa i prova les noves credencials abans d'activar-lo.",
+      "activationNeedsTest": "Envia una prova correcta abans d'activar-lo.",
       "sendTest": "Envia una prova",
       "testSent": "Correu de prova enviat.",
       "testFailed": "L'enviament de prova ha fallat: {error}",
       "testNeedsReady": "Configura i desa les credencials primer.",
       "testNeedsSave": "Desa els canvis abans d'enviar la prova.",
       "providerNotReady": "Falten credencials per a aquest proveïdor.",
+      "providerNotVerified": "Aquest proveïdor no ha superat cap prova amb les credencials actuals. Desa-les, envia una prova i després activa'l.",
       "nothingToSave": "No hi ha canvis per desar.",
       "encryptionActive": "Xifratge actiu: els secrets es desen xifrats.",
       "encryptionKeyMissing": "Configura MEMSHIP_SECRET_KEY per poder desar secrets del proveïdor.",
-      "encryptionKeyRequired": "No es poden desar secrets sense una clau de xifratge."
+      "encryptionKeyRequired": "No es poden desar secrets sense una clau de xifratge.",
+      "health": {
+        "unverified": "Sense verificar: encara no s'ha enviat res amb aquestes credencials. Envia una prova per comprovar-les.",
+        "ok": "Funciona: l'últim correu enviat amb aquestes credencials es va acceptar el {date}.",
+        "failing": "Falla: l'últim correu enviat amb aquestes credencials es va rebutjar el {date}. {reason}",
+        "failures": {
+          "no_provider": "No hi havia cap proveïdor disponible.",
+          "invalid_credentials": "El proveïdor ha rebutjat les credencials.",
+          "rejected_recipient": "El proveïdor ha rebutjat l'adreça del destinatari.",
+          "rate_limited": "S'ha arribat al límit d'enviament del proveïdor.",
+          "transport_unavailable": "No s'ha pogut contactar amb el proveïdor.",
+          "unknown": "El proveïdor no ha donat cap motiu reconeixible; envia una prova per veure'n el missatge."
+        }
+      }
     },
     "emailTemplates": {
       "title": "Correus als membres",

@@ -267,9 +267,23 @@ Recommended order — configure, **test**, then activate:
    - The button is disabled while you have unsaved changes ("Save your changes before sending the test") or while required fields are missing.
 4. Once the test arrives, set the **Active provider** selector to that provider and press **Save**. The badge becomes **Active**.
 
-A provider that is missing required fields cannot be selected as active — the option is greyed out with a "Fill in the credentials before activating it" hint.
+The order is enforced, not just recommended. The *Active provider* selector greys out a provider and says why on hover in three cases:
 
-Switching providers later is a two-click operation: select the other provider, save. The credentials of the one you left are kept, so you can switch back.
+- **Required fields are missing** — "Fill in the credentials before activating it".
+- **Its fields have unsaved edits** — "Save and test the new credentials before activating it". A test only proves saved credentials, so new ones need saving and testing first.
+- **No send has passed with its current credentials** — "Send a successful test before activating it". The test must be the most recent send, and a real email that went through counts too. If the latest send failed, the provider stays greyed out until a test passes again.
+
+The provider that is already active is never greyed out for this reason. Saving other changes does not deactivate it, even if it has never been tested. Setting the selector to **None** is always possible.
+
+Once a card has its credentials, a line under its header says whether they are known to work. Every email sent through that provider updates it: the test, and every real message as well.
+
+- **Not verified** (amber) — nothing has been sent with these credentials yet. Replacing a key or password, or changing it in `.env`, puts the card back here, because the earlier result was for different credentials.
+- **Working** (green) — the most recent email was accepted by the provider, with the date.
+- **Failing** (red) — the most recent email was refused, with the date and a short reason (credentials rejected, provider unreachable, sending limit reached…). **Send test** shows the provider's full error message.
+
+*Working* means the provider accepted the message. It does not mean the message reached the inbox: a bounce or a spam folder happens after that, so check the provider's own log for those.
+
+Switching providers later is a two-click operation: select the other provider, save. The credentials of the one you left are kept, so you can switch back — once they pass a test again, if they have changed since.
 
 ### 4.5 Mailing troubleshooting
 
@@ -281,7 +295,7 @@ Switching providers later is a two-click operation: select the other provider, s
 | Test fails: Resend 401 / "API key is invalid" | Key mistyped, revoked, or created without sending permission. Create a new key. |
 | Test reports success but nothing arrives | Check spam. For Resend, check the *Emails* log in its dashboard for a bounce. For Gmail, check the sending account's *Sent* folder. |
 | Nothing is being sent at all, no errors anywhere | Active provider is **None**. Select a provider and save. |
-| Members stop receiving mail after a working period | Gmail daily limit reached, or the app password was revoked; on Resend, a suspended domain. Use **Send test** to get the actual error. |
+| Members stop receiving mail after a working period | Gmail daily limit reached, or the app password was revoked; on Resend, a suspended domain. The provider card turns **Failing** and gives a short reason. Use **Send test** to get the actual error. |
 | The label says "from environment" | That value comes from the installation's `.env` file. It works, but anything you type in the screen takes precedence for that field. |
 | Emails arrive from an address you did not configure | Gmail rewrote the From to the account address (expected), or an env-file value is still supplying it. |
 
