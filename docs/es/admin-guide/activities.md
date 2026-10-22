@@ -59,4 +59,4 @@ espera**, **Pendiente** o **Cancelado**. Cuando una actividad se llena, las nuev
 pasan automáticamente a la **lista de espera** y se promocionan al liberarse plazas. Puedes
 **cambiar el estado** de una inscripción manualmente.
 
-Cada inscripción confirmada puede generar automáticamente un [recibo](payments.es.md).
+Cada inscripción confirmada puede generar automáticamente un [recibo](payments.md).

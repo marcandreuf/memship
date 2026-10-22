@@ -15,7 +15,7 @@
 #
 # `scripts/install.sh` creates the directory tree. If you bring the stack up by
 # hand, Docker creates any missing directory as root — which works, but see
-# docs/self-hosting/ for the ownership notes.
+# docs/en/self-hosting/ for the ownership notes.
 
 # The API, the Celery worker and Celery beat run the same image with the same
 # settings — only the command differs. Kept in one anchor so a new setting cannot
@@ -78,7 +78,7 @@ services:
     environment:
       # The site address Caddy serves. A bare hostname makes Caddy provision a
       # Let's Encrypt certificate automatically; the default `:80` serves plain
-      # HTTP, which is what you want on localhost. See docs/self-hosting/.
+      # HTTP, which is what you want on localhost. See docs/en/self-hosting/.
       SITE_ADDRESS: ${SITE_ADDRESS:-:80}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro

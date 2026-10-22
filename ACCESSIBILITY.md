@@ -136,7 +136,7 @@ What the project can genuinely promise, which is less than a company can:
   the truth today.
 - **Fixes land in the next release.** Pre-1.0, only the latest release gets fixes, so an
   upgrade is how a fix reaches your install — see
-  [Upgrading](docs/self-hosting/upgrading.md). Blocking barriers are aimed at the next patch;
+  [Upgrading](docs/en/self-hosting/upgrading.md). Blocking barriers are aimed at the next patch;
   anything else is scheduled honestly rather than promised by a date.
 - **You get asked to confirm it.** Accessibility fixes are easy to get wrong from the outside,
   so when one ships we will ask whether it actually works for you, and reopen if it does not.
@@ -179,7 +179,7 @@ Windows high-contrast mode. No claim is made about any of them, in either direct
 absence of a claim is not a claim of absence — it means nobody knows yet.
 
 **Server side**, which affects nothing about this document but is asked often: Docker and
-Docker Compose on Linux, per the [installation guide](docs/getting-started/installation.md).
+Docker Compose on Linux, per the [installation guide](docs/en/getting-started/installation.md).
 
 ## Known limitations
 

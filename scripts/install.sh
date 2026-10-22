@@ -98,7 +98,7 @@ if [ "$FROM_UPGRADE" -eq 0 ] && [ -f "$ENV_FILE" ] \
   of that, so running it here would skip the check that keeps a refused
   migration from becoming downtime.
 
-  Full procedure: docs/self-hosting/upgrading.md"
+  Full procedure: docs/en/self-hosting/upgrading.md"
 fi
 if [ -z "$DATA_ROOT" ] && [ -f "$ENV_FILE" ]; then
     DATA_ROOT="$(grep -E '^MEMSHIP_DATA_ROOT=' "$ENV_FILE" | tail -1 | cut -d= -f2- || true)"
@@ -138,7 +138,7 @@ done
 
 # storage/ holds uploads AND the auto-generated encryption key (secret.key). The
 # backend runs as HOST_UID/HOST_GID, so what it writes here belongs to you and
-# needs no sudo to read; 0770 keeps it off other local accounts. See docs/self-hosting/.
+# needs no sudo to read; 0770 keeps it off other local accounts. See docs/en/self-hosting/.
 chmod 0770 "$DATA_ROOT/storage"
 chmod 0700 "$DATA_ROOT/backups"
 
@@ -327,14 +327,14 @@ failure mode:
 and optionally uploads and certificates off this one. It is a starting point,
 not a backup system.
 
-Read \`docs/self-hosting/backups-and-restore.md\` before you go live, and test a
+Read \`docs/en/self-hosting/backups-and-restore.md\` before you go live, and test a
 restore once. A backup you have never restored is a guess.
 
 ## 4. Configure email
 
 Until a transport is set, registration, password-reset and receipt emails are
 **dropped silently**. Fill in either the Resend key or the SMTP block in
-\`.env\`, or configure it from Settings. See \`docs/self-hosting/email.md\`.
+\`.env\`, or configure it from Settings. See \`docs/en/self-hosting/email.md\`.
 
 ## Where things are
 
@@ -347,7 +347,7 @@ Until a transport is set, registration, password-reset and receipt emails are
 | Version | \`$NEW_TAG\` |
 
 Upgrading: refresh this directory from the release you want, then
-\`./scripts/upgrade.sh <version>\`. See \`docs/self-hosting/upgrading.md\`.
+\`./scripts/upgrade.sh <version>\`. See \`docs/en/self-hosting/upgrading.md\`.
 POSTINSTALL
     chmod 644 "$REPO_ROOT/POST-INSTALL.md"
 
@@ -499,7 +499,7 @@ cat <<EOF
                    Pulling images alone is a half-upgrade: part of a release
                    ships here, beside the images — this Compose file, the
                    Caddyfile, these scripts.
-                   Full procedure: docs/self-hosting/upgrading.md
-  Backups: docs/self-hosting/backups-and-restore.md
+                   Full procedure: docs/en/self-hosting/upgrading.md
+  Backups: docs/en/self-hosting/backups-and-restore.md
 
 EOF

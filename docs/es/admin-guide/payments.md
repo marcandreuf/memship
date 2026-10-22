@@ -14,7 +14,7 @@ Acciones disponibles según el estado: **Emitir**, **Cobrar**, **Devolver**, **A
 
 Un recibo incluido en una remesa ya **Enviada** o **Procesada** no se puede **Cobrar** ni
 **Anular** a mano: el cobro está en curso en el banco. Importa la devolución o cierra la remesa
-— ver [Domiciliación SEPA](sepa.es.md#remesas).
+— ver [Domiciliación SEPA](sepa.md#remesas).
 
 ## Corregir un recibo emitido
 
@@ -38,8 +38,8 @@ cobrado solo se corrige con una rectificativa.
 Un recibo puede tener origen:
 
 - **Cuota** — cuota de socio (ver *Generar cuotas* y la
-  [facturación recurrente](settings.es.md#facturación-recurrente)).
-- **Actividad** — generado automáticamente al confirmar una [inscripción](activities.es.md);
+  [facturación recurrente](settings.md#facturación-recurrente)).
+- **Actividad** — generado automáticamente al confirmar una [inscripción](activities.md);
   se anula si la inscripción se cancela.
 - **Manual** — creado a mano desde la ficha del socio.
 
@@ -51,7 +51,7 @@ membresía**. Es la forma de emitir la cuota periódica de forma masiva sin crea
 ## IVA y facturación
 
 - El **tipo de IVA** se calcula sobre la base; el tipo por defecto se configura en
-  [Ajustes → Banca y facturación](settings.es.md#banca-y-facturación).
+  [Ajustes → Banca y facturación](settings.md#banca-y-facturación).
 - La **numeración** usa un prefijo configurable y, opcionalmente, se reinicia cada año
   (p. ej. `FAC-2026-0001`).
 - El **PDF** del recibo incluye la cabecera de la organización, los datos del socio y el
@@ -60,7 +60,7 @@ membresía**. Es la forma de emitir la cuota periódica de forma masiva sin crea
 ## Métodos de pago y cobro en línea
 
 Un recibo puede cobrarse por **efectivo**, **transferencia**, **tarjeta**, **domiciliación**
-(ver [SEPA](sepa.es.md)) o mediante una **pasarela de pago en línea**.
+(ver [SEPA](sepa.md)) o mediante una **pasarela de pago en línea**.
 
 Cuando hay un proveedor configurado, el socio ve el botón **Pagar ahora** en sus recibos
 pendientes y puede pagar con:
@@ -72,13 +72,13 @@ pendientes y puede pagar con:
 
 > La confirmación definitiva de los pagos con pasarela llega por la **notificación asíncrona**
 > del proveedor, no por la vuelta del navegador. La configuración de proveedores se hace en
-> [Ajustes → Proveedores de pago](settings.es.md#proveedores-de-pago).
+> [Ajustes → Proveedores de pago](settings.md#proveedores-de-pago).
 
 > **Para darlos de alta paso a paso** — qué credencial pedir a Stripe o al banco, cómo crear
 > el webhook de Stripe y por qué Redsys no lo necesita — consulta la
-> [guía de proveedores de pago](payment-providers.md) _(en inglés)_.
+> [guía de proveedores de pago](../../en/admin-guide/payment-providers.md) _(en inglés)_.
 
 ## Panel financiero
 
-El [panel](reports.es.md) muestra el estado de los recibos y los importes **pendiente**,
+El [panel](reports.md) muestra el estado de los recibos y los importes **pendiente**,
 **cobrado este mes** y **vencido**.

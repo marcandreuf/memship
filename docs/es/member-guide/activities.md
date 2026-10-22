@@ -34,5 +34,5 @@ Si la actividad permite la **cancelación por el socio**, podrás cancelar tu in
 plazo establecido (un número de horas antes del inicio). Pasado ese plazo, contacta con la
 organización.
 
-Al inscribirte puede generarse un **[recibo](payments.es.md)**; al cancelar dentro de plazo, el
+Al inscribirte puede generarse un **[recibo](payments.md)**; al cancelar dentro de plazo, el
 recibo asociado se anula.
