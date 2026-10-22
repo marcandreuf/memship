@@ -441,7 +441,7 @@ def _dispatch(
     attachment_mime: str = "application/pdf",
     raise_errors: bool = False,
 ) -> bool:
-    """Send through a specific resolved provider (Resend or Gmail/SMTP).
+    """Send through a specific resolved provider (Resend or SMTP).
 
     The plain-text alternative is derived here rather than at each call site, so
     every sender — including the ones that hand over pre-built HTML — ships a
@@ -460,15 +460,15 @@ def _dispatch(
             attachment_mime=attachment_mime,
             raise_errors=raise_errors,
         )
-    if provider == "gmail":
-        g = resolved.gmail
-        host, port, tls = resolved.gmail_smtp()
+    if provider == "smtp":
+        s = resolved.smtp
+        host, port, tls = resolved.smtp_endpoint()
         return _send_via_smtp(
             to, subject, html_body,
             host=host, port=port, tls=tls,
-            user=g.get("user"),
-            password=g.get("app_password"),
-            from_email=g.get("from_email") or g.get("user"),
+            user=s.get("user"),
+            password=s.get("password"),
+            from_email=s.get("from_email") or s.get("user"),
             text_body=text_body,
             attachment=attachment,
             attachment_filename=attachment_filename,

@@ -15,7 +15,6 @@ from app.core.security.password import hash_password
 from app.domains.audit.models import AuditLog
 from app.domains.auth.models import User
 from app.domains.mailing.mailing_config import (
-    GMAIL_SMTP_HOST,
     build_field_node,
     resolve_mailing_config,
 )
@@ -121,7 +120,7 @@ class TestResolver:
 
         assert resolve_mailing_config(db).active == "resend"
 
-    def test_env_only_active_falls_to_gmail(self, db, monkeypatch):
+    def test_env_only_active_falls_to_smtp(self, db, monkeypatch):
         from app.core.config import settings
 
         _clear_env(monkeypatch)
@@ -129,9 +128,9 @@ class TestResolver:
         _org(db)
 
         resolved = resolve_mailing_config(db)
-        assert resolved.active == "gmail"
-        # A legacy SMTP host is honoured, not overridden by the Gmail constant.
-        assert resolved.gmail_smtp()[0] == "smtp.other.com"
+        assert resolved.active == "smtp"
+        # An env-only install keeps dialling its own server (#442).
+        assert resolved.smtp_endpoint() == ("smtp.other.com", 587, True)
 
     def test_db_node_without_active_is_inactive(self, db, monkeypatch):
         """Saving credentials must not auto-activate a provider."""
@@ -157,21 +156,58 @@ class TestResolver:
         db.flush()
         assert resolve_mailing_config(db).active == "resend"
 
-    def test_ui_gmail_pins_google_smtp_host(self, db, monkeypatch):
+    def test_stored_smtp_endpoint_wins_over_env(self, db, monkeypatch):
+        from app.core.config import settings
+
         _clear_env(monkeypatch)
+        monkeypatch.setattr(settings, "SMTP_HOST", "smtp.other.com", raising=False)
         org = _org(db)
         org.mailing_config = {
-            "active_provider": "gmail",
-            "gmail": {
-                "user": {"value": "club@gmail.com", "secret": False},
-                "app_password": {"value": "app-pw", "secret": False},
+            "active_provider": "smtp",
+            "smtp": {
+                "host": {"value": "mail.club.example", "secret": False},
+                "port": {"value": "2525", "secret": False},
+                "tls": {"value": "false", "secret": False},
+                "user": {"value": "secretaria@club.example", "secret": False},
+                "password": {"value": "pw", "secret": False},
             },
         }
         db.flush()
 
         resolved = resolve_mailing_config(db)
-        assert resolved.active == "gmail"
-        assert resolved.gmail_smtp() == (GMAIL_SMTP_HOST, 587, True)
+        assert resolved.active == "smtp"
+        assert resolved.smtp_endpoint() == ("mail.club.example", 2525, False)
+
+    def test_unset_port_and_tls_read_as_defaults_not_env(self, db, monkeypatch):
+        """The typed settings always hold a value; only a configured one is "env"."""
+        _clear_env(monkeypatch)
+        _org(db)
+
+        sources = resolve_mailing_config(db).flat_sources()
+        assert sources["smtp.port"] == "default"
+        assert sources["smtp.tls"] == "default"
+        assert sources["smtp.host"] == "none"
+
+    def test_smtp_needs_a_host_and_a_sender(self, db, monkeypatch):
+        _clear_env(monkeypatch)
+        org = _org(db)
+        org.mailing_config = {"smtp": {"user": {"value": "a@club.example", "secret": False}}}
+        db.flush()
+        assert resolve_mailing_config(db).smtp.ready is False
+
+        org.mailing_config = {"smtp": {"host": {"value": "mail.club.example", "secret": False}}}
+        db.flush()
+        assert resolve_mailing_config(db).smtp.ready is False  # no sender address
+
+        org.mailing_config = {
+            "smtp": {
+                "host": {"value": "mail.club.example", "secret": False},
+                "from_email": {"value": "socios@club.example", "secret": False},
+            }
+        }
+        db.flush()
+        # No user or password: a relay that trusts the server needs neither.
+        assert resolve_mailing_config(db).smtp.ready is True
 
     def test_secret_decrypts(self, db, monkeypatch):
         _clear_env(monkeypatch)
@@ -382,7 +418,7 @@ class TestPutMailingEndpoint:
 
         resp = client.put(
             "/api/v1/settings/mailing",
-            json={"active_provider": "gmail"},  # no gmail creds
+            json={"active_provider": "smtp"},  # no smtp host
         )
         assert resp.status_code == 400
         assert resp.json()["detail"]["code"] == "mailing_provider_not_ready"
@@ -396,18 +432,19 @@ class TestPutMailingEndpoint:
         org.mailing_config = {
             "active_provider": "resend",
             "resend": {"api_key": build_field_node("re_key", True)},
-            "gmail": {
+            "smtp": {
+                "host": {"value": "smtp.gmail.com", "secret": False},
                 "user": {"value": "club@gmail.com", "secret": False},
-                "app_password": build_field_node("app-pw", True),
+                "password": build_field_node("app-pw", True),
             },
         }
         db.flush()
         self._admin(client, db, "put-switch")
-        self._verify(client, "gmail")
+        self._verify(client, "smtp")
 
-        resp = client.put("/api/v1/settings/mailing", json={"active_provider": "gmail"})
+        resp = client.put("/api/v1/settings/mailing", json={"active_provider": "smtp"})
         assert resp.status_code == 200
-        assert resp.json()["active_provider"] == "gmail"
+        assert resp.json()["active_provider"] == "smtp"
         # Resend creds untouched.
         assert secrets_crypto.decrypt(org.mailing_config["resend"]["api_key"]["value"]) == "re_key"
 
@@ -469,7 +506,7 @@ class TestMailingTestEndpoint:
         _clear_env(monkeypatch)
         _org(db)
         self._admin(client, db, "test-unready")
-        resp = client.post("/api/v1/settings/mailing/test", json={"provider": "gmail"})
+        resp = client.post("/api/v1/settings/mailing/test", json={"provider": "smtp"})
         assert resp.status_code == 400
         assert resp.json()["detail"]["code"] == "mailing_provider_not_ready"
 
@@ -547,7 +584,7 @@ class TestMailTransportHealth:
             "last_failure_at": None,
             "last_failure": None,
         }
-        assert body["gmail"]["health"]["status"] == "unverified"
+        assert body["smtp"]["health"]["status"] == "unverified"
 
     def test_passing_test_send_marks_provider_ok(self, client, db, monkeypatch):
         self._resend_org(db, monkeypatch)
@@ -637,3 +674,65 @@ class TestMailTransportHealth:
 
         assert org.mailing_config == {}
         assert resolve_mailing_config(db).active == "resend"
+
+
+class TestSmtpProvider:
+    """#442: any SMTP server is configurable from the screen, not only through .env."""
+
+    def _admin(self, client, db, suffix):
+        admin = _create_user(db, "super_admin", suffix)
+        client.cookies.update(_auth_cookie(admin))
+        return admin
+
+    def test_stores_host_port_and_tls(self, client, db, monkeypatch):
+        _clear_env(monkeypatch)
+        _set_key(monkeypatch)
+        org = _org(db)
+        self._admin(client, db, "smtp-put")
+
+        resp = client.put(
+            "/api/v1/settings/mailing",
+            json={
+                "smtp": {
+                    "host": "mail.club.example",
+                    "port": 2525,
+                    "tls": False,
+                    "user": "secretaria@club.example",
+                    "password": {"value": "s3cret"},
+                }
+            },
+        )
+        assert resp.status_code == 200
+        smtp = resp.json()["smtp"]
+        assert (smtp["host"], smtp["port"], smtp["tls"]) == ("mail.club.example", 2525, False)
+        assert smtp["user"] == "secretaria@club.example"
+        assert smtp["password"] == {"configured": True, "last4": "cret"}
+        assert smtp["ready"] is True
+        assert "s3cret" not in resp.text
+        node = org.mailing_config["smtp"]
+        assert node["port"] == {"value": "2525", "secret": False}
+        assert node["tls"] == {"value": "false", "secret": False}
+        assert secrets_crypto.decrypt(node["password"]["value"]) == "s3cret"
+
+    def test_rejects_an_out_of_range_port(self, client, db, monkeypatch):
+        _clear_env(monkeypatch)
+        _org(db)
+        self._admin(client, db, "smtp-port")
+
+        resp = client.put("/api/v1/settings/mailing", json={"smtp": {"port": 70000}})
+        assert resp.status_code == 422
+
+    def test_env_only_smtp_install_reports_smtp(self, client, db, monkeypatch):
+        """No longer labelled Gmail while talking to some other host."""
+        from app.core.config import settings
+
+        _clear_env(monkeypatch)
+        monkeypatch.setattr(settings, "SMTP_HOST", "smtp.other.com", raising=False)
+        monkeypatch.setattr(settings, "SMTP_USER", "club@other.com", raising=False)
+        _org(db)
+        self._admin(client, db, "smtp-env")
+
+        body = client.get("/api/v1/settings/mailing").json()
+        assert body["active_provider"] == "smtp"
+        assert body["smtp"]["host"] == "smtp.other.com"
+        assert body["sources"]["smtp.host"] == "env"
