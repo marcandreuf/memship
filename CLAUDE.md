@@ -155,6 +155,16 @@ docker compose down              # Stop all
 ./scripts/release.sh 1.3.0 <sha> # Tag a specific validated commit
 ```
 
+**After any change under `scripts/`, run both shell guards** — `./tests/shell/run.sh` and
+`./tests/shell/mutate-check.sh`.
+
+**`mutate-check.sh` rewrites tracked files in place.** It edits a guard in `scripts/` to prove the
+tests catch it, then restores it. So it must finish, and `git status` be clean, **before anything is
+staged or committed** — run it in the foreground. Backgrounding it and committing while it works
+captures a mutated script: a one-character edit like `ALLOW_DOWNGRADE -eq 0` becoming `-eq 9` makes
+the whole downgrade guard unreachable, reads as deliberate in a diff, and every test still passes
+afterwards because the file is restored by then.
+
 ## Project Structure
 
 ```
