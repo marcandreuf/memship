@@ -84,6 +84,10 @@ Email is **disabled** unless either a Resend API key or an SMTP host is set. See
 
 If both are configured, Resend takes precedence.
 
+Every variable above can also be set from **Settings → Integrations → Mailing**, the SMTP server
+included. Once that screen has been saved, its values win and the active provider is whichever
+one it selects: see [Email delivery](email.md#which-one-is-in-effect).
+
 ## Background jobs (Celery / Redis)
 
 | Variable            | Default                    | Description                                                |
