@@ -71,6 +71,12 @@ class EmailFailure(str, Enum):
     UNKNOWN = "unknown"
 
 
+# Failures that may clear up on their own, so a later attempt is worth making
+# (#449). A refused credential or recipient fails the same way every time, and
+# retrying it only delays the admin learning that something needs fixing.
+TRANSIENT_FAILURES = frozenset({EmailFailure.TRANSPORT_UNAVAILABLE, EmailFailure.RATE_LIMITED})
+
+
 @dataclass(frozen=True)
 class EmailResult:
     outcome: EmailOutcome
@@ -883,11 +889,12 @@ def send_registration_approved_email(
 
 def send_registration_rejected_email(
     to: str, first_name: str, reason: str | None = None, locale: str = "es"
-) -> bool:
-    return _send_templated("registration_rejected", to, locale, {
+) -> EmailResult:
+    """The full result, so a transient failure can be retried (#449)."""
+    return _send_templated_result("registration_rejected", to, locale, {
         "first_name": first_name,
         "reason": reason,
-    })
+    }, capture_failure=True)
 
 
 def send_registration_confirmation_email(

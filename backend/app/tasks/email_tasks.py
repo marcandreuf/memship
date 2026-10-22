@@ -4,18 +4,91 @@ import logging
 
 from app.core.celery_app import celery
 from app.core.email import (
+    TRANSIENT_FAILURES,
+    EmailOutcome,
+    EmailResult,
     send_booking_cancelled_email,
     send_booking_confirmation_email,
     send_booking_promoted_email,
     send_booking_waitlisted_email,
     send_email,
     send_receipt_delivery_email,
+    send_registration_approved_email,
     send_registration_confirmation_email,
     send_registration_cancellation_email,
+    send_registration_rejected_email,
     send_waitlist_promotion_email,
 )
 
 logger = logging.getLogger(__name__)
+
+# Seconds before each later attempt at a mail whose first, inline send failed
+# transiently: about half an hour in all, long enough to ride out a provider
+# blip or a per-minute rate limit without leaving the applicant waiting a day.
+RETRY_DELAYS = (60, 300, 1500)
+
+
+def queue_email_retry(task, **kwargs) -> bool:
+    """Schedule the first later attempt; whether it was queued.
+
+    A broker that is down must not fail the request that already did its work,
+    but it has to leave a trace, and the caller has to know the mail is not
+    coming so it can say so.
+    """
+    try:
+        task.apply_async(kwargs=kwargs, countdown=RETRY_DELAYS[0])
+        return True
+    except Exception as exc:  # noqa: BLE001 — dispatch is best-effort
+        logger.error(f"Could not queue email retry: task={task.name}, error={exc}")
+        return False
+
+
+def _retry_if_transient(task, result: EmailResult, to: str) -> bool:
+    """Retry a transient failure on the remaining schedule; give up on anything else.
+
+    These senders report a failure as a result, never by raising, so the retry
+    is decided here rather than by Celery's exception-driven autoretry.
+    """
+    if result.outcome is EmailOutcome.FAILED and result.failure in TRANSIENT_FAILURES:
+        attempt = task.request.retries + 1
+        if attempt < len(RETRY_DELAYS):
+            raise task.retry(countdown=RETRY_DELAYS[attempt])
+        logger.error(
+            f"Email retries exhausted: task={task.name}, to={to}, reason={result.failure.value}"
+        )
+    elif result.outcome is EmailOutcome.FAILED:
+        logger.error(
+            f"Email retry stopped on a permanent failure: task={task.name}, to={to}, "
+            f"reason={result.failure.value if result.failure else None}"
+        )
+    return result.outcome is EmailOutcome.SENT
+
+
+@celery.task(bind=True, max_retries=len(RETRY_DELAYS) - 1)
+def retry_registration_approved_email_task(
+    self,
+    to: str,
+    first_name: str,
+    member_number: str,
+    login_url: str,
+    sso_providers: list[str],
+    has_password: bool,
+) -> bool:
+    """Later attempts at an approval mail whose inline send failed transiently (#449)."""
+    result = send_registration_approved_email(
+        to, first_name, member_number, login_url,
+        sso_providers=sso_providers, has_password=has_password,
+    )
+    return _retry_if_transient(self, result, to)
+
+
+@celery.task(bind=True, max_retries=len(RETRY_DELAYS) - 1)
+def retry_registration_rejected_email_task(
+    self, to: str, first_name: str, reason: str | None = None
+) -> bool:
+    """Later attempts at a rejection mail whose inline send failed transiently (#449)."""
+    result = send_registration_rejected_email(to, first_name, reason)
+    return _retry_if_transient(self, result, to)
 
 
 @celery.task(bind=True, max_retries=3, default_retry_delay=60)

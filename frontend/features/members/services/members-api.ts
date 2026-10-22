@@ -154,6 +154,8 @@ export interface ApprovalNotification {
     | "transport_unavailable"
     | "unknown"
     | null;
+  // A transient failure whose later attempts are queued (#449).
+  retrying: boolean;
 }
 
 export interface MemberApprovalResponse {
