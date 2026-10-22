@@ -12,7 +12,7 @@ const health = (status: string, extra: Record<string, string | null> = {}) => ({
 const view = (resendHealth: ReturnType<typeof health>) => ({
   active_provider: null,
   resend: {
-    from_email: "",
+    from_email: "noreply@club.example",
     api_key: { configured: true, last4: "4f2a" },
     ready: true,
     health: resendHealth,
