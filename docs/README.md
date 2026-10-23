@@ -2,11 +2,19 @@
 
 Documentation for **self-hosting operators**, **organization admins**, and **members**.
 
-> **Languages.** Operator/self-hosting docs are written in **English** (the audience is
-> developers and system administrators, often international). The admin and member guides
-> are **Spanish-first** (`.es.md`), since the people running a club and its members are
-> primarily Spanish-speaking; Catalan (`.ca.md`) and English (`.md`) translations are added
-> on demand.
+> **This page is the language index.** The documentation itself lives under one directory per
+> language. Pick yours:
+>
+> - **[Castellano](es/README.md)** — the default language of the published site
+> - **[English](en/README.md)**
+> - **[Català](ca/README.md)** — the index only; every page it lists is still served in Spanish
+>   or English, marked as such
+
+> **Languages.** Every page is published in `es`, `ca` and `en`, addressed by a directory rather
+> than a filename suffix: `docs/<locale>/<section>/<page>.md`. `es` is the default, so a Spanish
+> page is served without a locale prefix in its URL. Where a language has no translation yet the
+> reader is served the next available one, marked as such — coverage is tracked in
+> [#423](https://github.com/marcandreuf/memship/issues/423).
 
 ## Which version these docs describe
 
@@ -21,7 +29,7 @@ curl -s http://localhost/api/v1/health   # {"status":"healthy","version":"2.19.0
 ```
 
 `version` is the image tag the instance was deployed with. If it reads `latest` you are on an
-unpinned install and cannot tell from here — see [Upgrading](self-hosting/upgrading.md).
+unpinned install and cannot tell from here — see [Upgrading](en/self-hosting/upgrading.md).
 
 **If your instance is older than the version above**, read the docs as they stood for your
 release rather than these. Every tag carries its own copy, so swap the version into the path:
@@ -34,80 +42,6 @@ What changed between your version and this one is on the
 [releases page](https://github.com/marcandreuf/memship/releases), where each release's notes carry
 the behaviour changes and migrations an upgrader must not miss.
 
-## Getting started
-
-New to Memship? Start here.
-
-- [What you need to run Memship](getting-started/what-you-need.md) — the server, the domain,
-  the email and what they cost, measured rather than estimated. For deciding, before installing _(EN)_
-- [Qué necesitas para ejecutar Memship](getting-started/es/what-you-need.md) — la misma página en
-  castellano: el servidor, el dominio, el correo y lo que cuestan, medido en vez de estimado _(ES)_
-- [Quick start](getting-started/quickstart.md) — try Memship with a single command _(EN)_
-- [Installation](getting-started/installation.md) — production Docker install _(EN)_
-- [First-time setup](getting-started/first-setup.md) — create your admin and organization _(EN)_
-
-## Self-hosting (operators)
-
-Running Memship on your own server.
-
-- [Your organisation's domain](self-hosting/domain-and-dns.md) — choosing a hostname and the DNS
-  records behind it, when the domain belongs to a club rather than to you _(EN)_
-- [Configuration reference](self-hosting/configuration.md) — every environment variable _(EN)_
-- [Feature flags](self-hosting/feature-flags.md) — the twenty-one module switches, what a fresh install starts with _(EN)_
-- [Email delivery](self-hosting/email.md) — Resend, Gmail or any SMTP server _(EN)_
-- [Backups & restore](self-hosting/backups-and-restore.md) _(EN)_
-- [Upgrading](self-hosting/upgrading.md) — image tags and migrations _(EN)_
-- [Troubleshooting](self-hosting/troubleshooting.md) — when something will not start _(EN)_
-- Reverse proxy & TLS — the stack ships a Caddy that obtains and renews certificates on its own.
-  Set up in [Installation](getting-started/installation.md), tuned via `SITE_ADDRESS` in the
-  [Configuration reference](self-hosting/configuration.md); the DNS side is
-  [Your organisation's domain](self-hosting/domain-and-dns.md)
-- [Payment providers](admin-guide/payment-providers.md) — connecting Stripe, Redsys and Bizum:
-  which credential to get from where, the Stripe webhook, and why Redsys needs none _(EN)_
-
-## Development (contributors)
-
-Working on Memship itself.
-
-- [Local development environment](development/local-environment.md) — the dev stack, commands,
-  seeding and the test suites _(EN)_
-- [Contributing](https://github.com/marcandreuf/memship/blob/main/CONTRIBUTING.md) — branching, versioning and how a release is cut _(EN)_
-
-## Guía del administrador (admin guide)
-
-Para el personal que gestiona la organización desde el panel de administración.
-
-- [Introducción](admin-guide/overview.es.md) — roles, navegación y panel _(ES)_
-- [Socios](admin-guide/members.es.md) — ciclo de vida, tipos de membresía, grupos _(ES)_
-- [Actividades](admin-guide/activities.es.md) — inscripciones, modalidades, descuentos _(ES)_
-- [Pagos y recibos](admin-guide/payments.es.md) — recibos, cuotas, IVA, pago en línea _(ES)_
-- [Domiciliación SEPA](admin-guide/sepa.es.md) — mandatos y remesas _(ES)_
-- [Comunicaciones](admin-guide/communications.es.md) — anuncios a los socios _(ES)_
-- [Carné digital](admin-guide/member-cards.es.md) — carné QR y control de acceso _(ES)_
-- [Campos de perfil](admin-guide/custom-fields.es.md) — campos personalizados _(ES)_
-- [Informes y panel](admin-guide/reports.es.md) — panel, resumen anual, exportaciones _(ES)_
-- [Configuración](admin-guide/settings.es.md) — organización, facturación, automatizaciones _(ES)_
-- [Integrations](admin-guide/integrations.md) — SSO (Google, Apple) and email, step by step _(EN)_
-- [Payment providers](admin-guide/payment-providers.md) — connecting Stripe, Redsys and Bizum _(EN)_
-
-## Guía del socio (member guide)
-
-Para las personas socias que usan el portal.
-
-- [Tu cuenta y tu perfil](member-guide/account.es.md) — acceso, perfil, idioma, foto _(ES)_
-- [Actividades](member-guide/activities.es.md) — inscribirse, lista de espera _(ES)_
-- [Pagos y recibos](member-guide/payments.es.md) — mis recibos, pagar online, forma de pago _(ES)_
-- [Carné digital](member-guide/member-card.es.md) — carné QR _(ES)_
-
-## Reference
-
-- [Roles y permisos](reference/roles-and-permissions.es.md) _(ES)_
-- FAQ — _planned_
-- Glossary — _planned_
-
-> **Simple Bookings** (reserva de espacios) ships in the released images — `/api/v1/bookings` is
-> in the API and the setup command seeds spaces, slots and a waitlist — but it has **no admin or
-> member guide page yet**. That is a documentation gap, not a missing feature.
 
 ## Project policies
 
@@ -128,10 +62,20 @@ rules. GitHub also surfaces them from the root on its own.
 
 - **Docs live with the code.** When a feature PR changes behaviour, update its page in the
   same PR. Each admin/member guide page maps 1:1 to a feature module in the app.
+- **A page belongs to a locale directory, not to a filename.** `docs/es/admin-guide/sepa.md`,
+  never `sepa.es.md`. The suffix form cannot publish two languages of one page, which is why it
+  was replaced — see [#446](https://github.com/marcandreuf/memship/issues/446).
+- **Link within your own locale by plain relative path**, and across locales by going through the
+  directory: from `es/admin-guide/` to an English operator page is
+  `../../en/self-hosting/email.md`. A link that resolves on the site through the language
+  fallback but not on GitHub is a broken link — the published build rejects it.
+- **A translation records what it was translated from.** When a source page changes, its
+  translations have to follow or they become three pages that disagree while all three look
+  current — see [#451](https://github.com/marcandreuf/memship/issues/451).
 - **Keep heading anchors stable.** Pages link into each other's headings (e.g.
-  `settings.es.md#banca-y-facturación`), the READMEs and the issue templates link in from
+  `settings.md#banca-y-facturación`), the READMEs and the issue templates link in from
   outside the folder, and GitHub does not redirect a renamed anchor. So rename headings
   deliberately and fix what pointed at them — nothing warns you. The app itself does not yet
   link to these pages; when it does, its links will be the ones hardest to find and fix.
-- **Plain Markdown, tool-agnostic.** These files render on GitHub today and can be published
-  by a docs-site generator later without rework. Avoid tool-specific syntax.
+- **Plain Markdown, tool-agnostic.** These files render on GitHub today and are published by the
+  documentation site without rework. Avoid tool-specific syntax.

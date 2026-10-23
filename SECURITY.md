@@ -35,7 +35,7 @@ open tracker than have it sit in a public issue while it is still exploitable.
 ## Supported versions
 
 Pre-1.0, only the latest release receives fixes. Upgrade before reporting if you are behind — see
-[Upgrading](docs/self-hosting/upgrading.md).
+[Upgrading](docs/en/self-hosting/upgrading.md).
 
 ## Disclosure
 

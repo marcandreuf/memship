@@ -9,7 +9,7 @@
 # EVALUATION ONLY. The database password below is fixed and the data lives in
 # throwaway Docker volumes. To run memship for a real organization use
 # scripts/install.sh and the root docker-compose.yml — see
-# docs/getting-started/installation.md.
+# docs/en/getting-started/installation.md.
 #
 
 # The API, the Celery worker and Celery beat run the same image with the same

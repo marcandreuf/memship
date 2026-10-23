@@ -58,7 +58,7 @@ are printed once at the end of the run.
 
 Narrower roles — a treasurer who only sees billing, for example — are created by the super
 admin from **Settings → Roles**. See
-[Roles y permisos](../reference/roles-and-permissions.es.md).
+[Roles y permisos](../../es/reference/roles-and-permissions.md).
 
 ### A second super admin
 
@@ -163,5 +163,5 @@ refused, because the confirmation link they depend on cannot be sent. See
 
 ## Next steps
 
-- [Admin guide → Introducción](../admin-guide/overview.es.md) — how the admin panel is organized.
+- [Admin guide → Introducción](../../es/admin-guide/overview.md) — how the admin panel is organized.
 - [Backups & restore](../self-hosting/backups-and-restore.md) — configure before going live.

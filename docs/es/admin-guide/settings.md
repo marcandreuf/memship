@@ -24,7 +24,7 @@ de administración.
   `ES12000B12345678`), obligatorio para generar remesas.
 - **Formato SEPA** — ISO 20022 **pain.008**, estándar para los bancos de la zona SEPA.
 
-Ver [Domiciliación SEPA](sepa.es.md) para el flujo de mandatos y remesas.
+Ver [Domiciliación SEPA](sepa.md) para el flujo de mandatos y remesas.
 
 ## Proveedores de pago
 
@@ -35,7 +35,7 @@ proveedor tiene un **nombre visible**, un **estado** (Activo / Pruebas / Desacti
 opción **Probar conexión** para validar la configuración.
 
 > Los detalles de credenciales y URLs de retorno de cada proveedor se tratan en la
-> [guía de self-hosting](../self-hosting/configuration.md).
+> [guía de self-hosting](../../en/self-hosting/configuration.md).
 
 ## Facturación recurrente
 
@@ -76,7 +76,7 @@ instalación que nunca visite esta pantalla envía todos los correos, como hasta
 
 ## Otras opciones
 
-- **Comunicaciones** — activa el envío de [anuncios](communications.es.md).
-- **Tarjeta de socio** — activa el [carné digital](member-cards.es.md) y su numeración.
-- **Campos de perfil** — activa los [campos personalizados](custom-fields.es.md).
+- **Comunicaciones** — activa el envío de [anuncios](communications.md).
+- **Tarjeta de socio** — activa el [carné digital](member-cards.md) y su numeración.
+- **Campos de perfil** — activa los [campos personalizados](custom-fields.md).
 - **Opciones de género** — configura las opciones disponibles en los formularios de socios.

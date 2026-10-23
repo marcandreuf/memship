@@ -24,7 +24,7 @@ La majoria d'eines de gestió de socis són plataformes SaaS cares o programari 
 > **Per provar Memship, no per fer-lo servir.** És la via més ràpida a una instància
 > funcionant a la vostra màquina: imatges publicades, volums llencívols i una
 > contrasenya de base de dades fixa. Per gestionar una organització real, seguiu la
-> [Instal·lació](docs/getting-started/installation.md) — el mateix producte, configurat
+> [Instal·lació](docs/en/getting-started/installation.md) — el mateix producte, configurat
 > per poder-lo copiar, actualitzar i conservar.
 
 Proveu Memship amb una sola comanda — sense necessitat de clonar el repositori:
@@ -58,7 +58,7 @@ per qualsevol port que preferiu (per defecte és el 80).
 Quan acabeu d'avaluar-lo, torneu a executar la mateixa comanda i responeu *sí* a la
 pregunta sobre les dades del club: esborra el club de demostració conservant el vostre
 superadministrador i les passarel·les de pagament que hàgiu configurat. Consulteu
-[Configuració inicial](docs/getting-started/first-setup.md).
+[Configuració inicial](docs/en/getting-started/first-setup.md).
 
 ## Llançaments
 
@@ -247,7 +247,7 @@ El backend en Docker i el frontend en local amb recàrrega en calent de pnpm, go
 
 La instal·lació completa, totes les ordres, les URL dels serveis, la càrrega de dades inicial i les
 suites de tests són a
-**[Entorn de desenvolupament local](docs/development/local-environment.md)** _(en anglès)_.
+**[Entorn de desenvolupament local](docs/en/development/local-environment.md)** _(en anglès)_.
 
 Consulta [CONTRIBUTING](CONTRIBUTING.md) per a branques, versionat i com es publica una versió.
 
@@ -255,27 +255,27 @@ Consulta [CONTRIBUTING](CONTRIBUTING.md) per a branques, versionat i com es publ
 
 L'autoallotjament en producció viu a la documentació, perquè només hi hagi una còpia per mantenir correcta:
 
-- **[Què necessites per executar Memship](docs/getting-started/es/what-you-need.md)** — un servidor
+- **[Què necessites per executar Memship](docs/es/getting-started/what-you-need.md)** — un servidor
   de 2 vCPU / 4 GB / 40 GB, un domini i una manera d'enviar correu, per uns 8–12 € al mes. Llegeix-ho
   abans de decidir; les xifres estan mesurades, no estimades. _De moment només en castellà_
-- **[Instal·lació](docs/getting-started/installation.md)** — `vps-bootstrap.sh` en un servidor nou i
+- **[Instal·lació](docs/en/getting-started/installation.md)** — `vps-bootstrap.sh` en un servidor nou i
   després `install.sh`, que genera secrets reals, fixa una versió i posa les teves dades en un únic
   directori amb còpia de seguretat
-- **[Configuració inicial](docs/getting-started/first-setup.md)** — crear el super administrador i
+- **[Configuració inicial](docs/en/getting-started/first-setup.md)** — crear el super administrador i
   l'organització
-- **[Referència de configuració](docs/self-hosting/configuration.md)** — totes les variables
+- **[Referència de configuració](docs/en/self-hosting/configuration.md)** — totes les variables
   d'entorn
-- **[Còpies de seguretat i restauració](docs/self-hosting/backups-and-restore.md)** — configura-ho
+- **[Còpies de seguretat i restauració](docs/en/self-hosting/backups-and-restore.md)** — configura-ho
   abans de posar-ho en producció
-- **[Actualitzacions](docs/self-hosting/upgrading.md)** — passar a una versió nova
-- **[Resolució de problemes](docs/self-hosting/troubleshooting.md)** — quan alguna cosa no arrenca
+- **[Actualitzacions](docs/en/self-hosting/upgrading.md)** — passar a una versió nova
+- **[Resolució de problemes](docs/en/self-hosting/troubleshooting.md)** — quan alguna cosa no arrenca
 
 L'[Inici ràpid](#inici-ràpid-docker) de dalt és només per avaluar: inclou una clau de signatura
 publicada en aquest repositori i guarda les dades en volums d'un sol ús.
 
 ## Contribucions
 
-Les contribucions de codi són benvingudes. La base del projecte — infraestructura, CI/CD i l'arquitectura central — ja està consolidada, i [CONTRIBUTING](CONTRIBUTING.md) explica el model de branques, les convencions de commits i pull requests, el versionatge i com es publica una release _(en anglès)_. En resum: creeu una branca `feature/*` de vida curta a partir de `main` i obriu un pull request cap a `main`. Per preparar l'entorn, comenceu per [Local development environment](docs/development/local-environment.md) _(en anglès)_.
+Les contribucions de codi són benvingudes. La base del projecte — infraestructura, CI/CD i l'arquitectura central — ja està consolidada, i [CONTRIBUTING](CONTRIBUTING.md) explica el model de branques, les convencions de commits i pull requests, el versionatge i com es publica una release _(en anglès)_. En resum: creeu una branca `feature/*` de vida curta a partir de `main` i obriu un pull request cap a `main`. Per preparar l'entorn, comenceu per [Local development environment](docs/en/development/local-environment.md) _(en anglès)_.
 
 No escriviu codi? [Obriu una issue](https://github.com/marcandreuf/memship/issues) — els informes d'errors, les propostes de funcionalitats, les preguntes i explicar com faríeu servir Memship són igual de benvinguts, i per als dos primers hi ha plantilles.
 

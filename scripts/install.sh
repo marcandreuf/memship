@@ -98,7 +98,7 @@ if [ "$FROM_UPGRADE" -eq 0 ] && [ -f "$ENV_FILE" ] \
   of that, so running it here would skip the check that keeps a refused
   migration from becoming downtime.
 
-  Full procedure: docs/self-hosting/upgrading.md"
+  Full procedure: docs/en/self-hosting/upgrading.md"
 fi
 if [ -z "$DATA_ROOT" ] && [ -f "$ENV_FILE" ]; then
     DATA_ROOT="$(grep -E '^MEMSHIP_DATA_ROOT=' "$ENV_FILE" | tail -1 | cut -d= -f2- || true)"
@@ -138,7 +138,7 @@ done
 
 # storage/ holds uploads AND the auto-generated encryption key (secret.key). The
 # backend runs as HOST_UID/HOST_GID, so what it writes here belongs to you and
-# needs no sudo to read; 0770 keeps it off other local accounts. See docs/self-hosting/.
+# needs no sudo to read; 0770 keeps it off other local accounts. See docs/en/self-hosting/.
 chmod 0770 "$DATA_ROOT/storage"
 chmod 0700 "$DATA_ROOT/backups"
 
@@ -246,7 +246,7 @@ BACKEND_PUBLIC_URL=$PUBLIC_URL
 # The sending address is left blank on purpose. It is usually on the domain
 # your organisation already sends mail from, not on this site's hostname, and
 # it needs your mail provider's DNS records on that domain. See "Email is a
-# separate domain decision" in docs/self-hosting/domain-and-dns.md. SMTP_FROM
+# separate domain decision" in docs/en/self-hosting/domain-and-dns.md. SMTP_FROM
 # is also Resend's sender when RESEND_FROM_EMAIL is blank.
 RESEND_API_KEY=
 RESEND_FROM_EMAIL=
@@ -333,14 +333,14 @@ failure mode:
 and optionally uploads and certificates off this one. It is a starting point,
 not a backup system.
 
-Read \`docs/self-hosting/backups-and-restore.md\` before you go live, and test a
+Read \`docs/en/self-hosting/backups-and-restore.md\` before you go live, and test a
 restore once. A backup you have never restored is a guess.
 
 ## 4. Configure email
 
 Until a transport is set, registration, password-reset and receipt emails are
 **dropped silently**. Fill in either the Resend key or the SMTP block in
-\`.env\`, or configure it from Settings. See \`docs/self-hosting/email.md\`.
+\`.env\`, or configure it from Settings. See \`docs/en/self-hosting/email.md\`.
 
 The installer leaves the sending address blank. Choose it before you
 configure the provider: it is usually on the domain your organisation already
@@ -348,7 +348,7 @@ sends mail from (\`no-reply@myclub.org\`), not on this site's hostname, and the
 provider's SPF and DKIM records go on **that** domain. A domain has one SPF
 record — add the provider's \`include:\` to the one that exists rather than
 publishing a second. See "Email is a separate domain decision" in
-\`docs/self-hosting/domain-and-dns.md\`.
+\`docs/en/self-hosting/domain-and-dns.md\`.
 
 ## Where things are
 
@@ -361,7 +361,7 @@ publishing a second. See "Email is a separate domain decision" in
 | Version | \`$NEW_TAG\` |
 
 Upgrading: refresh this directory from the release you want, then
-\`./scripts/upgrade.sh <version>\`. See \`docs/self-hosting/upgrading.md\`.
+\`./scripts/upgrade.sh <version>\`. See \`docs/en/self-hosting/upgrading.md\`.
 POSTINSTALL
     chmod 644 "$REPO_ROOT/POST-INSTALL.md"
 
@@ -513,7 +513,7 @@ cat <<EOF
                    Pulling images alone is a half-upgrade: part of a release
                    ships here, beside the images — this Compose file, the
                    Caddyfile, these scripts.
-                   Full procedure: docs/self-hosting/upgrading.md
-  Backups: docs/self-hosting/backups-and-restore.md
+                   Full procedure: docs/en/self-hosting/upgrading.md
+  Backups: docs/en/self-hosting/backups-and-restore.md
 
 EOF

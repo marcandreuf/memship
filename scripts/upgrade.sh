@@ -84,7 +84,7 @@ if [ "$ALLOW_DOWNGRADE" -eq 0 ] && is_release "$CURRENT" && is_release "$VERSION
         printf '  database back: a release that ran a migration has already changed\n' >&2
         printf '  the schema, and %s will not understand it.\n\n' "$VERSION" >&2
         printf '  To go back, restore the snapshot taken before you upgraded to %s:\n' "$CURRENT" >&2
-        printf '    docs/self-hosting/backups-and-restore.md\n\n' >&2
+        printf '    docs/en/self-hosting/backups-and-restore.md\n\n' >&2
         printf '  If you know this release carried no migration, or you have already\n' >&2
         printf '  restored the database, pass --allow-downgrade.\n' >&2
         exit 1
@@ -502,7 +502,7 @@ if [ "$RUNNING" -eq 1 ]; then
     step "Pre-upgrade snapshot — rollback cover only, stays on this host"
     ./scripts/db-backup.sh
     printf '  This protects against a bad migration, not against losing this\n'
-    printf '  machine. Off-host copies: docs/self-hosting/backups-and-restore.md\n'
+    printf '  machine. Off-host copies: docs/en/self-hosting/backups-and-restore.md\n'
 else
     step "No running database — first install, nothing to snapshot"
 fi

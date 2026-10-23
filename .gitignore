@@ -83,7 +83,9 @@ e2e/cypress/parallel-weights.json
 
 # Per-repo config for personal agent skills. The canonical copies live in the
 # private context repo; this stays as a guard in case tooling recreates the path.
-docs/agents/
+# Matched at any depth: the locale move gave docs/ a level, so the bare
+# docs/agents/ stopped covering docs/es/agents/ and the rest.
+docs/**/agents/
 
 # Written on the server by scripts/install.sh at first install
 POST-INSTALL.md
