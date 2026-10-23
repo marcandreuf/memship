@@ -1,3 +1,6 @@
+<!-- source: en/getting-started/what-you-need.md -->
+<!-- source-hash: 9f5a006988a7 -->
+
 # Qué necesitas para ejecutar Memship
 
 Esta página es para decidir **si** vas a ejecutar Memship. Dice qué necesita la plataforma, cuánto
