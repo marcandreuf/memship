@@ -5,10 +5,9 @@ socias**. Este es el árbol en castellano; el inglés está en [`../en/README.md
 
 ## Qué versión describe esta documentación
 
-Estas páginas describen la versión publicada actual, más lo que se haya fusionado desde que se
-etiquetó. Se publican desde la rama principal, así que un cambio aparece aquí cuando se fusiona y
-no cuando sale la versión siguiente. La versión exacta está en
-[el índice de la documentación](../README.md#which-version-these-docs-describe).
+Estas páginas describen memship 2.19.0 — la versión publicada actual — más lo que se haya
+fusionado desde que se etiquetó. Se publican desde la rama principal, así que un cambio aparece
+aquí cuando se fusiona y no cuando sale la versión siguiente.
 
 **Para saber qué versión ejecuta tu instancia**, pregúntaselo:
 

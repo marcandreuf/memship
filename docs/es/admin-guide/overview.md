@@ -5,9 +5,9 @@ administración de Memship: altas de socios, actividades, cobros, comunicaciones
 configuración.
 
 > **Idioma.** Las guías del administrador y del socio se escriben primero en español
-> (`.es.md`), porque quienes gestionan un club y sus socios son mayoritariamente
-> hispanohablantes. Las traducciones al catalán (`.ca.md`) y al inglés (`.md`) se añaden según
-> la demanda.
+> (`docs/es/`), porque quienes gestionan un club y sus socios son mayoritariamente
+> hispanohablantes. Las traducciones al catalán (`docs/ca/`) y al inglés (`docs/en/`) se añaden
+> según la demanda; hasta que existan, se sirve la página en español.
 
 ## Roles
 
@@ -61,4 +61,4 @@ datos de la organización, marca, datos bancarios y facturación, y verifica el 
 ## Próximas páginas
 
 Las páginas detalladas de cada área (Socios, Actividades, Pagos, etc.) se irán añadiendo a esta
-guía. Consulta el [índice de la documentación](../../README.md) para ver el estado.
+guía. Consulta el [índice de la documentación](../README.md) para ver el estado.
