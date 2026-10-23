@@ -37,7 +37,7 @@ You do not need to edit any file or restart anything. Every credential in this g
 
 **A public address.** Both providers need to reach your installation from the internet to confirm a payment. That address is configured once at install time in `BACKEND_PUBLIC_URL` and `FRONTEND_URL`. A provider configured on an installation that the internet cannot reach will take money and never mark the receipt paid.
 
-**Direct debit is a different thing.** If your members pay by SEPA direct debit, none of this applies — see [SEPA](sepa.es.md). This guide is only about paying online by card or Bizum.
+**Direct debit is a different thing.** If your members pay by SEPA direct debit, none of this applies — see [SEPA](../../es/admin-guide/sepa.md). This guide is only about paying online by card or Bizum.
 
 ---
 
@@ -267,7 +267,7 @@ This check is local. It confirms your configuration is internally coherent; it c
 
 ## Related
 
-- [Payments](payments.es.md) — using payments day to day, in Spanish
-- [SEPA](sepa.es.md) — direct debit, a separate mechanism
+- [Payments](../../es/admin-guide/payments.md) — using payments day to day, in Spanish
+- [SEPA](../../es/admin-guide/sepa.md) — direct debit, a separate mechanism
 - [Integrations](integrations.md) — SSO and email, and the full description of secret storage
 - [Configuration reference](../self-hosting/configuration.md) — `BACKEND_PUBLIC_URL` and `FRONTEND_URL`

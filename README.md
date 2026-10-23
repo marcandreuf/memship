@@ -24,7 +24,7 @@ Most membership tools are either expensive SaaS platforms or outdated legacy sof
 > **For trying memship out, not for running it.** This is the fastest path to a
 > working instance on your own machine: published images, throwaway volumes, and
 > a fixed database password. To run memship for a real organization, follow
-> [Installation](docs/getting-started/installation.md) instead — same product,
+> [Installation](docs/en/getting-started/installation.md) instead — same product,
 > set up so it can be backed up, upgraded and kept.
 
 Try memship with a single command — no cloning required:
@@ -58,7 +58,7 @@ any port you prefer (default is 80).
 Once you are done evaluating, re-run the same command and answer *yes* to the
 club-data question: it clears the demo club while keeping your super admin and
 any payment providers you configured. See
-[First-time setup](docs/getting-started/first-setup.md).
+[First-time setup](docs/en/getting-started/first-setup.md).
 
 ## Releases
 
@@ -246,7 +246,7 @@ Backend in Docker, frontend locally with pnpm hot reload — driven by `scripts/
 ```
 
 Full setup, every command, service URLs, seeding and the test suites are in
-**[Local development environment](docs/development/local-environment.md)**.
+**[Local development environment](docs/en/development/local-environment.md)**.
 
 See [CONTRIBUTING](CONTRIBUTING.md) for branching, versioning and how a release is cut.
 
@@ -254,18 +254,18 @@ See [CONTRIBUTING](CONTRIBUTING.md) for branching, versioning and how a release 
 
 Production self-hosting lives in the docs, so there is one copy of it to keep correct:
 
-- **[What you need to run Memship](docs/getting-started/what-you-need.md)** — a 2 vCPU / 4 GB /
+- **[What you need to run Memship](docs/en/getting-started/what-you-need.md)** — a 2 vCPU / 4 GB /
   40 GB server, a domain and a way to send email, at about 8–12 € a month. Read this before
   deciding; the figures are measured, not estimated
-- **[Installation](docs/getting-started/installation.md)** — `vps-bootstrap.sh` on a bare server,
+- **[Installation](docs/en/getting-started/installation.md)** — `vps-bootstrap.sh` on a bare server,
   then `install.sh`, which generates real secrets, pins a version and puts your data under one
   backed-up directory
-- **[First-time setup](docs/getting-started/first-setup.md)** — create the super admin and the
+- **[First-time setup](docs/en/getting-started/first-setup.md)** — create the super admin and the
   organization
-- **[Configuration reference](docs/self-hosting/configuration.md)** — every environment variable
-- **[Backups & restore](docs/self-hosting/backups-and-restore.md)** — set this up before going live
-- **[Upgrading](docs/self-hosting/upgrading.md)** — moving to a new release
-- **[Troubleshooting](docs/self-hosting/troubleshooting.md)** — when something will not start
+- **[Configuration reference](docs/en/self-hosting/configuration.md)** — every environment variable
+- **[Backups & restore](docs/en/self-hosting/backups-and-restore.md)** — set this up before going live
+- **[Upgrading](docs/en/self-hosting/upgrading.md)** — moving to a new release
+- **[Troubleshooting](docs/en/self-hosting/troubleshooting.md)** — when something will not start
 
 The [Quick Start](#quick-start-docker) above is for evaluation only: it ships a signing key that is
 published in this repository and keeps data in throwaway volumes.
@@ -273,7 +273,7 @@ published in this repository and keeps data in throwaway volumes.
 
 ## Contributing
 
-Code contributions are welcome. The foundation — infrastructure, CI/CD and the core architecture — is in place, and [CONTRIBUTING](CONTRIBUTING.md) covers the branching model, the commit and pull-request conventions, versioning and how a release is cut. The short version: take a short-lived `feature/*` branch off `main`, and open a pull request back into it. To get set up, start with [Local development environment](docs/development/local-environment.md).
+Code contributions are welcome. The foundation — infrastructure, CI/CD and the core architecture — is in place, and [CONTRIBUTING](CONTRIBUTING.md) covers the branching model, the commit and pull-request conventions, versioning and how a release is cut. The short version: take a short-lived `feature/*` branch off `main`, and open a pull request back into it. To get set up, start with [Local development environment](docs/en/development/local-environment.md).
 
 Not writing code? [Open an issue](https://github.com/marcandreuf/memship/issues) — bug reports, feature requests, questions and an account of how you would use Memship are all welcome, and there are templates for the first two.
 

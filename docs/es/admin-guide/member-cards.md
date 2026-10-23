@@ -3,7 +3,7 @@
 Carné de socio digital con código QR y verificación en el control de acceso.
 
 > **Requisito previo.** Activa las tarjetas de socio en
-> [Ajustes → Tarjeta de socio](settings.es.md).
+> [Ajustes → Tarjeta de socio](settings.md).
 
 ## Numeración de socios
 
@@ -18,7 +18,7 @@ En los ajustes de la tarjeta configuras la **numeración**:
 
 Cada socio dispone en su portal de un **carné digital** con su número de socio, su estado y un
 **código QR**, que puede **descargar en PDF**. Ver la
-[guía del socio → Carné digital](../member-guide/member-card.es.md).
+[guía del socio → Carné digital](../member-guide/member-card.md).
 
 ## Control de acceso (escaneo)
 

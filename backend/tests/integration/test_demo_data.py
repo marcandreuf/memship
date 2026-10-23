@@ -127,7 +127,7 @@ ALL_FEATURE_FLAGS = {
 
 # What a real first install starts with, and it is meant to be this short: a club
 # opts into each module deliberately. Documented in
-# docs/self-hosting/feature-flags.md.
+# docs/en/self-hosting/feature-flags.md.
 FRESH_INSTALL_FLAGS = {"custom_roles", "gender_options"}
 
 
@@ -210,7 +210,7 @@ class TestFeatureFlagSeeding:
         until a mail transport is configured (`test_stuck_without_mail.py`), and
         on a clean install that is the answer a visitor actually gets. This pins
         the default; that pins the guard. Both are in
-        docs/self-hosting/feature-flags.md.
+        docs/en/self-hosting/feature-flags.md.
         """
         from app.domains.auth.service import get_registration_settings
 

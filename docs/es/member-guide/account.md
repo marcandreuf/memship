@@ -29,7 +29,7 @@ lectura**.
 
 ## Qué encontrarás en el portal
 
-- Tus **[actividades](activities.es.md)** y las inscripciones disponibles.
-- Tus **[recibos y pagos](payments.es.md)**, y tu **forma de pago**.
-- Tu **[carné digital](member-card.es.md)** con código QR.
+- Tus **[actividades](activities.md)** y las inscripciones disponibles.
+- Tus **[recibos y pagos](payments.md)**, y tu **forma de pago**.
+- Tu **[carné digital](member-card.md)** con código QR.
 - Los **anuncios** de la organización y tus **notificaciones**.
