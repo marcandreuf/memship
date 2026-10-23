@@ -4,7 +4,7 @@
 #   curl -fsSL https://raw.githubusercontent.com/marcandreuf/memship/main/docker-compose.quickstart.yml -o docker-compose.yml
 #   PORT=8081 docker compose up -d
 #   docker compose exec -it demo-memship-api python -m app.cli.seed
-#   Open http://localhost:8081
+#   Open http://localhost:8081 — and http://localhost:8025 for the mail it sends
 #
 # EVALUATION ONLY. The database password below is fixed and the data lives in
 # throwaway Docker volumes. To run memship for a real organization use
@@ -31,6 +31,17 @@ x-backend-env: &backend-env
   CORS_ORIGINS: http://localhost:${PORT:-80},http://localhost
   FRONTEND_URL: http://localhost:${PORT:-80}
   CELERY_BROKER_URL: redis://demo-memship-redis:6379/0
+  # Every message the instance sends lands in the demo-memship-mailpit inbox
+  # instead of being delivered. Without a transport, self-registration answers
+  # 503 by design — an address that can never be verified leaves the account
+  # stuck (#231) — so the one flow an evaluator most wants to see could not run
+  # (#438). EVALUATION ONLY: never copy these into the root docker-compose.yml,
+  # where they would silently swallow a real deployment's mail. A provider saved
+  # in Settings → Mailing takes precedence over them, as it does over any .env.
+  SMTP_HOST: demo-memship-mailpit
+  SMTP_PORT: 1025
+  SMTP_TLS: "false"
+  SMTP_FROM: memship@localhost
 
 services:
   demo-memship-caddy:
@@ -92,6 +103,8 @@ services:
         condition: service_healthy
       demo-memship-redis:
         condition: service_healthy
+      demo-memship-mailpit:
+        condition: service_started
     restart: unless-stopped
 
   # Sends the confirmation, cancellation, waitlist-promotion, receipt and
@@ -121,6 +134,8 @@ services:
         condition: service_healthy
       demo-memship-redis:
         condition: service_healthy
+      demo-memship-mailpit:
+        condition: service_started
     restart: unless-stopped
 
   # Scheduled billing run (02:00) and payment reminders (03:00) — see
@@ -152,6 +167,18 @@ services:
       - API_BASE_URL=http://demo-memship-api:8000
     depends_on:
       - demo-memship-api
+    restart: unless-stopped
+
+  # Test inbox: accepts every message on 1025 and shows it at
+  # http://localhost:8025. The web UI is published on loopback only, so the
+  # inbox is not reachable from the network even when the app is.
+  demo-memship-mailpit:
+    image: axllent/mailpit:v1.29
+    container_name: demo-memship-mailpit
+    expose:
+      - "1025"
+    ports:
+      - "127.0.0.1:${MAILPIT_PORT:-8025}:8025"
     restart: unless-stopped
 
   demo-memship-redis:

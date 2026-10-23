@@ -89,6 +89,28 @@ Go to **http://localhost:8081** and log in as the super admin you created.
 > [Configuration reference](../self-hosting/configuration.md) before putting Memship on a
 > network or entering real member data.
 
+## 5. Try a member joining
+
+The stack ships with a **test inbox** at **http://localhost:8025**. Every email the instance
+sends — address verification, registration approval, receipts, payment reminders — lands
+there instead of being delivered, whatever address it was sent to. This is the flow to try
+first:
+
+1. In a private window, open **http://localhost:8081/register** and sign up with any
+   address, real or not.
+2. Open the test inbox, find the verification email and follow its link.
+3. Back in your admin session, open **Pending registrations** in the sidebar. The new sign-up
+   is listed there — alongside a few the demo club seeds — so click **Approve** on its row and
+   confirm.
+4. The approval email arrives in the test inbox, and the member can now log in.
+
+The inbox is local to your machine — it is published on `127.0.0.1` only — and holds nothing
+real. Set `MAILPIT_PORT` alongside `PORT` if 8025 is taken.
+
+It stays in effect **only while Settings → Mailing has never been saved**. Configure a real
+provider there and that provider sends from then on, which is the intended precedence and not
+a fault — see [Which one is in effect](../self-hosting/email.md#which-one-is-in-effect).
+
 ## Moving from evaluation to real use
 
 Do not carry the quick-start stack into production — install it properly with
@@ -123,7 +145,8 @@ To get the disk space back as well, remove the images once the stack is down:
 
 ```bash
 docker image rm ghcr.io/marcandreuf/memship-backend:latest \
-                ghcr.io/marcandreuf/memship-frontend:latest
+                ghcr.io/marcandreuf/memship-frontend:latest \
+                axllent/mailpit:v1.29
 ```
 
 Leave `caddy`, `postgres` and `redis` alone unless you are sure nothing else on the machine
@@ -137,7 +160,7 @@ anywhere — useful if you deleted the directory, or cannot remember where you p
 ```bash
 docker rm -f demo-memship-caddy demo-memship-frontend demo-memship-api \
              demo-memship-celery-worker demo-memship-celery-beat \
-             demo-memship-redis demo-memship-db
+             demo-memship-redis demo-memship-db demo-memship-mailpit
 ```
 
 That removes the containers but not the data. The volumes are named after the Compose
