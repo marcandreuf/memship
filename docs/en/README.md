@@ -5,10 +5,9 @@ This is the English tree; the Spanish one is at [`../es/README.md`](../es/README
 
 ## Which version these docs describe
 
-These pages describe the current release, plus anything merged since it was tagged. They are
-published from the main branch, so a change lands here when it is merged rather than when the
-next version ships. The exact version is stated in
-[the documentation index](../README.md#which-version-these-docs-describe).
+These docs describe memship 2.19.0 — the current release — plus anything merged since it was
+tagged. They are published from the main branch, so a change lands here when it is merged rather
+than when the next version ships.
 
 **To check what your own instance runs**, ask it:
 
