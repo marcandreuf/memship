@@ -62,6 +62,9 @@ mutate "$INSTALL" "--upgrade is set for everyone, so the guard is dead" \
 mutate "$INSTALL" "a missing git tag falls back to latest again" \
     's/^    \[ -n "\$NEW_TAG" \] || die/    NEW_TAG="${NEW_TAG:-latest}"; [ -n "$NEW_TAG" ] || die/'
 
+mutate "$INSTALL" "the sending address is derived from --domain again" \
+    's/^SMTP_FROM=$/SMTP_FROM=noreply@${DOMAIN:-memship.local}/'
+
 mutate "$UPGRADE" "the downgrade comparison is the wrong way round" \
     's/if \[ "\$OLDER" = "\$VERSION" \]; then/if [ "$OLDER" != "$VERSION" ]; then/'
 

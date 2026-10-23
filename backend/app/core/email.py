@@ -18,7 +18,6 @@ from pathlib import Path
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound, select_autoescape
 from sqlalchemy import text
 
-from app.core.config import settings
 from app.core.email_branding import EmailBranding, get_email_branding
 from app.core.email_text import html_to_text
 from app.db import session as db_session
@@ -459,7 +458,7 @@ def _dispatch(
         return _send_via_resend(
             to, subject, html_body,
             api_key=c.get("api_key"),
-            from_email=c.get("from_email") or settings.SMTP_FROM,
+            from_email=c.get("from_email"),
             text_body=text_body,
             attachment=attachment,
             attachment_filename=attachment_filename,

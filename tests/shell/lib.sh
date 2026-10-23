@@ -97,7 +97,7 @@ write_env() {
         printf 'BACKEND_PUBLIC_URL=http://localhost\n'
         printf 'RESEND_API_KEY=\nRESEND_FROM_EMAIL=\n'
         printf 'SMTP_HOST=\nSMTP_PORT=587\nSMTP_USER=\nSMTP_PASSWORD=\n'
-        printf 'SMTP_FROM=noreply@memship.local\nSMTP_TLS=true\n'
+        printf 'SMTP_FROM=\nSMTP_TLS=true\n'
         printf 'GOOGLE_CLIENT_ID=\nGOOGLE_CLIENT_SECRET=\n'
         printf 'APPLE_CLIENT_ID=\nAPPLE_TEAM_ID=\nAPPLE_KEY_ID=\nAPPLE_PRIVATE_KEY=\n'
         printf '%s\n' "$@"
