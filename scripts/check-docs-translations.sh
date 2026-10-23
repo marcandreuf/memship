@@ -93,9 +93,9 @@ while IFS= read -r page; do
 
     if [ "$FIX" -eq 1 ]; then
         if [ -n "$declared" ]; then
-            sed -i "s|<!--[[:space:]]*source-hash:[[:space:]]*$declared[[:space:]]*-->|<!-- source-hash: $actual -->|" "$page"
+            sed -i "s|<!--[[:space:]]*source-hash:[[:space:]]*${declared}[[:space:]]*-->|<!-- source-hash: $actual -->|" "$page"
         else
-            sed -i "s|\(<!--[[:space:]]*source:[[:space:]]*$source_rel[[:space:]]*-->\)|\1\n<!-- source-hash: $actual -->|" "$page"
+            sed -i "s|\(<!--[[:space:]]*source:[[:space:]]*${source_rel}[[:space:]]*-->\)|\1\n<!-- source-hash: $actual -->|" "$page"
         fi
         echo "check-docs-translations: restamped $page to $actual."
         fixed=$((fixed + 1))
