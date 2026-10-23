@@ -46,13 +46,14 @@ interface ProviderForm {
 // Which fields each provider carries, which are secret, and which are required
 // for the provider to be activatable. `sender` lists fields of which at least
 // one must be filled: SMTP sends as the From address, or else as the user.
+// Resend has no account to send as, so its From address is required.
 const PROVIDER_SCHEMA = {
   resend: {
     icon: "📧",
     fields: ["from_email"] as const,
     secrets: ["api_key"] as const,
     required: ["api_key"],
-    sender: [],
+    sender: ["from_email"],
   },
   smtp: {
     icon: "✉️",
