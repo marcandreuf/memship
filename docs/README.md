@@ -69,9 +69,21 @@ rules. GitHub also surfaces them from the root on its own.
   directory: from `es/admin-guide/` to an English operator page is
   `../../en/self-hosting/email.md`. A link that resolves on the site through the language
   fallback but not on GitHub is a broken link — the published build rejects it.
-- **A translation records what it was translated from.** When a source page changes, its
-  translations have to follow or they become three pages that disagree while all three look
-  current — see [#451](https://github.com/marcandreuf/memship/issues/451).
+- **A translation records what it was translated from**, in a comment block at the top:
+
+  ```markdown
+  <!-- source: en/getting-started/what-you-need.md -->
+  <!-- source-hash: 9f5a006988a7 -->
+  ```
+
+  The hash is the first 12 characters of the source file's git blob id. CI re-hashes the source
+  and fails when it has moved on, naming the pages to revisit — otherwise a source page changes
+  and its translations become pages that disagree while all three look equally current, the stale
+  one hardest to spot in the language its reader cannot check
+  ([#451](https://github.com/marcandreuf/memship/issues/451)). A page with no `source:` is itself a
+  source and is skipped, so a page is adopted the moment it is translated and not before.
+
+  After re-translating, restamp with `./scripts/check-docs-translations.sh --fix`.
 - **Keep heading anchors stable.** Pages link into each other's headings (e.g.
   `settings.md#banca-y-facturación`), the READMEs and the issue templates link in from
   outside the folder, and GitHub does not redirect a renamed anchor. So rename headings
