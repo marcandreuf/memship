@@ -82,6 +82,10 @@ Three cases, and the difference matters:
 | **The screen has been saved and an active provider chosen** | That provider. Per field, a value saved in the screen wins; a field left empty there falls back to the matching environment variable. |
 | **The screen has been saved but no active provider chosen** | **Nothing.** Mail is silently skipped, whatever `.env` says. |
 
+The [quick-start stack](../getting-started/quickstart.md#5-try-a-member-joining) relies on the
+first row: its compose file points `SMTP_HOST` at a local test inbox, so saving the screen
+replaces the test inbox — with the provider chosen there, or with nothing if none is.
+
 The consequence to watch for: once anyone has saved the Mailing screen, **editing `.env` may
 have no visible effect** — the saved value wins and no error is raised. If you configured Resend
 in the screen and later change `RESEND_API_KEY` in `.env`, the old key keeps sending. Clear the
