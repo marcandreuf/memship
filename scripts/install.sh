@@ -246,7 +246,7 @@ BACKEND_PUBLIC_URL=$PUBLIC_URL
 # The sending address is left blank on purpose. It is usually on the domain
 # your organisation already sends mail from, not on this site's hostname, and
 # it needs your mail provider's DNS records on that domain. See "Email is a
-# separate domain decision" in docs/self-hosting/domain-and-dns.md. SMTP_FROM
+# separate domain decision" in docs/en/self-hosting/domain-and-dns.md. SMTP_FROM
 # is also Resend's sender when RESEND_FROM_EMAIL is blank.
 RESEND_API_KEY=
 RESEND_FROM_EMAIL=
@@ -348,7 +348,7 @@ sends mail from (\`no-reply@myclub.org\`), not on this site's hostname, and the
 provider's SPF and DKIM records go on **that** domain. A domain has one SPF
 record — add the provider's \`include:\` to the one that exists rather than
 publishing a second. See "Email is a separate domain decision" in
-\`docs/self-hosting/domain-and-dns.md\`.
+\`docs/en/self-hosting/domain-and-dns.md\`.
 
 ## Where things are
 
