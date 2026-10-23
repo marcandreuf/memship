@@ -34,6 +34,7 @@ jobs:
       frontend: ${{ steps.filter.outputs.frontend }}
       caddy: ${{ steps.filter.outputs.caddy }}
       shell: ${{ steps.filter.outputs.shell }}
+      docs: ${{ steps.filter.outputs.docs }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -62,6 +63,9 @@ jobs:
               - 'tests/shell/**'
               - 'docker-compose.yml'
               - 'Caddyfile'
+            docs:
+              - 'docs/**'
+              - 'scripts/check-docs-translations.sh'
 
   caddy-headers:
     name: Caddy Header Parity
@@ -74,6 +78,20 @@ jobs:
 
       - name: Compare the two Caddy header blocks
         run: ./scripts/check-caddy-headers.sh
+
+  docs-translations:
+    name: Translation Drift
+    needs: changes
+    if: ${{ needs.changes.outputs.docs == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    steps:
+      # fetch-depth is irrelevant here: the check hashes the working tree with
+      # `git hash-object`, not a commit range, so a shallow checkout is enough.
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Check each translation against the page it came from
+        run: ./scripts/check-docs-translations.sh
 
   shell:
     name: Deployment Script Tests
