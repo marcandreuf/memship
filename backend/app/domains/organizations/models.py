@@ -40,8 +40,8 @@ class OrganizationSettings(Base):
     bank_name = Column(String(255))
     bank_iban = Column(String(34))
     bank_bic = Column(String(11))
-    invoice_prefix = Column(String(10), default="INV")
-    invoice_next_number = Column(Integer, default=1)
+    invoice_prefix = Column(String(10), default="INV", server_default="INV")
+    invoice_next_number = Column(Integer, default=1, server_default="1")
     invoice_annual_reset = Column(Boolean, default=True)
     # Member numbering (v0.7.0 member card) — configurable prefix + zero-padded sequence
     member_number_prefix = Column(String(20), nullable=False, server_default="")

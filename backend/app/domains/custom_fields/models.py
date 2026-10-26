@@ -55,18 +55,18 @@ class CustomFieldDefinition(Base):
     field_type = Column(String(20), nullable=False)
     # Primary-locale label; `labels` holds optional per-locale overrides.
     label = Column(String(100), nullable=False)
-    labels = Column(JSONB, nullable=False, default=dict)
+    labels = Column(JSONB, nullable=False, default=dict, server_default="{}")
     help_text = Column(String(255))
     # For `select`: [{"value": "s", "label": "Small"}, ...]. NULL otherwise.
     options = Column(JSONB)
-    required = Column(Boolean, nullable=False, default=False)
+    required = Column(Boolean, nullable=False, default=False, server_default="false")
     # Who may see/edit this field. Super admin is always write; `restricted`
     # follows admin_access.
-    member_access = Column(String(10), nullable=False, default="read")
-    admin_access = Column(String(10), nullable=False, default="write")
-    sort_order = Column(Integer, nullable=False, default=0)
+    member_access = Column(String(10), nullable=False, default="read", server_default="read")
+    admin_access = Column(String(10), nullable=False, default="write", server_default="write")
+    sort_order = Column(Integer, nullable=False, default=0, server_default="0")
     # Retire a field without destroying the values already collected.
-    active = Column(Boolean, nullable=False, default=True)
+    active = Column(Boolean, nullable=False, default=True, server_default="true")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
