@@ -76,7 +76,17 @@ def run_migrations_online() -> None:
         poolclass=pool.NullPool,
     )
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+            # Off by default, and the reason 28 server defaults drifted apart
+            # unnoticed: the models declared them Python-side as `default=`,
+            # which never reaches the DDL, while the migrations wrote real
+            # DEFAULT clauses. Without this, `alembic check` compares neither
+            # and reports a clean diff on a schema that disagrees with itself.
+            compare_server_default=True,
+            compare_type=True,
+        )
         with context.begin_transaction():
             context.run_migrations()
 
