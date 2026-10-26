@@ -27,11 +27,11 @@ class Reminder(Base):
         Index("ix_reminders_open_due", "is_done", "due_date"),
     )
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     content = Column(Text, nullable=False)
     # NULL → plain note; a date → a dated reminder.
     due_date = Column(Date, nullable=True)
-    is_done = Column(Boolean, nullable=False, default=False)
+    is_done = Column(Boolean, nullable=False, default=False, server_default="false")
     # Author; nullable so the reminder survives the user's deletion.
     created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

@@ -147,7 +147,11 @@ class Member(Base):
     # ``membership_type_id`` is what destroys it — and it is what lets paying
     # the outstanding fee put the member back exactly where they were.
     membership_reverted_from_id = Column(
-        Integer, ForeignKey("membership_types.id", ondelete="SET NULL")
+        Integer, ForeignKey(
+            "membership_types.id",
+            ondelete="SET NULL",
+            name="fk_members_membership_reverted_from_id",
+        )
     )
     membership_reverted_at = Column(DateTime(timezone=True))
     is_active = Column(Boolean, default=True)
