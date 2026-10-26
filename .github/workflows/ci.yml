@@ -210,6 +210,26 @@ jobs:
         working-directory: backend
         run: uv sync --extra dev
 
+      # `create_all` builds every test database and `alembic upgrade head`
+      # builds every install, and nothing compared them. They had drifted into
+      # 36 differences: 28 server defaults the models declared Python-side as
+      # `default=` and so never emitted as DDL, 7 constraints whose definitions
+      # matched under different names, and an index no model declared. The
+      # suite could therefore pass against a schema no deployment has.
+      # `alembic check` diffs the models against a migrated database, so this
+      # fails the build the day the two disagree again.
+      - name: Schema guard (models match migrations)
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://memship:memship@localhost:5434/schema_guard
+          SECRET_KEY: test-secret-key-for-ci-minimum-32-chars
+        run: |
+          PGPASSWORD=memship psql -h localhost -p 5434 -U memship -d postgres \
+            -c 'DROP DATABASE IF EXISTS schema_guard' \
+            -c 'CREATE DATABASE schema_guard'
+          uv run alembic upgrade head
+          uv run alembic check
+
       - name: Run integration tests
         working-directory: backend
         env:
