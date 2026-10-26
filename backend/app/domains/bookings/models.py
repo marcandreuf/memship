@@ -57,7 +57,7 @@ class Space(Base):
     # Membership type ids allowed to book. Empty or NULL = open to every member,
     # the same reading as Activity.allowed_membership_types.
     allowed_membership_types = Column(ARRAY(Integer))
-    is_active = Column(Boolean, nullable=False, default=True)
+    is_active = Column(Boolean, nullable=False, default=True, server_default="true")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
@@ -87,13 +87,13 @@ class SpaceSlot(Base):
     slot_date = Column(Date, nullable=False)
     start_time = Column(Time, nullable=False)
     end_time = Column(Time, nullable=False)
-    capacity = Column(SmallInteger, nullable=False, default=1)
+    capacity = Column(SmallInteger, nullable=False, default=1, server_default="1")
     # Overrides the space's price for this one slot — prime time costs more.
     # NULL falls back to the space; 0 is an explicit free slot in a paid space.
     price = Column(Numeric(10, 2))
     # Slots generated together by one repeat rule share a series_id; NULL = one-off.
     series_id = Column(UUID(as_uuid=True))
-    is_active = Column(Boolean, nullable=False, default=True)
+    is_active = Column(Boolean, nullable=False, default=True, server_default="true")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     space = relationship("Space", back_populates="slots")
@@ -129,7 +129,7 @@ class Booking(Base):
     member_id = Column(
         Integer, ForeignKey("members.id", ondelete="CASCADE"), nullable=False
     )
-    status = Column(String(20), nullable=False, default="booked")
+    status = Column(String(20), nullable=False, default="booked", server_default="booked")
     # Set when a booking enters the waitlist; FIFO promotion orders by this.
     waitlisted_at = Column(DateTime(timezone=True))
     cancelled_at = Column(DateTime(timezone=True))
