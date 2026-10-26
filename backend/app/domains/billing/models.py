@@ -114,6 +114,12 @@ class Receipt(Base):
         Index("ix_receipts_origin", "origin"),
         Index("ix_receipts_booking_id", "booking_id"),
         Index("ix_receipts_rectifies_receipt_id", "rectifies_receipt_id"),
+        # Named explicitly: an unnamed `unique=True` on the column is
+        # auto-named `receipts_redsys_ds_order_key` by PostgreSQL, while the
+        # migration that created it named it `uq_...`. Same constraint, two
+        # names, which is enough to make autogenerate propose a drop and
+        # recreate on a schema that is already correct.
+        UniqueConstraint("redsys_ds_order", name="uq_receipts_redsys_ds_order"),
     )
 
     id = Column(Integer, primary_key=True, index=True)
@@ -131,7 +137,10 @@ class Receipt(Base):
     # would leave a negative amount pointing at nothing, which is exactly the
     # untraceable hole credit notes are here to prevent.
     rectifies_receipt_id = Column(
-        Integer, ForeignKey("receipts.id", ondelete="RESTRICT")
+        Integer,
+        ForeignKey(
+            "receipts.id", ondelete="RESTRICT", name="fk_receipts_rectifies_receipt_id"
+        ),
     )
 
     # Relationships
@@ -142,7 +151,8 @@ class Receipt(Base):
     # (deleting a slot cascades its bookings away), and a receipt must outlive
     # that. It keeps its description, which is what the member is invoiced for.
     booking_id = Column(
-        Integer, ForeignKey("bookings.id", ondelete="SET NULL")
+        Integer,
+        ForeignKey("bookings.id", ondelete="SET NULL", name="fk_receipts_booking_id"),
     )
     # The plan an unpaid purchase receipt was raised for, so activation can read
     # it off the receipt it has just marked paid. SET NULL, like
@@ -151,9 +161,17 @@ class Receipt(Base):
     # to be able to lose. A receipt must outlive that: it keeps its description
     # and its amount, which is what the member was actually invoiced for.
     purchased_membership_type_id = Column(
-        Integer, ForeignKey("membership_types.id", ondelete="SET NULL")
+        Integer,
+        ForeignKey(
+            "membership_types.id",
+            ondelete="SET NULL",
+            name="fk_receipts_purchased_membership_type_id",
+        ),
     )
-    remittance_id = Column(Integer, ForeignKey("remittances.id"))
+    remittance_id = Column(
+        Integer,
+        ForeignKey("remittances.id", name="fk_receipts_remittance_id"),
+    )
     created_by = Column(Integer, ForeignKey("users.id"))
 
     # Origin & description
@@ -184,7 +202,7 @@ class Receipt(Base):
     stripe_payment_intent_id = Column(String(255))
 
     # Redsys payment tracking
-    redsys_ds_order = Column(String(12), unique=True)
+    redsys_ds_order = Column(String(12))
     redsys_auth_code = Column(String(8))
 
     # Refund metadata (manual tracking)
@@ -547,7 +565,7 @@ class InvoiceSequence(Base):
     # integer primary key is autoincrementing by default, which would hand a
     # row inserted without one the year 1.
     year = Column(Integer, primary_key=True, autoincrement=False)
-    next_number = Column(Integer, nullable=False, default=1)
+    next_number = Column(Integer, nullable=False, default=1, server_default="1")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -565,7 +583,7 @@ class RemittanceSequence(Base):
     __tablename__ = "remittance_sequences"
 
     year = Column(Integer, primary_key=True, autoincrement=False)
-    next_number = Column(Integer, nullable=False, default=1)
+    next_number = Column(Integer, nullable=False, default=1, server_default="1")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

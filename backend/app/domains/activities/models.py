@@ -177,10 +177,10 @@ class DiscountCode(Base):
     discount_type = Column(String(20), nullable=False)  # 'percentage' or 'fixed'
     discount_value = Column(Numeric(10, 2), nullable=False)
     max_uses = Column(Integer)  # NULL = unlimited
-    current_uses = Column(Integer, default=0)
+    current_uses = Column(Integer, default=0, server_default="0")
     valid_from = Column(DateTime(timezone=True))
     valid_until = Column(DateTime(timezone=True))
-    is_active = Column(Boolean, default=True)
+    is_active = Column(Boolean, default=True, server_default="true")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
@@ -202,9 +202,9 @@ class ActivityConsent(Base):
     )
     title = Column(String(255), nullable=False)
     content = Column(Text, nullable=False)
-    is_mandatory = Column(Boolean, default=True)
-    display_order = Column(Integer, default=1)
-    is_active = Column(Boolean, default=True)
+    is_mandatory = Column(Boolean, default=True, server_default="true")
+    display_order = Column(Integer, default=1, server_default="1")
+    is_active = Column(Boolean, default=True, server_default="true")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
@@ -227,10 +227,10 @@ class ActivityAttachmentType(Base):
     name = Column(String(255), nullable=False)
     description = Column(Text)
     allowed_extensions = Column(ARRAY(String), default=list)  # e.g. ['pdf', 'jpg', 'png']
-    max_file_size_mb = Column(Integer, default=5)
-    is_mandatory = Column(Boolean, default=True)
-    display_order = Column(Integer, default=1)
-    is_active = Column(Boolean, default=True)
+    max_file_size_mb = Column(Integer, default=5, server_default="5")
+    is_mandatory = Column(Boolean, default=True, server_default="true")
+    display_order = Column(Integer, default=1, server_default="1")
+    is_active = Column(Boolean, default=True, server_default="true")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
@@ -273,12 +273,17 @@ class Registration(Base):
         Integer, ForeignKey("activity_prices.id", ondelete="SET NULL")
     )
     discount_code_id = Column(
-        Integer, ForeignKey("discount_codes.id", ondelete="SET NULL")
+        Integer,
+        ForeignKey(
+            "discount_codes.id",
+            ondelete="SET NULL",
+            name="fk_registrations_discount_code_id",
+        ),
     )
-    status = Column(String(20), default="confirmed", nullable=False)
+    status = Column(String(20), default="confirmed", nullable=False, server_default="confirmed")
     original_amount = Column(Numeric(10, 2))
     discounted_amount = Column(Numeric(10, 2))
-    registration_data = Column(JSONB, default=dict)
+    registration_data = Column(JSONB, default=dict, server_default="{}")
     member_notes = Column(Text)
     admin_notes = Column(Text)
     cancelled_at = Column(DateTime(timezone=True))
@@ -326,7 +331,7 @@ class RegistrationConsent(Base):
     activity_consent_id = Column(
         Integer, ForeignKey("activity_consents.id", ondelete="CASCADE"), nullable=False
     )
-    accepted = Column(Boolean, nullable=False, default=True)
+    accepted = Column(Boolean, nullable=False, default=True, server_default="true")
     accepted_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships
