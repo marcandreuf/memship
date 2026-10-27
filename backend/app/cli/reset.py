@@ -73,14 +73,14 @@ PRESERVED_TABLES = frozenset({
 
 # Rows belonging to the surviving operator accounts stay; the rest go. Keyed by
 # table, valued by the WHERE clause that spares them. `:user_ids` and
-# `:person_ids` are bound as expanding lists.
+# `:party_ids` are bound as expanding lists.
 ACCOUNT_SCOPED_PREDICATES = {
     "users": "id NOT IN :user_ids",
-    "persons": "id NOT IN :person_ids",
+    "persons": "party_id NOT IN :party_ids",
     # A preserved person keeps its identity row; every other party is club
     # data, whatever its kind. Deleting a party cascades its persons subtype
     # row, which the persons predicate would delete anyway.
-    "party": "id NOT IN (SELECT party_id FROM persons WHERE id IN :person_ids)",
+    "party": "id NOT IN :party_ids",
     "user_roles": "user_id NOT IN :user_ids",
     "user_identities": "user_id NOT IN :user_ids",
     # Custom roles are club data. The system roles are the product.
@@ -101,10 +101,10 @@ def _check_metadata_is_classified() -> None:
 
 
 def _preserved_ids(db) -> tuple[list[int], list[int]]:
-    """User and person ids for the super admins, who outlive a reset."""
+    """User and party ids for the super admins, who outlive a reset."""
     rows = db.execute(
         text(
-            "SELECT u.id, u.person_id FROM users u "
+            "SELECT u.id, u.party_id FROM users u "
             "JOIN user_roles ur ON ur.user_id = u.id "
             "JOIN roles r ON r.id = ur.role_id "
             "WHERE r.slug = :slug"
@@ -114,7 +114,7 @@ def _preserved_ids(db) -> tuple[list[int], list[int]]:
     return [r[0] for r in rows], [r[1] for r in rows]
 
 
-def _where(table_name: str, user_ids: list[int], person_ids: list[int]) -> tuple[str, dict]:
+def _where(table_name: str, user_ids: list[int], party_ids: list[int]) -> tuple[str, dict]:
     """The WHERE clause sparing the preserved rows, and its parameters.
 
     Returns an empty clause when the whole table goes — either because it holds
@@ -131,10 +131,10 @@ def _where(table_name: str, user_ids: list[int], person_ids: list[int]) -> tuple
         if not user_ids:
             return "", {}
         params["user_ids"] = user_ids
-    if "person_ids" in predicate:
-        if not person_ids:
+    if "party_ids" in predicate:
+        if not party_ids:
             return "", {}
-        params["person_ids"] = person_ids
+        params["party_ids"] = party_ids
     return f" WHERE {predicate}", params
 
 
@@ -149,13 +149,13 @@ def _statement(sql: str, params: dict):
 def preview_club_data(db) -> dict[str, int]:
     """Row counts a reset would delete, per table. Only non-empty tables."""
     _check_metadata_is_classified()
-    user_ids, person_ids = _preserved_ids(db)
+    user_ids, party_ids = _preserved_ids(db)
 
     counts: dict[str, int] = {}
     for table in reversed(Base.metadata.sorted_tables):
         if table.name in PRESERVED_TABLES:
             continue
-        where, params = _where(table.name, user_ids, person_ids)
+        where, params = _where(table.name, user_ids, party_ids)
         stmt = _statement(f"SELECT count(*) FROM {table.name}{where}", params)
         count = db.execute(stmt, params).scalar_one()
         if count:
@@ -170,7 +170,7 @@ def reset_club_data(db) -> dict[str, int]:
     through leaves the instance exactly as it was.
     """
     _check_metadata_is_classified()
-    user_ids, person_ids = _preserved_ids(db)
+    user_ids, party_ids = _preserved_ids(db)
 
     deleted: dict[str, int] = {}
     # Dependency order, children first, so plain DELETEs never trip a foreign
@@ -179,7 +179,7 @@ def reset_club_data(db) -> dict[str, int]:
     for table in reversed(Base.metadata.sorted_tables):
         if table.name in PRESERVED_TABLES:
             continue
-        where, params = _where(table.name, user_ids, person_ids)
+        where, params = _where(table.name, user_ids, party_ids)
         result = db.execute(_statement(f"DELETE FROM {table.name}{where}", params), params)
         if result.rowcount:
             deleted[table.name] = result.rowcount

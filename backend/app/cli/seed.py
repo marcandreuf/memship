@@ -476,7 +476,7 @@ def _create_account(db, details: dict, *slugs: str) -> User:
     db.flush()
 
     user = User(
-        person_id=person.id,
+        party_id=person.party_id,
         email=details["email"],
         password_hash=ph.hash(details["password"]),
         is_active=True,
@@ -519,8 +519,7 @@ def create_user_with_member(
 
     member_number = next_member_number(db)
     member = Member(
-        person_id=user.person_id,
-        user_id=user.id,
+        party_id=user.party_id,
         membership_type_id=membership_type.id,
         member_number=member_number,
         status="active",
@@ -809,7 +808,7 @@ def seed_extra_members(db, default_membership_type: MembershipType) -> list[Memb
     for i, data in enumerate(EXTRA_MEMBERS):
         existing = db.query(User).filter_by(email=data["email"]).first()
         if existing:
-            member = db.query(Member).filter(Member.user_id == existing.id).first()
+            member = db.query(Member).filter(Member.party_id == existing.party_id).first()
             if member:
                 members.append(member)
             continue
@@ -824,7 +823,7 @@ def seed_extra_members(db, default_membership_type: MembershipType) -> list[Memb
         db.flush()
 
         user = User(
-            person_id=person.id,
+            party_id=person.party_id,
             email=data["email"],
             password_hash=ph.hash("TestMember1!"),
             is_active=True,
@@ -842,8 +841,7 @@ def seed_extra_members(db, default_membership_type: MembershipType) -> list[Memb
         member_number = next_member_number(db)
         status = statuses[i % len(statuses)]
         member = Member(
-            person_id=person.id,
-            user_id=user.id,
+            party_id=person.party_id,
             membership_type_id=type_ids[i % len(type_ids)],
             member_number=member_number,
             status=status,
@@ -951,7 +949,7 @@ def seed_registrations(db) -> None:
 
     # Find test member (member@examplee6e3b1.com) — limit to 3 registrations so some activities remain unregistered for testing
     test_member_user = db.query(User).filter(User.email == "member@examplee6e3b1.com").first()
-    test_member = db.query(Member).filter(Member.user_id == test_member_user.id).first() if test_member_user else None
+    test_member = db.query(Member).filter(Member.party_id == test_member_user.party_id).first() if test_member_user else None
     test_member_reg_count = 0
     test_member_max_regs = 3
 
@@ -1293,7 +1291,7 @@ def seed_billing_data(db) -> None:
     members_data = (
         db.query(Member, MembershipType, Person)
         .join(MembershipType, Member.membership_type_id == MembershipType.id)
-        .join(Person, Member.person_id == Person.id)
+        .join(Person, Member.party_id == Person.party_id)
         .filter(Member.is_active.is_(True))
         .limit(20)
         .all()
@@ -1441,7 +1439,7 @@ def seed_billing_data(db) -> None:
     if test_member_user:
         test_member = (
             db.query(Member)
-            .filter(Member.person_id == test_member_user.person_id)
+            .filter(Member.party_id == test_member_user.party_id)
             .first()
         )
         if test_member:
@@ -1576,7 +1574,7 @@ def seed_sepa_data(db) -> None:
         person = db.query(Person).filter(Person.email == email).first()
         if not person or not person.bank_iban:
             continue
-        member = db.query(Member).join(Person, Member.person_id == Person.id).filter(Person.email == email).first()
+        member = db.query(Member).join(Person, Member.party_id == Person.party_id).filter(Person.email == email).first()
         if not member:
             continue
 
@@ -1640,7 +1638,7 @@ def seed_sepa_data(db) -> None:
 
             for i, member_id in enumerate(active_mandate_member_ids[:4]):
                 member = db.query(Member).filter(Member.id == member_id).first()
-                person = db.query(Person).filter(Person.id == member.person_id).first() if member else None
+                person = db.query(Person).filter(Person.party_id == member.party_id).first() if member else None
                 if not member or not person:
                     continue
                 base = Decimal("50.00")
@@ -1774,12 +1772,11 @@ def restore_member_records(db, users: list[User], membership_type: MembershipTyp
     for user in users:
         if not any(r.slug == MEMBER_SLUG for r in user.roles):
             continue
-        if db.query(Member).filter_by(person_id=user.person_id).first():
+        if db.query(Member).filter_by(party_id=user.party_id).first():
             continue
         db.add(
             Member(
-                person_id=user.person_id,
-                user_id=user.id,
+                party_id=user.party_id,
                 membership_type_id=membership_type.id,
                 member_number=next_member_number(db),
                 status="active",
@@ -1816,9 +1813,9 @@ def set_password(db, user: User, password: str) -> None:
 
 def attach_login(db, member: Member, password: str) -> str:
     """Give an existing demo member a login. Returns the email."""
-    person = db.query(Person).filter_by(id=member.person_id).one()
+    person = db.query(Person).filter_by(party_id=member.party_id).one()
     user = User(
-        person_id=person.id,
+        party_id=person.party_id,
         email=person.email,
         password_hash=ph.hash(password),
         is_active=True,
@@ -1827,7 +1824,6 @@ def attach_login(db, member: Member, password: str) -> str:
     db.add(user)
     db.flush()
     assign_roles(db, user, MEMBER_SLUG)
-    member.user_id = user.id
     db.flush()
     return person.email
 
@@ -1864,7 +1860,10 @@ def create_demo_accounts(db, membership_type: MembershipType) -> list[tuple[str,
     # needs a couple of working sign-ins, not sixty.
     from app.cli.demo_data import demo_members
 
-    for member in [m for m in demo_members(db) if m.user_id is None][:2]:
+    members_with_login = {
+        u.party_id for u in db.query(User.party_id).all()
+    }
+    for member in [m for m in demo_members(db) if m.party_id not in members_with_login][:2]:
         password = generate_password()
         email = attach_login(db, member, password)
         accounts.append(("member", email, password))

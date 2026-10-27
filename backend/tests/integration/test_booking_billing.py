@@ -51,7 +51,7 @@ def _member(db, i=0):
     person = Person(first_name=f"B{i}", last_name="Payer", email=f"b{i}@bill.com")
     db.add(person)
     db.flush()
-    member = Member(person_id=person.id, status="active", is_active=True)
+    member = Member(party_id=person.party_id, status="active", is_active=True)
     db.add(member)
     db.flush()
     return member
@@ -93,7 +93,7 @@ def _user(db):
     db.add(person)
     db.flush()
     user = User(
-        person_id=person.id,
+        party_id=person.party_id,
         email="canceller@bill.com",
         password_hash=hash_password("x"),
         role="admin",

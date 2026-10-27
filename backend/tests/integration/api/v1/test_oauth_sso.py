@@ -52,7 +52,7 @@ def _create_password_user(db, email, email_verified=True):
     db.add(person)
     db.flush()
     user = User(
-        person_id=person.id,
+        party_id=person.party_id,
         email=email,
         password_hash=hash_password("password123"),
         role="member",
@@ -64,8 +64,7 @@ def _create_password_user(db, email, email_verified=True):
     mt = _ensure_membership_type(db)
     db.add(
         Member(
-            person_id=person.id,
-            user_id=user.id,
+            party_id=person.party_id,
             membership_type_id=mt.id,
             member_number="M-9001",
             status="active",
@@ -87,7 +86,7 @@ class TestFirstTimeSsoSignIn:
         # SSO-only account: nothing to log in with on the password path.
         assert user.password_hash is None
 
-        member = db.query(Member).filter(Member.user_id == user.id).first()
+        member = db.query(Member).filter(Member.party_id == user.party_id).first()
         assert member.status == "pending"
         assert member.member_number is None
 
@@ -117,7 +116,7 @@ class TestFirstTimeSsoSignIn:
 
         user, _ = find_or_create_from_oauth(db, _profile())
 
-        member = db.query(Member).filter(Member.user_id == user.id).first()
+        member = db.query(Member).filter(Member.party_id == user.party_id).first()
         assert member.status == "active"
         assert member.member_number is not None
 

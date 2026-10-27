@@ -12,7 +12,7 @@ def _create_admin(db):
     db.add(person)
     db.flush()
     user = User(
-        person_id=person.id,
+        party_id=person.party_id,
         email="admin-m@examplee6e3b1.com",
         password_hash=hash_password("password123"),
         role="admin",
@@ -28,7 +28,7 @@ def _create_member_user(db, email="member-m@examplee6e3b1.com"):
     db.add(person)
     db.flush()
     user = User(
-        person_id=person.id,
+        party_id=person.party_id,
         email=email,
         password_hash=hash_password("password123"),
         role="member",
@@ -44,8 +44,7 @@ def _create_member_user(db, email="member-m@examplee6e3b1.com"):
         db.flush()
 
     member = Member(
-        person_id=person.id,
-        user_id=user.id,
+        party_id=person.party_id,
         membership_type_id=mt.id,
         member_number=f"M-{user.id:04d}",
         status="active",
@@ -144,7 +143,7 @@ class TestMemberCRUD:
         db.add(person1)
         db.flush()
         member1 = Member(
-            person_id=person1.id,
+            party_id=person1.party_id,
             membership_type_id=mt_in_group.id,
             member_number="M-GRP-001",
             status="active",
@@ -156,7 +155,7 @@ class TestMemberCRUD:
         db.add(person2)
         db.flush()
         member2 = Member(
-            person_id=person2.id,
+            party_id=person2.party_id,
             membership_type_id=mt_no_group.id,
             member_number="M-GRP-002",
             status="active",
@@ -270,7 +269,7 @@ class TestMemberCRUD:
 
     def test_member_cannot_list(self, client, db):
         _, member = _create_member_user(db, "no-list@examplee6e3b1.com")
-        user = db.query(User).filter(User.id == member.user_id).first()
+        user = member.user
         client.cookies.update(_auth_cookie(user))
 
         response = client.get("/api/v1/members/")
@@ -490,7 +489,7 @@ class TestGuardianMinor:
                 "last_name": "García",
                 "date_of_birth": "2018-06-15",
                 "membership_type_id": mt.id,
-                "guardian_person_id": guardian.id,
+                "guardian_person_id": guardian.party_id,
             },
         )
         assert response.status_code == 201
@@ -577,7 +576,7 @@ class TestGuardianMinor:
                 "first_name": "Child1",
                 "last_name": "Parent",
                 "date_of_birth": "2016-03-01",
-                "guardian_person_id": guardian.id,
+                "guardian_person_id": guardian.party_id,
                 "membership_type_id": mt.id,
             },
         )
@@ -591,7 +590,7 @@ class TestGuardianMinor:
                 "first_name": "Child2",
                 "last_name": "Parent",
                 "date_of_birth": "2019-07-15",
-                "guardian_person_id": guardian.id,
+                "guardian_person_id": guardian.party_id,
                 "membership_type_id": mt.id,
             },
         )

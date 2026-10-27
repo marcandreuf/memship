@@ -61,7 +61,7 @@ def _member(db, i=0, membership_type=None):
     db.add(person)
     db.flush()
     m = Member(
-        person_id=person.id,
+        party_id=person.party_id,
         status="active",
         is_active=True,
         membership_type_id=membership_type.id if membership_type else None,
@@ -83,7 +83,7 @@ def _user(db, i=0):
     db.add(person)
     db.flush()
     user = User(
-        person_id=person.id, email=f"u{i}@t.com",
+        party_id=person.party_id, email=f"u{i}@t.com",
         password_hash=hash_password("x"), role="admin", is_active=True,
     )
     db.add(user)

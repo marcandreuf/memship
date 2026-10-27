@@ -73,7 +73,7 @@ def _create_user(db, role="super_admin", suffix="mail"):
     db.add(person)
     db.flush()
     user = User(
-        person_id=person.id,
+        party_id=person.party_id,
         email=f"{suffix}-{role}@examplee6e3b1.com",
         password_hash=hash_password("password123"),
         role=role,

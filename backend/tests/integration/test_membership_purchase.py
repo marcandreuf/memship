@@ -63,7 +63,7 @@ def _member(db, suffix, tier, status="active"):
     db.add(person)
     db.flush()
     member = Member(
-        person_id=person.id,
+        party_id=person.party_id,
         membership_type_id=tier.id,
         member_number=f"BUY-{suffix}",
         status=status,

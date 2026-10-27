@@ -19,7 +19,7 @@ def _create_member_user(db, email="photo-member@examplee6e3b1.com"):
     db.add(person)
     db.flush()
     user = User(
-        person_id=person.id,
+        party_id=person.party_id,
         email=email,
         password_hash=hash_password("password123"),
         role="member",
