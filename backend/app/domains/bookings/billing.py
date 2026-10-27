@@ -95,7 +95,7 @@ def ensure_booking_receipt(
             generate_booking_receipt(
                 db=db,
                 booking_id=booking.id,
-                member_id=booking.member_id,
+                party_id=booking.party_id,
                 description=booking_description(space, slot),
                 amount=amount,
             )

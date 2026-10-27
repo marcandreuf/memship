@@ -110,7 +110,7 @@ class TestQuote:
             f"/api/v1/members/me/membership/quote/{paid.id}", cookies=_auth(user)
         )
 
-        assert db.query(Receipt).filter(Receipt.member_id == member.id).count() == 0
+        assert db.query(Receipt).filter(Receipt.party_id == member.party_id).count() == 0
 
     def test_unknown_plan_is_404(self, client, db):
         user, _, _, _ = _setup(db, "quote404")
@@ -203,7 +203,7 @@ class TestPurchase:
         live = (
             db.query(Receipt)
             .filter(
-                Receipt.member_id == member.id,
+                Receipt.party_id == member.party_id,
                 Receipt.status != "cancelled",
             )
             .all()

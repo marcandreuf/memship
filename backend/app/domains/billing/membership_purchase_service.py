@@ -198,7 +198,7 @@ def quote_membership_purchase(
     return _quote(db, mtype, vat_rate, today)
 
 
-def void_open_purchases(db: Session, member_id: int) -> list[Receipt]:
+def void_open_purchases(db: Session, party_id: int) -> list[Receipt]:
     """Cancel every purchase receipt this member still owes money on.
 
     Called when a new purchase starts. A member who picked the wrong plan can
@@ -212,7 +212,7 @@ def void_open_purchases(db: Session, member_id: int) -> list[Receipt]:
     open_purchases = (
         db.query(Receipt)
         .filter(
-            Receipt.member_id == member_id,
+            Receipt.party_id == party_id,
             Receipt.purchased_membership_type_id.isnot(None),
             Receipt.is_active.is_(True),
             Receipt.remittance_id.is_(None),
@@ -244,7 +244,7 @@ def purchase_membership(
     today = today or org_today(db)
     _assert_purchasable(member, mtype, today)
 
-    void_open_purchases(db, member.id)
+    void_open_purchases(db, member.party_id)
 
     concept = membership_concept(db, mtype, _default_vat_rate(db))
     quote = _quote(db, mtype, Decimal(str(concept.vat_rate)), today)
@@ -258,7 +258,7 @@ def purchase_membership(
 
     receipt = Receipt(
         receipt_number=generate_receipt_number(db, today),
-        member_id=member.id,
+        party_id=member.party_id,
         concept_id=concept.id,
         purchased_membership_type_id=mtype.id,
         # ``membership``, not a new origin: it is what the fee generator's
@@ -304,7 +304,12 @@ def activate_purchased_membership(db: Session, receipt: Receipt) -> bool:
         .filter(MembershipType.id == receipt.purchased_membership_type_id)
         .first()
     )
-    member = db.query(Member).filter(Member.id == receipt.member_id).first()
+    member = (
+        db.query(Member)
+        .filter(Member.party_id == receipt.party_id)
+        .order_by(Member.is_active.desc(), Member.id.desc())
+        .first()
+    )
     if mtype is None or member is None:
         logger.error(
             "Paid purchase receipt %s has no plan or member to activate", receipt.id

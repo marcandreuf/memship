@@ -101,7 +101,7 @@ def _create_member_with_mandate(db, suffix="rem"):
 
     org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
     mandate = SepaMandate(
-        member_id=member.id,
+        party_id=member.party_id,
         mandate_reference=f"FAC-M{suffix}-001",
         creditor_id=org.creditor_id,
         debtor_name=f"Test Member-{suffix}",
@@ -120,7 +120,8 @@ def _create_member_with_mandate(db, suffix="rem"):
 def _create_receipt(
     db, member_id, user_id, suffix="rem", status="emitted", base_amount=Decimal("50.00")
 ):
-    """Create a receipt for a member."""
+    """Create a receipt for a member (addressed to the member's party)."""
+    party_id = db.query(Member.party_id).filter(Member.id == member_id).scalar()
     concept = Concept(
         name=f"Fee-{suffix}",
         code=f"fee-{suffix}",
@@ -134,7 +135,7 @@ def _create_receipt(
     vat_amount = (base_amount * Decimal("0.21")).quantize(Decimal("0.01"))
     receipt = Receipt(
         receipt_number=f"FAC-2026-{suffix}",
-        member_id=member_id,
+        party_id=party_id,
         concept_id=concept.id,
         origin="membership",
         description=f"Monthly fee {suffix}",
@@ -1172,7 +1173,7 @@ class TestEligibleReceiptCarriesItsMember:
         )
         item = next(r for r in resp.json()["items"] if r["id"] == receipt.id)
 
-        label = label_members(db, [member.id])[0]
+        label = label_members(db, [member.party_id])[0]
         assert label == f"{item['member_number']} {item['member_name']}"
 
 
@@ -1856,7 +1857,7 @@ class TestAFileOnlyStandsWhileTheBatchDoes:
         """The sharper half: generation refuses, so the file on disk is the
         previous one — and saying it went to the bank must refuse too."""
         admin, member, _, rem_id = self._ready_batch(client, db, "file-nomandate")
-        for mandate in db.query(SepaMandate).filter(SepaMandate.member_id == member.id):
+        for mandate in db.query(SepaMandate).filter(SepaMandate.party_id == member.party_id):
             mandate.status = "cancelled"
         db.flush()
 

@@ -63,11 +63,11 @@ def _allow_members(db: Session, user: User, rest: list[str]) -> bool:
 
 
 def _allow_mandates(db: Session, user: User, rest: list[str]) -> bool:
-    """``mandates/<member_id>/<ref>.<ext>`` — the signing member, or billing staff."""
+    """``mandates/<party_id>/<ref>.<ext>`` — the signing member, or billing staff."""
     if "billing.read" in resolve_permissions(user):
         return True
     member = _own_member(db, user)
-    return member is not None and str(member.id) == rest[0]
+    return member is not None and str(member.party_id) == rest[0]
 
 
 def _allow_registrations(db: Session, user: User, rest: list[str]) -> bool:
@@ -81,7 +81,7 @@ def _allow_registrations(db: Session, user: User, rest: list[str]) -> bool:
         db.query(Registration.id)
         .filter(
             Registration.id == int(rest[0]),
-            Registration.member_id == member.id,
+            Registration.party_id == member.party_id,
         )
         .first()
         is not None

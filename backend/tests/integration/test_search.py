@@ -28,7 +28,7 @@ def _member(db, first, last, number):
 
 def _receipt(db, member, number, description):
     receipt = Receipt(
-        receipt_number=number, member_id=member.id, origin="manual",
+        receipt_number=number, party_id=member.party_id, origin="manual",
         description=description, base_amount=Decimal("10.00"),
         vat_rate=Decimal("0.00"), vat_amount=Decimal("0.00"),
         total_amount=Decimal("10.00"), status="emitted",

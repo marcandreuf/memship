@@ -494,7 +494,7 @@ class TestInvoiceSequenceSeeding:
         db.add(
             Receipt(
                 receipt_number=number,
-                member_id=member.id,
+                party_id=member.party_id,
                 origin="manual",
                 description="numbered by the seed, not by the allocator",
                 base_amount=Decimal("10.00"),

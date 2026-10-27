@@ -247,7 +247,7 @@ def generate_billing(db, created_by: int | None) -> None:
             seq += 1
             receipt = Receipt(
                 receipt_number=f"DEMO-{year}-{seq:04d}",
-                member_id=member.id,
+                party_id=member.party_id,
                 concept_id=membership_concept.id,
                 origin="membership",
                 description=f"Quota mensual {month:02d}/{year}",
@@ -308,12 +308,12 @@ def generate_sepa(db) -> None:
     today = date.today()
     created = 0
     for idx, (member, person) in enumerate(candidates):
-        if db.query(SepaMandate).filter(SepaMandate.member_id == member.id).first():
+        if db.query(SepaMandate).filter(SepaMandate.party_id == member.party_id).first():
             continue
         status = "cancelled" if idx % 8 == 7 else "active"
         signed = today - timedelta(days=60 + idx * 3)
         db.add(SepaMandate(
-            member_id=member.id,
+            party_id=member.party_id,
             mandate_reference=f"DEMO-{member.member_number}-{idx + 1:03d}",
             creditor_id=org.creditor_id if org else "ES12000B12345678",
             debtor_name=f"{person.first_name} {person.last_name}",
@@ -501,17 +501,17 @@ def generate_bookings(db) -> None:
     # Padel (capacity 1): one confirmed booking each; the first slot also gets a
     # waitlisted member so the waitlist/promotion flow is visible in the demo.
     for i, slot in enumerate(padel_slots):
-        db.add(Booking(space_slot_id=slot.id, member_id=take().id,
+        db.add(Booking(space_slot_id=slot.id, party_id=take().party_id,
                        status="booked"))
         if i == 0:
-            db.add(Booking(space_slot_id=slot.id, member_id=take().id,
+            db.add(Booking(space_slot_id=slot.id, party_id=take().party_id,
                            status="waitlisted",
                            waitlisted_at=datetime.now(timezone.utc)))
 
     # Sala (capacity 6): four confirmed bookings on each class.
     for slot in sala_slots:
         for _ in range(4):
-            db.add(Booking(space_slot_id=slot.id, member_id=take().id,
+            db.add(Booking(space_slot_id=slot.id, party_id=take().party_id,
                            status="booked"))
 
     db.flush()

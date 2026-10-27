@@ -445,7 +445,7 @@ ALTER SEQUENCE public.billing_runs_id_seq OWNED BY public.billing_runs.id;
 CREATE TABLE public.bookings (
     id integer NOT NULL,
     space_slot_id integer NOT NULL,
-    member_id integer NOT NULL,
+    party_id bigint NOT NULL,
     status character varying(20) DEFAULT 'booked'::character varying NOT NULL,
     waitlisted_at timestamp with time zone,
     cancelled_at timestamp with time zone,
@@ -1100,7 +1100,7 @@ ALTER SEQUENCE public.receipt_reminders_id_seq OWNED BY public.receipt_reminders
 CREATE TABLE public.receipts (
     id integer NOT NULL,
     receipt_number character varying(50) NOT NULL,
-    member_id integer NOT NULL,
+    party_id bigint NOT NULL,
     concept_id integer,
     registration_id integer,
     remittance_id integer,
@@ -1238,7 +1238,7 @@ ALTER SEQUENCE public.registration_consents_id_seq OWNED BY public.registration_
 CREATE TABLE public.registrations (
     id integer NOT NULL,
     activity_id integer NOT NULL,
-    member_id integer NOT NULL,
+    party_id bigint NOT NULL,
     modality_id integer,
     price_id integer,
     status character varying(20) DEFAULT 'confirmed'::character varying NOT NULL,
@@ -1444,7 +1444,7 @@ ALTER SEQUENCE public.roles_id_seq OWNED BY public.roles.id;
 
 CREATE TABLE public.sepa_mandates (
     id integer NOT NULL,
-    member_id integer NOT NULL,
+    party_id bigint NOT NULL,
     mandate_reference character varying(35) NOT NULL,
     creditor_id character varying(35) NOT NULL,
     debtor_name character varying(255) NOT NULL,
@@ -2620,10 +2620,10 @@ CREATE INDEX idx_registration_consents_registration_id ON public.registration_co
 CREATE INDEX idx_registrations_activity_id ON public.registrations USING btree (activity_id);
 
 --
--- Name: idx_registrations_member_id; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_registrations_party_id; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX idx_registrations_member_id ON public.registrations USING btree (member_id);
+CREATE INDEX idx_registrations_party_id ON public.registrations USING btree (party_id);
 
 --
 -- Name: idx_registrations_status; Type: INDEX; Schema: public; Owner: -
@@ -2722,10 +2722,10 @@ CREATE INDEX ix_billing_runs_id ON public.billing_runs USING btree (id);
 CREATE INDEX ix_billing_runs_triggered_started ON public.billing_runs USING btree (triggered_by, started_at);
 
 --
--- Name: ix_bookings_member; Type: INDEX; Schema: public; Owner: -
+-- Name: ix_bookings_party; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX ix_bookings_member ON public.bookings USING btree (member_id);
+CREATE INDEX ix_bookings_party ON public.bookings USING btree (party_id);
 
 --
 -- Name: ix_bookings_slot; Type: INDEX; Schema: public; Owner: -
@@ -2830,16 +2830,16 @@ CREATE INDEX ix_receipts_emission_date ON public.receipts USING btree (emission_
 CREATE INDEX ix_receipts_id ON public.receipts USING btree (id);
 
 --
--- Name: ix_receipts_member_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX ix_receipts_member_id ON public.receipts USING btree (member_id);
-
---
 -- Name: ix_receipts_origin; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX ix_receipts_origin ON public.receipts USING btree (origin);
+
+--
+-- Name: ix_receipts_party_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ix_receipts_party_id ON public.receipts USING btree (party_id);
 
 --
 -- Name: ix_receipts_rectifies_receipt_id; Type: INDEX; Schema: public; Owner: -
@@ -2908,10 +2908,10 @@ CREATE INDEX ix_remittances_status ON public.remittances USING btree (status);
 CREATE INDEX ix_sepa_mandates_id ON public.sepa_mandates USING btree (id);
 
 --
--- Name: ix_sepa_mandates_member_id; Type: INDEX; Schema: public; Owner: -
+-- Name: ix_sepa_mandates_party_id; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX ix_sepa_mandates_member_id ON public.sepa_mandates USING btree (member_id);
+CREATE INDEX ix_sepa_mandates_party_id ON public.sepa_mandates USING btree (party_id);
 
 --
 -- Name: ix_sepa_mandates_status; Type: INDEX; Schema: public; Owner: -
@@ -2956,10 +2956,10 @@ CREATE INDEX ix_webhook_events_provider_status ON public.webhook_events USING bt
 CREATE UNIQUE INDEX uq_addresses_primary_per_party ON public.addresses USING btree (party_id) WHERE ((party_id IS NOT NULL) AND is_primary);
 
 --
--- Name: uq_bookings_member_slot_active; Type: INDEX; Schema: public; Owner: -
+-- Name: uq_bookings_party_slot_active; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE UNIQUE INDEX uq_bookings_member_slot_active ON public.bookings USING btree (space_slot_id, member_id) WHERE ((status)::text = ANY ((ARRAY['booked'::character varying, 'waitlisted'::character varying])::text[]));
+CREATE UNIQUE INDEX uq_bookings_party_slot_active ON public.bookings USING btree (space_slot_id, party_id) WHERE ((status)::text = ANY ((ARRAY['booked'::character varying, 'waitlisted'::character varying])::text[]));
 
 --
 -- Name: uq_contacts_one_primary_per_channel; Type: INDEX; Schema: public; Owner: -
@@ -2980,16 +2980,16 @@ CREATE UNIQUE INDEX uq_members_one_active_per_party ON public.members USING btre
 CREATE UNIQUE INDEX uq_membership_types_is_default ON public.membership_types USING btree (is_default) WHERE is_default;
 
 --
--- Name: uq_registration_active_member; Type: INDEX; Schema: public; Owner: -
+-- Name: uq_registration_active_party; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE UNIQUE INDEX uq_registration_active_member ON public.registrations USING btree (activity_id, member_id) WHERE ((status)::text <> 'cancelled'::text);
+CREATE UNIQUE INDEX uq_registration_active_party ON public.registrations USING btree (activity_id, party_id) WHERE ((status)::text <> 'cancelled'::text);
 
 --
--- Name: uq_sepa_mandates_one_active_per_member; Type: INDEX; Schema: public; Owner: -
+-- Name: uq_sepa_mandates_one_active_per_party; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE UNIQUE INDEX uq_sepa_mandates_one_active_per_member ON public.sepa_mandates USING btree (member_id) WHERE (((status)::text = 'active'::text) AND (is_active = true));
+CREATE UNIQUE INDEX uq_sepa_mandates_one_active_per_party ON public.sepa_mandates USING btree (party_id) WHERE (((status)::text = 'active'::text) AND (is_active = true));
 
 --
 -- Name: uq_users_email_lower; Type: INDEX; Schema: public; Owner: -
@@ -3115,11 +3115,11 @@ ALTER TABLE ONLY public.bookings
     ADD CONSTRAINT bookings_cancelled_by_user_id_fkey FOREIGN KEY (cancelled_by_user_id) REFERENCES public.users(id) ON DELETE SET NULL;
 
 --
--- Name: bookings bookings_member_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: bookings bookings_party_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.bookings
-    ADD CONSTRAINT bookings_member_id_fkey FOREIGN KEY (member_id) REFERENCES public.members(id) ON DELETE CASCADE;
+    ADD CONSTRAINT bookings_party_id_fkey FOREIGN KEY (party_id) REFERENCES public.party(id) ON DELETE CASCADE;
 
 --
 -- Name: bookings bookings_space_slot_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
@@ -3304,11 +3304,11 @@ ALTER TABLE ONLY public.receipts
     ADD CONSTRAINT receipts_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id);
 
 --
--- Name: receipts receipts_member_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: receipts receipts_party_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.receipts
-    ADD CONSTRAINT receipts_member_id_fkey FOREIGN KEY (member_id) REFERENCES public.members(id);
+    ADD CONSTRAINT receipts_party_id_fkey FOREIGN KEY (party_id) REFERENCES public.party(id);
 
 --
 -- Name: receipts receipts_registration_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
@@ -3360,18 +3360,18 @@ ALTER TABLE ONLY public.registrations
     ADD CONSTRAINT registrations_cancelled_by_fkey FOREIGN KEY (cancelled_by) REFERENCES public.users(id) ON DELETE SET NULL;
 
 --
--- Name: registrations registrations_member_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.registrations
-    ADD CONSTRAINT registrations_member_id_fkey FOREIGN KEY (member_id) REFERENCES public.members(id) ON DELETE CASCADE;
-
---
 -- Name: registrations registrations_modality_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.registrations
     ADD CONSTRAINT registrations_modality_id_fkey FOREIGN KEY (modality_id) REFERENCES public.activity_modalities(id) ON DELETE SET NULL;
+
+--
+-- Name: registrations registrations_party_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.registrations
+    ADD CONSTRAINT registrations_party_id_fkey FOREIGN KEY (party_id) REFERENCES public.party(id) ON DELETE CASCADE;
 
 --
 -- Name: registrations registrations_price_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
@@ -3416,11 +3416,11 @@ ALTER TABLE ONLY public.role_permissions
     ADD CONSTRAINT role_permissions_role_id_fkey FOREIGN KEY (role_id) REFERENCES public.roles(id) ON DELETE CASCADE;
 
 --
--- Name: sepa_mandates sepa_mandates_member_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: sepa_mandates sepa_mandates_party_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.sepa_mandates
-    ADD CONSTRAINT sepa_mandates_member_id_fkey FOREIGN KEY (member_id) REFERENCES public.members(id);
+    ADD CONSTRAINT sepa_mandates_party_id_fkey FOREIGN KEY (party_id) REFERENCES public.party(id);
 
 --
 -- Name: space_slots space_slots_space_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -

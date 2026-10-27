@@ -47,7 +47,7 @@ def sepa_eligible_receipts_query(db: Session) -> Query:
     was unreachable from a dialog whose own text offers them, which is the set
     most in need of collection.
     """
-    mandated = select(SepaMandate.member_id).filter(
+    mandated = select(SepaMandate.party_id).filter(
         SepaMandate.status == "active",
         SepaMandate.is_active.is_(True),
     )
@@ -60,7 +60,7 @@ def sepa_eligible_receipts_query(db: Session) -> Query:
             Receipt.status.in_(("emitted", "overdue")),
             Receipt.is_batchable.is_(True),
             Receipt.remittance_id.is_(None),
-            Receipt.member_id.in_(mandated),
+            Receipt.party_id.in_(mandated),
             # A direct debit for zero collects nothing, and the bank file has no
             # way to express it — `sepaxml` fails on the empty amount with a bare
             # ValueError, which reached the admin as a 500 (#392). Zero is a
@@ -73,17 +73,18 @@ def sepa_eligible_receipts_query(db: Session) -> Query:
     )
 
 
-def label_members(db: Session, member_ids: list[int] | set[int]) -> list[str]:
-    """Name members the way an admin can find them.
+def label_members(db: Session, party_ids: list[int] | set[int]) -> list[str]:
+    """Name the parties behind a refusal the way an admin can find them.
 
     An error that lists `[48]` is unresolvable from any screen — the member
     number and the name are what the register, the search box and the receipt
-    all show.
+    all show. Keyed by party since Phase 4; a party with no membership still
+    names itself through its person row.
     """
     rows = (
         db.query(Member.member_number, Person.first_name, Person.last_name)
         .join(Person, Member.party_id == Person.party_id)
-        .filter(Member.id.in_(list(member_ids)))
+        .filter(Member.party_id.in_(list(party_ids)))
         .all()
     )
     return sorted(
@@ -265,7 +266,7 @@ def create_remittance(
                 f"Receipt {r.receipt_number}: total is {r.total_amount} — a direct "
                 "debit collects nothing and the bank file cannot express it"
             )
-        member_ids.add(r.member_id)
+        member_ids.add(r.party_id)
 
     if errors:
         raise HTTPException(
@@ -343,7 +344,7 @@ def active_mandate_map(db: Session, member_ids: set[int]) -> dict[int, SepaManda
     mandates = (
         db.query(SepaMandate)
         .filter(
-            SepaMandate.member_id.in_(member_ids),
+            SepaMandate.party_id.in_(member_ids),
             SepaMandate.status == "active",
             SepaMandate.is_active.is_(True),
         )
@@ -352,7 +353,7 @@ def active_mandate_map(db: Session, member_ids: set[int]) -> dict[int, SepaManda
     )
     chosen: dict[int, SepaMandate] = {}
     for mandate in mandates:
-        chosen.setdefault(mandate.member_id, mandate)
+        chosen.setdefault(mandate.party_id, mandate)
     return chosen
 
 
@@ -408,11 +409,11 @@ def refuse_if_mandates_withdrawn(
     file — so a batch whose regeneration was correctly refused cannot be marked
     as sent to the bank beside the stale file it still offers (#397).
     """
-    member_ids = {r.member_id for r in receipts}
+    member_ids = {r.party_id for r in receipts}
     mandated = {
-        m.member_id
+        m.party_id
         for m in db.query(SepaMandate).filter(
-            SepaMandate.member_id.in_(member_ids),
+            SepaMandate.party_id.in_(member_ids),
             SepaMandate.status == "active",
             SepaMandate.is_active.is_(True),
         )
@@ -462,7 +463,7 @@ def generate_remittance_xml(db: Session, remittance: Remittance) -> bytes:
     receipts = batch_receipts(db, remittance)
     refuse_if_out_of_step(remittance, receipts)
 
-    mandate_map = active_mandate_map(db, {r.member_id for r in receipts})
+    mandate_map = active_mandate_map(db, {r.party_id for r in receipts})
 
     refuse_past_collection_date(db, remittance.due_date, remittance.remittance_number)
 
@@ -491,7 +492,7 @@ def generate_remittance_xml(db: Session, remittance: Remittance) -> bytes:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail={
                 "code": "sepa_mandate_cancelled",
-                "members": label_members(db, exc.member_ids),
+                "members": label_members(db, exc.party_ids),
                 "message": str(exc),
             },
         ) from exc

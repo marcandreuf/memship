@@ -590,7 +590,7 @@ def test_deactivated_slot_absent_from_week_availability(db):
 
     ids = {
         c["space_slot_id"]
-        for c in service.space_week_availability(db, space, week_start, m1.id)
+        for c in service.space_week_availability(db, space, week_start, m1.party_id)
     }
 
     assert live.id in ids
@@ -777,7 +777,7 @@ def test_past_bookings_do_not_block_delete(db):
     m1 = _member(db, 1)
     from app.domains.bookings.models import Booking
 
-    db.add(Booking(space_slot_id=slot.id, member_id=m1.id, status="booked"))
+    db.add(Booking(space_slot_id=slot.id, party_id=m1.party_id, status="booked"))
     db.flush()
     notifier = RecordingNotifier()
 
@@ -818,7 +818,7 @@ def test_availability_reports_counts_and_state(db):
     m1 = _member(db, 1)
     service.create_booking(db, m1, slot.id)
 
-    cells = service.space_week_availability(db, space, week_start, m1.id)
+    cells = service.space_week_availability(db, space, week_start, m1.party_id)
     cell = next(c for c in cells if c["space_slot_id"] == slot.id)
 
     assert cell["date"] == target
@@ -843,7 +843,7 @@ def test_availability_reports_waitlist_and_other_members_per_slot(db):
 
     by_id = {
         c["space_slot_id"]: c
-        for c in service.space_week_availability(db, space, week_start, m2.id)
+        for c in service.space_week_availability(db, space, week_start, m2.party_id)
     }
     assert by_id[full.id]["booked_count"] == 1
     assert by_id[full.id]["waitlist_count"] == 1
@@ -871,7 +871,7 @@ def test_availability_query_count_does_not_grow_with_slots(db):
 
     event.listen(db.get_bind(), "before_cursor_execute", record)
     try:
-        cells = service.space_week_availability(db, space, week_start, m1.id)
+        cells = service.space_week_availability(db, space, week_start, m1.party_id)
     finally:
         event.remove(db.get_bind(), "before_cursor_execute", record)
 
@@ -900,7 +900,7 @@ def test_my_bookings_reports_occupancy(db):
     service.create_booking(db, m1, slot.id)
     service.create_booking(db, m2, slot.id)
 
-    mine = service.my_bookings(db, m1.id, scope="upcoming")
+    mine = service.my_bookings(db, m1.party_id, scope="upcoming")
     assert len(mine) == 1
     assert mine[0]["slot_date"] == slot.slot_date
     assert mine[0]["capacity"] == 3
@@ -918,7 +918,7 @@ def test_my_bookings_says_whether_the_member_can_still_cancel(db):
     service.create_booking(db, m1, soon.id)
     service.create_booking(db, m1, later.id)
 
-    mine = {b["space_slot_id"]: b for b in service.my_bookings(db, m1.id, scope="upcoming")}
+    mine = {b["space_slot_id"]: b for b in service.my_bookings(db, m1.party_id, scope="upcoming")}
 
     assert mine[soon.id]["can_cancel"] is False
     assert mine[later.id]["can_cancel"] is True

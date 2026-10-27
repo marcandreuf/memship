@@ -139,19 +139,19 @@ class TestMandates:
 
     def test_member_reads_own_mandate(self, client, db, storage):
         user, _, member = _make_user(db, "own-mandate@examplee6e3b1.com")
-        storage(f"mandates/{member.id}/MEM-0001-001.pdf", b"%PDF-1.4")
+        storage(f"mandates/{member.party_id}/MEM-0001-001.pdf", b"%PDF-1.4")
         client.cookies.update(_auth_cookie(user))
 
-        resp = client.get(f"/uploads/mandates/{member.id}/MEM-0001-001.pdf")
+        resp = client.get(f"/uploads/mandates/{member.party_id}/MEM-0001-001.pdf")
         assert resp.status_code == 200
 
     def test_member_cannot_read_another_members_mandate(self, client, db, storage):
         _, _, victim = _make_user(db, "victim-mandate@examplee6e3b1.com")
         attacker, _, _ = _make_user(db, "attacker-mandate@examplee6e3b1.com")
-        storage(f"mandates/{victim.id}/MEM-0002-001.pdf", b"%PDF-1.4")
+        storage(f"mandates/{victim.party_id}/MEM-0002-001.pdf", b"%PDF-1.4")
         client.cookies.update(_auth_cookie(attacker))
 
-        resp = client.get(f"/uploads/mandates/{victim.id}/MEM-0002-001.pdf")
+        resp = client.get(f"/uploads/mandates/{victim.party_id}/MEM-0002-001.pdf")
         assert resp.status_code == 404
 
 
@@ -175,7 +175,7 @@ class TestExecutableUploadsAreNeutralised:
         )
         db.add(activity)
         db.flush()
-        registration = Registration(activity_id=activity.id, member_id=member.id)
+        registration = Registration(activity_id=activity.id, party_id=member.party_id)
         db.add(registration)
         db.flush()
 

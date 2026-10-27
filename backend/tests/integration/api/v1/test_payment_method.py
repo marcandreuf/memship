@@ -73,7 +73,7 @@ class TestGetPaymentMethod:
         user, member = _setup(db, iban="ES6621000418401234567891", payment_method="direct_debit")
         member.person.bank_bic = "CAIXESBBXXX"
         mandate = SepaMandate(
-            member_id=member.id, mandate_reference="TEST-PM-001",
+            party_id=member.party_id, mandate_reference="TEST-PM-001",
             creditor_id="ES12000B12345678", debtor_name="Test Member",
             debtor_iban="ES6621000418401234567891", status="active",
             signed_at=date(2026, 1, 1),
