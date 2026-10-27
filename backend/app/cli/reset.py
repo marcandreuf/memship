@@ -36,7 +36,8 @@ KNOWN_TABLES = frozenset({
     "custom_field_definitions", "custom_field_values", "discount_codes",
     "groups", "invoice_sequences", "mail_transport_health", "members",
     "membership_types",
-    "notifications", "organization_settings", "payment_providers", "persons",
+    "notifications", "organization_settings", "party", "party_kinds",
+    "payment_providers", "persons",
     "receipt_reminders", "receipts", "registration_attachments",
     "registration_consents", "registrations", "reminders",
     "remittance_receipts", "remittance_sequences", "remittances",
@@ -61,6 +62,7 @@ KNOWN_TABLES = frozenset({
 PRESERVED_TABLES = frozenset({
     "address_types",
     "contact_types",
+    "party_kinds",
     # The reason this command exists instead of "delete the postgres volume".
     "payment_providers",
     # Cleared transitively: role_permissions.role_id is ON DELETE CASCADE, so
@@ -75,6 +77,10 @@ PRESERVED_TABLES = frozenset({
 ACCOUNT_SCOPED_PREDICATES = {
     "users": "id NOT IN :user_ids",
     "persons": "id NOT IN :person_ids",
+    # A preserved person keeps its identity row; every other party is club
+    # data, whatever its kind. Deleting a party cascades its persons subtype
+    # row, which the persons predicate would delete anyway.
+    "party": "id NOT IN (SELECT party_id FROM persons WHERE id IN :person_ids)",
     "user_roles": "user_id NOT IN :user_ids",
     "user_identities": "user_id NOT IN :user_ids",
     # Custom roles are club data. The system roles are the product.
