@@ -105,9 +105,6 @@ def _require_own_receipt(
 def _to_detail(receipt: Receipt) -> dict:
     """Convert a Receipt to a detail response dict with member/concept names."""
     data = {c.name: getattr(receipt, c.name) for c in receipt.__table__.columns}
-    # The HTTP contract still carries member_id (Phase 4); it is a property on
-    # the model now, not a column, so the column comprehension above misses it.
-    data["member_id"] = receipt.member_id
     data["member_name"] = None
     data["member_number"] = None
     data["concept_name"] = None
@@ -141,7 +138,7 @@ def list_receipts(
     status_filter: str | None = Query(None, alias="status"),
     origin: str | None = Query(None),
     document_type: str | None = Query(None),
-    member_id: int | None = Query(None),
+    party_id: int | None = Query(None),
     search: str | None = Query(None),
     emission_date_from: date | None = Query(None),
     emission_date_to: date | None = Query(None),
@@ -154,7 +151,7 @@ def list_receipts(
         status=status_filter,
         origin=origin,
         document_type=document_type,
-        member_id=member_id,
+        party_id=party_id,
         search=search,
         emission_date_from=emission_date_from,
         emission_date_to=emission_date_to,
@@ -214,7 +211,7 @@ def _receipt_csv_row(receipt: Receipt) -> list:
 def export_receipts_csv(
     status_filter: str | None = Query(None, alias="status"),
     origin: str | None = Query(None),
-    member_id: int | None = Query(None),
+    party_id: int | None = Query(None),
     document_type: str | None = Query(None),
     search: str | None = Query(None),
     emission_date_from: date | None = Query(None),
@@ -228,7 +225,7 @@ def export_receipts_csv(
         status=status_filter,
         origin=origin,
         document_type=document_type,
-        member_id=member_id,
+        party_id=party_id,
         search=search,
         emission_date_from=emission_date_from,
         emission_date_to=emission_date_to,
@@ -379,12 +376,7 @@ def create_receipt_endpoint(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("billing.write")),
 ):
-    """Create a manual receipt."""
-    # Validate member exists
-    member = db.query(Member).filter(Member.id == data.member_id).first()
-    if not member:
-        raise HTTPException(status_code=400, detail="Member not found")
-
+    """Create a manual receipt, addressed to any party."""
     receipt = create_receipt(db, data, current_user.id)
     db.commit()
     db.refresh(receipt)

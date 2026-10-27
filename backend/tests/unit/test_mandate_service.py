@@ -77,7 +77,7 @@ class TestPastedIbanNormalisation:
 
     def test_a_mandate_accepts_a_pasted_iban(self):
         mandate = MandateCreate(
-            member_id=1,
+            party_id=1,
             debtor_name="Carlos Blanch",
             debtor_iban="es91 2100 0418 4502 0005 1332",
             signed_at=date(2026, 1, 1),
@@ -87,7 +87,7 @@ class TestPastedIbanNormalisation:
     def test_a_mandate_still_refuses_a_bad_checksum(self):
         with pytest.raises(ValidationError):
             MandateCreate(
-                member_id=1,
+                party_id=1,
                 debtor_name="Carlos Blanch",
                 debtor_iban="ZZ00 NOTANIBAN 123",
                 signed_at=date(2026, 1, 1),
@@ -106,7 +106,7 @@ class TestIbanErrorCodes:
     def _error(self, iban: str) -> dict:
         with pytest.raises(ValidationError) as exc:
             MandateCreate(
-                member_id=1,
+                party_id=1,
                 debtor_name="Test Debtor",
                 debtor_iban=iban,
                 signed_at=date(2026, 10, 16),
@@ -124,7 +124,7 @@ class TestIbanErrorCodes:
 
     def test_lowercase_is_normalised_rather_than_refused(self):
         m = MandateCreate(
-            member_id=1,
+            party_id=1,
             debtor_name="Test Debtor",
             debtor_iban="es91 2100 0418 4502 0005 1332",
             signed_at=date(2026, 10, 16),

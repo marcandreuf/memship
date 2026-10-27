@@ -83,9 +83,9 @@ def _create_member(db, suffix="mnd"):
     return member, person
 
 
-def _mandate_payload(member_id, **overrides):
+def _mandate_payload(party_id, **overrides):
     base = {
-        "member_id": member_id,
+        "party_id": party_id,
         "debtor_name": "Juan Pérez",
         "debtor_iban": "ES7921000813610123456789",
         "signed_at": "2026-04-01",
@@ -102,7 +102,7 @@ class TestMandateCRUD:
 
         resp = client.post(
             "/api/v1/mandates/",
-            json=_mandate_payload(member.id),
+            json=_mandate_payload(member.party_id),
             cookies=_auth_cookie(admin),
         )
         assert resp.status_code == 201
@@ -125,7 +125,7 @@ class TestMandateCRUD:
 
         resp = client.post(
             "/api/v1/mandates/",
-            json=_mandate_payload(member.id),
+            json=_mandate_payload(member.party_id),
             cookies=_auth_cookie(admin),
         )
         assert resp.status_code == 400
@@ -138,7 +138,7 @@ class TestMandateCRUD:
 
         resp = client.post(
             "/api/v1/mandates/",
-            json=_mandate_payload(member.id, debtor_iban="INVALID"),
+            json=_mandate_payload(member.party_id, debtor_iban="INVALID"),
             cookies=_auth_cookie(admin),
         )
         assert resp.status_code == 422
@@ -151,7 +151,7 @@ class TestMandateCRUD:
         # Create a mandate
         client.post(
             "/api/v1/mandates/",
-            json=_mandate_payload(member.id),
+            json=_mandate_payload(member.party_id),
             cookies=_auth_cookie(admin),
         )
 
@@ -165,13 +165,13 @@ class TestMandateCRUD:
         m1, _ = _create_member(db, suffix="mnd-l2a")
         m2, _ = _create_member(db, suffix="mnd-l2b")
 
-        client.post("/api/v1/mandates/", json=_mandate_payload(m1.id), cookies=_auth_cookie(admin))
-        client.post("/api/v1/mandates/", json=_mandate_payload(m2.id, debtor_name="Other"), cookies=_auth_cookie(admin))
+        client.post("/api/v1/mandates/", json=_mandate_payload(m1.party_id), cookies=_auth_cookie(admin))
+        client.post("/api/v1/mandates/", json=_mandate_payload(m2.party_id, debtor_name="Other"), cookies=_auth_cookie(admin))
 
-        resp = client.get(f"/api/v1/mandates/?member_id={m1.id}", cookies=_auth_cookie(admin))
+        resp = client.get(f"/api/v1/mandates/?party_id={m1.party_id}", cookies=_auth_cookie(admin))
         assert resp.status_code == 200
         for item in resp.json()["items"]:
-            assert item["member_id"] == m1.id
+            assert item["party_id"] == m1.party_id
 
     def test_list_mandates_search(self, client, db):
         _ensure_org_settings(db)
@@ -180,7 +180,7 @@ class TestMandateCRUD:
 
         client.post(
             "/api/v1/mandates/",
-            json=_mandate_payload(member.id, debtor_name="Unique SearchName"),
+            json=_mandate_payload(member.party_id, debtor_name="Unique SearchName"),
             cookies=_auth_cookie(admin),
         )
 
@@ -199,7 +199,7 @@ class TestMandateCRUD:
             member, _ = _create_member(db, suffix=f"mnd-pp{i}")
             client.post(
                 "/api/v1/mandates/",
-                json=_mandate_payload(member.id),
+                json=_mandate_payload(member.party_id),
                 cookies=_auth_cookie(admin),
             )
 
@@ -216,7 +216,7 @@ class TestMandateCRUD:
 
         create_resp = client.post(
             "/api/v1/mandates/",
-            json=_mandate_payload(member.id),
+            json=_mandate_payload(member.party_id),
             cookies=_auth_cookie(admin),
         )
         mandate_id = create_resp.json()["id"]
@@ -232,7 +232,7 @@ class TestMandateCRUD:
 
         create_resp = client.post(
             "/api/v1/mandates/",
-            json=_mandate_payload(member.id),
+            json=_mandate_payload(member.party_id),
             cookies=_auth_cookie(admin),
         )
         mandate_id = create_resp.json()["id"]
@@ -252,7 +252,7 @@ class TestMandateCRUD:
 
         create_resp = client.post(
             "/api/v1/mandates/",
-            json=_mandate_payload(member.id),
+            json=_mandate_payload(member.party_id),
             cookies=_auth_cookie(admin),
         )
         mandate_id = create_resp.json()["id"]
@@ -269,7 +269,7 @@ class TestMandateCRUD:
 
         create_resp = client.post(
             "/api/v1/mandates/",
-            json=_mandate_payload(member.id),
+            json=_mandate_payload(member.party_id),
             cookies=_auth_cookie(admin),
         )
         mandate_id = create_resp.json()["id"]
@@ -285,7 +285,7 @@ class TestMandateCRUD:
 
         create_resp = client.post(
             "/api/v1/mandates/",
-            json=_mandate_payload(member.id),
+            json=_mandate_payload(member.party_id),
             cookies=_auth_cookie(admin),
         )
         mandate_id = create_resp.json()["id"]
@@ -307,7 +307,7 @@ class TestMandateAuth:
 
         resp = client.post(
             "/api/v1/mandates/",
-            json=_mandate_payload(member.id),
+            json=_mandate_payload(member.party_id),
             cookies=_auth_cookie(member_user),
         )
         assert resp.status_code == 403
@@ -338,14 +338,14 @@ class TestMemberMandate:
         # Admin creates mandate
         client.post(
             "/api/v1/mandates/",
-            json=_mandate_payload(member.id),
+            json=_mandate_payload(member.party_id),
             cookies=_auth_cookie(admin),
         )
 
         # Member views their mandate
         resp = client.get("/api/v1/members/me/mandate", cookies=_auth_cookie(member_user))
         assert resp.status_code == 200
-        assert resp.json()["member_id"] == member.id
+        assert resp.json()["party_id"] == member.party_id
 
     def test_member_no_mandate_returns_204(self, client, db):
         _ensure_org_settings(db)
@@ -373,7 +373,7 @@ class TestMandateUpload:
 
         create_resp = client.post(
             "/api/v1/mandates/",
-            json=_mandate_payload(member.id),
+            json=_mandate_payload(member.party_id),
             cookies=_auth_cookie(admin),
         )
         mandate_id = create_resp.json()["id"]
@@ -393,7 +393,7 @@ class TestMandateUpload:
 
         create_resp = client.post(
             "/api/v1/mandates/",
-            json=_mandate_payload(member.id),
+            json=_mandate_payload(member.party_id),
             cookies=_auth_cookie(admin),
         )
         mandate_id = create_resp.json()["id"]
@@ -412,9 +412,9 @@ class TestMandateReference:
         admin = _create_user(db, suffix="mnd-ref")
         member, _ = _create_member(db, suffix="mnd-ref")
 
-        r1 = client.post("/api/v1/mandates/", json=_mandate_payload(member.id), cookies=_auth_cookie(admin))
+        r1 = client.post("/api/v1/mandates/", json=_mandate_payload(member.party_id), cookies=_auth_cookie(admin))
         # Cancel first mandate so we can create another
         client.post(f"/api/v1/mandates/{r1.json()['id']}/cancel", cookies=_auth_cookie(admin))
 
-        r2 = client.post("/api/v1/mandates/", json=_mandate_payload(member.id), cookies=_auth_cookie(admin))
+        r2 = client.post("/api/v1/mandates/", json=_mandate_payload(member.party_id), cookies=_auth_cookie(admin))
         assert r1.json()["mandate_reference"] != r2.json()["mandate_reference"]

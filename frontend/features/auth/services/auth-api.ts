@@ -20,7 +20,7 @@ export interface User {
   /** Effective permission keys — the union of every assigned role. */
   permissions: string[];
   is_active: boolean;
-  person_id: number;
+  party_id: number;
   first_name: string;
   last_name: string;
   member_id: number | null;

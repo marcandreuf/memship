@@ -67,7 +67,7 @@ class ConceptResponse(BaseModel):
 
 
 class ReceiptCreate(BaseModel):
-    member_id: int
+    party_id: int
     concept_id: int | None = None
     registration_id: int | None = None
     origin: str = Field(pattern=r"^(membership|activity|manual|service)$")
@@ -131,7 +131,7 @@ class ReceiptResponse(BaseModel):
     receipt_number: str
     document_type: str = "invoice"
     rectifies_receipt_id: int | None = None
-    member_id: int
+    party_id: int
     concept_id: int | None
     registration_id: int | None
     remittance_id: int | None
@@ -200,7 +200,7 @@ class GenerateMembershipFeesRequest(BaseModel):
 class EligibleReceiptResponse(ReceiptResponse):
     """A receipt in the SEPA batch picker, with the member it belongs to.
 
-    `ReceiptResponse` carries `member_id` and nothing else about the member, so
+    `ReceiptResponse` carries `party_id` and nothing else about the member, so
     the picker's `SOCIO` column had nothing to render and showed `—` on every
     row (#379). That is the screen deciding whose bank account gets debited: a
     receipt number is a document reference, not a person. The frontend had been
@@ -220,7 +220,7 @@ class EligibleReceiptResponse(ReceiptResponse):
 
 
 class MandateCreate(BaseModel):
-    member_id: int
+    party_id: int
     debtor_name: NonBlank(255)
     debtor_iban: str = Field(min_length=5, max_length=34)
     _clean_iban = field_validator("debtor_iban", mode="before")(normalize_pasted_iban)
@@ -258,7 +258,7 @@ class MandateResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    member_id: int
+    party_id: int
     mandate_reference: str
     creditor_id: str
     debtor_name: str

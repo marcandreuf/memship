@@ -66,7 +66,7 @@ export type BookingStatus = "booked" | "waitlisted" | "cancelled";
 export interface AdminBooking {
   id: number;
   space_slot_id: number;
-  member_id: number;
+  party_id: number;
   member_name: string;
   slot_date: string; // "YYYY-MM-DD"
   start_time: string;
@@ -260,7 +260,7 @@ export interface MyBooking {
 export interface BookingResult {
   id: number;
   space_slot_id: number;
-  member_id: number;
+  party_id: number;
   status: BookingStatus;
 }
 

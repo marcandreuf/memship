@@ -155,7 +155,7 @@ def create_member(
     gender: str | None = None,
     national_id: str | None = None,
     membership_type_id: int | None = None,
-    guardian_person_id: int | None = None,
+    guardian_party_id: int | None = None,
     internal_notes: str | None = None,
 ) -> Member:
     person = Person(
@@ -178,7 +178,7 @@ def create_member(
         member_number=member_number,
         status="pending",
         is_minor=minor,
-        guardian_party_id=guardian_person_id,
+        guardian_party_id=guardian_party_id,
         internal_notes=internal_notes,
     )
     db.add(member)
