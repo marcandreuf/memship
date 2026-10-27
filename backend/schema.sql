@@ -964,6 +964,49 @@ CREATE SEQUENCE public.organization_settings_id_seq
 ALTER SEQUENCE public.organization_settings_id_seq OWNED BY public.organization_settings.id;
 
 --
+-- Name: party; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.party (
+    id bigint NOT NULL,
+    kind text NOT NULL,
+    display_name text NOT NULL,
+    national_id character varying(50),
+    email character varying(255),
+    photo_url character varying(500),
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now()
+);
+
+--
+-- Name: party_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.party_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+--
+-- Name: party_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.party_id_seq OWNED BY public.party.id;
+
+--
+-- Name: party_kinds; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.party_kinds (
+    code text NOT NULL,
+    name text NOT NULL,
+    is_natural boolean DEFAULT false NOT NULL,
+    display_order integer DEFAULT 0 NOT NULL
+);
+
+--
 -- Name: payment_providers; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1016,7 +1059,10 @@ CREATE TABLE public.persons (
     bank_bic character varying(11),
     bank_holder_name character varying(255),
     payment_method character varying(20),
-    stripe_customer_id character varying(255)
+    stripe_customer_id character varying(255),
+    party_id bigint NOT NULL,
+    kind text DEFAULT 'person'::text NOT NULL,
+    CONSTRAINT persons_kind_check CHECK ((kind = 'person'::text))
 );
 
 --
@@ -1804,6 +1850,12 @@ ALTER TABLE ONLY public.notifications ALTER COLUMN id SET DEFAULT nextval('publi
 ALTER TABLE ONLY public.organization_settings ALTER COLUMN id SET DEFAULT nextval('public.organization_settings_id_seq'::regclass);
 
 --
+-- Name: party id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.party ALTER COLUMN id SET DEFAULT nextval('public.party_id_seq'::regclass);
+
+--
 -- Name: payment_providers id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -2151,6 +2203,27 @@ ALTER TABLE ONLY public.organization_settings
     ADD CONSTRAINT organization_settings_pkey PRIMARY KEY (id);
 
 --
+-- Name: party party_id_kind_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.party
+    ADD CONSTRAINT party_id_kind_key UNIQUE (id, kind);
+
+--
+-- Name: party_kinds party_kinds_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.party_kinds
+    ADD CONSTRAINT party_kinds_pkey PRIMARY KEY (code);
+
+--
+-- Name: party party_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.party
+    ADD CONSTRAINT party_pkey PRIMARY KEY (id);
+
+--
 -- Name: payment_providers payment_providers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2317,6 +2390,13 @@ ALTER TABLE ONLY public.custom_field_values
 
 ALTER TABLE ONLY public.discount_codes
     ADD CONSTRAINT uq_discount_code_per_activity UNIQUE (activity_id, code);
+
+--
+-- Name: persons uq_persons_party_id; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.persons
+    ADD CONSTRAINT uq_persons_party_id UNIQUE (party_id);
 
 --
 -- Name: user_identities uq_provider_subject; Type: CONSTRAINT; Schema: public; Owner: -
@@ -2735,6 +2815,30 @@ CREATE INDEX ix_custom_field_values_person ON public.custom_field_values USING b
 --
 
 CREATE INDEX ix_notifications_user_unread ON public.notifications USING btree (user_id, read_at);
+
+--
+-- Name: ix_party_display_name; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ix_party_display_name ON public.party USING btree (display_name);
+
+--
+-- Name: ix_party_email; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ix_party_email ON public.party USING btree (email) WHERE (email IS NOT NULL);
+
+--
+-- Name: ix_party_kind; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ix_party_kind ON public.party USING btree (kind);
+
+--
+-- Name: ix_party_national_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ix_party_national_id ON public.party USING btree (national_id) WHERE (national_id IS NOT NULL);
 
 --
 -- Name: ix_payment_providers_id; Type: INDEX; Schema: public; Owner: -
@@ -3164,6 +3268,20 @@ ALTER TABLE ONLY public.membership_types
 
 ALTER TABLE ONLY public.notifications
     ADD CONSTRAINT notifications_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+--
+-- Name: party party_kind_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.party
+    ADD CONSTRAINT party_kind_fkey FOREIGN KEY (kind) REFERENCES public.party_kinds(code);
+
+--
+-- Name: persons persons_party_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.persons
+    ADD CONSTRAINT persons_party_fk FOREIGN KEY (party_id, kind) REFERENCES public.party(id, kind) ON DELETE CASCADE;
 
 --
 -- Name: receipt_reminders receipt_reminders_receipt_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
