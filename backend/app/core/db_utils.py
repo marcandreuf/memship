@@ -16,6 +16,22 @@ def get_or_404(db: Session, model: type[Base], id: int, detail: str | None = Non
     return instance
 
 
+def get_person_by_party_or_404(db: Session, party_id: int):
+    """Resolve a person by the party id — the id the API exposes (ADR 0003).
+
+    ``persons.id`` still exists for the polymorphic addresses/contacts pattern
+    and dies with it; nothing API-facing should resolve through it.
+    """
+    from app.domains.persons.models import Person
+
+    person = db.query(Person).filter(Person.party_id == party_id).first()
+    if not person:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Person not found"
+        )
+    return person
+
+
 def current_member_or_403(db: Session, user, *, active_only: bool = False):
     """The caller's own member record, or one refusal that says why there isn't one.
 
@@ -35,22 +51,24 @@ def current_member_or_403(db: Session, user, *, active_only: bool = False):
     routes resolve only a live membership, while the card and the booking
     routes answer for a cancelled member too.
 
-    Resolved through ``Member.user_id``, never through ``Person.email``: that
-    column is non-unique and a minor routinely shares a guardian's address, so
-    an email match can return somebody else's member row.
+    Resolved through the party: login and membership both hang off
+    ``party_id`` (ADR 0003), so the caller's member row is the one sharing the
+    user's party. Never resolved through ``Person.email``: that column is
+    non-unique and a minor routinely shares a guardian's address, so an email
+    match can return somebody else's member row.
 
-    A partial unique index on ``user_id`` (``uq_members_user_id``, migration
-    ``c58bc5181d90``) now makes a second row impossible going forward (#187).
-    The ordering below is kept anyway: it costs nothing against a unique
-    column, and it is what the migration itself used to decide which of any
-    pre-existing duplicate survived, so the two stay in lockstep.
+    A partial unique index (``uq_members_one_active_per_party``, migration
+    ``29a3872dad10``) makes a second active row impossible. The ordering below
+    is kept anyway: it costs nothing against a unique column, and it is the
+    rule the repoint migration used to decide which of any pre-existing
+    duplicate stayed active, so the two stay in lockstep (#187).
     """
     from app.domains.members.models import Member
 
     query = (
         db.query(Member)
         .options(joinedload(Member.person))
-        .filter(Member.user_id == user.id)
+        .filter(Member.party_id == user.party_id)
         .order_by(Member.is_active.desc(), Member.id.desc())
     )
     if active_only:

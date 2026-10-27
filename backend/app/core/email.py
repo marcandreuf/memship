@@ -670,7 +670,7 @@ def _member_opted_out(to: str) -> bool:
     try:
         rows = (
             db.query(Member.communication_preferences)
-            .join(Person, Member.person_id == Person.id)
+            .join(Person, Member.party_id == Person.party_id)
             .filter(
                 func.lower(Person.email) == to.lower(),
                 Member.is_active.is_(True),

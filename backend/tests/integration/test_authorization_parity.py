@@ -25,7 +25,7 @@ def _user(db, email, role):
     db.add(person)
     db.flush()
     user = User(
-        person_id=person.id, email=email,
+        party_id=person.party_id, email=email,
         password_hash=hash_password("password123"), role=role, is_active=True,
     )
     db.add(user)

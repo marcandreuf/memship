@@ -60,7 +60,7 @@ def _to_response(member: Member) -> MemberResponse:
 
     return MemberResponse(
         id=member.id,
-        person_id=member.person_id,
+        person_id=member.party_id,
         person=PersonResponse.model_validate(member.person),
         membership_type_id=member.membership_type_id,
         membership_type_name=(
@@ -181,7 +181,7 @@ def get_member(
     # Members can only view themselves
     if not user_has(current_user, "members.read"):
         own_member = (
-            db.query(Member).filter(Member.user_id == current_user.id).first()
+            db.query(Member).filter(Member.party_id == current_user.party_id).first()
         )
         if not own_member or own_member.id != member_id:
             raise HTTPException(status_code=403, detail="Insufficient permissions")
@@ -250,7 +250,7 @@ def update_member(
     # Members can only edit themselves, and only the self-serviceable fields.
     if not user_has(current_user, "members.write"):
         own_member = (
-            db.query(Member).filter(Member.user_id == current_user.id).first()
+            db.query(Member).filter(Member.party_id == current_user.party_id).first()
         )
         if not own_member or own_member.id != member_id:
             raise HTTPException(status_code=403, detail="Insufficient permissions")

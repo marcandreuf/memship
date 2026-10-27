@@ -52,7 +52,7 @@ def account(db):
     db.add(person)
     db.flush()
     user = User(
-        person_id=person.id,
+        party_id=person.party_id,
         email="throttle@examplee6e3b1.com",
         password_hash=hash_password(PASSWORD),
         is_active=True,
@@ -68,7 +68,7 @@ def _make_user(db, email):
     db.add(person)
     db.flush()
     user = User(
-        person_id=person.id,
+        party_id=person.party_id,
         email=email,
         password_hash=hash_password(PASSWORD),
         is_active=True,

@@ -27,7 +27,7 @@ def _create_user(db, role="admin", suffix="u"):
     db.add(person)
     db.flush()
     user = User(
-        person_id=person.id,
+        party_id=person.party_id,
         email=person.email,
         password_hash=hash_password("password123"),
         role=role,
@@ -95,7 +95,7 @@ def _create_member(
     user_id = None
     if with_user:
         u = User(
-            person_id=person.id,
+            party_id=person.party_id,
             email=person.email,
             password_hash=hash_password("password123"),
             role="member",
@@ -107,8 +107,7 @@ def _create_member(
     if mtype is None:
         mtype = _mtype(db, suffix)
     member = Member(
-        person_id=person.id,
-        user_id=user_id,
+        party_id=person.party_id,
         membership_type_id=mtype.id,
         member_number=f"M-{suffix}",
         status=status,
@@ -238,7 +237,7 @@ class TestDraftSend:
         assert body["sent_at"] is not None
 
         notes = (
-            db.query(Notification).filter(Notification.user_id == m.user_id).all()
+            db.query(Notification).filter(Notification.user_id == m.user.id).all()
         )
         assert len(notes) == 1
         assert notes[0].source_type == "announcement"
@@ -424,7 +423,7 @@ class TestNotifications:
         ann = _draft(db, admin, target_type="all", subject="News")
         client.post(f"/api/v1/announcements/{ann.id}/send", cookies=_auth_cookie(admin))
 
-        member_user = db.query(User).filter(User.id == member.user_id).first()
+        member_user = member.user
         resp = client.get(
             "/api/v1/me/announcements", cookies=_auth_cookie(member_user)
         )
@@ -507,7 +506,7 @@ class TestRecipients:
         client.post(f"/api/v1/announcements/{ann.id}/send", cookies=_auth_cookie(admin))
 
         # Member opens it — marks the notification read.
-        member_user = db.query(User).filter(User.id == member.user_id).first()
+        member_user = member.user
         client.post(
             "/api/v1/me/notifications/mark-read",
             json={"all": True},
@@ -548,7 +547,7 @@ class TestRecipients:
         ann = _draft(db, admin, target_type="all")
         client.post(f"/api/v1/announcements/{ann.id}/send", cookies=_auth_cookie(admin))
 
-        seen_user = db.query(User).filter(User.id == seen_member.user_id).first()
+        seen_user = seen_member.user
         client.post(
             "/api/v1/me/notifications/mark-read",
             json={"all": True},

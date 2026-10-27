@@ -110,7 +110,7 @@ def find_or_create_from_oauth(db: Session, profile: OAuthProfile) -> tuple[User,
 
     # No password hash: this account signs in through the provider only.
     user = User(
-        person_id=person.id,
+        party_id=person.party_id,
         email=profile.email,
         password_hash=None,
         is_active=True,
@@ -125,8 +125,7 @@ def find_or_create_from_oauth(db: Session, profile: OAuthProfile) -> tuple[User,
 
     default_type = get_default_membership_type(db)
     member = Member(
-        person_id=person.id,
-        user_id=user.id,
+        party_id=person.party_id,
         membership_type_id=default_type.id if default_type else None,
         member_number=None,
         status="pending",

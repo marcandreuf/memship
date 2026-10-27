@@ -40,7 +40,7 @@ def _create_admin(db, email="admin-card@examplee6e3b1.com"):
     db.add(person)
     db.flush()
     user = User(
-        person_id=person.id,
+        party_id=person.party_id,
         email=email,
         password_hash=hash_password("password123"),
         role="admin",
@@ -56,7 +56,7 @@ def _create_member_user(db, email="member-card@examplee6e3b1.com", status="activ
     db.add(person)
     db.flush()
     user = User(
-        person_id=person.id,
+        party_id=person.party_id,
         email=email,
         password_hash=hash_password("password123"),
         role="member",
@@ -72,8 +72,7 @@ def _create_member_user(db, email="member-card@examplee6e3b1.com", status="activ
         db.flush()
 
     member = Member(
-        person_id=person.id,
-        user_id=user.id,
+        party_id=person.party_id,
         membership_type_id=mt.id,
         member_number=number,
         status=status,

@@ -18,7 +18,7 @@ def _user(db, email, verified=False):
     db.add(person)
     db.flush()
     user = User(
-        person_id=person.id,
+        party_id=person.party_id,
         email=email,
         password_hash="x",
         role="member",

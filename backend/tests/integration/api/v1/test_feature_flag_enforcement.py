@@ -57,7 +57,7 @@ def _super_admin(db, email=f"flag-admin{SUFFIX}") -> User:
     db.add(person)
     db.flush()
     user = User(
-        person_id=person.id,
+        party_id=person.party_id,
         email=email,
         password_hash=hash_password("password123"),
         is_active=True,
@@ -76,7 +76,7 @@ def _member(db, email=f"flag-member{SUFFIX}") -> Member:
     db.flush()
     mtype = db.query(MembershipType).first()
     member = Member(
-        person_id=person.id,
+        party_id=person.party_id,
         membership_type_id=mtype.id if mtype else None,
         status="active",
     )

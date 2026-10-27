@@ -186,7 +186,7 @@ def paid_tier_without_purchase(
 
     query = (
         db.query(Member, Person, MembershipType, unpaid.c.receipts, unpaid.c.amount)
-        .join(Person, Member.person_id == Person.id)
+        .join(Person, Member.party_id == Person.party_id)
         .join(MembershipType, Member.membership_type_id == MembershipType.id)
         .outerjoin(unpaid, unpaid.c.member_id == Member.id)
         .filter(

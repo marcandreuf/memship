@@ -861,7 +861,7 @@ def generate_membership_fees(
     query = (
         db.query(Member, MembershipType, Person)
         .join(MembershipType, Member.membership_type_id == MembershipType.id)
-        .join(Person, Member.person_id == Person.id)
+        .join(Person, Member.party_id == Person.party_id)
         .filter(
             Member.status == "active",
             Member.is_active.is_(True),

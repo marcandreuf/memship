@@ -190,20 +190,20 @@ def _resolve_person(db: Session, person_id: int, current_user: User) -> bool:
     Returns whether the record belongs to the caller, which drives the whole
     access matrix downstream.
     """
-    person = db.query(Person).filter(Person.id == person_id).first()
+    person = db.query(Person).filter(Person.party_id == person_id).first()
     if not person:
         raise HTTPException(status_code=404, detail="Person not found")
 
-    is_own = current_user.person_id == person_id
+    is_own = current_user.party_id == person_id
     if not user_has(current_user, "members.read") and not is_own:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     return is_own
 
 
 def _own_person_id(current_user: User) -> int:
-    if not current_user.person_id:
+    if not current_user.party_id:
         raise HTTPException(status_code=403, detail="No person profile")
-    return current_user.person_id
+    return current_user.party_id
 
 
 def _field_error(key: str, message: str) -> HTTPException:

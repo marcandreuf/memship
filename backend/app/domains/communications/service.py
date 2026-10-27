@@ -121,7 +121,7 @@ def email_recipients(
         prefs = member.communication_preferences or {}
         if prefs.get("email") is False:
             continue
-        person = db.query(Person).filter(Person.id == member.person_id).first()
+        person = db.query(Person).filter(Person.party_id == member.party_id).first()
         if person and person.email:
             out.append((member, person))
     return out
@@ -154,15 +154,28 @@ def send_announcement(
 
     # Per-recipient delivery snapshot — the faithful audience record at send time.
     # One query fetches persons to compute the email-reachability flag.
-    person_ids = [m.person_id for m in members]
+    party_ids = [m.party_id for m in members]
     persons = (
-        {p.id: p for p in db.query(Person).filter(Person.id.in_(person_ids)).all()}
-        if person_ids
+        {p.party_id: p for p in db.query(Person).filter(Person.party_id.in_(party_ids)).all()}
+        if party_ids
         else {}
     )
+    # members.user_id is gone (ADR 0003): the member's login is the user
+    # sharing their party. Sorted so an active login wins over a deactivated
+    # duplicate kept as history.
+    users_by_party: dict[int, int] = {}
+    if party_ids:
+        rows = (
+            db.query(User.party_id, User.id, User.is_active)
+            .filter(User.party_id.in_(party_ids))
+            .order_by(User.is_active.asc(), User.id.asc())
+            .all()
+        )
+        for row in rows:
+            users_by_party[row.party_id] = row.id
     for m in members:
         prefs = m.communication_preferences or {}
-        person = persons.get(m.person_id)
+        person = persons.get(m.party_id)
         eligible = (
             prefs.get("email") is not False
             and person is not None
@@ -172,19 +185,19 @@ def send_announcement(
             AnnouncementRecipient(
                 announcement_id=ann.id,
                 member_id=m.id,
-                user_id=m.user_id,
+                user_id=users_by_party.get(m.party_id),
                 email_eligible=eligible,
                 # False, not NULL: this announcement is being sent now, so its
                 # delivery record starts empty rather than unknown. NULL is
                 # reserved for rows written before the outcome was recorded
                 # at all.
                 email_sent=False,
-                in_app=m.user_id is not None,
+                in_app=m.party_id in users_by_party,
             )
         )
 
     # In-app notifications require a user account (email is the universal channel).
-    user_ids = {m.user_id for m in members if m.user_id}
+    user_ids = {users_by_party[m.party_id] for m in members if m.party_id in users_by_party}
     for uid in user_ids:
         db.add(
             Notification(
@@ -248,7 +261,7 @@ def list_recipients(db: Session, announcement_id: int):
             Notification.read_at,
         )
         .join(Member, Member.id == AnnouncementRecipient.member_id)
-        .join(Person, Person.id == Member.person_id)
+        .join(Person, Person.party_id == Member.party_id)
         .outerjoin(Notification, _seen_join(announcement_id))
         .filter(AnnouncementRecipient.announcement_id == announcement_id)
         .order_by(Person.last_name, Person.first_name, AnnouncementRecipient.member_id)
@@ -295,7 +308,7 @@ def _announcement_author_name(db: Session, announcement_id: int) -> str | None:
     """Display name of the admin who sent the announcement (via user→person)."""
     row = (
         db.query(Person.first_name, Person.last_name)
-        .join(User, User.person_id == Person.id)
+        .join(User, User.party_id == Person.party_id)
         .join(Announcement, Announcement.created_by_user_id == User.id)
         .filter(Announcement.id == announcement_id)
         .first()

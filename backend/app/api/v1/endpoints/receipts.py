@@ -81,7 +81,7 @@ def _own_member(db: Session, user: User) -> Member | None:
     """
     return (
         db.query(Member)
-        .filter(Member.user_id == user.id, Member.is_active.is_(True))
+        .filter(Member.party_id == user.party_id, Member.is_active.is_(True))
         .first()
     )
 
@@ -707,7 +707,7 @@ def create_stripe_checkout(
 
     # Get member's person for customer sync
     member_obj = db.query(Member).filter(Member.id == receipt.member_id).first()
-    person = db.query(Person).filter(Person.id == member_obj.person_id).first()
+    person = db.query(Person).filter(Person.party_id == member_obj.party_id).first()
 
     # Lazy-create Stripe customer
     stripe_customer_id = None
@@ -813,7 +813,7 @@ def initiate_redsys_payment(
         raise HTTPException(status_code=500, detail="Redsys adapter not available")
 
     member_obj = db.query(Member).filter(Member.id == receipt.member_id).first()
-    person = db.query(Person).filter(Person.id == member_obj.person_id).first()
+    person = db.query(Person).filter(Person.party_id == member_obj.party_id).first()
 
     frontend = app_settings.FRONTEND_URL.rstrip("/")
     backend = app_settings.BACKEND_PUBLIC_URL.rstrip("/")

@@ -229,7 +229,7 @@ class TestTheDocumentedInstallCommand:
             row = conn.execute(
                 sa.text(
                     "SELECT u.id, p.id AS person_id FROM users u "
-                    "JOIN persons p ON p.id = u.person_id WHERE u.email = :e"
+                    "JOIN persons p ON p.party_id = u.party_id WHERE u.email = :e"
                 ),
                 {"e": STORED},
             ).one()
@@ -244,7 +244,10 @@ class TestTheDocumentedInstallCommand:
                 )
             }
             members = conn.execute(
-                sa.text("SELECT count(*) FROM members WHERE person_id = :p"),
+                sa.text(
+                    "SELECT count(*) FROM members m JOIN persons p ON p.party_id = m.party_id "
+                    "WHERE p.id = :p"
+                ),
                 {"p": row.person_id},
             ).scalar_one()
 
@@ -322,12 +325,12 @@ class TestItFailsLoudly:
                     ") "
                     "INSERT INTO persons (party_id, first_name, last_name, email) "
                     "SELECT id, 'Plain', 'Member', 'plain.member@example.org' "
-                    "FROM new_party RETURNING id"
+                    "FROM new_party RETURNING party_id"
                 )
             ).scalar_one()
             conn.execute(
                 sa.text(
-                    "INSERT INTO users (person_id, email, password_hash, is_active) "
+                    "INSERT INTO users (party_id, email, password_hash, is_active) "
                     "VALUES (:p, 'plain.member@example.org', 'untouched', true)"
                 ),
                 {"p": person_id},

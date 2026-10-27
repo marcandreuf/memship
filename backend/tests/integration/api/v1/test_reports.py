@@ -23,7 +23,7 @@ def _admin(db, suffix):
     db.add(person)
     db.flush()
     user = User(
-        person_id=person.id,
+        party_id=person.party_id,
         email=f"admin-rep-{suffix}@examplee6e3b1.com",
         password_hash=hash_password("password123"),
         role="admin",
@@ -43,7 +43,7 @@ def _member(db, suffix, *, status="active", joined_at=None, status_changed_at=No
     role_user = None
     if with_user:
         role_user = User(
-            person_id=person.id,
+            party_id=person.party_id,
             email=f"m-rep-{suffix}@examplee6e3b1.com",
             password_hash=hash_password("password123"),
             role="member",
@@ -53,8 +53,7 @@ def _member(db, suffix, *, status="active", joined_at=None, status_changed_at=No
         db.flush()
         uid = role_user.id
     member = Member(
-        person_id=person.id,
-        user_id=uid,
+        party_id=person.party_id,
         member_number=f"M-rep-{suffix}",
         status=status,
         joined_at=joined_at or date(YEAR, 1, 1),

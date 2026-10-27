@@ -143,7 +143,7 @@ def register_user(
 
     # Create user
     user = User(
-        person_id=person.id,
+        party_id=person.party_id,
         email=email,
         password_hash=hash_password(password),
         is_active=True,
@@ -159,8 +159,7 @@ def register_user(
     default_type = get_default_membership_type(db)
 
     member = Member(
-        person_id=person.id,
-        user_id=user.id,
+        party_id=person.party_id,
         membership_type_id=default_type.id if default_type else None,
         member_number=None,
         status="pending",

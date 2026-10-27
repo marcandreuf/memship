@@ -53,7 +53,7 @@ def list_contacts(
     current_user: User = Depends(require_any_permission("members.read", "self.profile.read")),
 ):
     """List all contacts for a person."""
-    person = db.query(Person).filter(Person.id == person_id).first()
+    person = db.query(Person).filter(Person.party_id == person_id).first()
     if not person:
         raise HTTPException(status_code=404, detail="Person not found")
 
@@ -61,7 +61,7 @@ def list_contacts(
         db.query(Contact)
         .filter(
             Contact.entity_type == "person",
-            Contact.entity_id == person_id,
+            Contact.entity_id == person.id,
             Contact.is_active.is_(True),
         )
         .order_by(Contact.display_order, Contact.id)
@@ -78,7 +78,7 @@ def create_contact(
     current_user: User = Depends(require_permission("members.write")),
 ):
     """Add a contact to a person."""
-    person = db.query(Person).filter(Person.id == person_id).first()
+    person = db.query(Person).filter(Person.party_id == person_id).first()
     if not person:
         raise HTTPException(status_code=404, detail="Person not found")
 
@@ -89,7 +89,8 @@ def create_contact(
 
     contact = Contact(
         entity_type="person",
-        entity_id=person_id,
+        # entity_id is the polymorphic persons.id until Phase 3 removes it.
+        entity_id=person.id,
         contact_type_id=data.contact_type_id,
         value=data.value,
         label=data.label,

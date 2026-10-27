@@ -46,7 +46,7 @@ def _user(db, role="admin", email=None):
     db.add(person)
     db.flush()
     user = User(
-        person_id=person.id, email=email,
+        party_id=person.party_id, email=email,
         password_hash=hash_password("password123"), role=role, is_active=True,
     )
     db.add(user)
@@ -59,13 +59,13 @@ def _member_user(db, email, membership_type=None):
     db.add(person)
     db.flush()
     user = User(
-        person_id=person.id, email=email,
+        party_id=person.party_id, email=email,
         password_hash=hash_password("password123"), role="member", is_active=True,
     )
     db.add(user)
     db.flush()
     member = Member(
-        person_id=person.id, user_id=user.id, status="active", is_active=True,
+        party_id=person.party_id, status="active", is_active=True,
         membership_type_id=membership_type.id if membership_type else None,
     )
     db.add(member)
