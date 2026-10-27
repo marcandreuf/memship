@@ -42,7 +42,7 @@ from app.core.schema_types import normalize_email
 from app.db.session import SessionLocal
 from app.domains.audit.models import AuditLog
 from app.domains.organizations.models import OrganizationSettings
-from app.domains.persons.models import Address, AddressType, Contact, ContactType, Person
+from app.domains.persons.models import Address, Contact, ContactChannel, ContactType, Person
 from app.domains.auth.models import Role, RolePermission, User
 from app.domains.auth.roles import assign_roles
 from app.domains.activities.models import (
@@ -151,41 +151,39 @@ def prompt_user_details(role_label: str) -> dict:
     }
 
 
-def seed_address_types(db) -> None:
-    existing = db.query(AddressType).count()
-    if existing > 0:
-        print(f"  Address types: already seeded ({existing} records)")
-        return
-
-    types = [
-        ("home", "Home", "Home address", 1),
-        ("work", "Work", "Work address", 2),
-        ("billing", "Billing", "Billing address", 3),
-        ("legal", "Legal/Registered", "Legal or registered address", 4),
-        ("venue", "Venue", "Venue or facility address", 5),
+def seed_contact_channels(db) -> None:
+    existing = {code for (code,) in db.query(ContactChannel.code)}
+    channels = [
+        ("email", "Email"), ("phone", "Phone"), ("url", "Website"),
+        ("handle", "Social handle"), ("other", "Other"),
     ]
-    for code, name, desc, order in types:
-        db.add(AddressType(code=code, name=name, description=desc, display_order=order))
-    db.flush()
-    print(f"  Address types: created {len(types)} types")
+    missing = [c for c in channels if c[0] not in existing]
+    for code, name in missing:
+        db.add(ContactChannel(code=code, name=name))
+    if missing:
+        db.flush()
+        print(f"  Contact channels: created {len(missing)}")
+    else:
+        print(f"  Contact channels: already seeded ({len(existing)} records)")
 
 
 def seed_contact_types(db) -> None:
+    seed_contact_channels(db)
     existing = db.query(ContactType).count()
     if existing > 0:
         print(f"  Contact types: already seeded ({existing} records)")
         return
 
     types = [
-        ("phone_home", "Home Phone", "Home phone number", 1),
-        ("phone_mobile", "Mobile Phone", "Mobile phone number", 2),
-        ("phone_work", "Work Phone", "Work phone number", 3),
-        ("phone_emergency", "Emergency Phone", "Emergency contact phone", 4),
-        ("email_work", "Work Email", "Work email address", 5),
-        ("email_other", "Other Email", "Other email address", 6),
+        ("phone_home", "Home Phone", "Home phone number", "phone", 1),
+        ("phone_mobile", "Mobile Phone", "Mobile phone number", "phone", 2),
+        ("phone_work", "Work Phone", "Work phone number", "phone", 3),
+        ("phone_emergency", "Emergency Phone", "Emergency contact phone", "phone", 4),
+        ("email_work", "Work Email", "Work email address", "email", 5),
+        ("email_other", "Other Email", "Other email address", "email", 6),
     ]
-    for code, name, desc, order in types:
-        db.add(ContactType(code=code, name=name, description=desc, display_order=order))
+    for code, name, desc, channel, order in types:
+        db.add(ContactType(code=code, name=name, description=desc, channel=channel, display_order=order))
     db.flush()
     print(f"  Contact types: created {len(types)} types")
 
@@ -278,12 +276,9 @@ def create_org_settings(db, details: dict, address: dict | None = None) -> None:
     db.flush()
 
     if address:
-        legal_type = db.query(AddressType).filter(AddressType.code == "legal").first()
         db.add(
             Address(
-                entity_type="organization",
-                entity_id=1,
-                address_type_id=legal_type.id if legal_type else None,
+                party_id=org.party_id,
                 is_primary=True,
                 **address,
             )
@@ -877,15 +872,13 @@ def seed_member_contacts(db) -> None:
             continue
         ct = db.query(ContactType).filter(ContactType.code == type_code).first()
         existing = db.query(Contact).filter(
-            Contact.entity_type == "person",
-            Contact.entity_id == person.id,
+            Contact.party_id == person.party_id,
             Contact.value == value,
         ).first()
         if existing:
             continue
         db.add(Contact(
-            entity_type="person",
-            entity_id=person.id,
+            party_id=person.party_id,
             contact_type_id=ct.id if ct else None,
             value=value,
             is_primary=is_primary,
@@ -2068,7 +2061,6 @@ def _run_interactive(db, membership_type: MembershipType) -> list[tuple[str, str
         print(f"  Deleted {sum(deleted.values()):,} rows across {len(deleted)} tables")
         # The reset takes the base data with it; put it back before anything
         # below tries to attach a member to a membership type.
-        seed_address_types(db)
         seed_contact_types(db)
         membership_type = seed_membership_types(db, seed_groups(db))
         restore_member_records(db, super_admin_users(db), membership_type)
@@ -2104,7 +2096,6 @@ def _run_unattended(db, membership_type: MembershipType, args) -> list[tuple[str
         print("\nResetting club data...")
         deleted = reset_club_data(db)
         print(f"  Deleted {sum(deleted.values()):,} rows across {len(deleted)} tables")
-        seed_address_types(db)
         seed_contact_types(db)
         membership_type = seed_membership_types(db, seed_groups(db))
         restore_member_records(db, super_admin_users(db), membership_type)
@@ -2215,7 +2206,6 @@ def main() -> None:
 
         # Base data every installation needs, whatever the answers below.
         print("\nSeeding lookup tables...")
-        seed_address_types(db)
         seed_contact_types(db)
 
         print("\nSeeding groups...")

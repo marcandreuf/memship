@@ -23,7 +23,6 @@ from app.cli.seed import (
     create_user_with_member,
     next_member_number,
     restore_member_records,
-    seed_address_types,
     seed_contact_types,
     seed_demo_org_settings,
     seed_groups,
@@ -46,7 +45,6 @@ from app.domains.persons.models import Person
 
 
 def _base_install(db):
-    seed_address_types(db)
     seed_contact_types(db)
     return seed_membership_types(db, seed_groups(db))
 

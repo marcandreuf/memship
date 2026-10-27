@@ -657,7 +657,7 @@ def _member_opted_out(to: str) -> bool:
     from sqlalchemy import func
 
     from app.domains.members.models import Member
-    from app.domains.persons.models import Person
+    from app.domains.persons.models import Party, Person
 
     try:
         db = db_session.SessionLocal()
@@ -671,8 +671,9 @@ def _member_opted_out(to: str) -> bool:
         rows = (
             db.query(Member.communication_preferences)
             .join(Person, Member.party_id == Person.party_id)
+            .join(Party, Party.id == Person.party_id)
             .filter(
-                func.lower(Person.email) == to.lower(),
+                func.lower(Party.email) == to.lower(),
                 Member.is_active.is_(True),
             )
             .all()

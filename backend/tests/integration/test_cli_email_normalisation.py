@@ -20,7 +20,6 @@ from app.cli.seed import (
     _run_unattended,
     attach_login,
     create_staff_user,
-    seed_address_types,
     seed_contact_types,
     seed_groups,
     seed_membership_types,
@@ -34,7 +33,6 @@ PASSWORD = "correct horse battery staple"
 
 
 def _base_install(db):
-    seed_address_types(db)
     seed_contact_types(db)
     return seed_membership_types(db, seed_groups(db))
 

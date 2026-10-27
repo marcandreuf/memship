@@ -147,7 +147,7 @@ class TestRegister:
 
         member = (
             db.query(Member)
-            .join(Person, Member.party_id == Person.id)
+            .join(Person, Member.party_id == Person.party_id)
             .filter(Person.email == "new@examplee6e3b1.com")
             .first()
         )
@@ -177,7 +177,7 @@ class TestRegister:
 
         member = (
             db.query(Member)
-            .join(Person, Member.party_id == Person.id)
+            .join(Person, Member.party_id == Person.party_id)
             .filter(Person.email == "tier@examplee6e3b1.com")
             .one()
         )

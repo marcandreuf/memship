@@ -29,7 +29,7 @@ def _auth_cookie(user):
 def _ensure_contact_type(db, code="phone_mobile"):
     ct = db.query(ContactType).filter(ContactType.code == code).first()
     if not ct:
-        ct = ContactType(code=code, name="Mobile Phone", is_active=True)
+        ct = ContactType(code=code, name="Mobile Phone", channel="phone", is_active=True)
         db.add(ct)
         db.flush()
     return ct
@@ -63,7 +63,7 @@ class TestContactsCRUD:
         user, person = _create_user(db, "admin", "-list1")
         ct = _ensure_contact_type(db)
         contact = Contact(
-            entity_type="person", entity_id=person.id,
+            party_id=person.party_id,
             contact_type_id=ct.id, value="+34 611 222 333",
         )
         db.add(contact)
@@ -80,7 +80,7 @@ class TestContactsCRUD:
         user, person = _create_user(db, "admin", "-update")
         ct = _ensure_contact_type(db)
         contact = Contact(
-            entity_type="person", entity_id=person.id,
+            party_id=person.party_id,
             contact_type_id=ct.id, value="+34 600 000 000",
         )
         db.add(contact)
@@ -100,7 +100,7 @@ class TestContactsCRUD:
         user, person = _create_user(db, "admin", "-delete")
         ct = _ensure_contact_type(db)
         contact = Contact(
-            entity_type="person", entity_id=person.id,
+            party_id=person.party_id,
             contact_type_id=ct.id, value="+34 600 111 222",
         )
         db.add(contact)

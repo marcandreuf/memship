@@ -345,7 +345,7 @@ class TestThePaymentConfirmation:
 
         receipt = self._paid(db, "conf-noaddr")
         member = db.query(Member).filter(Member.id == receipt.member_id).first()
-        db.query(Person).filter(Person.id == member.party_id).first().email = None
+        db.query(Person).filter(Person.party_id == member.party_id).first().email = None
         db.flush()
 
         with patch("app.core.email.send_email") as send:

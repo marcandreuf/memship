@@ -60,8 +60,7 @@ def list_contacts(
     contacts = (
         db.query(Contact)
         .filter(
-            Contact.entity_type == "person",
-            Contact.entity_id == person.id,
+            Contact.party_id == person.party_id,
             Contact.is_active.is_(True),
         )
         .order_by(Contact.display_order, Contact.id)
@@ -88,9 +87,7 @@ def create_contact(
             raise HTTPException(status_code=400, detail="Invalid contact type")
 
     contact = Contact(
-        entity_type="person",
-        # entity_id is the polymorphic persons.id until Phase 3 removes it.
-        entity_id=person.id,
+        party_id=person.party_id,
         contact_type_id=data.contact_type_id,
         value=data.value,
         label=data.label,
