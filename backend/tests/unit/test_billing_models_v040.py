@@ -28,7 +28,7 @@ from app.domains.organizations.schemas import (
 
 def _valid_mandate_data(**overrides):
     base = {
-        "member_id": 1,
+        "party_id": 1,
         "debtor_name": "John Doe",
         "debtor_iban": "ES9121000418450200051332",
         "signed_at": "2026-04-01",
@@ -144,7 +144,7 @@ class TestMandateResponse:
     def test_from_attributes(self):
         data = {
             "id": 1,
-            "member_id": 1,
+            "party_id": 1,
             "mandate_reference": "MEM-00001-001",
             "creditor_id": "ES12000B12345678",
             "debtor_name": "John Doe",

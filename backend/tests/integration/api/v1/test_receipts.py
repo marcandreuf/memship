@@ -146,7 +146,7 @@ class TestReceiptCRUD:
         resp = client.post(
             "/api/v1/receipts/",
             json={
-                "member_id": member.id,
+                "party_id": member.party_id,
                 "origin": "manual",
                 "description": "Room rental — March 2026",
                 "base_amount": 100,
@@ -172,7 +172,7 @@ class TestReceiptCRUD:
         resp = client.post(
             "/api/v1/receipts/",
             json={
-                "member_id": member.id,
+                "party_id": member.party_id,
                 "origin": "manual",
                 "description": "Discounted item",
                 "base_amount": 200,
@@ -201,7 +201,7 @@ class TestReceiptCRUD:
         resp = client.post(
             "/api/v1/receipts/",
             json={
-                "member_id": member.id,
+                "party_id": member.party_id,
                 "origin": "manual",
                 "description": "Over-discounted",
                 "base_amount": 50,
@@ -226,7 +226,7 @@ class TestReceiptCRUD:
         client.post(
             "/api/v1/receipts/",
             json={
-                "member_id": member.id,
+                "party_id": member.party_id,
                 "origin": "manual",
                 "description": "Test",
                 "base_amount": 50,
@@ -264,7 +264,7 @@ class TestDiscountedReceiptEdits:
         user = _create_user(db, "admin", f"rcpt-edit-{suffix}")
         member, _ = _create_member(db, f"edit-{suffix}")
         body = {
-            "member_id": member.id,
+            "party_id": member.party_id,
             "origin": "manual",
             "description": "Editable",
             "base_amount": 200,
@@ -328,7 +328,7 @@ class TestDiscountedReceiptEdits:
         updated_rid = client.post(
             "/api/v1/receipts/",
             json={
-                "member_id": created["member_id"],
+                "party_id": created["party_id"],
                 "origin": "manual",
                 "description": "Editable",
                 "base_amount": 200,
@@ -365,7 +365,7 @@ class TestReceiptStatusTransitions:
         resp = client.post(
             "/api/v1/receipts/",
             json={
-                "member_id": member.id,
+                "party_id": member.party_id,
                 "origin": "manual",
                 "description": "Status test",
                 "base_amount": 100,
@@ -483,7 +483,7 @@ class TestCreditNotes:
         receipt = client.post(
             "/api/v1/receipts/",
             json={
-                "member_id": member.id,
+                "party_id": member.party_id,
                 "origin": "manual",
                 "description": "Credit note test",
                 "base_amount": base_amount,
@@ -515,7 +515,7 @@ class TestCreditNotes:
         assert note["status"] == "emitted"
         assert note["is_batchable"] is False
         assert note["due_date"] is None
-        assert note["member_id"] == receipt["member_id"]
+        assert note["party_id"] == receipt["party_id"]
 
     def test_credit_note_for_a_discounted_receipt_adds_up(self, client, db):
         """The receipt's base is gross of its discount; the note's is net."""
@@ -638,7 +638,7 @@ class TestCreditNotes:
         receipt = client.post(
             "/api/v1/receipts/",
             json={
-                "member_id": member.id,
+                "party_id": member.party_id,
                 "origin": "manual",
                 "description": "Not issued yet",
                 "base_amount": 100,
@@ -808,7 +808,7 @@ class TestReceiptPDF:
         create_resp = client.post(
             "/api/v1/receipts/",
             json={
-                "member_id": member.id,
+                "party_id": member.party_id,
                 "origin": "manual",
                 "description": "PDF test receipt",
                 "base_amount": 100,
@@ -833,7 +833,7 @@ class TestReceiptPDF:
         create_resp = client.post(
             "/api/v1/receipts/",
             json={
-                "member_id": member.id,
+                "party_id": member.party_id,
                 "origin": "manual",
                 "description": "Discounted PDF",
                 "base_amount": 200,
@@ -860,7 +860,7 @@ class TestReceiptPDF:
         create_resp = client.post(
             "/api/v1/receipts/",
             json={
-                "member_id": member.id,
+                "party_id": member.party_id,
                 "origin": "manual",
                 "description": "Other member receipt",
                 "base_amount": 50,
@@ -885,7 +885,7 @@ class TestVATCalculation:
         resp = client.post(
             "/api/v1/receipts/",
             json={
-                "member_id": member.id,
+                "party_id": member.party_id,
                 "origin": "manual",
                 "description": "VAT test",
                 "base_amount": 100,
@@ -906,7 +906,7 @@ class TestVATCalculation:
         resp = client.post(
             "/api/v1/receipts/",
             json={
-                "member_id": member.id,
+                "party_id": member.party_id,
                 "origin": "manual",
                 "description": "Reduced VAT test",
                 "base_amount": 50.50,
@@ -927,7 +927,7 @@ class TestVATCalculation:
         resp = client.post(
             "/api/v1/receipts/",
             json={
-                "member_id": member.id,
+                "party_id": member.party_id,
                 "origin": "manual",
                 "description": "Exempt",
                 "base_amount": 75,

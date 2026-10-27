@@ -60,7 +60,7 @@ def _to_response(member: Member) -> MemberResponse:
 
     return MemberResponse(
         id=member.id,
-        person_id=member.party_id,
+        party_id=member.party_id,
         person=PersonResponse.model_validate(member.person),
         membership_type_id=member.membership_type_id,
         membership_type_name=(
@@ -205,7 +205,7 @@ def create_member_endpoint(
         gender=data.gender,
         national_id=data.national_id,
         membership_type_id=data.membership_type_id,
-        guardian_person_id=data.guardian_person_id,
+        guardian_party_id=data.guardian_party_id,
         internal_notes=data.internal_notes,
     )
     db.commit()

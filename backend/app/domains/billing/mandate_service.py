@@ -14,40 +14,50 @@ from app.domains.billing.schemas import (
     validate_iban_format,
 )
 from app.domains.members.models import Member
+from app.domains.persons.models import Party
 from app.domains.organizations.models import OrganizationSettings
 
 
 # --- Mandate Reference Generation ---
 
 
-def generate_mandate_reference(db: Session, member: Member) -> str:
+def generate_mandate_reference(db: Session, party) -> str:
     """Generate a unique mandate reference.
 
-    Format: {ORG_PREFIX}-{MEMBER_NUMBER}-{SEQ}
+    Format: {ORG_PREFIX}-{IDENTIFIER}-{SEQ}
     Max 35 chars, SEPA-compliant: [A-Za-z0-9+/-]
+
+    The identifier is the member number when the party is a member, else the
+    party id zero-padded: a mandate can be signed by any legal entity (ADR
+    0003), not only a member.
     """
     org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
     prefix = (org.invoice_prefix or "MEM")[:5]
 
-    # Pad member number or use member ID
-    member_part = member.member_number or f"{member.id:05d}"
+    member = (
+        db.query(Member)
+        .filter(Member.party_id == party.id)
+        .order_by(Member.is_active.desc(), Member.id.desc())
+        .first()
+    )
+    identifier = (member.member_number if member else None) or f"{party.id:05d}"
     # Sanitize: only keep SEPA-allowed characters
-    member_part = re.sub(r"[^A-Za-z0-9+/\-]", "", member_part)[:10]
+    identifier = re.sub(r"[^A-Za-z0-9+/\-]", "", identifier)[:10]
 
-    # Count existing mandates for this member to get sequence
+    # Count existing mandates for this party to get sequence
     count = (
         db.query(func.count(SepaMandate.id))
-        .filter(SepaMandate.party_id == member.party_id)
+        .filter(SepaMandate.party_id == party.id)
         .scalar()
     )
     seq = count + 1
 
-    reference = f"{prefix}-{member_part}-{seq:03d}"
+    reference = f"{prefix}-{identifier}-{seq:03d}"
 
     # Ensure uniqueness
     while db.query(SepaMandate).filter(SepaMandate.mandate_reference == reference).first():
         seq += 1
-        reference = f"{prefix}-{member_part}-{seq:03d}"
+        reference = f"{prefix}-{identifier}-{seq:03d}"
 
     return reference[:35]
 
@@ -75,11 +85,11 @@ def validate_mandate_transition(current: str, target: str) -> None:
 
 
 def create_mandate(db: Session, data: MandateCreate) -> SepaMandate:
-    """Create a new SEPA mandate for a member."""
-    # Validate member exists
-    member = db.query(Member).filter(Member.id == data.member_id, Member.is_active.is_(True)).first()
-    if not member:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Member not found")
+    """Create a new SEPA mandate for a party (member or not)."""
+    # Validate the party exists
+    party = db.query(Party).filter(Party.id == data.party_id).first()
+    if not party:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Party not found")
 
     # Validate IBAN format
     if not validate_iban_format(data.debtor_iban):
@@ -104,7 +114,7 @@ def create_mandate(db: Session, data: MandateCreate) -> SepaMandate:
     existing = (
         db.query(SepaMandate)
         .filter(
-            SepaMandate.party_id == member.party_id,
+            SepaMandate.party_id == party.id,
             SepaMandate.status == "active",
             SepaMandate.is_active.is_(True),
         )
@@ -122,10 +132,10 @@ def create_mandate(db: Session, data: MandateCreate) -> SepaMandate:
         )
 
     # Generate reference
-    reference = generate_mandate_reference(db, member)
+    reference = generate_mandate_reference(db, party)
 
     mandate = SepaMandate(
-        party_id=member.party_id,
+        party_id=party.id,
         mandate_reference=reference,
         creditor_id=org.creditor_id,
         debtor_name=data.debtor_name,

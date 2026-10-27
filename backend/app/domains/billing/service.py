@@ -29,7 +29,7 @@ from app.domains.billing.schemas import (
 from app.domains.billing.sequences import next_yearly_number
 from app.domains.members.models import Member, MembershipType
 from app.domains.organizations.models import OrganizationSettings
-from app.domains.persons.models import Person
+from app.domains.persons.models import Party, Person
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ def build_receipts_query(
     status: str | None = None,
     origin: str | None = None,
     document_type: str | None = None,
-    member_id: int | None = None,
+    party_id: int | None = None,
     search: str | None = None,
     emission_date_from: date | None = None,
     emission_date_to: date | None = None,
@@ -75,13 +75,8 @@ def build_receipts_query(
         query = query.filter(Receipt.origin == origin)
     if document_type:
         query = query.filter(Receipt.document_type == document_type)
-    if member_id:
-        # The HTTP contract still filters by members.id (Phase 4); the rows
-        # key on the party behind it.
-        query = query.filter(
-            Receipt.party_id
-            == db.query(Member.party_id).filter(Member.id == member_id).scalar_subquery()
-        )
+    if party_id:
+        query = query.filter(Receipt.party_id == party_id)
     if emission_date_from is not None:
         query = query.filter(Receipt.emission_date >= emission_date_from)
     if emission_date_to is not None:
@@ -407,15 +402,15 @@ def create_receipt(
     """Create a new receipt with calculated VAT."""
     receipt_number = generate_receipt_number(db, data.emission_date)
 
-    member = db.query(Member).filter(Member.id == data.member_id).first()
-    if member is None:
+    party = db.query(Party).filter(Party.id == data.party_id).first()
+    if party is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Member not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Party not found"
         )
 
     receipt = Receipt(
         receipt_number=receipt_number,
-        party_id=member.party_id,
+        party_id=party.id,
         concept_id=data.concept_id,
         registration_id=data.registration_id,
         origin=data.origin,

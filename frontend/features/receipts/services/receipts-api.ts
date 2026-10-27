@@ -5,7 +5,7 @@ export interface ReceiptData {
   receipt_number: string;
   document_type: string;
   rectifies_receipt_id: number | null;
-  member_id: number;
+  party_id: number;
   concept_id: number | null;
   registration_id: number | null;
   remittance_id: number | null;

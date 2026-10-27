@@ -494,7 +494,7 @@ def get_me(current_user: User = Depends(get_current_user)):
         is_active=current_user.is_active,
         # The API's person id is the party id from ADR 0003 on; equal values
         # for every row that predates the remodel.
-        person_id=current_user.party_id,
+        party_id=current_user.party_id,
         first_name=current_user.person.first_name,
         last_name=current_user.person.last_name,
         member_id=member.id if member else None,

@@ -306,7 +306,7 @@ def list_space_bookings(
             AdminBookingRead(
                 id=b.id,
                 space_slot_id=b.space_slot_id,
-                member_id=b.member_id,
+                party_id=b.party_id,
                 member_name=name,
                 slot_date=b.slot.slot_date,
                 start_time=b.slot.start_time,

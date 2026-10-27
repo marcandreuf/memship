@@ -84,7 +84,7 @@ describe("Redsys — Happy Path @smoke", () => {
         method: "POST",
         url: `${API_URL}/receipts`,
         body: {
-          member_id: member.id,
+          party_id: member.party_id,
           description: "Redsys E2E test receipt",
           base_amount: 40.0,
           vat_rate: 21,

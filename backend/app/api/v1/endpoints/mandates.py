@@ -31,7 +31,7 @@ MAX_DOC_SIZE_MB = 10
 
 @router.get("/", response_model=dict)
 def list_mandates(
-    member_id: int | None = None,
+    party_id: int | None = None,
     status_filter: str | None = Query(None, alias="status"),
     search: str | None = None,
     page: int = Query(1, ge=1),
@@ -42,12 +42,8 @@ def list_mandates(
     """List all mandates with optional filters."""
     query = db.query(SepaMandate).filter(SepaMandate.is_active.is_(True))
 
-    if member_id is not None:
-        # The HTTP contract still filters by members.id (Phase 4).
-        query = query.filter(
-            SepaMandate.party_id
-            == db.query(Member.party_id).filter(Member.id == member_id).scalar_subquery()
-        )
+    if party_id is not None:
+        query = query.filter(SepaMandate.party_id == party_id)
     if status_filter:
         query = query.filter(SepaMandate.status == status_filter)
     if search:

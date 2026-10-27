@@ -66,7 +66,7 @@ describe("Stripe Checkout — Failure / Cancel Path", () => {
         method: "POST",
         url: `${API_URL}/receipts`,
         body: {
-          member_id: member.id,
+          party_id: member.party_id,
           description: "Stripe cancel E2E test receipt",
           base_amount: 30.0,
           vat_rate: 21,
@@ -219,7 +219,7 @@ describe("Stripe Checkout — Failure / Cancel Path", () => {
               is_active: true,
               created_at: null,
               updated_at: null,
-              member_id: 1,
+              party_id: 1,
               concept_id: null,
               registration_id: null,
               remittance_id: null,
