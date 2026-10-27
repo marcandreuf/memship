@@ -47,7 +47,7 @@ class TestMemberPhotoUpload:
         )
         assert resp.status_code == 200
         photo_url = resp.json()["photo_url"]
-        assert photo_url == f"/uploads/members/{person.id}/photo.png"
+        assert photo_url == f"/uploads/members/{person.party_id}/photo.png"
 
         db.refresh(person)
         assert person.photo_url == photo_url
@@ -69,7 +69,7 @@ class TestMemberPhotoUpload:
             "/api/v1/members/me/photo/",
             files={"file": (filename, file_obj, content_type)},
         ).status_code == 200
-        photo_dir = tmp_path / "members" / str(person.id)
+        photo_dir = tmp_path / "members" / str(person.party_id)
         old_bytes = (photo_dir / "photo.jpg").read_bytes()
 
         def failing_commit():

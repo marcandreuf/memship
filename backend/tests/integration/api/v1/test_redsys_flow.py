@@ -97,7 +97,7 @@ def _create_member(db, person):
     member = Member(
         party_id=person.party_id,
         membership_type_id=mt.id,
-        member_number=f"M-{person.id:04d}",
+        member_number=f"M-{person.party_id:04d}",
         status="active",
         joined_at=date(2026, 1, 1),
         is_active=True,

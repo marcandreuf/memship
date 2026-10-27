@@ -94,10 +94,10 @@ class TestMemberPhotos:
 
     def test_member_reads_own_photo(self, client, db, storage):
         user, person, _ = _make_user(db, "own-photo@examplee6e3b1.com")
-        storage(f"members/{person.id}/photo.png", b"\x89PNG")
+        storage(f"members/{person.party_id}/photo.png", b"\x89PNG")
         client.cookies.update(_auth_cookie(user))
 
-        assert client.get(f"/uploads/members/{person.id}/photo.png").status_code == 200
+        assert client.get(f"/uploads/members/{person.party_id}/photo.png").status_code == 200
 
     def test_locked_member_is_rejected_like_anonymous(self, client, db, storage):
         """`get_optional_user` used to filter on `is_active` alone, so a locked
@@ -108,27 +108,27 @@ class TestMemberPhotos:
         user, person, _ = _make_user(db, "locked-photo@examplee6e3b1.com")
         user.is_locked = True
         db.flush()
-        storage(f"members/{person.id}/photo.png", b"\x89PNG")
+        storage(f"members/{person.party_id}/photo.png", b"\x89PNG")
         client.cookies.update(_auth_cookie(user))
 
-        assert client.get(f"/uploads/members/{person.id}/photo.png").status_code == 401
+        assert client.get(f"/uploads/members/{person.party_id}/photo.png").status_code == 401
 
     def test_member_cannot_read_another_members_photo(self, client, db, storage):
         _, other_person, _ = _make_user(db, "victim-photo@examplee6e3b1.com")
         attacker, _, _ = _make_user(db, "attacker-photo@examplee6e3b1.com")
-        storage(f"members/{other_person.id}/photo.png", b"\x89PNG")
+        storage(f"members/{other_person.party_id}/photo.png", b"\x89PNG")
         client.cookies.update(_auth_cookie(attacker))
 
-        resp = client.get(f"/uploads/members/{other_person.id}/photo.png")
+        resp = client.get(f"/uploads/members/{other_person.party_id}/photo.png")
         assert resp.status_code == 404
 
     def test_staff_reads_any_photo(self, client, db, storage):
         _, other_person, _ = _make_user(db, "scanned@examplee6e3b1.com")
         staff, _, _ = _make_user(db, "staff-photo@examplee6e3b1.com", role="admin")
-        storage(f"members/{other_person.id}/photo.png", b"\x89PNG")
+        storage(f"members/{other_person.party_id}/photo.png", b"\x89PNG")
         client.cookies.update(_auth_cookie(staff))
 
-        assert client.get(f"/uploads/members/{other_person.id}/photo.png").status_code == 200
+        assert client.get(f"/uploads/members/{other_person.party_id}/photo.png").status_code == 200
 
 
 class TestMandates:

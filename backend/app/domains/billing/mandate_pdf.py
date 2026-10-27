@@ -21,7 +21,8 @@ def _get_org_address(db: Session) -> str | None:
     """Get the organization address as a single string."""
     addr = (
         db.query(Address)
-        .filter(Address.entity_type == "organization", Address.entity_id == 1, Address.is_primary.is_(True))
+        .join(OrganizationSettings, OrganizationSettings.party_id == Address.party_id)
+        .filter(Address.is_primary.is_(True))
         .first()
     )
     if not addr:

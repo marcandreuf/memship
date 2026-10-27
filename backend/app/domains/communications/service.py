@@ -24,7 +24,7 @@ from app.domains.communications.schemas import (
     validate_target,
 )
 from app.domains.members.models import Member, MembershipType
-from app.domains.persons.models import Person
+from app.domains.persons.models import Party, Person
 
 
 class AnnouncementNotDraft(Exception):
@@ -254,7 +254,7 @@ def list_recipients(db: Session, announcement_id: int):
             AnnouncementRecipient.member_id,
             Person.first_name,
             Person.last_name,
-            Person.email,
+            Party.email,
             AnnouncementRecipient.email_eligible,
             AnnouncementRecipient.email_sent,
             AnnouncementRecipient.in_app,
@@ -262,6 +262,7 @@ def list_recipients(db: Session, announcement_id: int):
         )
         .join(Member, Member.id == AnnouncementRecipient.member_id)
         .join(Person, Person.party_id == Member.party_id)
+        .join(Party, Party.id == Person.party_id)
         .outerjoin(Notification, _seen_join(announcement_id))
         .filter(AnnouncementRecipient.announcement_id == announcement_id)
         .order_by(Person.last_name, Person.first_name, AnnouncementRecipient.member_id)

@@ -20,6 +20,8 @@ from sqlalchemy import (
     insert,
 )
 from sqlalchemy import DDL
+from sqlalchemy.ext.associationproxy import association_proxy
+from sqlalchemy.orm import Session as SASession
 from sqlalchemy.orm import relationship, validates
 
 from app.core.schema_types import normalize_email
@@ -67,9 +69,9 @@ class Party(Base):
     # list, receipt PDF and SEPA file wants a name and should not care what
     # kind of party it is. ``sepa_mandates.debtor_name`` set the precedent.
     display_name = Column(Text, nullable=False)
-    # Party-level facts: a company has all of these too. They still also live
-    # on ``persons`` until the columns move in a later phase; this copy is
-    # written at creation and nothing reads it yet.
+    # Party-level facts: a company has all of these too. Since the Phase 3
+    # column drop these are the only copy; ``Person`` reaches them through
+    # association proxies.
     national_id = Column(String(50))
     email = Column(String(255))
     photo_url = Column(String(500))
@@ -77,6 +79,17 @@ class Party(Base):
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+
+    @validates("email")
+    def _normalise_email(self, _key, value):
+        """Same rule as ``User.email`` — see the validator there (#191).
+
+        Lived on ``Person`` while the column did; the fact moved up, the rule
+        moves with it. Deliberately not unique (a minor shares a guardian's
+        address). ``attach_login`` copies it into ``users.email``, where it
+        decides a login.
+        """
+        return normalize_email(value)
 
 
 class Person(Base):
@@ -91,25 +104,22 @@ class Person(Base):
             name="persons_party_fk",
             ondelete="CASCADE",
         ),
-        UniqueConstraint("party_id", name="uq_persons_party_id"),
         CheckConstraint("kind = 'person'", name="persons_kind_check"),
-        Index("idx_persons_email", "email", unique=False, postgresql_where="email IS NOT NULL"),
         Index("idx_persons_last_name", "last_name"),
-        Index("idx_persons_national_id", "national_id", postgresql_where="national_id IS NOT NULL"),
     )
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    party_id = Column(BigInteger, nullable=False)
+    # The party IS the identity: persons dropped its own serial in Phase 3 and
+    # the subtype keys on its party. The value is assigned by the
+    # ``before_insert`` event below (or by the pending Party flushing first),
+    # never by a persons-side sequence.
+    party_id = Column(BigInteger, primary_key=True, autoincrement=False)
     # Holds no information (always 'person') — it exists so the foreign key
     # above can be composite. See Party.
     kind = Column(Text, nullable=False, server_default="person")
     first_name = Column(String(100), nullable=False)
     last_name = Column(String(100), nullable=False)
-    email = Column(String(255))
     date_of_birth = Column(Date)
     gender = Column(String(20))
-    national_id = Column(String(50))
-    photo_url = Column(String(500))
     bank_iban = Column(String(34))
     bank_bic = Column(String(11))
     bank_holder_name = Column(String(255))
@@ -120,8 +130,16 @@ class Person(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
-    # Relationships
-    party = relationship("Party")
+    # Relationships. ``party`` eager-joins because the proxies below make it
+    # part of what a person IS — email, national id and photo live there, and
+    # a lazy load per row would turn every loop over persons into N+1.
+    party = relationship(
+        "Party",
+        foreign_keys=[party_id],
+        primaryjoin="Person.party_id == Party.id",
+        lazy="joined",
+        innerjoin=True,
+    )
     user = relationship(
         "User",
         primaryjoin="Person.party_id == foreign(User.party_id)",
@@ -137,27 +155,55 @@ class Person(Base):
     addresses = relationship(
         "Address",
         back_populates="person",
-        primaryjoin="and_(Address.entity_type=='person', Address.entity_id==Person.id)",
-        foreign_keys="Address.entity_id",
+        primaryjoin="Person.party_id == foreign(Address.party_id)",
         viewonly=True,
     )
     contacts = relationship(
         "Contact",
         back_populates="person",
-        primaryjoin="and_(Contact.entity_type=='person', Contact.entity_id==Person.id)",
-        foreign_keys="Contact.entity_id",
+        primaryjoin="Person.party_id == foreign(Contact.party_id)",
         viewonly=True,
     )
 
-    @validates("email")
-    def _normalise_email(self, _key, value):
-        """Same rule as ``User.email`` — see the validator there (#191).
+    # The party-level facts, readable and writable as if they were still
+    # columns here. Setting one on a brand-new person creates the pending
+    # Party (the creator), which then flushes before the person and supplies
+    # its ``party_id``. Class-level use supports equality (an EXISTS against
+    # party); anything richer — LIKE, a select column — must join ``Party``
+    # explicitly, and fails loudly here rather than silently matching nothing.
+    email = association_proxy(
+        "party", "email",
+        creator=lambda value: Party(kind="person", display_name="(unnamed)", email=value),
+    )
+    national_id = association_proxy(
+        "party", "national_id",
+        creator=lambda value: Party(kind="person", display_name="(unnamed)", national_id=value),
+    )
+    photo_url = association_proxy(
+        "party", "photo_url",
+        creator=lambda value: Party(kind="person", display_name="(unnamed)", photo_url=value),
+    )
 
-        This column is deliberately not unique (a minor shares a guardian's
-        address), so normalising it changes no constraint. It is here because
-        `attach_login` copies it into ``users.email``, where it decides a login.
-        """
-        return normalize_email(value)
+
+@event.listens_for(SASession, "before_flush")
+def _pending_party_takes_the_persons_name(session, _ctx, _instances):
+    """A party born from a proxy starts as "(unnamed)"; give it the name.
+
+    The proxies' creators cannot see the person's name (the person may not
+    even have one yet at that point), so a brand-new pair reaches the flush
+    with the placeholder. The database trigger would fix the row anyway; this
+    fixes the in-session object too, so code that reads ``display_name``
+    right after creating a person sees what the database will hold.
+    """
+    for obj in session.new:
+        if isinstance(obj, Person) and obj.party is not None and obj.party in session.new:
+            display = " ".join(
+                part
+                for part in ((obj.first_name or "").strip(), (obj.last_name or "").strip())
+                if part
+            )
+            if display:
+                obj.party.display_name = display
 
 
 @event.listens_for(Person, "before_insert")
@@ -166,10 +212,13 @@ def _person_creates_its_party(_mapper, connection, person):
 
     An ORM event rather than service code because persons are created in six
     application call sites and across the test suite; this is the one place
-    they all pass through. ``party.display_name`` is written here and then
-    maintained by a database trigger from the repointing phase onwards; until
-    that phase nothing reads it, so a renamed person leaving it briefly stale
-    changes no behaviour.
+    they all pass through. Two ways a person can already have its party by the
+    time this fires: a pending ``Party`` created by one of the association
+    proxies flushed first (the relationship dependency orders it), or the
+    caller wired ``party_id`` explicitly. Only a bare person — no proxy
+    touched, no id given — needs the row created here. The display name is a
+    placeholder either way; the ``trg_party_display_name`` trigger syncs it
+    from the person's name the moment this insert lands.
     """
     if person.party_id is not None:
         return
@@ -180,13 +229,7 @@ def _person_creates_its_party(_mapper, connection, person):
     )
     person.party_id = connection.execute(
         insert(Party.__table__)
-        .values(
-            kind="person",
-            display_name=display_name or "(unnamed)",
-            national_id=person.national_id,
-            email=person.email,
-            photo_url=person.photo_url,
-        )
+        .values(kind="person", display_name=display_name or "(unnamed)")
         .returning(Party.__table__.c.id)
     ).scalar_one()
 
@@ -218,36 +261,41 @@ CREATE TRIGGER trg_party_display_name
 )
 
 
-class AddressType(Base):
-    __tablename__ = "address_types"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    code = Column(String(20), nullable=False, unique=True)
-    name = Column(String(50), nullable=False)
-    description = Column(String(255))
-    is_active = Column(Boolean, default=True)
-    display_order = Column(Integer, default=0)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
-    )
-
-
 class Address(Base):
+    """One owner, exactly, and a real one: the exclusive arc replaced the
+    old ``entity_type``/``entity_id`` pair in Phase 3. A party address and a
+    space address live in the same table because everything else about an
+    address is identical; the CHECK is what keeps a row from floating free or
+    serving two masters. The club's address is simply its party's address.
+    """
+
     __tablename__ = "addresses"
     __table_args__ = (
         CheckConstraint(
-            "entity_type IN ('person', 'organization', 'space')",
-            name="valid_entity_type",
+            "num_nonnulls(party_id, space_id) = 1",
+            name="addresses_exactly_one_owner",
         ),
-        Index("idx_addresses_entity", "entity_type", "entity_id"),
-        Index("idx_addresses_type", "address_type_id"),
+        Index("ix_addresses_party", "party_id", postgresql_where="party_id IS NOT NULL"),
+        Index("ix_addresses_space", "space_id", postgresql_where="space_id IS NOT NULL"),
+        # One primary address per party. The old nullable boolean let two rows
+        # both claim it, and row order decided.
+        Index(
+            "uq_addresses_primary_per_party",
+            "party_id",
+            unique=True,
+            postgresql_where="party_id IS NOT NULL AND is_primary",
+        ),
     )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    address_type_id = Column(Integer, ForeignKey("address_types.id", ondelete="SET NULL"))
-    entity_type = Column(String(30), nullable=False)
-    entity_id = Column(Integer, nullable=False)
+    party_id = Column(
+        BigInteger,
+        ForeignKey("party.id", ondelete="CASCADE", name="addresses_party_id_fkey"),
+    )
+    space_id = Column(
+        Integer,
+        ForeignKey("spaces.id", ondelete="CASCADE", name="addresses_space_id_fkey"),
+    )
     address_line1 = Column(String(255), nullable=False)
     address_line2 = Column(String(255))
     city = Column(String(100), nullable=False)
@@ -266,23 +314,45 @@ class Address(Base):
     )
 
     # Relationships
-    address_type = relationship("AddressType")
+    party = relationship("Party")
     person = relationship(
         "Person",
         back_populates="addresses",
-        primaryjoin="and_(Address.entity_type=='person', Address.entity_id==Person.id)",
-        foreign_keys=[entity_id],
+        primaryjoin="Person.party_id == foreign(Address.party_id)",
         viewonly=True,
     )
 
 
+class ContactChannel(Base):
+    """What a contact value IS — email, phone, url, handle. Structural, where
+    the old codes carried it only as a naming convention (``phone_*``,
+    ``email_*``): "this party's email" was a LIKE against a code an admin
+    could rename. A new channel is an INSERT here, same move as party_kinds.
+    """
+
+    __tablename__ = "contact_channels"
+
+    code = Column(Text, primary_key=True)
+    name = Column(Text, nullable=False)
+
+
 class ContactType(Base):
     __tablename__ = "contact_types"
+    __table_args__ = (
+        # Target of the composite FK on contacts: ties a contact's channel to
+        # its type's channel so the two cannot disagree.
+        UniqueConstraint("id", "channel", name="uq_contact_types_id_channel"),
+    )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     code = Column(String(20), nullable=False, unique=True)
     name = Column(String(50), nullable=False)
     description = Column(String(255))
+    channel = Column(
+        Text,
+        ForeignKey("contact_channels.code", name="contact_types_channel_fkey"),
+        nullable=False,
+    )
     is_active = Column(Boolean, default=True)
     display_order = Column(Integer, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -292,20 +362,49 @@ class ContactType(Base):
 
 
 class Contact(Base):
+    """A way to reach a party. Single-owner since Phase 3: the old polymorphic
+    CHECK only ever allowed ``'person'``, so this table paid the full price of
+    polymorphism for one owner kind.
+
+    ``channel`` is denormalised from the type on purpose. The composite FK
+    keeps it honest, and it is what lets the partial unique below say "one
+    primary per channel" — a primary email AND a primary phone, never two
+    primary emails. A typeless contact has no channel (the CHECK ties the two
+    nullabilities together), and the composite FK's SET NULL clears both when
+    a type is deleted.
+    """
+
     __tablename__ = "contacts"
     __table_args__ = (
-        CheckConstraint(
-            "entity_type IN ('person')",
-            name="valid_contact_entity_type",
+        ForeignKeyConstraint(
+            ["contact_type_id", "channel"],
+            ["contact_types.id", "contact_types.channel"],
+            name="contacts_channel_matches_type",
+            ondelete="SET NULL",
         ),
-        Index("idx_contacts_entity", "entity_type", "entity_id"),
+        CheckConstraint(
+            "(contact_type_id IS NULL) = (channel IS NULL)",
+            name="contacts_channel_iff_type",
+        ),
+        Index("ix_contacts_party", "party_id"),
         Index("idx_contacts_type", "contact_type_id"),
+        Index(
+            "uq_contacts_one_primary_per_channel",
+            "party_id",
+            "channel",
+            unique=True,
+            postgresql_where="is_primary",
+        ),
     )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    contact_type_id = Column(Integer, ForeignKey("contact_types.id", ondelete="SET NULL"))
-    entity_type = Column(String(30), nullable=False)
-    entity_id = Column(Integer, nullable=False)
+    party_id = Column(
+        BigInteger,
+        ForeignKey("party.id", ondelete="CASCADE", name="contacts_party_id_fkey"),
+        nullable=False,
+    )
+    contact_type_id = Column(Integer)
+    channel = Column(Text)
     value = Column(String(255), nullable=False)
     label = Column(String(100))
     is_primary = Column(Boolean, default=False)
@@ -317,11 +416,34 @@ class Contact(Base):
     )
 
     # Relationships
-    contact_type = relationship("ContactType")
+    party = relationship("Party")
+    contact_type = relationship(
+        "ContactType",
+        primaryjoin="foreign(Contact.contact_type_id) == ContactType.id",
+        viewonly=True,
+    )
     person = relationship(
         "Person",
         back_populates="contacts",
-        primaryjoin="and_(Contact.entity_type=='person', Contact.entity_id==Person.id)",
-        foreign_keys=[entity_id],
+        primaryjoin="Person.party_id == foreign(Contact.party_id)",
         viewonly=True,
     )
+
+
+@event.listens_for(Contact, "before_insert")
+@event.listens_for(Contact, "before_update")
+def _contact_carries_its_channel(_mapper, connection, contact):
+    """Fill ``channel`` from the type so no call site has to know about it.
+
+    The composite FK would reject a wrong value anyway; this makes the right
+    one automatic. Runs on update too, so changing a contact's type cannot
+    leave the old channel behind.
+    """
+    if contact.contact_type_id is None:
+        contact.channel = None
+        return
+    contact.channel = connection.execute(
+        ContactType.__table__.select()
+        .with_only_columns(ContactType.__table__.c.channel)
+        .where(ContactType.__table__.c.id == contact.contact_type_id)
+    ).scalar_one_or_none()
