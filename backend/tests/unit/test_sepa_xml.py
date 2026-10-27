@@ -21,18 +21,18 @@ def _mock_remittance(**overrides):
     return r
 
 
-def _mock_receipt(member_id=1, total_amount=50.00, receipt_number="FAC-2026-0001", description="Monthly fee"):
+def _mock_receipt(party_id=1, total_amount=50.00, receipt_number="FAC-2026-0001", description="Monthly fee"):
     r = MagicMock()
-    r.member_id = member_id
+    r.party_id = party_id
     r.total_amount = Decimal(str(total_amount))
     r.receipt_number = receipt_number
     r.description = description
     return r
 
 
-def _mock_mandate(member_id=1, **overrides):
+def _mock_mandate(party_id=1, **overrides):
     m = MagicMock()
-    m.member_id = member_id
+    m.party_id = party_id
     m.debtor_name = "John Doe"
     m.debtor_iban = "ES7921000813610123456789"
     m.debtor_bic = "BBVAESMMXXX"
@@ -85,12 +85,12 @@ class TestSepaXmlGeneration:
     def test_multiple_receipts(self):
         remittance = _mock_remittance()
         receipts = [
-            _mock_receipt(member_id=1, total_amount=50.00, receipt_number="FAC-2026-0001"),
-            _mock_receipt(member_id=2, total_amount=75.00, receipt_number="FAC-2026-0002"),
+            _mock_receipt(party_id=1, total_amount=50.00, receipt_number="FAC-2026-0001"),
+            _mock_receipt(party_id=2, total_amount=75.00, receipt_number="FAC-2026-0002"),
         ]
         mandates = {
-            1: _mock_mandate(member_id=1),
-            2: _mock_mandate(member_id=2, debtor_name="Jane Doe", debtor_iban="DE89370400440532013000", debtor_bic="COBADEFFXXX", mandate_reference="FAC-M0002-001"),
+            1: _mock_mandate(party_id=1),
+            2: _mock_mandate(party_id=2, debtor_name="Jane Doe", debtor_iban="DE89370400440532013000", debtor_bic="COBADEFFXXX", mandate_reference="FAC-M0002-001"),
         }
 
         xml = generate_sepa_xml(remittance, receipts, mandates).decode()
@@ -107,10 +107,10 @@ class TestSepaXmlGeneration:
         """
         remittance = _mock_remittance()
         receipts = [
-            _mock_receipt(member_id=1),
-            _mock_receipt(member_id=99, receipt_number="FAC-2026-0099"),
+            _mock_receipt(party_id=1),
+            _mock_receipt(party_id=99, receipt_number="FAC-2026-0099"),
         ]
-        mandates = {1: _mock_mandate(member_id=1)}
+        mandates = {1: _mock_mandate(party_id=1)}
 
         with pytest.raises(SepaExportError):
             generate_sepa_xml(remittance, receipts, mandates)
@@ -154,8 +154,8 @@ class TestMissingMandate:
 
     def test_raises_instead_of_skipping(self):
         remittance = _mock_remittance()
-        receipts = [_mock_receipt(member_id=1), _mock_receipt(member_id=2)]
-        mandates = {1: _mock_mandate(member_id=1)}  # member 2's mandate is gone
+        receipts = [_mock_receipt(party_id=1), _mock_receipt(party_id=2)]
+        mandates = {1: _mock_mandate(party_id=1)}  # member 2's mandate is gone
 
         with pytest.raises(SepaExportError) as exc:
             generate_sepa_xml(remittance, receipts, mandates)
@@ -163,8 +163,8 @@ class TestMissingMandate:
 
     def test_names_every_missing_member(self):
         remittance = _mock_remittance()
-        receipts = [_mock_receipt(member_id=n) for n in (1, 2, 3)]
-        mandates = {2: _mock_mandate(member_id=2)}
+        receipts = [_mock_receipt(party_id=n) for n in (1, 2, 3)]
+        mandates = {2: _mock_mandate(party_id=2)}
 
         with pytest.raises(SepaExportError) as exc:
             generate_sepa_xml(remittance, receipts, mandates)
@@ -174,8 +174,8 @@ class TestMissingMandate:
     def test_no_partial_file_is_returned(self):
         """The failure must not come back as a shorter file."""
         remittance = _mock_remittance()
-        receipts = [_mock_receipt(member_id=1), _mock_receipt(member_id=2)]
-        mandates = {1: _mock_mandate(member_id=1)}
+        receipts = [_mock_receipt(party_id=1), _mock_receipt(party_id=2)]
+        mandates = {1: _mock_mandate(party_id=1)}
 
         with pytest.raises(SepaExportError):
             generate_sepa_xml(remittance, receipts, mandates)

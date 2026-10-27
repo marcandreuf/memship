@@ -37,7 +37,7 @@ def generate_mandate_reference(db: Session, member: Member) -> str:
     # Count existing mandates for this member to get sequence
     count = (
         db.query(func.count(SepaMandate.id))
-        .filter(SepaMandate.member_id == member.id)
+        .filter(SepaMandate.party_id == member.party_id)
         .scalar()
     )
     seq = count + 1
@@ -104,7 +104,7 @@ def create_mandate(db: Session, data: MandateCreate) -> SepaMandate:
     existing = (
         db.query(SepaMandate)
         .filter(
-            SepaMandate.member_id == data.member_id,
+            SepaMandate.party_id == member.party_id,
             SepaMandate.status == "active",
             SepaMandate.is_active.is_(True),
         )
@@ -125,7 +125,7 @@ def create_mandate(db: Session, data: MandateCreate) -> SepaMandate:
     reference = generate_mandate_reference(db, member)
 
     mandate = SepaMandate(
-        member_id=data.member_id,
+        party_id=member.party_id,
         mandate_reference=reference,
         creditor_id=org.creditor_id,
         debtor_name=data.debtor_name,
@@ -174,12 +174,12 @@ def cancel_mandate(db: Session, mandate: SepaMandate) -> SepaMandate:
     return mandate
 
 
-def get_active_mandate(db: Session, member_id: int) -> SepaMandate | None:
-    """Get the most recent active mandate for a member."""
+def get_active_mandate(db: Session, party_id: int) -> SepaMandate | None:
+    """Get the most recent active mandate for a party."""
     return (
         db.query(SepaMandate)
         .filter(
-            SepaMandate.member_id == member_id,
+            SepaMandate.party_id == party_id,
             SepaMandate.status == "active",
             SepaMandate.is_active.is_(True),
         )

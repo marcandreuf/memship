@@ -136,7 +136,12 @@ def generate_receipt_pdf(db: Session, receipt: Receipt) -> bytes:
     from weasyprint import HTML
 
     org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
-    member = db.query(Member).filter(Member.id == receipt.member_id).first()
+    member = (
+        db.query(Member)
+        .filter(Member.party_id == receipt.party_id)
+        .order_by(Member.is_active.desc(), Member.id.desc())
+        .first()
+    )
     person = db.query(Person).filter(Person.party_id == member.party_id).first() if member else None
 
     locale = org.locale or "es"

@@ -344,7 +344,7 @@ def get_availability(
     if space is None or not space.is_active:
         raise HTTPException(status_code=404, detail="Space not found")
     member = current_member_or_403(db, current_user)
-    cells = service.space_week_availability(db, space, week_start, member.id)
+    cells = service.space_week_availability(db, space, week_start, member.party_id)
     eligibility = check_space_eligibility(space, member)
     return WeekAvailability(
         space_id=space_id,
@@ -400,7 +400,7 @@ def get_my_bookings(
     _require_bookings_enabled(db)
     member = current_member_or_403(db, current_user)
     scope = scope if scope in ("upcoming", "past") else "upcoming"
-    return service.my_bookings(db, member.id, scope=scope)
+    return service.my_bookings(db, member.party_id, scope=scope)
 
 
 @member_router.delete(
@@ -419,7 +419,7 @@ def cancel_booking(
     is_admin = user_has(current_user, "bookings.write")
     if not is_admin:
         member = current_member_or_403(db, current_user)
-        if booking.member_id != member.id:
+        if booking.party_id != member.party_id:
             raise HTTPException(status_code=403, detail="Not your booking")
 
     try:

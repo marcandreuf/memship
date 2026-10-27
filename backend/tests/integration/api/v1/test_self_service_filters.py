@@ -234,7 +234,7 @@ class TestReceiptsOwnershipFilter:
         _, member = theirs
         receipt = Receipt(
             receipt_number="FAC-FILTER-1",
-            member_id=member.id,
+            party_id=member.party_id,
             origin="membership",
             description="Filter receipt",
             base_amount=Decimal("100.00"),

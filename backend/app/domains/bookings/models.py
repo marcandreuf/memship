@@ -13,6 +13,7 @@ holding two active rows for the same slot.
 """
 
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     CheckConstraint,
     Column,
@@ -110,13 +111,13 @@ class Booking(Base):
             name="booking_status_valid",
         ),
         Index("ix_bookings_slot", "space_slot_id"),
-        Index("ix_bookings_member", "member_id"),
-        # One active row per member per slot — blocks double-booking and being
+        Index("ix_bookings_party", "party_id"),
+        # One active row per party per slot — blocks double-booking and being
         # both booked and waitlisted for the same slot.
         Index(
-            "uq_bookings_member_slot_active",
+            "uq_bookings_party_slot_active",
             "space_slot_id",
-            "member_id",
+            "party_id",
             unique=True,
             postgresql_where=text("status IN ('booked', 'waitlisted')"),
         ),
@@ -126,8 +127,12 @@ class Booking(Base):
     space_slot_id = Column(
         Integer, ForeignKey("space_slots.id", ondelete="CASCADE"), nullable=False
     )
-    member_id = Column(
-        Integer, ForeignKey("members.id", ondelete="CASCADE"), nullable=False
+    # Same shape as registrations (ADR 0003, Phase 4): a booking belongs to
+    # a party, and member-only spaces are a service-layer rule.
+    party_id = Column(
+        BigInteger,
+        ForeignKey("party.id", ondelete="CASCADE", name="bookings_party_id_fkey"),
+        nullable=False,
     )
     status = Column(String(20), nullable=False, default="booked", server_default="booked")
     # Set when a booking enters the waitlist; FIFO promotion orders by this.
@@ -137,4 +142,22 @@ class Booking(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     slot = relationship("SpaceSlot", back_populates="bookings")
-    member = relationship("Member")
+    party = relationship("Party")
+    member = relationship(
+        "Member",
+        primaryjoin="Booking.party_id == foreign(Member.party_id)",
+        order_by="desc(Member.is_active)",
+        uselist=False,
+        viewonly=True,
+    )
+    @property
+    def member_id(self):
+        """Transitional API field (ADR 0003, Phase 4): the row keys on the
+        party, but the HTTP contract still speaks members. Resolved through
+        the ``member`` join (active membership first); None only for a party
+        with no membership, which the surface phase will make routine.
+        Read-only on purpose — internal code writes ``party_id``.
+        """
+        member = self.member
+        return member.id if member else None
+

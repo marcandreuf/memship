@@ -18,14 +18,14 @@ class SepaExportError(Exception):
     says while those receipts are excluded from future batches. Nothing
     reconciles the two afterwards.
 
-    ``member_ids`` carries the members the caller must name in its own error.
+    ``party_ids`` carries the parties the caller must name in its own error.
     The message here is a fallback for a caller that has no session to resolve
     them with.
     """
 
-    def __init__(self, message: str, member_ids: list[int] | None = None) -> None:
+    def __init__(self, message: str, party_ids: list[int] | None = None) -> None:
         super().__init__(message)
-        self.member_ids = member_ids or []
+        self.party_ids = party_ids or []
 
 
 def _as_date(value: date | datetime) -> date:
@@ -49,7 +49,7 @@ def generate_sepa_xml(
     Args:
         remittance: The remittance batch.
         receipts: Receipts included in this batch.
-        mandates: Dict mapping member_id -> active SepaMandate.
+        mandates: Dict mapping party_id -> active SepaMandate.
 
     Returns:
         XML content as bytes.
@@ -71,7 +71,7 @@ def generate_sepa_xml(
 
     # Checked up front so the message names every affected member, rather than
     # failing on the first one and hiding the rest behind a second run.
-    missing = sorted({r.member_id for r in receipts if r.member_id not in mandates})
+    missing = sorted({r.party_id for r in receipts if r.party_id not in mandates})
     if missing:
         # The ids travel on the exception so the caller, which has the session,
         # can name these members the way the admin sees them. A cancelled
@@ -83,11 +83,11 @@ def generate_sepa_xml(
             f"{missing}. The mandate was most likely cancelled after this "
             "remittance was created. Create a new mandate for those members, "
             "then cancel this remittance and create it again.",
-            member_ids=missing,
+            party_ids=missing,
         )
 
     for receipt in receipts:
-        mandate = mandates[receipt.member_id]
+        mandate = mandates[receipt.party_id]
 
         # sepaxml expects amount in cents (integer)
         amount_cents = int(Decimal(str(receipt.total_amount)) * 100)

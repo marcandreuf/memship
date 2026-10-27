@@ -104,7 +104,7 @@ class TestRegistrationStats:
         user, member = _create_member_with_user(db, suffix="-stats")
         activity, price = _create_published_activity(db, admin.id)
         db.add(Registration(
-            activity_id=activity.id, member_id=member.id,
+            activity_id=activity.id, party_id=member.party_id,
             price_id=price.id, status="confirmed",
         ))
         db.flush()
@@ -303,7 +303,7 @@ class TestCancelRegistration:
         )
         # Register
         reg = Registration(
-            activity_id=activity.id, member_id=member.id,
+            activity_id=activity.id, party_id=member.party_id,
             price_id=price.id, status="confirmed",
         )
         db.add(reg)
@@ -326,11 +326,11 @@ class TestCancelRegistration:
 
         # Member 1 confirmed, member 2 waitlisted
         reg1 = Registration(
-            activity_id=activity.id, member_id=member1.id,
+            activity_id=activity.id, party_id=member1.party_id,
             price_id=price.id, status="confirmed",
         )
         reg2 = Registration(
-            activity_id=activity.id, member_id=member2.id,
+            activity_id=activity.id, party_id=member2.party_id,
             price_id=price.id, status="waitlist",
         )
         db.add_all([reg1, reg2])
@@ -354,7 +354,7 @@ class TestCancelRegistration:
             db, admin.id, allow_self_cancellation=False,
         )
         reg = Registration(
-            activity_id=activity.id, member_id=member.id,
+            activity_id=activity.id, party_id=member.party_id,
             price_id=price.id, status="confirmed",
         )
         db.add(reg)
@@ -379,7 +379,7 @@ class TestCancelRegistration:
             self_cancellation_deadline_hours=24,
         )
         reg = Registration(
-            activity_id=activity.id, member_id=member.id,
+            activity_id=activity.id, party_id=member.party_id,
             price_id=price.id, status="confirmed",
         )
         db.add(reg)
@@ -395,7 +395,7 @@ class TestCancelRegistration:
         _, member = _create_member_with_user(db, suffix="-admcancel")
         activity, price = _create_published_activity(db, admin.id)
         reg = Registration(
-            activity_id=activity.id, member_id=member.id,
+            activity_id=activity.id, party_id=member.party_id,
             price_id=price.id, status="confirmed",
         )
         db.add(reg)
@@ -413,7 +413,7 @@ class TestRegistrationAdmin:
         _, member = _create_member_with_user(db, suffix="-listreg")
         activity, price = _create_published_activity(db, admin.id)
         reg = Registration(
-            activity_id=activity.id, member_id=member.id,
+            activity_id=activity.id, party_id=member.party_id,
             price_id=price.id, status="confirmed",
         )
         db.add(reg)
@@ -431,7 +431,7 @@ class TestRegistrationAdmin:
         _, member = _create_member_with_user(db, suffix="-chgstat")
         activity, price = _create_published_activity(db, admin.id)
         reg = Registration(
-            activity_id=activity.id, member_id=member.id,
+            activity_id=activity.id, party_id=member.party_id,
             price_id=price.id, status="confirmed",
         )
         db.add(reg)
@@ -462,7 +462,7 @@ class TestMyRegistrations:
         user, member = _create_member_with_user(db, suffix="-myreg")
         activity, price = _create_published_activity(db, admin.id)
         reg = Registration(
-            activity_id=activity.id, member_id=member.id,
+            activity_id=activity.id, party_id=member.party_id,
             price_id=price.id, status="confirmed",
         )
         db.add(reg)
@@ -485,7 +485,7 @@ class TestMyRegistrations:
         for i in range(4):
             activity, price = _create_published_activity(db, admin.id, slug=f"tie-{i}")
             reg = Registration(
-                activity_id=activity.id, member_id=member.id,
+                activity_id=activity.id, party_id=member.party_id,
                 price_id=price.id, status="confirmed", created_at=stamp,
             )
             db.add(reg)
@@ -517,7 +517,7 @@ class TestMyUpcomingRegistrations:
             registration_ends_at=now + timedelta(days=starts_in),
         )
         reg = Registration(
-            activity_id=activity.id, member_id=member.id, price_id=price.id,
+            activity_id=activity.id, party_id=member.party_id, price_id=price.id,
             status=status, created_at=now - timedelta(days=signed_up_ago),
         )
         db.add(reg)
@@ -590,7 +590,7 @@ class TestAutoReceipt:
 
         # Check receipt was created
         receipt = db.query(Receipt).filter(
-            Receipt.member_id == member.id,
+            Receipt.party_id == member.party_id,
             Receipt.registration_id == response.json()["id"],
         ).first()
         assert receipt is not None
@@ -633,7 +633,7 @@ class TestAutoReceipt:
 
         # No receipt for waitlisted member
         receipt = db.query(Receipt).filter(
-            Receipt.member_id == member2.id,
+            Receipt.party_id == member2.party_id,
             Receipt.registration_id == r.json()["id"],
         ).first()
         assert receipt is None
@@ -717,7 +717,7 @@ class TestWaitlistAndCapacity:
 
         # Member 1 confirmed
         reg1 = Registration(
-            activity_id=activity.id, member_id=member1.id,
+            activity_id=activity.id, party_id=member1.party_id,
             price_id=price.id, status="confirmed",
         )
         db.add(reg1)
@@ -725,7 +725,7 @@ class TestWaitlistAndCapacity:
 
         # Member 2 waitlisted first (older timestamp)
         reg2 = Registration(
-            activity_id=activity.id, member_id=member2.id,
+            activity_id=activity.id, party_id=member2.party_id,
             price_id=price.id, status="waitlist",
             created_at=datetime.now(timezone.utc) - timedelta(minutes=10),
         )
@@ -734,7 +734,7 @@ class TestWaitlistAndCapacity:
 
         # Member 3 waitlisted second (newer timestamp)
         reg3 = Registration(
-            activity_id=activity.id, member_id=member3.id,
+            activity_id=activity.id, party_id=member3.party_id,
             price_id=price.id, status="waitlist",
             created_at=datetime.now(timezone.utc) - timedelta(minutes=5),
         )
@@ -767,20 +767,20 @@ class TestWaitlistAndCapacity:
             allow_self_cancellation=True,
         )
         reg1 = Registration(
-            activity_id=activity.id, member_id=member1.id,
+            activity_id=activity.id, party_id=member1.party_id,
             price_id=price.id, status="confirmed",
         )
         db.add(reg1)
         db.flush()
         stamp = datetime.now(timezone.utc) - timedelta(minutes=10)
         first = Registration(
-            activity_id=activity.id, member_id=member2.id,
+            activity_id=activity.id, party_id=member2.party_id,
             price_id=price.id, status="waitlist", created_at=stamp,
         )
         db.add(first)
         db.flush()
         second = Registration(
-            activity_id=activity.id, member_id=member3.id,
+            activity_id=activity.id, party_id=member3.party_id,
             price_id=price.id, status="waitlist", created_at=stamp,
         )
         db.add(second)
@@ -831,11 +831,11 @@ class TestWaitlistAndCapacity:
         )
 
         reg1 = Registration(
-            activity_id=activity.id, member_id=member1.id,
+            activity_id=activity.id, party_id=member1.party_id,
             price_id=price.id, status="confirmed",
         )
         reg2 = Registration(
-            activity_id=activity.id, member_id=member2.id,
+            activity_id=activity.id, party_id=member2.party_id,
             price_id=price.id, status="waitlist",
         )
         db.add_all([reg1, reg2])
@@ -863,11 +863,11 @@ class TestWaitlistAndCapacity:
         )
 
         reg1 = Registration(
-            activity_id=activity.id, member_id=member1.id,
+            activity_id=activity.id, party_id=member1.party_id,
             price_id=price.id, status="confirmed",
         )
         reg2 = Registration(
-            activity_id=activity.id, member_id=member2.id,
+            activity_id=activity.id, party_id=member2.party_id,
             price_id=price.id, status="waitlist",
         )
         db.add_all([reg1, reg2])

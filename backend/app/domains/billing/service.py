@@ -76,7 +76,12 @@ def build_receipts_query(
     if document_type:
         query = query.filter(Receipt.document_type == document_type)
     if member_id:
-        query = query.filter(Receipt.member_id == member_id)
+        # The HTTP contract still filters by members.id (Phase 4); the rows
+        # key on the party behind it.
+        query = query.filter(
+            Receipt.party_id
+            == db.query(Member.party_id).filter(Member.id == member_id).scalar_subquery()
+        )
     if emission_date_from is not None:
         query = query.filter(Receipt.emission_date >= emission_date_from)
     if emission_date_to is not None:
@@ -402,9 +407,15 @@ def create_receipt(
     """Create a new receipt with calculated VAT."""
     receipt_number = generate_receipt_number(db, data.emission_date)
 
+    member = db.query(Member).filter(Member.id == data.member_id).first()
+    if member is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Member not found"
+        )
+
     receipt = Receipt(
         receipt_number=receipt_number,
-        member_id=data.member_id,
+        party_id=member.party_id,
         concept_id=data.concept_id,
         registration_id=data.registration_id,
         origin=data.origin,
@@ -759,7 +770,7 @@ def create_credit_note(
         receipt_number=generate_receipt_number(db, org_today(db)),
         document_type="credit_note",
         rectifies_receipt_id=receipt.id,
-        member_id=receipt.member_id,
+        party_id=receipt.party_id,
         concept_id=receipt.concept_id,
         registration_id=receipt.registration_id,
         booking_id=receipt.booking_id,
@@ -881,7 +892,7 @@ def generate_membership_fees(
         existing = (
             db.query(Receipt)
             .filter(
-                Receipt.member_id == member.id,
+                Receipt.party_id == member.party_id,
                 Receipt.origin == "membership",
                 Receipt.billing_period_start == data.billing_period_start,
                 Receipt.billing_period_end == data.billing_period_end,
@@ -906,7 +917,7 @@ def generate_membership_fees(
 
         receipt = Receipt(
             receipt_number=receipt_number,
-            member_id=member.id,
+            party_id=member.party_id,
             concept_id=concept.id,
             origin="membership",
             description=f"{mtype.name} — {person.first_name} {person.last_name}",
@@ -932,7 +943,7 @@ def generate_membership_fees(
 def generate_activity_receipt(
     db: Session,
     registration_id: int,
-    member_id: int,
+    party_id: int,
     activity_name: str,
     amount: Decimal,
     tax_rate: Decimal | None,
@@ -972,7 +983,7 @@ def generate_activity_receipt(
 
     receipt = Receipt(
         receipt_number=receipt_number,
-        member_id=member_id,
+        party_id=party_id,
         concept_id=concept.id,
         registration_id=registration_id,
         origin="activity",
@@ -994,7 +1005,7 @@ def generate_activity_receipt(
 def generate_booking_receipt(
     db: Session,
     booking_id: int,
-    member_id: int,
+    party_id: int,
     description: str,
     amount: Decimal,
     created_by_id: int | None = None,
@@ -1041,7 +1052,7 @@ def generate_booking_receipt(
 
     receipt = Receipt(
         receipt_number=generate_receipt_number(db, today),
-        member_id=member_id,
+        party_id=party_id,
         concept_id=concept.id,
         booking_id=booking_id,
         origin="booking",

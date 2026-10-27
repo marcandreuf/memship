@@ -60,11 +60,11 @@ def build_activity_registrations_query(
 
 
 def build_member_registrations_query(
-    db: Session, member_id: int, *, status: str | None = None
+    db: Session, party_id: int, *, status: str | None = None
 ) -> Query:
-    """Registrations for one member, shared by the list and CSV export."""
+    """Registrations for one party, shared by the list and CSV export."""
     query = _registrations_base_query(db).filter(
-        Registration.member_id == member_id
+        Registration.party_id == party_id
     )
     if status:
         query = query.filter(Registration.status == status)
@@ -147,7 +147,7 @@ def register_member(
     # 7. Create registration
     registration = Registration(
         activity_id=activity.id,
-        member_id=member.id,
+        party_id=member.party_id,
         modality_id=modality_id,
         price_id=price_id,
         discount_code_id=discount.id if discount else None,
@@ -241,7 +241,7 @@ def ensure_registration_receipt(
             generate_activity_receipt(
                 db=db,
                 registration_id=registration.id,
-                member_id=registration.member_id,
+                party_id=registration.party_id,
                 activity_name=activity.name,
                 amount=Decimal(str(amount)),
                 tax_rate=activity.tax_rate,

@@ -339,3 +339,130 @@ class TestPhase3RealOwners:
         db.flush()
         db.expire_all()
         assert db.get(Party, person.party_id).email == "edited@example.org"
+
+
+class TestPhase4MoneyAndParticipation:
+    """Phase 4: money and participation belong to a party, member or not."""
+
+    def _activity(self, db):
+        from app.domains.activities.models import Activity
+
+        now = datetime.datetime.now(datetime.timezone.utc)
+        activity = Activity(
+            name="Donation drive",
+            slug=f"drive-{id(db) % 100000}",
+            status="published",
+            starts_at=now + datetime.timedelta(days=10),
+            ends_at=now + datetime.timedelta(days=11),
+            registration_starts_at=now - datetime.timedelta(days=1),
+            registration_ends_at=now + datetime.timedelta(days=9),
+            max_participants=50,
+        )
+        db.add(activity)
+        db.flush()
+        return activity
+
+    def test_a_receipt_can_be_addressed_to_a_non_member_party(self, db):
+        from app.domains.billing.models import Receipt
+
+        # A company party with no members row at all.
+        company = Party(kind="company", display_name="Acme SL")
+        db.add(company)
+        db.flush()
+
+        receipt = Receipt(
+            receipt_number="DON-0001",
+            party_id=company.id,
+            origin="manual",
+            emission_date=datetime.date(2026, 3, 1),
+            description="Donation",
+            base_amount=100,
+            vat_rate=0,
+            vat_amount=0,
+            total_amount=100,
+        )
+        db.add(receipt)
+        db.flush()
+
+        assert receipt.party_id == company.id
+        # No membership behind it, so the transitional field is None.
+        assert receipt.member_id is None
+
+    def test_a_receipt_member_id_resolves_through_the_party(self, db):
+        from app.domains.billing.models import Receipt
+        from app.domains.members.models import Member
+
+        person = _person()
+        db.add(person)
+        db.flush()
+        member = Member(party_id=person.party_id)
+        db.add(member)
+        db.flush()
+
+        receipt = Receipt(
+            receipt_number="MEM-0001",
+            party_id=person.party_id,
+            origin="membership",
+            emission_date=datetime.date(2026, 3, 1),
+            description="Fee",
+            base_amount=50,
+            vat_rate=0,
+            vat_amount=0,
+            total_amount=50,
+        )
+        db.add(receipt)
+        db.flush()
+        db.expire_all()
+
+        receipt = db.query(Receipt).filter_by(receipt_number="MEM-0001").one()
+        assert receipt.member_id == member.id
+
+    def test_one_active_mandate_per_party(self, db):
+        from app.domains.billing.models import SepaMandate
+
+        person = _person()
+        db.add(person)
+        db.flush()
+
+        def _mandate(ref):
+            return SepaMandate(
+                party_id=person.party_id, mandate_reference=ref,
+                creditor_id="ES00ZZZ", debtor_name="Nuria Vidal",
+                debtor_iban="ES7921000813610123456789",
+                signed_at=datetime.date(2026, 1, 1), status="active", is_active=True,
+            )
+
+        db.add(_mandate("M-1"))
+        db.flush()
+        db.add(_mandate("M-2"))
+        with pytest.raises(IntegrityError):
+            db.flush()
+
+    def test_one_active_registration_per_activity_per_party(self, db):
+        from app.domains.activities.models import Registration
+
+        person = _person()
+        db.add(person)
+        db.flush()
+        activity = self._activity(db)
+
+        db.add(Registration(activity_id=activity.id, party_id=person.party_id, status="confirmed"))
+        db.flush()
+        db.add(Registration(activity_id=activity.id, party_id=person.party_id, status="confirmed"))
+        with pytest.raises(IntegrityError):
+            db.flush()
+
+    def test_a_non_member_person_can_register(self, db):
+        from app.domains.activities.models import Registration
+
+        # A person party with no members row.
+        person = _person(first_name="Guest", last_name="Visitor")
+        db.add(person)
+        db.flush()
+        activity = self._activity(db)
+
+        reg = Registration(activity_id=activity.id, party_id=person.party_id, status="confirmed")
+        db.add(reg)
+        db.flush()
+        assert reg.party_id == person.party_id
+        assert reg.member is None

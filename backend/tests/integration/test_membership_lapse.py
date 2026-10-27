@@ -92,7 +92,7 @@ def _fee(db, member, suffix, *, due_date, status="emitted", return_date=None):
     """An ordinary recurring membership fee — no purchased plan on it."""
     receipt = Receipt(
         receipt_number=f"LAPSE-FEE-{suffix}",
-        member_id=member.id,
+        party_id=member.party_id,
         origin="membership",
         description="Membership fee",
         base_amount=Decimal("100.00"),
