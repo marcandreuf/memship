@@ -117,7 +117,7 @@ export default function ReceiptsPage() {
           <TableHeader>
             <TableRow>
               <TableHead>{t("receipts.receiptNumber")}</TableHead>
-              <TableHead>{t("receipts.member")}</TableHead>
+              <TableHead>{t("receipts.holder")}</TableHead>
               <TableHead>{t("receipts.description")}</TableHead>
               <TableHead className="text-right">{t("receipts.total")}</TableHead>
               <TableHead>{t("receipts.status")}</TableHead>

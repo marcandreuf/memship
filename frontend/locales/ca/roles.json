@@ -31,6 +31,7 @@
     "selfService": "Àrea personal",
     "domains": {
       "members": "Socis",
+      "entities": "Entitats",
       "membership": "Quotes i grups",
       "activities": "Activitats",
       "registrations": "Inscripcions",
@@ -64,6 +65,16 @@
       "approve": {
         "label": "Aprovar altes",
         "description": "Acceptar o rebutjar sol·licituds d'alta pendents."
+      }
+    },
+    "entities": {
+      "read": {
+        "label": "Veure entitats",
+        "description": "Consultar les entitats (empreses, fundacions, organismes) i les seves dades."
+      },
+      "write": {
+        "label": "Editar entitats",
+        "description": "Registrar, modificar o eliminar entitats i les seves adreces i contactes."
       }
     },
     "membership": {

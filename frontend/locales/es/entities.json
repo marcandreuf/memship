@@ -1,0 +1,31 @@
+{
+  "entities": {
+    "title": "Entidades",
+    "info": "Empresas, fundaciones, organismos públicos y otras organizaciones con las que trata el club: donantes, patrocinadores o colaboradores. No son socios; aquí se registran sus datos y se les pueden emitir recibos.",
+    "newEntity": "Nueva entidad",
+    "noEntities": "No hay entidades",
+    "entityInfo": "Datos de la entidad",
+    "name": "Nombre",
+    "kind": "Tipo",
+    "nationalId": "NIF/CIF",
+    "createdAt": "Fecha de alta",
+    "kinds": {
+      "person": "Persona",
+      "company": "Empresa",
+      "association": "Asociación",
+      "public_body": "Organismo público",
+      "foundation": "Fundación",
+      "other": "Otra"
+    },
+    "addressTab": "Dirección",
+    "contactsTab": "Contactos",
+    "addAddress": "Añadir dirección",
+    "noAddress": "No hay dirección registrada",
+    "deleteConfirm": "¿Eliminar esta entidad?",
+    "deleteConfirmDescription": "Se eliminarán también sus direcciones y contactos. Esta acción no se puede deshacer.",
+    "deleteHasHistory": "No se puede eliminar: la entidad tiene recibos o mandatos asociados.",
+    "partyPickerPlaceholder": "Buscar por nombre, NIF o email…",
+    "partyPickerNoResults": "Sin resultados",
+    "partyPickerChange": "Cambiar"
+  }
+}

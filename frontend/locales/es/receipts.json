@@ -6,7 +6,7 @@
     "createReceipt": "Nuevo recibo",
     "editReceipt": "Editar recibo",
     "receiptNumber": "N.º recibo",
-    "member": "Socio",
+    "holder": "Titular",
     "description": "Descripción",
     "amount": "Importe",
     "total": "Total",

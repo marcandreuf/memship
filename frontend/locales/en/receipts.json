@@ -6,7 +6,7 @@
     "createReceipt": "New Receipt",
     "editReceipt": "Edit Receipt",
     "receiptNumber": "Receipt #",
-    "member": "Member",
+    "holder": "Holder",
     "description": "Description",
     "amount": "Amount",
     "total": "Total",

@@ -31,6 +31,7 @@
     "selfService": "Área personal",
     "domains": {
       "members": "Socios",
+      "entities": "Entidades",
       "membership": "Cuotas y grupos",
       "activities": "Actividades",
       "registrations": "Inscripciones",
@@ -64,6 +65,16 @@
       "approve": {
         "label": "Aprobar altas",
         "description": "Aceptar o rechazar solicitudes de alta pendientes."
+      }
+    },
+    "entities": {
+      "read": {
+        "label": "Ver entidades",
+        "description": "Consultar las entidades (empresas, fundaciones, organismos) y sus datos."
+      },
+      "write": {
+        "label": "Editar entidades",
+        "description": "Registrar, modificar o eliminar entidades y sus direcciones y contactos."
       }
     },
     "membership": {

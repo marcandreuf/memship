@@ -18,6 +18,7 @@ from app.api.v1.endpoints import (
     contacts,
     custom_fields,
     discount_codes,
+    entities,
     groups,
     health,
     logo,
@@ -74,8 +75,11 @@ api_router.include_router(roles.router)
 api_router.include_router(roles.users_router)
 api_router.include_router(logo.router)
 api_router.include_router(contacts.router, dependencies=_approved_only)
+api_router.include_router(contacts.party_router, dependencies=_approved_only)
 api_router.include_router(contacts.detail_router, dependencies=_approved_only)
 api_router.include_router(contacts.types_router, dependencies=_approved_only)
+api_router.include_router(entities.router, dependencies=_approved_only)
+api_router.include_router(entities.parties_router, dependencies=_approved_only)
 api_router.include_router(payment_providers.router, dependencies=_approved_only)
 api_router.include_router(mandates.member_router, dependencies=_approved_only)
 api_router.include_router(mandates.router, dependencies=_approved_only)

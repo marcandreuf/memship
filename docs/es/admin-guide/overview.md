@@ -35,6 +35,8 @@ El panel de administración se organiza en torno a estas áreas:
   pendientes, pagados y vencidos.
 - **[Socios](members.md)** — ciclo de vida completo (alta, cambios de estado, baja), tipos de
   cuota, grupos y soporte para menores con tutor.
+- **[Entidades](entities.md)** — empresas, fundaciones y organismos con los que trata el club,
+  con recibos a su nombre (donaciones) sin necesidad de hacerlos socios.
 - **[Actividades](activities.md)** — creación y publicación, inscripciones con control de
   elegibilidad, lista de espera, códigos de descuento, consentimientos y adjuntos.
 - **[Pagos](payments.md)** — recibos, generación de cuotas, IVA, facturación, generación de

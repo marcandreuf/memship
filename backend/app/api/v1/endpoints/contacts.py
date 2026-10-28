@@ -1,9 +1,9 @@
-"""Contact management endpoints for persons."""
+"""Contact management endpoints for persons and entities."""
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.core.authorization import require_any_permission, require_permission
+from app.core.authorization import require_any_permission, require_permission, user_has
 from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
 from app.domains.auth.models import User
@@ -12,9 +12,13 @@ from app.domains.persons.contact_schemas import (
     ContactResponse,
     ContactUpdate,
 )
-from app.domains.persons.models import Contact, ContactType, Person
+from app.domains.persons.models import Contact, ContactType, Party, Person
 
 router = APIRouter(prefix="/persons/{person_id}/contacts", tags=["contacts"])
+# Entity contacts: same table, same handlers' logic, scoped by party. Person
+# parties 404 here — people keep the /persons routes and their self-service
+# rules, so this router only ever needs the entities permissions.
+party_router = APIRouter(prefix="/parties/{party_id}/contacts", tags=["contacts"])
 detail_router = APIRouter(prefix="/contacts", tags=["contacts"])
 types_router = APIRouter(prefix="/contact-types", tags=["contacts"])
 
@@ -99,17 +103,81 @@ def create_contact(
     return _contact_to_response(contact)
 
 
+def _get_entity_party_or_404(db: Session, party_id: int) -> Party:
+    party = db.query(Party).filter(
+        Party.id == party_id, Party.kind != "person"
+    ).first()
+    if not party:
+        raise HTTPException(status_code=404, detail="Entity not found")
+    return party
+
+
+@party_router.get("/", response_model=list[ContactResponse])
+def list_entity_contacts(
+    party_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("entities.read")),
+):
+    """List all contacts for an entity."""
+    party = _get_entity_party_or_404(db, party_id)
+    contacts = (
+        db.query(Contact)
+        .filter(Contact.party_id == party.id, Contact.is_active.is_(True))
+        .order_by(Contact.display_order, Contact.id)
+        .all()
+    )
+    return [_contact_to_response(c) for c in contacts]
+
+
+@party_router.post("/", response_model=ContactResponse, status_code=status.HTTP_201_CREATED)
+def create_entity_contact(
+    party_id: int,
+    data: ContactCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("entities.write")),
+):
+    """Add a contact to an entity."""
+    party = _get_entity_party_or_404(db, party_id)
+
+    if data.contact_type_id:
+        ct = db.query(ContactType).filter(ContactType.id == data.contact_type_id).first()
+        if not ct:
+            raise HTTPException(status_code=400, detail="Invalid contact type")
+
+    contact = Contact(
+        party_id=party.id,
+        contact_type_id=data.contact_type_id,
+        value=data.value,
+        label=data.label,
+        is_primary=data.is_primary,
+    )
+    db.add(contact)
+    db.commit()
+    db.refresh(contact)
+    return _contact_to_response(contact)
+
+
+def _require_write_on_owner(db: Session, current_user: User, contact: Contact) -> None:
+    """A contact write needs the permission matching its owner's kind: a
+    person's contact is members data, an entity's is entities data."""
+    kind = db.query(Party.kind).filter(Party.id == contact.party_id).scalar()
+    required = "members.write" if kind == "person" else "entities.write"
+    if not user_has(current_user, required):
+        raise HTTPException(status_code=403, detail={"code": "forbidden", "required": required})
+
+
 @detail_router.put("/{contact_id}", response_model=ContactResponse)
 def update_contact(
     contact_id: int,
     data: ContactUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("members.write")),
+    current_user: User = Depends(require_any_permission("members.write", "entities.write")),
 ):
     """Update a contact."""
     contact = db.query(Contact).filter(Contact.id == contact_id).first()
     if not contact:
         raise HTTPException(status_code=404, detail="Contact not found")
+    _require_write_on_owner(db, current_user, contact)
 
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
@@ -123,12 +191,13 @@ def update_contact(
 def delete_contact(
     contact_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("members.write")),
+    current_user: User = Depends(require_any_permission("members.write", "entities.write")),
 ):
     """Delete a contact."""
     contact = db.query(Contact).filter(Contact.id == contact_id).first()
     if not contact:
         raise HTTPException(status_code=404, detail="Contact not found")
+    _require_write_on_owner(db, current_user, contact)
 
     db.delete(contact)
     db.commit()
