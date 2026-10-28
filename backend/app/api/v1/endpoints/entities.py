@@ -62,6 +62,7 @@ def _entity_to_dict(party: Party) -> dict:
         "id": party.id,
         "kind": party.kind,
         "name": party.display_name,
+        "legal_name": party.legal_name,
         "national_id": party.national_id,
         "email": party.email,
         "created_at": party.created_at,
@@ -138,6 +139,7 @@ def create_entity(
     party = Party(
         kind=data.kind,
         display_name=data.name,
+        legal_name=data.legal_name,
         national_id=data.national_id,
         email=data.email,
     )

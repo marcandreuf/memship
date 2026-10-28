@@ -30,7 +30,7 @@ from app.core.config import settings
 from app.domains.billing.models import Concept, PaymentProvider, Receipt, SepaMandate
 from app.domains.members.models import Member, MembershipType
 from app.domains.organizations.models import OrganizationSettings
-from app.domains.persons.models import Party, Person
+from app.domains.persons.models import BankAccount, Party, Person
 from app.domains.reminders.models import Reminder
 
 # Deterministic so the same demo dataset (and screenshots) reproduce every run.
@@ -299,9 +299,11 @@ def generate_sepa(db) -> None:
         db.query(Member, Person)
         .join(Person, Member.party_id == Person.party_id)
         .join(Party, Party.id == Person.party_id)
+        .join(BankAccount, BankAccount.party_id == Person.party_id)
         .filter(
             Party.email.like(f"demo%@{settings.SEED_EMAIL_DOMAIN}"),
-            Person.bank_iban.isnot(None),
+            BankAccount.is_primary.is_(True),
+            BankAccount.iban.isnot(None),
         )
         .all()
     )

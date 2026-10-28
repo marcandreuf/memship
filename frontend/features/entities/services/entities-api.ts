@@ -5,6 +5,7 @@ export interface EntityData {
   id: number;
   kind: string;
   name: string;
+  legal_name: string | null;
   national_id: string | null;
   email: string | null;
   created_at: string | null;

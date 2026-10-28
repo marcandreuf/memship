@@ -127,6 +127,7 @@ export default function EntityDetailPage({
                 // JSON.stringify, and the partial update then keeps the old value.
                 data: {
                   ...data,
+                  legal_name: data.legal_name || null,
                   national_id: data.national_id || null,
                   email: data.email || null,
                 },

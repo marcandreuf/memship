@@ -6,6 +6,7 @@
     "noEntities": "No entities",
     "entityInfo": "Entity details",
     "name": "Name",
+    "legalName": "Legal name",
     "kind": "Kind",
     "nationalId": "Tax ID",
     "createdAt": "Created",
