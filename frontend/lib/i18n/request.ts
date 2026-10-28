@@ -11,6 +11,7 @@ export default getRequestConfig(async ({ requestLocale }) => {
   const common = (await import(`@/locales/${locale}/common.json`)).default;
   const auth = (await import(`@/locales/${locale}/auth.json`)).default;
   const members = (await import(`@/locales/${locale}/members.json`)).default;
+  const entities = (await import(`@/locales/${locale}/entities.json`)).default;
   const dashboard = (await import(`@/locales/${locale}/dashboard.json`)).default;
   const settings = (await import(`@/locales/${locale}/settings.json`)).default;
   const activities = (await import(`@/locales/${locale}/activities.json`)).default;
@@ -33,6 +34,6 @@ export default getRequestConfig(async ({ requestLocale }) => {
 
   return {
     locale,
-    messages: { ...common, ...auth, ...members, ...dashboard, ...settings, ...activities, ...receipts, ...mandates, ...remittances, ...paymentMethod, ...billingRuns, ...reminders, ...communications, ...memberCard, ...exportNs, ...annualSummary, ...reports, ...notes, ...profileFields, ...bookings, ...roles, ...membership },
+    messages: { ...common, ...auth, ...members, ...entities, ...dashboard, ...settings, ...activities, ...receipts, ...mandates, ...remittances, ...paymentMethod, ...billingRuns, ...reminders, ...communications, ...memberCard, ...exportNs, ...annualSummary, ...reports, ...notes, ...profileFields, ...bookings, ...roles, ...membership },
   };
 });

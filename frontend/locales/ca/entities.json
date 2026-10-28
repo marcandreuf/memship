@@ -1,0 +1,31 @@
+{
+  "entities": {
+    "title": "Entitats",
+    "info": "Empreses, fundacions, organismes públics i altres organitzacions amb què tracta el club: donants, patrocinadors o col·laboradors. No són socis; aquí se'n registren les dades i se'ls poden emetre rebuts.",
+    "newEntity": "Nova entitat",
+    "noEntities": "No hi ha entitats",
+    "entityInfo": "Dades de l'entitat",
+    "name": "Nom",
+    "kind": "Tipus",
+    "nationalId": "NIF/CIF",
+    "createdAt": "Data d'alta",
+    "kinds": {
+      "person": "Persona",
+      "company": "Empresa",
+      "association": "Associació",
+      "public_body": "Organisme públic",
+      "foundation": "Fundació",
+      "other": "Altra"
+    },
+    "addressTab": "Adreça",
+    "contactsTab": "Contactes",
+    "addAddress": "Afegeix una adreça",
+    "noAddress": "No hi ha cap adreça registrada",
+    "deleteConfirm": "Vols eliminar aquesta entitat?",
+    "deleteConfirmDescription": "També se n'eliminaran les adreces i els contactes. Aquesta acció no es pot desfer.",
+    "deleteHasHistory": "No es pot eliminar: l'entitat té rebuts o mandats associats.",
+    "partyPickerPlaceholder": "Cerca per nom, NIF o email…",
+    "partyPickerNoResults": "Sense resultats",
+    "partyPickerChange": "Canvia"
+  }
+}

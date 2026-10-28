@@ -79,8 +79,11 @@ describe("Mandate save errors reach the admin", () => {
     cy.visit("/en/mandates");
     cy.contains("button", /new mandate/i).click();
     cy.get('[role="dialog"]').within(() => {
-      cy.get('input[type="number"]').type("1");
-      cy.get("input").eq(1).type("Checksum Test");
+      // The holder is picked by search now, not typed as a raw id (#467 → 5b)
+      cy.get('input[placeholder*="Search by name"]').type("María");
+      cy.contains("button", "María").click();
+      // Selecting a party prefills the debtor name; overwrite it for the test
+      cy.get("input").eq(0).clear().type("Checksum Test");
       cy.get('input[placeholder="ES9121000418450200051332"]').type(
         "ES9121000418450200051333"
       );

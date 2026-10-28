@@ -31,6 +31,7 @@
     "selfService": "Personal area",
     "domains": {
       "members": "Members",
+      "entities": "Entities",
       "membership": "Fees and groups",
       "activities": "Activities",
       "registrations": "Registrations",
@@ -64,6 +65,16 @@
       "approve": {
         "label": "Approve registrations",
         "description": "Accept or reject pending membership requests."
+      }
+    },
+    "entities": {
+      "read": {
+        "label": "View entities",
+        "description": "View entities (companies, foundations, public bodies) and their data."
+      },
+      "write": {
+        "label": "Edit entities",
+        "description": "Register, edit or delete entities and their addresses and contacts."
       }
     },
     "membership": {

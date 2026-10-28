@@ -1,6 +1,6 @@
 """The catalog and the translation files must not drift apart.
 
-41 permissions x 2 strings x 3 locales is exactly the surface where one locale
+43 permissions x 2 strings x 3 locales is exactly the surface where one locale
 lags silently: a missing key renders as the raw key in the role editor, which
 is the screen a super admin uses to decide what to grant.
 """

@@ -1,0 +1,31 @@
+{
+  "entities": {
+    "title": "Entities",
+    "info": "Companies, foundations, public bodies and other organizations the club deals with: donors, sponsors or partners. They are not members; their details are kept here and receipts can be issued to them.",
+    "newEntity": "New entity",
+    "noEntities": "No entities",
+    "entityInfo": "Entity details",
+    "name": "Name",
+    "kind": "Kind",
+    "nationalId": "Tax ID",
+    "createdAt": "Created",
+    "kinds": {
+      "person": "Person",
+      "company": "Company",
+      "association": "Association",
+      "public_body": "Public body",
+      "foundation": "Foundation",
+      "other": "Other"
+    },
+    "addressTab": "Address",
+    "contactsTab": "Contacts",
+    "addAddress": "Add address",
+    "noAddress": "No address on file",
+    "deleteConfirm": "Delete this entity?",
+    "deleteConfirmDescription": "Its addresses and contacts will be deleted too. This action cannot be undone.",
+    "deleteHasHistory": "Cannot delete: the entity has receipts or mandates attached.",
+    "partyPickerPlaceholder": "Search by name, tax ID or email…",
+    "partyPickerNoResults": "No results",
+    "partyPickerChange": "Change"
+  }
+}
