@@ -6,6 +6,7 @@
     "noEntities": "No hi ha entitats",
     "entityInfo": "Dades de l'entitat",
     "name": "Nom",
+    "legalName": "Raó social",
     "kind": "Tipus",
     "nationalId": "NIF/CIF",
     "createdAt": "Data d'alta",
