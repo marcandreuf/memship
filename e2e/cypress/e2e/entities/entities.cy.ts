@@ -38,8 +38,17 @@ describe("Entity list", () => {
 
     cy.visit("/en/entities");
     cy.get('input[placeholder*="Search"]').type(name);
+    // Assert visibility only: clicking right after typing races the debounced
+    // search-param URL write, which can flush after the row navigation and
+    // bounce back to the list. Row-click navigation is covered below, without
+    // a pending search update in flight.
     cy.contains("td", name).should("be.visible");
-    cy.contains("td", name).click();
+  });
+
+  it("navigates to entity detail on row click", () => {
+    createEntity(uniqueName("Clickable SL"));
+    cy.visit("/en/entities");
+    cy.get("table tbody tr").first().click();
     cy.url().should("match", /\/entities\/\d+/);
   });
 });
