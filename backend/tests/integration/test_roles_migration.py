@@ -164,7 +164,11 @@ class TestBackfill:
 
 class TestSeededRoles:
     def test_super_admin_stores_no_permission_rows(self, migrated):
-        from app.core.permissions import ADMIN_SEED_KEYS, MEMBER_SEED_KEYS
+        """At the ROLES revision the stored grants are that migration's own
+        frozen key lists — NOT the live catalog, which later migrations keep
+        granting (the entities pair, 26ed04f8781e). The live-catalog property
+        is held at head by ``TestGrantsAtHead``."""
+        from app.core.permissions import MEMBER_SEED_KEYS
 
         with migrated.connect() as conn:
             counts = dict(
@@ -178,7 +182,7 @@ class TestSeededRoles:
             )
 
         assert counts["super_admin"] == 0
-        assert counts["admin"] == len(ADMIN_SEED_KEYS)
+        assert counts["admin"] == 38  # the list frozen in d1a2b3c4e5f6
         assert counts["member"] == len(MEMBER_SEED_KEYS)
 
     def test_admin_is_seeded_without_the_super_admin_only_keys(self, migrated):
@@ -196,6 +200,69 @@ class TestSeededRoles:
         assert "roles.write" not in keys
         assert "settings.integrations.write" not in keys
         assert "settings.custom_fields.write" not in keys
+
+
+HEAD_SCRATCH = f"memship_head_grants_test_{_WORKER}"
+
+
+def _head_scratch_url() -> str:
+    return BASE_URL.rsplit("/", 1)[0] + f"/{HEAD_SCRATCH}"
+
+
+@pytest.fixture(scope="module")
+def migrated_to_head():
+    """A fresh database taken straight to head — its own scratch, because the
+    module fixture above deliberately stops at the ROLES revision and
+    ``TestDowngrade`` mutates it."""
+    admin = sa.create_engine(_server_url(), isolation_level="AUTOCOMMIT")
+    try:
+        with admin.connect() as conn:
+            conn.execute(sa.text(f'DROP DATABASE IF EXISTS "{HEAD_SCRATCH}" WITH (FORCE)'))
+            conn.execute(sa.text(f'CREATE DATABASE "{HEAD_SCRATCH}"'))
+    except sa.exc.OperationalError as exc:
+        pytest.skip(f"no database server for the migration test: {exc}")
+
+    cfg = Config("alembic.ini")
+    cfg.set_main_option("sqlalchemy.url", _head_scratch_url())
+    previous = os.environ.get("DATABASE_URL")
+    os.environ["DATABASE_URL"] = _head_scratch_url()
+    try:
+        command.upgrade(cfg, "head")
+    finally:
+        if previous is None:
+            os.environ.pop("DATABASE_URL", None)
+        else:
+            os.environ["DATABASE_URL"] = previous
+
+    engine = sa.create_engine(_head_scratch_url())
+    yield engine
+
+    engine.dispose()
+    with admin.connect() as conn:
+        conn.execute(sa.text(f'DROP DATABASE IF EXISTS "{HEAD_SCRATCH}" WITH (FORCE)'))
+    admin.dispose()
+
+
+class TestGrantsAtHead:
+    def test_admin_at_head_holds_the_whole_seed(self, migrated_to_head):
+        """A key added to the catalog must ship its grant migration, or a
+        migrated install's admin silently lacks what a fresh test database
+        (seeded from ``ADMIN_SEED_KEYS``) holds. This is the guard the
+        entities pair (26ed04f8781e) first had to pass."""
+        from app.core.permissions import ADMIN_SEED_KEYS
+
+        with migrated_to_head.connect() as conn:
+            keys = {
+                k
+                for (k,) in conn.execute(
+                    sa.text(
+                        "SELECT rp.permission_key FROM role_permissions rp "
+                        "JOIN roles r ON r.id = rp.role_id WHERE r.slug = 'admin'"
+                    )
+                ).all()
+            }
+
+        assert keys == set(ADMIN_SEED_KEYS)
 
 
 class TestColumnsDropped:

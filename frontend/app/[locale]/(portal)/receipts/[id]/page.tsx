@@ -211,7 +211,7 @@ export default function ReceiptDetailPage() {
       label: t("receipts.documentType"),
       value: t(isCreditNote ? "receipts.documentTypeCreditNote" : "receipts.documentTypeInvoice"),
     },
-    { label: t("receipts.member"), value: receipt.member_name || "—" },
+    { label: t("receipts.holder"), value: receipt.member_name || "—" },
     { label: t("receipts.description"), value: receipt.description },
     { label: t("receipts.origin"), value: t(`receipts.origin${receipt.origin.charAt(0).toUpperCase() + receipt.origin.slice(1)}`) },
     { label: t("receipts.base"), value: formatCurrency(receipt.base_amount) },

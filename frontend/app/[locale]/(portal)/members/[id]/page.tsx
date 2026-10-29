@@ -8,7 +8,7 @@ import { EntityTabs } from "@/components/entity/entity-tabs";
 import { PlaceholderTab } from "@/components/entity/placeholder-tab";
 import { MemberActivitiesTab } from "@/features/members/components/member-activities-tab";
 import { ContactInfoTab } from "@/features/members/components/contact-info-tab";
-import { MemberReceiptsTab } from "@/features/members/components/member-receipts-tab";
+import { PartyReceiptsTab } from "@/features/receipts/components/party-receipts-tab";
 import { MemberCardTab } from "@/features/member-card/components/member-card-tab";
 import { MemberDetailSection } from "@/features/members/components/member-detail-section";
 import { MemberForm } from "@/features/members/components/member-form";
@@ -160,7 +160,7 @@ export default function MemberDetailPage({
                   id: "receipts",
                   label: t("receipts.title"),
                   badge: receiptData?.meta?.total,
-                  content: <MemberReceiptsTab partyId={member.party_id} />,
+                  content: <PartyReceiptsTab partyId={member.party_id} />,
                 },
               ]
             : []),

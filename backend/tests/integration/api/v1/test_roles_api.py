@@ -58,7 +58,7 @@ class TestPermissionCatalog:
 
         assert r.status_code == 200
         body = r.json()
-        assert len(body) == 41
+        assert len(body) == 43
         entry = next(p for p in body if p["key"] == "billing.run")
         assert entry["label_key"] == "permissions.billing.run.label"
         assert entry["description_key"] == "permissions.billing.run.description"
@@ -309,7 +309,7 @@ class TestAuthMePayload:
 
         body = client.get("/api/v1/auth/me", cookies=_auth_cookie(boss)).json()
 
-        assert len(body["permissions"]) == 41
+        assert len(body["permissions"]) == 43
         assert "roles.write" in body["permissions"]
 
 

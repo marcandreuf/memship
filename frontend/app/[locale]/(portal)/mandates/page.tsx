@@ -21,6 +21,8 @@ import { Pagination } from "@/components/entity/pagination";
 import { TableSkeleton } from "@/components/ui/skeletons";
 import { toast } from "sonner";
 import { useMandates, useCreateMandate } from "@/features/mandates/hooks/use-mandates";
+import { PartyPicker } from "@/features/entities/components/party-picker";
+import type { PartySearchResult } from "@/features/entities/services/entities-api";
 import { useSearchParam, usePageParam, useStatusParam } from "@/hooks/use-url-state";
 import { useFormatters } from "@/hooks/use-formatters";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
@@ -175,7 +177,7 @@ export default function MandatesPage() {
 
 function CreateMandateForm({ t, onSuccess }: { t: ErrorTranslator; onSuccess: () => void }) {
   const mutation = useCreateMandate();
-  const [memberId, setMemberId] = useState("");
+  const [party, setParty] = useState<PartySearchResult | null>(null);
   const [debtorName, setDebtorName] = useState("");
   const [debtorIban, setDebtorIban] = useState("");
   const [debtorBic, setDebtorBic] = useState("");
@@ -183,10 +185,10 @@ function CreateMandateForm({ t, onSuccess }: { t: ErrorTranslator; onSuccess: ()
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!memberId || !debtorName || !debtorIban || !signedAt) return;
+    if (!party || !debtorName || !debtorIban || !signedAt) return;
     try {
       await mutation.mutateAsync({
-        party_id: parseInt(memberId),
+        party_id: party.id,
         debtor_name: debtorName,
         debtor_iban: debtorIban.toUpperCase().replace(/\s/g, ""),
         debtor_bic: debtorBic || undefined,
@@ -202,8 +204,15 @@ function CreateMandateForm({ t, onSuccess }: { t: ErrorTranslator; onSuccess: ()
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="text-sm font-medium">{t("mandates.member")} (ID)</label>
-        <Input type="number" value={memberId} onChange={(e) => setMemberId(e.target.value)} placeholder={t("mandates.member")} />
+        <label className="text-sm font-medium">{t("mandates.holder")}</label>
+        <PartyPicker
+          value={party}
+          onSelect={(selected) => {
+            setParty(selected);
+            // The debtor is usually the holder; prefill, keep it editable.
+            if (selected && !debtorName) setDebtorName(selected.display_name);
+          }}
+        />
       </div>
       <div>
         <label className="text-sm font-medium">{t("mandates.debtorName")}</label>
@@ -223,7 +232,7 @@ function CreateMandateForm({ t, onSuccess }: { t: ErrorTranslator; onSuccess: ()
         <label className="text-sm font-medium">{t("mandates.signedAt")}</label>
         <Input type="date" value={signedAt} onChange={(e) => setSignedAt(e.target.value)} />
       </div>
-      <Button type="submit" disabled={!memberId || !debtorName.trim() || !debtorIban.trim() || mutation.isPending} className="w-full">
+      <Button type="submit" disabled={!party || !debtorName.trim() || !debtorIban.trim() || mutation.isPending} className="w-full">
         {mutation.isPending ? t("common.loading") : t("mandates.createMandate")}
       </Button>
     </form>

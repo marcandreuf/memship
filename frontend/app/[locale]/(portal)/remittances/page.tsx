@@ -264,7 +264,7 @@ function CreateRemittanceForm({ onSuccess }: { onSuccess: () => void }) {
               <TableRow>
                 <TableHead className="w-10"></TableHead>
                 <TableHead>{t("receipts.receiptNumber")}</TableHead>
-                <TableHead>{t("receipts.member")}</TableHead>
+                <TableHead>{t("receipts.holder")}</TableHead>
                 <TableHead className="text-right">{t("receipts.total")}</TableHead>
               </TableRow>
             </TableHeader>

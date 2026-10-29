@@ -5,7 +5,7 @@
     "info": "A SEPA mandate is the member's signed authorisation to charge their bank account. A receipt can only be collected by direct debit if its member has an active mandate.",
     "createMandate": "New Mandate",
     "mandateReference": "Reference",
-    "member": "Member",
+    "holder": "Member or entity",
     "debtorName": "Account Holder",
     "debtorIban": "IBAN",
     "debtorBic": "BIC",

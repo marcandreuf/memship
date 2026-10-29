@@ -16,6 +16,8 @@ export const ROUTE_PERMISSIONS: ReadonlyArray<readonly [string, readonly string[
   ["/members/new", ["members.write"]],
   ["/members/pending", ["members.approve"]],
   ["/members", ["members.read"]],
+  ["/entities/new", ["entities.write"]],
+  ["/entities", ["entities.read"]],
   ["/activities/new", ["activities.write"]],
   ["/communications/new", ["communications.write"]],
   ["/groups", ["membership.read"]],
