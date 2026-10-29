@@ -18,7 +18,7 @@ Documentation for **self-hosting operators**, **organization admins**, and **mem
 
 ## Which version these docs describe
 
-These docs describe memship 2.19.0 — the current release — plus anything merged since it was
+These docs describe memship 3.0.0 — the current release — plus anything merged since it was
 tagged. They are published from the main branch, so a change lands here when it is merged rather
 than when the next version ships.
 
