@@ -20,8 +20,15 @@ La **Fecha de alta** queda registrada automáticamente.
 ### Contactos
 
 En la pestaña **Contacto** de la ficha puedes añadir varios medios de contacto (teléfono,
-correo, etc.), cada uno con un **tipo** y una **etiqueta** (p. ej. «Personal», «Trabajo»). Marca
-uno como **contacto principal**.
+correo, etc.), cada uno con un **tipo** y una **etiqueta** (p. ej. «Personal», «Trabajo»).
+
+Puedes marcar uno como **principal de su canal**: un teléfono principal y un correo principal a
+la vez, pero no dos teléfonos principales. Los tipos se agrupan por canal, así que «Teléfono
+particular» y «Teléfono móvil» compiten por la misma plaza. Al marcar uno como principal, el
+anterior de ese canal deja de serlo: gana el último que marcas.
+
+Cada canal admite **hasta 5 contactos**. Cuando un canal está completo, sus tipos dejan de
+ofrecerse al añadir un contacto nuevo.
 
 ### Datos bancarios
 

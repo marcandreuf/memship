@@ -5,7 +5,7 @@ socias**. Este es el árbol en castellano; el inglés está en [`../en/README.md
 
 ## Qué versión describe esta documentación
 
-Estas páginas describen memship 2.19.0 — la versión publicada actual — más lo que se haya
+Estas páginas describen memship 3.0.0 — la versión publicada actual — más lo que se haya
 fusionado desde que se etiquetó. Se publican desde la rama principal, así que un cambio aparece
 aquí cuando se fusiona y no cuando sale la versión siguiente.
 
