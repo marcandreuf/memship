@@ -315,8 +315,14 @@ class TestItFailsLoudly:
         with scratch_db.begin() as conn:
             person_id = conn.execute(
                 sa.text(
-                    "INSERT INTO persons (first_name, last_name, email) "
-                    "VALUES ('Plain', 'Member', 'plain.member@example.org') RETURNING id"
+                    "WITH new_party AS ("
+                    "    INSERT INTO party (kind, display_name, email)"
+                    "    VALUES ('person', 'Plain Member', 'plain.member@example.org')"
+                    "    RETURNING id"
+                    ") "
+                    "INSERT INTO persons (party_id, first_name, last_name, email) "
+                    "SELECT id, 'Plain', 'Member', 'plain.member@example.org' "
+                    "FROM new_party RETURNING id"
                 )
             ).scalar_one()
             conn.execute(
