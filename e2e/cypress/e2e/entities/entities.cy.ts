@@ -13,7 +13,7 @@ function createEntity(name: string) {
   cy.url().should("include", "/entities/new");
   cy.get("form").within(() => {
     cy.get("input").eq(0).type(name);
-    cy.get("input").eq(1).type("B29045673");
+    cy.get('input[placeholder="B12345678"]').type("B29045673");
     cy.get('input[type="email"]').type(`e2e-${Date.now()}@example.org`);
     cy.contains("button", /save/i).click();
   });

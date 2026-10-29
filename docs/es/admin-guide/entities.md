@@ -12,7 +12,7 @@ administrador tiene de serie y que puedes conceder por separado en un rol person
 
 En **Entidades** (grupo de personas del menú) puedes buscar por nombre, NIF/CIF o correo, y
 filtrar por **tipo** (empresa, asociación, organismo público, fundación u otra). Con
-**Nueva entidad** se abre el formulario de alta: tipo, nombre, NIF/CIF y correo.
+**Nueva entidad** se abre el formulario de alta: tipo, nombre, razón social, NIF/CIF y correo.
 
 ## Ficha de una entidad
 

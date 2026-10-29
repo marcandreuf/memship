@@ -368,7 +368,14 @@ class TestTheDemoClubContactDetails:
     ):
         with scratch_db.connect() as conn:
             email, website = conn.execute(
-                sa.text("SELECT email, website FROM organization_settings WHERE id = 1")
+                sa.text(
+                    "SELECT p.email, "
+                    "       (SELECT c.value FROM contacts c "
+                    "        WHERE c.party_id = o.party_id AND c.channel = 'url' "
+                    "          AND c.is_primary) "
+                    "FROM organization_settings o JOIN party p ON p.id = o.party_id "
+                    "WHERE o.id = 1"
+                )
             ).one()
 
         assert email == f"info@{DEMO_DOMAIN}"
@@ -383,10 +390,7 @@ class TestTheDemoClubContactDetails:
             addresses = [
                 row[0]
                 for row in conn.execute(
-                    sa.text(
-                        "SELECT email FROM party WHERE email IS NOT NULL "
-                        "UNION SELECT email FROM organization_settings WHERE email IS NOT NULL"
-                    )
+                    sa.text("SELECT email FROM party WHERE email IS NOT NULL")
                 )
             ]
 

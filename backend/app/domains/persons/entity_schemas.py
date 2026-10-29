@@ -17,6 +17,7 @@ class EntityResponse(BaseModel):
     id: int
     kind: str
     name: str
+    legal_name: str | None = None
     national_id: str | None = None
     email: str | None = None
     created_at: datetime | None = None
@@ -25,6 +26,7 @@ class EntityResponse(BaseModel):
 class EntityCreate(BaseModel):
     kind: NonBlank(50)
     name: NonBlank(255)
+    legal_name: str | None = Field(default=None, max_length=255)
     national_id: str | None = Field(default=None, max_length=50)
     email: Email | None = None
 
@@ -32,6 +34,7 @@ class EntityCreate(BaseModel):
 class EntityUpdate(BaseModel):
     kind: NonBlank(50) | None = None
     name: NonBlank(255) | None = None
+    legal_name: str | None = Field(default=None, max_length=255)
     national_id: str | None = Field(default=None, max_length=50)
     email: Email | None = None
 

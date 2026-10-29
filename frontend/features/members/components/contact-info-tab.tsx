@@ -32,7 +32,7 @@ import {
   useUpdateContact,
   useDeleteContact,
 } from "../hooks/use-contacts";
-import type { ContactData } from "../services/contacts-api";
+import { fullChannels, type ContactData } from "../services/contacts-api";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
 
 const contactSchema = z.object({
@@ -52,8 +52,16 @@ export function ContactInfoTab({ personId }: ContactInfoTabProps) {
   const { has } = usePermissions();
   const canWrite = has("members.write");
   const { data: contacts = [], isLoading } = useContacts(personId);
+  const { data: contactTypes = [] } = useContactTypes();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<ContactData | null>(null);
+
+  // One Add button opens a dialog covering every channel, so it only goes away
+  // when there is no channel left with room. Per-channel fullness is enforced
+  // on the type selector inside the form.
+  const full = fullChannels(contacts);
+  const offered = new Set(contactTypes.map((ct) => ct.channel).filter(Boolean) as string[]);
+  const allChannelsFull = offered.size > 0 && [...offered].every((c) => full.has(c));
 
   if (isLoading) return <TabContentSkeleton />;
 
@@ -62,7 +70,13 @@ export function ContactInfoTab({ personId }: ContactInfoTabProps) {
       <div className="flex justify-end">
         {canWrite && <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setEditing(null); }}>
           <DialogTrigger asChild>
-            <Button variant="outline" size="sm" onClick={() => setEditing(null)}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setEditing(null)}
+              disabled={allChannelsFull}
+              title={allChannelsFull ? t("members.contactChannelFull") : undefined}
+            >
               {t("members.addContact")}
             </Button>
           </DialogTrigger>
@@ -75,6 +89,7 @@ export function ContactInfoTab({ personId }: ContactInfoTabProps) {
             <ContactForm
               personId={personId}
               contact={editing}
+              contacts={contacts}
               onSuccess={() => { setOpen(false); setEditing(null); }}
             />
           </DialogContent>
@@ -112,16 +127,19 @@ export function ContactInfoTab({ personId }: ContactInfoTabProps) {
 function ContactForm({
   personId,
   contact,
+  contacts,
   onSuccess,
 }: {
   personId: number;
   contact: ContactData | null;
+  contacts: ContactData[];
   onSuccess: () => void;
 }) {
   const t = useTranslations();
   const createMutation = useCreateContact(personId);
   const updateMutation = useUpdateContact(personId);
   const { data: contactTypes = [] } = useContactTypes();
+  const full = fullChannels(contacts);
 
   const form = useForm<ContactFormValues>({
     resolver: useZodResolver(contactSchema),
@@ -136,7 +154,11 @@ function ContactForm({
   // Default to Mobile Phone when types load and no type is set
   useEffect(() => {
     if (contactTypes.length > 0 && !form.getValues("contact_type_id")) {
-      const mobile = contactTypes.find(ct => ct.code === "phone_mobile");
+      const selectable = contactTypes.filter(
+        (ct) => !ct.channel || !full.has(ct.channel) || ct.channel === contact?.channel,
+      );
+      const mobile =
+        selectable.find((ct) => ct.code === "phone_mobile") ?? selectable[0];
       if (mobile) form.setValue("contact_type_id", mobile.id.toString());
     }
   }, [contactTypes, form]);
@@ -174,7 +196,19 @@ function ContactForm({
               <FormControl><SelectTrigger><SelectValue placeholder={t("members.selectContactType")} /></SelectTrigger></FormControl>
               <SelectContent>
                 {contactTypes.map((ct) => (
-                  <SelectItem key={ct.id} value={ct.id.toString()}>{ct.name}</SelectItem>
+                  <SelectItem
+                    key={ct.id}
+                    value={ct.id.toString()}
+                    // The contact being edited already occupies its channel, so
+                    // retyping within that channel stays available.
+                    disabled={
+                      !!ct.channel &&
+                      full.has(ct.channel) &&
+                      ct.channel !== contact?.channel
+                    }
+                  >
+                    {ct.name}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>

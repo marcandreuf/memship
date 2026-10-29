@@ -31,7 +31,8 @@ from app.db.base import Base
 KNOWN_TABLES = frozenset({
     "activities", "activity_attachment_types", "activity_consents",
     "activity_modalities", "activity_prices", "addresses",
-    "announcement_recipients", "announcements", "audit_logs", "billing_runs",
+    "announcement_recipients", "announcements", "audit_logs", "bank_accounts",
+    "billing_runs",
     "bookings", "concepts", "contact_channels", "contacts", "contact_types",
     "custom_field_definitions", "custom_field_values", "discount_codes",
     "groups", "invoice_sequences", "mail_transport_health", "members",
