@@ -37,6 +37,7 @@
     "typesInfo": "Los tipos de membresía definen las distintas categorías de socios de tu organización (p. ej. Socio Pleno, Estudiante, Senior). Cada tipo puede tener su propio precio, frecuencia de cobro y restricciones de edad.",
     "contactInfo": "Contacto",
     "addContact": "Añadir contacto",
+    "contactChannelFull": "Máximo 5 contactos por canal",
     "editContact": "Editar contacto",
     "contactType": "Tipo",
     "selectContactType": "Seleccionar tipo...",

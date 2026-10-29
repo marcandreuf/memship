@@ -203,10 +203,13 @@ def build_receipt_context(db: Session, receipt: Receipt) -> dict:
             "notes": receipt.notes,
         },
         "member": {
+            # legal_name first for a non-person recipient: a factura names the
+            # registered entity, while display_name is what the screens show
+            # and is often a trading name.
             "name": (
                 f"{person.first_name} {person.last_name}"
                 if person
-                else (party.display_name if party else None)
+                else ((party.legal_name or party.display_name) if party else None)
             ),
             "email": person.email if person else (party.email if party else None),
             "tax_id": (

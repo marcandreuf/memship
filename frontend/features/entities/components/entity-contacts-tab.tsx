@@ -26,7 +26,7 @@ import { TabContentSkeleton } from "@/components/ui/skeletons";
 import { toast } from "sonner";
 import { mapApiErrorsToForm } from "@/lib/errors";
 import { useContactTypes } from "@/features/members/hooks/use-contacts";
-import type { ContactData } from "@/features/members/services/contacts-api";
+import { fullChannels, type ContactData } from "@/features/members/services/contacts-api";
 import {
   useCreateEntityContact,
   useDeleteEntityContact,
@@ -52,8 +52,15 @@ export function EntityContactsTab({ partyId }: EntityContactsTabProps) {
   const { has } = usePermissions();
   const canWrite = has("entities.write");
   const { data: contacts = [], isLoading } = useEntityContacts(partyId);
+  const { data: contactTypes = [] } = useContactTypes();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<ContactData | null>(null);
+
+  // One Add button covers every channel, so it only goes away when no channel
+  // has room left. Per-channel fullness is enforced on the type selector.
+  const full = fullChannels(contacts);
+  const offered = new Set(contactTypes.map((ct) => ct.channel).filter(Boolean) as string[]);
+  const allChannelsFull = offered.size > 0 && [...offered].every((c) => full.has(c));
 
   if (isLoading) return <TabContentSkeleton />;
 
@@ -62,7 +69,13 @@ export function EntityContactsTab({ partyId }: EntityContactsTabProps) {
       <div className="flex justify-end">
         {canWrite && <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setEditing(null); }}>
           <DialogTrigger asChild>
-            <Button variant="outline" size="sm" onClick={() => setEditing(null)}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setEditing(null)}
+              disabled={allChannelsFull}
+              title={allChannelsFull ? t("members.contactChannelFull") : undefined}
+            >
               {t("members.addContact")}
             </Button>
           </DialogTrigger>
@@ -75,6 +88,7 @@ export function EntityContactsTab({ partyId }: EntityContactsTabProps) {
             <ContactForm
               partyId={partyId}
               contact={editing}
+              contacts={contacts}
               onSuccess={() => { setOpen(false); setEditing(null); }}
             />
           </DialogContent>
@@ -113,16 +127,19 @@ export function EntityContactsTab({ partyId }: EntityContactsTabProps) {
 function ContactForm({
   partyId,
   contact,
+  contacts,
   onSuccess,
 }: {
   partyId: number;
   contact: ContactData | null;
+  contacts: ContactData[];
   onSuccess: () => void;
 }) {
   const t = useTranslations();
   const createMutation = useCreateEntityContact(partyId);
   const updateMutation = useUpdateEntityContact(partyId);
   const { data: contactTypes = [] } = useContactTypes();
+  const full = fullChannels(contacts);
 
   const form = useForm<ContactFormValues>({
     resolver: useZodResolver(contactSchema),
@@ -175,7 +192,19 @@ function ContactForm({
               <FormControl><SelectTrigger><SelectValue placeholder={t("members.selectContactType")} /></SelectTrigger></FormControl>
               <SelectContent>
                 {contactTypes.map((ct) => (
-                  <SelectItem key={ct.id} value={ct.id.toString()}>{ct.name}</SelectItem>
+                  <SelectItem
+                    key={ct.id}
+                    value={ct.id.toString()}
+                    // The edited contact already occupies its channel, so
+                    // retyping within that channel stays available.
+                    disabled={
+                      !!ct.channel &&
+                      full.has(ct.channel) &&
+                      ct.channel !== contact?.channel
+                    }
+                  >
+                    {ct.name}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>

@@ -11,6 +11,9 @@ class ContactResponse(BaseModel):
     id: int
     contact_type_id: int | None = None
     contact_type_name: str | None = None
+    # Denormalised from the type. The client groups by it: one primary and one
+    # cap per channel, not per type.
+    channel: str | None = None
     value: str
     label: str | None = None
     is_primary: bool = False

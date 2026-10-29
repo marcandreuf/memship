@@ -248,3 +248,33 @@ class TestOnePrimaryPerChannel:
         assert response.status_code == 201
         db.refresh(phone)
         assert phone.is_primary is True
+
+
+class TestTheClientCanGroupByChannel:
+    """The cap and the primary slot are both per channel, and a channel holds
+    several types, so the client has to be told which channel a type belongs
+    to rather than inferring it from the code."""
+
+    def test_contact_types_carry_their_channel(self, client, db):
+        user, _ = _create_user(db, "admin", "-chan-types")
+        _contact_type(db, "phone_home", "phone", "Home Phone")
+        _contact_type(db, "email_work", "email", "Work Email")
+        client.cookies.update(_auth_cookie(user))
+
+        response = client.get("/api/v1/contact-types/")
+
+        assert response.status_code == 200
+        by_code = {t["code"]: t for t in response.json()}
+        assert by_code["phone_home"]["channel"] == "phone"
+        assert by_code["email_work"]["channel"] == "email"
+
+    def test_a_saved_contact_carries_its_channel(self, client, db):
+        user, person = _create_user(db, "admin", "-chan-saved")
+        mobile = _contact_type(db, "phone_mobile", "phone", "Mobile Phone")
+        _contact(db, person.party_id, mobile, "+34 600 000 009")
+        client.cookies.update(_auth_cookie(user))
+
+        response = client.get(f"/api/v1/persons/{person.party_id}/contacts/")
+
+        assert response.status_code == 200
+        assert response.json()[0]["channel"] == "phone"
