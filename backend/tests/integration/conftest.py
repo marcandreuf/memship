@@ -196,6 +196,36 @@ def _seed_system_roles():
                 )
 
 
+def _seed_party_kinds():
+    """Mirror the party_kinds rows the migration seeds (bea328dd48ab).
+
+    Same reason as ``_seed_system_roles``: create_all builds tables, not data,
+    and every Person insert creates a party whose ``kind`` references this
+    registry.
+    """
+    from sqlalchemy import text
+
+    kinds = (
+        ("person", "Person", True, 1),
+        ("company", "Company", False, 2),
+        ("association", "Association", False, 3),
+        ("public_body", "Public body", False, 4),
+        ("foundation", "Foundation", False, 5),
+        ("other", "Other", False, 9),
+    )
+    with test_engine.begin() as conn:
+        for code, name, is_natural, display_order in kinds:
+            conn.execute(
+                text(
+                    "INSERT INTO party_kinds (code, name, is_natural, display_order) "
+                    "VALUES (:code, :name, :is_natural, :display_order) "
+                    "ON CONFLICT (code) DO NOTHING"
+                ),
+                {"code": code, "name": name, "is_natural": is_natural,
+                 "display_order": display_order},
+            )
+
+
 def _install_role_assignment_hook(session):
     """Give every test-created ``User`` the role assignments the app would.
 
@@ -276,6 +306,7 @@ def create_test_tables():
         pass
 
     _seed_system_roles()
+    _seed_party_kinds()
 
     # The mail transport (app.core.email) opens its own SessionLocal to resolve
     # the active provider at send time. Point that at the test engine so a send
