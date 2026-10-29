@@ -19,6 +19,7 @@ from sqlalchemy import (
     func,
     insert,
 )
+from sqlalchemy import DDL
 from sqlalchemy.orm import relationship, validates
 
 from app.core.schema_types import normalize_email
@@ -121,8 +122,18 @@ class Person(Base):
 
     # Relationships
     party = relationship("Party")
-    user = relationship("User", back_populates="person", uselist=False)
-    member = relationship("Member", back_populates="person", uselist=False, foreign_keys="Member.person_id")
+    user = relationship(
+        "User",
+        primaryjoin="Person.party_id == foreign(User.party_id)",
+        uselist=False,
+        viewonly=True,
+    )
+    member = relationship(
+        "Member",
+        primaryjoin="Person.party_id == foreign(Member.party_id)",
+        uselist=False,
+        viewonly=True,
+    )
     addresses = relationship(
         "Address",
         back_populates="person",
@@ -178,6 +189,33 @@ def _person_creates_its_party(_mapper, connection, person):
         )
         .returning(Party.__table__.c.id)
     ).scalar_one()
+
+
+# The same trigger the repoint migration installs (29a3872dad10), attached to
+# create_all so the test schema and a migrated database behave identically:
+# party.display_name follows the person's name whoever writes it.
+event.listen(
+    Person.__table__,
+    "after_create",
+    DDL(
+        """
+CREATE OR REPLACE FUNCTION party_sync_display_name_from_person() RETURNS trigger AS $party_sync$
+BEGIN
+    UPDATE party
+    SET display_name = btrim(coalesce(NEW.first_name, '') || ' ' || coalesce(NEW.last_name, '')),
+        updated_at = now()
+    WHERE id = NEW.party_id
+      AND btrim(coalesce(NEW.first_name, '') || ' ' || coalesce(NEW.last_name, '')) <> '';
+    RETURN NULL;
+END;
+$party_sync$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_party_display_name
+    AFTER INSERT OR UPDATE OF first_name, last_name ON persons
+    FOR EACH ROW EXECUTE FUNCTION party_sync_display_name_from_person();
+        """
+    ),
+)
 
 
 class AddressType(Base):

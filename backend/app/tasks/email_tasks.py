@@ -223,7 +223,7 @@ def send_receipt_email_task(self, receipt_id: int) -> bool:
                 logger.warning(f"Member {receipt.member_id} not found for receipt email")
                 return False
 
-            person = db.query(Person).filter(Person.id == member.person_id).first()
+            person = db.query(Person).filter(Person.party_id == member.party_id).first()
             if not person or not person.email:
                 logger.warning(f"No email for member {member.id}")
                 return False

@@ -16,7 +16,7 @@ def _create_user(db, role="admin", suffix=""):
     db.add(person)
     db.flush()
     user = User(
-        person_id=person.id,
+        party_id=person.party_id,
         email=f"disc-{role}{suffix}@examplee6e3b1.com",
         password_hash=hash_password("password123"),
         role=role,
@@ -35,7 +35,7 @@ def _create_member_with_user(db, suffix=""):
     db.add(person)
     db.flush()
     user = User(
-        person_id=person.id,
+        party_id=person.party_id,
         email=f"member-disc{suffix}@examplee6e3b1.com",
         password_hash=hash_password("password123"),
         role="member",
@@ -49,8 +49,7 @@ def _create_member_with_user(db, suffix=""):
         db.add(existing)
         db.flush()
     member = Member(
-        person_id=person.id,
-        user_id=user.id,
+        party_id=person.party_id,
         membership_type_id=existing.id,
         member_number=f"MD{suffix}-{user.id}",
         status="active",

@@ -227,7 +227,7 @@ def get_my_mandate(
     """Get the current member's active mandate (read-only)."""
     member = (
         db.query(Member)
-        .filter(Member.person_id == current_user.person_id, Member.is_active.is_(True))
+        .filter(Member.party_id == current_user.party_id, Member.is_active.is_(True))
         .first()
     )
     if not member:

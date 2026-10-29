@@ -121,7 +121,7 @@ class TestTheUnattendedInstall:
         db.add(person)
         db.flush()
         member = User(
-            person_id=person.id,
+            party_id=person.party_id,
             email="plain@examplee6e3b1.com",
             password_hash="untouched",
             is_active=True,
@@ -157,7 +157,7 @@ class TestTheModelValidators:
         person = Person(first_name="W", last_name="V", email=written)
         db.add(person)
         db.flush()
-        user = User(person_id=person.id, email=written, password_hash="x", is_active=True)
+        user = User(party_id=person.party_id, email=written, password_hash="x", is_active=True)
         db.add(user)
         db.flush()
 
@@ -187,7 +187,7 @@ class TestTheModelValidators:
         person = Person(first_name="I", last_name="D", email="sso@example.com")
         db.add(person)
         db.flush()
-        user = User(person_id=person.id, email="sso@example.com", is_active=True)
+        user = User(party_id=person.party_id, email="sso@example.com", is_active=True)
         db.add(user)
         db.flush()
 
@@ -214,11 +214,11 @@ class TestTheModelValidators:
         db.flush()
         from app.domains.members.models import Member
 
-        member = Member(person_id=person.id, membership_type_id=membership_type.id, status="active")
+        member = Member(party_id=person.party_id, membership_type_id=membership_type.id, status="active")
         db.add(member)
         db.flush()
 
         returned = attach_login(db, member, "a demo password")
 
         assert returned == "demo.person@example.org"
-        assert db.query(User).filter_by(id=member.user_id).one().email == "demo.person@example.org"
+        assert member.user.email == "demo.person@example.org"

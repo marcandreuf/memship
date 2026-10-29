@@ -49,7 +49,7 @@ def _member_user(db, suffix, tier, status="active"):
     db.add(person)
     db.flush()
     user = User(
-        person_id=person.id,
+        party_id=person.party_id,
         email=email,
         password_hash=hash_password("password123"),
         role="member",
@@ -58,8 +58,7 @@ def _member_user(db, suffix, tier, status="active"):
     db.add(user)
     db.flush()
     member = Member(
-        person_id=person.id,
-        user_id=user.id,
+        party_id=person.party_id,
         membership_type_id=tier.id,
         member_number=f"API-{suffix}",
         status=status,
@@ -346,7 +345,7 @@ class TestActivationThroughTheAdminPaidRoute:
         db.add(admin_person)
         db.flush()
         admin = User(
-            person_id=admin_person.id,
+            party_id=admin_person.party_id,
             email=admin_person.email,
             password_hash=hash_password("password123"),
             role="admin",

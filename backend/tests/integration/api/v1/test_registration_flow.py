@@ -76,7 +76,7 @@ def _create_user(db, email, role="member", status="active", password="password12
     db.flush()
 
     user = User(
-        person_id=person.id,
+        party_id=person.party_id,
         email=email,
         password_hash=hash_password(password),
         role=role,
@@ -88,8 +88,7 @@ def _create_user(db, email, role="member", status="active", password="password12
 
     mt = _ensure_membership_type(db)
     member = Member(
-        person_id=person.id,
-        user_id=user.id,
+        party_id=person.party_id,
         membership_type_id=mt.id,
         member_number=None if status == "pending" else f"M-{user.id:04d}",
         status=status,
@@ -125,7 +124,7 @@ class TestRegistrationCreatesPendingMember:
 
         member = (
             db.query(Member)
-            .join(Person, Member.person_id == Person.id)
+            .join(Person, Member.party_id == Person.id)
             .filter(Person.email == REGISTER_PAYLOAD["email"])
             .first()
         )
@@ -179,7 +178,7 @@ class TestRegistrationCreatesPendingMember:
 
         member = (
             db.query(Member)
-            .join(Person, Member.person_id == Person.id)
+            .join(Person, Member.party_id == Person.id)
             .filter(Person.email == REGISTER_PAYLOAD["email"])
             .first()
         )

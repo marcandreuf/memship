@@ -46,7 +46,7 @@ def build_members_query(
         ).filter(MembershipType.group_id == group_id)
 
     if search:
-        query = query.join(Person, Member.person_id == Person.id).filter(
+        query = query.join(Person, Member.party_id == Person.party_id).filter(
             match_words(
                 search,
                 Person.first_name,
@@ -169,12 +169,12 @@ def create_member(
     minor = is_minor_by_dob(date_of_birth)
 
     member = Member(
-        person_id=person.id,
+        party_id=person.party_id,
         membership_type_id=membership_type_id,
         member_number=member_number,
         status="pending",
         is_minor=minor,
-        guardian_person_id=guardian_person_id,
+        guardian_party_id=guardian_person_id,
         internal_notes=internal_notes,
     )
     db.add(member)

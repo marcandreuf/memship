@@ -55,7 +55,7 @@ def _create_user(db, person=None, role="super_admin", suffix="st"):
     if not person:
         person = _create_person(db, suffix=suffix)
     user = User(
-        person_id=person.id,
+        party_id=person.party_id,
         email=person.email,
         password_hash=hash_password("password123"),
         role=role,
@@ -80,10 +80,9 @@ def _create_member(db, person, status="active"):
     # Every account the product creates links its member row to the user
     # (auth/service.py, oauth_service.py); the self-service guards resolve
     # through that foreign key, so the fixture has to set it too.
-    user = db.query(User).filter(User.person_id == person.id).first()
+    user = db.query(User).filter(User.party_id == person.party_id).first()
     member = Member(
-        person_id=person.id,
-        user_id=user.id if user else None,
+        party_id=person.party_id,
         membership_type_id=mt.id,
         member_number=f"M-{person.id:04d}",
         status=status,

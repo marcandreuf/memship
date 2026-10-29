@@ -99,7 +99,7 @@ def _password_user(db, email="sso@examplee6e3b1.com", **flags):
     db.add(person)
     db.flush()
     user = User(
-        person_id=person.id,
+        party_id=person.party_id,
         email=email,
         password_hash=hash_password("password123"),
         role="member",
@@ -112,8 +112,7 @@ def _password_user(db, email="sso@examplee6e3b1.com", **flags):
     mt = _ensure_membership_type(db)
     db.add(
         Member(
-            person_id=person.id,
-            user_id=user.id,
+            party_id=person.party_id,
             membership_type_id=mt.id,
             member_number="M-9001",
             status="active",
@@ -305,7 +304,7 @@ def test_pending_member_still_gets_a_session(client, db, stub_provider):
     assert "access_token=" in response.headers.get("set-cookie", "")
 
     user = db.query(User).filter(User.email == "sso@examplee6e3b1.com").one()
-    member = db.query(Member).filter(Member.user_id == user.id).one()
+    member = db.query(Member).filter(Member.party_id == user.party_id).one()
     assert member.status == "pending"
 
 
@@ -323,7 +322,7 @@ def test_signup_lands_on_the_default_tier_not_the_oldest_row(client, db, stub_pr
     client.get(GOOGLE_CALLBACK, follow_redirects=False)
 
     user = db.query(User).filter(User.email == "sso@examplee6e3b1.com").one()
-    member = db.query(Member).filter(Member.user_id == user.id).one()
+    member = db.query(Member).filter(Member.party_id == user.party_id).one()
     assert member.membership_type_id == free.id
     assert member.membership_type_id != paid.id
 

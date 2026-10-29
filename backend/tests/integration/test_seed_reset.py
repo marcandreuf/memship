@@ -117,13 +117,13 @@ class TestResetKeeps:
         seed_demo_org_settings(db)
         keeper = _account("owner@example.org", "super_admin", membership_type, db)
         _account("club@example.org", "admin", membership_type, db)
-        keeper_person_id = keeper.person_id
+        keeper_party_id = keeper.party_id
 
         reset_club_data(db)
 
         remaining = db.query(User).all()
         assert [u.email for u in remaining] == ["owner@example.org"]
-        assert db.query(Person).filter_by(id=keeper_person_id).one_or_none() is not None
+        assert db.query(Person).filter_by(party_id=keeper_party_id).one_or_none() is not None
 
     def test_payment_provider_credentials_survive(self, db):
         membership_type = _base_install(db)
@@ -214,8 +214,8 @@ class TestResetClears:
         membership_type = seed_membership_types(db, seed_groups(db))
         restore_member_records(db, super_admin_users(db), membership_type)
 
-        member = db.query(Member).filter_by(person_id=keeper.person_id).one()
-        assert member.user_id == keeper.id
+        member = db.query(Member).filter_by(party_id=keeper.party_id).one()
+        assert member.party_id == keeper.party_id
         assert member.status == "active"
 
 
@@ -232,7 +232,7 @@ class TestStaffAreNotMembers:
 
         user = _staff("owner@example.org", SUPER_ADMIN_SLUG, db)
 
-        assert db.query(Member).filter_by(person_id=user.person_id).first() is None
+        assert db.query(Member).filter_by(party_id=user.party_id).first() is None
         assert {r.slug for r in user.roles} == {SUPER_ADMIN_SLUG}
 
     def test_a_seeded_club_admin_has_no_member_record(self, db):
@@ -240,7 +240,7 @@ class TestStaffAreNotMembers:
 
         user = _staff("club@example.org", "admin", db)
 
-        assert db.query(Member).filter_by(person_id=user.person_id).first() is None
+        assert db.query(Member).filter_by(party_id=user.party_id).first() is None
         assert {r.slug for r in user.roles} == {"admin"}
 
     def test_the_first_real_member_gets_m_0001(self, db):
@@ -251,7 +251,7 @@ class TestStaffAreNotMembers:
 
         joiner = _account("first@example.org", MEMBER_SLUG, membership_type, db)
 
-        member = db.query(Member).filter_by(person_id=joiner.person_id).one()
+        member = db.query(Member).filter_by(party_id=joiner.party_id).one()
         assert member.member_number == "M-0001"
 
     def test_the_register_is_empty_before_anyone_joins(self, db):
@@ -284,7 +284,7 @@ class TestStaffAreNotMembers:
         membership_type = seed_membership_types(db, seed_groups(db))
         restore_member_records(db, super_admin_users(db), membership_type)
 
-        assert db.query(Member).filter_by(person_id=keeper.person_id).first() is None
+        assert db.query(Member).filter_by(party_id=keeper.party_id).first() is None
 
 
 class TestCreatedByResolution:
@@ -492,7 +492,7 @@ class TestInvoiceSequenceSeeding:
     def _receipt(self, db, number):
         membership_type = _base_install(db)
         user = _account(f"holder-{number}@example.com", MEMBER_SLUG, membership_type, db)
-        member = db.query(Member).filter_by(user_id=user.id).one()
+        member = db.query(Member).filter_by(party_id=user.party_id).one()
         db.add(
             Receipt(
                 receipt_number=number,

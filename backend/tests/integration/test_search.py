@@ -20,7 +20,7 @@ def _member(db, first, last, number):
     person = Person(first_name=first, last_name=last, email=f"{number.lower()}@search.test")
     db.add(person)
     db.flush()
-    member = Member(person_id=person.id, member_number=number, status="active")
+    member = Member(party_id=person.party_id, member_number=number, status="active")
     db.add(member)
     db.flush()
     return member

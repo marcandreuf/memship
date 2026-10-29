@@ -59,10 +59,10 @@ async def upload_my_photo(
         )
 
     def commit(filename: str) -> None:
-        person.photo_url = f"/uploads/members/{person.id}/{filename}"
+        person.photo_url = f"/uploads/members/{person.party_id}/{filename}"
         db.commit()
 
-    replace_file(_photo_dir(person.id), "photo", ext, content, commit)
+    replace_file(_photo_dir(person.party_id), "photo", ext, content, commit)
 
     return {"photo_url": person.photo_url}
 
@@ -82,4 +82,4 @@ def delete_my_photo(
 
     person.photo_url = None
     db.commit()
-    remove_files(_photo_dir(person.id), "photo")
+    remove_files(_photo_dir(person.party_id), "photo")

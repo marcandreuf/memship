@@ -1,6 +1,7 @@
 """User model for authentication."""
 
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     CheckConstraint,
     Column,
@@ -24,7 +25,15 @@ from app.db.base import Base
 class User(Base):
     __tablename__ = "users"
     __table_args__ = (
-        Index("idx_users_person_id", "person_id"),
+        Index("idx_users_party_id", "party_id"),
+        # One ACTIVE login per party. Partial so a deactivated duplicate from
+        # the repoint migration keeps its party_id as history (ADR 0003).
+        Index(
+            "uq_users_one_active_per_party",
+            "party_id",
+            unique=True,
+            postgresql_where="is_active",
+        ),
         Index("idx_users_is_active", "is_active"),
         # The column is unique already; this is the same invariant for the
         # normalised form, so a mixed-case duplicate cannot be inserted around
@@ -40,7 +49,11 @@ class User(Base):
     )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    person_id = Column(Integer, ForeignKey("persons.id", ondelete="CASCADE"), nullable=False)
+    party_id = Column(
+        BigInteger,
+        ForeignKey("party.id", ondelete="CASCADE", name="users_party_id_fkey"),
+        nullable=False,
+    )
     email = Column(String(255), unique=True, nullable=False)
     # Nullable: SSO-only users (Google/Apple) have no password. The password login
     # path rejects a user whose hash is NULL.
@@ -68,7 +81,15 @@ class User(Base):
     )
 
     # Relationships
-    person = relationship("Person", back_populates="user")
+    party = relationship("Party")
+    # No FK between users and persons any more; both reference party, and the
+    # join goes through it. viewonly: the link is written by setting party_id.
+    person = relationship(
+        "Person",
+        primaryjoin="User.party_id == foreign(Person.party_id)",
+        uselist=False,
+        viewonly=True,
+    )
     identities = relationship(
         "UserIdentity", back_populates="user", cascade="all, delete-orphan"
     )

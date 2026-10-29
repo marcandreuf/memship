@@ -55,7 +55,7 @@ def _user_with(db, keys, *, slug):
     db.add(person)
     db.flush()
     user = User(
-        person_id=person.id, email=email,
+        party_id=person.party_id, email=email,
         password_hash=hash_password("password123"), is_active=True,
     )
     db.add(user)

@@ -15,7 +15,7 @@ def _create_test_user(db, email="test@example.com", password="password123", role
     db.flush()
 
     user = User(
-        person_id=person.id,
+        party_id=person.party_id,
         email=email,
         password_hash=hash_password(password),
         role=role,
@@ -32,8 +32,7 @@ def _create_test_user(db, email="test@example.com", password="password123", role
         db.flush()
 
     member = Member(
-        person_id=person.id,
-        user_id=user.id,
+        party_id=person.party_id,
         membership_type_id=mt.id,
         member_number=f"M-{user.id:04d}",
         status="active",
@@ -148,7 +147,7 @@ class TestRegister:
 
         member = (
             db.query(Member)
-            .join(Person, Member.person_id == Person.id)
+            .join(Person, Member.party_id == Person.id)
             .filter(Person.email == "new@examplee6e3b1.com")
             .first()
         )
@@ -178,7 +177,7 @@ class TestRegister:
 
         member = (
             db.query(Member)
-            .join(Person, Member.person_id == Person.id)
+            .join(Person, Member.party_id == Person.id)
             .filter(Person.email == "tier@examplee6e3b1.com")
             .one()
         )
@@ -873,7 +872,7 @@ class TestUnverifiedEmailCannotSignIn:
         db.add(person)
         db.flush()
         user = User(
-            person_id=person.id,
+            party_id=person.party_id,
             email=email,
             password_hash=hash_password(password),
             role="member",

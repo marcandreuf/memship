@@ -44,7 +44,7 @@ def member(db):
     db.add(person)
     db.flush()
     m = Member(
-        person_id=person.id,
+        party_id=person.party_id,
         membership_type_id=mt.id,
         member_number="NUM-0001",
         status="active",

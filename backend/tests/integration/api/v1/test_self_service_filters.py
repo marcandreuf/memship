@@ -55,13 +55,13 @@ def _account(db, membership_type, email, role="member"):
     from app.domains.auth.models import User
 
     user = User(
-        person_id=person.id, email=email,
+        party_id=person.party_id, email=email,
         password_hash=hash_password("password123"), role=role, is_active=True,
     )
     db.add(user)
     db.flush()
     member = Member(
-        person_id=person.id, user_id=user.id,
+        party_id=person.party_id,
         membership_type_id=membership_type.id, status="active",
     )
     db.add(member)
@@ -140,7 +140,7 @@ class TestPersonsFilters:
     def test_own_person_is_readable(self, client, db, org, mine):
         user, _ = mine
 
-        r = client.get(f"/api/v1/persons/{user.person_id}", cookies=_cookie(user))
+        r = client.get(f"/api/v1/persons/{user.party_id}", cookies=_cookie(user))
 
         assert r.status_code == 200
 
@@ -148,7 +148,7 @@ class TestPersonsFilters:
         user, _ = mine
         other_user, _ = theirs
 
-        r = client.get(f"/api/v1/persons/{other_user.person_id}", cookies=_cookie(user))
+        r = client.get(f"/api/v1/persons/{other_user.party_id}", cookies=_cookie(user))
 
         assert r.status_code == 403
 
@@ -157,7 +157,7 @@ class TestPersonsFilters:
         other_user, _ = theirs
 
         r = client.put(
-            f"/api/v1/persons/{other_user.person_id}",
+            f"/api/v1/persons/{other_user.party_id}",
             json={"first_name": "Hacked"},
             cookies=_cookie(user),
         )
@@ -168,7 +168,7 @@ class TestPersonsFilters:
         user, _ = staff
         other_user, _ = theirs
 
-        r = client.get(f"/api/v1/persons/{other_user.person_id}", cookies=_cookie(user))
+        r = client.get(f"/api/v1/persons/{other_user.party_id}", cookies=_cookie(user))
 
         assert r.status_code == 200
 
@@ -279,7 +279,7 @@ class TestCustomFieldsPersonFilter:
         other_user, _ = theirs
 
         r = client.get(
-            f"/api/v1/persons/{other_user.person_id}/custom-fields/", cookies=_cookie(user)
+            f"/api/v1/persons/{other_user.party_id}/custom-fields/", cookies=_cookie(user)
         )
 
         assert r.status_code == 403
@@ -291,7 +291,7 @@ class TestCustomFieldsPersonFilter:
         other_user, _ = theirs
 
         r = client.get(
-            f"/api/v1/persons/{other_user.person_id}/custom-fields/", cookies=_cookie(user)
+            f"/api/v1/persons/{other_user.party_id}/custom-fields/", cookies=_cookie(user)
         )
 
         assert r.status_code == 200

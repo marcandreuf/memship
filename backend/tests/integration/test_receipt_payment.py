@@ -62,7 +62,7 @@ def _create_member(db, suffix):
     db.add(mtype)
     db.flush()
     member = Member(
-        person_id=person.id,
+        party_id=person.party_id,
         membership_type_id=mtype.id,
         member_number=f"MP-{suffix}",
         status="active",
@@ -103,7 +103,7 @@ def _create_admin(db, suffix):
     db.add(person)
     db.flush()
     user = User(
-        person_id=person.id,
+        party_id=person.party_id,
         email=person.email,
         password_hash=hash_password("password123"),
         role="admin",
@@ -345,7 +345,7 @@ class TestThePaymentConfirmation:
 
         receipt = self._paid(db, "conf-noaddr")
         member = db.query(Member).filter(Member.id == receipt.member_id).first()
-        db.query(Person).filter(Person.id == member.person_id).first().email = None
+        db.query(Person).filter(Person.id == member.party_id).first().email = None
         db.flush()
 
         with patch("app.core.email.send_email") as send:

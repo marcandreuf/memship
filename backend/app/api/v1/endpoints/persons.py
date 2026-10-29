@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.core.db_utils import get_or_404
+from app.core.db_utils import get_person_by_party_or_404
 from app.core.security.dependencies import get_current_user
 from app.core.authorization import require_any_permission, require_permission, user_has
 from app.db.session import get_db
@@ -21,10 +21,10 @@ def get_person(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_any_permission("members.read", "self.profile.read")),
 ):
-    person = get_or_404(db, Person, person_id)
+    person = get_person_by_party_or_404(db, person_id)
 
     # Members can only view their own person
-    if not user_has(current_user, "members.read") and current_user.person_id != person_id:
+    if not user_has(current_user, "members.read") and current_user.party_id != person_id:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
 
     return person
@@ -37,9 +37,9 @@ def update_person(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_any_permission("members.write", "self.profile.write")),
 ):
-    person = get_or_404(db, Person, person_id)
+    person = get_person_by_party_or_404(db, person_id)
 
-    if not user_has(current_user, "members.write") and current_user.person_id != person_id:
+    if not user_has(current_user, "members.write") and current_user.party_id != person_id:
         raise HTTPException(status_code=403, detail="Insufficient permissions")
 
     allowed_fields = {

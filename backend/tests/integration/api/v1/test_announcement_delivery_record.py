@@ -62,7 +62,7 @@ def _admin(db, suffix):
     db.add(person)
     db.flush()
     user = User(
-        person_id=person.id,
+        party_id=person.party_id,
         email=person.email,
         password_hash=hash_password("password123"),
         role="admin",
@@ -83,7 +83,7 @@ def _member(db, suffix, opted_out=False):
     db.add(mt)
     db.flush()
     member = Member(
-        person_id=person.id,
+        party_id=person.party_id,
         membership_type_id=mt.id,
         member_number=f"M-{suffix}",
         status="active",

@@ -3,7 +3,7 @@
 from datetime import date, datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import AliasChoices, BaseModel, Field, field_validator, model_validator
 
 from app.core.schema_types import Email, NonBlank, refuse_null
 from app.domains.shared.enums import MemberStatus
@@ -172,7 +172,9 @@ class MemberRegistrationRejection(BaseModel):
 
 
 class PersonResponse(BaseModel):
-    id: int
+    # The API's person id is the party id (ADR 0003); equal to the old
+    # persons.id for every row that predates the remodel.
+    id: int = Field(validation_alias=AliasChoices("party_id", "id"))
     first_name: str
     last_name: str
     email: str | None = None
@@ -187,7 +189,7 @@ class PersonResponse(BaseModel):
 
 
 class GuardianResponse(BaseModel):
-    id: int
+    id: int = Field(validation_alias=AliasChoices("party_id", "id"))
     first_name: str
     last_name: str
     email: str | None = None

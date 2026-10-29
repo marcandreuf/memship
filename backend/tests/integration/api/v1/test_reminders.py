@@ -19,7 +19,7 @@ def _admin(db, suffix):
     db.add(person)
     db.flush()
     user = User(
-        person_id=person.id,
+        party_id=person.party_id,
         email=f"admin-rem-{suffix}@examplee6e3b1.com",
         password_hash=hash_password("password123"),
         role="admin",
@@ -35,7 +35,7 @@ def _member_user(db, suffix):
     db.add(person)
     db.flush()
     user = User(
-        person_id=person.id,
+        party_id=person.party_id,
         email=f"m-rem-{suffix}@examplee6e3b1.com",
         password_hash=hash_password("password123"),
         role="member",
@@ -43,7 +43,7 @@ def _member_user(db, suffix):
     )
     db.add(user)
     db.flush()
-    db.add(Member(person_id=person.id, user_id=user.id, member_number=f"M-rem-{suffix}", status="active"))
+    db.add(Member(party_id=person.party_id, member_number=f"M-rem-{suffix}", status="active"))
     db.flush()
     return user
 

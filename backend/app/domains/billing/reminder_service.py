@@ -134,7 +134,7 @@ def _has_active_online_provider(db: Session) -> bool:
 def _recipient(db: Session, receipt: Receipt) -> tuple[Person | None, OrganizationSettings | None]:
     member = db.query(Member).filter(Member.id == receipt.member_id).first()
     person = (
-        db.query(Person).filter(Person.id == member.person_id).first() if member else None
+        db.query(Person).filter(Person.party_id == member.party_id).first() if member else None
     )
     org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
     return person, org

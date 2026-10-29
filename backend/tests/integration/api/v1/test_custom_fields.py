@@ -37,7 +37,7 @@ def _create_user(db, role="admin", email=None):
     db.add(person)
     db.flush()
     user = User(
-        person_id=person.id,
+        party_id=person.party_id,
         email=email,
         password_hash=hash_password("password123"),
         role=role,
@@ -78,7 +78,7 @@ class TestFeatureGate:
         _ensure_org(db, enabled=False)
         user = _create_user(db, "super_admin")
         response = client.get(
-            f"/api/v1/persons/{user.person_id}/custom-fields/",
+            f"/api/v1/persons/{user.party_id}/custom-fields/",
             cookies=_auth_cookie(user),
         )
         assert response.status_code == 404
@@ -178,7 +178,7 @@ class TestDefinitions:
         admin = _create_user(db, "admin")
         target = _create_user(db, "member", email="target-archive@examplee6e3b1.com")
         client.put(
-            f"/api/v1/persons/{target.person_id}/custom-fields/",
+            f"/api/v1/persons/{target.party_id}/custom-fields/",
             json={"shirt_size": "M"},
             cookies=_auth_cookie(admin),
         )
@@ -213,7 +213,7 @@ class TestValues:
         _definition(db, key="shirt_size")
         admin = _create_user(db, "admin")
         target = _create_user(db, "member", email="target-round@examplee6e3b1.com")
-        url = f"/api/v1/persons/{target.person_id}/custom-fields/"
+        url = f"/api/v1/persons/{target.party_id}/custom-fields/"
         cookies = _auth_cookie(admin)
 
         assert client.get(url, cookies=cookies).json() == {"shirt_size": None}
@@ -232,7 +232,7 @@ class TestValues:
         _definition(db, key="joined_on", field_type="date")
         admin = _create_user(db, "admin")
         target = _create_user(db, "member", email="target-coerce@examplee6e3b1.com")
-        url = f"/api/v1/persons/{target.person_id}/custom-fields/"
+        url = f"/api/v1/persons/{target.party_id}/custom-fields/"
         cookies = _auth_cookie(admin)
 
         assert client.put(
@@ -255,7 +255,7 @@ class TestValues:
         target = _create_user(db, "member", email="target-select@examplee6e3b1.com")
 
         response = client.put(
-            f"/api/v1/persons/{target.person_id}/custom-fields/",
+            f"/api/v1/persons/{target.party_id}/custom-fields/",
             json={"size": "xl"},
             cookies=_auth_cookie(admin),
         )
@@ -268,7 +268,7 @@ class TestValues:
         target = _create_user(db, "member", email="target-required@examplee6e3b1.com")
 
         response = client.put(
-            f"/api/v1/persons/{target.person_id}/custom-fields/",
+            f"/api/v1/persons/{target.party_id}/custom-fields/",
             json={},
             cookies=_auth_cookie(admin),
         )
@@ -281,7 +281,7 @@ class TestValues:
         target = _create_user(db, "member", email="target-unknown@examplee6e3b1.com")
 
         response = client.put(
-            f"/api/v1/persons/{target.person_id}/custom-fields/",
+            f"/api/v1/persons/{target.party_id}/custom-fields/",
             json={"nope": "x"},
             cookies=_auth_cookie(admin),
         )
@@ -295,7 +295,7 @@ class TestValues:
         target = _create_user(db, "member", email="target-inactive@examplee6e3b1.com")
 
         response = client.put(
-            f"/api/v1/persons/{target.person_id}/custom-fields/",
+            f"/api/v1/persons/{target.party_id}/custom-fields/",
             json={"retired": "x"},
             cookies=_auth_cookie(admin),
         )
@@ -309,7 +309,7 @@ class TestValues:
         target = _create_user(db, "member", email="target-locked@examplee6e3b1.com")
 
         response = client.put(
-            f"/api/v1/persons/{target.person_id}/custom-fields/",
+            f"/api/v1/persons/{target.party_id}/custom-fields/",
             json={"locked": "x"},
             cookies=_auth_cookie(admin),
         )
@@ -323,7 +323,7 @@ class TestValues:
         other = _create_user(db, "member", email="other@examplee6e3b1.com")
 
         response = client.get(
-            f"/api/v1/persons/{other.person_id}/custom-fields/",
+            f"/api/v1/persons/{other.party_id}/custom-fields/",
             cookies=_auth_cookie(member),
         )
         assert response.status_code == 403
@@ -388,7 +388,7 @@ class TestSelfService:
         member = _create_user(db, "member", email="preserve@examplee6e3b1.com")
 
         client.put(
-            f"/api/v1/persons/{member.person_id}/custom-fields/",
+            f"/api/v1/persons/{member.party_id}/custom-fields/",
             json={"category": "senior", "shirt_size": "S"},
             cookies=_auth_cookie(admin),
         )
