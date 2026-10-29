@@ -13,6 +13,23 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
+--
+-- Name: party_sync_display_name_from_person(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.party_sync_display_name_from_person() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    UPDATE party
+    SET display_name = btrim(coalesce(NEW.first_name, '') || ' ' || coalesce(NEW.last_name, '')),
+        updated_at = now()
+    WHERE id = NEW.party_id
+      AND btrim(coalesce(NEW.first_name, '') || ' ' || coalesce(NEW.last_name, '')) <> '';
+    RETURN NULL;
+END;
+$$;
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
@@ -650,7 +667,7 @@ ALTER SEQUENCE public.custom_field_definitions_id_seq OWNED BY public.custom_fie
 CREATE TABLE public.custom_field_values (
     id integer NOT NULL,
     definition_id integer NOT NULL,
-    person_id integer NOT NULL,
+    party_id bigint NOT NULL,
     value text,
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now()
@@ -782,8 +799,7 @@ CREATE TABLE public.mail_transport_health (
 
 CREATE TABLE public.members (
     id integer NOT NULL,
-    person_id integer NOT NULL,
-    user_id integer,
+    party_id bigint NOT NULL,
     membership_type_id integer,
     member_number character varying(50),
     status character varying(50),
@@ -792,7 +808,7 @@ CREATE TABLE public.members (
     joined_at date DEFAULT CURRENT_DATE NOT NULL,
     expires_at date,
     renewed_at date,
-    guardian_person_id integer,
+    guardian_party_id bigint,
     is_minor boolean,
     communication_preferences jsonb,
     internal_notes text,
@@ -1637,7 +1653,7 @@ CREATE TABLE public.user_roles (
 
 CREATE TABLE public.users (
     id integer NOT NULL,
-    person_id integer NOT NULL,
+    party_id bigint NOT NULL,
     email character varying(255) NOT NULL,
     password_hash character varying(255),
     email_verified boolean,
@@ -2378,11 +2394,11 @@ ALTER TABLE ONLY public.billing_runs
     ADD CONSTRAINT uq_billing_runs_frequency_period UNIQUE (frequency, period_start, period_end);
 
 --
--- Name: custom_field_values uq_custom_field_value_definition_person; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: custom_field_values uq_custom_field_value_definition_party; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.custom_field_values
-    ADD CONSTRAINT uq_custom_field_value_definition_person UNIQUE (definition_id, person_id);
+    ADD CONSTRAINT uq_custom_field_value_definition_party UNIQUE (definition_id, party_id);
 
 --
 -- Name: discount_codes uq_discount_code_per_activity; Type: CONSTRAINT; Schema: public; Owner: -
@@ -2625,10 +2641,10 @@ CREATE INDEX idx_members_member_number ON public.members USING btree (member_num
 CREATE INDEX idx_members_membership_type_id ON public.members USING btree (membership_type_id);
 
 --
--- Name: idx_members_person_id; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_members_party_id; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX idx_members_person_id ON public.members USING btree (person_id);
+CREATE INDEX idx_members_party_id ON public.members USING btree (party_id);
 
 --
 -- Name: idx_members_status; Type: INDEX; Schema: public; Owner: -
@@ -2733,10 +2749,10 @@ CREATE INDEX idx_user_roles_user ON public.user_roles USING btree (user_id);
 CREATE INDEX idx_users_is_active ON public.users USING btree (is_active);
 
 --
--- Name: idx_users_person_id; Type: INDEX; Schema: public; Owner: -
+-- Name: idx_users_party_id; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX idx_users_person_id ON public.users USING btree (person_id);
+CREATE INDEX idx_users_party_id ON public.users USING btree (party_id);
 
 --
 -- Name: idx_users_reset_token; Type: INDEX; Schema: public; Owner: -
@@ -2805,10 +2821,10 @@ CREATE INDEX ix_concepts_id ON public.concepts USING btree (id);
 CREATE INDEX ix_custom_field_definitions_active_order ON public.custom_field_definitions USING btree (active, sort_order);
 
 --
--- Name: ix_custom_field_values_person; Type: INDEX; Schema: public; Owner: -
+-- Name: ix_custom_field_values_party; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX ix_custom_field_values_person ON public.custom_field_values USING btree (person_id);
+CREATE INDEX ix_custom_field_values_party ON public.custom_field_values USING btree (party_id);
 
 --
 -- Name: ix_notifications_user_unread; Type: INDEX; Schema: public; Owner: -
@@ -3009,10 +3025,10 @@ CREATE INDEX ix_webhook_events_provider_status ON public.webhook_events USING bt
 CREATE UNIQUE INDEX uq_bookings_member_slot_active ON public.bookings USING btree (space_slot_id, member_id) WHERE ((status)::text = ANY ((ARRAY['booked'::character varying, 'waitlisted'::character varying])::text[]));
 
 --
--- Name: uq_members_user_id; Type: INDEX; Schema: public; Owner: -
+-- Name: uq_members_one_active_per_party; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE UNIQUE INDEX uq_members_user_id ON public.members USING btree (user_id) WHERE (user_id IS NOT NULL);
+CREATE UNIQUE INDEX uq_members_one_active_per_party ON public.members USING btree (party_id) WHERE is_active;
 
 --
 -- Name: uq_membership_types_is_default; Type: INDEX; Schema: public; Owner: -
@@ -3037,6 +3053,18 @@ CREATE UNIQUE INDEX uq_sepa_mandates_one_active_per_member ON public.sepa_mandat
 --
 
 CREATE UNIQUE INDEX uq_users_email_lower ON public.users USING btree (lower(btrim((email)::text)));
+
+--
+-- Name: uq_users_one_active_per_party; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uq_users_one_active_per_party ON public.users USING btree (party_id) WHERE is_active;
+
+--
+-- Name: persons trg_party_display_name; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_party_display_name AFTER INSERT OR UPDATE OF first_name, last_name ON public.persons FOR EACH ROW EXECUTE FUNCTION public.party_sync_display_name_from_person();
 
 --
 -- Name: activities activities_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
@@ -3165,11 +3193,11 @@ ALTER TABLE ONLY public.custom_field_values
     ADD CONSTRAINT custom_field_values_definition_id_fkey FOREIGN KEY (definition_id) REFERENCES public.custom_field_definitions(id) ON DELETE CASCADE;
 
 --
--- Name: custom_field_values custom_field_values_person_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: custom_field_values custom_field_values_party_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.custom_field_values
-    ADD CONSTRAINT custom_field_values_person_id_fkey FOREIGN KEY (person_id) REFERENCES public.persons(id) ON DELETE CASCADE;
+    ADD CONSTRAINT custom_field_values_party_id_fkey FOREIGN KEY (party_id) REFERENCES public.party(id) ON DELETE CASCADE;
 
 --
 -- Name: discount_codes discount_codes_activity_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
@@ -3228,11 +3256,11 @@ ALTER TABLE ONLY public.members
     ADD CONSTRAINT members_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id) ON DELETE SET NULL;
 
 --
--- Name: members members_guardian_person_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: members members_guardian_party_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.members
-    ADD CONSTRAINT members_guardian_person_id_fkey FOREIGN KEY (guardian_person_id) REFERENCES public.persons(id) ON DELETE SET NULL;
+    ADD CONSTRAINT members_guardian_party_id_fkey FOREIGN KEY (guardian_party_id) REFERENCES public.persons(party_id) ON DELETE SET NULL;
 
 --
 -- Name: members members_membership_type_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
@@ -3242,18 +3270,11 @@ ALTER TABLE ONLY public.members
     ADD CONSTRAINT members_membership_type_id_fkey FOREIGN KEY (membership_type_id) REFERENCES public.membership_types(id) ON DELETE SET NULL;
 
 --
--- Name: members members_person_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: members members_party_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.members
-    ADD CONSTRAINT members_person_id_fkey FOREIGN KEY (person_id) REFERENCES public.persons(id) ON DELETE CASCADE;
-
---
--- Name: members members_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.members
-    ADD CONSTRAINT members_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE SET NULL;
+    ADD CONSTRAINT members_party_id_fkey FOREIGN KEY (party_id) REFERENCES public.party(id) ON DELETE CASCADE;
 
 --
 -- Name: membership_types membership_types_group_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
@@ -3466,11 +3487,11 @@ ALTER TABLE ONLY public.user_roles
     ADD CONSTRAINT user_roles_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
 
 --
--- Name: users users_person_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: users users_party_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.users
-    ADD CONSTRAINT users_person_id_fkey FOREIGN KEY (person_id) REFERENCES public.persons(id) ON DELETE CASCADE;
+    ADD CONSTRAINT users_party_id_fkey FOREIGN KEY (party_id) REFERENCES public.party(id) ON DELETE CASCADE;
 
 --
 -- Name: webhook_events webhook_events_receipt_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -

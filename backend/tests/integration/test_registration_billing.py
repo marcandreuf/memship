@@ -51,7 +51,7 @@ def _member(db, membership_type, suffix):
     db.add(person)
     db.flush()
     member = Member(
-        person_id=person.id,
+        party_id=person.party_id,
         membership_type_id=membership_type.id,
         member_number=f"SB-{suffix}",
         status="active",
@@ -228,7 +228,7 @@ class TestTheQuotedPriceIsWhatIsInvoiced:
         db.add(person)
         db.flush()
         user = User(
-            person_id=person.id,
+            party_id=person.party_id,
             email="quote@examplee6e3b1.com",
             password_hash=hash_password("password123"),
             role="admin",

@@ -90,3 +90,72 @@ class TestSubtypeExclusivity:
 
         db.execute(text("DELETE FROM party WHERE id = :id"), {"id": party_id})
         assert db.get(Person, person_id) is None
+
+
+class TestPhase2Repoint:
+    """Phase 2: login and membership are facts about a party."""
+
+    def test_renaming_a_person_updates_the_party_display_name(self, db):
+        person = _person()
+        db.add(person)
+        db.flush()
+
+        person.last_name = "Casals"
+        db.flush()
+        db.expire_all()
+
+        assert db.get(Party, person.party_id).display_name == "Nuria Casals"
+
+    def test_one_active_login_per_party(self, db):
+        from app.domains.auth.models import User
+
+        person = _person()
+        db.add(person)
+        db.flush()
+        db.add(User(party_id=person.party_id, email="a@example.com", is_active=True))
+        db.flush()
+
+        db.add(User(party_id=person.party_id, email="b@example.com", is_active=True))
+        with pytest.raises(IntegrityError):
+            db.flush()
+
+    def test_a_deactivated_login_may_share_the_party(self, db):
+        """The index is partial on purpose: deactivated duplicates are history."""
+        from app.domains.auth.models import User
+
+        person = _person()
+        db.add(person)
+        db.flush()
+        db.add(User(party_id=person.party_id, email="a2@example.com", is_active=True))
+        db.add(User(party_id=person.party_id, email="b2@example.com", is_active=False))
+        db.flush()
+
+    def test_one_active_membership_per_party(self, db):
+        from app.domains.members.models import Member
+
+        person = _person()
+        db.add(person)
+        db.flush()
+        db.add(Member(party_id=person.party_id, is_active=True))
+        db.flush()
+
+        db.add(Member(party_id=person.party_id, is_active=True))
+        with pytest.raises(IntegrityError):
+            db.flush()
+
+    def test_the_member_resolves_its_login_through_the_party(self, db):
+        from app.domains.auth.models import User
+        from app.domains.members.models import Member
+
+        person = _person()
+        db.add(person)
+        db.flush()
+        user = User(party_id=person.party_id, email="link@example.com", is_active=True)
+        member = Member(party_id=person.party_id)
+        db.add_all([user, member])
+        db.flush()
+        db.expire_all()
+
+        member = db.get(Member, member.id)
+        assert member.user is not None and member.user.id == user.id
+        assert member.person is not None and member.person.party_id == person.party_id

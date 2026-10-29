@@ -70,7 +70,7 @@ def operator(db):
     db.add(person)
     db.flush()
     user = User(
-        person_id=person.id, email="ops@examplee6e3b1.com",
+        party_id=person.party_id, email="ops@examplee6e3b1.com",
         password_hash=hash_password("password123"), role="super_admin", is_active=True,
     )
     db.add(user)
@@ -84,7 +84,7 @@ def club_admin(db):
     db.add(person)
     db.flush()
     user = User(
-        person_id=person.id, email="ca@examplee6e3b1.com",
+        party_id=person.party_id, email="ca@examplee6e3b1.com",
         password_hash=hash_password("password123"), role="admin", is_active=True,
     )
     db.add(user)
@@ -99,13 +99,13 @@ def joiner(db, membership_type):
     db.add(person)
     db.flush()
     user = User(
-        person_id=person.id, email="joiner@examplee6e3b1.com",
+        party_id=person.party_id, email="joiner@examplee6e3b1.com",
         password_hash=hash_password("password123"), role="member", is_active=True,
     )
     db.add(user)
     db.flush()
     member = Member(
-        person_id=person.id, user_id=user.id,
+        party_id=person.party_id,
         membership_type_id=membership_type.id, member_number="M-0001",
         status="active",
     )
@@ -252,7 +252,7 @@ class TestItIsOutsideTheClub:
 
         billed = {r.member_id for r in receipts}
         operator_members = {
-            m.id for m in db.query(Member).filter(Member.user_id == operator.id).all()
+            m.id for m in db.query(Member).filter(Member.party_id == operator.party_id).all()
         }
         assert operator_members == set()
         assert billed and operator_members.isdisjoint(billed)

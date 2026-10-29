@@ -11,7 +11,7 @@ def _create_user(db, role="admin", suffix=""):
     db.add(person)
     db.flush()
     user = User(
-        person_id=person.id,
+        party_id=person.party_id,
         email=f"contact-{role}{suffix}@examplee6e3b1.com",
         password_hash=hash_password("password123"),
         role=role,
@@ -40,7 +40,7 @@ class TestContactsCRUD:
         user, person = _create_user(db, "admin", "-list0")
         client.cookies.update(_auth_cookie(user))
 
-        response = client.get(f"/api/v1/persons/{person.id}/contacts/")
+        response = client.get(f"/api/v1/persons/{person.party_id}/contacts/")
         assert response.status_code == 200
         assert response.json() == []
 
@@ -50,7 +50,7 @@ class TestContactsCRUD:
         client.cookies.update(_auth_cookie(user))
 
         response = client.post(
-            f"/api/v1/persons/{person.id}/contacts/",
+            f"/api/v1/persons/{person.party_id}/contacts/",
             json={"contact_type_id": ct.id, "value": "+34 600 123 456", "is_primary": True},
         )
         assert response.status_code == 201
@@ -70,7 +70,7 @@ class TestContactsCRUD:
         db.flush()
 
         client.cookies.update(_auth_cookie(user))
-        response = client.get(f"/api/v1/persons/{person.id}/contacts/")
+        response = client.get(f"/api/v1/persons/{person.party_id}/contacts/")
         assert response.status_code == 200
         data = response.json()
         assert len(data) == 1
@@ -115,7 +115,7 @@ class TestContactsCRUD:
         client.cookies.update(_auth_cookie(user))
 
         response = client.post(
-            f"/api/v1/persons/{person.id}/contacts/",
+            f"/api/v1/persons/{person.party_id}/contacts/",
             json={"value": "+34 600 000 000"},
         )
         assert response.status_code == 403

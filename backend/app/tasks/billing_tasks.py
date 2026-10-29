@@ -166,7 +166,7 @@ def _send_payment_confirmation(db: Session, receipt_id: int) -> bool:
 
     member = db.query(Member).filter(Member.id == receipt.member_id).first()
     person = (
-        db.query(Person).filter(Person.id == member.person_id).first() if member else None
+        db.query(Person).filter(Person.party_id == member.party_id).first() if member else None
     )
     if not person or not person.email:
         logger.warning(f"No email for the payer of receipt {receipt_id}")

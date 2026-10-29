@@ -13,6 +13,7 @@ columns or a GIN index and is deliberately out of scope here.
 """
 
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     CheckConstraint,
     Column,
@@ -83,9 +84,9 @@ class CustomFieldValue(Base):
     __tablename__ = "custom_field_values"
     __table_args__ = (
         UniqueConstraint(
-            "definition_id", "person_id", name="uq_custom_field_value_definition_person"
+            "definition_id", "party_id", name="uq_custom_field_value_definition_party"
         ),
-        Index("ix_custom_field_values_person", "person_id"),
+        Index("ix_custom_field_values_party", "party_id"),
     )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -94,8 +95,10 @@ class CustomFieldValue(Base):
         ForeignKey("custom_field_definitions.id", ondelete="CASCADE"),
         nullable=False,
     )
-    person_id = Column(
-        Integer, ForeignKey("persons.id", ondelete="CASCADE"), nullable=False
+    party_id = Column(
+        BigInteger,
+        ForeignKey("party.id", ondelete="CASCADE", name="custom_field_values_party_id_fkey"),
+        nullable=False,
     )
     # Canonical string form; coerced per definition.field_type by the service.
     value = Column(Text)

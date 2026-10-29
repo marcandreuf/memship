@@ -47,7 +47,7 @@ _INLINE_TYPES = frozenset(
 
 
 def _own_member(db: Session, user: User) -> Member | None:
-    return db.query(Member).filter(Member.user_id == user.id).first()
+    return db.query(Member).filter(Member.party_id == user.party_id).first()
 
 
 def _allow_activities(db: Session, user: User, rest: list[str]) -> bool:
@@ -56,8 +56,8 @@ def _allow_activities(db: Session, user: User, rest: list[str]) -> bool:
 
 
 def _allow_members(db: Session, user: User, rest: list[str]) -> bool:
-    """``members/<person_id>/photo.<ext>`` — the member themselves, or staff."""
-    if user.person_id is not None and str(user.person_id) == rest[0]:
+    """``members/<party_id>/photo.<ext>`` — the member themselves, or staff."""
+    if user.party_id is not None and str(user.party_id) == rest[0]:
         return True
     return "members.read" in resolve_permissions(user)
 

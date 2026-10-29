@@ -38,14 +38,14 @@ def _setup(db, iban=None, payment_method=None):
     db.add(person)
     db.flush()
     user = User(
-        person_id=person.id, email="pm-member@examplee6e3b1.com",
+        party_id=person.party_id, email="pm-member@examplee6e3b1.com",
         password_hash=hash_password("password123"),
         role="member", is_active=True,
     )
     db.add(user)
     db.flush()
     member = Member(
-        person_id=person.id, user_id=user.id,
+        party_id=person.party_id,
         membership_type_id=mt.id, member_number="PM-0001", status="active",
     )
     db.add(member)
@@ -196,7 +196,7 @@ class TestPaymentMethodAuth:
         db.add(person)
         db.flush()
         user = User(
-            person_id=person.id, email="pm-admin@examplee6e3b1.com",
+            party_id=person.party_id, email="pm-admin@examplee6e3b1.com",
             password_hash=hash_password("password123"),
             role="admin", is_active=True,
         )

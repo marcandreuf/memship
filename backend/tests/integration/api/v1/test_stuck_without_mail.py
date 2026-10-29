@@ -75,7 +75,7 @@ def _admin(db, suffix, role="admin"):
     db.add(person)
     db.flush()
     user = User(
-        person_id=person.id,
+        party_id=person.party_id,
         email=email,
         password_hash=hash_password(PASSWORD),
         role=role,
@@ -99,7 +99,7 @@ def _stuck_member(db, suffix):
     db.add(person)
     db.flush()
     user = User(
-        person_id=person.id,
+        party_id=person.party_id,
         email=email,
         password_hash=hash_password(PASSWORD),
         role="member",
@@ -112,8 +112,7 @@ def _stuck_member(db, suffix):
     user.plain_verification_token = _issue_verification_token(user)
     db.flush()
     member = Member(
-        person_id=person.id,
-        user_id=user.id,
+        party_id=person.party_id,
         membership_type_id=_default_tier(db).id,
         member_number=f"M-{suffix}",
         status="active",
@@ -252,7 +251,7 @@ class TestAnAdminCanFreeAStuckMember:
         admin = _admin(db, "audit")
         member = _stuck_member(db, "audit1")
         db.commit()
-        user_id = member.user_id
+        user_id = member.user.id
 
         client.post(
             f"/api/v1/members/{member.id}/confirm-email", cookies=_cookie(admin)
@@ -298,7 +297,7 @@ class TestAnAdminCanFreeAStuckMember:
         admin = _admin(db, "twice")
         member = _stuck_member(db, "twice1")
         db.commit()
-        user_id = member.user_id
+        user_id = member.user.id
 
         first = client.post(
             f"/api/v1/members/{member.id}/confirm-email", cookies=_cookie(admin)
@@ -326,7 +325,7 @@ class TestAnAdminCanFreeAStuckMember:
         db.add(person)
         db.flush()
         member = Member(
-            person_id=person.id,
+            party_id=person.party_id,
             membership_type_id=_default_tier(db).id,
             member_number="M-nologin",
             status="active",
@@ -384,7 +383,7 @@ class TestTheMemberRecordShowsTheState:
         db.add(person)
         db.flush()
         member = Member(
-            person_id=person.id,
+            party_id=person.party_id,
             membership_type_id=_default_tier(db).id,
             member_number="M-desk",
             status="active",

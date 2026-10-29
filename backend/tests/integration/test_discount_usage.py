@@ -56,7 +56,7 @@ def _member(db, membership_type, suffix):
     db.add(person)
     db.flush()
     member = Member(
-        person_id=person.id,
+        party_id=person.party_id,
         membership_type_id=membership_type.id,
         member_number=f"DISC-{suffix}",
         status="active",

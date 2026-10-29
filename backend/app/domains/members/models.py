@@ -1,6 +1,7 @@
 """Member and MembershipType models."""
 
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     CheckConstraint,
     Column,
@@ -109,12 +110,14 @@ class Member(Base):
             "status IN ('pending', 'active', 'suspended', 'cancelled', 'expired')",
             name="valid_status",
         ),
-        Index("idx_members_person_id", "person_id"),
+        Index("idx_members_party_id", "party_id"),
+        # One ACTIVE membership per party; deactivated history keeps its
+        # party_id (ADR 0003). Same shape as the users index.
         Index(
-            "uq_members_user_id",
-            "user_id",
+            "uq_members_one_active_per_party",
+            "party_id",
             unique=True,
-            postgresql_where="user_id IS NOT NULL",
+            postgresql_where="is_active",
         ),
         Index("idx_members_membership_type_id", "membership_type_id"),
         Index("idx_members_member_number", "member_number", postgresql_where="member_number IS NOT NULL"),
@@ -124,8 +127,11 @@ class Member(Base):
     )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    person_id = Column(Integer, ForeignKey("persons.id", ondelete="CASCADE"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+    party_id = Column(
+        BigInteger,
+        ForeignKey("party.id", ondelete="CASCADE", name="members_party_id_fkey"),
+        nullable=False,
+    )
     membership_type_id = Column(Integer, ForeignKey("membership_types.id", ondelete="SET NULL"))
     member_number = Column(String(50), unique=True)
     status = Column(String(50), default="active")
@@ -134,7 +140,16 @@ class Member(Base):
     joined_at = Column(Date, nullable=False, server_default=func.current_date())
     expires_at = Column(Date)
     renewed_at = Column(Date)
-    guardian_person_id = Column(Integer, ForeignKey("persons.id", ondelete="SET NULL"))
+    # Points at the persons SUBTYPE, not at party: a guardian is always a
+    # natural person, and the reference does the work of a CHECK.
+    guardian_party_id = Column(
+        BigInteger,
+        ForeignKey(
+            "persons.party_id",
+            ondelete="SET NULL",
+            name="members_guardian_party_id_fkey",
+        ),
+    )
     is_minor = Column(Boolean, default=False)
     communication_preferences = Column(
         JSONB, default=lambda: {"email": True, "sms": False, "push": False}
@@ -162,12 +177,25 @@ class Member(Base):
     created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
 
     # Relationships
-    person = relationship("Person", back_populates="member", foreign_keys=[person_id])
-    user = relationship("User", foreign_keys=[user_id])
+    party = relationship("Party", foreign_keys=[party_id])
+    person = relationship(
+        "Person",
+        primaryjoin="Member.party_id == foreign(Person.party_id)",
+        uselist=False,
+        viewonly=True,
+    )
+    # members.user_id is gone (ADR 0003): login and membership both hang off
+    # the party, so the login for a member is the party join below.
+    user = relationship(
+        "User",
+        primaryjoin="Member.party_id == foreign(User.party_id)",
+        uselist=False,
+        viewonly=True,
+    )
     membership_type = relationship(
         "MembershipType", back_populates="members", foreign_keys=[membership_type_id]
     )
     membership_reverted_from = relationship(
         "MembershipType", foreign_keys=[membership_reverted_from_id]
     )
-    guardian = relationship("Person", foreign_keys=[guardian_person_id])
+    guardian = relationship("Person", foreign_keys=[guardian_party_id])

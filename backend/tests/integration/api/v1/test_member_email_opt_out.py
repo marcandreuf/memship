@@ -63,7 +63,7 @@ def _member(db, suffix, email=ADDRESS, opted_out=False, is_active=True):
     db.add(person)
     db.flush()
     member = Member(
-        person_id=person.id,
+        party_id=person.party_id,
         membership_type_id=_mtype(db, suffix).id,
         member_number=f"M-{suffix}",
         status="active",

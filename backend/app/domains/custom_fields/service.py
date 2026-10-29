@@ -177,7 +177,7 @@ def validate_value(definition: CustomFieldDefinition, raw) -> str | None:
 
 
 def get_person_values(
-    db: Session, person_id: int, *, permissions: frozenset[str], is_own: bool
+    db: Session, party_id: int, *, permissions: frozenset[str], is_own: bool
 ) -> dict[str, str | None]:
     """One person's values, keyed by field, limited to what the actor may see.
 
@@ -188,7 +188,7 @@ def get_person_values(
     stored = {
         v.definition_id: v.value
         for v in db.query(CustomFieldValue)
-        .filter(CustomFieldValue.person_id == person_id)
+        .filter(CustomFieldValue.party_id == party_id)
         .all()
     }
     return {d.key: stored.get(d.id) for d in definitions}
@@ -196,7 +196,7 @@ def get_person_values(
 
 def set_person_values(
     db: Session,
-    person_id: int,
+    party_id: int,
     submitted: dict,
     *,
     permissions: frozenset[str],
@@ -227,7 +227,7 @@ def set_person_values(
     existing = {
         v.definition_id: v
         for v in db.query(CustomFieldValue)
-        .filter(CustomFieldValue.person_id == person_id)
+        .filter(CustomFieldValue.party_id == party_id)
         .all()
     }
 
@@ -250,7 +250,7 @@ def set_person_values(
         else:
             db.add(
                 CustomFieldValue(
-                    definition_id=definition.id, person_id=person_id, value=value
+                    definition_id=definition.id, party_id=party_id, value=value
                 )
             )
 

@@ -33,7 +33,7 @@ def _create_user(db, role="admin", suffix="rem"):
     db.add(person)
     db.flush()
     user = User(
-        person_id=person.id,
+        party_id=person.party_id,
         email=f"{suffix}-{role}@examplee6e3b1.com",
         password_hash=hash_password("password123"),
         role=role,
@@ -91,7 +91,7 @@ def _create_member_with_mandate(db, suffix="rem"):
     db.add(mtype)
     db.flush()
     member = Member(
-        person_id=person.id,
+        party_id=person.party_id,
         membership_type_id=mtype.id,
         member_number=f"M-{suffix}",
         status="active",
@@ -194,7 +194,7 @@ class TestRemittanceCRUD:
         mtype = MembershipType(name="NoMandate-rem", slug="nomandate-rem", base_price=50.00, billing_frequency="monthly")
         db.add(mtype)
         db.flush()
-        member = Member(person_id=person.id, membership_type_id=mtype.id, member_number="M-noman", status="active")
+        member = Member(party_id=person.party_id, membership_type_id=mtype.id, member_number="M-noman", status="active")
         db.add(member)
         db.flush()
 
@@ -1004,7 +1004,7 @@ class TestEligibleReceipts:
         db.add(mtype)
         db.flush()
         member = Member(
-            person_id=person.id, membership_type_id=mtype.id, member_number="M-el3", status="active"
+            party_id=person.party_id, membership_type_id=mtype.id, member_number="M-el3", status="active"
         )
         db.add(member)
         db.flush()
@@ -1114,7 +1114,7 @@ class TestMandateErrorsNameTheMember:
         db.add(mtype)
         db.flush()
         member = Member(
-            person_id=person.id, membership_type_id=mtype.id, member_number="D-0023", status="active"
+            party_id=person.party_id, membership_type_id=mtype.id, member_number="D-0023", status="active"
         )
         db.add(member)
         db.flush()
@@ -1155,7 +1155,7 @@ class TestEligibleReceiptCarriesItsMember:
         # A name an admin can find in the register, not an internal id.
         assert item["member_name"]
         assert str(member.id) != item["member_name"]
-        person = db.query(Person).filter(Person.id == member.person_id).first()
+        person = db.query(Person).filter(Person.id == member.party_id).first()
         assert person.first_name in item["member_name"]
         assert person.last_name in item["member_name"]
 

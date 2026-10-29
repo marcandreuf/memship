@@ -110,11 +110,11 @@ def _get_org_address(db: Session) -> str | None:
     return ", ".join(parts)
 
 
-def _get_member_address(db: Session, person_id: int) -> str | None:
+def _get_member_address(db: Session, person_pk: int) -> str | None:
     """Get a member's primary address as a single string."""
     addr = (
         db.query(Address)
-        .filter(Address.entity_type == "person", Address.entity_id == person_id, Address.is_primary.is_(True))
+        .filter(Address.entity_type == "person", Address.entity_id == person_pk, Address.is_primary.is_(True))
         .first()
     )
     if not addr:
@@ -136,7 +136,7 @@ def generate_receipt_pdf(db: Session, receipt: Receipt) -> bytes:
 
     org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
     member = db.query(Member).filter(Member.id == receipt.member_id).first()
-    person = db.query(Person).filter(Person.id == member.person_id).first() if member else None
+    person = db.query(Person).filter(Person.party_id == member.party_id).first() if member else None
 
     locale = org.locale or "es"
     if locale not in ("es", "ca", "en"):

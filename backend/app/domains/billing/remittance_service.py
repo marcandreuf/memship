@@ -82,7 +82,7 @@ def label_members(db: Session, member_ids: list[int] | set[int]) -> list[str]:
     """
     rows = (
         db.query(Member.member_number, Person.first_name, Person.last_name)
-        .join(Person, Member.person_id == Person.id)
+        .join(Person, Member.party_id == Person.party_id)
         .filter(Member.id.in_(list(member_ids)))
         .all()
     )

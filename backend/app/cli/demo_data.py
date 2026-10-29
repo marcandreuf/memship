@@ -133,7 +133,7 @@ def generate_members(
         db.flush()
 
         member = Member(
-            person_id=person.id,
+            party_id=person.party_id,
             membership_type_id=type_ids[i % len(type_ids)],
             member_number=f"D-{i + 1:04d}",
             status=status,
@@ -157,7 +157,7 @@ def generate_members(
 def demo_members(db) -> list[Member]:
     return (
         db.query(Member)
-        .join(Person, Member.person_id == Person.id)
+        .join(Person, Member.party_id == Person.party_id)
         .filter(Person.email.like(f"demo%@{settings.SEED_EMAIL_DOMAIN}"))
         .all()
     )
@@ -296,7 +296,7 @@ def generate_sepa(db) -> None:
     # Demo members with an IBAN but no mandate yet.
     candidates = (
         db.query(Member, Person)
-        .join(Person, Member.person_id == Person.id)
+        .join(Person, Member.party_id == Person.party_id)
         .filter(
             Person.email.like(f"demo%@{settings.SEED_EMAIL_DOMAIN}"),
             Person.bank_iban.isnot(None),

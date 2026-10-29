@@ -58,13 +58,13 @@ def _account(db, membership_type, email, *, role="member", person_email=None):
     db.add(person)
     db.flush()
     user = User(
-        person_id=person.id, email=email,
+        party_id=person.party_id, email=email,
         password_hash=hash_password("password123"), role=role, is_active=True,
     )
     db.add(user)
     db.flush()
     member = Member(
-        person_id=person.id, user_id=user.id,
+        party_id=person.party_id,
         membership_type_id=membership_type.id, status="active",
     )
     db.add(member)

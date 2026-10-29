@@ -27,7 +27,7 @@ def _make_user(db, email, role="member", with_member=True):
     db.add(person)
     db.flush()
     user = User(
-        person_id=person.id,
+        party_id=person.party_id,
         email=email,
         password_hash=hash_password("password123"),
         role=role,
@@ -37,7 +37,7 @@ def _make_user(db, email, role="member", with_member=True):
     db.flush()
     member = None
     if with_member:
-        member = Member(person_id=person.id, user_id=user.id, status="active")
+        member = Member(party_id=person.party_id, status="active")
         db.add(member)
         db.flush()
     return user, person, member

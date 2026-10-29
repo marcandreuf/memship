@@ -26,7 +26,7 @@ def ensure_customer(
         params={
             "email": person.email,
             "name": f"{person.first_name} {person.last_name}",
-            "metadata": {"person_id": str(person.id)},
+            "metadata": {"person_id": str(person.party_id)},
         }
     )
 

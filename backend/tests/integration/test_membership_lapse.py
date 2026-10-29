@@ -68,7 +68,7 @@ def _member(db, suffix, tier):
     db.add(person)
     db.flush()
     member = Member(
-        person_id=person.id,
+        party_id=person.party_id,
         membership_type_id=tier.id,
         member_number=f"LAPSE-{suffix}",
         status="active",

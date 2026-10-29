@@ -29,7 +29,7 @@ def _user(db, role, email):
     db.add(person)
     db.flush()
     user = User(
-        person_id=person.id, email=email,
+        party_id=person.party_id, email=email,
         password_hash=hash_password("password123"), role=role, is_active=True,
     )
     db.add(user)
@@ -45,7 +45,7 @@ def _member(db, user, gender=None):
         db.flush()
     user.person.gender = gender
     member = Member(
-        person_id=user.person_id, user_id=user.id, membership_type_id=mt.id,
+        party_id=user.party_id, membership_type_id=mt.id,
         member_number=f"G-{user.id:04d}", status="active",
     )
     db.add(member)
@@ -120,7 +120,7 @@ class TestMemberWrites:
         member = _member(db, _user(db, "member", "m-g@examplee6e3b1.com"))
         _login(client, _user(db, "admin", "admin-g@examplee6e3b1.com"))
 
-        r = client.put(f"/api/v1/persons/{member.person_id}", json={"gender": "not-an-option"})
+        r = client.put(f"/api/v1/persons/{member.party_id}", json={"gender": "not-an-option"})
 
         assert r.status_code == 422
 
