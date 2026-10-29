@@ -69,6 +69,9 @@ class Party(Base):
     # list, receipt PDF and SEPA file wants a name and should not care what
     # kind of party it is. ``sepa_mandates.debtor_name`` set the precedent.
     display_name = Column(Text, nullable=False)
+    # The registered name when it differs from the everyday one — a company's
+    # "S.L." form, the club's registered association name (Phase 5c).
+    legal_name = Column(String(255))
     # Party-level facts: a company has all of these too. Since the Phase 3
     # column drop these are the only copy; ``Person`` reaches them through
     # association proxies.
@@ -120,9 +123,8 @@ class Person(Base):
     last_name = Column(String(100), nullable=False)
     date_of_birth = Column(Date)
     gender = Column(String(20))
-    bank_iban = Column(String(34))
-    bank_bic = Column(String(11))
-    bank_holder_name = Column(String(255))
+    # A preference, not an account fact — the account itself lives in
+    # ``bank_accounts`` since Phase 5c.
     payment_method = Column(String(20))
     stripe_customer_id = Column(String(255), unique=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -164,6 +166,13 @@ class Person(Base):
         primaryjoin="Person.party_id == foreign(Contact.party_id)",
         viewonly=True,
     )
+    # Writable, unlike the two above: the bank_* properties below append to it,
+    # and the pending row's party_id is filled from the person's at flush.
+    bank_accounts = relationship(
+        "BankAccount",
+        primaryjoin="Person.party_id == foreign(BankAccount.party_id)",
+        cascade="all, delete-orphan",
+    )
 
     # The party-level facts, readable and writable as if they were still
     # columns here. Setting one on a brand-new person creates the pending
@@ -183,6 +192,52 @@ class Person(Base):
         "party", "photo_url",
         creator=lambda value: Party(kind="person", display_name="(unnamed)", photo_url=value),
     )
+
+    # The bank facts, readable and writable as if they were still columns here
+    # (they were, until Phase 5c). Instance-level only: a query needs to join
+    # ``BankAccount`` explicitly, and a class-level use fails loudly.
+    def _primary_bank_account(self, create: bool = False) -> "BankAccount | None":
+        for account in self.bank_accounts:
+            if account.is_primary:
+                return account
+        if create:
+            account = BankAccount(is_primary=True)
+            self.bank_accounts.append(account)
+            return account
+        return None
+
+    @property
+    def bank_iban(self):
+        account = self._primary_bank_account()
+        return account.iban if account else None
+
+    @bank_iban.setter
+    def bank_iban(self, value):
+        if value is None and self._primary_bank_account() is None:
+            return
+        self._primary_bank_account(create=True).iban = value
+
+    @property
+    def bank_bic(self):
+        account = self._primary_bank_account()
+        return account.bic if account else None
+
+    @bank_bic.setter
+    def bank_bic(self, value):
+        if value is None and self._primary_bank_account() is None:
+            return
+        self._primary_bank_account(create=True).bic = value
+
+    @property
+    def bank_holder_name(self):
+        account = self._primary_bank_account()
+        return account.holder_name if account else None
+
+    @bank_holder_name.setter
+    def bank_holder_name(self, value):
+        if value is None and self._primary_bank_account() is None:
+            return
+        self._primary_bank_account(create=True).holder_name = value
 
 
 @event.listens_for(SASession, "before_flush")
@@ -428,6 +483,50 @@ class Contact(Base):
         primaryjoin="Person.party_id == foreign(Contact.party_id)",
         viewonly=True,
     )
+
+
+class BankAccount(Base):
+    """Where a party banks — the third party satellite (Phase 5c), one owner
+    like ``Address`` and ``Contact``. The club's collection account and a
+    member's debit account are the same kind of fact, which is what lets an
+    entity hold one too. ``sepa_mandates`` keeps its own debtor snapshot and
+    ``remittances`` its creditor snapshot: those are the legal record, this is
+    the living value they are taken from.
+
+    The value columns are all nullable on purpose: the write-through
+    properties on ``Person`` and ``OrganizationSettings`` set them one at a
+    time, and the old columns were independently nullable too.
+    """
+
+    __tablename__ = "bank_accounts"
+    __table_args__ = (
+        Index("ix_bank_accounts_party", "party_id"),
+        # One primary account per party, same construction as addresses.
+        Index(
+            "uq_bank_accounts_primary_per_party",
+            "party_id",
+            unique=True,
+            postgresql_where="is_primary",
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    party_id = Column(
+        BigInteger,
+        ForeignKey("party.id", ondelete="CASCADE", name="bank_accounts_party_id_fkey"),
+        nullable=False,
+    )
+    bank_name = Column(String(255))
+    iban = Column(String(34))
+    bic = Column(String(11))
+    holder_name = Column(String(255))
+    is_primary = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    party = relationship("Party", overlaps="bank_accounts")
 
 
 @event.listens_for(Contact, "before_insert")

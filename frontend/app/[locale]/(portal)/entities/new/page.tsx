@@ -21,6 +21,7 @@ export default function NewEntityPage() {
         onSubmit={async (data) => {
           const created = await create({
             ...data,
+            legal_name: data.legal_name || undefined,
             national_id: data.national_id || undefined,
             email: data.email || undefined,
           });

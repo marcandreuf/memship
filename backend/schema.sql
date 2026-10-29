@@ -398,6 +398,40 @@ CREATE SEQUENCE public.audit_logs_id_seq
 ALTER SEQUENCE public.audit_logs_id_seq OWNED BY public.audit_logs.id;
 
 --
+-- Name: bank_accounts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.bank_accounts (
+    id integer NOT NULL,
+    party_id bigint NOT NULL,
+    bank_name character varying(255),
+    iban character varying(34),
+    bic character varying(11),
+    holder_name character varying(255),
+    is_primary boolean,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now()
+);
+
+--
+-- Name: bank_accounts_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.bank_accounts_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+--
+-- Name: bank_accounts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.bank_accounts_id_seq OWNED BY public.bank_accounts.id;
+
+--
 -- Name: billing_runs; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -903,13 +937,6 @@ ALTER SEQUENCE public.notifications_id_seq OWNED BY public.notifications.id;
 
 CREATE TABLE public.organization_settings (
     id integer NOT NULL,
-    name character varying(255) NOT NULL,
-    legal_name character varying(255),
-    email character varying(255),
-    phone character varying(50),
-    website character varying(255),
-    logo_url character varying(500),
-    tax_id character varying(50),
     locale character varying(10),
     timezone character varying(50),
     currency character varying(3),
@@ -919,9 +946,6 @@ CREATE TABLE public.organization_settings (
     custom_settings jsonb,
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now(),
-    bank_name character varying(255),
-    bank_iban character varying(34),
-    bank_bic character varying(11),
     invoice_prefix character varying(10) DEFAULT 'INV'::character varying,
     invoice_next_number integer DEFAULT 1,
     invoice_annual_reset boolean,
@@ -968,7 +992,8 @@ CREATE TABLE public.party (
     email character varying(255),
     photo_url character varying(500),
     created_at timestamp with time zone DEFAULT now(),
-    updated_at timestamp with time zone DEFAULT now()
+    updated_at timestamp with time zone DEFAULT now(),
+    legal_name character varying(255)
 );
 
 --
@@ -1044,9 +1069,6 @@ CREATE TABLE public.persons (
     gender character varying(20),
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now(),
-    bank_iban character varying(34),
-    bank_bic character varying(11),
-    bank_holder_name character varying(255),
     payment_method character varying(20),
     stripe_customer_id character varying(255),
     party_id bigint NOT NULL,
@@ -1737,6 +1759,12 @@ ALTER TABLE ONLY public.announcements ALTER COLUMN id SET DEFAULT nextval('publi
 ALTER TABLE ONLY public.audit_logs ALTER COLUMN id SET DEFAULT nextval('public.audit_logs_id_seq'::regclass);
 
 --
+-- Name: bank_accounts id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.bank_accounts ALTER COLUMN id SET DEFAULT nextval('public.bank_accounts_id_seq'::regclass);
+
+--
 -- Name: billing_runs id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1985,6 +2013,13 @@ ALTER TABLE ONLY public.announcements
 
 ALTER TABLE ONLY public.audit_logs
     ADD CONSTRAINT audit_logs_pkey PRIMARY KEY (id);
+
+--
+-- Name: bank_accounts bank_accounts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.bank_accounts
+    ADD CONSTRAINT bank_accounts_pkey PRIMARY KEY (id);
 
 --
 -- Name: billing_runs billing_runs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
@@ -2710,6 +2745,12 @@ CREATE INDEX ix_announcements_created ON public.announcements USING btree (creat
 CREATE INDEX ix_announcements_status ON public.announcements USING btree (status);
 
 --
+-- Name: ix_bank_accounts_party; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ix_bank_accounts_party ON public.bank_accounts USING btree (party_id);
+
+--
 -- Name: ix_billing_runs_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2956,6 +2997,12 @@ CREATE INDEX ix_webhook_events_provider_status ON public.webhook_events USING bt
 CREATE UNIQUE INDEX uq_addresses_primary_per_party ON public.addresses USING btree (party_id) WHERE ((party_id IS NOT NULL) AND is_primary);
 
 --
+-- Name: uq_bank_accounts_primary_per_party; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uq_bank_accounts_primary_per_party ON public.bank_accounts USING btree (party_id) WHERE is_primary;
+
+--
 -- Name: uq_bookings_party_slot_active; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3099,6 +3146,13 @@ ALTER TABLE ONLY public.announcements
 
 ALTER TABLE ONLY public.audit_logs
     ADD CONSTRAINT audit_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE SET NULL;
+
+--
+-- Name: bank_accounts bank_accounts_party_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.bank_accounts
+    ADD CONSTRAINT bank_accounts_party_id_fkey FOREIGN KEY (party_id) REFERENCES public.party(id) ON DELETE CASCADE;
 
 --
 -- Name: billing_runs billing_runs_triggered_by_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -

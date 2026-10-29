@@ -19,6 +19,7 @@ import type { EntityData } from "../services/entities-api";
 const entitySchema = z.object({
   kind: z.string().min(1),
   name: z.string().trim().min(1).max(255),
+  legal_name: z.string().max(255).optional().or(z.literal("")),
   national_id: z.string().max(50).optional().or(z.literal("")),
   email: z.string().email().max(255).optional().or(z.literal("")),
 });
@@ -40,6 +41,7 @@ export function EntityForm({ entity, onSubmit, isSubmitting, onCancel }: EntityF
     defaultValues: {
       kind: entity?.kind || "company",
       name: entity?.name || "",
+      legal_name: entity?.legal_name || "",
       national_id: entity?.national_id || "",
       email: entity?.email || "",
     },
@@ -77,6 +79,13 @@ export function EntityForm({ entity, onSubmit, isSubmitting, onCancel }: EntityF
                   ))}
                 </SelectContent>
               </Select>
+              <FormMessage />
+            </FormItem>
+          )} />
+          <FormField control={form.control} name="legal_name" render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t("entities.legalName")}</FormLabel>
+              <FormControl><Input {...field} /></FormControl>
               <FormMessage />
             </FormItem>
           )} />

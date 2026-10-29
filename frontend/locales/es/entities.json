@@ -6,6 +6,7 @@
     "noEntities": "No hay entidades",
     "entityInfo": "Datos de la entidad",
     "name": "Nombre",
+    "legalName": "Razón social",
     "kind": "Tipo",
     "nationalId": "NIF/CIF",
     "createdAt": "Fecha de alta",
