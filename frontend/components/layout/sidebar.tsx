@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   Users,
   UserCheck,
+  Building2,
   CalendarDays,
   FolderOpen,
   Settings,
@@ -103,6 +104,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
           [
             { href: "/members", label: t("nav.members"), icon: Users, show: has("members.read") },
             { href: "/members/pending", label: t("nav.pendingRegistrations"), icon: UserCheck, show: has("members.approve") },
+            { href: "/entities", label: t("nav.entities"), icon: Building2, show: has("entities.read") },
             { href: "/paid-tier-without-purchase", label: t("reports.paidTierWithoutPurchase.nav"), icon: TriangleAlert, show: has("members.read") },
             { href: "/groups", label: t("nav.groups"), icon: FolderOpen, show: has("membership.read") },
             { href: "/activities", label: t("nav.activities"), icon: CalendarDays, show: has("activities.read") },

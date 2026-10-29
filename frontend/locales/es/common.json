@@ -9,6 +9,7 @@
   "nav": {
     "dashboard": "Panel",
     "members": "Socios",
+    "entities": "Entidades",
     "membershipTypes": "Tipos de membresía",
     "groups": "Grupos",
     "receipts": "Recibos",

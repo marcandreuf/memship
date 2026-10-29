@@ -9,6 +9,7 @@
   "nav": {
     "dashboard": "Dashboard",
     "members": "Members",
+    "entities": "Entities",
     "membershipTypes": "Membership Types",
     "groups": "Groups",
     "receipts": "Receipts",

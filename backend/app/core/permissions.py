@@ -32,6 +32,8 @@ ADMINISTRATIVE: tuple[Permission, ...] = (
     _p("members.read"),
     _p("members.write"),
     _p("members.approve"),
+    _p("entities.read"),
+    _p("entities.write"),
     _p("membership.read"),
     _p("membership.write"),
     _p("activities.read"),

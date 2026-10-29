@@ -26,7 +26,7 @@ import { TabContentSkeleton } from "@/components/ui/skeletons";
 import { toast } from "sonner";
 import { mapApiErrorsToForm } from "@/lib/errors";
 import { useFormatters } from "@/hooks/use-formatters";
-import { useReceipts, useCreateReceipt } from "@/features/receipts/hooks/use-receipts";
+import { useReceipts, useCreateReceipt } from "../hooks/use-receipts";
 
 const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   new: "outline",
@@ -48,11 +48,11 @@ const createSchema = z.object({
   notes: z.string().optional().or(z.literal("")),
 });
 
-interface MemberReceiptsTabProps {
+interface PartyReceiptsTabProps {
   partyId: number;
 }
 
-export function MemberReceiptsTab({ partyId }: MemberReceiptsTabProps) {
+export function PartyReceiptsTab({ partyId }: PartyReceiptsTabProps) {
   const t = useTranslations();
   const router = useRouter();
   const [createOpen, setCreateOpen] = useState(false);
@@ -82,7 +82,7 @@ export function MemberReceiptsTab({ partyId }: MemberReceiptsTabProps) {
             <DialogHeader>
               <DialogTitle>{t("receipts.createReceipt")}</DialogTitle>
             </DialogHeader>
-            <CreateMemberReceiptForm
+            <CreatePartyReceiptForm
               partyId={partyId}
               t={t}
               onSuccess={() => setCreateOpen(false)}
@@ -132,7 +132,7 @@ export function MemberReceiptsTab({ partyId }: MemberReceiptsTabProps) {
   );
 }
 
-function CreateMemberReceiptForm({
+function CreatePartyReceiptForm({
   partyId,
   t,
   onSuccess,
