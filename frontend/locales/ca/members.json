@@ -37,6 +37,7 @@
     "typesInfo": "Els tipus de afiliació defineixen les diferents categories de socis de la teva organització (p. ex. Soci Ple, Estudiant, Sènior). Cada tipus pot tenir el seu propi preu, freqüència de cobrament i restriccions d'edat.",
     "contactInfo": "Contacte",
     "addContact": "Afegir contacte",
+    "contactChannelFull": "Màxim 5 contactes per canal",
     "editContact": "Editar contacte",
     "contactType": "Tipus",
     "selectContactType": "Seleccionar tipus...",

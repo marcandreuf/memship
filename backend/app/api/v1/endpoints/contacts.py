@@ -35,7 +35,15 @@ def list_contact_types(
         .order_by(ContactType.display_order)
         .all()
     )
-    return [{"id": ct.id, "code": ct.code, "name": ct.name} for ct in types]
+    # ``channel`` is what groups types into one primary slot and one cap:
+    # phone_home and phone_mobile are both ``phone``. Without it the client
+    # would have to guess the grouping from the code prefix, which the
+    # people-cluster migration only does as a one-time backfill with an
+    # ``other`` fallback for codes it cannot read.
+    return [
+        {"id": ct.id, "code": ct.code, "name": ct.name, "channel": ct.channel}
+        for ct in types
+    ]
 
 
 def _contact_to_response(contact: Contact) -> dict:
@@ -44,6 +52,7 @@ def _contact_to_response(contact: Contact) -> dict:
         "id": contact.id,
         "contact_type_id": contact.contact_type_id,
         "contact_type_name": contact.contact_type.name if contact.contact_type else None,
+        "channel": contact.channel,
         "value": contact.value,
         "label": contact.label,
         "is_primary": contact.is_primary,

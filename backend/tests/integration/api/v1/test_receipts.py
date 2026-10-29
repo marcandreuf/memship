@@ -1060,6 +1060,35 @@ class TestReceiptsForAPartyWithNoMembership:
         assert found.status_code == 200
         assert len(found.json()["items"]) >= 1
 
+    def test_the_pdf_prefers_the_legal_name(self, db):
+        """A factura names the registered entity. ``display_name`` is what the
+        screens show and is often a trading name, so the invoice prefers
+        ``legal_name`` and falls back when it is unset."""
+        from app.domains.billing.pdf import build_receipt_context
+
+        _ensure_org_settings(db)
+        party = _company_party(db, "Fundació Curta", "G66778899")
+        party.legal_name = "Fundació Curta per a l'Esport, SL"
+        db.flush()
+        receipt = Receipt(
+            receipt_number="FAC-2026-0098",
+            party_id=party.id,
+            origin="manual",
+            description="Donatiu",
+            base_amount=Decimal("100.00"),
+            vat_rate=Decimal("0.00"),
+            vat_amount=Decimal("0.00"),
+            total_amount=Decimal("100.00"),
+            status="pending",
+            emission_date=date.today(),
+        )
+        db.add(receipt)
+        db.flush()
+
+        context = build_receipt_context(db, receipt)
+
+        assert context["member"]["name"] == "Fundació Curta per a l'Esport, SL"
+
     def test_the_pdf_context_carries_the_party_as_recipient(self, db):
         """Asserted on the context rather than rendered bytes: WeasyPrint's
         system deps are deliberately absent in tests, which is why
