@@ -29,10 +29,36 @@ def _auth_cookie(user):
 def _ensure_contact_type(db, code="phone_mobile"):
     ct = db.query(ContactType).filter(ContactType.code == code).first()
     if not ct:
-        ct = ContactType(code=code, name="Mobile Phone", is_active=True)
+        ct = ContactType(code=code, name="Mobile Phone", channel="phone", is_active=True)
         db.add(ct)
         db.flush()
     return ct
+
+
+def _contact_type(db, code, channel, name=None):
+    """Fetch or create a type in a given channel. Several types share a channel
+    (``phone_home`` and ``phone_mobile`` are both ``phone``), which is what the
+    one-primary-per-channel index is about."""
+    ct = db.query(ContactType).filter(ContactType.code == code).first()
+    if not ct:
+        ct = ContactType(
+            code=code, name=name or code, channel=channel, is_active=True
+        )
+        db.add(ct)
+        db.flush()
+    return ct
+
+
+def _contact(db, party_id, contact_type, value, *, is_primary=False):
+    row = Contact(
+        party_id=party_id,
+        contact_type_id=contact_type.id,
+        value=value,
+        is_primary=is_primary,
+    )
+    db.add(row)
+    db.flush()
+    return row
 
 
 class TestContactsCRUD:
@@ -63,7 +89,7 @@ class TestContactsCRUD:
         user, person = _create_user(db, "admin", "-list1")
         ct = _ensure_contact_type(db)
         contact = Contact(
-            entity_type="person", entity_id=person.id,
+            party_id=person.party_id,
             contact_type_id=ct.id, value="+34 611 222 333",
         )
         db.add(contact)
@@ -80,7 +106,7 @@ class TestContactsCRUD:
         user, person = _create_user(db, "admin", "-update")
         ct = _ensure_contact_type(db)
         contact = Contact(
-            entity_type="person", entity_id=person.id,
+            party_id=person.party_id,
             contact_type_id=ct.id, value="+34 600 000 000",
         )
         db.add(contact)
@@ -100,7 +126,7 @@ class TestContactsCRUD:
         user, person = _create_user(db, "admin", "-delete")
         ct = _ensure_contact_type(db)
         contact = Contact(
-            entity_type="person", entity_id=person.id,
+            party_id=person.party_id,
             contact_type_id=ct.id, value="+34 600 111 222",
         )
         db.add(contact)
@@ -129,3 +155,96 @@ class TestContactsCRUD:
             json={"value": "+34 600 000 000"},
         )
         assert response.status_code == 404
+
+
+class TestOnePrimaryPerChannel:
+    """``uq_contacts_one_primary_per_channel`` permits one primary per channel,
+    and a channel holds several types: ``phone_home``, ``phone_mobile``,
+    ``phone_work`` and ``phone_emergency`` are all ``phone``.
+
+    A primary home phone beside a primary mobile was legal before the index, and
+    nothing demotes the incumbent on a write, so the insert collided with the
+    index and the unhandled ``IntegrityError`` surfaced as a 500 on an action
+    that had always worked.
+
+    The rule is newest-wins: the contact being saved takes the slot. That is the
+    opposite of the migration's dedupe, which keeps the first per channel, and
+    the asymmetry is deliberate - at upgrade there is no user intent to read,
+    here somebody ticked the box.
+    """
+
+    def test_a_new_primary_demotes_the_incumbent_in_the_same_channel(self, client, db):
+        user, person = _create_user(db, "admin", "-prim-new")
+        home = _contact_type(db, "phone_home", "phone", "Home Phone")
+        mobile = _contact_type(db, "phone_mobile", "phone", "Mobile Phone")
+        incumbent = _contact(db, person.party_id, home, "+34 900 000 001", is_primary=True)
+        client.cookies.update(_auth_cookie(user))
+
+        response = client.post(
+            f"/api/v1/persons/{person.party_id}/contacts/",
+            json={"contact_type_id": mobile.id, "value": "+34 600 000 001", "is_primary": True},
+        )
+
+        assert response.status_code == 201
+        assert response.json()["is_primary"] is True
+        db.refresh(incumbent)
+        assert incumbent.is_primary is False
+
+    def test_promoting_an_existing_contact_demotes_the_incumbent(self, client, db):
+        user, person = _create_user(db, "admin", "-prim-promote")
+        home = _contact_type(db, "phone_home", "phone", "Home Phone")
+        mobile = _contact_type(db, "phone_mobile", "phone", "Mobile Phone")
+        incumbent = _contact(db, person.party_id, home, "+34 900 000 002", is_primary=True)
+        challenger = _contact(db, person.party_id, mobile, "+34 600 000 002")
+        client.cookies.update(_auth_cookie(user))
+
+        response = client.put(
+            f"/api/v1/contacts/{challenger.id}", json={"is_primary": True}
+        )
+
+        assert response.status_code == 200
+        db.refresh(incumbent)
+        db.refresh(challenger)
+        assert challenger.is_primary is True
+        assert incumbent.is_primary is False
+
+    def test_retyping_into_a_channel_that_already_has_a_primary_demotes_it(
+        self, client, db
+    ):
+        """Changing a primary contact's type can move it into a channel that
+        already has one, which the composite FK allows and the index does not."""
+        user, person = _create_user(db, "admin", "-prim-retype")
+        home = _contact_type(db, "phone_home", "phone", "Home Phone")
+        mobile = _contact_type(db, "phone_mobile", "phone", "Mobile Phone")
+        work_email = _contact_type(db, "email_work", "email", "Work Email")
+        incumbent = _contact(db, person.party_id, home, "+34 900 000 003", is_primary=True)
+        moving = _contact(db, person.party_id, work_email, "a@examplee6e3b1.com", is_primary=True)
+        client.cookies.update(_auth_cookie(user))
+
+        response = client.put(
+            f"/api/v1/contacts/{moving.id}", json={"contact_type_id": mobile.id}
+        )
+
+        assert response.status_code == 200
+        db.refresh(incumbent)
+        db.refresh(moving)
+        assert moving.is_primary is True
+        assert incumbent.is_primary is False
+
+    def test_a_primary_email_and_a_primary_phone_coexist(self, client, db):
+        """The index's actual purpose, kept as a guard on the demotion: the
+        demotion must be scoped to one channel and not clear the other."""
+        user, person = _create_user(db, "admin", "-prim-channels")
+        mobile = _contact_type(db, "phone_mobile", "phone", "Mobile Phone")
+        work_email = _contact_type(db, "email_work", "email", "Work Email")
+        phone = _contact(db, person.party_id, mobile, "+34 600 000 004", is_primary=True)
+        client.cookies.update(_auth_cookie(user))
+
+        response = client.post(
+            f"/api/v1/persons/{person.party_id}/contacts/",
+            json={"contact_type_id": work_email.id, "value": "b@examplee6e3b1.com", "is_primary": True},
+        )
+
+        assert response.status_code == 201
+        db.refresh(phone)
+        assert phone.is_primary is True

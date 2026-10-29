@@ -228,7 +228,7 @@ class TestTheDocumentedInstallCommand:
         with scratch_db.connect() as conn:
             row = conn.execute(
                 sa.text(
-                    "SELECT u.id, p.id AS person_id FROM users u "
+                    "SELECT u.id, p.party_id AS person_id FROM users u "
                     "JOIN persons p ON p.party_id = u.party_id WHERE u.email = :e"
                 ),
                 {"e": STORED},
@@ -246,7 +246,7 @@ class TestTheDocumentedInstallCommand:
             members = conn.execute(
                 sa.text(
                     "SELECT count(*) FROM members m JOIN persons p ON p.party_id = m.party_id "
-                    "WHERE p.id = :p"
+                    "WHERE p.party_id = :p"
                 ),
                 {"p": row.person_id},
             ).scalar_one()
@@ -323,8 +323,8 @@ class TestItFailsLoudly:
                     "    VALUES ('person', 'Plain Member', 'plain.member@example.org')"
                     "    RETURNING id"
                     ") "
-                    "INSERT INTO persons (party_id, first_name, last_name, email) "
-                    "SELECT id, 'Plain', 'Member', 'plain.member@example.org' "
+                    "INSERT INTO persons (party_id, first_name, last_name) "
+                    "SELECT id, 'Plain', 'Member' "
                     "FROM new_party RETURNING party_id"
                 )
             ).scalar_one()
@@ -384,7 +384,7 @@ class TestTheDemoClubContactDetails:
                 row[0]
                 for row in conn.execute(
                     sa.text(
-                        "SELECT email FROM persons WHERE email IS NOT NULL "
+                        "SELECT email FROM party WHERE email IS NOT NULL "
                         "UNION SELECT email FROM organization_settings WHERE email IS NOT NULL"
                     )
                 )

@@ -1155,7 +1155,7 @@ class TestEligibleReceiptCarriesItsMember:
         # A name an admin can find in the register, not an internal id.
         assert item["member_name"]
         assert str(member.id) != item["member_name"]
-        person = db.query(Person).filter(Person.id == member.party_id).first()
+        person = db.query(Person).filter(Person.party_id == member.party_id).first()
         assert person.first_name in item["member_name"]
         assert person.last_name in item["member_name"]
 

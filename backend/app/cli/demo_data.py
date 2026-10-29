@@ -30,7 +30,7 @@ from app.core.config import settings
 from app.domains.billing.models import Concept, PaymentProvider, Receipt, SepaMandate
 from app.domains.members.models import Member, MembershipType
 from app.domains.organizations.models import OrganizationSettings
-from app.domains.persons.models import Person
+from app.domains.persons.models import Party, Person
 from app.domains.reminders.models import Reminder
 
 # Deterministic so the same demo dataset (and screenshots) reproduce every run.
@@ -85,7 +85,7 @@ def generate_members(
     carry their own ``D-`` member-number namespace so they never collide with
     base-install / ``--test`` numbering.
     """
-    if db.query(Person).filter(Person.email.like(f"demo%@{settings.SEED_EMAIL_DOMAIN}")).first():
+    if db.query(Person).join(Party, Party.id == Person.party_id).filter(Party.email.like(f"demo%@{settings.SEED_EMAIL_DOMAIN}")).first():
         print("  Demo members: already seeded")
         return demo_members(db)
 
@@ -158,7 +158,8 @@ def demo_members(db) -> list[Member]:
     return (
         db.query(Member)
         .join(Person, Member.party_id == Person.party_id)
-        .filter(Person.email.like(f"demo%@{settings.SEED_EMAIL_DOMAIN}"))
+        .join(Party, Party.id == Person.party_id)
+        .filter(Party.email.like(f"demo%@{settings.SEED_EMAIL_DOMAIN}"))
         .all()
     )
 
@@ -297,8 +298,9 @@ def generate_sepa(db) -> None:
     candidates = (
         db.query(Member, Person)
         .join(Person, Member.party_id == Person.party_id)
+        .join(Party, Party.id == Person.party_id)
         .filter(
-            Person.email.like(f"demo%@{settings.SEED_EMAIL_DOMAIN}"),
+            Party.email.like(f"demo%@{settings.SEED_EMAIL_DOMAIN}"),
             Person.bank_iban.isnot(None),
         )
         .all()

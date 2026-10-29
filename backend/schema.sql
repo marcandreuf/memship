@@ -246,47 +246,11 @@ CREATE SEQUENCE public.activity_prices_id_seq
 ALTER SEQUENCE public.activity_prices_id_seq OWNED BY public.activity_prices.id;
 
 --
--- Name: address_types; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.address_types (
-    id integer NOT NULL,
-    code character varying(20) NOT NULL,
-    name character varying(50) NOT NULL,
-    description character varying(255),
-    is_active boolean,
-    display_order integer,
-    created_at timestamp with time zone DEFAULT now(),
-    updated_at timestamp with time zone DEFAULT now()
-);
-
---
--- Name: address_types_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.address_types_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
---
--- Name: address_types_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.address_types_id_seq OWNED BY public.address_types.id;
-
---
 -- Name: addresses; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.addresses (
     id integer NOT NULL,
-    address_type_id integer,
-    entity_type character varying(30) NOT NULL,
-    entity_id integer NOT NULL,
     address_line1 character varying(255) NOT NULL,
     address_line2 character varying(255),
     city character varying(100) NOT NULL,
@@ -301,7 +265,9 @@ CREATE TABLE public.addresses (
     is_active boolean,
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now(),
-    CONSTRAINT valid_entity_type CHECK (((entity_type)::text = ANY ((ARRAY['person'::character varying, 'organization'::character varying, 'space'::character varying])::text[])))
+    party_id bigint,
+    space_id integer,
+    CONSTRAINT addresses_exactly_one_owner CHECK ((num_nonnulls(party_id, space_id) = 1))
 );
 
 --
@@ -549,6 +515,15 @@ CREATE SEQUENCE public.concepts_id_seq
 ALTER SEQUENCE public.concepts_id_seq OWNED BY public.concepts.id;
 
 --
+-- Name: contact_channels; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.contact_channels (
+    code text NOT NULL,
+    name text NOT NULL
+);
+
+--
 -- Name: contact_types; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -560,7 +535,8 @@ CREATE TABLE public.contact_types (
     is_active boolean,
     display_order integer,
     created_at timestamp with time zone DEFAULT now(),
-    updated_at timestamp with time zone DEFAULT now()
+    updated_at timestamp with time zone DEFAULT now(),
+    channel text NOT NULL
 );
 
 --
@@ -588,8 +564,6 @@ ALTER SEQUENCE public.contact_types_id_seq OWNED BY public.contact_types.id;
 CREATE TABLE public.contacts (
     id integer NOT NULL,
     contact_type_id integer,
-    entity_type character varying(30) NOT NULL,
-    entity_id integer NOT NULL,
     value character varying(255) NOT NULL,
     label character varying(100),
     is_primary boolean,
@@ -597,7 +571,9 @@ CREATE TABLE public.contacts (
     is_active boolean,
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now(),
-    CONSTRAINT valid_contact_entity_type CHECK (((entity_type)::text = 'person'::text))
+    party_id bigint NOT NULL,
+    channel text,
+    CONSTRAINT contacts_channel_iff_type CHECK (((contact_type_id IS NULL) = (channel IS NULL)))
 );
 
 --
@@ -958,6 +934,7 @@ CREATE TABLE public.organization_settings (
     sso_config jsonb DEFAULT '{}'::jsonb NOT NULL,
     mailing_config jsonb DEFAULT '{}'::jsonb NOT NULL,
     communications_config jsonb DEFAULT '{}'::jsonb NOT NULL,
+    party_id bigint NOT NULL,
     CONSTRAINT single_organization CHECK ((id = 1))
 );
 
@@ -1061,14 +1038,10 @@ ALTER SEQUENCE public.payment_providers_id_seq OWNED BY public.payment_providers
 --
 
 CREATE TABLE public.persons (
-    id integer NOT NULL,
     first_name character varying(100) NOT NULL,
     last_name character varying(100) NOT NULL,
-    email character varying(255),
     date_of_birth date,
     gender character varying(20),
-    national_id character varying(50),
-    photo_url character varying(500),
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now(),
     bank_iban character varying(34),
@@ -1080,24 +1053,6 @@ CREATE TABLE public.persons (
     kind text DEFAULT 'person'::text NOT NULL,
     CONSTRAINT persons_kind_check CHECK ((kind = 'person'::text))
 );
-
---
--- Name: persons_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.persons_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
---
--- Name: persons_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.persons_id_seq OWNED BY public.persons.id;
 
 --
 -- Name: receipt_reminders; Type: TABLE; Schema: public; Owner: -
@@ -1758,12 +1713,6 @@ ALTER TABLE ONLY public.activity_modalities ALTER COLUMN id SET DEFAULT nextval(
 ALTER TABLE ONLY public.activity_prices ALTER COLUMN id SET DEFAULT nextval('public.activity_prices_id_seq'::regclass);
 
 --
--- Name: address_types id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.address_types ALTER COLUMN id SET DEFAULT nextval('public.address_types_id_seq'::regclass);
-
---
 -- Name: addresses id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1876,12 +1825,6 @@ ALTER TABLE ONLY public.party ALTER COLUMN id SET DEFAULT nextval('public.party_
 --
 
 ALTER TABLE ONLY public.payment_providers ALTER COLUMN id SET DEFAULT nextval('public.payment_providers_id_seq'::regclass);
-
---
--- Name: persons id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.persons ALTER COLUMN id SET DEFAULT nextval('public.persons_id_seq'::regclass);
 
 --
 -- Name: receipt_reminders id; Type: DEFAULT; Schema: public; Owner: -
@@ -2016,20 +1959,6 @@ ALTER TABLE ONLY public.activity_prices
     ADD CONSTRAINT activity_prices_pkey PRIMARY KEY (id);
 
 --
--- Name: address_types address_types_code_key; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.address_types
-    ADD CONSTRAINT address_types_code_key UNIQUE (code);
-
---
--- Name: address_types address_types_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.address_types
-    ADD CONSTRAINT address_types_pkey PRIMARY KEY (id);
-
---
 -- Name: addresses addresses_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2084,6 +2013,13 @@ ALTER TABLE ONLY public.concepts
 
 ALTER TABLE ONLY public.concepts
     ADD CONSTRAINT concepts_pkey PRIMARY KEY (id);
+
+--
+-- Name: contact_channels contact_channels_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contact_channels
+    ADD CONSTRAINT contact_channels_pkey PRIMARY KEY (code);
 
 --
 -- Name: contact_types contact_types_code_key; Type: CONSTRAINT; Schema: public; Owner: -
@@ -2212,6 +2148,13 @@ ALTER TABLE ONLY public.notifications
     ADD CONSTRAINT notifications_pkey PRIMARY KEY (id);
 
 --
+-- Name: organization_settings organization_settings_party_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.organization_settings
+    ADD CONSTRAINT organization_settings_party_id_key UNIQUE (party_id);
+
+--
 -- Name: organization_settings organization_settings_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2251,7 +2194,7 @@ ALTER TABLE ONLY public.payment_providers
 --
 
 ALTER TABLE ONLY public.persons
-    ADD CONSTRAINT persons_pkey PRIMARY KEY (id);
+    ADD CONSTRAINT persons_pkey PRIMARY KEY (party_id);
 
 --
 -- Name: receipt_reminders receipt_reminders_pkey; Type: CONSTRAINT; Schema: public; Owner: -
@@ -2394,6 +2337,13 @@ ALTER TABLE ONLY public.billing_runs
     ADD CONSTRAINT uq_billing_runs_frequency_period UNIQUE (frequency, period_start, period_end);
 
 --
+-- Name: contact_types uq_contact_types_id_channel; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contact_types
+    ADD CONSTRAINT uq_contact_types_id_channel UNIQUE (id, channel);
+
+--
 -- Name: custom_field_values uq_custom_field_value_definition_party; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2406,13 +2356,6 @@ ALTER TABLE ONLY public.custom_field_values
 
 ALTER TABLE ONLY public.discount_codes
     ADD CONSTRAINT uq_discount_code_per_activity UNIQUE (activity_id, code);
-
---
--- Name: persons uq_persons_party_id; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.persons
-    ADD CONSTRAINT uq_persons_party_id UNIQUE (party_id);
 
 --
 -- Name: user_identities uq_provider_subject; Type: CONSTRAINT; Schema: public; Owner: -
@@ -2545,18 +2488,6 @@ CREATE INDEX idx_activity_prices_activity_id ON public.activity_prices USING btr
 CREATE INDEX idx_activity_prices_modality_id ON public.activity_prices USING btree (modality_id);
 
 --
--- Name: idx_addresses_entity; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_addresses_entity ON public.addresses USING btree (entity_type, entity_id);
-
---
--- Name: idx_addresses_type; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_addresses_type ON public.addresses USING btree (address_type_id);
-
---
 -- Name: idx_audit_logs_action; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2579,12 +2510,6 @@ CREATE INDEX idx_audit_logs_table_record ON public.audit_logs USING btree (table
 --
 
 CREATE INDEX idx_audit_logs_user_id ON public.audit_logs USING btree (user_id);
-
---
--- Name: idx_contacts_entity; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_contacts_entity ON public.contacts USING btree (entity_type, entity_id);
 
 --
 -- Name: idx_contacts_type; Type: INDEX; Schema: public; Owner: -
@@ -2671,22 +2596,10 @@ CREATE INDEX idx_membership_types_is_active ON public.membership_types USING btr
 CREATE INDEX idx_membership_types_slug ON public.membership_types USING btree (slug);
 
 --
--- Name: idx_persons_email; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_persons_email ON public.persons USING btree (email) WHERE (email IS NOT NULL);
-
---
 -- Name: idx_persons_last_name; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX idx_persons_last_name ON public.persons USING btree (last_name);
-
---
--- Name: idx_persons_national_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX idx_persons_national_id ON public.persons USING btree (national_id) WHERE (national_id IS NOT NULL);
 
 --
 -- Name: idx_registration_attachments_registration_id; Type: INDEX; Schema: public; Owner: -
@@ -2767,6 +2680,18 @@ CREATE INDEX idx_users_reset_token ON public.users USING btree (reset_token) WHE
 CREATE INDEX idx_users_verification_token ON public.users USING btree (verification_token) WHERE (verification_token IS NOT NULL);
 
 --
+-- Name: ix_addresses_party; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ix_addresses_party ON public.addresses USING btree (party_id) WHERE (party_id IS NOT NULL);
+
+--
+-- Name: ix_addresses_space; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ix_addresses_space ON public.addresses USING btree (space_id) WHERE (space_id IS NOT NULL);
+
+--
 -- Name: ix_announcement_recipients_announcement; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2813,6 +2738,12 @@ CREATE INDEX ix_bookings_slot ON public.bookings USING btree (space_slot_id);
 --
 
 CREATE INDEX ix_concepts_id ON public.concepts USING btree (id);
+
+--
+-- Name: ix_contacts_party; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ix_contacts_party ON public.contacts USING btree (party_id);
 
 --
 -- Name: ix_custom_field_definitions_active_order; Type: INDEX; Schema: public; Owner: -
@@ -3019,10 +2950,22 @@ CREATE INDEX ix_webhook_events_id ON public.webhook_events USING btree (id);
 CREATE INDEX ix_webhook_events_provider_status ON public.webhook_events USING btree (provider_type, status);
 
 --
+-- Name: uq_addresses_primary_per_party; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uq_addresses_primary_per_party ON public.addresses USING btree (party_id) WHERE ((party_id IS NOT NULL) AND is_primary);
+
+--
 -- Name: uq_bookings_member_slot_active; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX uq_bookings_member_slot_active ON public.bookings USING btree (space_slot_id, member_id) WHERE ((status)::text = ANY ((ARRAY['booked'::character varying, 'waitlisted'::character varying])::text[]));
+
+--
+-- Name: uq_contacts_one_primary_per_channel; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uq_contacts_one_primary_per_channel ON public.contacts USING btree (party_id, channel) WHERE is_primary;
 
 --
 -- Name: uq_members_one_active_per_party; Type: INDEX; Schema: public; Owner: -
@@ -3109,11 +3052,18 @@ ALTER TABLE ONLY public.activity_prices
     ADD CONSTRAINT activity_prices_modality_id_fkey FOREIGN KEY (modality_id) REFERENCES public.activity_modalities(id) ON DELETE SET NULL;
 
 --
--- Name: addresses addresses_address_type_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: addresses addresses_party_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.addresses
-    ADD CONSTRAINT addresses_address_type_id_fkey FOREIGN KEY (address_type_id) REFERENCES public.address_types(id) ON DELETE SET NULL;
+    ADD CONSTRAINT addresses_party_id_fkey FOREIGN KEY (party_id) REFERENCES public.party(id) ON DELETE CASCADE;
+
+--
+-- Name: addresses addresses_space_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.addresses
+    ADD CONSTRAINT addresses_space_id_fkey FOREIGN KEY (space_id) REFERENCES public.spaces(id) ON DELETE CASCADE;
 
 --
 -- Name: announcement_recipients announcement_recipients_announcement_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
@@ -3179,11 +3129,25 @@ ALTER TABLE ONLY public.bookings
     ADD CONSTRAINT bookings_space_slot_id_fkey FOREIGN KEY (space_slot_id) REFERENCES public.space_slots(id) ON DELETE CASCADE;
 
 --
--- Name: contacts contacts_contact_type_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: contact_types contact_types_channel_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contact_types
+    ADD CONSTRAINT contact_types_channel_fkey FOREIGN KEY (channel) REFERENCES public.contact_channels(code);
+
+--
+-- Name: contacts contacts_channel_matches_type; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.contacts
-    ADD CONSTRAINT contacts_contact_type_id_fkey FOREIGN KEY (contact_type_id) REFERENCES public.contact_types(id) ON DELETE SET NULL;
+    ADD CONSTRAINT contacts_channel_matches_type FOREIGN KEY (contact_type_id, channel) REFERENCES public.contact_types(id, channel) ON DELETE SET NULL;
+
+--
+-- Name: contacts contacts_party_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contacts
+    ADD CONSTRAINT contacts_party_id_fkey FOREIGN KEY (party_id) REFERENCES public.party(id) ON DELETE CASCADE;
 
 --
 -- Name: custom_field_values custom_field_values_definition_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
@@ -3289,6 +3253,13 @@ ALTER TABLE ONLY public.membership_types
 
 ALTER TABLE ONLY public.notifications
     ADD CONSTRAINT notifications_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+--
+-- Name: organization_settings organization_settings_party_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.organization_settings
+    ADD CONSTRAINT organization_settings_party_id_fkey FOREIGN KEY (party_id) REFERENCES public.party(id);
 
 --
 -- Name: party party_kind_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -

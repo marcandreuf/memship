@@ -124,7 +124,7 @@ class TestRegistrationCreatesPendingMember:
 
         member = (
             db.query(Member)
-            .join(Person, Member.party_id == Person.id)
+            .join(Person, Member.party_id == Person.party_id)
             .filter(Person.email == REGISTER_PAYLOAD["email"])
             .first()
         )
@@ -178,7 +178,7 @@ class TestRegistrationCreatesPendingMember:
 
         member = (
             db.query(Member)
-            .join(Person, Member.party_id == Person.id)
+            .join(Person, Member.party_id == Person.party_id)
             .filter(Person.email == REGISTER_PAYLOAD["email"])
             .first()
         )

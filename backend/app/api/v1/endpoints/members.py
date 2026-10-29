@@ -532,8 +532,7 @@ def get_my_profile(
         contact = (
             db.query(Contact)
             .filter(
-                Contact.entity_type == "person",
-                Contact.entity_id == person.id,
+                Contact.party_id == person.party_id,
                 Contact.contact_type_id == mobile_type.id,
             )
             .first()
@@ -563,8 +562,7 @@ def update_my_profile(
             contact = (
                 db.query(Contact)
                 .filter(
-                    Contact.entity_type == "person",
-                    Contact.entity_id == person.id,
+                    Contact.party_id == person.party_id,
                     Contact.contact_type_id == mobile_type.id,
                 )
                 .first()
@@ -574,8 +572,7 @@ def update_my_profile(
                     contact.value = update_data["phone"]
                 else:
                     db.add(Contact(
-                        entity_type="person",
-                        entity_id=person.id,
+                        party_id=person.party_id,
                         contact_type_id=mobile_type.id,
                         value=update_data["phone"],
                         is_primary=True,
@@ -590,8 +587,7 @@ def update_my_profile(
     mobile_type = db.query(ContactType).filter(ContactType.code == "phone_mobile").first()
     if mobile_type:
         c = db.query(Contact).filter(
-            Contact.entity_type == "person",
-            Contact.entity_id == person.id,
+            Contact.party_id == person.party_id,
             Contact.contact_type_id == mobile_type.id,
         ).first()
         if c:

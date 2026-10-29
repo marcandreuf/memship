@@ -9,7 +9,7 @@ from app.core.search import match_words
 from app.domains.auth.models import User
 from app.domains.members.models import Member, MembershipType
 from app.domains.organizations.models import OrganizationSettings
-from app.domains.persons.models import Person
+from app.domains.persons.models import Party, Person
 
 VALID_STATUS_TRANSITIONS = {
     "pending": ["active", "cancelled"],
@@ -46,13 +46,17 @@ def build_members_query(
         ).filter(MembershipType.group_id == group_id)
 
     if search:
-        query = query.join(Person, Member.party_id == Person.party_id).filter(
-            match_words(
-                search,
-                Person.first_name,
-                Person.last_name,
-                Person.email,
-                Member.member_number,
+        query = (
+            query.join(Person, Member.party_id == Person.party_id)
+            .join(Party, Party.id == Person.party_id)
+            .filter(
+                match_words(
+                    search,
+                    Person.first_name,
+                    Person.last_name,
+                    Party.email,
+                    Member.member_number,
+                )
             )
         )
 
