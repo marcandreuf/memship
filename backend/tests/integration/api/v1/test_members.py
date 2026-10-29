@@ -581,7 +581,7 @@ class TestGuardianMinor:
             },
         )
         assert resp1.status_code == 201
-        assert resp1.json()["guardian"]["id"] == guardian.id
+        assert resp1.json()["guardian"]["id"] == guardian.party_id
 
         # Create second minor with same guardian
         resp2 = client.post(
@@ -595,5 +595,5 @@ class TestGuardianMinor:
             },
         )
         assert resp2.status_code == 201
-        assert resp2.json()["guardian"]["id"] == guardian.id
+        assert resp2.json()["guardian"]["id"] == guardian.party_id
         assert resp1.json()["id"] != resp2.json()["id"]

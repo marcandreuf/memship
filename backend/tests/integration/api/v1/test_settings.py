@@ -304,9 +304,9 @@ class TestOrganizationAddress:
     def test_update_existing_address(self, client, db):
         _ensure_org_settings(db)
         # Create an address first
+        org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
         addr = Address(
-            entity_type="organization",
-            entity_id=1,
+            party_id=org.party_id,
             address_line1="Old Street 1",
             city="Madrid",
             country="ES",

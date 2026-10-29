@@ -30,9 +30,9 @@ from app.db.base import Base
 # credential store the way a volume wipe would.
 KNOWN_TABLES = frozenset({
     "activities", "activity_attachment_types", "activity_consents",
-    "activity_modalities", "activity_prices", "addresses", "address_types",
+    "activity_modalities", "activity_prices", "addresses",
     "announcement_recipients", "announcements", "audit_logs", "billing_runs",
-    "bookings", "concepts", "contacts", "contact_types",
+    "bookings", "concepts", "contact_channels", "contacts", "contact_types",
     "custom_field_definitions", "custom_field_values", "discount_codes",
     "groups", "invoice_sequences", "mail_transport_health", "members",
     "membership_types",
@@ -60,7 +60,7 @@ KNOWN_TABLES = frozenset({
 
 # Instance-level configuration and lookups. A club reset never touches these.
 PRESERVED_TABLES = frozenset({
-    "address_types",
+    "contact_channels",
     "contact_types",
     "party_kinds",
     # The reason this command exists instead of "delete the postgres volume".

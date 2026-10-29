@@ -33,5 +33,5 @@ def ensure_customer(
     person.stripe_customer_id = customer.id
     db.flush()
 
-    logger.info("Created Stripe customer %s for person %s", customer.id, person.id)
+    logger.info("Created Stripe customer %s for person %s", customer.id, person.party_id)
     return customer.id

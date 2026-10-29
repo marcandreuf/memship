@@ -124,12 +124,14 @@ def get_organization_address(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("settings.read")),
 ):
-    """Get the organization's address."""
+    """Get the organization's address — the club party's address."""
+    org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
+    if org is None:
+        return None
     return (
         db.query(Address)
         .filter(
-            Address.entity_type == "organization",
-            Address.entity_id == 1,
+            Address.party_id == org.party_id,
             Address.is_active.is_(True),
         )
         .first()
@@ -142,13 +144,13 @@ def update_organization_address(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("settings.write")),
 ):
-    """Create or update the organization's address."""
+    """Create or update the organization's address — the club party's address."""
+    org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
+    if org is None:
+        raise HTTPException(status_code=404, detail="Organization not configured")
     address = (
         db.query(Address)
-        .filter(
-            Address.entity_type == "organization",
-            Address.entity_id == 1,
-        )
+        .filter(Address.party_id == org.party_id)
         .first()
     )
 
@@ -157,8 +159,7 @@ def update_organization_address(
             setattr(address, key, value)
     else:
         address = Address(
-            entity_type="organization",
-            entity_id=1,
+            party_id=org.party_id,
             is_primary=True,
             **data.model_dump(),
         )

@@ -1,18 +1,23 @@
 """Organization settings model — single-tenant, one record per deployment."""
 
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     CheckConstraint,
     Column,
     DateTime,
+    ForeignKey,
     Integer,
     Numeric,
     SmallInteger,
     String,
     Text,
+    event,
     func,
+    insert,
 )
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import relationship
 
 from app.db.base import Base
 
@@ -24,6 +29,16 @@ class OrganizationSettings(Base):
     )
 
     id = Column(Integer, primary_key=True)
+    # The club is a party like anyone else (ADR 0003, Phase 3): an association
+    # with a legal name, a tax number and addresses that work through the same
+    # mechanism as everyone else's. This row keeps the configuration; the
+    # identity columns below it migrate onto the party in the surface phase.
+    party_id = Column(
+        BigInteger,
+        ForeignKey("party.id", name="organization_settings_party_id_fkey"),
+        nullable=False,
+        unique=True,
+    )
     name = Column(String(255), nullable=False)
     legal_name = Column(String(255))
     email = Column(String(255))
@@ -74,3 +89,31 @@ class OrganizationSettings(Base):
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+
+    party = relationship("Party")
+
+
+@event.listens_for(OrganizationSettings, "before_insert")
+def _organization_creates_its_party(_mapper, connection, org):
+    """The club's party row, created the same way a person's is.
+
+    Mirrors ``_person_creates_its_party``: the one place every creation path
+    (installer, seeder, tests) passes through. The identity facts are copied
+    at creation; they keep living on this row until the surface phase moves
+    them, so nothing reads the copies yet.
+    """
+    if org.party_id is not None:
+        return
+    from app.domains.persons.models import Party
+
+    org.party_id = connection.execute(
+        insert(Party.__table__)
+        .values(
+            kind="association",
+            display_name=(org.name or "").strip() or "(unnamed)",
+            national_id=org.tax_id,
+            email=org.email,
+            photo_url=org.logo_url,
+        )
+        .returning(Party.__table__.c.id)
+    ).scalar_one()

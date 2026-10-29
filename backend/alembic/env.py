@@ -12,7 +12,6 @@ from app.db.base import Base
 from app.domains.organizations.models import OrganizationSettings  # noqa: F401
 from app.domains.persons.models import (  # noqa: F401
     Address,
-    AddressType,
     Contact,
     ContactType,
     Person,

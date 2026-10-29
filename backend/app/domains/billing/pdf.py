@@ -94,7 +94,8 @@ def _get_org_address(db: Session) -> str | None:
     """Get the organization address as a single string."""
     addr = (
         db.query(Address)
-        .filter(Address.entity_type == "organization", Address.entity_id == 1, Address.is_primary.is_(True))
+        .join(OrganizationSettings, OrganizationSettings.party_id == Address.party_id)
+        .filter(Address.is_primary.is_(True))
         .first()
     )
     if not addr:
@@ -110,11 +111,11 @@ def _get_org_address(db: Session) -> str | None:
     return ", ".join(parts)
 
 
-def _get_member_address(db: Session, person_pk: int) -> str | None:
+def _get_member_address(db: Session, party_id: int) -> str | None:
     """Get a member's primary address as a single string."""
     addr = (
         db.query(Address)
-        .filter(Address.entity_type == "person", Address.entity_id == person_pk, Address.is_primary.is_(True))
+        .filter(Address.party_id == party_id, Address.is_primary.is_(True))
         .first()
     )
     if not addr:
@@ -146,7 +147,7 @@ def generate_receipt_pdf(db: Session, receipt: Receipt) -> bytes:
     template = _env.get_template(template_name)
 
     org_address = _get_org_address(db)
-    member_address = _get_member_address(db, person.id) if person else None
+    member_address = _get_member_address(db, person.party_id) if person else None
     discount = resolve_discount(
         Decimal(str(receipt.base_amount)), receipt.discount_amount, receipt.discount_type
     )

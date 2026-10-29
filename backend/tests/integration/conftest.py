@@ -71,8 +71,8 @@ _pw_module.hash_password = _cached_hash
 from app.domains.organizations.models import OrganizationSettings  # noqa: F401
 from app.domains.persons.models import (  # noqa: F401
     Address,
-    AddressType,
     Contact,
+    ContactChannel,
     ContactType,
     Person,
 )
@@ -213,6 +213,10 @@ def _seed_party_kinds():
         ("foundation", "Foundation", False, 5),
         ("other", "Other", False, 9),
     )
+    channels = (
+        ("email", "Email"), ("phone", "Phone"), ("url", "Website"),
+        ("handle", "Social handle"), ("other", "Other"),
+    )
     with test_engine.begin() as conn:
         for code, name, is_natural, display_order in kinds:
             conn.execute(
@@ -223,6 +227,14 @@ def _seed_party_kinds():
                 ),
                 {"code": code, "name": name, "is_natural": is_natural,
                  "display_order": display_order},
+            )
+        for code, name in channels:
+            conn.execute(
+                text(
+                    "INSERT INTO contact_channels (code, name) VALUES (:code, :name) "
+                    "ON CONFLICT (code) DO NOTHING"
+                ),
+                {"code": code, "name": name},
             )
 
 
