@@ -4,7 +4,7 @@ from app.core.security.jwt import create_access_token
 from app.core.security.password import hash_password
 from app.domains.auth.models import Role, RolePermission, User, UserRoleAssignment
 from app.domains.organizations.models import OrganizationSettings
-from app.domains.persons.models import Contact, Party, Person
+from app.domains.persons.models import Contact, ContactType, Party, Person
 
 
 def _create_user(db, role="admin", suffix=""):
@@ -294,6 +294,44 @@ class TestEntityAddress:
 
 
 class TestEntityContacts:
+    def test_a_new_primary_demotes_the_entitys_incumbent(self, client, db):
+        """The fourth write path onto ``uq_contacts_one_primary_per_channel``,
+        and the one not in the review. The demotion lives on the session rather
+        than at the call sites, so this route inherited it from phase 3 without
+        a line of its own -- which is what this pins."""
+        admin = _create_user(db, suffix="ent-prim")
+        cookies = _auth_cookie(admin)
+        entity = client.post(
+            "/api/v1/entities/", json=_entity_payload(name="Primaria SL ent-prim"),
+            cookies=cookies,
+        ).json()
+        home = db.query(ContactType).filter(ContactType.code == "phone_home").first()
+        if not home:
+            home = ContactType(code="phone_home", name="Home Phone", channel="phone", is_active=True)
+            db.add(home)
+        mobile = db.query(ContactType).filter(ContactType.code == "phone_mobile").first()
+        if not mobile:
+            mobile = ContactType(code="phone_mobile", name="Mobile Phone", channel="phone", is_active=True)
+            db.add(mobile)
+        db.flush()
+        incumbent = Contact(
+            party_id=entity["id"], contact_type_id=home.id,
+            value="900 000 010", is_primary=True,
+        )
+        db.add(incumbent)
+        db.flush()
+
+        resp = client.post(
+            f"/api/v1/parties/{entity['id']}/contacts/",
+            json={"contact_type_id": mobile.id, "value": "600 000 010", "is_primary": True},
+            cookies=cookies,
+        )
+
+        assert resp.status_code == 201
+        assert resp.json()["is_primary"] is True
+        db.refresh(incumbent)
+        assert incumbent.is_primary is False
+
     def test_crud_scoped_by_party(self, client, db):
         admin = _create_user(db, suffix="ent-ct1")
         cookies = _auth_cookie(admin)
