@@ -13,7 +13,7 @@ export interface PersonData {
 
 export interface MemberData {
   id: number;
-  person_id: number;
+  party_id: number;
   person: PersonData;
   membership_type_id: number | null;
   membership_type_name: string | null;
@@ -213,7 +213,7 @@ export async function deleteMembershipType(id: number): Promise<void> {
 export interface MemberRegistrationData {
   id: number;
   activity_id: number;
-  member_id: number;
+  party_id: number;
   modality_id: number | null;
   price_id: number | null;
   discount_code_id: number | null;

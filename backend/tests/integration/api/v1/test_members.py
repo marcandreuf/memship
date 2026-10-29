@@ -489,7 +489,7 @@ class TestGuardianMinor:
                 "last_name": "García",
                 "date_of_birth": "2018-06-15",
                 "membership_type_id": mt.id,
-                "guardian_person_id": guardian.party_id,
+                "guardian_party_id": guardian.party_id,
             },
         )
         assert response.status_code == 201
@@ -576,7 +576,7 @@ class TestGuardianMinor:
                 "first_name": "Child1",
                 "last_name": "Parent",
                 "date_of_birth": "2016-03-01",
-                "guardian_person_id": guardian.party_id,
+                "guardian_party_id": guardian.party_id,
                 "membership_type_id": mt.id,
             },
         )
@@ -590,7 +590,7 @@ class TestGuardianMinor:
                 "first_name": "Child2",
                 "last_name": "Parent",
                 "date_of_birth": "2019-07-15",
-                "guardian_person_id": guardian.party_id,
+                "guardian_party_id": guardian.party_id,
                 "membership_type_id": mt.id,
             },
         )

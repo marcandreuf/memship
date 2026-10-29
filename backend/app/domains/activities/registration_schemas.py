@@ -78,7 +78,7 @@ class RegistrationResponse(BaseModel):
 
     id: int
     activity_id: int
-    member_id: int
+    party_id: int
     modality_id: int | None = None
     price_id: int | None = None
     discount_code_id: int | None = None

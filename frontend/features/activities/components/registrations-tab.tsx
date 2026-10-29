@@ -122,7 +122,7 @@ function RegistrationRow({ registration }: { registration: RegistrationData }) {
   const changeMutation = useChangeRegistrationStatus();
   const memberName = registration.member
     ? `${registration.member.first_name} ${registration.member.last_name}`
-    : `Member #${registration.member_id}`;
+    : `Party #${registration.party_id}`;
 
   async function handleStatusChange(newStatus: string) {
     try {

@@ -142,7 +142,7 @@ class TestRegistration:
         assert response.status_code == 201
         data = response.json()
         assert data["activity_id"] == activity.id
-        assert data["member_id"] == member.id
+        assert data["party_id"] == member.party_id
         assert data["status"] == "confirmed"
         assert data["price_id"] == price.id
 

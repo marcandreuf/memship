@@ -49,20 +49,20 @@ const createSchema = z.object({
 });
 
 interface MemberReceiptsTabProps {
-  memberId: number;
+  partyId: number;
 }
 
-export function MemberReceiptsTab({ memberId }: MemberReceiptsTabProps) {
+export function MemberReceiptsTab({ partyId }: MemberReceiptsTabProps) {
   const t = useTranslations();
   const router = useRouter();
   const [createOpen, setCreateOpen] = useState(false);
 
   const params = useMemo(() => {
     const p = new URLSearchParams();
-    p.set("member_id", String(memberId));
+    p.set("party_id", String(partyId));
     p.set("per_page", "50");
     return p;
-  }, [memberId]);
+  }, [partyId]);
 
   const { data, isLoading } = useReceipts(params);
   const { formatCurrency, formatDate } = useFormatters();
@@ -83,7 +83,7 @@ export function MemberReceiptsTab({ memberId }: MemberReceiptsTabProps) {
               <DialogTitle>{t("receipts.createReceipt")}</DialogTitle>
             </DialogHeader>
             <CreateMemberReceiptForm
-              memberId={memberId}
+              partyId={partyId}
               t={t}
               onSuccess={() => setCreateOpen(false)}
             />
@@ -133,11 +133,11 @@ export function MemberReceiptsTab({ memberId }: MemberReceiptsTabProps) {
 }
 
 function CreateMemberReceiptForm({
-  memberId,
+  partyId,
   t,
   onSuccess,
 }: {
-  memberId: number;
+  partyId: number;
   t: (key: string, values?: Record<string, string | number | Date>) => string;
   onSuccess: () => void;
 }) {
@@ -158,7 +158,7 @@ function CreateMemberReceiptForm({
 
   async function onSubmit(data: z.infer<typeof createSchema>) {
     const payload: Record<string, unknown> = {
-      member_id: memberId,
+      party_id: partyId,
       origin: data.origin,
       description: data.description,
       base_amount: data.base_amount,

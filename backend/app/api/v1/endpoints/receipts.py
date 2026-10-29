@@ -102,19 +102,33 @@ def _require_own_receipt(
         raise HTTPException(status_code=403, detail="Access denied")
 
 
+def _holder_name(receipt: Receipt) -> str | None:
+    """Who the receipt is addressed to.
+
+    Resolved from the party, not from the membership. A receipt is addressed to
+    an identity, and a party with no ``members`` row is the ordinary case the
+    entities screens exist for: a donation receipt to a company. Reading the
+    name through ``receipt.member.person`` left those blank in the list, the
+    detail and the export, and a Spanish factura needs the recipient's name.
+
+    The person's own first and last name still wins for a member, because
+    ``party.display_name`` is kept in step with it by ``trg_party_display_name``
+    but the split pair is what the screens have always shown.
+    """
+    if receipt.member and receipt.member.person:
+        person = receipt.member.person
+        return f"{person.first_name} {person.last_name}"
+    return receipt.party.display_name if receipt.party else None
+
+
 def _to_detail(receipt: Receipt) -> dict:
     """Convert a Receipt to a detail response dict with member/concept names."""
     data = {c.name: getattr(receipt, c.name) for c in receipt.__table__.columns}
-    # The HTTP contract still carries member_id (Phase 4); it is a property on
-    # the model now, not a column, so the column comprehension above misses it.
-    data["member_id"] = receipt.member_id
-    data["member_name"] = None
-    data["member_number"] = None
+    data["member_name"] = _holder_name(receipt)
+    data["member_number"] = (
+        receipt.member.member_number if receipt.member else None
+    )
     data["concept_name"] = None
-    if receipt.member and receipt.member.person:
-        p = receipt.member.person
-        data["member_name"] = f"{p.first_name} {p.last_name}"
-        data["member_number"] = receipt.member.member_number
     if receipt.concept:
         data["concept_name"] = receipt.concept.name
     data["rectifies_receipt_number"] = (
@@ -141,7 +155,7 @@ def list_receipts(
     status_filter: str | None = Query(None, alias="status"),
     origin: str | None = Query(None),
     document_type: str | None = Query(None),
-    member_id: int | None = Query(None),
+    party_id: int | None = Query(None),
     search: str | None = Query(None),
     emission_date_from: date | None = Query(None),
     emission_date_to: date | None = Query(None),
@@ -154,7 +168,7 @@ def list_receipts(
         status=status_filter,
         origin=origin,
         document_type=document_type,
-        member_id=member_id,
+        party_id=party_id,
         search=search,
         emission_date_from=emission_date_from,
         emission_date_to=emission_date_to,
@@ -186,12 +200,8 @@ _RECEIPTS_CSV_HEADERS = [
 
 
 def _receipt_csv_row(receipt: Receipt) -> list:
-    member_name = None
-    member_number = None
-    if receipt.member and receipt.member.person:
-        p = receipt.member.person
-        member_name = f"{p.first_name} {p.last_name}"
-        member_number = receipt.member.member_number
+    member_name = _holder_name(receipt)
+    member_number = receipt.member.member_number if receipt.member else None
     return [
         receipt.receipt_number,
         receipt.document_type,
@@ -214,7 +224,7 @@ def _receipt_csv_row(receipt: Receipt) -> list:
 def export_receipts_csv(
     status_filter: str | None = Query(None, alias="status"),
     origin: str | None = Query(None),
-    member_id: int | None = Query(None),
+    party_id: int | None = Query(None),
     document_type: str | None = Query(None),
     search: str | None = Query(None),
     emission_date_from: date | None = Query(None),
@@ -228,7 +238,7 @@ def export_receipts_csv(
         status=status_filter,
         origin=origin,
         document_type=document_type,
-        member_id=member_id,
+        party_id=party_id,
         search=search,
         emission_date_from=emission_date_from,
         emission_date_to=emission_date_to,
@@ -379,12 +389,7 @@ def create_receipt_endpoint(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("billing.write")),
 ):
-    """Create a manual receipt."""
-    # Validate member exists
-    member = db.query(Member).filter(Member.id == data.member_id).first()
-    if not member:
-        raise HTTPException(status_code=400, detail="Member not found")
-
+    """Create a manual receipt, addressed to any party."""
     receipt = create_receipt(db, data, current_user.id)
     db.commit()
     db.refresh(receipt)

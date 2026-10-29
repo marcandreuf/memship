@@ -63,7 +63,7 @@ def _to_detail_response(registration: Registration) -> RegistrationDetailRespons
     return RegistrationDetailResponse(
         id=registration.id,
         activity_id=registration.activity_id,
-        member_id=registration.member_id,
+        party_id=registration.party_id,
         modality_id=registration.modality_id,
         price_id=registration.price_id,
         status=registration.status,
@@ -406,7 +406,7 @@ def _to_registration_with_activity(
     return RegistrationDetailResponse(
         id=registration.id,
         activity_id=registration.activity_id,
-        member_id=registration.member_id,
+        party_id=registration.party_id,
         modality_id=registration.modality_id,
         price_id=registration.price_id,
         discount_code_id=registration.discount_code_id,

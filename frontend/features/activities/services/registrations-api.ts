@@ -11,7 +11,7 @@ export interface RegistrationMemberInfo {
 export interface RegistrationData {
   id: number;
   activity_id: number;
-  member_id: number;
+  party_id: number;
   modality_id: number | null;
   price_id: number | null;
   discount_code_id: number | null;
