@@ -69,7 +69,7 @@ def _member(db, suffix, *, status="active", joined_at=None, status_changed_at=No
 def _receipt(db, member, *, suffix, status, emission_date, payment_date=None, total="121.00"):
     receipt = Receipt(
         receipt_number=f"FAC-rep-{suffix}",
-        member_id=member.id,
+        party_id=member.party_id,
         origin="membership",
         description=f"Receipt {suffix}",
         base_amount=Decimal("100.00"),
@@ -103,7 +103,7 @@ def _activity(db, suffix, starts_at):
 
 
 def _registration(db, activity, member, status="confirmed"):
-    reg = Registration(activity_id=activity.id, member_id=member.id, status=status)
+    reg = Registration(activity_id=activity.id, party_id=member.party_id, status=status)
     db.add(reg)
     db.flush()
     return reg

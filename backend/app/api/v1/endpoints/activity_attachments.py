@@ -126,7 +126,7 @@ def list_registration_attachments(
     is_admin = user_has(current_user, "registrations.read")
     if not is_admin:
         member = db.query(Member).filter(Member.party_id == current_user.party_id).first()
-        if not member or registration.member_id != member.id:
+        if not member or registration.party_id != member.party_id:
             raise HTTPException(status_code=403, detail="Access denied")
 
     return (
@@ -158,7 +158,7 @@ async def upload_registration_attachment(
     is_admin = user_has(current_user, "registrations.write")
     if not is_admin:
         member = db.query(Member).filter(Member.party_id == current_user.party_id).first()
-        if not member or registration.member_id != member.id:
+        if not member or registration.party_id != member.party_id:
             raise HTTPException(status_code=403, detail="Access denied")
 
     # Validate against attachment type if provided

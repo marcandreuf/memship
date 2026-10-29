@@ -235,7 +235,7 @@ def update_space(
             affected = _affected_active_bookings(db, [s.id for s in stranded])
             if not force:
                 raise SlotsOutsideHours(
-                    len(stranded), len({b.member_id for b in affected})
+                    len(stranded), len({b.party_id for b in affected})
                 )
             for slot in stranded:
                 delete_slot(db, slot, force=True, notifier=notifier)
@@ -304,7 +304,7 @@ def delete_space(
     slot_ids = [s.id for s in space.slots]
     affected = _affected_active_bookings(db, slot_ids)
     if affected and not force:
-        raise HasActiveBookings(len({b.member_id for b in affected}))
+        raise HasActiveBookings(len({b.party_id for b in affected}))
     for b in affected:
         void_booking_receipts(db, b)
         notifier.send_admin_cancellation(
@@ -540,7 +540,7 @@ def delete_slot(
     notifier = notifier or NullBookingNotifier()
     affected = _affected_active_bookings(db, [slot.id])
     if affected and not force:
-        raise HasActiveBookings(len({b.member_id for b in affected}))
+        raise HasActiveBookings(len({b.party_id for b in affected}))
     space = get_space(db, slot.space_id)
     for b in affected:
         void_booking_receipts(db, b)
@@ -567,13 +567,13 @@ def _count(db: Session, slot_id: int, status: str) -> int:
 
 
 def _member_active_booking(
-    db: Session, slot_id: int, member_id: int
+    db: Session, slot_id: int, party_id: int
 ) -> Booking | None:
     return (
         db.query(Booking)
         .filter(
             Booking.space_slot_id == slot_id,
-            Booking.member_id == member_id,
+            Booking.party_id == party_id,
             Booking.status.in_(ACTIVE_STATUSES),
         )
         .first()
@@ -600,7 +600,7 @@ def _counts_by_slot(db: Session, slot_ids: list[int]) -> dict[tuple[int, str], i
 
 
 def _member_statuses_by_slot(
-    db: Session, slot_ids: list[int], member_id: int
+    db: Session, slot_ids: list[int], party_id: int
 ) -> dict[int, str]:
     """The member's active booking status per slot, for the slots they hold."""
     if not slot_ids:
@@ -609,7 +609,7 @@ def _member_statuses_by_slot(
         db.query(Booking.space_slot_id, Booking.status)
         .filter(
             Booking.space_slot_id.in_(slot_ids),
-            Booking.member_id == member_id,
+            Booking.party_id == party_id,
             Booking.status.in_(ACTIVE_STATUSES),
         )
         .all()
@@ -621,7 +621,7 @@ def _member_statuses_by_slot(
 
 
 def space_week_availability(
-    db: Session, space: Space, week_start: date, member_id: int | None
+    db: Session, space: Space, week_start: date, party_id: int | None
 ) -> list[dict]:
     """One cell per active slot dated within the week starting at ``week_start``
     (which should be a Monday)."""
@@ -644,7 +644,7 @@ def space_week_availability(
     slot_ids = [slot.id for slot in slots]
     counts = _counts_by_slot(db, slot_ids)
     my_statuses = (
-        _member_statuses_by_slot(db, slot_ids, member_id) if member_id is not None else {}
+        _member_statuses_by_slot(db, slot_ids, party_id) if party_id is not None else {}
     )
 
     cells: list[dict] = []
@@ -738,7 +738,7 @@ def create_booking(
     if slot.slot_date > now_local.date() + timedelta(days=_window_days(db)):
         raise BookingWindowExceeded("Beyond the booking window")
 
-    if _member_active_booking(db, slot.id, member.id) is not None:
+    if _member_active_booking(db, slot.id, member.party_id) is not None:
         raise DuplicateBooking("Member already holds this slot")
 
     booked = _count(db, slot.id, BookingStatus.BOOKED)
@@ -753,7 +753,7 @@ def create_booking(
 
     booking = Booking(
         space_slot_id=slot.id,
-        member_id=member.id,
+        party_id=member.party_id,
         status=status,
         waitlisted_at=waitlisted_at,
     )
@@ -823,7 +823,8 @@ def cancel_booking(
         member = (
             db.query(Member)
             .options(joinedload(Member.person))
-            .filter(Member.id == booking.member_id)
+            .filter(Member.party_id == booking.party_id)
+            .order_by(Member.is_active.desc(), Member.id.desc())
             .first()
         )
         if member is not None and space is not None:
@@ -865,7 +866,8 @@ def _promote_next(
         member = (
             db.query(Member)
             .options(joinedload(Member.person))
-            .filter(Member.id == candidate.member_id)
+            .filter(Member.party_id == candidate.party_id)
+            .order_by(Member.is_active.desc(), Member.id.desc())
             .first()
         )
         if member is None:
@@ -889,7 +891,7 @@ def _promote_next(
 # --- Reads ----------------------------------------------------------------
 
 
-def my_bookings(db: Session, member_id: int, *, scope: str) -> list[dict]:
+def my_bookings(db: Session, party_id: int, *, scope: str) -> list[dict]:
     """A member's non-cancelled bookings, denormalized, upcoming or past."""
     tz = org_timezone(db)
     now_local = datetime.now(tz)
@@ -901,7 +903,7 @@ def my_bookings(db: Session, member_id: int, *, scope: str) -> list[dict]:
         .join(SpaceSlot, Booking.space_slot_id == SpaceSlot.id)
         .options(joinedload(Booking.slot).joinedload(SpaceSlot.space))
         .filter(
-            Booking.member_id == member_id,
+            Booking.party_id == party_id,
             Booking.status.in_(ACTIVE_STATUSES),
         )
     )

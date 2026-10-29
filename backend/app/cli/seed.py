@@ -972,7 +972,7 @@ def seed_registrations(db) -> None:
             # Check not already registered
             exists = db.query(Registration).filter(
                 Registration.activity_id == activity.id,
-                Registration.member_id == member.id,
+                Registration.party_id == member.party_id,
             ).first()
             if exists:
                 continue
@@ -991,7 +991,7 @@ def seed_registrations(db) -> None:
 
             reg = Registration(
                 activity_id=activity.id,
-                member_id=member.id,
+                party_id=member.party_id,
                 modality_id=modality_id,
                 price_id=default_price.id,
                 status=status,
@@ -1333,7 +1333,7 @@ def seed_billing_data(db) -> None:
 
         receipt = Receipt(
             receipt_number=next_number(),
-            member_id=member.id,
+            party_id=member.party_id,
             concept_id=concept.id,
             origin="membership",
             description=desc,
@@ -1373,7 +1373,7 @@ def seed_billing_data(db) -> None:
 
         receipt = Receipt(
             receipt_number=next_number(),
-            member_id=reg.member_id,
+            party_id=reg.party_id,
             concept_id=activity_concept.id,
             registration_id=reg.id,
             origin="activity",
@@ -1408,7 +1408,7 @@ def seed_billing_data(db) -> None:
             total = base + vat
             receipt = Receipt(
                 receipt_number=next_number(),
-                member_id=manual_member.id,
+                party_id=manual_member.party_id,
                 concept_id=manual_concept.id,
                 origin="manual",
                 description=desc,
@@ -1439,7 +1439,7 @@ def seed_billing_data(db) -> None:
             has_emitted = (
                 db.query(Receipt)
                 .filter(
-                    Receipt.member_id == test_member.id,
+                    Receipt.party_id == test_member.party_id,
                     Receipt.status == "emitted",
                 )
                 .count()
@@ -1452,7 +1452,7 @@ def seed_billing_data(db) -> None:
                 total = Decimal("60.50")
                 receipt = Receipt(
                     receipt_number=next_number(),
-                    member_id=test_member.id,
+                    party_id=test_member.party_id,
                     concept_id=concept.id if concept else None,
                     origin="membership",
                     description=f"Annual membership — {test_member_user.person.first_name} {test_member_user.person.last_name}",
@@ -1576,7 +1576,7 @@ def seed_sepa_data(db) -> None:
         signed_date = today - timedelta(days=90 + mandate_count * 5)
 
         mandate = SepaMandate(
-            member_id=member.id,
+            party_id=member.party_id,
             mandate_reference=reference,
             creditor_id=org.creditor_id,
             debtor_name=f"{person.first_name} {person.last_name}",
@@ -1596,14 +1596,14 @@ def seed_sepa_data(db) -> None:
 
     # --- Ensure some receipts are emitted + batchable for remittance testing ---
     # Update a few receipts to be emitted/batchable for members with active mandates
-    active_mandate_member_ids = [
-        m.member_id
+    active_mandate_party_ids = [
+        m.party_id
         for m in db.query(SepaMandate).filter(SepaMandate.status == "active").all()
     ]
     batchable_receipts = (
         db.query(Receipt)
         .filter(
-            Receipt.member_id.in_(active_mandate_member_ids),
+            Receipt.party_id.in_(active_mandate_party_ids),
             Receipt.status.in_(["emitted", "overdue"]),
             Receipt.is_batchable.is_(True),
             Receipt.remittance_id.is_(None),
@@ -1616,7 +1616,7 @@ def seed_sepa_data(db) -> None:
     else:
         # Create extra batchable receipts to ensure enough for testing
         concept = db.query(Concept).filter(Concept.concept_type == "membership").first()
-        if concept and active_mandate_member_ids:
+        if concept and active_mandate_party_ids:
             receipt_prefix = org.invoice_prefix or "FAC"
             year = today.year
             # Find next receipt number
@@ -1629,8 +1629,8 @@ def seed_sepa_data(db) -> None:
                 except (ValueError, IndexError):
                     pass
 
-            for i, member_id in enumerate(active_mandate_member_ids[:4]):
-                member = db.query(Member).filter(Member.id == member_id).first()
+            for i, party_id in enumerate(active_mandate_party_ids[:4]):
+                member = db.query(Member).filter(Member.party_id == party_id).order_by(Member.is_active.desc(), Member.id.desc()).first()
                 person = db.query(Person).filter(Person.party_id == member.party_id).first() if member else None
                 if not member or not person:
                     continue
@@ -1639,7 +1639,7 @@ def seed_sepa_data(db) -> None:
                 total = Decimal("60.50")
                 receipt = Receipt(
                     receipt_number=f"{receipt_prefix}-{year}-{seq_start + i:04d}",
-                    member_id=member_id,
+                    party_id=party_id,
                     concept_id=concept.id,
                     origin="membership",
                     description=f"SEPA test — {person.first_name} {person.last_name}",
@@ -1654,7 +1654,7 @@ def seed_sepa_data(db) -> None:
                 )
                 db.add(receipt)
             db.flush()
-            print(f"  SEPA test receipts: created {min(4, len(active_mandate_member_ids))} emitted batchable receipts")
+            print(f"  SEPA test receipts: created {min(4, len(active_mandate_party_ids))} emitted batchable receipts")
 
     print("  SEPA seed: complete — ready for manual SEPA workflow testing")
 

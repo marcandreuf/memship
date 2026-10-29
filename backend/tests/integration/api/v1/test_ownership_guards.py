@@ -93,7 +93,7 @@ def _grant(db, user, slug, keys):
 def _receipt(db, member, number, session_id):
     receipt = Receipt(
         receipt_number=number,
-        member_id=member.id,
+        party_id=member.party_id,
         origin="membership",
         description="Guard receipt",
         base_amount=Decimal("100.00"),
@@ -289,7 +289,7 @@ class TestCancellationTakesTheWriteKey:
         _grant(db, viewer, "registrations-viewer", {"registrations.read"})
         _, other = _account(db, standard_type, "reg-other@examplee6e3b1.com")
         registration = Registration(
-            activity_id=activity.id, member_id=other.id, status="confirmed"
+            activity_id=activity.id, party_id=other.party_id, status="confirmed"
         )
         db.add(registration)
         db.flush()
@@ -309,7 +309,7 @@ class TestCancellationTakesTheWriteKey:
         _grant(db, editor, "registrations-editor", {"registrations.write"})
         _, other = _account(db, standard_type, "reg-other-2@examplee6e3b1.com")
         registration = Registration(
-            activity_id=activity.id, member_id=other.id, status="confirmed"
+            activity_id=activity.id, party_id=other.party_id, status="confirmed"
         )
         db.add(registration)
         db.flush()

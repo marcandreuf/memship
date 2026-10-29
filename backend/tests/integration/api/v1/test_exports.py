@@ -99,7 +99,7 @@ def _concept(db, suffix):
 def _receipt(db, member, *, suffix, emission_date, status="emitted", concept=None):
     receipt = Receipt(
         receipt_number=f"FAC-{suffix}",
-        member_id=member.id,
+        party_id=member.party_id,
         concept_id=concept.id if concept else None,
         origin="membership",
         description=f"Receipt {suffix}",
@@ -143,7 +143,7 @@ def _modality(db, activity, name="Standard"):
 def _registration(db, activity, member, *, status="confirmed", modality=None):
     reg = Registration(
         activity_id=activity.id,
-        member_id=member.id,
+        party_id=member.party_id,
         modality_id=modality.id if modality else None,
         status=status,
         original_amount=Decimal("30.00"),

@@ -1,6 +1,7 @@
 """Billing domain models — concepts, receipts, mandates, remittances, providers."""
 
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     CheckConstraint,
     Column,
@@ -108,7 +109,7 @@ class Receipt(Base):
             " OR (document_type = 'credit_note' AND rectifies_receipt_id IS NOT NULL)",
             name="credit_note_rectifies_a_receipt",
         ),
-        Index("ix_receipts_member_id", "member_id"),
+        Index("ix_receipts_party_id", "party_id"),
         Index("ix_receipts_status", "status"),
         Index("ix_receipts_emission_date", "emission_date"),
         Index("ix_receipts_origin", "origin"),
@@ -143,8 +144,15 @@ class Receipt(Base):
         ),
     )
 
-    # Relationships
-    member_id = Column(Integer, ForeignKey("members.id"), nullable=False)
+    # A financial document is addressed to an identity, not a membership
+    # (ADR 0003, Phase 4): this is what makes a donation from a company or a
+    # non-member expressible. No ondelete, exactly as before — money outlives
+    # everything.
+    party_id = Column(
+        BigInteger,
+        ForeignKey("party.id", name="receipts_party_id_fkey"),
+        nullable=False,
+    )
     concept_id = Column(Integer, ForeignKey("concepts.id"))
     registration_id = Column(Integer, ForeignKey("registrations.id"))
     # SET NULL, unlike registration_id: a booking is a row an admin can destroy
@@ -229,7 +237,29 @@ class Receipt(Base):
     )
 
     # ORM relationships
-    member = relationship("Member", backref="receipts")
+    party = relationship("Party")
+    # The membership behind the party, when there is one. Viewonly: the row
+    # keys on the party, and this join exists for display and for the API's
+    # transitional ``member_id`` field. Active membership first, so a party
+    # with deactivated history resolves to the row the product means.
+    member = relationship(
+        "Member",
+        primaryjoin="Receipt.party_id == foreign(Member.party_id)",
+        order_by="desc(Member.is_active)",
+        uselist=False,
+        viewonly=True,
+    )
+    @property
+    def member_id(self):
+        """Transitional API field (ADR 0003, Phase 4): the row keys on the
+        party, but the HTTP contract still speaks members. Resolved through
+        the ``member`` join (active membership first); None only for a party
+        with no membership, which the surface phase will make routine.
+        Read-only on purpose — internal code writes ``party_id``.
+        """
+        member = self.member
+        return member.id if member else None
+
     concept = relationship("Concept", back_populates="receipts")
     registration = relationship("Registration", backref="receipts")
     booking = relationship("Booking", backref="receipts")
@@ -263,22 +293,28 @@ class SepaMandate(Base):
             "status IN ('active', 'cancelled', 'expired')",
             name="valid_mandate_status",
         ),
-        Index("ix_sepa_mandates_member_id", "member_id"),
+        Index("ix_sepa_mandates_party_id", "party_id"),
         Index("ix_sepa_mandates_status", "status"),
-        # A member has one account the club collects from. Two active mandates
+        # A party has one account the club collects from. Two active mandates
         # left the choice between them to whichever row the query returned
         # first, so which account was debited was not decided by anything the
         # product states (#394). Unrepresentable rather than guarded.
         Index(
-            "uq_sepa_mandates_one_active_per_member",
-            "member_id",
+            "uq_sepa_mandates_one_active_per_party",
+            "party_id",
             unique=True,
             postgresql_where=text("status = 'active' AND is_active = true"),
         ),
     )
 
     id = Column(Integer, primary_key=True, index=True)
-    member_id = Column(Integer, ForeignKey("members.id"), nullable=False)
+    # A mandate is a debtor's authorisation, and any legal entity can sign
+    # one (ADR 0003, Phase 4). The debtor_* columns were already a snapshot.
+    party_id = Column(
+        BigInteger,
+        ForeignKey("party.id", name="sepa_mandates_party_id_fkey"),
+        nullable=False,
+    )
     mandate_reference = Column(String(35), unique=True, nullable=False)
     creditor_id = Column(String(35), nullable=False)
     debtor_name = Column(String(255), nullable=False)
@@ -298,7 +334,25 @@ class SepaMandate(Base):
     )
 
     # ORM relationships
-    member = relationship("Member", backref="sepa_mandates")
+    party = relationship("Party")
+    member = relationship(
+        "Member",
+        primaryjoin="SepaMandate.party_id == foreign(Member.party_id)",
+        order_by="desc(Member.is_active)",
+        uselist=False,
+        viewonly=True,
+    )
+    @property
+    def member_id(self):
+        """Transitional API field (ADR 0003, Phase 4): the row keys on the
+        party, but the HTTP contract still speaks members. Resolved through
+        the ``member`` join (active membership first); None only for a party
+        with no membership, which the surface phase will make routine.
+        Read-only on purpose — internal code writes ``party_id``.
+        """
+        member = self.member
+        return member.id if member else None
+
 
 
 class Remittance(Base):

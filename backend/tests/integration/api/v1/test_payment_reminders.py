@@ -111,7 +111,7 @@ def _create_member(db, suffix="m1", email=_UNSET):
 def _create_receipt(db, member, suffix="r1", status="emitted", due_date=None, paid=False):
     receipt = Receipt(
         receipt_number=f"R-{suffix}",
-        member_id=member.id,
+        party_id=member.party_id,
         origin="membership",
         description="Membership fee",
         base_amount=Decimal("50.00"),

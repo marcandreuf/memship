@@ -164,7 +164,12 @@ def _send_payment_confirmation(db: Session, receipt_id: int) -> bool:
         logger.warning(f"Receipt {receipt_id} not found for payment notification")
         return False
 
-    member = db.query(Member).filter(Member.id == receipt.member_id).first()
+    member = (
+        db.query(Member)
+        .filter(Member.party_id == receipt.party_id)
+        .order_by(Member.is_active.desc(), Member.id.desc())
+        .first()
+    )
     person = (
         db.query(Person).filter(Person.party_id == member.party_id).first() if member else None
     )

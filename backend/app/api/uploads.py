@@ -29,6 +29,7 @@ from app.core.security.dependencies import get_optional_user
 from app.db.session import get_db
 from app.domains.activities.models import Registration
 from app.domains.auth.models import User
+from app.domains.billing.models import SepaMandate
 from app.domains.members.models import Member
 
 router = APIRouter(prefix="/uploads", tags=["uploads"])
@@ -63,11 +64,40 @@ def _allow_members(db: Session, user: User, rest: list[str]) -> bool:
 
 
 def _allow_mandates(db: Session, user: User, rest: list[str]) -> bool:
-    """``mandates/<member_id>/<ref>.<ext>`` — the signing member, or billing staff."""
+    """``mandates/<id>/<ref>.<ext>`` — the signing member, or billing staff.
+
+    Authorised against the mandate row, never the path. The directory used to
+    be named after ``mandate.member_id`` and is now named after
+    ``mandate.party_id``, and neither the files nor ``document_path`` moved, so
+    on an upgraded install the segment names a member while the guard believed
+    it named a party. Those are independent sequences: comparing them served
+    one member's signed mandate, IBAN and signature included, to whoever's
+    party id happened to equal that member id, and refused the owner their own
+    document. The reference is ``{prefix}-{member_number}-NNN``, so the
+    filename is guessable rather than secret.
+
+    The stored file is a scan of signed paper — jpg and png are accepted — so
+    it is the only record of the member's authorisation and cannot be
+    regenerated. It stays exactly where it is; the path simply stops carrying
+    authority, which also means the next change of layout cannot bring this
+    back.
+    """
     if "billing.read" in resolve_permissions(user):
         return True
     member = _own_member(db, user)
-    return member is not None and str(member.id) == rest[0]
+    if member is None:
+        return False
+    # Matched on the tail rather than the whole string: ``document_path`` holds
+    # whatever ``STORAGE_LOCAL_PATH`` rendered to at upload time, which a later
+    # deployment can spell differently. ``autoescape`` keeps a ``%`` or ``_``
+    # in a requested name from widening the match.
+    relative = "/".join(["mandates", *rest])
+    mandate = (
+        db.query(SepaMandate)
+        .filter(SepaMandate.document_path.endswith(relative, autoescape=True))
+        .first()
+    )
+    return mandate is not None and mandate.party_id == member.party_id
 
 
 def _allow_registrations(db: Session, user: User, rest: list[str]) -> bool:
@@ -81,7 +111,7 @@ def _allow_registrations(db: Session, user: User, rest: list[str]) -> bool:
         db.query(Registration.id)
         .filter(
             Registration.id == int(rest[0]),
-            Registration.member_id == member.id,
+            Registration.party_id == member.party_id,
         )
         .first()
         is not None

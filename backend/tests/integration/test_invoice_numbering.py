@@ -60,7 +60,7 @@ def _issue(db, member, year=2026, day=15):
     db.add(
         Receipt(
             receipt_number=number,
-            member_id=member.id,
+            party_id=member.party_id,
             emission_date=date(year, 6, day),
             due_date=date(year, 7, day),
             base_amount=10,
