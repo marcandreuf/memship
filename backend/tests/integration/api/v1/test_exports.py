@@ -286,6 +286,40 @@ class TestReceiptsExport:
         assert row[headers.index("concept")] == "Membership Fee r-cols"
         assert row[headers.index("total_amount")] == "121.00"
 
+    def test_a_party_with_no_membership_is_named(self, client, db):
+        """A donation receipt to a company carried blank holder columns, because
+        the row was built from ``receipt.member.person`` and a company has no
+        ``members`` row."""
+        from app.domains.persons.models import Party
+
+        admin = _admin(db, "r-party")
+        party = Party(kind="company", display_name="Fundació Export", national_id="G99887766")
+        db.add(party)
+        db.flush()
+        receipt = Receipt(
+            receipt_number="FAC-r-party-1",
+            party_id=party.id,
+            origin="manual",
+            description="Donatiu",
+            base_amount=Decimal("100.00"),
+            vat_rate=Decimal("0.00"),
+            vat_amount=Decimal("0.00"),
+            total_amount=Decimal("100.00"),
+            status="emitted",
+            emission_date=date(2026, 3, 15),
+        )
+        db.add(receipt)
+        db.flush()
+        client.cookies.update(_auth_cookie(admin))
+
+        resp = client.get("/api/v1/receipts/export.csv")
+
+        assert resp.status_code == 200
+        headers, rows = _parse_csv(resp)
+        row = next(r for r in rows if r[headers.index("receipt_number")] == "FAC-r-party-1")
+        assert row[headers.index("member_name")] == "Fundació Export"
+        assert row[headers.index("member_number")] == ""
+
     def test_date_range_filter(self, client, db):
         admin = _admin(db, "r-date")
         member = _member(db, "r-date-m")

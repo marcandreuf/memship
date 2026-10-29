@@ -11,7 +11,7 @@ from app.domains.billing.models import Receipt
 from app.domains.billing.service import resolve_discount
 from app.domains.members.models import Member
 from app.domains.organizations.models import OrganizationSettings
-from app.domains.persons.models import Address, Person
+from app.domains.persons.models import Address, Party, Person
 
 TEMPLATE_DIR = Path(__file__).resolve().parent.parent.parent / "templates" / "pdf"
 
@@ -127,14 +127,13 @@ def _get_member_address(db: Session, party_id: int) -> str | None:
     return ", ".join(parts)
 
 
-def generate_receipt_pdf(db: Session, receipt: Receipt) -> bytes:
-    """Generate a PDF for a receipt.
+def build_receipt_context(db: Session, receipt: Receipt) -> dict:
+    """Assemble everything the receipt template renders.
 
-    Returns the PDF as bytes.
+    Split out of :func:`generate_receipt_pdf` so the recipient can be asserted
+    without WeasyPrint, whose system deps are deliberately absent in tests --
+    the same reason the import below is lazy.
     """
-    # Lazy import to avoid ImportError when WeasyPrint system deps are missing (e.g., in tests)
-    from weasyprint import HTML
-
     org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
     member = (
         db.query(Member)
@@ -143,21 +142,23 @@ def generate_receipt_pdf(db: Session, receipt: Receipt) -> bytes:
         .first()
     )
     person = db.query(Person).filter(Person.party_id == member.party_id).first() if member else None
+    # The recipient is the receipt's party. Loading only the person left a
+    # donation receipt to a company with no name, no tax id and no address,
+    # which a Spanish factura cannot be issued without.
+    party = db.query(Party).filter(Party.id == receipt.party_id).first()
 
     locale = org.locale or "es"
     if locale not in ("es", "ca", "en"):
         locale = "es"
 
-    template_name = f"receipt_{locale}.html"
-    template = _env.get_template(template_name)
-
     org_address = _get_org_address(db)
-    member_address = _get_member_address(db, person.party_id) if person else None
+    recipient_address = _get_member_address(db, receipt.party_id)
     discount = resolve_discount(
         Decimal(str(receipt.base_amount)), receipt.discount_amount, receipt.discount_type
     )
 
     context = {
+        "locale": locale,
         "org": {
             "name": org.name,
             "legal_name": org.legal_name,
@@ -202,17 +203,33 @@ def generate_receipt_pdf(db: Session, receipt: Receipt) -> bytes:
             "notes": receipt.notes,
         },
         "member": {
-            "name": f"{person.first_name} {person.last_name}" if person else "—",
-            "email": person.email if person else None,
-            "tax_id": person.national_id if person else None,
-            "address": member_address,
-            "member_number": member.member_number if member else "—",
+            "name": (
+                f"{person.first_name} {person.last_name}"
+                if person
+                else (party.display_name if party else None)
+            ),
+            "email": person.email if person else (party.email if party else None),
+            "tax_id": (
+                person.national_id if person else (party.national_id if party else None)
+            ),
+            "address": recipient_address,
+            # A membership fact, so it is absent rather than a dash when the
+            # recipient holds no membership. The template omits the line.
+            "member_number": member.member_number if member else None,
         },
         "document_labels": DOCUMENT_LABELS.get(locale, DOCUMENT_LABELS["es"]),
         "status_label": STATUS_LABELS.get(locale, STATUS_LABELS["es"]).get(receipt.status, receipt.status),
         "payment_method_label": PAYMENT_METHOD_LABELS.get(locale, PAYMENT_METHOD_LABELS["es"]).get(receipt.payment_method, receipt.payment_method) if receipt.payment_method else None,
     }
 
-    html_content = template.render(**context)
-    pdf_bytes = HTML(string=html_content).write_pdf()
-    return pdf_bytes
+    return context
+
+
+def generate_receipt_pdf(db: Session, receipt: Receipt) -> bytes:
+    """Render a receipt as PDF bytes."""
+    # Lazy import: WeasyPrint's system deps are missing in the test image.
+    from weasyprint import HTML
+
+    context = build_receipt_context(db, receipt)
+    template = _env.get_template(f"receipt_{context['locale']}.html")
+    return HTML(string=template.render(**context)).write_pdf()

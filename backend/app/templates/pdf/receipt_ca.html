@@ -67,7 +67,7 @@
       {% if member.tax_id %}<p>NIF: {{ member.tax_id }}</p>{% endif %}
       {% if member.address %}<p>{{ member.address }}</p>{% endif %}
       {% if member.email %}<p>{{ member.email }}</p>{% endif %}
-      <p>N.º soci: {{ member.member_number }}</p>
+      {% if member.member_number %}<p>N.º soci: {{ member.member_number }}</p>{% endif %}
     </div>
     {% if receipt.billing_period_start %}
     <div class="party">

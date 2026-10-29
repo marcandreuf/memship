@@ -82,13 +82,23 @@ def build_receipts_query(
     if emission_date_to is not None:
         query = query.filter(Receipt.emission_date <= emission_date_to)
     if search:
-        query = query.join(Receipt.member).join(Member.person).filter(
-            match_words(
-                search,
-                Receipt.receipt_number,
-                Receipt.description,
-                Person.first_name,
-                Person.last_name,
+        # Outer joins, and the party's own name in the match. An inner join
+        # here dropped every receipt with no membership out of the results
+        # rather than showing it unnamed, which hid exactly the donation
+        # receipts the entities screens produce.
+        query = (
+            query.outerjoin(Receipt.member)
+            .outerjoin(Member.person)
+            .outerjoin(Receipt.party)
+            .filter(
+                match_words(
+                    search,
+                    Receipt.receipt_number,
+                    Receipt.description,
+                    Person.first_name,
+                    Person.last_name,
+                    Party.display_name,
+                )
             )
         )
 
