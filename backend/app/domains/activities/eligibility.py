@@ -83,7 +83,7 @@ def check_eligibility(
         db.query(Registration)
         .filter(
             Registration.activity_id == activity.id,
-            Registration.member_id == member.id,
+            Registration.party_id == member.party_id,
             Registration.status != "cancelled",
         )
         .first()

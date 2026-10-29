@@ -1,6 +1,7 @@
 """Activity domain models."""
 
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     CheckConstraint,
     Column,
@@ -248,14 +249,14 @@ class Registration(Base):
             name="valid_registration_status",
         ),
         Index(
-            "uq_registration_active_member",
+            "uq_registration_active_party",
             "activity_id",
-            "member_id",
+            "party_id",
             unique=True,
             postgresql_where=Column("status") != "cancelled",
         ),
         Index("idx_registrations_activity_id", "activity_id"),
-        Index("idx_registrations_member_id", "member_id"),
+        Index("idx_registrations_party_id", "party_id"),
         Index("idx_registrations_status", "status"),
     )
 
@@ -263,8 +264,13 @@ class Registration(Base):
     activity_id = Column(
         Integer, ForeignKey("activities.id", ondelete="CASCADE"), nullable=False
     )
-    member_id = Column(
-        Integer, ForeignKey("members.id", ondelete="CASCADE"), nullable=False
+    # A registration belongs to a party (ADR 0003, Phase 4, #429): a
+    # non-member registrant is a person party with no members row, and
+    # member-only activities are a service-layer rule, not a schema guarantee.
+    party_id = Column(
+        BigInteger,
+        ForeignKey("party.id", ondelete="CASCADE", name="registrations_party_id_fkey"),
+        nullable=False,
     )
     modality_id = Column(
         Integer, ForeignKey("activity_modalities.id", ondelete="SET NULL")
@@ -296,7 +302,25 @@ class Registration(Base):
 
     # Relationships
     activity = relationship("Activity", back_populates="registrations")
-    member = relationship("Member", foreign_keys=[member_id])
+    party = relationship("Party")
+    member = relationship(
+        "Member",
+        primaryjoin="Registration.party_id == foreign(Member.party_id)",
+        order_by="desc(Member.is_active)",
+        uselist=False,
+        viewonly=True,
+    )
+    @property
+    def member_id(self):
+        """Transitional API field (ADR 0003, Phase 4): the row keys on the
+        party, but the HTTP contract still speaks members. Resolved through
+        the ``member`` join (active membership first); None only for a party
+        with no membership, which the surface phase will make routine.
+        Read-only on purpose — internal code writes ``party_id``.
+        """
+        member = self.member
+        return member.id if member else None
+
     modality = relationship("ActivityModality")
     price = relationship("ActivityPrice")
     discount_code = relationship("DiscountCode")

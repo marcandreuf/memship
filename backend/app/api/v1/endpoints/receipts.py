@@ -98,13 +98,16 @@ def _require_own_receipt(
     if user_has(user, staff_permission):
         return
     member = _own_member(db, user)
-    if not member or receipt.member_id != member.id:
+    if not member or receipt.party_id != member.party_id:
         raise HTTPException(status_code=403, detail="Access denied")
 
 
 def _to_detail(receipt: Receipt) -> dict:
     """Convert a Receipt to a detail response dict with member/concept names."""
     data = {c.name: getattr(receipt, c.name) for c in receipt.__table__.columns}
+    # The HTTP contract still carries member_id (Phase 4); it is a property on
+    # the model now, not a column, so the column comprehension above misses it.
+    data["member_id"] = receipt.member_id
     data["member_name"] = None
     data["member_number"] = None
     data["concept_name"] = None
@@ -638,7 +641,7 @@ def list_my_receipts(
 
     query = (
         db.query(Receipt)
-        .filter(Receipt.member_id == member.id, Receipt.is_active.is_(True))
+        .filter(Receipt.party_id == member.party_id, Receipt.is_active.is_(True))
         .options(joinedload(Receipt.concept))
         .order_by(Receipt.emission_date.desc(), Receipt.id.desc())
     )
@@ -706,8 +709,13 @@ def create_stripe_checkout(
     currency = org.currency if org and org.currency else "EUR"
 
     # Get member's person for customer sync
-    member_obj = db.query(Member).filter(Member.id == receipt.member_id).first()
-    person = db.query(Person).filter(Person.party_id == member_obj.party_id).first()
+    member_obj = (
+        db.query(Member)
+        .filter(Member.party_id == receipt.party_id)
+        .order_by(Member.is_active.desc(), Member.id.desc())
+        .first()
+    )
+    person = db.query(Person).filter(Person.party_id == receipt.party_id).first()
 
     # Lazy-create Stripe customer
     stripe_customer_id = None
@@ -812,8 +820,13 @@ def initiate_redsys_payment(
     if not adapter:
         raise HTTPException(status_code=500, detail="Redsys adapter not available")
 
-    member_obj = db.query(Member).filter(Member.id == receipt.member_id).first()
-    person = db.query(Person).filter(Person.party_id == member_obj.party_id).first()
+    member_obj = (
+        db.query(Member)
+        .filter(Member.party_id == receipt.party_id)
+        .order_by(Member.is_active.desc(), Member.id.desc())
+        .first()
+    )
+    person = db.query(Person).filter(Person.party_id == receipt.party_id).first()
 
     frontend = app_settings.FRONTEND_URL.rstrip("/")
     backend = app_settings.BACKEND_PUBLIC_URL.rstrip("/")

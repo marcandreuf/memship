@@ -43,7 +43,11 @@ def list_mandates(
     query = db.query(SepaMandate).filter(SepaMandate.is_active.is_(True))
 
     if member_id is not None:
-        query = query.filter(SepaMandate.member_id == member_id)
+        # The HTTP contract still filters by members.id (Phase 4).
+        query = query.filter(
+            SepaMandate.party_id
+            == db.query(Member.party_id).filter(Member.id == member_id).scalar_subquery()
+        )
     if status_filter:
         query = query.filter(SepaMandate.status == status_filter)
     if search:
@@ -203,7 +207,7 @@ async def upload_signed_mandate(
         )
 
     # Save to storage
-    storage_dir = Path(settings.STORAGE_LOCAL_PATH) / "mandates" / str(mandate.member_id)
+    storage_dir = Path(settings.STORAGE_LOCAL_PATH) / "mandates" / str(mandate.party_id)
     storage_dir.mkdir(parents=True, exist_ok=True)
     filename = f"{mandate.mandate_reference}.{ext}"
     file_path = storage_dir / filename
@@ -233,7 +237,7 @@ def get_my_mandate(
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
 
-    mandate = get_active_mandate(db, member.id)
+    mandate = get_active_mandate(db, member.party_id)
     if not mandate:
         return Response(status_code=204)
     return mandate

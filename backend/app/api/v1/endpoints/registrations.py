@@ -286,7 +286,7 @@ def cancel_own_registration(
     # Check ownership if not admin
     if not is_admin:
         member = current_member_or_403(db, current_user)
-        if registration.member_id != member.id:
+        if registration.party_id != member.party_id:
             raise HTTPException(status_code=403, detail="Cannot cancel another member's registration")
 
         # Check self-cancellation rules
@@ -361,7 +361,7 @@ def list_my_registrations(
 
     query = (
         db.query(Registration)
-        .filter(Registration.member_id == member.id)
+        .filter(Registration.party_id == member.party_id)
         .options(joinedload(Registration.activity))
     )
     if upcoming:
@@ -439,7 +439,7 @@ def list_member_registrations(
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
 
-    query = build_member_registrations_query(db, member_id, status=status_filter)
+    query = build_member_registrations_query(db, member.party_id, status=status_filter)
     items, meta = paginate(query, page, per_page)
 
     return {
@@ -460,6 +460,6 @@ def export_member_registrations_csv(
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
 
-    query = build_member_registrations_query(db, member_id, status=status_filter)
+    query = build_member_registrations_query(db, member.party_id, status=status_filter)
     rows = (_registration_csv_row(r) for r in query.yield_per(500))
     return stream_csv(_REGISTRATIONS_CSV_HEADERS, rows, f"member-{member_id}-registrations.csv")

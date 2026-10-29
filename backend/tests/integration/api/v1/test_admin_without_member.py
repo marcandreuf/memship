@@ -112,7 +112,7 @@ def joiner(db, membership_type):
     db.add(member)
     db.flush()
     receipt = Receipt(
-        receipt_number="R-9001", member_id=member.id, origin="membership",
+        receipt_number="R-9001", party_id=member.party_id, origin="membership",
         description="Annual fee", base_amount=Decimal("90.00"),
         vat_rate=Decimal("0.00"), vat_amount=Decimal("0.00"),
         total_amount=Decimal("90.00"), status="emitted",

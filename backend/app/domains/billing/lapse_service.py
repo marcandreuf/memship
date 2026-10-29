@@ -189,11 +189,16 @@ def revert_lapsed_members(db: Session, today: date | None = None) -> dict:
     skipped = 0
     seen: set[int] = set()
     for receipt in lapsed_receipts(db, today):
-        if receipt.member_id in seen:
+        if receipt.party_id in seen:
             continue
-        seen.add(receipt.member_id)
+        seen.add(receipt.party_id)
 
-        member = db.query(Member).filter(Member.id == receipt.member_id).first()
+        member = (
+            db.query(Member)
+            .filter(Member.party_id == receipt.party_id)
+            .order_by(Member.is_active.desc(), Member.id.desc())
+            .first()
+        )
         if member is None or member.membership_type_id == free_tier.id:
             skipped += 1
             continue
@@ -233,7 +238,12 @@ def restore_reverted_membership(db: Session, receipt: Receipt) -> bool:
     if receipt.origin != "membership":
         return False
 
-    member = db.query(Member).filter(Member.id == receipt.member_id).first()
+    member = (
+        db.query(Member)
+        .filter(Member.party_id == receipt.party_id)
+        .order_by(Member.is_active.desc(), Member.id.desc())
+        .first()
+    )
     if member is None or member.membership_reverted_from_id is None:
         return False
 

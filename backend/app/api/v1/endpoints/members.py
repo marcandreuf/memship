@@ -639,7 +639,7 @@ def _build_payment_response(person: Person, db: Session) -> PaymentMethodRespons
     if member:
         mandate = (
             db.query(SepaMandate)
-            .filter(SepaMandate.member_id == member.id, SepaMandate.is_active.is_(True))
+            .filter(SepaMandate.party_id == member.party_id, SepaMandate.is_active.is_(True))
             .order_by(SepaMandate.created_at.desc(), SepaMandate.id.desc())
             .first()
         )

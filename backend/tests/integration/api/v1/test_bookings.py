@@ -698,7 +698,7 @@ class TestSpaceStats:
     def _book(db, slot, member, status="booked"):
         from app.domains.bookings.models import Booking
 
-        db.add(Booking(space_slot_id=slot.id, member_id=member.id, status=status))
+        db.add(Booking(space_slot_id=slot.id, party_id=member.party_id, status=status))
         db.flush()
 
     def test_counts_cover_the_30_day_window_only(self, client, db):

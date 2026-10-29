@@ -101,11 +101,11 @@ def _remittance(db, number, total):
     return remittance
 
 
-def _membership_receipts(db, member_id):
+def _membership_receipts(db, party_id):
     return (
         db.query(Receipt)
         .filter(
-            Receipt.member_id == member_id,
+            Receipt.party_id == party_id,
             Receipt.origin == "membership",
             Receipt.is_active.is_(True),
             Receipt.status != "cancelled",
@@ -238,7 +238,7 @@ class TestPurchaseRefusals:
         quote = quote_membership_purchase(db, member, paid, today=date(2026, 3, 15))
 
         assert quote.total_amount == Decimal("201.67")
-        assert _membership_receipts(db, member.id) == []
+        assert _membership_receipts(db, member.party_id) == []
 
 
 # --- Changing your mind ---
@@ -255,7 +255,7 @@ class TestSupersedingAPurchase:
         db.refresh(first)
         assert first.status == "cancelled"
         assert second.status == "emitted"
-        assert [r.id for r in _membership_receipts(db, member.id)] == [second.id]
+        assert [r.id for r in _membership_receipts(db, member.party_id)] == [second.id]
 
     def test_a_purchase_already_handed_to_the_bank_is_left_alone(self, db):
         member, _, first_plan = _setup(db, "inremittance")
@@ -315,7 +315,7 @@ class TestExpiry:
         assert run.receipts_generated == 1
 
         assert expire_unpaid_purchases(db, date(2027, 1, 1)) == 0
-        fee = _membership_receipts(db, member.id)[0]
+        fee = _membership_receipts(db, member.party_id)[0]
         assert fee.status == "emitted"
 
     def test_expiry_runs_before_the_dunning_pass(self, db):
@@ -386,7 +386,7 @@ class TestActivation:
         member.membership_type_id = paid.id
         db.flush()
         run_billing(db, "annual", "scheduled", today=date(2026, 1, 1))
-        fee = _membership_receipts(db, member.id)[0]
+        fee = _membership_receipts(db, member.party_id)[0]
         member.membership_type_id = free.id
         db.flush()
 
@@ -429,7 +429,7 @@ class TestNoDoubleBilling:
 
         assert run.status == "success"
         assert run.receipts_generated == 0
-        assert [r.id for r in _membership_receipts(db, member.id)] == [receipt.id]
+        assert [r.id for r in _membership_receipts(db, member.party_id)] == [receipt.id]
 
     def test_the_run_after_the_period_ends_does_bill_them(self, db):
         """The buyer joins the ordinary cycle at the next calendar boundary."""
@@ -441,7 +441,7 @@ class TestNoDoubleBilling:
         run = run_billing(db, "annual", "scheduled", today=date(2027, 1, 1))
 
         assert run.receipts_generated == 1
-        fees = _membership_receipts(db, member.id)
+        fees = _membership_receipts(db, member.party_id)
         assert len(fees) == 2
         renewal = next(r for r in fees if r.id != receipt.id)
         assert renewal.base_amount == Decimal("200.00")
@@ -463,7 +463,7 @@ class TestNoDoubleBilling:
         run = run_billing(db, "annual", "scheduled", today=date(2026, 3, 20))
 
         assert run.receipts_generated == 0
-        assert [r.id for r in _membership_receipts(db, member.id)] == [receipt.id]
+        assert [r.id for r in _membership_receipts(db, member.party_id)] == [receipt.id]
 
     def test_a_monthly_purchase_covers_the_month_it_was_bought_in(self, db):
         member, _, paid = _setup(db, "monthly", price=30, frequency="monthly")

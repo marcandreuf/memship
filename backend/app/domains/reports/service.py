@@ -161,7 +161,7 @@ def paid_tier_without_purchase(
     has_paid_membership_receipt = (
         db.query(Receipt.id)
         .filter(
-            Receipt.member_id == Member.id,
+            Receipt.party_id == Member.party_id,
             Receipt.origin == "membership",
             Receipt.status == "paid",
             Receipt.is_active.is_(True),
@@ -171,7 +171,7 @@ def paid_tier_without_purchase(
 
     unpaid = (
         db.query(
-            Receipt.member_id.label("member_id"),
+            Receipt.party_id.label("party_id"),
             func.count(Receipt.id).label("receipts"),
             func.coalesce(func.sum(Receipt.total_amount), 0).label("amount"),
         )
@@ -180,7 +180,7 @@ def paid_tier_without_purchase(
             Receipt.status.in_(UNPAID_STATUSES),
             Receipt.is_active.is_(True),
         )
-        .group_by(Receipt.member_id)
+        .group_by(Receipt.party_id)
         .subquery()
     )
 
@@ -188,7 +188,7 @@ def paid_tier_without_purchase(
         db.query(Member, Person, MembershipType, unpaid.c.receipts, unpaid.c.amount)
         .join(Person, Member.party_id == Person.party_id)
         .join(MembershipType, Member.membership_type_id == MembershipType.id)
-        .outerjoin(unpaid, unpaid.c.member_id == Member.id)
+        .outerjoin(unpaid, unpaid.c.party_id == Member.party_id)
         .filter(
             MembershipType.base_price > 0,
             Member.is_active.is_(True),

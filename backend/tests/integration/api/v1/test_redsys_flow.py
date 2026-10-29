@@ -111,7 +111,7 @@ def _create_receipt(db, member, status="emitted", ds_order=None):
     _create_org(db)
     receipt = Receipt(
         receipt_number=f"FAC-2026-R{member.id:04d}",
-        member_id=member.id,
+        party_id=member.party_id,
         origin="membership",
         description="Test fee",
         base_amount=Decimal("100.00"),

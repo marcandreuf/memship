@@ -190,7 +190,7 @@ class TestFileUpload:
 
         # Create a registration first
         reg = Registration(
-            activity_id=activity.id, member_id=member.id,
+            activity_id=activity.id, party_id=member.party_id,
             price_id=price.id, status="confirmed",
         )
         db.add(reg)
@@ -221,7 +221,7 @@ class TestFileUpload:
         db.flush()
 
         reg = Registration(
-            activity_id=activity.id, member_id=member.id,
+            activity_id=activity.id, party_id=member.party_id,
             price_id=price.id, status="confirmed",
         )
         db.add(reg)
@@ -248,7 +248,7 @@ class TestFileUpload:
         db.flush()
 
         reg = Registration(
-            activity_id=activity.id, member_id=member.id,
+            activity_id=activity.id, party_id=member.party_id,
             price_id=price.id, status="confirmed",
         )
         db.add(reg)
@@ -275,7 +275,7 @@ class TestFileUpload:
         user, member = _create_member_with_user(db, suffix="-fu4")
         activity, price = _create_published_activity(db, admin.id)
         reg = Registration(
-            activity_id=activity.id, member_id=member.id,
+            activity_id=activity.id, party_id=member.party_id,
             price_id=price.id, status="confirmed",
         )
         db.add(reg)
@@ -302,7 +302,7 @@ class TestFileUpload:
         activity, price = _create_published_activity(db, admin.id)
 
         reg = Registration(
-            activity_id=activity.id, member_id=member.id,
+            activity_id=activity.id, party_id=member.party_id,
             price_id=price.id, status="confirmed",
         )
         db.add(reg)
@@ -327,7 +327,7 @@ class TestFileUpload:
         activity, price = _create_published_activity(db, admin.id)
 
         reg = Registration(
-            activity_id=activity.id, member_id=member1.id,
+            activity_id=activity.id, party_id=member1.party_id,
             price_id=price.id, status="confirmed",
         )
         db.add(reg)
@@ -347,7 +347,7 @@ class TestFileUpload:
         activity, price = _create_published_activity(db, admin.id)
 
         reg = Registration(
-            activity_id=activity.id, member_id=member.id,
+            activity_id=activity.id, party_id=member.party_id,
             price_id=price.id, status="confirmed",
         )
         db.add(reg)
