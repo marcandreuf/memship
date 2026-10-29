@@ -447,3 +447,57 @@ def _contact_carries_its_channel(_mapper, connection, contact):
         .with_only_columns(ContactType.__table__.c.channel)
         .where(ContactType.__table__.c.id == contact.contact_type_id)
     ).scalar_one_or_none()
+
+
+@event.listens_for(SASession, "before_flush")
+def _one_primary_contact_per_channel(session, _ctx, _instances):
+    """Saving a contact as primary demotes the party's other primary in that
+    channel, instead of colliding with ``uq_contacts_one_primary_per_channel``.
+
+    Nothing demoted the incumbent before, and nothing caught the resulting
+    ``IntegrityError``, so writes that had always worked became 500s: a channel
+    holds several types (``phone_home``, ``phone_mobile``, ``phone_work`` and
+    ``phone_emergency`` are all ``phone``), and a primary of each was legal
+    until the index arrived. Four write paths reach this -- the two create
+    endpoints, the update endpoint and the member's own profile -- so it lives
+    here rather than at the call sites, which is also what makes it cover a
+    writer nobody has added yet.
+
+    Newest wins: the contact being saved takes the slot. The migration's dedupe
+    keeps the *first* per channel instead, and the asymmetry is deliberate --
+    at upgrade there is no user intent to read, here somebody ticked the box.
+
+    ``channel`` is resolved from the type rather than read off the instance:
+    ``_contact_carries_its_channel`` fills that column at ``before_insert``,
+    which runs after this.
+    """
+    claiming = [
+        obj
+        for obj in list(session.new) + list(session.dirty)
+        if isinstance(obj, Contact)
+        and obj.is_primary
+        and obj.party_id is not None
+        and obj.contact_type_id is not None
+    ]
+    if not claiming:
+        return
+
+    with session.no_autoflush:
+        for contact in claiming:
+            channel = (
+                session.query(ContactType.channel)
+                .filter(ContactType.id == contact.contact_type_id)
+                .scalar()
+            )
+            if channel is None:
+                continue
+            incumbents = session.query(Contact).filter(
+                Contact.party_id == contact.party_id,
+                Contact.channel == channel,
+                Contact.is_primary.is_(True),
+            )
+            # A pending contact has no id to exclude itself by, and no row to
+            # match either, so the filter is only needed for an update.
+            if contact.id is not None:
+                incumbents = incumbents.filter(Contact.id != contact.id)
+            incumbents.update({"is_primary": False}, synchronize_session="fetch")

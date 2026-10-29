@@ -245,6 +245,13 @@ class TestPhase3RealOwners:
         db.flush()
 
     def test_a_second_primary_on_the_same_channel_is_refused(self, db):
+        """The index is the backstop; the application is the policy.
+
+        ``_one_primary_contact_per_channel`` hands the slot over before an ORM
+        write can collide, so this reaches the constraint through raw SQL -- the
+        way a migration, a psql session or a future writer outside the ORM
+        would. The same reason the channel-disagreement test below does.
+        """
         from app.domains.persons.models import Contact, ContactType
 
         person = _person()
@@ -255,9 +262,38 @@ class TestPhase3RealOwners:
 
         db.add(Contact(party_id=person.party_id, contact_type_id=home.id, value="+34 600 000 003", is_primary=True))
         db.flush()
-        db.add(Contact(party_id=person.party_id, contact_type_id=work.id, value="+34 600 000 004", is_primary=True))
+
         with pytest.raises(IntegrityError):
-            db.flush()
+            db.execute(
+                text(
+                    "INSERT INTO contacts "
+                    "(party_id, contact_type_id, channel, value, is_primary) "
+                    "VALUES (:p, :t, 'phone', '+34 600 000 004', true)"
+                ),
+                {"p": person.party_id, "t": work.id},
+            )
+
+    def test_the_application_demotes_instead_of_colliding(self, db):
+        """The other half of the pair: through the ORM the second primary is
+        accepted and the first stands down."""
+        from app.domains.persons.models import Contact, ContactType
+
+        person = _person()
+        home = ContactType(code="phone_p3c3", name="Home", channel="phone")
+        work = ContactType(code="phone_p3c4", name="Work", channel="phone")
+        db.add_all([person, home, work])
+        db.flush()
+
+        first = Contact(party_id=person.party_id, contact_type_id=home.id, value="+34 600 000 005", is_primary=True)
+        db.add(first)
+        db.flush()
+        second = Contact(party_id=person.party_id, contact_type_id=work.id, value="+34 600 000 006", is_primary=True)
+        db.add(second)
+        db.flush()
+
+        db.refresh(first)
+        assert second.is_primary is True
+        assert first.is_primary is False
 
     def test_a_channel_cannot_disagree_with_its_type(self, db):
         from app.domains.persons.models import ContactType
