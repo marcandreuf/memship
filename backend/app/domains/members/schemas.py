@@ -80,7 +80,7 @@ class MemberCreate(BaseModel):
     bank_iban: str | None = Field(default=None, max_length=34)
     bank_bic: str | None = Field(default=None, max_length=11)
     membership_type_id: int | None = None
-    guardian_person_id: int | None = None
+    guardian_party_id: int | None = None
     internal_notes: str | None = Field(default=None, max_length=2000)
 
     @field_validator("date_of_birth")
@@ -117,7 +117,7 @@ class MemberSelfUpdate(BaseModel):
 
     Deliberately excludes ``email`` (identity, and it would desynchronise the
     Person row from ``User.email``), ``membership_type_id`` (it sets the
-    recurring fee and unlocks restricted activities), ``guardian_person_id`` and
+    recurring fee and unlocks restricted activities), ``guardian_party_id`` and
     ``internal_notes`` (admin-only). ``MemberUpdate`` adds those back for
     callers holding ``members.write``.
     """
@@ -146,7 +146,7 @@ class MemberSelfUpdate(BaseModel):
 class MemberUpdate(MemberSelfUpdate):
     email: Email | None = None
     membership_type_id: int | None = None
-    guardian_person_id: int | None = None
+    guardian_party_id: int | None = None
     internal_notes: str | None = Field(default=None, max_length=2000)
 
 
@@ -199,7 +199,7 @@ class GuardianResponse(BaseModel):
 
 class MemberResponse(BaseModel):
     id: int
-    person_id: int
+    party_id: int
     person: PersonResponse
     membership_type_id: int | None = None
     membership_type_name: str | None = None

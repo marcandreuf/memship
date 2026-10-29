@@ -186,7 +186,7 @@ function CreateMandateForm({ t, onSuccess }: { t: ErrorTranslator; onSuccess: ()
     if (!memberId || !debtorName || !debtorIban || !signedAt) return;
     try {
       await mutation.mutateAsync({
-        member_id: parseInt(memberId),
+        party_id: parseInt(memberId),
         debtor_name: debtorName,
         debtor_iban: debtorIban.toUpperCase().replace(/\s/g, ""),
         debtor_bic: debtorBic || undefined,

@@ -59,10 +59,10 @@ export default function MemberDetailPage({
   // Receipt count for badge
   const receiptParams = useMemo(() => {
     const p = new URLSearchParams();
-    p.set("member_id", String(memberId));
+    if (member) p.set("party_id", String(member.party_id));
     p.set("per_page", "1");
     return p;
-  }, [memberId]);
+  }, [member]);
   const { data: receiptData } = useReceipts(receiptParams, canReadBilling);
 
   if (isLoading) {
@@ -141,7 +141,7 @@ export default function MemberDetailPage({
                 {
                   id: "contact",
                   label: t("members.contactInfo"),
-                  content: <ContactInfoTab personId={member.person_id} />,
+                  content: <ContactInfoTab personId={member.party_id} />,
                 },
               ]
             : []),
@@ -160,7 +160,7 @@ export default function MemberDetailPage({
                   id: "receipts",
                   label: t("receipts.title"),
                   badge: receiptData?.meta?.total,
-                  content: <MemberReceiptsTab memberId={memberId} />,
+                  content: <MemberReceiptsTab partyId={member.party_id} />,
                 },
               ]
             : []),
@@ -179,7 +179,7 @@ export default function MemberDetailPage({
                 {
                   id: "custom-fields",
                   label: t("profileFields.tabLabel"),
-                  content: <CustomFieldsTab personId={member.person_id} />,
+                  content: <CustomFieldsTab personId={member.party_id} />,
                 },
               ]
             : []),

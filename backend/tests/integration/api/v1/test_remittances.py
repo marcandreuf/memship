@@ -1922,7 +1922,7 @@ class TestOneActiveMandatePerMember:
         resp = client.post(
             "/api/v1/mandates/",
             json={
-                "member_id": member.id,
+                "party_id": member.party_id,
                 "debtor_name": "Test Member",
                 "debtor_iban": "DE89370400440532013000",
                 "mandate_type": "recurrent",
@@ -1953,7 +1953,7 @@ class TestOneActiveMandatePerMember:
         resp = client.post(
             "/api/v1/mandates/",
             json={
-                "member_id": member.id,
+                "party_id": member.party_id,
                 "debtor_name": "Test Member",
                 "debtor_iban": "DE89370400440532013000",
                 "mandate_type": "recurrent",

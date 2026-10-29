@@ -9,7 +9,7 @@ from app.domains.auth.models import User
 from app.domains.billing.models import Concept, Receipt
 from app.domains.members.models import Member, MembershipType
 from app.domains.organizations.models import OrganizationSettings
-from app.domains.persons.models import Person
+from app.domains.persons.models import Address, Party, Person
 
 
 def _create_user(db, role="admin", suffix="receipt"):
@@ -146,7 +146,7 @@ class TestReceiptCRUD:
         resp = client.post(
             "/api/v1/receipts/",
             json={
-                "member_id": member.id,
+                "party_id": member.party_id,
                 "origin": "manual",
                 "description": "Room rental — March 2026",
                 "base_amount": 100,
@@ -172,7 +172,7 @@ class TestReceiptCRUD:
         resp = client.post(
             "/api/v1/receipts/",
             json={
-                "member_id": member.id,
+                "party_id": member.party_id,
                 "origin": "manual",
                 "description": "Discounted item",
                 "base_amount": 200,
@@ -201,7 +201,7 @@ class TestReceiptCRUD:
         resp = client.post(
             "/api/v1/receipts/",
             json={
-                "member_id": member.id,
+                "party_id": member.party_id,
                 "origin": "manual",
                 "description": "Over-discounted",
                 "base_amount": 50,
@@ -226,7 +226,7 @@ class TestReceiptCRUD:
         client.post(
             "/api/v1/receipts/",
             json={
-                "member_id": member.id,
+                "party_id": member.party_id,
                 "origin": "manual",
                 "description": "Test",
                 "base_amount": 50,
@@ -264,7 +264,7 @@ class TestDiscountedReceiptEdits:
         user = _create_user(db, "admin", f"rcpt-edit-{suffix}")
         member, _ = _create_member(db, f"edit-{suffix}")
         body = {
-            "member_id": member.id,
+            "party_id": member.party_id,
             "origin": "manual",
             "description": "Editable",
             "base_amount": 200,
@@ -328,7 +328,7 @@ class TestDiscountedReceiptEdits:
         updated_rid = client.post(
             "/api/v1/receipts/",
             json={
-                "member_id": created["member_id"],
+                "party_id": created["party_id"],
                 "origin": "manual",
                 "description": "Editable",
                 "base_amount": 200,
@@ -365,7 +365,7 @@ class TestReceiptStatusTransitions:
         resp = client.post(
             "/api/v1/receipts/",
             json={
-                "member_id": member.id,
+                "party_id": member.party_id,
                 "origin": "manual",
                 "description": "Status test",
                 "base_amount": 100,
@@ -483,7 +483,7 @@ class TestCreditNotes:
         receipt = client.post(
             "/api/v1/receipts/",
             json={
-                "member_id": member.id,
+                "party_id": member.party_id,
                 "origin": "manual",
                 "description": "Credit note test",
                 "base_amount": base_amount,
@@ -515,7 +515,7 @@ class TestCreditNotes:
         assert note["status"] == "emitted"
         assert note["is_batchable"] is False
         assert note["due_date"] is None
-        assert note["member_id"] == receipt["member_id"]
+        assert note["party_id"] == receipt["party_id"]
 
     def test_credit_note_for_a_discounted_receipt_adds_up(self, client, db):
         """The receipt's base is gross of its discount; the note's is net."""
@@ -638,7 +638,7 @@ class TestCreditNotes:
         receipt = client.post(
             "/api/v1/receipts/",
             json={
-                "member_id": member.id,
+                "party_id": member.party_id,
                 "origin": "manual",
                 "description": "Not issued yet",
                 "base_amount": 100,
@@ -808,7 +808,7 @@ class TestReceiptPDF:
         create_resp = client.post(
             "/api/v1/receipts/",
             json={
-                "member_id": member.id,
+                "party_id": member.party_id,
                 "origin": "manual",
                 "description": "PDF test receipt",
                 "base_amount": 100,
@@ -833,7 +833,7 @@ class TestReceiptPDF:
         create_resp = client.post(
             "/api/v1/receipts/",
             json={
-                "member_id": member.id,
+                "party_id": member.party_id,
                 "origin": "manual",
                 "description": "Discounted PDF",
                 "base_amount": 200,
@@ -860,7 +860,7 @@ class TestReceiptPDF:
         create_resp = client.post(
             "/api/v1/receipts/",
             json={
-                "member_id": member.id,
+                "party_id": member.party_id,
                 "origin": "manual",
                 "description": "Other member receipt",
                 "base_amount": 50,
@@ -885,7 +885,7 @@ class TestVATCalculation:
         resp = client.post(
             "/api/v1/receipts/",
             json={
-                "member_id": member.id,
+                "party_id": member.party_id,
                 "origin": "manual",
                 "description": "VAT test",
                 "base_amount": 100,
@@ -906,7 +906,7 @@ class TestVATCalculation:
         resp = client.post(
             "/api/v1/receipts/",
             json={
-                "member_id": member.id,
+                "party_id": member.party_id,
                 "origin": "manual",
                 "description": "Reduced VAT test",
                 "base_amount": 50.50,
@@ -927,7 +927,7 @@ class TestVATCalculation:
         resp = client.post(
             "/api/v1/receipts/",
             json={
-                "member_id": member.id,
+                "party_id": member.party_id,
                 "origin": "manual",
                 "description": "Exempt",
                 "base_amount": 75,
@@ -939,3 +939,153 @@ class TestVATCalculation:
         data = resp.json()
         assert float(data["vat_amount"]) == 0
         assert float(data["total_amount"]) == 75.0
+
+
+def _company_party(db, display_name, national_id, *, with_address=True):
+    """A non-person party: the donor or sponsor the entities screens exist for.
+    It holds no ``members`` row and never will."""
+    party = Party(kind="company", display_name=display_name, national_id=national_id)
+    db.add(party)
+    db.flush()
+    if with_address:
+        db.add(Address(
+            party_id=party.id,
+            address_line1="Carrer Gran 1",
+            postal_code="08001",
+            city="Barcelona",
+            is_primary=True,
+        ))
+        db.flush()
+    return party
+
+
+class TestReceiptsForAPartyWithNoMembership:
+    """``create_receipt`` accepts any party, so a receipt can be addressed to a
+    company: that is exactly the donation receipt the entities screens produce.
+
+    Every place that named the holder resolved it through
+    ``receipt.member.person``, and a company has no ``members`` row, so the
+    name, the tax id and the address all came out empty. A Spanish factura
+    needs the recipient's name and NIF/CIF, so this is an invalid document
+    rather than an untidy one.
+    """
+
+    def test_detail_names_the_party(self, client, db):
+        user = _create_user(db, "admin", "party-detail")
+        _ensure_org_settings(db)
+        party = _company_party(db, "Fundació Exemple", "G12345678")
+        client.cookies.update(_auth_cookie(user))
+
+        created = client.post("/api/v1/receipts/", json={
+            "party_id": party.id,
+            "origin": "manual",
+            "description": "Donatiu campanya hivern",
+            "base_amount": 100.0,
+            "vat_rate": 0.0,
+            "emission_date": str(date.today()),
+        })
+        assert created.status_code == 201, created.text
+        receipt_id = created.json()["id"]
+
+        detail = client.get(f"/api/v1/receipts/{receipt_id}")
+
+        assert detail.status_code == 200
+        body = detail.json()
+        assert body["member_name"] == "Fundació Exemple"
+        # Not a member, so there is no member number to show.
+        assert body["member_number"] is None
+
+    def test_the_list_names_the_party(self, client, db):
+        user = _create_user(db, "admin", "party-list")
+        _ensure_org_settings(db)
+        party = _company_party(db, "Associació Dos", "G87654321")
+        client.cookies.update(_auth_cookie(user))
+        client.post("/api/v1/receipts/", json={
+            "party_id": party.id,
+            "origin": "manual",
+            "description": "Donatiu",
+            "base_amount": 50.0,
+            "vat_rate": 0.0,
+            "emission_date": str(date.today()),
+        })
+
+        listed = client.get("/api/v1/receipts/", params={"party_id": party.id})
+
+        assert listed.status_code == 200
+        items = listed.json()["items"]
+        assert len(items) == 1
+        assert items[0]["member_name"] == "Associació Dos"
+
+    def test_search_finds_the_receipt_instead_of_dropping_it(self, client, db):
+        """``build_receipts_query`` joined ``Receipt.member`` and
+        ``Member.person`` as an inner join, so a search removed every receipt
+        with no membership from the results rather than showing it unnamed."""
+        user = _create_user(db, "admin", "party-search")
+        _ensure_org_settings(db)
+        party = _company_party(db, "Fundació Cercable", "G11223344")
+        client.cookies.update(_auth_cookie(user))
+        client.post("/api/v1/receipts/", json={
+            "party_id": party.id,
+            "origin": "manual",
+            "description": "Donatiu cercable",
+            "base_amount": 75.0,
+            "vat_rate": 0.0,
+            "emission_date": str(date.today()),
+        })
+
+        found = client.get("/api/v1/receipts/", params={"search": "Cercable"})
+
+        assert found.status_code == 200
+        numbers = [i["member_name"] for i in found.json()["items"]]
+        assert "Fundació Cercable" in numbers
+
+    def test_search_still_matches_a_member_by_name(self, client, db):
+        """The guard on the join change: a member receipt stays findable by the
+        person's name."""
+        user = _create_user(db, "admin", "party-search-member")
+        _ensure_org_settings(db)
+        member, _ = _create_member(db, "searchable")
+        client.cookies.update(_auth_cookie(user))
+        client.post("/api/v1/receipts/", json={
+            "party_id": member.party_id,
+            "origin": "manual",
+            "description": "Quota",
+            "base_amount": 30.0,
+            "vat_rate": 0.0,
+            "emission_date": str(date.today()),
+        })
+
+        found = client.get("/api/v1/receipts/", params={"search": "García"})
+
+        assert found.status_code == 200
+        assert len(found.json()["items"]) >= 1
+
+    def test_the_pdf_context_carries_the_party_as_recipient(self, db):
+        """Asserted on the context rather than rendered bytes: WeasyPrint's
+        system deps are deliberately absent in tests, which is why
+        ``generate_receipt_pdf`` imports it lazily."""
+        from app.domains.billing.pdf import build_receipt_context
+
+        _ensure_org_settings(db)
+        party = _company_party(db, "Fundació PDF", "G55667788")
+        receipt = Receipt(
+            receipt_number="FAC-2026-0099",
+            party_id=party.id,
+            origin="manual",
+            description="Donatiu",
+            base_amount=Decimal("100.00"),
+            vat_rate=Decimal("0.00"),
+            vat_amount=Decimal("0.00"),
+            total_amount=Decimal("100.00"),
+            status="pending",
+            emission_date=date.today(),
+        )
+        db.add(receipt)
+        db.flush()
+
+        context = build_receipt_context(db, receipt)
+
+        assert context["member"]["name"] == "Fundació PDF"
+        assert context["member"]["tax_id"] == "G55667788"
+        assert context["member"]["address"] is not None
+        assert context["member"]["member_number"] is None

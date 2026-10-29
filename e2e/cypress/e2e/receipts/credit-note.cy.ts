@@ -20,7 +20,7 @@ describe("Receipts — Issue a credit note", () => {
         method: "POST",
         url: `${API_URL}/receipts`,
         body: {
-          member_id: member.id,
+          party_id: member.party_id,
           description: "Credit note E2E test receipt",
           base_amount: 100.0,
           vat_rate: 21,

@@ -48,7 +48,7 @@ class UserResponse(BaseModel):
     roles: list[RoleSummary] = []
     permissions: list[str] = []
     is_active: bool
-    person_id: int
+    party_id: int
     first_name: str
     last_name: str
     member_id: int | None = None

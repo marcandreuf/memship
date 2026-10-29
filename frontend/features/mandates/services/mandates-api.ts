@@ -8,7 +8,7 @@ export interface DocumentInfo {
 
 export interface MandateData {
   id: number;
-  member_id: number;
+  party_id: number;
   mandate_reference: string;
   creditor_id: string;
   debtor_name: string;

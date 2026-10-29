@@ -139,7 +139,7 @@ class BookingRead(BaseModel):
 
     id: int
     space_slot_id: int
-    member_id: int
+    party_id: int
     status: str
     created_at: datetime | None
 
@@ -164,7 +164,7 @@ class MyBookingRead(BaseModel):
 class AdminBookingRead(BaseModel):
     id: int
     space_slot_id: int
-    member_id: int
+    party_id: int
     member_name: str
     slot_date: date
     start_time: time
