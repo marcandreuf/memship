@@ -93,10 +93,17 @@ def upgrade() -> None:
             "INSERT INTO contact_channels (code, name) VALUES (:ch, :name) "
             "ON CONFLICT (code) DO NOTHING"
         ), {"ch": channel, "name": name})
+        # DO UPDATE, not DO NOTHING: a row already carrying this code keeps
+        # whatever channel it has, and e3f8c2a91b47 derives that channel from
+        # the code with split_part, which cannot resolve `website` and settles
+        # on 'other'. The contacts insert below then asserts (type, 'url') and
+        # the composite foreign key refuses it. Repairing the channel here is
+        # what stops this upgrade depending on the table being pristine
+        # (memship#475).
         conn.execute(sa.text(
             "INSERT INTO contact_types (code, name, channel, is_active, display_order) "
-            "SELECT :code, :name, :ch, true, 0 "
-            "WHERE NOT EXISTS (SELECT 1 FROM contact_types WHERE code = :code)"
+            "VALUES (:code, :name, :ch, true, 0) "
+            "ON CONFLICT (code) DO UPDATE SET channel = EXCLUDED.channel"
         ), {"code": code, "name": name, "ch": channel})
 
     moved_contacts = 0
@@ -224,6 +231,19 @@ def downgrade() -> None:
     )).rowcount
     if removed:
         _log(f"downgrade: removed {removed} club contact row(s)")
+
+    # And the types behind them, or the table keeps rows the old schema never
+    # had. Leaving them made this downgrade non-invertible: the next upgrade
+    # finds a `website` type whose channel e3f8c2a91b47 re-derives as 'other',
+    # skips seeding it because the code already exists, and then violates
+    # contacts_channel_matches_type inserting (type, 'url') (memship#475).
+    # Safe to delete by code: contact_types has no creation path, the API
+    # exposes only a GET, so nothing but this migration puts these codes there.
+    seeded_types = conn.execute(sa.text(
+        "DELETE FROM contact_types WHERE code IN ('phone_main', 'website')"
+    )).rowcount
+    if seeded_types:
+        _log(f"downgrade: removed {seeded_types} club contact type(s)")
 
     op.drop_index("uq_bank_accounts_primary_per_party", table_name="bank_accounts")
     op.drop_index("ix_bank_accounts_party", table_name="bank_accounts")
