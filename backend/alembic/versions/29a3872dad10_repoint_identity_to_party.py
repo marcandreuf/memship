@@ -280,10 +280,6 @@ def downgrade() -> None:
         ["person_id"], ["id"], ondelete="CASCADE",
     )
     op.create_index("idx_members_person_id", "members", ["person_id"])
-    bind.execute(sa.text(
-        "UPDATE members m SET user_id = u.id FROM users u "
-        "WHERE u.person_id = m.person_id AND u.is_active"
-    ))
 
     op.drop_index("idx_users_party_id", table_name="users")
     op.drop_index("uq_users_one_active_per_party", table_name="users")
@@ -298,3 +294,12 @@ def downgrade() -> None:
         ["person_id"], ["id"], ondelete="CASCADE",
     )
     op.create_index("idx_users_person_id", "users", ["person_id"])
+
+    # After the users block, not with the members block above: this reads
+    # users.person_id, which only exists once party_id has been renamed back a
+    # few lines up. Ordering it with the other members statements is a hard
+    # failure on every downgrade, whatever the data holds (memship#474).
+    bind.execute(sa.text(
+        "UPDATE members m SET user_id = u.id FROM users u "
+        "WHERE u.person_id = m.person_id AND u.is_active"
+    ))
