@@ -175,3 +175,91 @@ class TestWhenItCannotLook:
 
         assert result.returncode == 2
         assert "could not run" in result.stderr
+
+
+@pytest.fixture
+def head_db():
+    """A database at the current head, where `members.user_id` no longer
+    exists: `29a3872dad10` drops it and the member link now goes through the
+    party."""
+    admin = sa.create_engine(_server_url(), isolation_level="AUTOCOMMIT")
+    try:
+        with admin.connect() as conn:
+            conn.execute(sa.text(f'DROP DATABASE IF EXISTS "{SCRATCH}" WITH (FORCE)'))
+            conn.execute(sa.text(f'CREATE DATABASE "{SCRATCH}"'))
+    except sa.exc.OperationalError as exc:
+        pytest.skip(f"no database server for the preflight test: {exc}")
+
+    _migrate_to("head")
+    engine = sa.create_engine(_scratch_url())
+    try:
+        yield engine
+    finally:
+        engine.dispose()
+        with admin.connect() as conn:
+            conn.execute(sa.text(f'DROP DATABASE IF EXISTS "{SCRATCH}" WITH (FORCE)'))
+        admin.dispose()
+
+
+class TestItSurvivesTheSchemaMovingUnderIt:
+    """A `preflight_check` is stored as a historical record but executed as
+    live code, so it keeps running against databases built long after its own
+    migration. `f5a6b7c8d9e0`'s check reads `members.user_id`, which
+    `29a3872dad10:196` drops, so on any 3.0.0 database the module raised and
+    returned 2, and `scripts/upgrade.sh` turned that into a refusal.
+
+    The upgrade *to* 3.0.0 was never affected: the column still exists at
+    2.19.0 while the gate runs. Every upgrade *from* it was (memship#476).
+    """
+
+    def test_a_3_0_0_database_can_still_be_checked(self, head_db):
+        result = _preflight()
+
+        assert result.returncode == 0, result.stdout + result.stderr
+
+    def test_it_says_nothing_is_pending_rather_than_claiming_a_pass(self, head_db):
+        """A database already at the target has nothing to examine. Saying so
+        is different from reporting checks that ran."""
+        assert "nothing pending" in _preflight().stdout
+
+
+@pytest.fixture
+def db_at_2_19():
+    """v2.19.0's head: the state a real instance upgrades to 3.0.0 from."""
+    admin = sa.create_engine(_server_url(), isolation_level="AUTOCOMMIT")
+    try:
+        with admin.connect() as conn:
+            conn.execute(sa.text(f'DROP DATABASE IF EXISTS "{SCRATCH}" WITH (FORCE)'))
+            conn.execute(sa.text(f'CREATE DATABASE "{SCRATCH}"'))
+    except sa.exc.OperationalError as exc:
+        pytest.skip(f"no database server for the preflight test: {exc}")
+
+    _migrate_to("d6f0e949ffef")
+    engine = sa.create_engine(_scratch_url())
+    try:
+        yield engine
+    finally:
+        engine.dispose()
+        with admin.connect() as conn:
+            conn.execute(sa.text(f'DROP DATABASE IF EXISTS "{SCRATCH}" WITH (FORCE)'))
+        admin.dispose()
+
+
+class TestItReportsWhatThisUpgradeActuallyExamined:
+    """The 3.0.0 upgrade's gate reported "2 run, nothing blocking" while both
+    revisions it named were already applied and none of the eight being applied
+    declared anything. The count described the repository's history rather than
+    the upgrade. This is the reporting half of memship-context#80.
+    """
+
+    def test_it_counts_the_pending_migrations_not_the_whole_history(self, db_at_2_19):
+        out = _preflight().stdout
+
+        assert "8 migrations pending" in out
+
+    def test_it_says_plainly_that_none_declares_a_precondition(self, db_at_2_19):
+        """The silence is the finding. A gate that examined nothing must not
+        read like one that examined something."""
+        out = _preflight().stdout
+
+        assert "none of which declares a data precondition" in out
