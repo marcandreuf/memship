@@ -28,8 +28,23 @@ describe("Member detail — the open tab is in the URL", () => {
 
   const activeTab = () => cy.get('[role="tab"][data-state="active"]');
 
+/**
+ * A tab by its exact label, tolerating a badge.
+ *
+ * Two traps, both met for real while writing this. A tab's text includes its
+ * badge count when it has one, so `Receipts` renders as `Receipts3` on a member
+ * who has receipts and as `Receipts` on one who does not — a substring match
+ * hides that, an exact match fails on whichever member the list happens to put
+ * first. And a sibling label can contain another's: `Membership Types` contains
+ * `Members`, so a substring match clicks the wrong tab, and when that one is
+ * already active Radix fires no change and nothing reaches the URL.
+ */
+const tab = (label: string) =>
+  cy.contains('[role="tab"]', new RegExp(`^${label}(\\s*\\d+)?$`));
+
+
   it("names the tab in the URL when one is opened", () => {
-    cy.get('[role="tab"]').contains("Activities").click();
+    tab("Activities").click();
 
     cy.url().should("include", "tab=activities");
     activeTab().should("contain.text", "Activities");
@@ -52,7 +67,7 @@ describe("Member detail — the open tab is in the URL", () => {
   });
 
   it("returns to the tab that was left, not to the first one", () => {
-    cy.get('[role="tab"]').contains("Activities").click();
+    tab("Activities").click();
     cy.url().should("include", "tab=activities");
 
     cy.get("nav[aria-label='breadcrumb']").contains("Members").click();
@@ -67,9 +82,9 @@ describe("Member detail — the open tab is in the URL", () => {
   it("switching tabs does not stack history entries", () => {
     // The setter replaces rather than pushes, so Back leaves the record
     // instead of walking backwards through every tab that was looked at.
-    cy.get('[role="tab"]').contains("Activities").click();
+    tab("Activities").click();
     cy.url().should("include", "tab=activities");
-    cy.get('[role="tab"]').contains("Receipts").click();
+    tab("Receipts").click();
     cy.url().should("include", "tab=receipts");
 
     cy.go("back");
