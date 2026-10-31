@@ -54,6 +54,18 @@ NORMALISED = "lower(btrim(email))"
 # EXISTS rather than a join to members: `members.user_id` carries no unique
 # constraint (#187), so a join would multiply a user holding two member rows
 # and trip `count(*) > 1` on a single account.
+#
+# `members.user_id` no longer exists in the current schema: `29a3872dad10`
+# drops it when the identity cluster moves onto the party. Reading it here is
+# still correct, and must not be "fixed". This check is consulted only while
+# this migration is pending (`app/cli/preflight.py`), which is only ever a
+# database that has not applied it, and on that schema `members.user_id` is
+# the link. On the schema where the column is gone, `members` carries
+# `party_id` instead and this check is never reached, so resolving the link
+# through the party would be valid where it never runs and invalid on the
+# only schema it does run on, breaking every remaining 2.x upgrade. Nothing
+# in CI holds a 2.x database, so that breakage would pass the suite
+# (memship#476).
 FIND_DUPLICATES = sa.text(
     f"""
     SELECT {NORMALISED} AS normalised,
@@ -71,6 +83,7 @@ FIND_DUPLICATES = sa.text(
                     WHEN last_login_at IS NULL THEN ' [never signed in]'
                     ELSE ' [last signed in ' || last_login_at::date || ']'
                   END
+               -- members.user_id: deliberate, see the note above the query.
                || CASE
                     WHEN EXISTS (SELECT 1 FROM members m WHERE m.user_id = users.id)
                     THEN ' [has a member record]' ELSE ''
