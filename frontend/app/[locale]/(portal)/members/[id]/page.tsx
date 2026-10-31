@@ -160,7 +160,7 @@ export default function MemberDetailPage({
                   id: "receipts",
                   label: t("receipts.title"),
                   badge: receiptData?.meta?.total,
-                  content: <PartyReceiptsTab partyId={member.party_id} />,
+                  content: <PartyReceiptsTab partyId={member.party_id} returnLabel={memberName} />,
                 },
               ]
             : []),

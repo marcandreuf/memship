@@ -105,7 +105,7 @@ export default function GroupDetailPage({
           {
             id: "members",
             label: t("groups.members"),
-            content: <MembersTab groupId={groupId} />,
+            content: <MembersTab groupId={groupId} returnLabel={group.name} />,
           },
         ]}
       />

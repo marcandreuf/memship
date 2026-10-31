@@ -150,7 +150,7 @@ export default function EntityDetailPage({
                   id: "receipts",
                   label: t("receipts.title"),
                   badge: receiptData?.meta?.total,
-                  content: <PartyReceiptsTab partyId={entityId} />,
+                  content: <PartyReceiptsTab partyId={entityId} returnLabel={entity.name} />,
                 },
               ]
             : []),
