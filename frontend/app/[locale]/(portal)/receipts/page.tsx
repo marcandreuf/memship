@@ -27,6 +27,7 @@ import { useSearchParam, usePageParam, useStatusParam } from "@/hooks/use-url-st
 import { useFormatters } from "@/hooks/use-formatters";
 import type { ReceiptData } from "@/features/receipts/services/receipts-api";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
+import { useReturnToHere } from "@/hooks/use-return-to";
 
 const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   new: "outline",
@@ -51,6 +52,7 @@ function OriginBadge({ origin, t }: { origin: string; t: (key: string) => string
 
 export default function ReceiptsPage() {
   const t = useTranslations();
+  const linkBack = useReturnToHere(t("receipts.title"));
   const router = useRouter();
   const [page, setPage] = usePageParam();
   const [search, setSearch] = useSearchParam();
@@ -130,7 +132,7 @@ export default function ReceiptsPage() {
               <TableRow
                 key={r.id}
                 className="cursor-pointer hover:bg-muted/50"
-                onClick={() => router.push(`/receipts/${r.id}`)}
+                onClick={() => router.push(linkBack(`/receipts/${r.id}`))}
               >
                 <TableCell className="font-mono text-sm">
                   {r.receipt_number}
@@ -156,7 +158,7 @@ export default function ReceiptsPage() {
           {items.map((r: ReceiptData) => (
             <Link
               key={r.id}
-              href={`/receipts/${r.id}`}
+              href={linkBack(`/receipts/${r.id}`)}
               className="block rounded-lg border p-4 hover:bg-accent transition-colors"
             >
               <div className="flex items-start justify-between gap-2">

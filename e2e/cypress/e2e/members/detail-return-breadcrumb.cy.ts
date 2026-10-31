@@ -68,6 +68,28 @@ const tab = (label: string) =>
     });
   });
 
+
+  describe("arriving from a paged list", () => {
+    it("comes back to the page that was left, not to page one", () => {
+      // The milder instance of the same gap: list state is already URL-backed,
+      // but a row click pushed a bare detail path and the static crumb linked
+      // to the bare list, so a filtered, paged list returned as page one.
+      // 56 members at 20 per page, so page 2 always has rows.
+      cy.loginAsAdmin();
+      cy.visit("/en/members?page=2");
+      cy.url().should("include", "page=2");
+
+      cy.get("table tbody tr").first().click();
+      cy.url().should("match", /\/members\/\d+/);
+
+      // Same label as the static crumb it replaced; the href is what changed.
+      breadcrumb()
+        .contains("a", "Members")
+        .should("have.attr", "href")
+        .and("include", "page=2");
+    });
+  });
+
   describe("the return target is validated before it is rendered", () => {
     beforeEach(() => {
       cy.loginAsAdmin();
