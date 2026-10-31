@@ -1961,6 +1961,18 @@ def _parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def _reset_club(db) -> MembershipType:
+    print("\nResetting club data...")
+    deleted = reset_club_data(db)
+    print(f"  Deleted {sum(deleted.values()):,} rows across {len(deleted)} tables")
+    # The reset takes the base data with it; put it back before anything
+    # below tries to attach a member to a membership type.
+    seed_contact_types(db)
+    membership_type = seed_membership_types(db, seed_groups(db))
+    restore_member_records(db, super_admin_users(db), membership_type)
+    return membership_type
+
+
 def _run_interactive(db, membership_type: MembershipType) -> list[tuple[str, str, str]]:
     """Ask all three questions, then act on the answers.
 
@@ -2056,14 +2068,7 @@ def _run_interactive(db, membership_type: MembershipType) -> list[tuple[str, str
 
     # --- act ----------------------------------------------------------------
     if do_reset:
-        print("\nResetting club data...")
-        deleted = reset_club_data(db)
-        print(f"  Deleted {sum(deleted.values()):,} rows across {len(deleted)} tables")
-        # The reset takes the base data with it; put it back before anything
-        # below tries to attach a member to a membership type.
-        seed_contact_types(db)
-        membership_type = seed_membership_types(db, seed_groups(db))
-        restore_member_records(db, super_admin_users(db), membership_type)
+        membership_type = _reset_club(db)
 
     accounts: list[tuple[str, str, str]] = []
     if super_details:
@@ -2093,12 +2098,7 @@ def _run_interactive(db, membership_type: MembershipType) -> list[tuple[str, str
 
 def _run_unattended(db, membership_type: MembershipType, args) -> list[tuple[str, str, str]]:
     if args.reset_club_data:
-        print("\nResetting club data...")
-        deleted = reset_club_data(db)
-        print(f"  Deleted {sum(deleted.values()):,} rows across {len(deleted)} tables")
-        seed_contact_types(db)
-        membership_type = seed_membership_types(db, seed_groups(db))
-        restore_member_records(db, super_admin_users(db), membership_type)
+        membership_type = _reset_club(db)
 
     accounts: list[tuple[str, str, str]] = []
     if args.admin_email:
@@ -2192,6 +2192,24 @@ def main() -> None:
     args = _parse_args()
     if args.test:
         guard_test_mode()
+        # `--test` seeds its own fixed dataset, so these would be accepted and
+        # then never read. `--reset-club-data` is honoured: it is how the e2e
+        # dataset is rebuilt once its relative dates have aged (#460).
+        ignored = [
+            flag
+            for flag, value in (
+                ("--admin-email", args.admin_email),
+                ("--club-name", args.club_name),
+                ("--demo", args.demo),
+            )
+            if value
+        ]
+        if ignored:
+            print(
+                f"\nERROR: --test cannot be combined with {', '.join(ignored)}.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
 
     unattended = bool(
         args.admin_email or args.reset_club_data or args.club_name or args.demo
@@ -2215,6 +2233,8 @@ def main() -> None:
         membership_type = seed_membership_types(db, groups)
 
         if args.test:
+            if args.reset_club_data:
+                membership_type = _reset_club(db)
             seed_demo_org_settings(db)
             run_test_mode(db, membership_type)
             accounts = [(a["role"], a["email"], a["password"]) for a in TEST_ACCOUNTS]
