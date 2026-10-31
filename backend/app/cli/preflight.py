@@ -161,6 +161,40 @@ def _summary(pending: list[str], checks: list[tuple[str, object]]) -> str:
     )
 
 
+def evaluate(
+    engine, checks: list[tuple[str, object]]
+) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
+    """Run every pending check, independently, and sort the outcomes.
+
+    Returns ``(blocks, unrunnable)``: the checks that would refuse, and the
+    checks that could not be asked. One check raising used to abort the
+    comprehension that ran all of them, so the gate said "the checks could not
+    be run" without naming one, and an operator could not tell a problem in
+    their data from a bug in ours (memship#476).
+
+    Each check gets its own connection. That is not tidiness: a statement that
+    fails aborts the Postgres transaction it ran in, so sharing one connection
+    would leave every later check failing with "current transaction is aborted"
+    and report a single broken check as all of them broken.
+
+    Only ``SQLAlchemyError`` counts as unrunnable. A check raising anything else
+    is our own bug and is left to propagate rather than being filed under a
+    message that reads like an operator problem.
+    """
+    blocks: list[tuple[str, str]] = []
+    unrunnable: list[tuple[str, str]] = []
+    for revision, check in checks:
+        try:
+            with engine.connect() as conn:
+                report = check(conn)
+        except sa.exc.SQLAlchemyError as exc:
+            unrunnable.append((revision, str(exc)))
+            continue
+        if report is not None:
+            blocks.append((revision, report))
+    return blocks, unrunnable
+
+
 def main() -> int:
     engine = None
     try:
@@ -172,11 +206,7 @@ def main() -> int:
             current = MigrationContext.configure(conn).get_current_heads()
             pending = pending_revisions(current, "head") if current else []
             checks = pending_checks(current, "head")
-            blocks = [
-                (revision, report)
-                for revision, check in checks
-                if (report := check(conn)) is not None
-            ]
+        blocks, unrunnable = evaluate(engine, checks)
     except sa.exc.SQLAlchemyError as exc:
         # Deliberately not "no checks ran, carry on". Being unable to look is
         # not the same as having looked, and the caller is about to replace a
@@ -186,6 +216,38 @@ def main() -> int:
     finally:
         if engine is not None:
             engine.dispose()
+
+    if unrunnable:
+        # Still exit 2, for the reason above. What changed is that the operator
+        # is told which check broke, and that the rest were consulted.
+        print(
+            f"\n{len(unrunnable)} of {len(checks)} pre-upgrade check(s) could "
+            "not be run.\n",
+            file=sys.stderr,
+        )
+        for revision, detail in unrunnable:
+            print(f"--- {revision} could not run ---\n{detail}\n", file=sys.stderr)
+        if blocks:
+            print(
+                f"The {len(blocks)} check(s) that did run would also refuse "
+                "this upgrade:\n",
+                file=sys.stderr,
+            )
+            for revision, report in blocks:
+                print(f"--- {revision} ---\n{report}\n", file=sys.stderr)
+        else:
+            print(
+                f"The other {len(checks) - len(unrunnable)} check(s) ran and "
+                "found nothing blocking.\n",
+                file=sys.stderr,
+            )
+        print(
+            "Being unable to run a check is not the same as it passing, so "
+            "nothing\nhas been changed and the instance is still serving the "
+            "version it was.\n",
+            file=sys.stderr,
+        )
+        return 2
 
     if not blocks:
         print(_summary(pending, checks))
