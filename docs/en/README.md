@@ -5,7 +5,7 @@ This is the English tree; the Spanish one is at [`../es/README.md`](../es/README
 
 ## Which version these docs describe
 
-These docs describe memship 3.0.0 — the current release — plus anything merged since it was
+These docs describe memship 3.0.1 — the current release — plus anything merged since it was
 tagged. They are published from the main branch, so a change lands here when it is merged rather
 than when the next version ships.
 

@@ -11,7 +11,7 @@ l'anglès a [`../en/README.md`](../en/README.md).
 
 ## Quina versió descriu aquesta documentació
 
-Aquestes pàgines descriuen memship 3.0.0 — la versió publicada actual — més el que s'hagi
+Aquestes pàgines descriuen memship 3.0.1 — la versió publicada actual — més el que s'hagi
 fusionat des que es va etiquetar. Es publiquen des de la branca principal, així que un canvi
 apareix aquí quan es fusiona i no quan surt la versió següent.
 

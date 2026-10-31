@@ -28,7 +28,7 @@ settings are called out there, on the [releases page](https://github.com/marcand
 Then two commands. Refresh the deployment files, then apply the version:
 
 ```bash
-MEMSHIP_VERSION=2.19.0
+MEMSHIP_VERSION=3.0.1
 MEMSHIP_APP=/srv/openmemship/app          # wherever your install lives
 
 curl -fsSL "https://github.com/marcandreuf/memship/archive/refs/tags/v${MEMSHIP_VERSION}.tar.gz" \
