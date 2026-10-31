@@ -27,6 +27,7 @@ import { useSearchParam, usePageParam, useStatusParam } from "@/hooks/use-url-st
 import { useFormatters } from "@/hooks/use-formatters";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
 import { type ErrorTranslator } from "@/lib/errors";
+import { useReturnToHere } from "@/hooks/use-return-to";
 
 const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   active: "default",
@@ -41,6 +42,7 @@ function StatusBadge({ status, t }: { status: string; t: (key: string) => string
 
 export default function MandatesPage() {
   const t = useTranslations();
+  const linkBack = useReturnToHere(t("mandates.title"));
   const { has } = usePermissions();
   const canWrite = has("billing.write");
   const router = useRouter();
@@ -123,7 +125,7 @@ export default function MandatesPage() {
               <TableRow
                 key={m.id}
                 className="cursor-pointer hover:bg-muted/50"
-                onClick={() => router.push(`/mandates/${m.id}`)}
+                onClick={() => router.push(linkBack(`/mandates/${m.id}`))}
               >
                 <TableCell className="font-mono text-sm">{m.mandate_reference}</TableCell>
                 <TableCell>{m.debtor_name}</TableCell>
@@ -140,7 +142,7 @@ export default function MandatesPage() {
           {items.map((m) => (
             <Link
               key={m.id}
-              href={`/mandates/${m.id}`}
+              href={linkBack(`/mandates/${m.id}`)}
               className="block rounded-lg border p-4 hover:bg-accent transition-colors"
             >
               <div className="flex items-start justify-between gap-2">

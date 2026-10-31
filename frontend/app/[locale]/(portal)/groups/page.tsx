@@ -40,6 +40,7 @@ import { useSearchParam } from "@/hooks/use-url-state";
 import { useGroups, useCreateGroup } from "@/features/groups/hooks/use-groups";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
 import { matchesSearch } from "@/lib/search";
+import { useReturnToHere } from "@/hooks/use-return-to";
 
 const groupSchema = z.object({
   name: z.string().trim().min(1).max(255),
@@ -53,6 +54,7 @@ type GroupFormValues = z.infer<typeof groupSchema>;
 
 export default function GroupsPage() {
   const t = useTranslations();
+  const linkBack = useReturnToHere(t("groups.title"));
   const { has } = usePermissions();
   const canWrite = has("membership.write");
   const router = useRouter();
@@ -193,7 +195,7 @@ export default function GroupsPage() {
                   <TableRow
                     key={group.id}
                     className="cursor-pointer"
-                    onClick={() => router.push(`/groups/${group.id}`)}
+                    onClick={() => router.push(linkBack(`/groups/${group.id}`))}
                   >
                     <TableCell className="font-medium">{group.name}</TableCell>
                     <TableCell className="font-mono text-sm">{group.slug}</TableCell>
@@ -225,7 +227,7 @@ export default function GroupsPage() {
               <div
                 key={group.id}
                 className="rounded-lg border p-4 hover:bg-accent transition-colors cursor-pointer"
-                onClick={() => router.push(`/groups/${group.id}`)}
+                onClick={() => router.push(linkBack(`/groups/${group.id}`))}
               >
                 <div className="flex items-start justify-between">
                   <div>

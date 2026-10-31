@@ -28,6 +28,7 @@ import {
 import { usePageParam, useStatusParam } from "@/hooks/use-url-state";
 import { useFormatters } from "@/hooks/use-formatters";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
+import { useReturnToHere } from "@/hooks/use-return-to";
 
 const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   draft: "outline",
@@ -45,6 +46,7 @@ function StatusBadge({ status, t }: { status: string; t: (key: string) => string
 
 export default function RemittancesPage() {
   const t = useTranslations();
+  const linkBack = useReturnToHere(t("remittances.title"));
   const { has } = usePermissions();
   const canWrite = has("billing.write");
   const router = useRouter();
@@ -128,7 +130,7 @@ export default function RemittancesPage() {
               <TableRow
                 key={r.id}
                 className="cursor-pointer hover:bg-muted/50"
-                onClick={() => router.push(`/remittances/${r.id}`)}
+                onClick={() => router.push(linkBack(`/remittances/${r.id}`))}
               >
                 <TableCell className="font-mono text-sm">{r.remittance_number}</TableCell>
                 <TableCell className="text-sm">{formatDate(r.emission_date)}</TableCell>
@@ -146,7 +148,7 @@ export default function RemittancesPage() {
           {items.map((r) => (
             <Link
               key={r.id}
-              href={`/remittances/${r.id}`}
+              href={linkBack(`/remittances/${r.id}`)}
               className="block rounded-lg border p-4 hover:bg-accent transition-colors"
             >
               <div className="flex items-start justify-between gap-2">
