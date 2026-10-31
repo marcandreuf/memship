@@ -263,3 +263,63 @@ class TestItReportsWhatThisUpgradeActuallyExamined:
         out = _preflight().stdout
 
         assert "none of which declares a data precondition" in out
+
+
+class TestABrokenCheckDoesNotTakeTheOthersWithIt:
+    """memship#476's shape, against a real server.
+
+    The unit tests beside this pin which outcome each check produces. They
+    cannot pin the reason every check needs its own connection: a statement
+    that fails aborts the Postgres transaction it ran in, so a shared
+    connection would leave every later check raising "current transaction is
+    aborted" and report one broken check as all of them broken.
+    """
+
+    @staticmethod
+    def _cannot_run(conn):
+        # Invalid at every revision, so this does not quietly start working.
+        return conn.execute(sa.text("SELECT 1 FROM table_that_does_not_exist")).scalar()
+
+    @staticmethod
+    def _refuses(conn):
+        count = conn.execute(sa.text("SELECT count(*) FROM users")).scalar_one()
+        return f"would refuse, having seen {count} account(s)"
+
+    def test_a_check_after_a_failed_statement_can_still_query(self, pre_guard_db):
+        from app.cli.preflight import evaluate
+
+        _add_user(pre_guard_db, "someone@example.org")
+
+        blocks, unrunnable = evaluate(
+            pre_guard_db,
+            [("broken", self._cannot_run), ("later", self._refuses)],
+        )
+
+        assert [revision for revision, _ in unrunnable] == ["broken"]
+        assert [revision for revision, _ in blocks] == ["later"]
+        assert "having seen 1 account(s)" in blocks[0][1]
+
+    def test_the_gate_still_refuses_and_names_the_broken_check(
+        self, pre_guard_db, monkeypatch, capsys
+    ):
+        """Exit 2 does not soften. Being unable to look is not having looked;
+        what changed is that the operator is told which check broke and that
+        the others were consulted."""
+        from app.cli import preflight
+
+        monkeypatch.setattr(preflight.settings, "DATABASE_URL", _scratch_url())
+        monkeypatch.setattr(
+            preflight,
+            "pending_checks",
+            lambda current, target: [
+                ("broken", self._cannot_run),
+                ("later", lambda conn: None),
+            ],
+        )
+
+        status = preflight.main()
+
+        assert status == 2
+        err = capsys.readouterr().err
+        assert "broken could not run" in err
+        assert "1 check(s) ran and found nothing blocking" in err
