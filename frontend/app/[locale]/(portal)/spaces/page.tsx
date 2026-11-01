@@ -35,9 +35,11 @@ import { useSpaces } from "@/features/bookings/hooks/use-bookings";
 import { SpaceForm } from "@/features/bookings/components/space-form";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
 import { matchesSearch } from "@/lib/search";
+import { useReturnToHere } from "@/hooks/use-return-to";
 
 export default function SpacesPage() {
   const t = useTranslations();
+  const linkBack = useReturnToHere(t("bookings.spaces.title"));
   const { has } = usePermissions();
   const canWrite = has("bookings.write");
   const router = useRouter();
@@ -124,7 +126,7 @@ export default function SpacesPage() {
                   <TableRow
                     key={space.id}
                     className="cursor-pointer"
-                    onClick={() => router.push(`/spaces/${space.id}`)}
+                    onClick={() => router.push(linkBack(`/spaces/${space.id}`))}
                   >
                     <TableCell className="font-medium">{space.name}</TableCell>
                     <TableCell>{space.space_type ?? "—"}</TableCell>
@@ -149,7 +151,7 @@ export default function SpacesPage() {
             {filteredSpaces.map((space) => (
               <Link
                 key={space.id}
-                href={`/spaces/${space.id}`}
+                href={linkBack(`/spaces/${space.id}`)}
                 className="block rounded-lg border p-4 hover:bg-accent transition-colors"
               >
                 <div className="flex items-start justify-between gap-2">

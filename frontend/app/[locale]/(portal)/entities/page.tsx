@@ -18,9 +18,11 @@ import { TableSkeleton } from "@/components/ui/skeletons";
 import { useEntities, useEntityKinds } from "@/features/entities/hooks/use-entities";
 import { useSearchParam, usePageParam, useStatusParam } from "@/hooks/use-url-state";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
+import { useReturnToHere } from "@/hooks/use-return-to";
 
 export default function EntitiesPage() {
   const t = useTranslations();
+  const linkBack = useReturnToHere(t("entities.title"));
   const { has } = usePermissions();
   const canWrite = has("entities.write");
   const router = useRouter();
@@ -95,7 +97,7 @@ export default function EntitiesPage() {
               <TableRow
                 key={e.id}
                 className="cursor-pointer hover:bg-muted/50"
-                onClick={() => router.push(`/entities/${e.id}`)}
+                onClick={() => router.push(linkBack(`/entities/${e.id}`))}
               >
                 <TableCell className="font-medium">{e.name}</TableCell>
                 <TableCell>
@@ -113,7 +115,7 @@ export default function EntitiesPage() {
           {items.map((e) => (
             <Link
               key={e.id}
-              href={`/entities/${e.id}`}
+              href={linkBack(`/entities/${e.id}`)}
               className="block rounded-lg border p-4 hover:bg-accent transition-colors"
             >
               <div className="flex items-start justify-between gap-2">

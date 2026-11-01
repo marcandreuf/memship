@@ -26,6 +26,7 @@ import { TabContentSkeleton } from "@/components/ui/skeletons";
 import { toast } from "sonner";
 import { mapApiErrorsToForm } from "@/lib/errors";
 import { useFormatters } from "@/hooks/use-formatters";
+import { useReturnToHere } from "@/hooks/use-return-to";
 import { useReceipts, useCreateReceipt } from "../hooks/use-receipts";
 
 const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -50,11 +51,19 @@ const createSchema = z.object({
 
 interface PartyReceiptsTabProps {
   partyId: number;
+  /**
+   * What the breadcrumb on the receipt should call this record. A receipt is
+   * reachable from a member, from an entity and from the receipts list, so
+   * without it the receipt names a parent the user did not come through
+   * (memship#471). Omitted, the row still navigates, just without a trail.
+   */
+  returnLabel?: string;
 }
 
-export function PartyReceiptsTab({ partyId }: PartyReceiptsTabProps) {
+export function PartyReceiptsTab({ partyId, returnLabel }: PartyReceiptsTabProps) {
   const t = useTranslations();
   const router = useRouter();
+  const linkBack = useReturnToHere(returnLabel ?? "");
   const [createOpen, setCreateOpen] = useState(false);
 
   const params = useMemo(() => {
@@ -112,7 +121,7 @@ export function PartyReceiptsTab({ partyId }: PartyReceiptsTabProps) {
                 <TableRow
                   key={r.id}
                   className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => router.push(`/receipts/${r.id}`)}
+                  onClick={() => router.push(linkBack(`/receipts/${r.id}`))}
                 >
                   <TableCell className="font-mono text-sm">{r.receipt_number}</TableCell>
                   <TableCell className="max-w-[200px] truncate">{r.description}</TableCell>
