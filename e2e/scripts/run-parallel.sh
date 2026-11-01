@@ -15,11 +15,42 @@
 # Nothing outside `roles/` reads the flag, so confining that directory to a
 # single serial worker is enough; the rest of the suite keeps the remaining
 # threads and the wall clock is unchanged.
+#
+# The run fails if it leaves any screenshot. See `finish()` below.
 
 set -e
 cd "$(dirname "$0")/.."
 
 THREADS=${1:-4}
+SHOTS="cypress/screenshots"
+
+# Cleared first so a previous run's screenshots cannot condemn this one.
+rm -rf "$SHOTS"
+
+# A test that fails and then passes on retry leaves a screenshot and nothing
+# else. Its spec still reports `Failing: 0`, every worker still prints "All
+# specs passed!", and the exit code is still 0 — the summary and the status
+# agree on a pass that did not happen. That is how the shared-state collision
+# in #117 stayed invisible: the only evidence the whole run produced was a file
+# on disk that nothing looked at.
+#
+# So screenshots are part of the verdict, not a debugging aid. A file with no
+# "attempt N" suffix is a retry-only pass, which is a failure to explain.
+finish() {
+  local code=$1
+  if [ -d "$SHOTS" ] && [ -n "$(find "$SHOTS" -type f -print -quit 2>/dev/null)" ]; then
+    echo ""
+    echo "ERROR: the run left screenshots, so at least one test failed at least once."
+    echo "A name with no 'attempt N' suffix failed and then passed on retry, which"
+    echo "the summary above reports as a pass. Treat it as a failure to explain."
+    echo ""
+    find "$SHOTS" -type f | sed 's/^/  /'
+    if [ "$code" -eq 0 ]; then
+      code=1
+    fi
+  fi
+  exit "$code"
+}
 
 ROLES_SPECS=$(find cypress/e2e/roles -name "*.cy.ts" -type f 2>/dev/null | sort | tr '\n' ' ')
 POOL_SPECS=$(find cypress/e2e -name "*.cy.ts" -type f -not -path "cypress/e2e/roles/*" | sort | tr '\n' ' ')
@@ -33,7 +64,11 @@ if [ "$THREADS" -le 1 ] || [ "$ROLES_COUNT" -eq 0 ]; then
   ALL_SPECS=$(find cypress/e2e -name "*.cy.ts" -type f | sort | tr '\n' ' ')
   echo "Running $(echo $ALL_SPECS | wc -w) spec files with $THREADS thread(s)..."
   echo ""
-  exec npx cypress-parallel -s cypress:run -t "$THREADS" --spec $ALL_SPECS
+  set +e
+  npx cypress-parallel -s cypress:run -t "$THREADS" --spec $ALL_SPECS
+  ALL_EXIT=$?
+  set -e
+  finish "$ALL_EXIT"
 fi
 
 POOL_THREADS=$((THREADS - 1))
@@ -67,6 +102,6 @@ cat "$ROLES_LOG"
 rm -f "$ROLES_LOG"
 
 if [ "$POOL_EXIT" -ne 0 ]; then
-  exit "$POOL_EXIT"
+  finish "$POOL_EXIT"
 fi
-exit "$ROLES_EXIT"
+finish "$ROLES_EXIT"
