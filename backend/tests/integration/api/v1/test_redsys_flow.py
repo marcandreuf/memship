@@ -426,6 +426,35 @@ class TestRedsysWebhookFlow:
         assert receipt.redsys_auth_code == "AUTH777"
         assert receipt.transaction_id == "AUTH777"
 
+    def test_the_receipt_api_returns_the_redsys_identifiers(self, client, db):
+        """Stored but never returned, a Redsys payment could only be matched to
+        the bank's settlement report with a database shell (#425)."""
+        _create_org(db)
+        person = _create_person(db, suffix="wh-ids")
+        admin = _create_user(db, person=person, suffix="wh-ids")
+        member = _create_member(db, person)
+        receipt = _create_receipt(db, member, ds_order="000000001002")
+        _create_redsys_provider(db)
+
+        envelope = _sign_notification(
+            ds_order=receipt.redsys_ds_order,
+            ds_response="0000",
+            ds_auth_code="AUTH778",
+        )
+        assert _post_webhook(client, envelope).status_code == 200
+
+        client.cookies.update(_auth_cookie(admin))
+        detail = client.get(f"/api/v1/receipts/{receipt.id}")
+        assert detail.status_code == 200, detail.text
+        assert detail.json()["redsys_ds_order"] == "000000001002"
+        assert detail.json()["redsys_auth_code"] == "AUTH778"
+
+        listed = client.get("/api/v1/receipts")
+        assert listed.status_code == 200, listed.text
+        row = next(r for r in listed.json()["items"] if r["id"] == receipt.id)
+        assert row["redsys_ds_order"] == "000000001002"
+        assert row["redsys_auth_code"] == "AUTH778"
+
     def test_bizum_payment_method_preserved(self, client, db):
         _create_org(db)
         person = _create_person(db, suffix="wh-biz")

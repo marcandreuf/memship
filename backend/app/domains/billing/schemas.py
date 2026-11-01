@@ -153,6 +153,11 @@ class ReceiptResponse(BaseModel):
     return_reason: str | None
     stripe_checkout_session_id: str | None = None
     stripe_payment_intent_id: str | None = None
+    # The two values a Redsys payment is reconciled and chased by: the order
+    # the bank's settlement report lists, and the authorisation code (#425).
+    # Neither is secret — the code is printed on the cardholder's receipt.
+    redsys_ds_order: str | None = None
+    redsys_auth_code: str | None = None
     refund_amount: Decimal | None = None
     refund_date: date | None = None
     refund_reason: str | None = None
