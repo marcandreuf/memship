@@ -237,6 +237,16 @@ cd e2e && pnpm test:parallel:prod
 stall pushes navigations past their timeouts — specs fail, or pass only on retry, and which ones
 varies between runs. `test:parallel:prod` builds, serves, runs and tears down.
 
+**Both parallel runners reseed the dev database before the suite starts** (`seed --test
+--reset-club-data`, about 11 seconds). The seed writes registration windows relative to the day it
+ran, so a reused dataset ages until those windows close and specs fail on correct behaviour. This
+deletes the club data you have in the dev database; super admins, system roles and payment
+providers are kept. To run against the data as it is, set `E2E_KEEP_DATA=1`:
+
+```bash
+cd e2e && E2E_KEEP_DATA=1 pnpm test:parallel:prod
+```
+
 Every e2e request reaches the API from the same loopback address, so the per-IP auth throttles see
 the whole suite as one caller. The dev stack raises the registration limit to 1000 per hour
 (`REGISTER_LIMIT_PER_IP` in `backend/docker/docker-compose.yml`; production keeps 5), so
