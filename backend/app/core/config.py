@@ -102,6 +102,11 @@ class Settings(BaseSettings):
     # safe reading the socket. A value that does not match the deployment breaks
     # the per-IP throttles in both directions — see #59.
     TRUSTED_PROXY_HOPS: int = 1
+    # Registrations allowed per source address per hour. The default is the
+    # production value and the production compose file does not forward it.
+    # It exists for the dev stack, where every e2e request reaches the API from
+    # one loopback address and the whole suite shares a single bucket (#462).
+    REGISTER_LIMIT_PER_IP: int = 5
     LOG_LEVEL: str = "info"
 
     # SMTP (optional — emails disabled if SMTP_HOST is empty).
@@ -213,6 +218,14 @@ class Settings(BaseSettings):
         """Negative would index from the wrong end of the header silently."""
         if value < 0:
             raise ValueError("TRUSTED_PROXY_HOPS cannot be negative")
+        return value
+
+    @field_validator("REGISTER_LIMIT_PER_IP")
+    @classmethod
+    def _registration_stays_possible(cls, value: int) -> int:
+        """Zero would refuse every registration with a 429, not disable the limit."""
+        if value < 1:
+            raise ValueError("REGISTER_LIMIT_PER_IP must be at least 1")
         return value
 
     @field_validator("SEED_EMAIL_DOMAIN")
