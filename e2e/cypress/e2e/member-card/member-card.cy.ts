@@ -69,41 +69,62 @@ describe("Member Card + QR (v0.7.0)", () => {
   });
 
   it("verifies a member by code on the admin scan page: active → suspended", () => {
-    // Grab the seed member's signed token + identity from their own card DTO.
-    cy.loginAsMember();
-    cy.request("/api/me/card").then((card) => {
-      const token = card.body.token as string;
-      const memberId = card.body.member_id as number;
-      const fullName = card.body.full_name as string;
-      expect(token).to.be.a("string");
+    // A member of this test's own, never the shared seed member.
+    //
+    // This test suspends whoever it scans. Suspending the seed member made its
+    // status wrong for every other worker for as long as the scan took, and
+    // `members.status` is read across the suite: `eligibility-rules.cy.ts` 8.3
+    // logs in as that same member and asserts "You are eligible", so a worker
+    // landing inside this window read "Your membership is not active" and
+    // failed, then passed on retry once the status had been restored
+    // (memship#117).
+    //
+    // The admin card endpoint takes a member id, so the member being scanned
+    // needs no login of its own and can be a throwaway. Nothing else reads it,
+    // so there is no window to land in and nothing to restore.
+    cy.loginAsAdmin();
+    cy.request({
+      method: "POST",
+      url: `${API}/members/`,
+      body: { first_name: MEMBER_FIRST, last_name: `Scan${Date.now()}` },
+    }).then((created) => {
+      expect(created.status).to.eq(201);
+      const memberId = created.body.id as number;
 
-      cy.loginAsAdmin();
-      cy.visit("/en/scan");
-
-      // Manual entry (camera-free, deterministic) → active verdict for the member.
-      cy.get('input[aria-label="Enter code manually"]').type(token);
-      cy.contains("button", "Verify").click();
-      cy.contains("Active").should("be.visible");
-      cy.contains(fullName).should("be.visible");
-
-      // Suspend the member via API, then re-scan → live status reflects it.
+      // `create_member` sets "pending" explicitly, so a new member is not
+      // active and the scan would read Pending. Activate before scanning;
+      // "pending" -> "active" -> "suspended" are both allowed transitions.
       cy.request({
         method: "PUT",
         url: `${API}/members/${memberId}/status`,
-        body: { status: "suspended", reason: "e2e" },
+        body: { status: "active", reason: "e2e-activate" },
       }).then((r) => expect(r.status).to.eq(200));
 
-      cy.contains("button", "Scan another").click();
-      cy.get('input[aria-label="Enter code manually"]').type(token);
-      cy.contains("button", "Verify").click();
-      cy.contains("Suspended").should("be.visible");
+      cy.request(`${API}/members/${memberId}/card`).then((card) => {
+        const token = card.body.token as string;
+        const fullName = card.body.full_name as string;
+        expect(token).to.be.a("string");
 
-      // Restore to active so the shared seed member isn't left suspended.
-      cy.request({
-        method: "PUT",
-        url: `${API}/members/${memberId}/status`,
-        body: { status: "active", reason: "e2e-restore" },
-      }).then((r) => expect(r.status).to.eq(200));
+        cy.visit("/en/scan");
+
+        // Manual entry (camera-free, deterministic) → active verdict.
+        cy.get('input[aria-label="Enter code manually"]').type(token);
+        cy.contains("button", "Verify").click();
+        cy.contains("Active").should("be.visible");
+        cy.contains(fullName).should("be.visible");
+
+        // Suspend via API, then re-scan → live status reflects it.
+        cy.request({
+          method: "PUT",
+          url: `${API}/members/${memberId}/status`,
+          body: { status: "suspended", reason: "e2e" },
+        }).then((r) => expect(r.status).to.eq(200));
+
+        cy.contains("button", "Scan another").click();
+        cy.get('input[aria-label="Enter code manually"]').type(token);
+        cy.contains("button", "Verify").click();
+        cy.contains("Suspended").should("be.visible");
+      });
     });
   });
 
