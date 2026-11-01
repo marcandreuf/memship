@@ -54,35 +54,6 @@ if [ "${E2E_KEEP_DATA:-0}" != "1" ]; then
 fi
 
 SHOTS="cypress/screenshots"
-BACKEND_COMPOSE="../backend/docker/docker-compose.yml"
-
-# Every run starts from a freshly seeded dataset (#461). The seed writes
-# registration windows relative to seed time and its "already seeded" guards
-# never touch them again, so a reused database ages until the windows close and
-# the eligibility specs fail on correct behaviour. A `seed demo` in between also
-# replaces the fixed e2e passwords, after which every login fails and the
-# per-address login throttle takes the whole suite down in `before each`.
-# Reseeding removes both, and the accumulation across runs in #117 with them.
-#
-# This deletes the club data in the dev database. Super admins, system roles and
-# payment providers survive. Set E2E_KEEP_DATA=1 to run against the data as is.
-if [ "${E2E_KEEP_DATA:-0}" != "1" ]; then
-  echo "-> Rebuilding the e2e dataset (seed --test --reset-club-data)..."
-  SEED_LOG=$(mktemp -t e2e-seed-XXXXXX.log)
-  if ! docker compose -f "$BACKEND_COMPOSE" exec -T api \
-      python -m app.cli.seed --test --reset-club-data > "$SEED_LOG" 2>&1; then
-    cat "$SEED_LOG"
-    rm -f "$SEED_LOG"
-    echo ""
-    echo "ERROR: could not rebuild the e2e dataset. Is the backend running?"
-    echo "  ./scripts/dev.sh start backend"
-    echo "Or run against the current data with E2E_KEEP_DATA=1."
-    exit 1
-  fi
-  grep -E "^  Deleted " "$SEED_LOG" || true
-  rm -f "$SEED_LOG"
-  echo ""
-fi
 
 # Cleared first so a previous run's screenshots cannot condemn this one.
 rm -rf "$SHOTS"
