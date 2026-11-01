@@ -23,3 +23,16 @@ export function usePageParam() {
 export function useStatusParam() {
   return useQueryState("status", parseAsString.withDefault("").withOptions({ shallow: true }));
 }
+
+/**
+ * URL-persisted open tab parameter (?tab=...).
+ * Defaults to empty string, shallow updates.
+ *
+ * nuqs replaces rather than pushes by default, which is what this wants: a tab
+ * switch should leave the record's URL carrying the open tab so Browser Back
+ * from a record opened out of that tab returns to it, without making Back walk
+ * backwards through every tab that was looked at (memship#471).
+ */
+export function useTabParam() {
+  return useQueryState("tab", parseAsString.withDefault("").withOptions({ shallow: true }));
+}

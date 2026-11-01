@@ -13,15 +13,19 @@ import {
 } from "@/components/ui/table";
 import { MEMBER_STATUS_VARIANTS } from "@/lib/status-variants";
 import { TabContentSkeleton } from "@/components/ui/skeletons";
+import { useReturnToHere } from "@/hooks/use-return-to";
 import { useMembers } from "@/features/members/hooks/use-members";
 
 interface MembersTabProps {
   groupId: number;
+  /** What the breadcrumb on the member should call this group (memship#471). */
+  returnLabel?: string;
 }
 
-export function MembersTab({ groupId }: MembersTabProps) {
+export function MembersTab({ groupId, returnLabel }: MembersTabProps) {
   const t = useTranslations();
   const router = useRouter();
+  const linkBack = useReturnToHere(returnLabel ?? "");
   const { data, isLoading } = useMembers({ group_id: groupId });
 
   if (isLoading) {
@@ -50,7 +54,7 @@ export function MembersTab({ groupId }: MembersTabProps) {
           <TableRow
             key={member.id}
             className="cursor-pointer"
-            onClick={() => router.push(`/members/${member.id}`)}
+            onClick={() => router.push(linkBack(`/members/${member.id}`))}
           >
             <TableCell className="font-mono text-sm">
               {member.member_number}

@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { Tabs, TabsContent, TabsNav } from "@/components/ui/tabs";
+import { useTabParam } from "@/hooks/use-url-state";
 
 interface EntityTab {
   id: string;
@@ -12,6 +13,7 @@ interface EntityTab {
 
 interface EntityTabsProps {
   tabs: EntityTab[];
+  /** Tab to open when the URL names none. Defaults to the first tab. */
   defaultTab?: string;
   /**
    * When true, a tab's content is mounted only after the tab is first
@@ -21,22 +23,33 @@ interface EntityTabsProps {
   lazy?: boolean;
 }
 
+/**
+ * The open tab lives in the URL (`?tab=`), not in component state.
+ *
+ * It was `useState`, which made opening a record from a tab a one-way trip:
+ * Browser Back returned to the record's *first* tab, because nothing recorded
+ * which tab had been left (memship#471). A query parameter also makes a tab
+ * linkable and survives a refresh.
+ *
+ * This supersedes the per-page reading of `?tab=` that `profile/page.tsx` did
+ * on its own. One mechanism, in the component every tabbed page already uses.
+ */
 export function EntityTabs({ tabs, defaultTab, lazy = false }: EntityTabsProps) {
-  const initial = defaultTab || tabs[0]?.id;
-  // Controlled so the dropdown in `TabsNav` can label itself with the open tab.
-  // Seeded lazily rather than from `useState(initial)`: callers build `tabs`
-  // from data, so the first render often has none and would freeze the initial
-  // value at undefined.
-  const [selected, setSelected] = useState<string>();
+  const [tab, setTab] = useTabParam();
   // Track which tabs have been opened so lazy content mounts once and persists.
   const [visited, setVisited] = useState<Set<string>>(() => new Set());
 
   if (tabs.length === 0) return null;
 
-  const active = selected ?? initial;
+  // A `?tab=` naming a tab this record does not have is ignored rather than
+  // rendering an empty panel: the id may be stale, or belong to a tab the
+  // caller omitted for this user. Callers also build `tabs` from data, so the
+  // first render often has none and must not freeze the choice.
+  const named = tabs.some(({ id }) => id === tab) ? tab : undefined;
+  const active = named ?? defaultTab ?? tabs[0]?.id;
 
   const onValueChange = (value: string) => {
-    setSelected(value);
+    setTab(value);
     setVisited((prev) => (prev.has(value) ? prev : new Set(prev).add(value)));
   };
 
@@ -47,9 +60,11 @@ export function EntityTabs({ tabs, defaultTab, lazy = false }: EntityTabsProps) 
         value={active ?? ""}
         onValueChange={onValueChange}
       />
-      {tabs.map((tab) => (
-        <TabsContent key={tab.id} value={tab.id}>
-          {lazy && tab.id !== active && !visited.has(tab.id) ? null : tab.content}
+      {tabs.map((tabItem) => (
+        <TabsContent key={tabItem.id} value={tabItem.id}>
+          {lazy && tabItem.id !== active && !visited.has(tabItem.id)
+            ? null
+            : tabItem.content}
         </TabsContent>
       ))}
     </Tabs>
