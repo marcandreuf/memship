@@ -1,6 +1,7 @@
 """The sliding window itself, without HTTP in the way."""
 
 import time
+from pathlib import Path
 
 import pytest
 from fastapi import HTTPException
@@ -9,6 +10,7 @@ from pydantic import ValidationError
 
 from app.core.config import Settings, settings
 from app.core.security.rate_limit import (
+    REGISTER_BY_IP,
     Throttle,
     client_ip,
     enforce,
@@ -211,3 +213,21 @@ class TestClientIpWithNoProxy:
     def test_a_negative_count_is_refused_at_the_boundary(self):
         with pytest.raises(ValidationError):
             Settings(TRUSTED_PROXY_HOPS=-1)
+
+
+class TestRegistrationLimitSetting:
+    """`REGISTER_LIMIT_PER_IP` is raised in the dev stack only (#462)."""
+
+    def test_the_default_is_the_production_limit(self):
+        assert Settings.model_fields["REGISTER_LIMIT_PER_IP"].default == 5
+
+    def test_the_throttle_reads_it(self):
+        assert REGISTER_BY_IP.limit == settings.REGISTER_LIMIT_PER_IP
+
+    def test_the_production_stack_does_not_forward_it(self):
+        compose = Path(__file__).resolve().parents[3] / "docker-compose.yml"
+        assert "REGISTER_LIMIT_PER_IP" not in compose.read_text(encoding="utf-8")
+
+    def test_zero_is_refused_at_the_boundary(self):
+        with pytest.raises(ValidationError):
+            Settings(REGISTER_LIMIT_PER_IP=0)
