@@ -237,6 +237,12 @@ cd e2e && pnpm test:parallel:prod
 stall pushes navigations past their timeouts — specs fail, or pass only on retry, and which ones
 varies between runs. `test:parallel:prod` builds, serves, runs and tears down.
 
+Every e2e request reaches the API from the same loopback address, so the per-IP auth throttles see
+the whole suite as one caller. The dev stack raises the registration limit to 1000 per hour
+(`REGISTER_LIMIT_PER_IP` in `backend/docker/docker-compose.yml`; production keeps 5), so
+back-to-back runs no longer fail the registration specs with `429`. The other limits are unchanged.
+The counters are in-memory, so `docker compose restart api` clears them all.
+
 Retries mask failures, so read the screenshots in `e2e/cypress/screenshots/` (gitignored,
 overwritten each run): a screenshot with no `attempt N` suffix means a test failed once and passed
 on retry. A clean run leaves none. Intermittent retry-only passes under parallel load are a known
