@@ -31,6 +31,15 @@ PORT=8081 docker compose up -d
 
 Change `PORT=8081` to any port you prefer (default is `80`).
 
+This runs the latest published images, and `/api/v1/health` reports `"version":"latest"`. To
+evaluate a specific release instead, set `IMAGE_TAG` on both commands. Health then reports that
+release:
+
+```bash
+IMAGE_TAG=3.0.1 docker compose pull
+IMAGE_TAG=3.0.1 PORT=8081 docker compose up -d
+```
+
 ## 3. Run the setup
 
 The same command sets Memship up on every environment. It is interactive, and asks

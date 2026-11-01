@@ -42,6 +42,12 @@ x-backend-env: &backend-env
   SMTP_PORT: 1025
   SMTP_TLS: "false"
   SMTP_FROM: memship@localhost
+  # What GET /api/v1/health reports as `version`. The image only has the build
+  # sha baked in, because a release promotes the validated image without
+  # rebuilding it, so the root docker-compose.yml passes the tag it deployed.
+  # This does the same (#420). Set IMAGE_TAG to pin a release and report it.
+  # Left unset, the images are :latest and so is the answer.
+  APP_VERSION: ${IMAGE_TAG:-latest}
 
 services:
   demo-memship-caddy:
@@ -88,7 +94,7 @@ services:
     restart: unless-stopped
 
   demo-memship-api:
-    image: ghcr.io/marcandreuf/memship-backend:latest
+    image: ghcr.io/marcandreuf/memship-backend:${IMAGE_TAG:-latest}
     pull_policy: always
     container_name: demo-memship-api
     expose:
@@ -111,7 +117,7 @@ services:
   # announcement emails. Without it every send is dropped silently — the
   # dispatch sites swallow the failure so the request still succeeds.
   demo-memship-celery-worker:
-    image: ghcr.io/marcandreuf/memship-backend:latest
+    image: ghcr.io/marcandreuf/memship-backend:${IMAGE_TAG:-latest}
     pull_policy: always
     container_name: demo-memship-celery-worker
     command: celery -A app.core.celery_app worker --loglevel=info
@@ -141,7 +147,7 @@ services:
   # Scheduled billing run (02:00) and payment reminders (03:00) — see
   # beat_schedule in backend/app/core/celery_app.py.
   demo-memship-celery-beat:
-    image: ghcr.io/marcandreuf/memship-backend:latest
+    image: ghcr.io/marcandreuf/memship-backend:${IMAGE_TAG:-latest}
     pull_policy: always
     container_name: demo-memship-celery-beat
     command: celery -A app.core.celery_app beat --loglevel=info --schedule=/var/lib/celery/celerybeat-schedule
@@ -158,7 +164,7 @@ services:
     restart: unless-stopped
 
   demo-memship-frontend:
-    image: ghcr.io/marcandreuf/memship-frontend:latest
+    image: ghcr.io/marcandreuf/memship-frontend:${IMAGE_TAG:-latest}
     pull_policy: always
     container_name: demo-memship-frontend
     expose:
