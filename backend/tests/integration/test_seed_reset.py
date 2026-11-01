@@ -11,6 +11,7 @@ from datetime import date
 from decimal import Decimal
 
 import pytest
+from sqlalchemy import text
 
 from app.cli import reset as reset_module
 from app.cli.reset import KNOWN_TABLES, preview_club_data, reset_club_data
@@ -23,11 +24,14 @@ from app.cli.seed import (
     create_user_with_member,
     next_member_number,
     restore_member_records,
+    seed_activities,
     seed_contact_types,
     seed_demo_org_settings,
+    seed_extra_members,
     seed_groups,
     seed_membership_types,
     seed_narrow_role,
+    seed_registrations,
     set_password,
     super_admin_users,
     sync_invoice_sequence,
@@ -35,6 +39,7 @@ from app.cli.seed import (
 from app.core.permissions import MEMBER_SLUG, SUPER_ADMIN_SLUG
 from app.core.schema_types import normalize_email
 from app.db.base import Base
+from app.domains.activities.models import Activity, Registration
 from app.domains.audit.models import AuditLog
 from app.domains.auth.models import Role, User
 from app.domains.billing.models import InvoiceSequence, PaymentProvider, Receipt
@@ -555,3 +560,65 @@ class TestInvoiceSequenceSeeding:
         sync_invoice_sequence(db)
 
         assert db.query(InvoiceSequence).count() == 0
+
+
+class TestRegistrationSeedingOrder:
+    """Who `seed_registrations` registers is a contract with the e2e suite.
+
+    It registers the first ten active members in every activity, and the age
+    specs depend on the adults past those ten staying out of the kids' events.
+    The query had no ORDER BY, so "first" meant heap order. That matches
+    insertion order on a fresh database and not after `reset_club_data` has
+    freed space for new rows to fill, which is how a reseed put an adult into
+    Kids Dance Party (#461).
+    """
+
+    def test_it_registers_the_lowest_ids_whatever_the_heap_order(self, db):
+        membership_type = _base_install(db)
+        admin = _staff("owner@example.org", SUPER_ADMIN_SLUG, db)
+        seed_activities(db, admin.id)
+        seed_extra_members(db, membership_type)
+        members = db.query(Member).filter_by(status="active").order_by(Member.id).all()
+        assert len(members) > 10
+
+        # Changing an indexed column writes a new row version, with new index
+        # entries, further along the heap. A no-op `SET status = status` would
+        # be a HOT update and keep the old position. Either scan an unordered
+        # query might use now returns the lowest-id member last.
+        for status in ("pending", "active"):
+            db.execute(
+                text("UPDATE members SET status = :s WHERE id = :id"),
+                {"s": status, "id": members[0].id},
+            )
+        db.expire_all()
+
+        seed_registrations(db)
+
+        kids = db.query(Activity).filter_by(name="Kids Dance Party").one()
+        registered = {
+            party_id
+            for (party_id,) in db.query(Registration.party_id).filter_by(activity_id=kids.id)
+        }
+        assert registered == {m.party_id for m in members[:10]}
+
+    def test_the_test_member_stays_out_of_the_activities_the_specs_open(self, db):
+        """Ordered by id, the test member is the first member and its three
+        capped registrations went to the first three activities, Summer Soccer
+        Camp among them, so 8.4 met "already registered" instead of the age
+        gate it asserts."""
+        membership_type = _base_install(db)
+        admin = _staff("owner@example.org", SUPER_ADMIN_SLUG, db)
+        member = _account("member@examplee6e3b1.com", MEMBER_SLUG, membership_type, db)
+        seed_activities(db, admin.id)
+        seed_extra_members(db, membership_type)
+
+        seed_registrations(db)
+
+        names = {
+            name
+            for (name,) in db.query(Activity.name)
+            .join(Registration, Registration.activity_id == Activity.id)
+            .filter(Registration.party_id == member.party_id)
+        }
+        assert names
+        assert not names & {"Summer Soccer Camp", "Chess Club Tournament"}
