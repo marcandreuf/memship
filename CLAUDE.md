@@ -131,6 +131,14 @@ Every run above reused the previous run's database rather than reseeding, and
 none degraded — but worker assignment shifts between runs, so a shared-state
 collision may simply not have been scheduled. See #117; it is not fixed.
 
+**`run-parallel.sh` reseeds before every run** (`seed --test --reset-club-data`,
+~11s), so both `test:parallel` and `test:parallel:prod` start from the same
+dataset. A reused database ages: the seed writes registration windows relative
+to seed time, and weeks later they close and the eligibility specs fail on
+correct behaviour (#461). This deletes the dev database's club data on every
+run. `E2E_KEEP_DATA=1` skips the reseed. It resets the accumulation across runs
+that #117 describes. It does not isolate workers within a run.
+
 Retries mask all of this, so read the failure screenshots in
 `cypress/screenshots/` (gitignored, overwritten each run) — a screenshot with no
 "attempt N" suffix means a test failed once and passed on retry. A clean run
