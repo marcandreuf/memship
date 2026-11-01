@@ -20,6 +20,10 @@ services:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - RUN_MIGRATIONS=1
       - APP_VERSION=${APP_VERSION:-dev}
+      # Every e2e request reaches the API from one loopback address, so the
+      # production limit of 5 per hour let two back-to-back suite runs exhaust
+      # it and fail the registration specs with 429 (#462).
+      - REGISTER_LIMIT_PER_IP=${REGISTER_LIMIT_PER_IP:-1000}
     volumes:
       - ../app:/app/app
       - ../alembic:/app/alembic
