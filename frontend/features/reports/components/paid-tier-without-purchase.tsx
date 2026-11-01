@@ -15,6 +15,7 @@ import { TableSkeleton } from "@/components/ui/skeletons";
 import { PageInfo } from "@/components/page-info";
 import { Pagination } from "@/components/entity/pagination";
 import { usePageParam } from "@/hooks/use-url-state";
+import { useReturnToHere } from "@/hooks/use-return-to";
 import { useFormatters } from "@/hooks/use-formatters";
 import { MEMBER_STATUS_VARIANTS } from "@/lib/status-variants";
 import { usePaidTierWithoutPurchase } from "../hooks/use-paid-tier-without-purchase";
@@ -27,6 +28,9 @@ import { usePaidTierWithoutPurchase } from "../hooks/use-paid-tier-without-purch
 export function PaidTierWithoutPurchase() {
   const t = useTranslations();
   const router = useRouter();
+  // The report names itself: it is a list, so the member it opens should lead
+  // back to it rather than to the members list (memship#471).
+  const linkBack = useReturnToHere(t("reports.paidTierWithoutPurchase.title"));
   const { formatCurrency, formatDate } = useFormatters();
   const [page, setPage] = usePageParam();
   const { data, isLoading } = usePaidTierWithoutPurchase(page);
@@ -78,7 +82,7 @@ export function PaidTierWithoutPurchase() {
                   <TableRow
                     key={row.member_id}
                     className="cursor-pointer"
-                    onClick={() => router.push(`/members/${row.member_id}`)}
+                    onClick={() => router.push(linkBack(`/members/${row.member_id}`))}
                   >
                     <TableCell className="font-medium">{row.full_name}</TableCell>
                     <TableCell>{row.member_number ?? "—"}</TableCell>

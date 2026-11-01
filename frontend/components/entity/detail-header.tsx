@@ -3,6 +3,7 @@
 import { type ReactNode } from "react";
 import { Badge, type badgeVariants } from "@/components/ui/badge";
 import { Breadcrumbs } from "./breadcrumbs";
+import { useReturnTo } from "@/hooks/use-return-to";
 import type { VariantProps } from "class-variance-authority";
 
 interface BreadcrumbItem {
@@ -26,9 +27,22 @@ export function DetailHeader({
   badge,
   actions,
 }: DetailHeaderProps) {
+  // A record has several parents, so the first crumb each page hardcodes names
+  // whichever one its module happens to sit under. When the URL says where the
+  // page was opened from, that is the true parent and it replaces the static
+  // one, which also makes the breadcrumb the way back (memship#471).
+  //
+  // Only the first crumb is replaced: the rest, ending in this record, still
+  // describe the page. A page passing a single crumb has no module crumb to
+  // swap, so the return is prepended instead of overwriting the record.
+  const returnTo = useReturnTo();
+  const items = returnTo
+    ? [returnTo, ...breadcrumbs.slice(breadcrumbs.length > 1 ? 1 : 0)]
+    : breadcrumbs;
+
   return (
     <div className="space-y-1">
-      <Breadcrumbs items={breadcrumbs} />
+      <Breadcrumbs items={items} />
       {/* The actions wrap below the title rather than squeezing it. They were
           `shrink-0` beside a `truncate` heading on a row that could not wrap,
           so at a narrow desktop width the receipt number rendered as "F.."

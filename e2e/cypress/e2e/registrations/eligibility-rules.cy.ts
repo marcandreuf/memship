@@ -29,7 +29,12 @@ function visitRegisterPage(activityName: string) {
     .closest("a")
     .invoke("attr", "href")
     .then((href) => {
-      cy.visit(`${href}/register`);
+      // Take the path, not the whole href: a list card now carries the return
+      // context as a query string (memship#471), so appending a segment to the
+      // raw href puts `/register` after `?from=...` and requests a route that
+      // does not exist.
+      const path = String(href).split("?")[0];
+      cy.visit(`${path}/register`);
       cy.url().should("include", "/register");
     });
 }

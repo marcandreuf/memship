@@ -144,6 +144,13 @@ Retries mask all of this, so read the failure screenshots in
 "attempt N" suffix means a test failed once and passed on retry. A clean run
 leaves none.
 
+`run-parallel.sh` now enforces that rather than leaving it to be noticed. It
+clears `cypress/screenshots/` before the run and fails the run if any remain,
+so a retry-only pass is a non-zero exit instead of a file nobody opened. A
+genuine failure keeps its own exit code. This matters because the summary and
+the status agree on a pass that did not happen: the spec reports `Failing: 0`,
+every worker prints "All specs passed!", and the exit code is 0.
+
 Intermittent retry-only passes under parallel load remain a known open problem —
 see issue #58, which #216 narrowed rather than closed. Treat a run that only
 passes on retry as a failure to explain, not a pass.
