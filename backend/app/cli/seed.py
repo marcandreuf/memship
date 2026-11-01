@@ -930,8 +930,12 @@ def seed_registrations(db) -> None:
     from datetime import datetime, timezone
 
     # Get published activities and members
-    activities = db.query(Activity).filter(Activity.status == "published").all()
-    members = db.query(Member).filter(Member.status == "active").all()
+    activities = db.query(Activity).filter(Activity.status == "published").order_by(Activity.id).all()
+    # Ordered, because which members are registered and which activity is
+    # "first" is a contract with the e2e suite: an unordered scan returns rows in
+    # heap order, which after `reset_club_data` is no longer insertion order, and
+    # an adult then lands in the kids' activity the age specs expect to refuse.
+    members = db.query(Member).filter(Member.status == "active").order_by(Member.id).all()
 
     if len(activities) < 2 or len(members) < 3:
         print("  Registrations: not enough activities/members to seed")
@@ -945,6 +949,9 @@ def seed_registrations(db) -> None:
     test_member = db.query(Member).filter(Member.party_id == test_member_user.party_id).first() if test_member_user else None
     test_member_reg_count = 0
     test_member_max_regs = 3
+    # The eligibility specs open these as the test member and expect the
+    # registration form, or its refusal, rather than "already registered".
+    test_member_unregistered = {"Summer Soccer Camp", "Chess Club Tournament"}
 
     for activity in activities:
         prices = db.query(ActivityPrice).filter(
@@ -966,8 +973,11 @@ def seed_registrations(db) -> None:
         members_to_register = members[:max_to_register]
 
         for i, member in enumerate(members_to_register):
-            # Skip test member after they've reached their registration limit
-            if test_member and member.id == test_member.id and test_member_reg_count >= test_member_max_regs:
+            # The test member keeps its cap and stays out of the activities above
+            if test_member and member.id == test_member.id and (
+                test_member_reg_count >= test_member_max_regs
+                or activity.name in test_member_unregistered
+            ):
                 continue
             # Check not already registered
             exists = db.query(Registration).filter(
@@ -1037,7 +1047,7 @@ def seed_discount_codes(db) -> None:
     from datetime import datetime, timezone, timedelta
     now = datetime.now(timezone.utc)
 
-    activities = db.query(Activity).filter(Activity.status == "published").all()
+    activities = db.query(Activity).filter(Activity.status == "published").order_by(Activity.id).all()
     count = 0
     first_activity = True
 
@@ -1100,7 +1110,7 @@ def seed_consents(db) -> None:
         print(f"  Activity consents: already seeded ({existing} records)")
         return
 
-    activities = db.query(Activity).filter(Activity.status == "published").all()
+    activities = db.query(Activity).filter(Activity.status == "published").order_by(Activity.id).all()
     count = 0
 
     for activity in activities:
@@ -1154,7 +1164,7 @@ def seed_attachment_types(db) -> None:
         print(f"  Attachment types: already seeded ({existing} records)")
         return
 
-    activities = db.query(Activity).filter(Activity.status == "published").all()
+    activities = db.query(Activity).filter(Activity.status == "published").order_by(Activity.id).all()
     count = 0
 
     # Add medical certificate requirement to sport-related activities (first one)
