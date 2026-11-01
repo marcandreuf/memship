@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -74,7 +73,6 @@ export default function ProfilePage() {
   const locale = useLocale();
   const pathname = usePathname();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { user } = useAuth();
   // An operator account administers the instance without belonging to the club
   // (#168), so it has a person but no member record. `useMember` is already
@@ -255,11 +253,6 @@ export default function ProfilePage() {
       ? [{ id: "payment", label: t("paymentMethod.title"), content: <MyPaymentMethod /> }]
       : []),
   ];
-  const tabParam = searchParams.get("tab");
-  const defaultTab = tabs.some((tab) => tab.id === tabParam)
-    ? (tabParam as string)
-    : undefined;
-
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-3">
@@ -296,7 +289,7 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
-      <EntityTabs tabs={tabs} defaultTab={defaultTab} lazy />
+      <EntityTabs tabs={tabs} lazy />
     </div>
   );
 }

@@ -31,6 +31,7 @@ import { useActivities } from "@/features/activities/hooks/use-activities";
 import { useMyRegistrations } from "@/features/activities/hooks/use-registrations";
 import type { ActivityListData } from "@/features/activities/services/activities-api";
 import { useLocaleDate } from "@/hooks/use-locale-date";
+import { useReturnToHere } from "@/hooks/use-return-to";
 
 function getRegistrationStatus(
   activity: ActivityListData,
@@ -52,6 +53,7 @@ function getRegistrationStatus(
 
 export default function ActivitiesPage() {
   const t = useTranslations();
+  const linkBack = useReturnToHere(t("activities.title"));
   const { shortDate: formatDate } = useLocaleDate();
   const router = useRouter();
   const { user } = useAuth();
@@ -149,7 +151,7 @@ export default function ActivitiesPage() {
                   <TableRow
                     key={activity.id}
                     className="cursor-pointer"
-                    onClick={() => router.push(`/activities/${activity.id}`)}
+                    onClick={() => router.push(linkBack(`/activities/${activity.id}`))}
                   >
                     <TableCell className="font-medium">{activity.name}</TableCell>
                     <TableCell>{formatDate(activity.starts_at)}</TableCell>
@@ -179,7 +181,7 @@ export default function ActivitiesPage() {
             {data.items.map((activity) => (
               <Link
                 key={activity.id}
-                href={`/activities/${activity.id}`}
+                href={linkBack(`/activities/${activity.id}`)}
                 className="block rounded-lg border p-4 hover:bg-accent transition-colors"
               >
                 <div className="flex items-start justify-between">
@@ -217,7 +219,7 @@ export default function ActivitiesPage() {
           {data.items.map((activity) => (
             <Link
               key={activity.id}
-              href={`/activities/${activity.id}`}
+              href={linkBack(`/activities/${activity.id}`)}
               className="flex rounded-lg border overflow-hidden hover:bg-accent transition-colors"
             >
               <div className="flex-1 p-4">

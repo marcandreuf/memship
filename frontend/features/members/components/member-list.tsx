@@ -27,9 +27,11 @@ import { TableSkeleton } from "@/components/ui/skeletons";
 import { useSearchParam, usePageParam, useStatusParam } from "@/hooks/use-url-state";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
 import { useMembers } from "../hooks/use-members";
+import { useReturnToHere } from "@/hooks/use-return-to";
 
 export function MemberList() {
   const t = useTranslations();
+  const linkBack = useReturnToHere(t("nav.members"));
   const { has } = usePermissions();
   const canWrite = has("members.write");
   const router = useRouter();
@@ -117,7 +119,7 @@ export function MemberList() {
                   <TableRow
                     key={member.id}
                     className="cursor-pointer"
-                    onClick={() => router.push(`/members/${member.id}`)}
+                    onClick={() => router.push(linkBack(`/members/${member.id}`))}
                   >
                     <TableCell className="font-mono text-sm">
                       {member.member_number}
@@ -143,7 +145,7 @@ export function MemberList() {
             {data.items.map((member) => (
               <Link
                 key={member.id}
-                href={`/members/${member.id}`}
+                href={linkBack(`/members/${member.id}`)}
                 className="block rounded-lg border p-4 hover:bg-accent transition-colors"
               >
                 <div className="flex items-start justify-between">
