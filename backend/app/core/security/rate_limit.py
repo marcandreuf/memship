@@ -135,8 +135,11 @@ LOGIN_BY_IP = Throttle("login-ip", limit=20, window_seconds=900)
 EMAIL_DISPATCH_BY_EMAIL = Throttle("email-dispatch-email", limit=3, window_seconds=3600)
 EMAIL_DISPATCH_BY_IP = Throttle("email-dispatch-ip", limit=10, window_seconds=3600)
 
-# Registration creates a Person, a User and a Member row per call.
-REGISTER_BY_IP = Throttle("register-ip", limit=5, window_seconds=3600)
+# Registration creates a Person, a User and a Member row per call. The only
+# limit read from settings: the dev stack raises it for the e2e suite (#462).
+REGISTER_BY_IP = Throttle(
+    "register-ip", limit=settings.REGISTER_LIMIT_PER_IP, window_seconds=3600
+)
 
 # Registering an address that already has an account mails its owner (#102), so
 # the endpoint sends to an address an anonymous caller chose and needs the same
