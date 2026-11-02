@@ -27,7 +27,7 @@ import { FormSkeleton } from "@/components/ui/skeletons";
 const memberCardSchema = z.object({
   member_card: z.boolean(),
   member_number_prefix: z.string().max(20),
-  member_number_padding: z.coerce.number().int().min(1).max(10),
+  member_number_padding: z.coerce.number<number>().int().min(1).max(10),
 });
 
 type MemberCardFormValues = z.infer<typeof memberCardSchema>;
