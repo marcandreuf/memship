@@ -1,14 +1,22 @@
-"""The sliding window itself, without HTTP in the way."""
+"""The sliding window itself, without HTTP in the way.
 
+These run against the in-process fallback window: the CI unit job has no Redis.
+The Redis-backed window is covered in tests/integration/test_rate_limit_redis.py.
+"""
+
+import logging
+import math
 import time
 from pathlib import Path
 
 import pytest
+import redis
 from fastapi import HTTPException
 
 from pydantic import ValidationError
 
 from app.core.config import Settings, settings
+from app.core.security import rate_limit
 from app.core.security.rate_limit import (
     REGISTER_BY_IP,
     Throttle,
@@ -30,6 +38,13 @@ class _Request:
     def __init__(self, host="10.0.0.1", forwarded=None):
         self.client = _Client(host) if host else None
         self.headers = {"x-forwarded-for": forwarded} if forwarded else {}
+
+
+@pytest.fixture(autouse=True)
+def _local_window_only(monkeypatch):
+    """Hold the Redis backoff open, so every call uses the in-process window."""
+    monkeypatch.setattr(rate_limit, "_redis_down_until", math.inf)
+    monkeypatch.setattr(rate_limit, "_degraded", False)
 
 
 @pytest.fixture
@@ -95,12 +110,74 @@ class TestTheWindow:
         throttle = Throttle("sweep", limit=5, window_seconds=1)
         for i in range(50):
             throttle.record(f"user{i}@examplee6e3b1.com")
-        assert len(throttle._hits) == 50
+        assert len(throttle._local._hits) == 50
 
         time.sleep(1.05)
         throttle.record("someone-else@examplee6e3b1.com")
 
-        assert len(throttle._hits) == 1
+        assert len(throttle._local._hits) == 1
+
+
+class _Unreachable:
+    """Stands in for `_connect()`'s result: every script call fails as Redis would."""
+
+    def __init__(self):
+        self.calls = 0
+
+    def _fail(self, *args, **kwargs):
+        self.calls += 1
+        raise redis.ConnectionError("Connection refused")
+
+    retry_after = record = _fail
+
+
+class TestRedisUnavailable:
+    """Chosen behaviour for #210: degrade to the per-process window and say so,
+    rather than refusing every sign-in or dropping the limit."""
+
+    @pytest.fixture
+    def unreachable(self, monkeypatch):
+        backend = _Unreachable()
+        monkeypatch.setattr(rate_limit, "_connect", lambda: backend)
+        monkeypatch.setattr(rate_limit, "_redis_down_until", 0.0)
+        return backend
+
+    def test_the_limit_still_holds_per_process(self, unreachable, throttle):
+        for _ in range(3):
+            throttle.record("k")
+
+        assert throttle.retry_after("k") > 0
+
+    def test_the_fallback_is_logged_as_an_error(self, unreachable, throttle, caplog):
+        with caplog.at_level(logging.ERROR, logger=rate_limit.__name__):
+            throttle.retry_after("k")
+
+        assert any("cannot reach Redis" in r.getMessage() for r in caplog.records)
+
+    def test_redis_is_not_retried_on_every_request_during_an_outage(
+        self, unreachable, throttle
+    ):
+        """An outage costs one connection attempt per backoff interval, not
+        several per login."""
+        for _ in range(10):
+            throttle.record("k")
+            throttle.retry_after("k")
+
+        assert unreachable.calls == 1
+
+    def test_recovery_is_logged(self, unreachable, throttle, monkeypatch, caplog):
+        throttle.retry_after("k")
+
+        class _Back:
+            def retry_after(self, *args, **kwargs):
+                return 0
+
+        monkeypatch.setattr(rate_limit, "_connect", lambda: _Back())
+        monkeypatch.setattr(rate_limit, "_redis_down_until", 0.0)
+        with caplog.at_level(logging.WARNING, logger=rate_limit.__name__):
+            assert throttle.retry_after("k") == 0
+
+        assert any("reached Redis again" in r.getMessage() for r in caplog.records)
 
 
 class TestEnforce:
