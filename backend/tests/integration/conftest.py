@@ -48,6 +48,14 @@ def _worker_storage_path(base_path: str) -> str:
 # time to create the storage root.
 settings.STORAGE_LOCAL_PATH = _worker_storage_path(settings.STORAGE_LOCAL_PATH)
 
+# The auth throttles count in Redis, and xdist workers share one Redis database.
+# Without a prefix of its own, one worker's `reset_all()` would wipe a window
+# another worker's test is in the middle of filling — and both workers' tests
+# log in as the same address from the same client IP.
+from app.core.security import rate_limit as _rate_limit  # noqa: E402
+
+_rate_limit.KEY_PREFIX = f"memship:throttle:test:{os.getenv('PYTEST_XDIST_WORKER', 'main')}"
+
 from app.main import app  # noqa: E402
 
 # Stub password hashing for tests: use fast argon2 params and cache results.
@@ -366,7 +374,7 @@ def _fresh_auth_throttles():
     """Start every test with empty rate-limit windows.
 
     The throttles in ``app.core.security.rate_limit`` are module-level and hold
-    their counts in process, so without this one test's failed logins would
+    their counts in Redis, so without this one test's failed logins would
     spend another test's budget — and which tests those are would depend on
     ordering. Tests that assert the limit still exercise the real throttle.
     """

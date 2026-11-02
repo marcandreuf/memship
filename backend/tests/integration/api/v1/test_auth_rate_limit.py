@@ -5,7 +5,7 @@ that mail an address chosen by an anonymous caller accepted unlimited requests
 — so a member's mailbox could be flooded, and their pending reset token burned,
 from outside.
 
-The throttles are process-global, so every test here leans on the autouse
+The throttles count in Redis, so every test here leans on the autouse
 `_fresh_auth_throttles` fixture in tests/integration/conftest.py.
 """
 
