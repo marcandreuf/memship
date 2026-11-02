@@ -30,9 +30,9 @@ import { FormSkeleton } from "@/components/ui/skeletons";
 
 const paymentRemindersSchema = z.object({
   payment_reminders_enabled: z.boolean(),
-  reminder_days_after_due: z.coerce.number().int().min(0).max(365),
-  reminder_repeat_days: z.coerce.number().int().min(1).max(365),
-  reminder_max_count: z.coerce.number().int().min(1).max(10),
+  reminder_days_after_due: z.coerce.number<number>().int().min(0).max(365),
+  reminder_repeat_days: z.coerce.number<number>().int().min(1).max(365),
+  reminder_max_count: z.coerce.number<number>().int().min(1).max(10),
 });
 
 type PaymentRemindersFormValues = z.infer<typeof paymentRemindersSchema>;

@@ -32,7 +32,7 @@ import { FormSkeleton } from "@/components/ui/skeletons";
 const recurringBillingSchema = z.object({
   recurring_billing_enabled: z.boolean(),
   // 29–31 are allowed: the backend bills a shorter month on its last day.
-  recurring_billing_day: z.coerce.number().int().min(1).max(31),
+  recurring_billing_day: z.coerce.number<number>().int().min(1).max(31),
   billing_notification_email: optionalEmailSchema,
 });
 

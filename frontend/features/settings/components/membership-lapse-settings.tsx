@@ -30,8 +30,8 @@ import { FormSkeleton } from "@/components/ui/skeletons";
 
 const membershipLapseSchema = z.object({
   membership_lapse_enabled: z.boolean(),
-  membership_fee_due_days: z.coerce.number().int().min(0).max(365),
-  membership_lapse_grace_days: z.coerce.number().int().min(0).max(365),
+  membership_fee_due_days: z.coerce.number<number>().int().min(0).max(365),
+  membership_lapse_grace_days: z.coerce.number<number>().int().min(0).max(365),
 });
 
 type MembershipLapseFormValues = z.infer<typeof membershipLapseSchema>;

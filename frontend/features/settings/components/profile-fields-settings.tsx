@@ -89,7 +89,7 @@ const definitionSchema = z
     required: z.boolean(),
     member_access: z.enum(["hidden", "read", "write"]),
     admin_access: z.enum(["read", "write"]),
-    sort_order: z.coerce.number().int().min(0),
+    sort_order: z.coerce.number<number>().int().min(0),
     active: z.boolean(),
   })
   .superRefine((data, ctx) => {
