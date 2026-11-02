@@ -30,7 +30,12 @@ from app.core.security.password import hash_password
 from app.domains.auth.models import User
 from app.domains.billing.models import Receipt, ReceiptReminder
 from app.domains.billing.reminder_service import run_scheduled_reminders
-from app.domains.billing.rules import INT_RULES, billing_int_rule
+from app.domains.billing.rules import (
+    BOOL_KEYS,
+    INT_RULES,
+    SAVE_ONLY_INT_RULES,
+    billing_int_rule,
+)
 from app.domains.members.models import Member, MembershipType
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Person
@@ -276,3 +281,102 @@ class TestTheDunningRunSurvivesAStoredBadValue:
         assert result["reminders_sent"] == 0, (
             "max_count 0 means send none, and the run sent something anyway"
         )
+
+class TestSaveOnlyIntegersAreRangeCheckedOnSave:
+    """`membership_fee_due_days` and `membership_lapse_grace_days`.
+
+    These two always had read-side protection: `int()` inside a `try`, clamped
+    with `max(0, ...)`. What they lacked was anything refusing the value on the
+    way in, so a 400-day grace period was stored and silently honoured.
+
+    **Their reads are deliberately untouched.** `int()` accepts a numeric string,
+    so `"5"` resolves to 5 today; routing them through `billing_int_rule` would
+    reject that string and fall back to the default instead, reinterpreting a
+    value an instance has already stored. Refusing it on the way in costs
+    nothing, because no stored value is re-read.
+    """
+
+    @pytest.mark.parametrize("key", sorted(SAVE_ONLY_INT_RULES))
+    @pytest.mark.parametrize(
+        "value,case", [("5", "string"), (-1, "negative"), (366, "over-a-year")]
+    )
+    def test_settings_put_refuses_the_value(self, client, db, key, value, case):
+        _org(db, {})
+        client.cookies.update(_auth_cookie(_admin(db, f"so-{key}-{case}")))
+
+        response = client.put("/api/v1/settings/", json={"features": {key: value}})
+
+        assert response.status_code == 422, (
+            f"settings accepted {key}={value!r} ({case})"
+        )
+
+    @pytest.mark.parametrize("key", sorted(SAVE_ONLY_INT_RULES))
+    def test_zero_is_accepted(self, client, db, key):
+        """0 means "due immediately" and "lapse immediately", both legitimate."""
+        _org(db, {})
+        client.cookies.update(_auth_cookie(_admin(db, f"so-zero-{key}")))
+
+        response = client.put("/api/v1/settings/", json={"features": {key: 0}})
+
+        assert response.status_code == 200
+        assert response.json()["features"][key] == 0
+
+    @pytest.mark.parametrize("key", sorted(SAVE_ONLY_INT_RULES))
+    def test_a_stored_numeric_string_is_still_honoured_on_read(self, db, key):
+        """The reason these reads were left alone, pinned so it stays true.
+
+        If someone later routes these through `billing_int_rule`, this fails:
+        the registry rejects a string and would hand back the default, changing
+        what an instance already configured.
+        """
+        from app.domains.billing.lapse_service import lapse_grace_days
+        from app.domains.billing.recurring_billing_service import membership_fee_due_days
+
+        reader = {
+            "membership_lapse_grace_days": lapse_grace_days,
+            "membership_fee_due_days": membership_fee_due_days,
+        }[key]
+        _org(db, {key: "5"})
+
+        assert reader(db) == 5
+
+
+class TestBooleanFlagsAreTypeCheckedOnSave:
+    """A non-boolean in a flag read as one.
+
+    These reads cannot raise: truthiness is total. The wrong answer is the
+    point. `bool("false")` is `True`, so a flag an admin meant to switch off
+    reads as on, and the feature runs. Validating the type on the way in is what
+    keeps an instance out of that state.
+
+    Save-side only, on purpose. A read-side fallback would reinterpret a value
+    already stored, and that is the one change in this area that would alter a
+    running instance rather than preserve it.
+    """
+
+    @pytest.mark.parametrize("key", sorted(BOOL_KEYS | {"booking_waitlist_enabled"}))
+    @pytest.mark.parametrize(
+        "value,case",
+        [("false", "the-string-false"), (0, "int-zero"), (None, "null")],
+    )
+    def test_settings_put_refuses_a_non_boolean(self, client, db, key, value, case):
+        _org(db, {})
+        client.cookies.update(_auth_cookie(_admin(db, f"bool-{key}-{case}")))
+
+        response = client.put("/api/v1/settings/", json={"features": {key: value}})
+
+        assert response.status_code == 422, (
+            f"settings accepted {key}={value!r}; `bool({value!r})` is "
+            f"{bool(value)}, so the flag would read as that whatever was meant"
+        )
+
+    @pytest.mark.parametrize("key", sorted(BOOL_KEYS | {"booking_waitlist_enabled"}))
+    @pytest.mark.parametrize("value", [True, False])
+    def test_settings_put_accepts_a_real_boolean(self, client, db, key, value):
+        _org(db, {})
+        client.cookies.update(_auth_cookie(_admin(db, f"bool-ok-{key}-{value}")))
+
+        response = client.put("/api/v1/settings/", json={"features": {key: value}})
+
+        assert response.status_code == 200
+        assert response.json()["features"][key] is value

@@ -12,7 +12,7 @@ unchanged so no caller had to move.
 """
 
 from app.domains.shared.feature_rules import IntRules, int_rule as _int_rule
-from app.domains.shared.feature_rules import validate_int_rules
+from app.domains.shared.feature_rules import validate_bool_keys, validate_int_rules
 
 #: key -> (default, minimum, maximum). The maximum keeps ``timedelta`` from
 #: overflowing on an absurd value.
@@ -22,8 +22,17 @@ INT_RULES: IntRules = {
 }
 
 
+#: Read as a boolean, through `bool(features.get(key, True))` in
+#: `bookings/service.py`, so it cannot raise. The check refuses the string
+#: `"false"`, which is truthy and would switch the waitlist on for an admin who
+#: meant to switch it off. Note the default here is True, unlike the billing
+#: flags, so an absent key means enabled.
+BOOL_KEYS = frozenset({"booking_waitlist_enabled"})
+
+
 def validate_booking_rules(features: dict) -> dict:
-    return validate_int_rules(features, INT_RULES)
+    validate_int_rules(features, INT_RULES)
+    return validate_bool_keys(features, BOOL_KEYS)
 
 
 def int_rule(features: dict, key: str) -> int:
