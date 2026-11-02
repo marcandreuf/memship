@@ -11,6 +11,7 @@ from app.core.sepa_identifiers import (
     refuse_invalid_creditor_id,
     refuse_invalid_iban,
 )
+from app.domains.billing.rules import validate_billing_rules
 from app.domains.bookings.rules import validate_booking_rules
 
 
@@ -111,8 +112,16 @@ class OrganizationSettingsUpdate(BaseModel):
 
     @field_validator("features")
     @classmethod
-    def _check_booking_rules(cls, v: dict | None) -> dict | None:
-        return validate_booking_rules(v) if v is not None else v
+    def _check_feature_values(cls, v: dict | None) -> dict | None:
+        """Refuse an invalid configuration value before it reaches the row.
+
+        Each domain owns the keys it reads, so the validators are per domain
+        rather than one list here. A key no validator claims is not refused by
+        this; that is #494.
+        """
+        if v is None:
+            return v
+        return validate_billing_rules(validate_booking_rules(v))
 
     # Normalisation first, so an IBAN pasted in groups of four off a bank
     # statement is not refused over whitespace, and an empty field still clears.
