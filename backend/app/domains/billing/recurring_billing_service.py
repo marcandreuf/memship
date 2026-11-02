@@ -23,6 +23,7 @@ from app.domains.billing.models import BillingRun
 from app.domains.billing.schemas import GenerateMembershipFeesRequest
 from app.domains.billing.service import generate_membership_fees
 from app.domains.organizations.models import OrganizationSettings
+from app.domains.billing.rules import billing_int_rule
 
 # Frequencies eligible for automatic recurring billing (one_time excluded).
 BILLABLE_FREQUENCIES = ("monthly", "quarterly", "annual")
@@ -228,7 +229,9 @@ def run_scheduled_billing(db: Session, today: date | None = None) -> list[Billin
     if not features.get("recurring_billing_enabled"):
         return []
 
-    billing_day = features.get("recurring_billing_day", 1)
+    # `effective_billing_day` clamps the range already; what it cannot survive
+    # is a wrong type, since `max("x", 1)` raises (#493).
+    billing_day = billing_int_rule(features, "recurring_billing_day")
 
     runs: list[BillingRun] = []
     for frequency in BILLABLE_FREQUENCIES:

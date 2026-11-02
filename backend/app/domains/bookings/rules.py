@@ -4,37 +4,27 @@
 where an invalid value is refused, and on the way out, where a value stored
 before the check existed falls back to its default instead of failing every
 availability, booking and cancellation request with a 500.
+
+The machinery moved to ``domains/shared/feature_rules.py`` when the same pattern
+was extended to the billing values (#493). Two copies of "what counts as a valid
+integer here" would have been free to disagree, and the public names below are
+unchanged so no caller had to move.
 """
 
-from typing import Any
+from app.domains.shared.feature_rules import IntRules, int_rule as _int_rule
+from app.domains.shared.feature_rules import validate_int_rules
 
 #: key -> (default, minimum, maximum). The maximum keeps ``timedelta`` from
 #: overflowing on an absurd value.
-INT_RULES: dict[str, tuple[int, int, int]] = {
+INT_RULES: IntRules = {
     "booking_window_days": (14, 1, 365),
     "booking_cancellation_deadline_hours": (24, 0, 8760),
 }
 
 
-def _is_valid(value: Any, minimum: int, maximum: int) -> bool:
-    # bool is an int subclass; `true` is not a number of days.
-    return (
-        isinstance(value, int)
-        and not isinstance(value, bool)
-        and minimum <= value <= maximum
-    )
-
-
 def validate_booking_rules(features: dict) -> dict:
-    for key, (_, minimum, maximum) in INT_RULES.items():
-        if key in features and not _is_valid(features[key], minimum, maximum):
-            raise ValueError(
-                f"{key} must be an integer between {minimum} and {maximum}"
-            )
-    return features
+    return validate_int_rules(features, INT_RULES)
 
 
 def int_rule(features: dict, key: str) -> int:
-    default, minimum, maximum = INT_RULES[key]
-    value = features.get(key, default)
-    return value if _is_valid(value, minimum, maximum) else default
+    return _int_rule(features, key, INT_RULES)
