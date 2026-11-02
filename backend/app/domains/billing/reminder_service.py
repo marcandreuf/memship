@@ -30,6 +30,7 @@ from app.domains.mailing.policy import is_enabled as template_enabled
 from app.domains.members.models import Member
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Person
+from app.domains.billing.rules import billing_int_rule
 
 # Receipt statuses that still owe money and can be reminded.
 PAYABLE_STATUSES = ("emitted", "overdue")
@@ -308,9 +309,13 @@ def run_scheduled_reminders(db: Session, today: date | None = None) -> dict:
             "failures": 0,
         }
 
-    days_after_due = features.get("reminder_days_after_due", 3)
-    repeat_days = features.get("reminder_repeat_days", 7)
-    max_count = features.get("reminder_max_count", 3)
+    # Guarded rather than read bare: these feed `timedelta` and an `int`
+    # comparison, so a wrong-typed value used to raise from inside the loop over
+    # overdue candidates, which meant it failed nothing until the first receipt
+    # went overdue (#493).
+    days_after_due = billing_int_rule(features, "reminder_days_after_due")
+    repeat_days = billing_int_rule(features, "reminder_repeat_days")
+    max_count = billing_int_rule(features, "reminder_max_count")
 
     overdue_marked = mark_overdue(db, today)
     due = reminders_due(db, today, days_after_due, repeat_days, max_count)
