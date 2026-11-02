@@ -48,3 +48,20 @@ def int_rule(features: dict, key: str, rules: IntRules) -> int:
     default, minimum, maximum = rules[key]
     value = features.get(key, default)
     return value if is_valid_int(value, minimum, maximum) else default
+
+def validate_bool_keys(features: dict, keys: frozenset[str]) -> dict:
+    """Refuse a non-boolean in a flag that is read as one.
+
+    These reads never raise, so this is not crash protection. It is about a
+    specific wrong answer: ``bool`` is total, so the string ``"false"`` is
+    truthy and a flag an admin meant to switch off reads as on. Validating the
+    type on the way in is what stops an instance reaching that state.
+
+    Deliberately save-side only. A read-side fallback would have to reinterpret
+    a value already stored, and that is the one change in this area that would
+    alter a running instance's behaviour rather than preserve it.
+    """
+    for key in sorted(keys):
+        if key in features and not isinstance(features[key], bool):
+            raise ValueError(f"{key} must be true or false")
+    return features

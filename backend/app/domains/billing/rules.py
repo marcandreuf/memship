@@ -15,7 +15,12 @@ value and no overdue receipts ran clean every night; the first receipt to go
 overdue broke the task, a long way in time from whatever wrote the value.
 """
 
-from app.domains.shared.feature_rules import IntRules, int_rule, validate_int_rules
+from app.domains.shared.feature_rules import (
+    IntRules,
+    int_rule,
+    validate_bool_keys,
+    validate_int_rules,
+)
 
 #: key -> (default, minimum, maximum). Each bound is chosen so that no value a
 #: real instance could plausibly hold changes meaning when the read-side
@@ -45,8 +50,46 @@ INT_RULES: IntRules = {
 }
 
 
+#: Validated on save, but **not** read through ``billing_int_rule``. Both reads
+#: already coerce with ``int()`` inside a ``try`` and clamp with ``max(0, ...)``,
+#: so neither can raise, and ``int()`` accepts a numeric string: ``"5"`` reads as
+#: 5 today. Routing them through the registry above would reject that string and
+#: fall back to the default instead, which reinterprets a value an instance has
+#: already stored. Refusing it on the way in costs nothing, because no stored
+#: value is re-read.
+#:
+#: Only the bounds are live here. The default in each tuple is never read,
+#: because nothing resolves these keys through the registry, and it is a literal
+#: rather than the service's own constant because importing
+#: ``recurring_billing_service`` from here would close an import cycle. So the
+#: two can drift without consequence; if that ever stops being true, move the
+#: constants down here and let the services import them instead.
+SAVE_ONLY_INT_RULES: IntRules = {
+    # Days after emission before a membership fee is due. Mirrors
+    # `recurring_billing_service.DEFAULT_MEMBERSHIP_FEE_DUE_DAYS`, which is 7.
+    "membership_fee_due_days": (7, 0, 365),
+    # Days past due before an unpaid member loses their tier. Mirrors
+    # `lapse_service.DEFAULT_GRACE_DAYS`, which is 21.
+    "membership_lapse_grace_days": (21, 0, 365),
+}
+
+#: Flags this domain reads as booleans. `payment_reminders_enabled` and
+#: `recurring_billing_enabled` are read for truthiness and
+#: `membership_lapse_enabled` through `bool()`, so none of them can raise. What
+#: the check buys is the string `"false"` reading as on.
+BOOL_KEYS = frozenset(
+    {
+        "payment_reminders_enabled",
+        "recurring_billing_enabled",
+        "membership_lapse_enabled",
+    }
+)
+
+
 def validate_billing_rules(features: dict) -> dict:
-    return validate_int_rules(features, INT_RULES)
+    validate_int_rules(features, INT_RULES)
+    validate_int_rules(features, SAVE_ONLY_INT_RULES)
+    return validate_bool_keys(features, BOOL_KEYS)
 
 
 def billing_int_rule(features: dict, key: str) -> int:
