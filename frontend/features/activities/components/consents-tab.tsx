@@ -33,7 +33,7 @@ const consentSchema = z.object({
   title: z.string().trim().min(1).max(255),
   content: z.string().min(1).max(10000).refine((v) => v.trim() !== "", "validation.required"),
   is_mandatory: z.boolean(),
-  display_order: z.coerce.number().int().min(0),
+  display_order: z.coerce.number<number>().int().min(0),
 });
 type ConsentFormValues = z.infer<typeof consentSchema>;
 

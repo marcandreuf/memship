@@ -45,9 +45,9 @@ import { useLocaleDate } from "@/hooks/use-locale-date";
 const modalitySchema = z.object({
   name: z.string().trim().min(1).max(255),
   description: z.string().max(2000).optional().or(z.literal("")),
-  max_participants: z.coerce.number().int().min(0).optional().or(z.literal("")),
+  max_participants: z.coerce.number<number>().int().min(0).optional().or(z.literal("")),
   registration_deadline: z.string().optional().or(z.literal("")),
-  display_order: z.coerce.number().int().min(0),
+  display_order: z.coerce.number<number>().int().min(0),
 });
 type ModalityFormValues = z.infer<typeof modalitySchema>;
 

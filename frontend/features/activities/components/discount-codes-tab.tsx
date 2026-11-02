@@ -34,8 +34,8 @@ const discountSchema = z.object({
   code: z.string().trim().min(1).max(50),
   description: z.string().max(2000).optional().or(z.literal("")),
   discount_type: z.enum(["percentage", "fixed"]),
-  discount_value: z.coerce.number().gt(0),
-  max_uses: z.coerce.number().int().min(1).optional().or(z.literal("")),
+  discount_value: z.coerce.number<number>().gt(0),
+  max_uses: z.coerce.number<number>().int().min(1).optional().or(z.literal("")),
   valid_from: z.string().optional().or(z.literal("")),
   valid_until: z.string().optional().or(z.literal("")),
 });

@@ -1,11 +1,11 @@
-import { z } from "zod";
+import type { z } from "zod";
 
 /**
  * Localised messages for zod's built-in validation failures.
  *
- * Zod ships English defaults ("String must contain at least 1 character(s)"),
+ * Zod ships English defaults ("Too small: expected string to have >=1 characters"),
  * which leak to the user whatever locale they picked. Passing this map into
- * `zodResolver(schema, { errorMap })` replaces every default with a `validation.*`
+ * `zodResolver(schema, { error })` replaces every default with a `validation.*`
  * message, so the ~200 validators across the app need no per-schema changes.
  *
  * Issues that carry their own `message` bypass this map entirely — those pass a
@@ -19,95 +19,89 @@ export type ValidationTranslator = (
   values?: Record<string, string | number>
 ) => string;
 
-export function createZodErrorMap(t: ValidationTranslator): z.ZodErrorMap {
+export function createZodErrorMap(t: ValidationTranslator): z.core.$ZodErrorMap {
   return (issue) => {
     switch (issue.code) {
-      case z.ZodIssueCode.invalid_type: {
-        if (issue.received === "undefined" || issue.received === "null") {
-          return { message: t("validation.required") };
+      case "invalid_type": {
+        if (issue.input === undefined || issue.input === null) {
+          return t("validation.required");
         }
-        if (issue.expected === "integer") {
-          return { message: t("validation.notAnInteger") };
+        if (issue.expected === "int") {
+          return t("validation.notAnInteger");
         }
         if (issue.expected === "number" || issue.expected === "bigint") {
-          return { message: t("validation.notANumber") };
+          return t("validation.notANumber");
         }
         if (issue.expected === "date") {
-          return { message: t("validation.invalidDate") };
+          return t("validation.invalidDate");
         }
-        return { message: t("validation.invalid") };
+        return t("validation.invalid");
       }
 
-      case z.ZodIssueCode.too_small: {
+      case "too_small": {
         const min = Number(issue.minimum);
-        switch (issue.type) {
+        switch (issue.origin) {
           case "string":
             // `.min(1)` is the idiom for "this field is mandatory".
             return min <= 1 && issue.inclusive
-              ? { message: t("validation.required") }
-              : { message: t("validation.tooShort", { min }) };
+              ? t("validation.required")
+              : t("validation.tooShort", { min });
           case "array":
-            return { message: t("validation.tooFewItems", { min }) };
+            return t("validation.tooFewItems", { min });
           case "date":
-            return { message: t("validation.dateTooEarly") };
+            return t("validation.dateTooEarly");
           default:
             return issue.inclusive
-              ? { message: t("validation.tooSmall", { min }) }
-              : { message: t("validation.tooSmallExclusive", { min }) };
+              ? t("validation.tooSmall", { min })
+              : t("validation.tooSmallExclusive", { min });
         }
       }
 
-      case z.ZodIssueCode.too_big: {
+      case "too_big": {
         const max = Number(issue.maximum);
-        switch (issue.type) {
+        switch (issue.origin) {
           case "string":
-            return { message: t("validation.tooLong", { max }) };
+            return t("validation.tooLong", { max });
           case "array":
-            return { message: t("validation.tooManyItems", { max }) };
+            return t("validation.tooManyItems", { max });
           case "date":
-            return { message: t("validation.dateTooLate") };
+            return t("validation.dateTooLate");
           default:
             return issue.inclusive
-              ? { message: t("validation.tooBig", { max }) }
-              : { message: t("validation.tooBigExclusive", { max }) };
+              ? t("validation.tooBig", { max })
+              : t("validation.tooBigExclusive", { max });
         }
       }
 
-      case z.ZodIssueCode.invalid_string: {
-        if (issue.validation === "email") {
-          return { message: t("validation.invalidEmail") };
+      case "invalid_format": {
+        if (issue.format === "email") {
+          return t("validation.invalidEmail");
         }
-        if (issue.validation === "url") {
-          return { message: t("validation.invalidUrl") };
+        if (issue.format === "url") {
+          return t("validation.invalidUrl");
         }
-        if (issue.validation === "datetime" || issue.validation === "date") {
-          return { message: t("validation.invalidDate") };
+        if (issue.format === "datetime" || issue.format === "date") {
+          return t("validation.invalidDate");
         }
-        return { message: t("validation.invalidFormat") };
+        return t("validation.invalidFormat");
       }
 
-      case z.ZodIssueCode.invalid_enum_value:
-      case z.ZodIssueCode.invalid_literal:
-        return { message: t("validation.invalidOption") };
+      case "invalid_value":
+        return t("validation.invalidOption");
 
-      case z.ZodIssueCode.not_multiple_of:
-        return {
-          message: t("validation.notAMultipleOf", { multiple: Number(issue.multipleOf) }),
-        };
+      case "not_multiple_of":
+        return t("validation.notAMultipleOf", { multiple: Number(issue.divisor) });
 
-      case z.ZodIssueCode.invalid_date:
-        return { message: t("validation.invalidDate") };
-
-      case z.ZodIssueCode.invalid_union: {
+      case "invalid_union": {
         // Union branches are parsed with this same map, so their messages are
         // already localised — surface the first one instead of a bare "Invalid input".
-        const first = issue.unionErrors?.[0]?.issues?.[0];
-        if (first?.message) return { message: first.message };
-        return { message: t("validation.invalid") };
+        const first = issue.errors?.[0]?.[0];
+        if (first?.message) return first.message;
+        return t("validation.invalid");
       }
 
       default:
-        return { message: t("validation.invalid") };
+        return t("validation.invalid");
     }
   };
 }

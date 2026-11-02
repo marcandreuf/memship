@@ -32,9 +32,9 @@ const attachmentTypeSchema = z.object({
   name: z.string().trim().min(1).max(255),
   description: z.string().max(2000).optional().or(z.literal("")),
   allowed_extensions: z.string().optional().or(z.literal("")),
-  max_file_size_mb: z.coerce.number().int().min(1).max(50),
+  max_file_size_mb: z.coerce.number<number>().int().min(1).max(50),
   is_mandatory: z.boolean(),
-  display_order: z.coerce.number().int().min(0),
+  display_order: z.coerce.number<number>().int().min(0),
 });
 type AttachmentTypeFormValues = z.infer<typeof attachmentTypeSchema>;
 
