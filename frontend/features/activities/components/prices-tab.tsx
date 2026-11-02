@@ -47,9 +47,9 @@ import { useFormatters } from "@/hooks/use-formatters";
 const priceSchema = z.object({
   name: z.string().trim().min(1).max(255),
   description: z.string().max(2000).optional().or(z.literal("")),
-  amount: z.coerce.number().min(0),
-  modality_id: z.coerce.number().int().optional().or(z.literal("")),
-  display_order: z.coerce.number().int().min(0),
+  amount: z.coerce.number<number>().min(0),
+  modality_id: z.coerce.number<number>().int().optional().or(z.literal("")),
+  display_order: z.coerce.number<number>().int().min(0),
   is_optional: z.boolean(),
   is_default: z.boolean(),
   valid_from: z.string().optional().or(z.literal("")),

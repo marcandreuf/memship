@@ -31,9 +31,9 @@ import { FormSkeleton } from "@/components/ui/skeletons";
 const paymentsSchema = z.object({
   // Invoicing
   invoice_prefix: z.string().min(1).max(10),
-  invoice_next_number: z.coerce.number().int().min(1),
+  invoice_next_number: z.coerce.number<number>().int().min(1),
   invoice_annual_reset: z.boolean(),
-  default_vat_rate: z.coerce.number().min(0).max(100),
+  default_vat_rate: z.coerce.number<number>().min(0).max(100),
   // Banking
   bank_name: z.string().max(255).optional().or(z.literal("")),
   bank_iban: z.string().max(34).optional().or(z.literal("")),

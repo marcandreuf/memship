@@ -82,7 +82,7 @@ const slotSchema = z
     all_day: z.boolean(),
     start_time: z.string(),
     end_time: z.string(),
-    capacity: z.coerce.number().int().min(1),
+    capacity: z.coerce.number<number>().int().min(1),
     // Empty means "use the space's price"; "0" means this slot is free. The two
     // are different answers, so the field stays a string until it is submitted.
     price: z
@@ -94,8 +94,8 @@ const slotSchema = z
     is_active: z.boolean(),
     repeat_enabled: z.boolean(),
     repeat_weekdays: z.array(z.number().int().min(0).max(6)),
-    repeat_interval: z.coerce.number().int().min(1).max(12),
-    repeat_count: z.coerce.number().int().min(1).max(52),
+    repeat_interval: z.coerce.number<number>().int().min(1).max(12),
+    repeat_count: z.coerce.number<number>().int().min(1).max(52),
     apply_to: z.enum(["one", "upcoming"]),
   })
   .superRefine((data, ctx) => {

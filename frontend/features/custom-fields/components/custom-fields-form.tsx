@@ -84,9 +84,9 @@ export function CustomFieldsForm({
   // Unlike every other form in the app, the shape isn't known at build time —
   // it's assembled from the definitions the API returned for this user.
   const schema = useMemo(() => {
-    const shape: Record<string, z.ZodTypeAny> = {};
+    const shape: Record<string, z.ZodType<FieldValue, FieldValue>> = {};
     for (const definition of writable) {
-      let field: z.ZodTypeAny;
+      let field: z.ZodType<string, string>;
       switch (definition.field_type) {
         case "boolean":
           // A checkbox always carries a value, so `required` is already met.
