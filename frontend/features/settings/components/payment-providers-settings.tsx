@@ -47,6 +47,7 @@ import type {
 } from "../services/payment-providers-api";
 import { useProviderErrors } from "../hooks/use-provider-errors";
 import { StoredSecretField } from "./stored-secret-field";
+import { WebhookEventsCard } from "./webhook-events-card";
 
 const STATUS_VARIANT: Record<string, "default" | "secondary" | "outline"> = {
   active: "default",
@@ -322,6 +323,8 @@ export function PaymentProvidersSettings() {
             )}
           </CardContent>
         </Card>
+
+        <WebhookEventsCard />
 
         {/* Create / Edit Dialog */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
