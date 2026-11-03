@@ -20,6 +20,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -42,6 +43,7 @@ import {
 } from "../hooks/use-activities";
 import type { ActivityData, ActivityModalityData, ActivityPriceData } from "../services/activities-api";
 import { useLocaleDate } from "@/hooks/use-locale-date";
+import { useMembershipTypes } from "@/features/members/hooks/use-members";
 import { useFormatters } from "@/hooks/use-formatters";
 
 const priceSchema = z.object({
@@ -52,6 +54,7 @@ const priceSchema = z.object({
   display_order: z.coerce.number<number>().int().min(0),
   is_optional: z.boolean(),
   is_default: z.boolean(),
+  membership_type_ids: z.array(z.number()),
   valid_from: z.string().optional().or(z.literal("")),
   valid_until: z.string().optional().or(z.literal("")),
 });
@@ -184,6 +187,9 @@ function PriceForm({
   const createMutation = useCreatePrice(activityId);
   const updateMutation = useUpdatePrice(activityId);
 
+  const { data: membershipTypes } = useMembershipTypes();
+  const activeTypes = (membershipTypes ?? []).filter((mt) => mt.is_active);
+
   const form = useForm<PriceFormValues>({
     resolver: useZodResolver(priceSchema),
     defaultValues: {
@@ -194,6 +200,7 @@ function PriceForm({
       display_order: price?.display_order ?? 1,
       is_optional: price?.is_optional ?? false,
       is_default: price?.is_default ?? false,
+      membership_type_ids: price?.membership_type_ids ?? [],
       valid_from: price?.valid_from ? toLocalDatetime(price.valid_from) : "",
       valid_until: price?.valid_until ? toLocalDatetime(price.valid_until) : "",
     },
@@ -206,6 +213,10 @@ function PriceForm({
       display_order: data.display_order,
       is_optional: data.is_optional,
       is_default: data.is_default,
+      // Sent even when empty. Empty means "every membership type", so clearing
+      // the selection has to reach the row — omitting it on an update would
+      // leave the previous restriction in place (#427).
+      membership_type_ids: data.membership_type_ids,
     };
     if (data.description) payload.description = data.description;
     if (data.modality_id !== "" && data.modality_id !== undefined) payload.modality_id = Number(data.modality_id);
@@ -277,6 +288,36 @@ function PriceForm({
           <FormItem className="flex items-center gap-2">
             <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
             <FormLabel className="!mt-0">{t("activities.prices.isOptional")}</FormLabel><FormMessage />
+          </FormItem>
+        )} />
+        <FormField control={form.control} name="membership_type_ids" render={({ field }) => (
+          <FormItem>
+            <FormLabel>{t("activities.prices.allowedTypes")}</FormLabel>
+            <FormDescription>{t("activities.prices.allowedTypesHint")}</FormDescription>
+            {activeTypes.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                {t("activities.prices.allowedTypesNone")}
+              </p>
+            ) : (
+              <div className="grid gap-2 sm:grid-cols-2">
+                {activeTypes.map((mt) => (
+                  <label key={mt.id} className="flex items-center gap-2 text-sm">
+                    <Checkbox
+                      checked={field.value.includes(mt.id)}
+                      onCheckedChange={(checked) =>
+                        field.onChange(
+                          checked
+                            ? [...field.value, mt.id]
+                            : field.value.filter((id) => id !== mt.id)
+                        )
+                      }
+                    />
+                    {mt.name}
+                  </label>
+                ))}
+              </div>
+            )}
+            <FormMessage />
           </FormItem>
         )} />
         <Button type="submit" disabled={isPending} className="w-full">

@@ -61,6 +61,10 @@ def _make_activity(**kwargs):
     activity.allowed_membership_types = kwargs.get("allowed_types", None)
     activity.min_age = kwargs.get("min_age", None)
     activity.max_age = kwargs.get("max_age", None)
+    # Set explicitly: a bare MagicMock attribute is truthy but iterates empty,
+    # which is not how any real Activity behaves and would read here as "has
+    # prices, none of them applicable" (#427).
+    activity.prices = kwargs.get("prices", [])
     return activity
 
 

@@ -55,6 +55,8 @@ class ActivityPriceCreate(BaseModel):
     is_optional: bool = False
     is_default: bool = False
     is_visible: bool = True
+    # Empty or omitted means every membership type (#427).
+    membership_type_ids: list[int] | None = None
     max_registrations: int | None = Field(default=None, ge=1)
     valid_from: datetime | None = None
     valid_until: datetime | None = None
@@ -75,6 +77,7 @@ class ActivityPriceUpdate(BaseModel):
     is_optional: bool | None = None
     is_default: bool | None = None
     is_visible: bool | None = None
+    membership_type_ids: list[int] | None = None
     max_registrations: int | None = Field(default=None, ge=1)
     valid_from: datetime | None = None
     valid_until: datetime | None = None
@@ -112,6 +115,7 @@ class ActivityPriceResponse(BaseModel):
     is_optional: bool
     is_default: bool
     is_visible: bool
+    membership_type_ids: list[int] | None = None
     max_registrations: int | None = None
     current_registrations: int = 0
     valid_from: datetime | None = None

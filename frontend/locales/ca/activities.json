@@ -4,6 +4,7 @@
       "not_open": "L'activitat no està oberta a inscripcions",
       "member_not_active": "La teva alta de soci no està activa",
       "membership_type_not_allowed": "El teu tipus de soci no té accés a aquesta activitat",
+      "no_price_for_membership_type": "No hi ha cap preu disponible per al teu tipus de soci: contacta amb el club",
       "birth_date_required": "Aquesta activitat té restricció d'edat: indica la teva data de naixement a El meu perfil",
       "below_min_age": "L'edat mínima és {min_age} anys",
       "above_max_age": "L'edat màxima és {max_age} anys",
@@ -107,7 +108,10 @@
       "free": "Gratuït",
       "vatBreakdown": "{base} + {rate}% IVA ({vat})",
       "confirmDelete": "Vols eliminar aquest preu?",
-      "confirmDeleteDescription": "Les inscripcions ja cobrades amb aquest preu no canvien."
+      "confirmDeleteDescription": "Les inscripcions ja cobrades amb aquest preu no canvien.",
+      "allowedTypes": "Tipus de soci",
+      "allowedTypesHint": "Deixa-ho tot sense marcar perquè aquest preu s'apliqui a tots els tipus de soci. Els socis el tipus dels quals no estigui seleccionat no el veuran.",
+      "allowedTypesNone": "Encara no hi ha tipus de soci actius"
     },
     "discounts": {
       "title": "Descomptes",
