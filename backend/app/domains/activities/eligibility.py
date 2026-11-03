@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from app.domains.activities.models import Activity, Registration
+from app.domains.activities.pricing import selectable_prices
 from app.domains.members.models import Member
 from app.domains.persons.age import age_restriction_problem
 
@@ -90,6 +91,27 @@ def check_eligibility(
     )
     if existing:
         result.add_reason("Already registered for this activity", "already_registered")
+
+    # 7. A price this member may actually hold
+    #
+    # Blocking is the decision taken on #427, over falling back to a default
+    # price. A fallback would charge a member an amount never meant for their
+    # type and hide the misconfiguration from the admin who caused it.
+    #
+    # It has to be a stated reason rather than a silent empty list, because the
+    # member portal now shows only the prices that apply to them: without this,
+    # a misconfigured activity renders as one with no prices and no explanation.
+    #
+    # Only when the activity **has** prices and none of them reach this member.
+    # An activity with no prices at all is a different situation, left exactly
+    # as it was: this reason would misdescribe it — nothing is being withheld
+    # from their type — and `price_id` is required on the register request, so
+    # such an activity was never registerable and nothing here changes that.
+    if activity.prices and not selectable_prices(activity, member):
+        result.add_reason(
+            "No price is available for your membership type",
+            "no_price_for_membership_type",
+        )
 
     return result
 

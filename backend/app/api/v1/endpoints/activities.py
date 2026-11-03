@@ -11,7 +11,7 @@ from app.core.pagination import paginate
 from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
 from app.domains.activities.models import Activity
-from app.domains.activities.pricing import priced
+from app.domains.activities.pricing import priced, prices_for_viewer
 from app.domains.activities.schemas import (
     ActivityCreate,
     ActivityListResponse,
@@ -31,7 +31,9 @@ from app.domains.auth.models import User
 router = APIRouter(prefix="/activities", tags=["activities"])
 
 
-def _to_response(db: Session, activity: Activity) -> ActivityResponse:
+def _to_response(
+    db: Session, activity: Activity, viewer: User | None = None
+) -> ActivityResponse:
     now = datetime.now(timezone.utc)
     available_spots = max(0, activity.max_participants - (activity.current_participants or 0))
     is_registration_open = (
@@ -81,7 +83,7 @@ def _to_response(db: Session, activity: Activity) -> ActivityResponse:
         created_at=activity.created_at,
         updated_at=activity.updated_at,
         modalities=[m for m in activity.modalities] if activity.modalities else [],
-        prices=[priced(db, activity, p) for p in activity.prices],
+        prices=[priced(db, activity, p) for p in prices_for_viewer(db, activity, viewer)],
     )
 
 
@@ -153,7 +155,11 @@ def get_activity(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_any_permission("activities.read", "self.activities.read")),
 ):
-    return _to_response(db, get_visible_activity_or_404(db, activity_id, current_user))
+    return _to_response(
+        db,
+        get_visible_activity_or_404(db, activity_id, current_user),
+        viewer=current_user,
+    )
 
 
 @router.post("/", response_model=ActivityResponse, status_code=status.HTTP_201_CREATED)

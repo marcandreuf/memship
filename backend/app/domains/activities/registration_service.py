@@ -27,6 +27,7 @@ from app.domains.activities.models import (
     Registration,
     RegistrationConsent,
 )
+from app.domains.activities.pricing import member_can_hold_price
 from app.domains.members.models import Member
 from app.domains.organizations.service import org_locale
 
@@ -88,17 +89,20 @@ def register_member(
     if not result.eligible:
         raise RegistrationError("; ".join(result.reasons))
 
-    # 2. Validate price belongs to this activity
+    # 2. Validate the price belongs to this activity *and* that this member may
+    #    hold it. The membership-type and visibility checks are deliberately
+    #    here rather than only in what the member was offered: `price_id` comes
+    #    straight from the request body, so a filter applied only on the way out
+    #    is a suggestion (#427, #510).
     price = (
         db.query(ActivityPrice)
         .filter(
             ActivityPrice.id == price_id,
             ActivityPrice.activity_id == activity.id,
-            ActivityPrice.is_active.is_(True),
         )
         .first()
     )
-    if not price:
+    if not price or not member_can_hold_price(price, member):
         raise RegistrationError("Invalid price for this activity")
 
     # 3. Validate modality if provided

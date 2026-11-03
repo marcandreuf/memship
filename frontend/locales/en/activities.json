@@ -4,6 +4,7 @@
       "not_open": "The activity is not open for registration",
       "member_not_active": "Your membership is not active",
       "membership_type_not_allowed": "Your membership type does not give access to this activity",
+      "no_price_for_membership_type": "No price is available for your membership type: please contact the club",
       "birth_date_required": "This activity has an age restriction: add your date of birth on My profile",
       "below_min_age": "The minimum age is {min_age}",
       "above_max_age": "The maximum age is {max_age}",
@@ -107,7 +108,10 @@
       "free": "Free",
       "vatBreakdown": "{base} + {rate}% VAT ({vat})",
       "confirmDelete": "Delete this price?",
-      "confirmDeleteDescription": "Registrations already charged at this price are unaffected."
+      "confirmDeleteDescription": "Registrations already charged at this price are unaffected.",
+      "allowedTypes": "Membership types",
+      "allowedTypesHint": "Leave all unchecked for this price to apply to every membership type. Members whose type is not selected will not be offered it.",
+      "allowedTypesNone": "No active membership types yet"
     },
     "discounts": {
       "title": "Discounts",
