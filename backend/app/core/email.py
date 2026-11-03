@@ -1173,6 +1173,9 @@ def send_receipt_delivery_email(
     org_name: str,
     pdf_bytes: bytes,
     locale: str = "es",
+    pay_now_url: str | None = None,
+    bank_details: str | None = None,
+    direct_debit: bool = False,
 ) -> bool:
     """Deliver a generated receipt PDF to the member it belongs to."""
     return _send_templated(
@@ -1185,6 +1188,9 @@ def send_receipt_delivery_email(
             "amount": amount,
             "currency": currency,
             "org_name": org_name,
+            "pay_now_url": pay_now_url,
+            "bank_details": bank_details,
+            "direct_debit": direct_debit,
         },
         subject_args={"receipt_number": receipt_number, "org_name": org_name},
         attachment=pdf_bytes,

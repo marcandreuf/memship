@@ -206,6 +206,7 @@ def send_receipt_email_task(self, receipt_id: int) -> bool:
     try:
         from app.db.session import SessionLocal
         from app.domains.billing.models import Receipt
+        from app.domains.billing.payment_instructions import delivery_instructions
         from app.domains.billing.pdf import generate_receipt_pdf
         from app.domains.members.models import Member
         from app.domains.organizations.models import OrganizationSettings
@@ -237,6 +238,7 @@ def send_receipt_email_task(self, receipt_id: int) -> bool:
             locale = org.locale or "es"
 
             pdf_bytes = generate_receipt_pdf(db, receipt)
+            instructions = delivery_instructions(db, receipt, org, locale)
 
             return send_receipt_delivery_email(
                 to=person.email,
@@ -247,6 +249,9 @@ def send_receipt_email_task(self, receipt_id: int) -> bool:
                 org_name=org.name,
                 pdf_bytes=pdf_bytes,
                 locale=locale,
+                pay_now_url=instructions.pay_now_url,
+                bank_details=instructions.bank_details,
+                direct_debit=instructions.direct_debit,
             )
         finally:
             db.close()
