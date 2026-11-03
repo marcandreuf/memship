@@ -8,7 +8,7 @@ from app.core.db_utils import get_or_404
 from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
 from app.domains.activities.models import Activity, ActivityModality, ActivityPrice
-from app.domains.activities.pricing import priced
+from app.domains.activities.pricing import priced, prices_for_viewer
 from app.domains.activities.schemas import (
     ActivityPriceCreate,
     ActivityPriceResponse,
@@ -31,9 +31,13 @@ def list_prices(
     query = db.query(ActivityPrice).filter(ActivityPrice.activity_id == activity_id)
     if modality_id is not None:
         query = query.filter(ActivityPrice.modality_id == modality_id)
+    rows = query.order_by(ActivityPrice.display_order).all()
+    # Same narrowing as the activity detail response: this route carries the
+    # same pair of permissions, so without it a member could read the prices
+    # their type is excluded from by asking for them directly (#427).
     return [
         priced(db, activity, p)
-        for p in query.order_by(ActivityPrice.display_order).all()
+        for p in prices_for_viewer(db, activity, current_user, rows)
     ]
 
 

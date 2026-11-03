@@ -137,6 +137,15 @@ class ActivityPrice(Base):
     is_optional = Column(Boolean, default=False)
     is_default = Column(Boolean, default=False)
     is_visible = Column(Boolean, default=True)
+    # Which membership types may hold this price. NULL or empty means every
+    # type, so every price that existed before this column keeps working and
+    # the migration needs no backfill (#427).
+    #
+    # An array rather than a join table, mirroring
+    # ``activities.allowed_membership_types``: a short list, read on every price
+    # render. The trade it inherits is that a deleted membership type leaves a
+    # stale id here, which reads as "no member matches" rather than as an error.
+    membership_type_ids = Column(ARRAY(Integer))
     max_registrations = Column(Integer)
     current_registrations = Column(Integer, default=0)
     valid_from = Column(DateTime(timezone=True))
