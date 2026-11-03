@@ -109,14 +109,20 @@ Three different kinds of thing live in this column, and they do not behave alike
 | `membership_lapse_grace_days` | value | **21** | days past due before a member lapses |
 | `booking_window_days` | value | **14** | how far ahead a member may book (1–365) |
 | `booking_cancellation_deadline_hours` | value | **24** | cancellation cut-off (0–8760) |
-| `booking_waitlist_enabled` | value | off | whether a full slot offers a waitlist |
+| `booking_waitlist_enabled` | value | **on** | whether a full slot offers a waitlist |
 | `billing_notification_email` | value | *unset* | where billing-run summaries go; no-op when unset, validated as an address on save |
 | `gender_options` | data | no options offered | the member form's gender field |
 
-The defaults above are not documentation-only — they are the literal fallbacks in
-`reminder_service.py`, `recurring_billing_service.py`, `lapse_service.py` and
-`bookings/rules.py`, and `backend/tests/integration/test_demo_data.py` fails if
-the seeded values and the code defaults ever drift apart.
+The defaults above are the literal fallbacks in `reminder_service.py`,
+`recurring_billing_service.py`, `lapse_service.py` and `bookings/rules.py`. Two
+tests in `backend/tests/integration/test_demo_data.py` guard them: one pins the
+six numeric defaults against what the demo seed writes, the other pins the three
+flags that are **on while absent**.
+
+Be precise about what that does and does not cover: both compare *code* against
+*code*. Neither reads this page, so a row here can still drift from the fallback
+it describes — which is what happened to `booking_waitlist_enabled`, listed as
+off for as long as the code defaulted it to on.
 
 ## Switching one off is not the same as never switching it on
 
