@@ -27,6 +27,7 @@
     "invalid": "Invalid card code",
     "notFound": "Member not found",
     "resultNumber": "No.",
+    "noType": "No type",
     "scanAnother": "Scan another"
   },
   "photo": {

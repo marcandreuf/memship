@@ -10,6 +10,7 @@ export interface CardData {
   member_id: number;
   full_name: string;
   member_number: string;
+  membership_type: string | null;
   status: string;
   photo_url: string | null;
   organization: CardOrganization;
@@ -24,6 +25,7 @@ export interface ScanResult {
   member_id: number;
   full_name: string;
   member_number: string;
+  membership_type: string | null;
   status: string;
   photo_url: string | null;
 }

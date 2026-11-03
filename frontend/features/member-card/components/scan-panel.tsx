@@ -193,6 +193,12 @@ export function ScanPanel() {
                 <p className="font-mono text-sm text-muted-foreground">
                   {t("scan.resultNumber")} {result.member_number}
                 </p>
+                {/* Stated even when absent, unlike on the card: whoever is
+                    checking needs "this member has no type" to be different from
+                    a line that failed to render. */}
+                <p className="truncate text-sm text-muted-foreground">
+                  {result.membership_type ?? t("scan.noType")}
+                </p>
               </div>
             </div>
             <Button type="button" variant="outline" className="w-full" onClick={reset}>

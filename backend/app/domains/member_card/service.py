@@ -41,7 +41,13 @@ def _organization(db: Session) -> OrganizationSettings | None:
 
 
 def build_card(db: Session, member: Member) -> dict:
-    """Assemble the card DTO for a member (name, number, status, branding, token)."""
+    """Assemble the card DTO for a member (name, number, type, status, branding, token).
+
+    ``membership_type`` is the type's name, or ``None``. It is nullable in the
+    column (`ondelete="SET NULL"`), so a staff-created record or one whose type
+    was deleted legitimately has none, and each surface decides how to render
+    that rather than printing an empty label (#428).
+    """
     person = member.person
     org = _organization(db)
     full_name = f"{person.first_name} {person.last_name}".strip()
@@ -49,6 +55,7 @@ def build_card(db: Session, member: Member) -> dict:
         "member_id": member.id,
         "full_name": full_name,
         "member_number": member.member_number or f"#{member.id}",
+        "membership_type": member.membership_type.name if member.membership_type else None,
         "status": member.status,
         "photo_url": person.photo_url,
         "organization": {
@@ -136,7 +143,7 @@ def verify_scan(db: Session, token: str) -> Member:
 
     member = (
         db.query(Member)
-        .options(joinedload(Member.person))
+        .options(joinedload(Member.person), joinedload(Member.membership_type))
         .filter(Member.id == member_id)
         .first()
     )
