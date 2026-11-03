@@ -101,6 +101,8 @@
     "fixed": "Fixed",
     "inRemittance": "In remittance",
     "inRemittanceSent": "sent to the bank, collection in progress",
-    "inRemittanceOpen": "not sent yet"
+    "inRemittanceOpen": "not sent yet",
+    "gatewayReference": "Gateway reference",
+    "gatewayReferenceHint": "The authorisation code (Redsys, Bizum) or the payment id (Stripe), as it appears on the bank's or the gateway's settlement."
   }
 }

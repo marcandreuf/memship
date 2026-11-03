@@ -61,6 +61,14 @@ class Concept(Base):
     receipts = relationship("Receipt", back_populates="concept")
 
 
+PAYMENT_METHODS = (
+    "cash", "bank_transfer", "card", "direct_debit", "stripe_checkout", "redsys", "bizum"
+)
+# Methods a gateway confirms. Asserting one by hand requires the gateway's own
+# reference, so the payment can still be matched to its settlement line (#426).
+GATEWAY_PAYMENT_METHODS = ("stripe_checkout", "redsys", "bizum")
+
+
 class Receipt(Base):
     """Individual billing document — one receipt per concept per member."""
 
@@ -75,7 +83,7 @@ class Receipt(Base):
             name="valid_receipt_origin",
         ),
         CheckConstraint(
-            "payment_method IN ('cash', 'bank_transfer', 'card', 'direct_debit', 'stripe_checkout', 'redsys', 'bizum') OR payment_method IS NULL",
+            f"payment_method IN ({', '.join(repr(m) for m in PAYMENT_METHODS)}) OR payment_method IS NULL",
             name="valid_payment_method",
         ),
         CheckConstraint(
