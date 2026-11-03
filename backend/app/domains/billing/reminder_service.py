@@ -22,18 +22,15 @@ from datetime import date, timedelta
 from sqlalchemy.orm import Session
 
 from app.core.clock import org_today
-from app.core.config import settings
 from app.core.email import EmailOutcome, send_payment_reminder_email
 from app.db.after_commit import run_after_commit
-from app.domains.billing.models import PaymentProvider, Receipt, ReceiptReminder
+from app.domains.billing.models import Receipt, ReceiptReminder
+from app.domains.billing.payment_instructions import PAYABLE_STATUSES, how_to_pay
 from app.domains.mailing.policy import is_enabled as template_enabled
 from app.domains.members.models import Member
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Person
 from app.domains.billing.rules import billing_int_rule
-
-# Receipt statuses that still owe money and can be reminded.
-PAYABLE_STATUSES = ("emitted", "overdue")
 
 # Statuses ``mark_overdue`` transitions once the due date has passed.
 OVERDUE_ELIGIBLE_STATUSES = ("pending", "emitted")
@@ -123,15 +120,6 @@ def reminders_due(
     return due
 
 
-def _has_active_online_provider(db: Session) -> bool:
-    return (
-        db.query(PaymentProvider)
-        .filter(PaymentProvider.status.in_(["active", "test"]))
-        .first()
-        is not None
-    )
-
-
 def _recipient(db: Session, receipt: Receipt) -> tuple[Person | None, OrganizationSettings | None]:
     member = (
         db.query(Member)
@@ -164,17 +152,7 @@ def _prepare_reminder(
     member_name = " ".join(filter(None, [person.first_name, person.last_name])) or person.email
     days_overdue = max(0, (today - receipt.due_date).days) if receipt.due_date else 0
 
-    pay_now_url = None
-    bank_details = None
-    if _has_active_online_provider(db):
-        # The member's own page, not /receipts — that one is the admin list,
-        # gated on `billing.read`, so the portal layout bounced the recipient of
-        # every reminder we sent straight to /dashboard. See
-        # frontend/lib/route-permissions.ts: /my-receipts wants
-        # `self.billing.read`, which is what a member actually holds.
-        pay_now_url = f"{settings.FRONTEND_URL}/{locale}/my-receipts"
-    elif org and org.bank_iban:
-        bank_details = " — ".join(filter(None, [org.bank_name, org.bank_iban]))
+    instructions = how_to_pay(db, org, locale)
 
     payload = dict(
         to=person.email,
@@ -185,8 +163,8 @@ def _prepare_reminder(
         due_date=receipt.due_date.isoformat() if receipt.due_date else "",
         days_overdue=days_overdue,
         org_name=org_name,
-        pay_now_url=pay_now_url,
-        bank_details=bank_details,
+        pay_now_url=instructions.pay_now_url,
+        bank_details=instructions.bank_details,
         locale=locale,
     )
     return person, payload
