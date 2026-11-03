@@ -28,6 +28,7 @@ export interface ActivityPriceData {
   is_optional: boolean;
   is_default: boolean;
   is_visible: boolean;
+  membership_type_ids: number[] | null;
   max_registrations: number | null;
   current_registrations: number;
   valid_from: string | null;

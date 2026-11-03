@@ -253,9 +253,13 @@ class TestItReportsWhatThisUpgradeActuallyExamined:
     """
 
     def test_it_counts_the_pending_migrations_not_the_whole_history(self, db_at_2_19):
+        """The number grows with every migration added after `db_at_2_19`, so
+        **bump it when you add one** — that is the cost of asserting the real
+        count rather than deriving it from the same code under test, and the
+        derived version would pass whatever the gate reported."""
         out = _preflight().stdout
 
-        assert "8 migrations pending" in out
+        assert "9 migrations pending" in out
 
     def test_it_says_plainly_that_none_declares_a_precondition(self, db_at_2_19):
         """The silence is the finding. A gate that examined nothing must not

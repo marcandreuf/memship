@@ -4,6 +4,7 @@
       "not_open": "La actividad no está abierta a inscripciones",
       "member_not_active": "Tu alta de socio no está activa",
       "membership_type_not_allowed": "Tu tipo de socio no tiene acceso a esta actividad",
+      "no_price_for_membership_type": "No hay ningún precio disponible para tu tipo de socio: contacta con el club",
       "birth_date_required": "Esta actividad tiene restricción de edad: indica tu fecha de nacimiento en Mi perfil",
       "below_min_age": "La edad mínima es {min_age} años",
       "above_max_age": "La edad máxima es {max_age} años",
@@ -107,7 +108,10 @@
       "free": "Gratis",
       "vatBreakdown": "{base} + {rate}% IVA ({vat})",
       "confirmDelete": "¿Eliminar este precio?",
-      "confirmDeleteDescription": "Las inscripciones ya cobradas con él no cambian."
+      "confirmDeleteDescription": "Las inscripciones ya cobradas con él no cambian.",
+      "allowedTypes": "Tipos de socio",
+      "allowedTypesHint": "Déjalo todo sin marcar para que este precio se aplique a todos los tipos de socio. Los socios cuyo tipo no esté seleccionado no lo verán.",
+      "allowedTypesNone": "Todavía no hay tipos de socio activos"
     },
     "discounts": {
       "title": "Descuentos",
