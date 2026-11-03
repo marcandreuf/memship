@@ -101,6 +101,8 @@
     "fixed": "Fix",
     "inRemittance": "A la remesa",
     "inRemittanceSent": "enviada al banc, cobrament en curs",
-    "inRemittanceOpen": "encara no enviada"
+    "inRemittanceOpen": "encara no enviada",
+    "gatewayReference": "Referència de la passarel·la",
+    "gatewayReferenceHint": "El codi d'autorització (Redsys, Bizum) o l'identificador del pagament (Stripe), tal com apareix a la liquidació del banc o de la passarel·la."
   }
 }

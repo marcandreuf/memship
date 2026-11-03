@@ -22,7 +22,7 @@ import {
   initiateRedsysPayment,
   getRedsysReturnStatus,
 } from "../services/receipts-api";
-import type { CreditNotePayload, RedsysMethod, RedsysLocale } from "../services/receipts-api";
+import type { CreditNotePayload, PayReceiptData, RedsysMethod, RedsysLocale } from "../services/receipts-api";
 
 export function useReceipts(params?: URLSearchParams, enabled = true) {
   return useQuery({
@@ -84,7 +84,7 @@ export function useEmitReceipt() {
 export function usePayReceipt() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: { payment_method: string; payment_date?: string } }) =>
+    mutationFn: ({ id, data }: { id: number; data: PayReceiptData }) =>
       payReceipt(id, data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["receipts"] }),
   });

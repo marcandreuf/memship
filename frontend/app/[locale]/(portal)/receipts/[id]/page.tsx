@@ -32,6 +32,7 @@ import {
   useReemitReceipt,
   useCreateCreditNote,
 } from "@/features/receipts/hooks/use-receipts";
+import { GATEWAY_PAYMENT_METHODS } from "@/features/receipts/services/receipts-api";
 import {
   useReceiptReminders,
   useSendReceiptReminder,
@@ -62,6 +63,9 @@ export default function ReceiptDetailPage() {
   const [creditOpen, setCreditOpen] = useState(false);
   const [payMethod, setPayMethod] = useState("");
   const [payDate, setPayDate] = useState(new Date().toISOString().split("T")[0]);
+  const [gatewayReference, setGatewayReference] = useState("");
+  const isGatewayMethod = (GATEWAY_PAYMENT_METHODS as readonly string[]).includes(payMethod);
+  const payReady = !!payMethod && (!isGatewayMethod || gatewayReference.trim() !== "");
   const [returnReason, setReturnReason] = useState("");
   const [creditReason, setCreditReason] = useState("");
   const [creditAmount, setCreditAmount] = useState("");
@@ -124,9 +128,16 @@ export default function ReceiptDetailPage() {
   }
 
   async function handlePay() {
-    if (!payMethod) return;
+    if (!payReady) return;
     try {
-      await payMutation.mutateAsync({ id: receipt!.id, data: { payment_method: payMethod, payment_date: payDate || undefined } });
+      await payMutation.mutateAsync({
+        id: receipt!.id,
+        data: {
+          payment_method: payMethod,
+          payment_date: payDate || undefined,
+          gateway_reference: isGatewayMethod ? gatewayReference.trim() : undefined,
+        },
+      });
       toast.success(t("toast.success.saved"));
       setPayOpen(false);
     } catch { /* global handler */ }
@@ -233,6 +244,9 @@ export default function ReceiptDetailPage() {
   if (receipt.payment_method) {
     fields.push({ label: t("receipts.paymentMethod"), value: t(`receipts.method${receipt.payment_method.split("_").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join("")}`) });
     fields.push({ label: t("receipts.paymentDate"), value: formatDate(receipt.payment_date) });
+    if (receipt.transaction_id) {
+      fields.push({ label: t("receipts.gatewayReference"), value: receipt.transaction_id });
+    }
   }
 
   if (receipt.return_reason) {
@@ -371,14 +385,32 @@ export default function ReceiptDetailPage() {
                   <SelectItem value="bank_transfer">{t("receipts.methodBankTransfer")}</SelectItem>
                   <SelectItem value="card">{t("receipts.methodCard")}</SelectItem>
                   <SelectItem value="direct_debit">{t("receipts.methodDirectDebit")}</SelectItem>
+                  <SelectItem value="redsys">{t("receipts.methodRedsys")}</SelectItem>
+                  <SelectItem value="bizum">{t("receipts.methodBizum")}</SelectItem>
+                  <SelectItem value="stripe_checkout">{t("receipts.methodStripeCheckout")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+            {isGatewayMethod && (
+              <div className="space-y-1">
+                <label htmlFor="gateway-reference" className="text-sm font-medium">
+                  {t("receipts.gatewayReference")}
+                </label>
+                <Input
+                  id="gateway-reference"
+                  value={gatewayReference}
+                  onChange={(e) => setGatewayReference(e.target.value)}
+                  maxLength={255}
+                  required
+                />
+                <p className="text-xs text-muted-foreground">{t("receipts.gatewayReferenceHint")}</p>
+              </div>
+            )}
             <div>
               <label className="text-sm font-medium">{t("receipts.paymentDate")}</label>
               <Input type="date" value={payDate} onChange={(e) => setPayDate(e.target.value)} />
             </div>
-            <Button onClick={handlePay} disabled={!payMethod || payMutation.isPending} className="w-full">
+            <Button onClick={handlePay} disabled={!payReady || payMutation.isPending} className="w-full">
               {payMutation.isPending ? t("common.loading") : t("receipts.markPaid")}
             </Button>
           </div>
