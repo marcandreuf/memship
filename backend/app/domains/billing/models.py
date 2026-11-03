@@ -480,13 +480,16 @@ class PaymentProvider(Base):
     )
 
 
+WEBHOOK_EVENT_STATUSES = ("received", "processed", "failed", "ignored")
+
+
 class WebhookEvent(Base):
     """Incoming webhook event — audit log and idempotency dedup."""
 
     __tablename__ = "webhook_events"
     __table_args__ = (
         CheckConstraint(
-            "status IN ('received', 'processed', 'failed', 'ignored')",
+            f"status IN ({', '.join(repr(s) for s in WEBHOOK_EVENT_STATUSES)})",
             name="valid_webhook_event_status",
         ),
         Index("ix_webhook_events_provider_status", "provider_type", "status"),
