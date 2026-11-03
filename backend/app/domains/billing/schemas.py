@@ -3,7 +3,9 @@
 from datetime import date, datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from app.domains.billing.models import GATEWAY_PAYMENT_METHODS, PAYMENT_METHODS
 
 from app.core.schema_types import NonBlank, refuse_null
 from app.core.sepa_identifiers import (  # noqa: F401  (re-exported)
@@ -102,8 +104,34 @@ class ReceiptUpdate(BaseModel):
 
 
 class ReceiptPayRequest(BaseModel):
-    payment_method: str = Field(pattern=r"^(cash|bank_transfer|card|direct_debit|stripe_checkout)$")
+    """An administrator recording a payment by hand.
+
+    The methods are the ones the receipts table accepts. A gateway method is
+    the recovery path for a payment the gateway took but whose notification
+    never applied (#426), and must carry the gateway's reference — the Redsys
+    authorisation code, the Stripe payment intent — so "a person says so" can
+    still be matched to what the bank says.
+    """
+
+    payment_method: str
     payment_date: date | None = None
+    gateway_reference: NonBlank(255) | None = None
+
+    @field_validator("payment_method")
+    @classmethod
+    def _known_method(cls, value: str) -> str:
+        if value not in PAYMENT_METHODS:
+            raise ValueError(f"Unknown payment method: {value}")
+        return value
+
+    @model_validator(mode="after")
+    def _reference_matches_method(self) -> "ReceiptPayRequest":
+        is_gateway = self.payment_method in GATEWAY_PAYMENT_METHODS
+        if is_gateway and self.gateway_reference is None:
+            raise ValueError("A gateway payment needs the gateway's reference")
+        if not is_gateway and self.gateway_reference is not None:
+            raise ValueError("Only a gateway payment carries a gateway reference")
+        return self
 
 
 class ReceiptReturnRequest(BaseModel):

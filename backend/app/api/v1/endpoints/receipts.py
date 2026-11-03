@@ -468,6 +468,7 @@ def pay_receipt_endpoint(
         receipt,
         payment_method=data.payment_method,
         payment_date=data.payment_date,
+        transaction_id=data.gateway_reference,
         # An administrator asserting a settlement, not money arriving on its
         # own — so a receipt already out for direct debit is refused, and one
         # in a batch still being assembled leaves it (#383).

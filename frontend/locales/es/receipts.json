@@ -101,6 +101,8 @@
     "fixed": "Fijo",
     "inRemittance": "En remesa",
     "inRemittanceSent": "enviada al banco, cobro en curso",
-    "inRemittanceOpen": "aún no enviada"
+    "inRemittanceOpen": "aún no enviada",
+    "gatewayReference": "Referencia de la pasarela",
+    "gatewayReferenceHint": "El código de autorización (Redsys, Bizum) o el identificador del pago (Stripe), tal como aparece en la liquidación del banco o de la pasarela."
   }
 }
