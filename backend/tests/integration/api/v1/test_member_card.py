@@ -51,7 +51,16 @@ def _create_admin(db, email="admin-card@examplee6e3b1.com"):
     return user
 
 
-def _create_member_user(db, email="member-card@examplee6e3b1.com", status="active", number="SCB-0001"):
+def _create_member_user(
+    db,
+    email="member-card@examplee6e3b1.com",
+    status="active",
+    number="SCB-0001",
+    type_name=None,
+    with_type=True,
+):
+    """``with_type=False`` leaves `membership_type_id` null, which the column
+    allows (`ondelete="SET NULL"`) and a staff-created record really has."""
     person = Person(first_name="Mika", last_name="Roig", email=email)
     db.add(person)
     db.flush()
@@ -65,15 +74,25 @@ def _create_member_user(db, email="member-card@examplee6e3b1.com", status="activ
     db.add(user)
     db.flush()
 
-    mt = db.query(MembershipType).first()
-    if not mt:
-        mt = MembershipType(name="General", slug="general", is_active=True)
-        db.add(mt)
-        db.flush()
+    mt = None
+    if with_type and type_name:
+        mt = db.query(MembershipType).filter(MembershipType.name == type_name).first()
+        if not mt:
+            mt = MembershipType(
+                name=type_name, slug=type_name.lower().replace(" ", "-"), is_active=True
+            )
+            db.add(mt)
+            db.flush()
+    elif with_type:
+        mt = db.query(MembershipType).first()
+        if not mt:
+            mt = MembershipType(name="General", slug="general", is_active=True)
+            db.add(mt)
+            db.flush()
 
     member = Member(
         party_id=person.party_id,
-        membership_type_id=mt.id,
+        membership_type_id=mt.id if mt else None,
         member_number=number,
         status=status,
     )
@@ -373,3 +392,120 @@ class TestMemberNumbering:
 
         resp = client.post("/api/v1/members/assign-numbers")
         assert resp.status_code == 403
+
+
+class TestTheCardShowsTheMembershipType:
+    """Part 1 of #428. The card carried name, number, status, photo and branding
+    but never the type, so every card looked the same whoever held it — and an
+    organisation with a free supporter tier beside a full one could not tell them
+    apart at its own door.
+
+    Unconditional on purpose: it is information the holder and the person
+    checking both want, and it does not touch the per-type issuing question that
+    Part 2 settles.
+    """
+
+    def test_my_card_carries_the_type_name(self, client, db):
+        _ensure_org(db, prefix="SCB-")
+        user, _ = _create_member_user(db, type_name="Student")
+        client.cookies.update(_auth_cookie(user))
+
+        resp = client.get("/api/v1/me/card")
+
+        assert resp.status_code == 200
+        assert resp.json()["membership_type"] == "Student"
+
+    def test_the_admin_card_carries_the_type_name(self, client, db):
+        _ensure_org(db)
+        admin = _create_admin(db)
+        _, member = _create_member_user(
+            db, email="type-admin@examplee6e3b1.com", type_name="Honorary"
+        )
+        client.cookies.update(_auth_cookie(admin))
+
+        resp = client.get(f"/api/v1/members/{member.id}/card")
+
+        assert resp.status_code == 200
+        assert resp.json()["membership_type"] == "Honorary"
+
+    def test_the_scan_result_carries_the_type_name(self, client, db):
+        """The readout whoever is checking the card actually looks at."""
+        _ensure_org(db)
+        admin = _create_admin(db)
+        _, member = _create_member_user(
+            db, email="type-scan@examplee6e3b1.com", type_name="Supporter"
+        )
+        client.cookies.update(_auth_cookie(admin))
+
+        resp = client.post(
+            "/api/v1/card/scan", json={"token": sign_card_token(member.id)}
+        )
+
+        assert resp.status_code == 200
+        assert resp.json()["membership_type"] == "Supporter"
+
+    def test_a_member_with_no_type_is_served_rather_than_refused(self, client, db):
+        """`membership_type_id` is nullable, so this is a legitimate record and
+        not a broken one: a staff-created member, or one whose type was deleted.
+
+        All three surfaces answer 200 with an explicit null. Reading
+        `member.membership_type.name` unguarded would raise `AttributeError` here
+        and turn a member's own card into a 500.
+        """
+        _ensure_org(db)
+        admin = _create_admin(db)
+        user, member = _create_member_user(
+            db, email="type-none@examplee6e3b1.com", with_type=False
+        )
+
+        client.cookies.update(_auth_cookie(user))
+        mine = client.get("/api/v1/me/card")
+
+        client.cookies.clear()
+        client.cookies.update(_auth_cookie(admin))
+        as_admin = client.get(f"/api/v1/members/{member.id}/card")
+        scanned = client.post(
+            "/api/v1/card/scan", json={"token": sign_card_token(member.id)}
+        )
+
+        for label, resp in (("me", mine), ("admin", as_admin), ("scan", scanned)):
+            assert resp.status_code == 200, f"{label} answered {resp.status_code}"
+            assert resp.json()["membership_type"] is None, label
+
+
+class TestThePrintedCardShowsTheMembershipType:
+    """The PDF is rendered from `member_card.html` through the same Jinja
+    environment the service uses, so the template is asserted directly rather
+    than through WeasyPrint's output bytes — a type name is not reliably
+    greppable in a compressed PDF, and the question here is what the template
+    emits."""
+
+    def _render(self, membership_type):
+        from app.domains.member_card.service import _env
+
+        return _env.get_template("member_card.html").render(
+            card={
+                "full_name": "Mika Roig",
+                "member_number": "SCB-0001",
+                "membership_type": membership_type,
+                "status": "active",
+                "organization": {"name": "Test Club", "brand_color": "#0083ad"},
+            },
+            qr_svg="<svg></svg>",
+            photo_data_uri=None,
+            initials="MR",
+        )
+
+    def test_the_type_is_printed(self):
+        assert "Student" in self._render("Student")
+
+    def test_no_type_prints_no_line_at_all(self):
+        """Omitted rather than printed empty or as "no type": the card is a
+        credential, and a blank tier line on one reads as a misprint. The scan
+        readout makes the opposite choice on purpose, because whoever is checking
+        needs "this member has no type" to differ from a line that did not
+        render."""
+        html = self._render(None)
+
+        assert 'class="type"' not in html
+        assert "SCB-0001" in html, "the number should still render"

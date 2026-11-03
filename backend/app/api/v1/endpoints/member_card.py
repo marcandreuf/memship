@@ -46,7 +46,7 @@ def _require_card_enabled(db: Session) -> None:
 def _load_member_or_404(db: Session, member_id: int) -> Member:
     member = (
         db.query(Member)
-        .options(joinedload(Member.person))
+        .options(joinedload(Member.person), joinedload(Member.membership_type))
         .filter(Member.id == member_id)
         .first()
     )
@@ -122,6 +122,7 @@ def scan_card(
         member_id=member.id,
         full_name=f"{person.first_name} {person.last_name}".strip(),
         member_number=member.member_number or f"#{member.id}",
+        membership_type=member.membership_type.name if member.membership_type else None,
         status=member.status,
         photo_url=person.photo_url,
     )

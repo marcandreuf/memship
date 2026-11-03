@@ -70,6 +70,12 @@ export function MemberCard({
             <p className="font-mono text-sm tracking-wider text-muted-foreground">
               {card.member_number}
             </p>
+            {/* Omitted when the member has no type. The card is a credential, and
+                a blank or "no type" line on one reads as a fault rather than a
+                fact — unlike the scan readout, where staff need the distinction. */}
+            {card.membership_type ? (
+              <p className="truncate text-sm text-muted-foreground">{card.membership_type}</p>
+            ) : null}
           </div>
         </div>
 
