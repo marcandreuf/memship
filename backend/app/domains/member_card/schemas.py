@@ -13,6 +13,7 @@ class CardResponse(BaseModel):
     member_id: int
     full_name: str
     member_number: str
+    membership_type: str | None = None
     status: str
     photo_url: str | None = None
     organization: CardOrganization
@@ -27,6 +28,7 @@ class ScanResponse(BaseModel):
     member_id: int
     full_name: str
     member_number: str
+    membership_type: str | None = None
     status: str
     photo_url: str | None = None
 

@@ -27,6 +27,7 @@
     "invalid": "Código de tarjeta no válido",
     "notFound": "Socio no encontrado",
     "resultNumber": "Nº",
+    "noType": "Sin tipo",
     "scanAnother": "Escanear otro"
   },
   "photo": {
