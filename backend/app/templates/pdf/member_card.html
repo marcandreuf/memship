@@ -30,6 +30,9 @@
   }
   .details .name { font-size: 13pt; font-weight: bold; margin: 0 0 1mm 0; }
   .details .number { font-size: 9pt; font-family: monospace; color: #555; letter-spacing: 1px; }
+  /* Omitted entirely when the member has no type, rather than printed empty:
+     the card is a credential and a blank tier line reads as a misprint. */
+  .details .type { font-size: 8pt; color: #555; margin: 1mm 0 0 0; }
   .qr { width: 22mm; height: 22mm; }
   .qr svg { width: 22mm; height: 22mm; }
 </style>
@@ -50,6 +53,7 @@
         <div class="details">
           <p class="name">{{ card.full_name }}</p>
           <div class="number">{{ card.member_number }}</div>
+          {% if card.membership_type %}<p class="type">{{ card.membership_type }}</p>{% endif %}
         </div>
       </div>
       <div class="qr">{{ qr_svg | safe }}</div>

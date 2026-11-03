@@ -27,6 +27,7 @@
     "invalid": "Codi de targeta no vàlid",
     "notFound": "Soci no trobat",
     "resultNumber": "Núm.",
+    "noType": "Sense tipus",
     "scanAnother": "Escaneja un altre"
   },
   "photo": {
