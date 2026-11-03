@@ -26,6 +26,7 @@
     "cameraError": "Could not access the camera.",
     "invalid": "Invalid card code",
     "notFound": "Member not found",
+    "stale": "This card is no longer valid",
     "resultNumber": "No.",
     "noType": "No type",
     "scanAnother": "Scan another"

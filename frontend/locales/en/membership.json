@@ -30,6 +30,10 @@
       "quarterly": "Quarterly",
       "annual": "Annual",
       "one_time": "One-off"
+    },
+    "types": {
+      "issuesCard": "Issues a member card",
+      "issuesCardHint": "Only members on a type with this switched on are issued a card. Off for every type until you turn it on."
     }
   }
 }

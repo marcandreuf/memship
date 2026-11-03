@@ -71,6 +71,7 @@ export interface MembershipTypeData {
   max_age: number | null;
   is_active: boolean;
   is_default: boolean;
+  issues_card: boolean;
   created_at: string;
 }
 

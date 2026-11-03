@@ -59,6 +59,12 @@ class UserResponse(BaseModel):
     # Drives the portal's "awaiting approval" gate — None for staff accounts
     # that have no member record.
     member_status: str | None = None
+    # Whether to offer this account the card at all: the instance flag *and*
+    # their own type's switch (#428 Part 2). Resolved here, beside
+    # `member_status`, because the portal already gates on member-derived facts
+    # from this response and the alternative is the nav probing an endpoint that
+    # answers 404 by design.
+    has_member_card: bool = False
     # Session window, in seconds, and how far into it an active client renews.
     # Resolved here so the frontend never has to duplicate the arithmetic behind
     # ACCESS_TOKEN_EXPIRE_MINUTES / SESSION_REFRESH_PERCENT.

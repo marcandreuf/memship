@@ -19,6 +19,8 @@ from app.domains.member_card.schemas import (
     ScanResponse,
 )
 from app.domains.member_card.service import (
+    CardNotIssued,
+    member_is_issued_a_card,
     CardMemberNotFound,
     InvalidCardToken,
     build_card,
@@ -40,6 +42,20 @@ def _require_card_enabled(db: Session) -> None:
     )
     features = (org.features or {}) if org else {}
     if not features.get("member_card"):
+        raise HTTPException(status_code=404, detail="Not found")
+
+
+def _require_card_for(member: Member) -> None:
+    """404 unless this member's type issues a card (#428 Part 2).
+
+    The same shape and the same status as the instance-wide gate above, and for
+    the same reason: a card this member does not have should be absent, not
+    forbidden. Called on every route after the member is resolved — the
+    member-facing ones against the caller, the admin ones against the *target*,
+    or the admin PDF would stay a way to produce a card the policy says should
+    not exist.
+    """
+    if not member_is_issued_a_card(member):
         raise HTTPException(status_code=404, detail="Not found")
 
 
@@ -80,6 +96,7 @@ def get_my_card(
 ):
     _require_card_enabled(db)
     member = current_member_or_403(db, current_user)
+    _require_card_for(member)
     return build_card(db, member)
 
 
@@ -90,6 +107,7 @@ def get_my_card_qr(
 ):
     _require_card_enabled(db)
     member = current_member_or_403(db, current_user)
+    _require_card_for(member)
     return _qr_response(member)
 
 
@@ -100,6 +118,7 @@ def get_my_card_pdf(
 ):
     _require_card_enabled(db)
     member = current_member_or_403(db, current_user)
+    _require_card_for(member)
     return _pdf_response(db, member)
 
 
@@ -116,6 +135,12 @@ def scan_card(
         raise HTTPException(status_code=400, detail="Invalid card code")
     except CardMemberNotFound:
         raise HTTPException(status_code=404, detail="Member not found")
+    except CardNotIssued:
+        # 410: the token was genuine and the member exists, but the card is no
+        # longer issued to their type. Distinct from both neighbours so the
+        # person at the door is told the card is stale rather than that the
+        # member is unknown or the code is forged.
+        raise HTTPException(status_code=410, detail="Card is no longer valid")
 
     person = member.person
     return ScanResponse(
@@ -139,6 +164,7 @@ def get_member_card_admin(
 ):
     _require_card_enabled(db)
     member = _load_member_or_404(db, member_id)
+    _require_card_for(member)
     return build_card(db, member)
 
 
@@ -150,6 +176,7 @@ def get_member_card_qr_admin(
 ):
     _require_card_enabled(db)
     member = _load_member_or_404(db, member_id)
+    _require_card_for(member)
     return _qr_response(member)
 
 
@@ -161,4 +188,5 @@ def get_member_card_pdf_admin(
 ):
     _require_card_enabled(db)
     member = _load_member_or_404(db, member_id)
+    _require_card_for(member)
     return _pdf_response(db, member)

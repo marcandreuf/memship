@@ -99,7 +99,23 @@ def _member(db, email=f"flag-member{SUFFIX}") -> Member:
     person = Person(first_name="Flag", last_name="Member", email=email)
     db.add(person)
     db.flush()
+    # The card is issued per membership type since #428 Part 2, off by default,
+    # so this member needs a type that issues one — otherwise the `member_card`
+    # row below would 404 for the per-type reason and its reachable-while-on
+    # half would stop proving that the **flag** is a working module gate.
+    #
+    # Created rather than only opted in: this suite runs against a freshly
+    # migrated database with no seed data, so there is no type to find.
     mtype = db.query(MembershipType).first()
+    if mtype is None:
+        mtype = MembershipType(
+            name="Flag Tier", slug="flag-tier", is_active=True, issues_card=True
+        )
+        db.add(mtype)
+        db.flush()
+    else:
+        mtype.issues_card = True
+        db.flush()
     member = Member(
         party_id=person.party_id,
         membership_type_id=mtype.id if mtype else None,
