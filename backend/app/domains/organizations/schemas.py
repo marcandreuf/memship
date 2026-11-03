@@ -13,6 +13,8 @@ from app.core.sepa_identifiers import (
 )
 from app.domains.billing.rules import validate_billing_rules
 from app.domains.bookings.rules import validate_booking_rules
+from app.domains.organizations.feature_keys import FEATURE_KEYS
+from app.domains.shared.feature_rules import validate_known_keys
 
 
 class OrganizationSettingsResponse(BaseModel):
@@ -113,15 +115,18 @@ class OrganizationSettingsUpdate(BaseModel):
     @field_validator("features")
     @classmethod
     def _check_feature_values(cls, v: dict | None) -> dict | None:
-        """Refuse an invalid configuration value before it reaches the row.
+        """Refuse an unrecognised key or an invalid value before it reaches the row.
 
-        Each domain owns the keys it reads, so the validators are per domain
-        rather than one list here. A key no validator claims is not refused by
-        this; that is #494.
+        The key check runs first: a misspelled flag name is a wrong key rather
+        than a wrong value, and no per-domain validator would claim it to say so.
+        Each domain then owns the values it reads, so those validators stay per
+        domain rather than collapsing into one list here.
         """
         if v is None:
             return v
-        return validate_billing_rules(validate_booking_rules(v))
+        validate_known_keys(v, FEATURE_KEYS)
+        validate_booking_rules(v)
+        return validate_billing_rules(v)
 
     # Normalisation first, so an IBAN pasted in groups of four off a bank
     # statement is not refused over whitespace, and an empty field still clears.

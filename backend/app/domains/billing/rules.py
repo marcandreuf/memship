@@ -19,6 +19,7 @@ from app.domains.shared.feature_rules import (
     IntRules,
     int_rule,
     validate_bool_keys,
+    validate_email_keys,
     validate_int_rules,
 )
 
@@ -86,10 +87,30 @@ BOOL_KEYS = frozenset(
 )
 
 
+#: Addresses this domain stores in ``features``. The notification address was
+#: the one address the product stored without validating, so a typo in it meant
+#: the billing summary silently never arrived: the send is deliberately
+#: best-effort, so a malformed address raises nothing a user sees and the only
+#: record is a log line nobody reads until they are already looking (#495).
+#:
+#: Save-side only, like the booleans. A read-side fallback is not available
+#: here: there is no default address to fall back *to*, and silently not
+#: sending is what the defect already does.
+EMAIL_KEYS = frozenset({"billing_notification_email"})
+
+#: Every key this domain owns, for the canonical set in
+#: ``domains/organizations/feature_keys.py`` (#494). This domain has no module
+#: gate: billing is not optional on an instance.
+FEATURE_KEYS = (
+    frozenset(INT_RULES) | frozenset(SAVE_ONLY_INT_RULES) | BOOL_KEYS | EMAIL_KEYS
+)
+
+
 def validate_billing_rules(features: dict) -> dict:
     validate_int_rules(features, INT_RULES)
     validate_int_rules(features, SAVE_ONLY_INT_RULES)
-    return validate_bool_keys(features, BOOL_KEYS)
+    validate_bool_keys(features, BOOL_KEYS)
+    return validate_email_keys(features, EMAIL_KEYS)
 
 
 def billing_int_rule(features: dict, key: str) -> int:
