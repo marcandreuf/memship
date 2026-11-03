@@ -13,7 +13,7 @@ import { TableSkeleton } from "@/components/ui/skeletons";
 import { Pagination } from "@/components/entity/pagination";
 import { Link } from "@/lib/i18n/routing";
 import { formatDateTime } from "@/lib/formatters";
-import { useWebhookEvents } from "../hooks/use-payment-providers";
+import { useWebhookEvents, useWebhookRejections } from "../hooks/use-payment-providers";
 import type { WebhookEvent, WebhookEventStatus } from "../services/payment-providers-api";
 
 const NEEDS_A_LOOK: WebhookEventStatus[] = ["failed", "ignored"];
@@ -62,6 +62,7 @@ export function WebhookEventsCard() {
         </div>
       </CardHeader>
       <CardContent className="px-4 pb-3 pt-0 space-y-3">
+        <Rejections />
         {isLoading ? (
           <TableSkeleton rows={3} columns={6} />
         ) : events.length === 0 ? (
@@ -127,6 +128,47 @@ export function WebhookEventsCard() {
         )}
       </CardContent>
     </Card>
+  );
+}
+
+/**
+ * Notifications refused at the signature check (#514). They are counted, not
+ * stored, so they never appear in the table — and a count that keeps rising
+ * means every real payment confirmation is being refused.
+ */
+function Rejections() {
+  const t = useTranslations();
+  const { data } = useWebhookRejections();
+  if (!data) return null;
+  if (!data.available) {
+    return (
+      <p className="text-xs text-muted-foreground">
+        {t("settings.providers.webhookEvents.rejectedUnavailable")}
+      </p>
+    );
+  }
+  if (data.items.length === 0) return null;
+  return (
+    <div
+      role="alert"
+      data-testid="webhook-rejections"
+      className="rounded-md border border-destructive/50 bg-destructive/5 p-3 text-sm space-y-1"
+    >
+      {data.items.map((item) => (
+        <p key={item.provider_type}>
+          {t("settings.providers.webhookEvents.rejected", {
+            provider: item.provider_type,
+            count: item.count,
+            days: data.days,
+            at: formatDateTime(item.last_at),
+            reason: item.last_reason ?? "—",
+          })}
+        </p>
+      ))}
+      <p className="text-xs text-muted-foreground">
+        {t("settings.providers.webhookEvents.rejectedHint")}
+      </p>
+    </div>
   );
 }
 

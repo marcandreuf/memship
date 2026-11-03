@@ -124,7 +124,10 @@
           "processed": "Processada",
           "failed": "Fallida",
           "ignored": "Ignorada"
-        }
+        },
+        "rejected": "{provider}: {count, plural, one {# notificació rebutjada} other {# notificacions rebutjades}} per la signatura en els darrers {days} dies. Darrera: {at} — {reason}",
+        "rejectedHint": "Si continuen arribant, la clau del webhook configurada no és la correcta i no s'està confirmant cap pagament.",
+        "rejectedUnavailable": "No s'ha pogut llegir el recompte de notificacions rebutjades."
       }
     },
     "recurringBilling": {
@@ -391,6 +394,10 @@
         "announcement": {
           "name": "Anuncis",
           "description": "Difusió dels anuncis que envien els administradors."
+        },
+        "webhook_digest": {
+          "name": "Incidències en notificacions de pagament",
+          "description": "Resum diari, a l'adreça de notificacions de facturació, dels avisos de pagament fallits, ignorats o rebutjats."
         }
       }
     },

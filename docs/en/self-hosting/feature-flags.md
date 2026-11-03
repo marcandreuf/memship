@@ -110,7 +110,7 @@ Three different kinds of thing live in this column, and they do not behave alike
 | `booking_window_days` | value | **14** | how far ahead a member may book (1–365) |
 | `booking_cancellation_deadline_hours` | value | **24** | cancellation cut-off (0–8760) |
 | `booking_waitlist_enabled` | value | **on** | whether a full slot offers a waitlist |
-| `billing_notification_email` | value | *unset* | where billing-run summaries go; no-op when unset, validated as an address on save |
+| `billing_notification_email` | value | *unset* | where billing-run summaries and the daily payment-notification digest go; no-op when unset, validated as an address on save |
 | `gender_options` | data | no options offered | the member form's gender field |
 
 The defaults above are the literal fallbacks in `reminder_service.py`,

@@ -56,6 +56,13 @@ from app.core.security import rate_limit as _rate_limit  # noqa: E402
 
 _rate_limit.KEY_PREFIX = f"memship:throttle:test:{os.getenv('PYTEST_XDIST_WORKER', 'main')}"
 
+# Rejected-webhook counts live in the same Redis; same reason for a prefix.
+from app.domains.billing import webhook_rejections as _webhook_rejections  # noqa: E402
+
+_webhook_rejections.KEY_PREFIX = (
+    f"memship:webhook-rejections:test:{os.getenv('PYTEST_XDIST_WORKER', 'main')}"
+)
+
 from app.main import app  # noqa: E402
 
 # Stub password hashing for tests: use fast argon2 params and cache results.

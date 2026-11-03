@@ -76,6 +76,22 @@ export interface WebhookEventListResponse {
   meta: { page: number; per_page: number; total: number; total_pages: number };
 }
 
+/** Notifications refused at the signature check; never recorded as events. */
+export interface WebhookRejections {
+  available: boolean;
+  days: number;
+  items: {
+    provider_type: string;
+    count: number;
+    last_at: string | null;
+    last_reason: string | null;
+  }[];
+}
+
+export async function getWebhookRejections(): Promise<WebhookRejections> {
+  return apiClient("/payment-providers/webhook-rejections");
+}
+
 export async function getWebhookEvents(
   statuses: WebhookEventStatus[],
   page: number

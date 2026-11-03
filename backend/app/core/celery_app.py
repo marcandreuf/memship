@@ -44,6 +44,10 @@ celery.conf.beat_schedule = {
         "task": "app.tasks.billing_tasks.scheduled_membership_lapse",
         "schedule": crontab(hour=4, minute=0),
     },
+    "scheduled-webhook-digest": {
+        "task": "app.tasks.billing_tasks.scheduled_webhook_digest",
+        "schedule": crontab(hour=7, minute=0),
+    },
 }
 
 # Load every model so the SQLAlchemy mapper registry is fully configured in the

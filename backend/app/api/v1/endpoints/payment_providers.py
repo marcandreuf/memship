@@ -1,5 +1,7 @@
 """Payment provider management endpoints (super_admin only)."""
 
+from datetime import datetime, timedelta, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session, joinedload
 
@@ -15,6 +17,7 @@ from app.domains.billing.models import (
     Receipt,
     WebhookEvent,
 )
+from app.domains.billing import webhook_rejections
 from app.domains.billing.provider_config import (
     AVAILABLE_PROVIDER_TYPES,
     PROVIDER_CONFIG_SCHEMAS,
@@ -211,6 +214,36 @@ def list_webhook_events(
             for e in items
         ],
         "meta": meta.model_dump(),
+    }
+
+
+@router.get("/webhook-rejections", response_model=dict)
+def list_webhook_rejections(
+    days: int = Query(7, ge=1, le=30),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("settings.integrations.write")),
+):
+    """Notifications refused at the signature check, counted per provider (#514).
+
+    They never become `webhook-events` rows. A count that keeps rising is the
+    sign of a wrong webhook secret — every real payment confirmation is being
+    refused. `available` is false when the counts cannot be read.
+    """
+    provider_types = [t for (t,) in db.query(PaymentProvider.provider_type).distinct()]
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+    summaries = webhook_rejections.rejection_summaries(provider_types, since)
+    return {
+        "available": summaries is not None,
+        "days": days,
+        "items": [
+            {
+                "provider_type": s.provider_type,
+                "count": s.count,
+                "last_at": s.last_at.isoformat() if s.last_at else None,
+                "last_reason": s.last_reason,
+            }
+            for s in summaries or []
+        ],
     }
 
 

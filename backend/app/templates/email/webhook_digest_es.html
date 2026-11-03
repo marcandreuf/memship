@@ -1,0 +1,25 @@
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}Hay notificaciones de pago de las últimas 24 horas que necesitan revisión.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Notificaciones de pago con incidencias</h1>
+<p style="{{ s.p }}">En las últimas 24 horas, algunas notificaciones de las pasarelas de pago no se aplicaron. Revísalas en Ajustes → Proveedores de pago.</p>
+{%- if rejections %}
+<p style="{{ s.p }}"><strong>Rechazadas por la firma.</strong> Si siguen llegando, la clave del webhook configurada no es la correcta y ningún pago se está confirmando.</p>
+{% call c.panel() %}
+{% for r in rejections %}{{ c.data_row(r.provider, r.count ~ " — " ~ r.last_reason) }}{% endfor %}
+{% endcall %}
+{%- endif %}
+{%- if events %}
+<p style="{{ s.p }}"><strong>Fallidas o ignoradas ({{ events_total }}).</strong> Una ignorada sobre un recibo ya pagado puede ser un doble cobro.</p>
+{% call c.panel() %}
+{% for e in events %}{{ c.data_row(e.at ~ " · " ~ e.provider, (e.receipt_number ~ " — " if e.receipt_number else "") ~ {"failed": "fallida", "ignored": "ignorada"}.get(e.status, e.status) ~ (": " ~ e.reason if e.reason else "")) }}{% endfor %}
+{% endcall %}
+{%- if events_hidden %}
+<p style="{{ s.p }}">Y {{ events_hidden }} más.</p>
+{%- endif %}
+{%- endif %}
+<p style="{{ s.note_last }}">Recibes este correo porque esta dirección es la de notificaciones de facturación.</p>
+{% endblock %}
