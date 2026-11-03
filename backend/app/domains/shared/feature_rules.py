@@ -1,4 +1,4 @@
-"""Validating the integer values an organization configures in ``features``.
+"""Validating what an organization configures in ``features``.
 
 ``features`` is free-form JSON on a single row, so a value there is checked
 twice: on the way in, where an invalid one is refused, and on the way out, where
@@ -13,9 +13,18 @@ silently change behaviour on an instance that had configured the edge. The bound
 here are wide enough that no value a real instance could plausibly hold changes
 meaning; the fallback is for wrong types and absurd values, not for tightening
 policy after the fact.
+
+The key names are checked too, against the canonical set assembled in
+``domains/organizations/feature_keys.py``, and that half is save-side only: the
+endpoint merges after the schema runs, so a stray key stored before the check
+existed is never re-validated. See ``validate_known_keys``.
 """
 
 from typing import Any
+
+from pydantic import TypeAdapter, ValidationError
+
+from app.core.schema_types import Email
 
 #: key -> (default, minimum, maximum)
 IntRules = dict[str, tuple[int, int, int]]
@@ -64,4 +73,63 @@ def validate_bool_keys(features: dict, keys: frozenset[str]) -> dict:
     for key in sorted(keys):
         if key in features and not isinstance(features[key], bool):
             raise ValueError(f"{key} must be true or false")
+    return features
+
+
+def validate_known_keys(features: dict, keys: frozenset[str]) -> dict:
+    """Refuse a key the product does not define, leaving stored strays alone.
+
+    The counterpart of the value checks above, and the reason those were not
+    enough on their own: ``PUT /settings/`` merges sparsely, so a key nothing
+    recognises is written and then kept forever (#494). A typo in a flag name
+    answers 200, configures nothing, and leaves no record of why.
+
+    The rule is **"an unknown key is refused", never "all known keys are
+    required"**. A fresh install stores a subset of the set and the rest resolve
+    through their read-side defaults, so absence is legitimate and must stay
+    legitimate.
+
+    This validates the request body, not the row. The merge in
+    ``api/v1/endpoints/settings.py`` runs *after* the schema, so only the keys a
+    request actually carries reach here and a stray already in ``features`` is
+    never re-validated. That is deliberate: an instance holding one can still
+    save an unrelated flag, and dropping it would mean deleting data nobody has
+    surveyed for no gain this refusal does not already provide.
+    """
+    unknown = sorted(set(features) - keys)
+    if unknown:
+        raise ValueError(f"unrecognised feature keys: {', '.join(unknown)}")
+    return features
+
+
+_EMAIL = TypeAdapter(Email)
+
+
+def validate_email_keys(features: dict, keys: frozenset[str]) -> dict:
+    """Validate and normalise an address stored in ``features``.
+
+    ``features`` bypasses the schema types entirely, so an address living in it
+    gets none of the checks every other address in the product receives (#495).
+    This routes it through the same shared ``Email`` annotation rather than a
+    second, looser rule: normalise first, then the anchored ASCII pattern.
+
+    ``Email`` is ASCII-only because a login address is folded by both
+    ``str.lower()`` and Postgres ``lower()`` and the two agree on little else
+    (#242). No key here has a uniqueness index, so none of them needs that
+    restriction, but reuse is cheaper than a second address rule that would be
+    free to disagree with the first.
+
+    Unset stays unset. ``None`` and ``""`` are left alone, because every read is
+    guarded by truthiness and both already mean "send no notification"; an admin
+    clearing the field must not be refused.
+
+    The normalised value is written back, so what is stored is what the mail
+    transport will be handed.
+    """
+    for key in sorted(keys):
+        if key in features and features[key] not in (None, ""):
+            try:
+                features[key] = _EMAIL.validate_python(features[key])
+            except ValidationError as exc:
+                raise ValueError(f"{key} must be a valid email address") from exc
     return features

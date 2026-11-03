@@ -110,7 +110,7 @@ Three different kinds of thing live in this column, and they do not behave alike
 | `booking_window_days` | value | **14** | how far ahead a member may book (1–365) |
 | `booking_cancellation_deadline_hours` | value | **24** | cancellation cut-off (0–8760) |
 | `booking_waitlist_enabled` | value | off | whether a full slot offers a waitlist |
-| `billing_notification_email` | value | *unset* | where billing-run summaries go; no-op when unset |
+| `billing_notification_email` | value | *unset* | where billing-run summaries go; no-op when unset, validated as an address on save |
 | `gender_options` | data | no options offered | the member form's gender field |
 
 The defaults above are not documentation-only — they are the literal fallbacks in
@@ -121,11 +121,38 @@ the seeded values and the code defaults ever drift apart.
 ## Switching one off is not the same as never switching it on
 
 A **value** has no off state and no redirect. Setting `reminder_max_count` to
-something out of range is a different situation from leaving it absent: the
-booking rules range-check on save and fall back to the default rather than
-raising, but not every value does. If you are reviewing this area, a value needs
+something out of range is a different situation from leaving it absent: every
+value is range-checked on save and refused with a 422, and the ones read through
+a registry also fall back to their default rather than raising if an older
+instance already has a bad one stored. If you are reviewing this area, a value needs
 to be looked at for *what the screen does with a nonsensical number*, which is
 not a gesture the gates need at all.
+
+## A key this page does not list is refused
+
+The twenty-one above are the whole set, and `PUT /api/v1/settings/` answers
+**422** for anything else, naming the key it did not recognise.
+
+This matters if you configure an instance through the API rather than the admin
+screens. Before it was enforced, a misspelled flag name was accepted, stored and
+silently did nothing: the update merges sparsely, so whatever key the request
+carried was written and then kept forever, with nothing anywhere to say the
+setting had no effect. `booking_window_day` for `booking_window_days` cost
+exactly that.
+
+Two consequences worth knowing:
+
+- **Absence is still fine.** The rule is that an unknown key is refused, never
+  that every known key is required. A fresh install stores a subset and the rest
+  resolve through the defaults in the table above.
+- **Send only the keys you are changing.** A key already in the column from
+  before this was enforced is left alone, so an instance holding one keeps
+  working — but a client that reads the whole `features` dict and posts it back
+  re-sends that key and will be refused. Posting back a snapshot was never
+  necessary, because the endpoint merges.
+
+If you need somewhere to put values of your own, `custom_settings` is a separate
+column on the same row and accepts anything.
 
 ## One name collision worth knowing
 
