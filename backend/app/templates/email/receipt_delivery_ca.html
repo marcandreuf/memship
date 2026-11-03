@@ -11,5 +11,17 @@
 {{ c.data_row("Rebut", receipt_number) }}
 {{ c.data_row("Import", amount ~ " " ~ currency) }}
 {% endcall %}
+{%- if direct_debit %}
+<p style="{{ s.p }}">Aquest rebut es carregarà al teu compte per domiciliació bancària.</p>
+{%- elif pay_now_url %}
+{{ c.button(pay_now_url, "Pagar ara") }}
+{%- elif bank_details %}
+<p style="{{ s.p }}">Pots fer el pagament mitjançant transferència bancària:</p>
+{% call c.panel() %}
+<tr><td colspan="2" class="ms-text" style="padding:3px 0; font-family:Helvetica,Arial,sans-serif; font-size:15px; line-height:22px; mso-line-height-rule:exactly; color:#1f2328;">
+{%- for line in bank_details.split("\n") %}{{ line }}<br>{% endfor -%}
+</td></tr>
+{% endcall %}
+{%- endif %}
 <p style="{{ s.note_last }}">El rebut va adjunt a aquest correu en format PDF.</p>
 {% endblock %}

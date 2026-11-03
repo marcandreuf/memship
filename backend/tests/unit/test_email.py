@@ -530,3 +530,66 @@ class TestApprovedEmailResult:
             result = send_registration_approved_email("u@example.com", "Ana", "M-1", LOGIN_URL)
         send.assert_not_called()
         assert result == EmailResult(EmailOutcome.SUPPRESSED)
+
+
+RECEIPT_DELIVERY = {
+    "member_name": "María",
+    "receipt_number": "FAC-2026-0117",
+    "amount": "50.00",
+    "currency": "EUR",
+    "org_name": "Club Sant Jordi",
+}
+PAY_URL = "https://club.test/es/my-receipts"
+IBAN = "Caixa Test — ES9121000418450200051332"
+
+
+class TestReceiptDeliveryTemplate:
+    """The email that delivers a receipt says how to pay it (#436).
+
+    It used to carry no link at all, so a member paying by card was first asked
+    to pay by the overdue reminder ten days later.
+    """
+
+    @pytest.mark.parametrize(
+        "locale,label", [("es", "Pagar ahora"), ("ca", "Pagar ara"), ("en", "Pay now")]
+    )
+    def test_a_pay_button_when_an_online_provider_is_live(self, locale, label):
+        html = render_template(
+            "receipt_delivery", locale, dict(RECEIPT_DELIVERY, pay_now_url=PAY_URL)
+        )
+        assert label in html
+        assert f'href="{PAY_URL}"' in html
+
+    @pytest.mark.parametrize("locale", ["es", "ca", "en"])
+    def test_bank_details_when_there_is_only_an_iban(self, locale):
+        html = render_template(
+            "receipt_delivery", locale, dict(RECEIPT_DELIVERY, bank_details=IBAN)
+        )
+        assert "ES9121000418450200051332" in html
+        assert "my-receipts" not in html
+
+    @pytest.mark.parametrize(
+        "locale,note",
+        [
+            ("es", "domiciliación bancaria"),
+            ("ca", "domiciliació bancària"),
+            ("en", "direct debit"),
+        ],
+    )
+    def test_a_direct_debit_receipt_says_so_instead_of_asking(self, locale, note):
+        # Both are passed to prove the debit note wins: a member whose bank
+        # will collect must not also be offered a way to pay it themselves.
+        context = dict(
+            RECEIPT_DELIVERY, direct_debit=True, pay_now_url=PAY_URL, bank_details=IBAN
+        )
+        html = render_template("receipt_delivery", locale, context)
+        assert note in html
+        assert PAY_URL not in html
+        assert "ES9121000418450200051332" not in html
+
+    @pytest.mark.parametrize("locale", ["es", "ca", "en"])
+    def test_nothing_to_pay_renders_no_payment_block(self, locale):
+        html = render_template("receipt_delivery", locale, dict(RECEIPT_DELIVERY))
+        assert "FAC-2026-0117" in html
+        assert "my-receipts" not in html
+        assert "ES9121000418450200051332" not in html
