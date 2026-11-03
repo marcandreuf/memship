@@ -197,26 +197,37 @@ class TestFeatureFlagSeeding:
         demo_data.seed_demo_data(db, membership_type, created_by=None)
         assert set(_features(db)) == ALL_FEATURE_FLAGS
 
-    def test_two_flags_are_on_while_absent(self, db):
+    def test_three_flags_are_on_while_absent(self, db):
         """#317 read the nineteen absent flags as nineteen modules switched off.
 
-        Two of them are not. `get_registration_settings` reads both with a `True`
-        default, so sign-up is open *by policy* on a fresh install and each one
-        lands in the pending-approval queue.
+        Three of them are not. `get_registration_settings` reads two with a
+        `True` default, so sign-up is open *by policy* on a fresh install and
+        each one lands in the pending-approval queue.
 
         Open by policy is not open in practice: `POST /auth/register` still 503s
         until a mail transport is configured (`test_stuck_without_mail.py`), and
         on a clean install that is the answer a visitor actually gets. This pins
-        the default; that pins the guard. Both are in
-        docs/en/self-hosting/feature-flags.md.
+        the default; that pins the guard.
+
+        The third is `booking_waitlist_enabled`, read as
+        `bool(features.get(key, True))`, so a full slot offers a waitlist on an
+        instance that has never touched settings. It was absent from this test
+        and documented as off for as long as it defaulted to on (#505) — which
+        is the whole reason the count is in the name: a fourth such flag has to
+        either join the assertion or rename the test.
+
+        All three are in docs/en/self-hosting/feature-flags.md.
         """
         from app.domains.auth.service import get_registration_settings
+        from app.domains.bookings.service import _waitlist_enabled
 
         _base_install(db)
         absent = _features(db)
         assert "public_registration" not in absent
         assert "registration_requires_approval" not in absent
         assert get_registration_settings(db) == (True, True)
+        assert "booking_waitlist_enabled" not in absent
+        assert _waitlist_enabled(db) is True
 
     def test_seeding_features_twice_changes_nothing(self, db):
         _base_install(db)
