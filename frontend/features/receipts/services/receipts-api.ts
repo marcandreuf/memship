@@ -95,7 +95,16 @@ export async function emitReceipt(id: number): Promise<ReceiptData> {
   return apiClient(`/receipts/${id}/emit`, { method: "POST" });
 }
 
-export async function payReceipt(id: number, data: { payment_method: string; payment_date?: string }): Promise<ReceiptData> {
+/** Methods a gateway confirms; recording one by hand needs the gateway's reference (#426). */
+export const GATEWAY_PAYMENT_METHODS = ["redsys", "bizum", "stripe_checkout"] as const;
+
+export interface PayReceiptData {
+  payment_method: string;
+  payment_date?: string;
+  gateway_reference?: string;
+}
+
+export async function payReceipt(id: number, data: PayReceiptData): Promise<ReceiptData> {
   return apiClient(`/receipts/${id}/pay`, {
     method: "POST",
     body: JSON.stringify(data),

@@ -3,10 +3,19 @@
 from datetime import date, timedelta
 from decimal import Decimal
 
+import pytest
+from sqlalchemy import CheckConstraint
+
 from app.core.security.jwt import create_access_token
 from app.core.security.password import hash_password
 from app.domains.auth.models import User
-from app.domains.billing.models import Concept, Receipt
+from app.domains.billing.models import (
+    GATEWAY_PAYMENT_METHODS,
+    PAYMENT_METHODS,
+    Concept,
+    Receipt,
+)
+from app.domains.billing.schemas import ReceiptPayRequest
 from app.domains.members.models import Member, MembershipType
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Address, Party, Person
@@ -400,6 +409,84 @@ class TestReceiptStatusTransitions:
         assert data["status"] == "paid"
         assert data["payment_method"] == "cash"
         assert data["payment_date"] == "2026-03-26"
+
+    @pytest.mark.parametrize(
+        "method,reference",
+        [("redsys", "123456"), ("bizum", "654321"), ("stripe_checkout", "pi_3Abc")],
+    )
+    def test_a_gateway_payment_is_reconciled_with_its_reference(
+        self, client, db, method, reference
+    ):
+        """The recovery path when the gateway took the money and its
+        notification never applied: the true method, plus the reference that
+        matches it to the settlement line (#426)."""
+        receipt, user = self._create_receipt(client, db, f"gw-{method.replace('_', '-')}")
+        client.post(f"/api/v1/receipts/{receipt['id']}/emit", cookies=_auth_cookie(user))
+
+        resp = client.post(
+            f"/api/v1/receipts/{receipt['id']}/pay",
+            json={"payment_method": method, "gateway_reference": f"  {reference} "},
+            cookies=_auth_cookie(user),
+        )
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["status"] == "paid"
+        assert data["payment_method"] == method
+        assert data["transaction_id"] == reference
+
+    @pytest.mark.parametrize("reference", [None, "", "   "])
+    def test_a_gateway_payment_without_a_reference_is_refused(self, client, db, reference):
+        receipt, user = self._create_receipt(client, db, f"gw-noref-{len(reference or '')}-{reference is None}".lower())
+        client.post(f"/api/v1/receipts/{receipt['id']}/emit", cookies=_auth_cookie(user))
+        body = {"payment_method": "redsys"}
+        if reference is not None:
+            body["gateway_reference"] = reference
+
+        resp = client.post(
+            f"/api/v1/receipts/{receipt['id']}/pay", json=body, cookies=_auth_cookie(user)
+        )
+
+        assert resp.status_code == 422
+        assert client.get(
+            f"/api/v1/receipts/{receipt['id']}", cookies=_auth_cookie(user)
+        ).json()["status"] == "emitted"
+
+    def test_a_reference_on_a_non_gateway_payment_is_refused(self, client, db):
+        receipt, user = self._create_receipt(client, db, "cash-ref")
+        client.post(f"/api/v1/receipts/{receipt['id']}/emit", cookies=_auth_cookie(user))
+
+        resp = client.post(
+            f"/api/v1/receipts/{receipt['id']}/pay",
+            json={"payment_method": "cash", "gateway_reference": "123456"},
+            cookies=_auth_cookie(user),
+        )
+
+        assert resp.status_code == 422
+
+    def test_an_unknown_method_is_refused(self, client, db):
+        receipt, user = self._create_receipt(client, db, "unknown-method")
+        client.post(f"/api/v1/receipts/{receipt['id']}/emit", cookies=_auth_cookie(user))
+
+        resp = client.post(
+            f"/api/v1/receipts/{receipt['id']}/pay",
+            json={"payment_method": "paypal"},
+            cookies=_auth_cookie(user),
+        )
+
+        assert resp.status_code == 422
+
+    def test_the_pay_request_accepts_every_method_the_table_does(self):
+        """The two lists used to disagree silently: the table stored `redsys`
+        and `bizum`, the endpoint refused them."""
+        check = next(
+            c for c in Receipt.__table__.constraints
+            if isinstance(c, CheckConstraint) and c.name == "valid_payment_method"
+        )
+        for method in PAYMENT_METHODS:
+            assert f"'{method}'" in str(check.sqltext)
+            reference = "x" if method in GATEWAY_PAYMENT_METHODS else None
+            ReceiptPayRequest(payment_method=method, gateway_reference=reference)
 
     def test_return_receipt(self, client, db):
         receipt, user = self._create_receipt(client, db, "ret")
