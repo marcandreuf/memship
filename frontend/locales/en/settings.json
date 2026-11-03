@@ -107,6 +107,24 @@
         "connection_failed": "Could not reach the provider",
         "cannot_clear_stored_secret": "{field} cannot be emptied — paste the new value over it, or delete the provider",
         "prefix_only": "{field} is only the prefix — paste the whole key"
+      },
+      "webhookEvents": {
+        "title": "Payment notifications",
+        "description": "Gateway notifications that could not be applied or were ignored. An ignored notification for an already-paid receipt may be a double charge.",
+        "empty": "No failed or ignored notifications",
+        "showAll": "Also show processed ones",
+        "date": "Date",
+        "provider": "Provider",
+        "eventType": "Event",
+        "status": "Status",
+        "receipt": "Receipt",
+        "reason": "Reason",
+        "statuses": {
+          "received": "Received",
+          "processed": "Processed",
+          "failed": "Failed",
+          "ignored": "Ignored"
+        }
       }
     },
     "recurringBilling": {

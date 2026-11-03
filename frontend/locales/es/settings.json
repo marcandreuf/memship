@@ -107,6 +107,24 @@
         "connection_failed": "No se ha podido conectar con el proveedor",
         "cannot_clear_stored_secret": "{field} no se puede vaciar: pega el valor nuevo encima o elimina el proveedor",
         "prefix_only": "{field} solo contiene el prefijo: pega la clave completa"
+      },
+      "webhookEvents": {
+        "title": "Notificaciones de pago",
+        "description": "Avisos de las pasarelas que no se pudieron aplicar o que se ignoraron. Un aviso ignorado sobre un recibo ya pagado puede ser un doble cobro.",
+        "empty": "No hay notificaciones fallidas ni ignoradas",
+        "showAll": "Mostrar también las procesadas",
+        "date": "Fecha",
+        "provider": "Proveedor",
+        "eventType": "Evento",
+        "status": "Estado",
+        "receipt": "Recibo",
+        "reason": "Motivo",
+        "statuses": {
+          "received": "Recibida",
+          "processed": "Procesada",
+          "failed": "Fallida",
+          "ignored": "Ignorada"
+        }
       }
     },
     "recurringBilling": {

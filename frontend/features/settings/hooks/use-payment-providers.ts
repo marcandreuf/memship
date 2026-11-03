@@ -10,7 +10,16 @@ import {
   testPaymentProvider,
   getProviderTypes,
   getActivePaymentMethods,
+  getWebhookEvents,
+  type WebhookEventStatus,
 } from "../services/payment-providers-api";
+
+export function useWebhookEvents(statuses: WebhookEventStatus[], page: number) {
+  return useQuery({
+    queryKey: ["payment-providers", "webhook-events", statuses, page],
+    queryFn: () => getWebhookEvents(statuses, page),
+  });
+}
 
 export function usePaymentProviders() {
   return useQuery({

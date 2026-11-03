@@ -55,6 +55,36 @@ export async function getPaymentProviders(): Promise<PaymentProviderListResponse
   return apiClient("/payment-providers");
 }
 
+export type WebhookEventStatus = "received" | "processed" | "failed" | "ignored";
+
+/** A recorded gateway notification. The payload is deliberately not returned. */
+export interface WebhookEvent {
+  id: number;
+  provider_type: string;
+  external_event_id: string;
+  event_type: string;
+  status: WebhookEventStatus;
+  error_message: string | null;
+  receipt_id: number | null;
+  receipt_number: string | null;
+  created_at: string | null;
+  processed_at: string | null;
+}
+
+export interface WebhookEventListResponse {
+  items: WebhookEvent[];
+  meta: { page: number; per_page: number; total: number; total_pages: number };
+}
+
+export async function getWebhookEvents(
+  statuses: WebhookEventStatus[],
+  page: number
+): Promise<WebhookEventListResponse> {
+  const params = new URLSearchParams({ page: String(page) });
+  for (const s of statuses) params.append("status", s);
+  return apiClient(`/payment-providers/webhook-events?${params}`);
+}
+
 export interface ActivePaymentMethod {
   provider_type: string;
   status: string;

@@ -1,7 +1,7 @@
 """Payment provider management endpoints (super_admin only)."""
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.core.authorization import require_any_permission, require_permission
 from app.core.encryption import decrypt_config, encrypt_config, mask_config
@@ -9,7 +9,12 @@ from app.core.pagination import paginate
 from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
 from app.domains.auth.models import User
-from app.domains.billing.models import PaymentProvider, Receipt
+from app.domains.billing.models import (
+    WEBHOOK_EVENT_STATUSES,
+    PaymentProvider,
+    Receipt,
+    WebhookEvent,
+)
 from app.domains.billing.provider_config import (
     AVAILABLE_PROVIDER_TYPES,
     PROVIDER_CONFIG_SCHEMAS,
@@ -23,6 +28,7 @@ from app.domains.billing.schemas import (
     PaymentProviderCreate,
     PaymentProviderResponse,
     PaymentProviderUpdate,
+    WebhookEventResponse,
 )
 
 router = APIRouter(prefix="/payment-providers", tags=["payment-providers"])
@@ -161,6 +167,49 @@ def list_providers(
 
     return {
         "items": [_mask_provider(p) for p in items],
+        "meta": meta.model_dump(),
+    }
+
+
+@router.get("/webhook-events", response_model=dict)
+def list_webhook_events(
+    status_filter: list[str] = Query(["failed", "ignored"], alias="status"),
+    provider_type: str | None = Query(None),
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("settings.integrations.write")),
+):
+    """Recorded payment notifications, newest first — `failed` and `ignored` by default.
+
+    The table was built to answer "what failed?" and nothing read it (#435). An
+    `ignored` row is the one most worth a look: it is how a second charge for an
+    already-paid receipt is recorded, so the member may have paid twice.
+    """
+    unknown = set(status_filter) - set(WEBHOOK_EVENT_STATUSES)
+    if unknown:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Unknown status: {', '.join(sorted(unknown))}",
+        )
+    query = (
+        db.query(WebhookEvent)
+        .options(joinedload(WebhookEvent.receipt))
+        .filter(WebhookEvent.status.in_(status_filter))
+    )
+    if provider_type:
+        query = query.filter(WebhookEvent.provider_type == provider_type)
+    items, meta = paginate(
+        query.order_by(WebhookEvent.created_at.desc(), WebhookEvent.id.desc()), page, per_page
+    )
+
+    return {
+        "items": [
+            WebhookEventResponse.model_validate(e)
+            .model_copy(update={"receipt_number": e.receipt.receipt_number if e.receipt else None})
+            .model_dump(mode="json")
+            for e in items
+        ],
         "meta": meta.model_dump(),
     }
 

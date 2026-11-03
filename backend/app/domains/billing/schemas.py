@@ -383,6 +383,28 @@ class PaymentProviderResponse(BaseModel):
     updated_at: datetime | None = None
 
 
+class WebhookEventResponse(BaseModel):
+    """A recorded payment notification, without its payload.
+
+    The payload is what the gateway sent — card holder, email, amounts — and an
+    administrator asking "what failed?" needs the outcome and the reason, not a
+    copy of the member's data on another screen.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    provider_type: str
+    external_event_id: str
+    event_type: str
+    status: str
+    error_message: str | None = None
+    receipt_id: int | None = None
+    receipt_number: str | None = None
+    created_at: datetime | None = None
+    processed_at: datetime | None = None
+
+
 # --- Billing Run schemas (recurring billing) ---
 
 

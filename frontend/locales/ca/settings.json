@@ -107,6 +107,24 @@
         "connection_failed": "No s'ha pogut connectar amb el proveïdor",
         "cannot_clear_stored_secret": "{field} no es pot buidar: enganxa-hi el valor nou a sobre o elimina el proveïdor",
         "prefix_only": "{field} només conté el prefix: enganxa la clau completa"
+      },
+      "webhookEvents": {
+        "title": "Notificacions de pagament",
+        "description": "Avisos de les passarel·les que no s'han pogut aplicar o que s'han ignorat. Un avís ignorat sobre un rebut ja pagat pot ser un doble cobrament.",
+        "empty": "No hi ha notificacions fallides ni ignorades",
+        "showAll": "Mostra també les processades",
+        "date": "Data",
+        "provider": "Proveïdor",
+        "eventType": "Esdeveniment",
+        "status": "Estat",
+        "receipt": "Rebut",
+        "reason": "Motiu",
+        "statuses": {
+          "received": "Rebuda",
+          "processed": "Processada",
+          "failed": "Fallida",
+          "ignored": "Ignorada"
+        }
       }
     },
     "recurringBilling": {
