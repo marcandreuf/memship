@@ -86,9 +86,10 @@ que las pasarelas enviaron y memship no aplicó:
 - **Rechazadas por la firma** — un recuento por proveedor encima de la lista. Si no para de
   crecer, la clave configurada no es la correcta y no se está confirmando ningún pago.
 
-Para recibir un aviso, indica la dirección de notificaciones de facturación y activa
-**Incidencias en notificaciones de pago** en Ajustes → Comunicaciones: llega un correo al día,
-solo si en las últimas 24 horas hubo algo.
+Para recibir un aviso, indica la dirección de notificaciones de facturación: llega un correo al
+día, solo si en las últimas 24 horas hubo algo. Es **Incidencias en notificaciones de pago** en
+Ajustes → Comunicaciones: activado por defecto en una instalación nueva, y se puede desactivar
+ahí. Una instalación anterior empieza con él desactivado; actívalo ahí.
 
 Si la pasarela cobró y el recibo sigue pendiente, márcalo como pagado eligiendo Redsys, Bizum o
 Stripe: memship pide la **referencia de la pasarela** (el código de autorización o el

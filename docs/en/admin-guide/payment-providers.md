@@ -249,7 +249,7 @@ Under the providers, **Payment notifications** lists what the gateways sent that
 - **Ignored** — memship received it and deliberately did nothing: an event type it does not handle, a wrong amount, or a payment for a receipt **already paid**. That last one is how a double charge shows up — the member paid twice and the second payment needs refunding at the gateway.
 - **Refused at the signature check** — shown as a count per provider above the list, with the last reason. These are never stored, because nothing in an unverified message can be trusted. A count that keeps rising means the configured secret is wrong and **no** payment is being confirmed.
 
-To be told rather than having to look, set the billing notification address and switch on **Payment notification problems** under Settings → Communications. memship then sends one email a day, only when something went wrong in the previous 24 hours.
+To be told rather than having to look, set the billing notification address. memship then sends one email a day, only when something went wrong in the previous 24 hours. The email is **Payment notification problems** under Settings → Communications: on by default on a new install, and switchable there. An install that predates it starts with it off — switch it on there.
 
 If the gateway took the money and the receipt is still unpaid, mark it paid by hand choosing Redsys, Bizum or Stripe as the method: memship asks for the gateway reference (the authorisation code or payment id from the settlement) so the payment can still be matched to the bank.
 
