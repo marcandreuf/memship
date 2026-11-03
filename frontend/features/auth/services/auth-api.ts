@@ -30,6 +30,7 @@ export interface User {
   email_verified: boolean;
   /** null for staff accounts that have no member record */
   member_status: MemberStatus | null;
+  has_member_card: boolean;
   /** Session window in seconds, as configured by ACCESS_TOKEN_EXPIRE_MINUTES. */
   session_expires_in: number;
   /** Seconds into that window at which an active client renews the session. */

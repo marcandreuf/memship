@@ -26,6 +26,7 @@
     "cameraError": "No s'ha pogut accedir a la càmera.",
     "invalid": "Codi de targeta no vàlid",
     "notFound": "Soci no trobat",
+    "stale": "Aquesta targeta ja no és vàlida",
     "resultNumber": "Núm.",
     "noType": "Sense tipus",
     "scanAnother": "Escaneja un altre"

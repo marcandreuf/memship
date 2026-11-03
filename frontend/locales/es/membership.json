@@ -30,6 +30,10 @@
       "quarterly": "Trimestral",
       "annual": "Anual",
       "one_time": "Pago único"
+    },
+    "types": {
+      "issuesCard": "Emite tarjeta de socio",
+      "issuesCardHint": "Solo los socios de un tipo con esta opción activada reciben tarjeta. Desactivada en todos los tipos hasta que la actives."
     }
   }
 }

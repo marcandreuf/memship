@@ -58,6 +58,7 @@ def _create_member_user(
     number="SCB-0001",
     type_name=None,
     with_type=True,
+    issues_card=True,
 ):
     """``with_type=False`` leaves `membership_type_id` null, which the column
     allows (`ondelete="SET NULL"`) and a staff-created record really has."""
@@ -89,6 +90,13 @@ def _create_member_user(
             mt = MembershipType(name="General", slug="general", is_active=True)
             db.add(mt)
             db.flush()
+    # Opt the type in, the way a real admin now has to. Since #428 Part 2 the
+    # switch is off on every type, so a fixture that does not set it is testing
+    # an instance that issues no cards — which is what
+    # `TestTheCardIsWithheldPerType` is for.
+    if mt is not None and issues_card:
+        mt.issues_card = True
+        db.flush()
 
     member = Member(
         party_id=person.party_id,
@@ -444,33 +452,28 @@ class TestTheCardShowsTheMembershipType:
         assert resp.status_code == 200
         assert resp.json()["membership_type"] == "Supporter"
 
-    def test_a_member_with_no_type_is_served_rather_than_refused(self, client, db):
-        """`membership_type_id` is nullable, so this is a legitimate record and
-        not a broken one: a staff-created member, or one whose type was deleted.
+    def test_build_card_still_renders_a_member_with_no_type(self, db):
+        """`membership_type_id` is nullable, so reading
+        `member.membership_type.name` unguarded would raise `AttributeError`.
 
-        All three surfaces answer 200 with an explicit null. Reading
-        `member.membership_type.name` unguarded would raise `AttributeError` here
-        and turn a member's own card into a 500.
+        Asserted against `build_card` rather than through an endpoint, because
+        **#428 Part 2 made that case unreachable over the API**: a member with no
+        type has no type whose card switch was turned on, so every card route now
+        refuses them — which is `TestTheCardIsWithheldPerType` below. The guard
+        in `build_card` stays: it is a service function, the column is still
+        nullable, and the cost of keeping it is one conditional.
         """
+        from app.domains.member_card.service import build_card
+
         _ensure_org(db)
-        admin = _create_admin(db)
-        user, member = _create_member_user(
+        _, member = _create_member_user(
             db, email="type-none@examplee6e3b1.com", with_type=False
         )
 
-        client.cookies.update(_auth_cookie(user))
-        mine = client.get("/api/v1/me/card")
+        card = build_card(db, member)
 
-        client.cookies.clear()
-        client.cookies.update(_auth_cookie(admin))
-        as_admin = client.get(f"/api/v1/members/{member.id}/card")
-        scanned = client.post(
-            "/api/v1/card/scan", json={"token": sign_card_token(member.id)}
-        )
-
-        for label, resp in (("me", mine), ("admin", as_admin), ("scan", scanned)):
-            assert resp.status_code == 200, f"{label} answered {resp.status_code}"
-            assert resp.json()["membership_type"] is None, label
+        assert card["membership_type"] is None
+        assert card["member_number"]
 
 
 class TestThePrintedCardShowsTheMembershipType:
@@ -509,3 +512,208 @@ class TestThePrintedCardShowsTheMembershipType:
 
         assert 'class="type"' not in html
         assert "SCB-0001" in html, "the number should still render"
+
+
+class TestTheCardIsWithheldPerType:
+    """Part 2 of #428. The card is issued per membership type, off everywhere
+    until an admin turns it on.
+
+    The organisation's case: a free "friend" tier beside a paid one, where the
+    card *is* what the paid tier buys — *"porque no damos clases ni tienen
+    obligación, entonces hay que darles algo a cambio"*. Withholding it is the
+    only thing that actually reserves the benefit, since the requester's own
+    answer was that shops will not check the tier printed on it.
+
+    **Hide, not mark invalid**, decided on the issue: 404 like the instance-wide
+    gate, because a card this member does not have is absent rather than
+    forbidden.
+    """
+
+    def _member_on_a_type_without_cards(self, db, email):
+        return _create_member_user(db, email=email, type_name="Friends", issues_card=False)
+
+    def test_the_member_cannot_reach_their_own_card(self, client, db):
+        _ensure_org(db)
+        user, _ = self._member_on_a_type_without_cards(db, "withheld-me@examplee6e3b1.com")
+        client.cookies.update(_auth_cookie(user))
+
+        assert client.get("/api/v1/me/card").status_code == 404
+
+    def test_the_qr_and_the_pdf_go_with_it(self, client, db):
+        """*"One switch governs everything that hangs off the card, not a part of
+        it."* A reachable PDF would be a card by another route."""
+        _ensure_org(db)
+        user, _ = self._member_on_a_type_without_cards(db, "withheld-qr@examplee6e3b1.com")
+        client.cookies.update(_auth_cookie(user))
+
+        assert client.get("/api/v1/me/card/qr.svg").status_code == 404
+        assert client.get("/api/v1/me/card/pdf").status_code == 404
+
+    def test_an_admin_cannot_print_one_either(self, client, db):
+        """The target member's type, not the admin's permissions. Otherwise the
+        admin PDF stays a way to produce a card the policy says should not
+        exist — which the issue names as the check easiest to get wrong."""
+        _ensure_org(db)
+        admin = _create_admin(db, email="withheld-admin@examplee6e3b1.com")
+        _, member = self._member_on_a_type_without_cards(
+            db, "withheld-target@examplee6e3b1.com"
+        )
+        client.cookies.update(_auth_cookie(admin))
+
+        assert client.get(f"/api/v1/members/{member.id}/card").status_code == 404
+        assert client.get(f"/api/v1/members/{member.id}/card/qr.svg").status_code == 404
+        assert client.get(f"/api/v1/members/{member.id}/card/pdf").status_code == 404
+
+    def test_a_member_with_no_type_at_all_is_withheld_too(self, client, db):
+        """The stricter reading, and the only one that does not leave a loophole.
+
+        The issue leaves this one open. Taking the permissive reading would mean
+        every *typed* member waits for an admin to tick their type while a member
+        with no type is issued a card immediately — backwards for a feature whose
+        purpose is withholding. It matches the same call on per-type pricing,
+        where a restriction naming types cannot include a member who has none.
+        """
+        _ensure_org(db)
+        user, _ = _create_member_user(
+            db, email="withheld-notype@examplee6e3b1.com", with_type=False
+        )
+        client.cookies.update(_auth_cookie(user))
+
+        assert client.get("/api/v1/me/card").status_code == 404
+
+    def test_turning_the_type_on_issues_the_card(self, client, db):
+        """The mirror. Without it every refusal above would be satisfied by a
+        card module that never works for anyone."""
+        _ensure_org(db)
+        user, member = _create_member_user(
+            db, email="issued@examplee6e3b1.com", type_name="Full", issues_card=True
+        )
+        client.cookies.update(_auth_cookie(user))
+
+        response = client.get("/api/v1/me/card")
+
+        assert response.status_code == 200, response.text
+        assert response.json()["member_id"] == member.id
+
+    def test_the_instance_flag_still_governs_above_the_type(self, client, db):
+        """Two levels with distinct meanings, which is the decision on #428: the
+        flag answers whether the card module exists on this instance at all, the
+        type answers whether a given member gets one. A type with the switch on
+        must still 404 while the module is off, or the flag has stopped being a
+        module gate."""
+        _ensure_org(db, member_card=False)
+        user, _ = _create_member_user(
+            db, email="flagoff@examplee6e3b1.com", type_name="Full", issues_card=True
+        )
+        client.cookies.update(_auth_cookie(user))
+
+        assert client.get("/api/v1/me/card").status_code == 404
+
+
+class TestAStaleQrStopsVerifying:
+    """The consequence the issue calls easiest to miss.
+
+    A card token is signed once and never expires, so a QR captured while the
+    holder's type still issued cards would keep verifying at the door after an
+    admin switched that type off. `verify_scan` already re-read status live; it
+    now re-reads the type too, or the switch would be advisory at the only place
+    anyone checks a card.
+    """
+
+    def test_a_token_minted_while_the_type_issued_cards_stops_working(self, client, db):
+        _ensure_org(db)
+        admin = _create_admin(db, email="stale-admin@examplee6e3b1.com")
+        user, member = _create_member_user(
+            db, email="stale@examplee6e3b1.com", type_name="WasFull", issues_card=True
+        )
+        token = sign_card_token(member.id)
+        client.cookies.update(_auth_cookie(admin))
+
+        # Verifies while the type still issues cards.
+        assert client.post("/api/v1/card/scan", json={"token": token}).status_code == 200
+
+        member.membership_type.issues_card = False
+        db.flush()
+
+        response = client.post("/api/v1/card/scan", json={"token": token})
+
+        assert response.status_code == 410, (
+            "a QR captured before the switch was turned off still verified at "
+            "the door, so the switch is advisory"
+        )
+
+    def test_it_is_told_apart_from_an_unknown_member_and_a_forged_code(
+        self, client, db
+    ):
+        """Three different facts at the door, three different answers. A stale
+        card reported as "member not found" would send someone looking for a
+        missing record instead of a lapsed tier."""
+        _ensure_org(db)
+        admin = _create_admin(db, email="stale-codes@examplee6e3b1.com")
+        _, member = _create_member_user(
+            db, email="stale-codes-m@examplee6e3b1.com",
+            type_name="NoCards", issues_card=False,
+        )
+        client.cookies.update(_auth_cookie(admin))
+
+        stale = client.post(
+            "/api/v1/card/scan", json={"token": sign_card_token(member.id)}
+        )
+        unknown = client.post(
+            "/api/v1/card/scan", json={"token": sign_card_token(999999)}
+        )
+        forged = client.post("/api/v1/card/scan", json={"token": "not-a-real-token"})
+
+        assert stale.status_code == 410
+        assert unknown.status_code == 404
+        assert forged.status_code == 400
+
+
+class TestThePortalIsToldWhetherToOfferTheCard:
+    """`/auth/me` carries `has_member_card`, which is what the navigation and
+    the route guard read.
+
+    It exists so the portal does not have to probe `/me/card` — an endpoint
+    whose job is to answer 404 — to decide whether to render a menu item. It
+    folds in **both** levels, because the frontend recombining them would be a
+    third place for the two-level rule to drift.
+    """
+
+    def test_it_is_true_when_the_flag_and_the_type_both_allow_it(self, client, db):
+        _ensure_org(db)
+        user, _ = _create_member_user(
+            db, email="me-card-on@examplee6e3b1.com", type_name="Full", issues_card=True
+        )
+        client.cookies.update(_auth_cookie(user))
+
+        assert client.get("/api/v1/auth/me").json()["has_member_card"] is True
+
+    def test_it_is_false_when_the_type_does_not_issue_one(self, client, db):
+        _ensure_org(db)
+        user, _ = _create_member_user(
+            db, email="me-card-type@examplee6e3b1.com",
+            type_name="Friends2", issues_card=False,
+        )
+        client.cookies.update(_auth_cookie(user))
+
+        assert client.get("/api/v1/auth/me").json()["has_member_card"] is False
+
+    def test_it_is_false_when_the_instance_flag_is_off(self, client, db):
+        """The level above. A type with the switch on must not advertise a card
+        on an instance where the module does not exist."""
+        _ensure_org(db, member_card=False)
+        user, _ = _create_member_user(
+            db, email="me-card-flag@examplee6e3b1.com", type_name="Full", issues_card=True
+        )
+        client.cookies.update(_auth_cookie(user))
+
+        assert client.get("/api/v1/auth/me").json()["has_member_card"] is False
+
+    def test_it_is_false_for_a_staff_account_with_no_member_record(self, client, db):
+        """A super admin administering the club is not a member of it, so there
+        is no type to consult and no card to offer."""
+        _ensure_org(db)
+        admin = _create_admin(db, email="me-card-staff@examplee6e3b1.com")
+        client.cookies.update(_auth_cookie(admin))
+
+        assert client.get("/api/v1/auth/me").json()["has_member_card"] is False

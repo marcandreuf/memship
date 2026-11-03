@@ -24,6 +24,9 @@ class MembershipTypeCreate(BaseModel):
     group_id: int | None = None
     base_price: float = Field(default=0, ge=0)
     billing_frequency: str = "annual"
+    # Off unless the admin asks for it: see the migration for why the default
+    # is not "preserve today's behaviour" (#428 Part 2).
+    issues_card: bool = False
     is_active: bool = True
     min_age: int | None = Field(default=None, ge=0, le=150)
     max_age: int | None = Field(default=None, ge=0, le=150)
@@ -40,6 +43,7 @@ class MembershipTypeUpdate(BaseModel):
     group_id: int | None = None
     base_price: float | None = Field(default=None, ge=0)
     billing_frequency: str | None = None
+    issues_card: bool | None = None
     is_active: bool | None = None
     is_default: bool | None = None
     # null clears a limit. The range is checked against the stored values in
@@ -59,6 +63,7 @@ class MembershipTypeResponse(BaseModel):
     group_name: str | None = None
     base_price: float
     billing_frequency: str
+    issues_card: bool = False
     min_age: int | None = None
     max_age: int | None = None
     is_active: bool
