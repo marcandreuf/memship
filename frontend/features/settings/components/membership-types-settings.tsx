@@ -21,11 +21,13 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -62,6 +64,7 @@ const createSchema = z.object({
   group_id: z.coerce.number<number>().optional(),
   min_age: z.coerce.number<number>().int().min(0).max(150).optional().or(z.literal("")),
   max_age: z.coerce.number<number>().int().min(0).max(150).optional().or(z.literal("")),
+  issues_card: z.boolean(),
 }).refine((data) => !data.min_age || !data.max_age || Number(data.max_age) >= Number(data.min_age), {
   message: "validation.maxLessThanMin",
   path: ["max_age"],
@@ -89,12 +92,12 @@ export function MembershipTypesSettings() {
 
   const form = useForm<CreateFormValues>({
     resolver: useZodResolver(createSchema),
-    defaultValues: { name: "", slug: "", description: "", base_price: 0, min_age: "", max_age: "" },
+    defaultValues: { name: "", slug: "", description: "", base_price: 0, min_age: "", max_age: "", issues_card: false },
   });
 
   function openCreate() {
     setEditing(null);
-    form.reset({ name: "", slug: "", description: "", base_price: 0, min_age: "", max_age: "" });
+    form.reset({ name: "", slug: "", description: "", base_price: 0, min_age: "", max_age: "", issues_card: false });
     setOpen(true);
   }
 
@@ -108,6 +111,7 @@ export function MembershipTypesSettings() {
       group_id: type.group_id || undefined,
       min_age: type.min_age ?? "",
       max_age: type.max_age ?? "",
+      issues_card: type.issues_card,
     });
     setOpen(true);
   }
@@ -273,6 +277,26 @@ export function MembershipTypesSettings() {
                           ))}
                         </SelectContent>
                       </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="issues_card"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center gap-2">
+                        <FormControl>
+                          <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                        </FormControl>
+                        <FormLabel className="!mt-0">
+                          {t("membership.types.issuesCard")}
+                        </FormLabel>
+                      </div>
+                      <FormDescription>
+                        {t("membership.types.issuesCardHint")}
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

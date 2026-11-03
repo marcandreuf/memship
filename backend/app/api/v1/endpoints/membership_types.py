@@ -33,6 +33,7 @@ def _to_response(mt: MembershipType) -> MembershipTypeResponse:
         max_age=mt.max_age,
         is_active=mt.is_active,
         is_default=mt.is_default,
+        issues_card=mt.issues_card,
         created_at=mt.created_at,
     )
 

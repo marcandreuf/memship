@@ -27,7 +27,7 @@ export function ScanPanel() {
   const scanMutation = useScanCard();
   const [code, setCode] = useState("");
   const [result, setResult] = useState<ScanResult | null>(null);
-  const [errorKind, setErrorKind] = useState<"invalid" | "notFound" | null>(null);
+  const [errorKind, setErrorKind] = useState<"invalid" | "notFound" | "stale" | null>(null);
   const [cameraOn, setCameraOn] = useState(false);
   const [cameraError, setCameraError] = useState(false);
   // Holds the Html5Qrcode instance while the camera is active.
@@ -44,8 +44,14 @@ export function ScanPanel() {
         },
         onError: (err) => {
           setResult(null);
+          // Three different facts at the door, and the middle one is new: 410
+          // means the code was genuine and the member exists, but their type no
+          // longer issues a card (#428 Part 2). Reporting that as "member not
+          // found" would send whoever is checking to look for a missing record
+          // instead of a lapsed tier.
+          const status = err instanceof ClientApiError ? err.status : undefined;
           setErrorKind(
-            err instanceof ClientApiError && err.status === 404 ? "notFound" : "invalid"
+            status === 410 ? "stale" : status === 404 ? "notFound" : "invalid"
           );
         },
       });

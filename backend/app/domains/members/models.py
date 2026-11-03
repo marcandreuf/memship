@@ -82,6 +82,15 @@ class MembershipType(Base):
     current_members = Column(Integer, default=0)
     base_price = Column(Numeric(10, 2), default=0)
     billing_frequency = Column(String(20), default="annual")
+    # Whether members of this type are issued a digital card (#428 Part 2).
+    #
+    # Off for every type, including on upgrade, which is deliberate: a card
+    # issued to everyone is what this exists to stop, so the permissive default
+    # would ship the feature switched off in practice. It sits *beneath*
+    # `features.member_card` rather than replacing it — that flag answers
+    # whether the card module exists on this instance at all, this answers
+    # whether a given member gets one.
+    issues_card = Column(Boolean, nullable=False, server_default="false", default=False)
     is_fixed_term = Column(Boolean, default=False)
     term_months = Column(Integer)
     benefits = Column(ARRAY(Text))

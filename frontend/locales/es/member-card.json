@@ -26,6 +26,7 @@
     "cameraError": "No se pudo acceder a la cámara.",
     "invalid": "Código de tarjeta no válido",
     "notFound": "Socio no encontrado",
+    "stale": "Esta tarjeta ya no es válida",
     "resultNumber": "Nº",
     "noType": "Sin tipo",
     "scanAnother": "Escanear otro"

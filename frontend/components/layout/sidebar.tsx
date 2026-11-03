@@ -135,7 +135,11 @@ export function AppSidebar({ user }: AppSidebarProps) {
             { href: "/my-bookings", label: t("bookings.navMyBookings"), icon: ClipboardList, show: bookingsEnabled && has("self.bookings.read") },
             { href: "/my-membership", label: t("membership.nav"), icon: BadgeEuro, show: has("self.billing.read") },
             { href: "/my-receipts", label: t("receipts.myReceipts"), icon: Receipt, show: has("self.billing.read") },
-            { href: "/my-card", label: t("nav.myCard"), icon: IdCard, show: cardEnabled && has("self.card.read") },
+            // `has_member_card` already folds in the instance flag *and* this
+            // member's own type (#428 Part 2), so it replaces `cardEnabled` here.
+            // `/scan` above keeps the instance flag: staff scanning does not
+            // depend on the scanning account's own membership type.
+            { href: "/my-card", label: t("nav.myCard"), icon: IdCard, show: user.has_member_card && has("self.card.read") },
           ],
         ]
       : []),
