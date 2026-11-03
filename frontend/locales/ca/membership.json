@@ -30,6 +30,10 @@
       "quarterly": "Trimestral",
       "annual": "Anual",
       "one_time": "Pagament únic"
+    },
+    "types": {
+      "issuesCard": "Emet targeta de soci",
+      "issuesCardHint": "Només els socis d'un tipus amb aquesta opció activada reben targeta. Desactivada en tots els tipus fins que l'actives."
     }
   }
 }

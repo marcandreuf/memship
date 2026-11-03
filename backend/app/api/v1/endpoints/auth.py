@@ -35,6 +35,7 @@ from app.core.security.rate_limit import (
 )
 from app.db.session import get_db
 from app.domains.auth.models import User
+from app.domains.member_card.service import member_card_available
 from app.domains.auth.schemas import (
     LoginRequest,
     MessageResponse,
@@ -482,7 +483,10 @@ def password_reset_confirm(data: PasswordReset, db: Session = Depends(get_db)):
 
 
 @router.get("/me", response_model=UserResponse)
-def get_me(current_user: User = Depends(get_current_user)):
+def get_me(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     member = current_user.person.member
     return UserResponse(
         id=current_user.id,
@@ -503,6 +507,7 @@ def get_me(current_user: User = Depends(get_current_user)):
         photo_url=current_user.person.photo_url,
         email_verified=bool(current_user.email_verified),
         member_status=member.status if member else None,
+        has_member_card=member_card_available(db, member),
         session_expires_in=settings.session_max_age,
         session_refresh_after=settings.session_refresh_after,
     )

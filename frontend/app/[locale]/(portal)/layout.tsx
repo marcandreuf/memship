@@ -57,6 +57,17 @@ export default function PortalLayout({
     }
   }, [isLoading, user, settings, pathname, router]);
 
+  // Beneath the feature check above, not instead of it: `features.member_card`
+  // decides whether the card module exists on this instance, the member's own
+  // type decides whether they are issued one (#428 Part 2). A member whose type
+  // has no card would otherwise see the page render a shell over an endpoint
+  // that answers 404 by design.
+  useEffect(() => {
+    if (!isLoading && user && pathname.startsWith("/my-card") && !user.has_member_card) {
+      router.push("/dashboard");
+    }
+  }, [isLoading, user, pathname, router]);
+
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
