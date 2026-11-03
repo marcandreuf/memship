@@ -30,6 +30,13 @@ INT_RULES: IntRules = {
 BOOL_KEYS = frozenset({"booking_waitlist_enabled"})
 
 
+#: The configuration keys this domain owns, for the canonical set in
+#: ``domains/organizations/feature_keys.py`` (#494). The `bookings` module gate
+#: is **not** here: it decides whether the module exists on this instance at
+#: all rather than tuning a value, so it is grouped with the other gates there.
+FEATURE_KEYS = frozenset(INT_RULES) | BOOL_KEYS
+
+
 def validate_booking_rules(features: dict) -> dict:
     validate_int_rules(features, INT_RULES)
     return validate_bool_keys(features, BOOL_KEYS)

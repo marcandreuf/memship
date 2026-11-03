@@ -63,10 +63,11 @@ export function RolesSettings() {
 
   async function onToggle(checked: boolean) {
     try {
-      // PUT /settings replaces the whole features dict — merge to keep siblings.
-      await updateSettings.mutateAsync({
-        features: { ...(settings?.features ?? {}), custom_roles: checked },
-      });
+      // Send only this flag. The endpoint merges sparsely, so re-sending the
+      // snapshot this browser loaded is both unnecessary and the lost update
+      // that merging was introduced to remove (#314), and it now replays any
+      // unrecognised key the row happens to hold, which #494 refuses.
+      await updateSettings.mutateAsync({ features: { custom_roles: checked } });
       toast.success(t("toast.success.saved"));
     } catch {
       /* global handler shows the error toast */

@@ -1,4 +1,9 @@
-"""The billing and reminder configuration values are guarded at both ends (#493).
+"""What ``organization_settings.features`` accepts on save, and what it falls back to.
+
+Three defects in one place, because they share one validator and one endpoint:
+the configuration values guarded at both ends (#493), the canonical key set that
+lets a misspelled flag be refused (#494), and the notification address validated
+like every other address in the product (#495).
 
 Four values in ``features`` used to have no protection anywhere: nothing refused a
 wrong type on save, and every read was a bare ``features.get(key, default)``. The
@@ -18,6 +23,12 @@ alone leaves the defect reachable. Validation on save does nothing about a value
 already stored, and ``features`` has been free-form JSONB since the column
 existed, with seeds and migrations writing to it without passing through the
 schema.
+
+The key check (#494) is save-side only for the opposite reason: the sparse merge
+in ``api/v1/endpoints/settings.py`` runs *after* the schema, so a stored stray
+key is never re-validated and an instance holding one stays able to save. That
+order is load-bearing and
+``test_a_stored_stray_key_does_not_block_an_unrelated_save`` is what pins it.
 """
 
 from datetime import date, datetime, timedelta, timezone
@@ -36,7 +47,17 @@ from app.domains.billing.rules import (
     SAVE_ONLY_INT_RULES,
     billing_int_rule,
 )
+from app.domains.billing.rules import FEATURE_KEYS as BILLING_FEATURE_KEYS
+from app.domains.bookings.rules import FEATURE_KEYS as BOOKING_FEATURE_KEYS
+from app.cli.demo_data import DEMO_FEATURES
 from app.domains.members.models import Member, MembershipType
+from app.domains.organizations.feature_keys import (
+    ACTION_GATE_KEYS,
+    FEATURE_KEYS,
+    MODULE_GATE_KEYS,
+    OFFERED_VALUE_KEYS,
+    POLICY_KEYS,
+)
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Person
 
@@ -380,3 +401,288 @@ class TestBooleanFlagsAreTypeCheckedOnSave:
 
         assert response.status_code == 200
         assert response.json()["features"][key] is value
+
+
+# Every canonical key paired with a value the code honours. This one literal
+# does two jobs: it pins the canonical set, so adding a flag to the product is a
+# deliberate edit with a visible diff here, and it drives the acceptance mirror
+# below, so a key cannot be added to the set without something proving the
+# endpoint actually takes it.
+CANONICAL = {
+    # Module gates — 404 when off.
+    "bookings": True,
+    "communications": True,
+    "custom_profile_fields": True,
+    "custom_roles": True,
+    "member_card": True,
+    # Action gate — 403 when off.
+    "public_registration": True,
+    # Policy.
+    "registration_requires_approval": True,
+    # Offered values.
+    "gender_options": [
+        {"value": "male", "label_es": "Hombre", "label_ca": "Home", "label_en": "Male"}
+    ],
+    # Bookings configuration.
+    "booking_window_days": 14,
+    "booking_cancellation_deadline_hours": 24,
+    "booking_waitlist_enabled": True,
+    # Billing configuration.
+    "membership_fee_due_days": 7,
+    "membership_lapse_grace_days": 21,
+    "membership_lapse_enabled": True,
+    "payment_reminders_enabled": True,
+    "recurring_billing_enabled": True,
+    "reminder_days_after_due": 3,
+    "reminder_repeat_days": 7,
+    "reminder_max_count": 3,
+    "recurring_billing_day": 1,
+    "billing_notification_email": "tesoreria@club.example",
+}
+
+
+class TestTheCanonicalSetIsPinned:
+    """The list exists so a typo can be refused; these keep the list honest.
+
+    Before #494 there was no canonical list anywhere in the code, and the
+    nearest thing was a demo seed naming nineteen of the twenty-one flags.
+    """
+
+    def test_the_set_is_exactly_what_this_test_pins(self):
+        assert FEATURE_KEYS == frozenset(CANONICAL), (
+            "the canonical feature set changed. Adding a flag to the product is "
+            "meant to be a deliberate edit in both places: register it in its "
+            "domain's rules.py (or in feature_keys.py if it is a gate), and give "
+            "it a valid value in CANONICAL here so the acceptance mirror covers it"
+        )
+
+    def test_the_groups_do_not_overlap(self):
+        """A key classified twice means the specification's four classes have
+        stopped being classes. Caught exactly this while writing #494, with
+        `public_registration` declared both a module gate and an action gate."""
+        groups = {
+            "module gates": MODULE_GATE_KEYS,
+            "action gates": ACTION_GATE_KEYS,
+            "offered values": OFFERED_VALUE_KEYS,
+            "policy": POLICY_KEYS,
+            "billing": BILLING_FEATURE_KEYS,
+            "bookings": BOOKING_FEATURE_KEYS,
+        }
+        for left, left_keys in groups.items():
+            for right, right_keys in groups.items():
+                if left >= right:
+                    continue
+                assert not left_keys & right_keys, (
+                    f"{sorted(left_keys & right_keys)} is declared both in "
+                    f"{left} and in {right}"
+                )
+
+    def test_every_key_the_demo_seed_writes_is_recognised(self):
+        """`seed demo` writes nineteen of them. A flag added to the demo without
+        being registered would otherwise 422 the first time an admin saved it."""
+        assert set(DEMO_FEATURES) <= FEATURE_KEYS, (
+            f"the demo seed writes {sorted(set(DEMO_FEATURES) - FEATURE_KEYS)}, "
+            f"which the settings endpoint would refuse"
+        )
+
+
+class TestUnrecognisedKeysAreRefusedOnSave:
+    @pytest.mark.parametrize(
+        "key",
+        [
+            pytest.param("booking_window_day", id="singular-typo"),
+            pytest.param("reminder_max_cont", id="dropped-letter"),
+            pytest.param("payment_reminders", id="truncated"),
+            pytest.param("memberCardEnabled", id="wrong-convention"),
+        ],
+    )
+    def test_settings_put_refuses_a_misspelled_flag(self, client, db, key):
+        _org(db, {})
+        client.cookies.update(_auth_cookie(_admin(db, f"unk-{key}")))
+
+        response = client.put("/api/v1/settings/", json={"features": {key: True}})
+
+        assert response.status_code == 422, (
+            f"settings accepted the unknown key {key!r} with "
+            f"{response.status_code}; the sparse merge would store it forever "
+            f"and nothing would ever say the setting does nothing"
+        )
+
+    def test_the_refusal_names_the_offending_key(self, client, db):
+        """The defect was a silent no-op, so a 422 that does not say which key
+        is wrong only moves the guesswork rather than ending it."""
+        _org(db, {})
+        client.cookies.update(_auth_cookie(_admin(db, "unk-named")))
+
+        response = client.put(
+            "/api/v1/settings/", json={"features": {"booking_window_day": 7}}
+        )
+
+        assert response.status_code == 422
+        assert "booking_window_day" in response.text
+
+    @pytest.mark.parametrize("key,value", sorted(CANONICAL.items()))
+    def test_settings_put_accepts_every_canonical_key(self, client, db, key, value):
+        """The mirror. Without it the refusals above could pass by refusing
+        every key, which would break every settings form in the product."""
+        _org(db, {})
+        client.cookies.update(_auth_cookie(_admin(db, f"can-{key}")))
+
+        response = client.put("/api/v1/settings/", json={"features": {key: value}})
+
+        assert response.status_code == 200, (
+            f"settings refused the canonical key {key!r}: {response.text}"
+        )
+        assert response.json()["features"][key] == value
+
+    @pytest.mark.parametrize(
+        "features",
+        [
+            pytest.param({}, id="nothing-at-all"),
+            pytest.param({"custom_roles": True}, id="a-single-key"),
+        ],
+    )
+    def test_absence_stays_legitimate(self, client, db, features):
+        """The rule is "an unknown key is refused", never "all known keys are
+        required". A fresh `seed --test` stores fifteen of the twenty-one and the
+        rest resolve through their read-side defaults."""
+        _org(db, {})
+        client.cookies.update(_auth_cookie(_admin(db, f"abs-{len(features)}")))
+
+        response = client.put("/api/v1/settings/", json={"features": features})
+
+        assert response.status_code == 200, response.text
+
+    def test_a_stored_stray_key_does_not_block_an_unrelated_save(self, client, db):
+        """Keys already stored are left alone rather than dropped by a migration,
+        so an instance holding one has to stay able to save.
+
+        This works because the merge in `api/v1/endpoints/settings.py` runs
+        *after* the schema: only the keys a request carries reach the validator,
+        and the stored row is never re-validated. If that order ever inverts,
+        every instance with a stray key would be locked out of its own settings.
+        """
+        _org(db, {"legacy_flag_nobody_remembers": True})
+        client.cookies.update(_auth_cookie(_admin(db, "stray")))
+
+        response = client.put(
+            "/api/v1/settings/", json={"features": {"custom_roles": False}}
+        )
+
+        assert response.status_code == 200, response.text
+        features = response.json()["features"]
+        assert features["custom_roles"] is False
+        assert features["legacy_flag_nobody_remembers"] is True, (
+            "the stray was dropped; #494 decided to leave stored keys alone"
+        )
+
+    def test_replaying_the_whole_stored_snapshot_is_refused(self, client, db):
+        """The other half of the decision, and the one with a client consequence.
+
+        A stored stray is tolerated only because it is never re-sent. A client
+        that reads `features` and posts the whole dict back *does* re-send it,
+        so it is refused like any other unknown key, and on an instance holding
+        a stray that client can no longer save at all.
+
+        This is deliberate rather than an oversight: the endpoint merges sparsely
+        precisely so that no form needs to replay a snapshot, and replaying one is
+        itself the lost update that merging removed (#314). `roles-settings.tsx`
+        was doing exactly this and was fixed alongside #494; this test is what
+        stops the pattern coming back silently.
+        """
+        _org(db, {"legacy_flag_nobody_remembers": True, "custom_roles": True})
+        client.cookies.update(_auth_cookie(_admin(db, "stray-replay")))
+
+        stored = client.get("/api/v1/settings/").json()["features"]
+        response = client.put("/api/v1/settings/", json={"features": stored})
+
+        assert response.status_code == 422, (
+            "replaying the stored snapshot was accepted; a client doing this "
+            "would silently keep re-writing keys nothing recognises"
+        )
+        assert "legacy_flag_nobody_remembers" in response.text
+
+
+class TestTheNotificationAddressIsValidatedOnSave:
+    """`billing_notification_email` was the one address stored without
+    validation (#495), because it lives in `features` and so bypassed the shared
+    schema types entirely.
+
+    Its consequence is quiet by design: the send is best-effort so a failure
+    cannot fail the billing run, which means a malformed address raises nothing
+    a user sees and the summary just never arrives.
+    """
+
+    @pytest.mark.parametrize(
+        "value",
+        [
+            pytest.param("tesoreria", id="no-at-sign"),
+            pytest.param("tesoreria@club", id="no-tld"),
+            pytest.param("tesoreria club@example.test", id="internal-space"),
+            pytest.param("josé@club.example", id="non-ascii-local-part"),
+            pytest.param(123, id="not-a-string"),
+            pytest.param(True, id="a-boolean"),
+        ],
+    )
+    def test_settings_put_refuses_a_malformed_address(self, client, db, value):
+        _org(db, {})
+        client.cookies.update(_auth_cookie(_admin(db, f"mail-bad-{value}")))
+
+        response = client.put(
+            "/api/v1/settings/",
+            json={"features": {"billing_notification_email": value}},
+        )
+
+        assert response.status_code == 422, (
+            f"settings accepted {value!r} as the notification address; the "
+            f"billing summary would silently never arrive"
+        )
+
+    def test_the_address_is_normalised_the_way_every_other_address_is(
+        self, client, db
+    ):
+        """Stored as it will be handed to the mail transport, not as typed."""
+        _org(db, {})
+        client.cookies.update(_auth_cookie(_admin(db, "mail-norm")))
+
+        response = client.put(
+            "/api/v1/settings/",
+            json={"features": {"billing_notification_email": "  Tesoreria@Club.Example  "}},
+        )
+
+        assert response.status_code == 200, response.text
+        assert (
+            response.json()["features"]["billing_notification_email"]
+            == "tesoreria@club.example"
+        )
+
+    def test_a_development_domain_validates(self, client, db):
+        """`Email` is a regex rather than `EmailStr` on purpose, so `.test` and
+        `.local` work in development."""
+        _org(db, {})
+        client.cookies.update(_auth_cookie(_admin(db, "mail-dev")))
+
+        response = client.put(
+            "/api/v1/settings/",
+            json={"features": {"billing_notification_email": "tesoreria@club.test"}},
+        )
+
+        assert response.status_code == 200, response.text
+
+    @pytest.mark.parametrize(
+        "value", [pytest.param("", id="empty-string"), pytest.param(None, id="null")]
+    )
+    def test_clearing_the_address_is_allowed(self, client, db, value):
+        """Both reads are guarded by truthiness and both of these already mean
+        "send no notification", so an admin switching the notification off must
+        not be refused."""
+        _org(db, {"billing_notification_email": "old@club.example"})
+        client.cookies.update(_auth_cookie(_admin(db, f"mail-clear-{value!r}")))
+
+        response = client.put(
+            "/api/v1/settings/",
+            json={"features": {"billing_notification_email": value}},
+        )
+
+        assert response.status_code == 200, response.text
+        assert not response.json()["features"]["billing_notification_email"]
