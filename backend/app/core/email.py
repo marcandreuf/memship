@@ -201,6 +201,11 @@ _SUBJECTS = {
         "ca": "Correu de prova de Memship",
         "en": "Memship test email",
     },
+    "webhook_digest": {
+        "es": "Notificaciones de pago con incidencias — {total}",
+        "ca": "Notificacions de pagament amb incidències — {total}",
+        "en": "Payment notifications needing attention — {total}",
+    },
     "billing_summary": {
         "es": "Facturación recurrente — {total} recibos generados",
         "ca": "Facturació recurrent — {total} rebuts generats",
@@ -1222,4 +1227,32 @@ def send_billing_summary_email(
             "any_failed": any_failed,
         },
         subject_args={"total": total},
+    )
+
+
+def send_webhook_digest_email(
+    to: str,
+    events: list[dict],
+    events_total: int,
+    rejections: list[dict],
+    locale: str = "es",
+) -> bool:
+    """The day's failed, ignored and refused payment notifications, for the admin address.
+
+    ``events`` holds the newest of ``events_total``; ``rejections`` is one
+    entry per provider with notifications refused at the signature check.
+    """
+    rejected_total = sum(r["count"] for r in rejections)
+    return _send_templated(
+        "webhook_digest",
+        to,
+        locale,
+        {
+            "events": events,
+            "events_total": events_total,
+            "events_hidden": events_total - len(events),
+            "rejections": rejections,
+            "rejected_total": rejected_total,
+        },
+        subject_args={"total": events_total + rejected_total},
     )

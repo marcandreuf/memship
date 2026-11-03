@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getReceipts,
@@ -159,17 +160,40 @@ export function useStripeCheckout() {
   });
 }
 
+const POLL_INTERVAL_MS = 2000;
+const STRIPE_POLL_ATTEMPTS = 5;
+const REDSYS_POLL_ATTEMPTS = 15;
+/** How long each return page waits for the gateway's confirmation before saying so. */
+export const STRIPE_CONFIRMATION_WAIT_MS = POLL_INTERVAL_MS * STRIPE_POLL_ATTEMPTS;
+export const REDSYS_CONFIRMATION_WAIT_MS = POLL_INTERVAL_MS * REDSYS_POLL_ATTEMPTS;
+
+/**
+ * True once `ms` have passed while `waiting` holds.
+ *
+ * The return pages stop polling after a fixed window. If the confirmation has
+ * not arrived by then it may never come — a rejected notification, a lost one
+ * (#514) — and the page must stop implying it is on its way.
+ */
+export function useWaitedPast(ms: number, waiting: boolean) {
+  const [elapsed, setElapsed] = useState(false);
+  useEffect(() => {
+    if (!waiting) return;
+    const timer = setTimeout(() => setElapsed(true), ms);
+    return () => clearTimeout(timer);
+  }, [ms, waiting]);
+  return waiting && elapsed;
+}
+
 export function useReceiptByStripeSession(sessionId: string | null) {
   return useQuery({
     queryKey: ["receipt-by-session", sessionId],
     queryFn: () => getReceiptByStripeSession(sessionId!),
     enabled: !!sessionId,
     refetchInterval: (query) => {
-      // Poll every 2s until receipt is paid, max 5 retries
       const data = query.state.data;
       if (data && data.status === "paid") return false;
-      if ((query.state.dataUpdateCount ?? 0) >= 5) return false;
-      return 2000;
+      if ((query.state.dataUpdateCount ?? 0) >= STRIPE_POLL_ATTEMPTS) return false;
+      return POLL_INTERVAL_MS;
     },
   });
 }
@@ -201,8 +225,8 @@ export function useRedsysReturnStatus(receiptId: number | null) {
       const data = query.state.data;
       const terminal = new Set(["paid", "cancelled", "returned"]);
       if (data && terminal.has(data.status)) return false;
-      if ((query.state.dataUpdateCount ?? 0) >= 15) return false;
-      return 2000;
+      if ((query.state.dataUpdateCount ?? 0) >= REDSYS_POLL_ATTEMPTS) return false;
+      return POLL_INTERVAL_MS;
     },
   });
 }

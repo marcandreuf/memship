@@ -5,8 +5,12 @@ import { useRouter } from "@/lib/i18n/routing";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useRedsysReturnStatus } from "@/features/receipts/hooks/use-receipts";
-import { CircleCheck, CircleX, Loader2 } from "lucide-react";
+import {
+  REDSYS_CONFIRMATION_WAIT_MS,
+  useRedsysReturnStatus,
+  useWaitedPast,
+} from "@/features/receipts/hooks/use-receipts";
+import { CircleAlert, CircleCheck, CircleX, Loader2 } from "lucide-react";
 
 export default function RedsysReturnPage() {
   const t = useTranslations();
@@ -20,6 +24,7 @@ export default function RedsysReturnPage() {
   const isPaid = data?.status === "paid";
   const userCancelled = outcome === "ko";
   const pending = !isPaid && !userCancelled;
+  const unconfirmed = useWaitedPast(REDSYS_CONFIRMATION_WAIT_MS, pending);
 
   let Icon = Loader2;
   let iconClass = "text-muted-foreground animate-spin";
@@ -29,15 +34,20 @@ export default function RedsysReturnPage() {
   } else if (userCancelled) {
     Icon = CircleX;
     iconClass = "text-muted-foreground";
+  } else if (unconfirmed) {
+    Icon = CircleAlert;
+    iconClass = "text-amber-500";
   }
 
   let title = t("receipts.paymentProcessing");
   if (isPaid) title = t("receipts.paymentSuccessTitle");
   else if (userCancelled) title = t("receipts.paymentCancelTitle");
+  else if (unconfirmed) title = t("receipts.paymentUnconfirmedTitle");
 
   let message = t("receipts.paymentPendingMessage");
   if (isPaid) message = t("receipts.paymentSuccessMessage");
   else if (userCancelled) message = t("receipts.paymentCancelMessage");
+  else if (unconfirmed) message = t("receipts.paymentUnconfirmedMessage");
 
   return (
     <div className="flex items-center justify-center min-h-[60vh]">

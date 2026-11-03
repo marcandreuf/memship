@@ -14,7 +14,7 @@ from app.db.session import get_db
 from app.domains.billing.models import PaymentProvider
 from app.domains.billing.provider_config import get_sensitive_fields
 from app.domains.billing.service import dispatch_payment_notifications
-from app.domains.billing import webhook_service
+from app.domains.billing import webhook_rejections, webhook_service
 
 logger = logging.getLogger(__name__)
 
@@ -96,6 +96,9 @@ async def receive_webhook(
             provider_type,
             exc,
         )
+        # Counted, not stored as a row: nothing in an unverified body can be
+        # trusted, and a request must not be able to write to the database.
+        webhook_rejections.record_rejection(provider_type, str(exc))
         return Response(
             content='{"detail":"Signature validation failed"}',
             status_code=400,

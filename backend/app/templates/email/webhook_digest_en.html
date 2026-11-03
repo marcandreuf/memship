@@ -1,0 +1,25 @@
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}Payment notifications from the last 24 hours need a look.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Payment notifications needing attention</h1>
+<p style="{{ s.p }}">In the last 24 hours, some notifications from the payment gateways were not applied. Review them under Settings → Payment providers.</p>
+{%- if rejections %}
+<p style="{{ s.p }}"><strong>Refused at the signature check.</strong> If these keep arriving, the configured webhook secret is wrong and no payment is being confirmed.</p>
+{% call c.panel() %}
+{% for r in rejections %}{{ c.data_row(r.provider, r.count ~ " — " ~ r.last_reason) }}{% endfor %}
+{% endcall %}
+{%- endif %}
+{%- if events %}
+<p style="{{ s.p }}"><strong>Failed or ignored ({{ events_total }}).</strong> An ignored one for an already-paid receipt may be a double charge.</p>
+{% call c.panel() %}
+{% for e in events %}{{ c.data_row(e.at ~ " · " ~ e.provider, (e.receipt_number ~ " — " if e.receipt_number else "") ~ e.status ~ (": " ~ e.reason if e.reason else "")) }}{% endfor %}
+{% endcall %}
+{%- if events_hidden %}
+<p style="{{ s.p }}">And {{ events_hidden }} more.</p>
+{%- endif %}
+{%- endif %}
+<p style="{{ s.note_last }}">You are receiving this because this address is the billing notification address.</p>
+{% endblock %}

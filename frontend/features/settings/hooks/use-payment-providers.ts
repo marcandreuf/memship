@@ -11,8 +11,16 @@ import {
   getProviderTypes,
   getActivePaymentMethods,
   getWebhookEvents,
+  getWebhookRejections,
   type WebhookEventStatus,
 } from "../services/payment-providers-api";
+
+export function useWebhookRejections() {
+  return useQuery({
+    queryKey: ["payment-providers", "webhook-rejections"],
+    queryFn: getWebhookRejections,
+  });
+}
 
 export function useWebhookEvents(statuses: WebhookEventStatus[], page: number) {
   return useQuery({
