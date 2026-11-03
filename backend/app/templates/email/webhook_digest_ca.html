@@ -1,0 +1,25 @@
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}Hi ha notificacions de pagament de les darreres 24 hores que cal revisar.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Notificacions de pagament amb incidències</h1>
+<p style="{{ s.p }}">En les darreres 24 hores, algunes notificacions de les passarel·les de pagament no s'han aplicat. Revisa-les a Configuració → Proveïdors de pagament.</p>
+{%- if rejections %}
+<p style="{{ s.p }}"><strong>Rebutjades per la signatura.</strong> Si continuen arribant, la clau del webhook configurada no és la correcta i no s'està confirmant cap pagament.</p>
+{% call c.panel() %}
+{% for r in rejections %}{{ c.data_row(r.provider, r.count ~ " — " ~ r.last_reason) }}{% endfor %}
+{% endcall %}
+{%- endif %}
+{%- if events %}
+<p style="{{ s.p }}"><strong>Fallides o ignorades ({{ events_total }}).</strong> Una d'ignorada sobre un rebut ja pagat pot ser un doble cobrament.</p>
+{% call c.panel() %}
+{% for e in events %}{{ c.data_row(e.at ~ " · " ~ e.provider, (e.receipt_number ~ " — " if e.receipt_number else "") ~ {"failed": "fallida", "ignored": "ignorada"}.get(e.status, e.status) ~ (": " ~ e.reason if e.reason else "")) }}{% endfor %}
+{% endcall %}
+{%- if events_hidden %}
+<p style="{{ s.p }}">I {{ events_hidden }} més.</p>
+{%- endif %}
+{%- endif %}
+<p style="{{ s.note_last }}">Reps aquest correu perquè aquesta adreça és la de notificacions de facturació.</p>
+{% endblock %}

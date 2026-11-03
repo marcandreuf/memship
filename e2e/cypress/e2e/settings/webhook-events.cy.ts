@@ -75,6 +75,21 @@ describe("Payment notifications — Super Admin", () => {
           .its("status")
           .should("eq", 200);
       });
+
+    // One signed with the wrong secret: refused, never a row, but counted (#514).
+    cy.wrap(null)
+      .then(() => stripeSignature(payload, "whsec_not_the_configured_one"))
+      .then((signature) => {
+        cy.request({
+          method: "POST",
+          url: `${API_URL}/webhooks/stripe`,
+          body: payload,
+          headers: { "Content-Type": "application/json", "Stripe-Signature": signature },
+          failOnStatusCode: false,
+        })
+          .its("status")
+          .should("eq", 400);
+      });
   });
 
   beforeEach(() => {
@@ -90,6 +105,13 @@ describe("Payment notifications — Super Admin", () => {
         .should("contain", "Ignored")
         .and("contain", "Unhandled event type: customer.created");
     });
+  });
+
+  it("counts notifications refused at the signature check", () => {
+    cy.get("[data-testid='webhook-rejections']")
+      .should("contain", "stripe")
+      .and("contain", "refused at the signature check")
+      .and("contain", "Invalid signature");
   });
 
   it("keeps ignored ones listed when processed ones are shown too", () => {

@@ -74,6 +74,27 @@ pendientes y puede pagar con:
 > del proveedor, no por la vuelta del navegador. La configuración de proveedores se hace en
 > [Ajustes → Proveedores de pago](settings.md#proveedores-de-pago).
 
+### Cuando una notificación de pago falla
+
+En **Ajustes → Proveedores de pago**, bajo los proveedores, **Notificaciones de pago** lista lo
+que las pasarelas enviaron y memship no aplicó:
+
+- **Fallida** — no se pudo aplicar. La pasarela reintenta; si sigue fallando, hay que revisarla.
+- **Ignorada** — se recibió y no se hizo nada a propósito: un tipo de aviso que no se trata, un
+  importe distinto o un pago de un recibo **ya pagado**. Esto último es un doble cobro: hay que
+  devolver el segundo pago desde la pasarela.
+- **Rechazadas por la firma** — un recuento por proveedor encima de la lista. Si no para de
+  crecer, la clave configurada no es la correcta y no se está confirmando ningún pago.
+
+Para recibir un aviso, indica la dirección de notificaciones de facturación: llega un correo al
+día, solo si en las últimas 24 horas hubo algo. Es **Incidencias en notificaciones de pago** en
+Ajustes → Comunicaciones: activado por defecto en una instalación nueva, y se puede desactivar
+ahí. Una instalación anterior empieza con él desactivado; actívalo ahí.
+
+Si la pasarela cobró y el recibo sigue pendiente, márcalo como pagado eligiendo Redsys, Bizum o
+Stripe: memship pide la **referencia de la pasarela** (el código de autorización o el
+identificador del pago) para poder cuadrarlo con el banco.
+
 > **Para darlos de alta paso a paso** — qué credencial pedir a Stripe o al banco, cómo crear
 > el webhook de Stripe y por qué Redsys no lo necesita — consulta la
 > [guía de proveedores de pago](../../en/admin-guide/payment-providers.md) _(en inglés)_.

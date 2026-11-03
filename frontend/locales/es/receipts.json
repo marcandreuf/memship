@@ -88,7 +88,7 @@
     "paymentProcessing": "Procesando pago...",
     "paymentSuccessTitle": "Pago realizado",
     "paymentSuccessMessage": "Tu pago se ha procesado correctamente.",
-    "paymentPendingMessage": "Tu pago se está procesando. Te enviaremos un email cuando se confirme.",
+    "paymentPendingMessage": "Tu pago se está procesando. El recibo aparecerá como pagado en cuanto la pasarela lo confirme.",
     "paymentCancelTitle": "Pago cancelado",
     "paymentCancelMessage": "El pago no se ha completado. Puedes intentarlo de nuevo o volver atrás.",
     "tryAgain": "Reintentar",
@@ -103,6 +103,8 @@
     "inRemittanceSent": "enviada al banco, cobro en curso",
     "inRemittanceOpen": "aún no enviada",
     "gatewayReference": "Referencia de la pasarela",
-    "gatewayReferenceHint": "El código de autorización (Redsys, Bizum) o el identificador del pago (Stripe), tal como aparece en la liquidación del banco o de la pasarela."
+    "gatewayReferenceHint": "El código de autorización (Redsys, Bizum) o el identificador del pago (Stripe), tal como aparece en la liquidación del banco o de la pasarela.",
+    "paymentUnconfirmedTitle": "Pago pendiente de confirmación",
+    "paymentUnconfirmedMessage": "Todavía no hemos recibido la confirmación de la pasarela. Si el cargo aparece en tu banco, no vuelvas a pagar: contacta con la organización para que lo revise."
   }
 }

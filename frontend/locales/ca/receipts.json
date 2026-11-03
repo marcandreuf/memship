@@ -88,7 +88,7 @@
     "paymentProcessing": "Processant pagament...",
     "paymentSuccessTitle": "Pagament realitzat",
     "paymentSuccessMessage": "El teu pagament s'ha processat correctament.",
-    "paymentPendingMessage": "El teu pagament s'està processant. T'enviarem un email quan es confirmi.",
+    "paymentPendingMessage": "El teu pagament s'està processant. El rebut apareixerà com a pagat tan bon punt la passarel·la el confirmi.",
     "paymentCancelTitle": "Pagament cancel·lat",
     "paymentCancelMessage": "El pagament no s'ha completat. Pots intentar-ho de nou o tornar enrere.",
     "tryAgain": "Reintentar",
@@ -103,6 +103,8 @@
     "inRemittanceSent": "enviada al banc, cobrament en curs",
     "inRemittanceOpen": "encara no enviada",
     "gatewayReference": "Referència de la passarel·la",
-    "gatewayReferenceHint": "El codi d'autorització (Redsys, Bizum) o l'identificador del pagament (Stripe), tal com apareix a la liquidació del banc o de la passarel·la."
+    "gatewayReferenceHint": "El codi d'autorització (Redsys, Bizum) o l'identificador del pagament (Stripe), tal com apareix a la liquidació del banc o de la passarel·la.",
+    "paymentUnconfirmedTitle": "Pagament pendent de confirmació",
+    "paymentUnconfirmedMessage": "Encara no hem rebut la confirmació de la passarel·la. Si el càrrec apareix al teu banc, no tornis a pagar: contacta amb l'organització perquè ho revisi."
   }
 }

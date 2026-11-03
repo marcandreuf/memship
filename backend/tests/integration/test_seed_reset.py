@@ -44,7 +44,7 @@ from app.domains.audit.models import AuditLog
 from app.domains.auth.models import Role, User
 from app.domains.billing.models import InvoiceSequence, PaymentProvider, Receipt
 from app.domains.members.models import Member, MembershipType
-from app.domains.mailing.policy import is_enabled
+from app.domains.mailing.policy import BY_KEY, is_enabled
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Person
 
@@ -337,8 +337,35 @@ class TestOrganizationDetails:
         org = db.query(OrganizationSettings).one()
         assert is_enabled(db, "registration_approved") is True
         assert org.communications_config["templates"] == {
-            "registration_approved": {"enabled": True}
+            "registration_approved": {"enabled": True},
+            "webhook_digest": {"enabled": True},
         }
+
+    def test_new_install_starts_with_the_payment_digest_on_but_switchable(self, db):
+        # #514: on by default so a club hears about money going wrong, yet an
+        # ordinary optional template — off is a choice the club can make.
+        _base_install(db)
+        create_org_settings(db, {"name": "Fresh Club"})
+
+        assert is_enabled(db, "webhook_digest") is True
+        assert BY_KEY["webhook_digest"].tier == "optional"
+
+        org = db.query(OrganizationSettings).one()
+        org.communications_config = {"templates": {"webhook_digest": {"enabled": False}}}
+        db.flush()
+        assert is_enabled(db, "webhook_digest") is False
+
+    def test_an_existing_club_is_not_switched_on(self, db):
+        """Only a new install gets the default; an existing one keeps its choice."""
+        _base_install(db)
+        create_org_settings(db, {"name": "First"})
+        org = db.query(OrganizationSettings).one()
+        org.communications_config = {"templates": {}}
+        db.flush()
+
+        create_org_settings(db, {"name": "Second"})
+
+        assert is_enabled(db, "webhook_digest") is False
 
     def test_second_call_leaves_the_existing_organization_alone(self, db):
         _base_install(db)

@@ -268,8 +268,16 @@ def create_org_settings(db, details: dict, address: dict | None = None) -> None:
         # On for a new install only; an existing club's choice is never touched.
         # Approval is the one member-facing mail with no in-app substitute: a
         # pending applicant has no other way to learn they were let in (#337).
+        # The payment-notification digest reports money going wrong silently —
+        # a double charge, or every confirmation refused by a wrong webhook
+        # secret — which a club that never finds the switch would never hear
+        # of (#514). It stays optional, so a club can turn it off, and sends
+        # nothing until a billing notification address is set.
         communications_config={
-            "templates": {"registration_approved": {"enabled": True}},
+            "templates": {
+                "registration_approved": {"enabled": True},
+                "webhook_digest": {"enabled": True},
+            },
         },
     )
     db.add(org)
