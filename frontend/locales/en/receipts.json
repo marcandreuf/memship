@@ -88,7 +88,7 @@
     "paymentProcessing": "Processing payment...",
     "paymentSuccessTitle": "Payment Successful",
     "paymentSuccessMessage": "Your payment has been processed successfully.",
-    "paymentPendingMessage": "Your payment is being processed. We'll email you when confirmed.",
+    "paymentPendingMessage": "Your payment is being processed. The receipt will show as paid as soon as the gateway confirms it.",
     "paymentCancelTitle": "Payment Cancelled",
     "paymentCancelMessage": "Your payment was not completed. You can try again or go back.",
     "tryAgain": "Try Again",
@@ -103,6 +103,8 @@
     "inRemittanceSent": "sent to the bank, collection in progress",
     "inRemittanceOpen": "not sent yet",
     "gatewayReference": "Gateway reference",
-    "gatewayReferenceHint": "The authorisation code (Redsys, Bizum) or the payment id (Stripe), as it appears on the bank's or the gateway's settlement."
+    "gatewayReferenceHint": "The authorisation code (Redsys, Bizum) or the payment id (Stripe), as it appears on the bank's or the gateway's settlement.",
+    "paymentUnconfirmedTitle": "Payment awaiting confirmation",
+    "paymentUnconfirmedMessage": "We haven't received the gateway's confirmation yet. If the charge appears in your bank account, don't pay again: contact the organisation so they can check it."
   }
 }

@@ -5,9 +5,13 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "@/lib/i18n/routing";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useReceiptByStripeSession } from "@/features/receipts/hooks/use-receipts";
+import {
+  STRIPE_CONFIRMATION_WAIT_MS,
+  useReceiptByStripeSession,
+  useWaitedPast,
+} from "@/features/receipts/hooks/use-receipts";
 import { useFormatters } from "@/hooks/use-formatters";
-import { CircleCheck, Loader2 } from "lucide-react";
+import { CircleAlert, CircleCheck, Loader2 } from "lucide-react";
 
 export default function PaymentSuccessPage() {
   const t = useTranslations();
@@ -19,6 +23,17 @@ export default function PaymentSuccessPage() {
   const { data: receipt, isLoading } = useReceiptByStripeSession(sessionId);
 
   const isPaid = receipt?.status === "paid";
+  const unconfirmed = useWaitedPast(STRIPE_CONFIRMATION_WAIT_MS, !isPaid);
+
+  let title = t("receipts.paymentProcessing");
+  let message = t("receipts.paymentPendingMessage");
+  if (isPaid) {
+    title = t("receipts.paymentSuccessTitle");
+    message = t("receipts.paymentSuccessMessage");
+  } else if (unconfirmed) {
+    title = t("receipts.paymentUnconfirmedTitle");
+    message = t("receipts.paymentUnconfirmedMessage");
+  }
 
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
@@ -26,21 +41,15 @@ export default function PaymentSuccessPage() {
         <CardHeader className="text-center">
           {isPaid ? (
             <CircleCheck className="mx-auto h-12 w-12 text-green-500 mb-2" />
+          ) : unconfirmed ? (
+            <CircleAlert className="mx-auto h-12 w-12 text-amber-500 mb-2" />
           ) : (
             <Loader2 className="mx-auto h-12 w-12 text-muted-foreground animate-spin mb-2" />
           )}
-          <CardTitle>
-            {isPaid
-              ? t("receipts.paymentSuccessTitle")
-              : t("receipts.paymentProcessing")}
-          </CardTitle>
+          <CardTitle>{title}</CardTitle>
         </CardHeader>
         <CardContent className="text-center space-y-4">
-          <p className="text-muted-foreground">
-            {isPaid
-              ? t("receipts.paymentSuccessMessage")
-              : t("receipts.paymentPendingMessage")}
-          </p>
+          <p className="text-muted-foreground">{message}</p>
 
           {receipt && (
             <div className="text-sm space-y-1">

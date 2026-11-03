@@ -27,6 +27,7 @@ You do not need to edit any file or restart anything. Every credential in this g
    - [Testing](#55-testing)
    - [Redsys troubleshooting](#56-redsys-troubleshooting)
 6. [Activation, test mode, and what members see](#6-activation-test-mode-and-what-members-see)
+   - [When a payment notification goes wrong](#61-when-a-payment-notification-goes-wrong)
 7. [Field reference](#7-field-reference)
 
 ---
@@ -134,7 +135,7 @@ In **Settings → Payments → Providers**, add a Stripe provider and enter:
 
 A newly created provider starts **disabled**. Configure it first, test it, then activate it.
 
-> **The Webhook Secret is format-checked, but only for its shape.** memship refuses to save a value that does not begin `whsec_`, so the common paste error — a secret key, a publishable key, something from the wrong box — is caught the moment you save it rather than at activation. What no local check can catch is a *correctly shaped* secret from the wrong endpoint: an old one, or one from an endpoint you deleted. It looks identical, saves cleanly, and then fails verification on every event — the member sees success, the receipt stays unpaid, and no screen reports anything. Only the end-to-end test in 4.5 tells you the value is the right one.
+> **The Webhook Secret is format-checked, but only for its shape.** memship refuses to save a value that does not begin `whsec_`, so the common paste error — a secret key, a publishable key, something from the wrong box — is caught the moment you save it rather than at activation. What no local check can catch is a *correctly shaped* secret from the wrong endpoint: an old one, or one from an endpoint you deleted. It looks identical, saves cleanly, and then fails verification on every event — the member sees success and the receipt stays unpaid. memship refuses each of those notifications and counts it, so **Payment notifications** (see [6.1](#61-when-a-payment-notification-goes-wrong)) shows the refusals and why — but only once a real payment has been attempted. The end-to-end test in 4.5 is what tells you the value is the right one.
 
 ### 4.5 Testing
 
@@ -145,7 +146,7 @@ To test the webhook, take a receipt through a real payment with Stripe in test m
 - the receipt in memship moved to **paid**
 - the delivery in **Stripe → Developers → Webhooks** shows a `2xx` response
 
-A delivery showing `400` with a signature error means the Webhook Secret is wrong.
+A delivery showing `400` with a signature error means the Webhook Secret is wrong; memship counts it under **Payment notifications** too.
 
 ### 4.6 Stripe troubleshooting
 
@@ -157,7 +158,7 @@ A delivery showing `400` with a signature error means the Webhook Secret is wron
 | Stripe shows `404` | The URL is missing the `/api/v1/` prefix, so it reached the web interface instead of the API |
 | Receipt stays unpaid, everything else looks correct | See the amount-mismatch note below |
 
-> **A payment for the wrong amount is refused on purpose.** memship compares the amount Stripe reports against the receipt total and, if they differ, **leaves the receipt unpaid** and logs an error for a person to review. A valid signature proves Stripe sent the message, not that the sum is the one you asked for. This looks exactly like a broken webhook, so check the backend log before concluding the configuration is wrong.
+> **A payment for the wrong amount is refused on purpose.** memship compares the amount Stripe reports against the receipt total and, if they differ, **leaves the receipt unpaid** and records the notification as **ignored** with both amounts, under **Payment notifications**, for a person to review. A valid signature proves Stripe sent the message, not that the sum is the one you asked for. This looks exactly like a broken webhook, so check Payment notifications before concluding the configuration is wrong.
 
 ---
 
@@ -239,6 +240,18 @@ Whichever you offer, use the **test** status first and complete one real payment
 **memship refuses to activate a provider that could not take a payment.** Activation is the last moment an incomplete configuration is still a settings problem — past it, the missing field resurfaces as a failed payment on a member's screen. If activation is refused, the message names the fields at fault.
 
 This check is local. It confirms your configuration is internally coherent; it cannot know that a key was revoked at the provider yesterday. That is one more reason to complete a real payment before relying on it.
+
+### 6.1 When a payment notification goes wrong
+
+Under the providers, **Payment notifications** lists what the gateways sent that memship did not apply:
+
+- **Failed** — memship could not apply it. The gateway retries, so a failure that clears on its own is normal; one that stays is not.
+- **Ignored** — memship received it and deliberately did nothing: an event type it does not handle, a wrong amount, or a payment for a receipt **already paid**. That last one is how a double charge shows up — the member paid twice and the second payment needs refunding at the gateway.
+- **Refused at the signature check** — shown as a count per provider above the list, with the last reason. These are never stored, because nothing in an unverified message can be trusted. A count that keeps rising means the configured secret is wrong and **no** payment is being confirmed.
+
+To be told rather than having to look, set the billing notification address and switch on **Payment notification problems** under Settings → Communications. memship then sends one email a day, only when something went wrong in the previous 24 hours.
+
+If the gateway took the money and the receipt is still unpaid, mark it paid by hand choosing Redsys, Bizum or Stripe as the method: memship asks for the gateway reference (the authorisation code or payment id from the settlement) so the payment can still be matched to the bank.
 
 ---
 

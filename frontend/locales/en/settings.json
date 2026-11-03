@@ -124,7 +124,10 @@
           "processed": "Processed",
           "failed": "Failed",
           "ignored": "Ignored"
-        }
+        },
+        "rejected": "{provider}: {count, plural, one {# notification} other {# notifications}} refused at the signature check in the last {days} days. Last: {at} — {reason}",
+        "rejectedHint": "If these keep arriving, the configured webhook secret is wrong and no payment is being confirmed.",
+        "rejectedUnavailable": "The count of refused notifications could not be read."
       }
     },
     "recurringBilling": {
@@ -391,6 +394,10 @@
         "announcement": {
           "name": "Announcements",
           "description": "Delivery of the announcements admins broadcast."
+        },
+        "webhook_digest": {
+          "name": "Payment notification problems",
+          "description": "Daily summary, to the billing notification address, of failed, ignored or refused payment notifications."
         }
       }
     },

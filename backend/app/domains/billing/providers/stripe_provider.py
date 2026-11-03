@@ -139,6 +139,11 @@ class StripeAdapter(PaymentProviderAdapter):
             )
         except stripe.SignatureVerificationError as exc:
             raise ValueError(f"Invalid signature: {exc}") from exc
+        except (AttributeError, KeyError, TypeError, ValueError) as exc:
+            # A correctly signed body that is not a Stripe event — no
+            # `"object": "event"`, not JSON at all — fails inside the SDK while it
+            # builds the event. That is a bad request, not a server error (#514).
+            raise ValueError(f"Not a Stripe event: {exc}") from exc
 
         return json.loads(raw_body)
 

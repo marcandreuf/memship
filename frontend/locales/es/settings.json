@@ -124,7 +124,10 @@
           "processed": "Procesada",
           "failed": "Fallida",
           "ignored": "Ignorada"
-        }
+        },
+        "rejected": "{provider}: {count, plural, one {# notificación rechazada} other {# notificaciones rechazadas}} por la firma en los últimos {days} días. Última: {at} — {reason}",
+        "rejectedHint": "Si siguen llegando, la clave del webhook configurada no es la correcta y no se está confirmando ningún pago.",
+        "rejectedUnavailable": "No se ha podido leer el recuento de notificaciones rechazadas."
       }
     },
     "recurringBilling": {
@@ -391,6 +394,10 @@
         "announcement": {
           "name": "Anuncios",
           "description": "Difusión de los anuncios que envían los administradores."
+        },
+        "webhook_digest": {
+          "name": "Incidencias en notificaciones de pago",
+          "description": "Resumen diario, a la dirección de notificaciones de facturación, de los avisos de pago fallidos, ignorados o rechazados."
         }
       }
     },

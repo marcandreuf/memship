@@ -130,6 +130,49 @@ def scheduled_membership_lapse() -> dict:
 
 
 @celery.task
+def scheduled_webhook_digest() -> dict:
+    """Daily Beat entry point: email the last day's payment notification problems (#514).
+
+    Failed and ignored notifications, and those refused at the signature
+    check, to ``billing_notification_email``. Silent when there is no address
+    or nothing went wrong; the template switch in Settings applies as usual.
+    Best-effort like the billing summary: a send failure is logged, not raised.
+    """
+    from datetime import datetime, timezone
+
+    from app.core.email import send_webhook_digest_email
+    from app.db.session import SessionLocal
+    from app.domains.billing.webhook_digest import build_digest
+    from app.domains.organizations.models import OrganizationSettings
+
+    db = SessionLocal()
+    try:
+        org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
+        to = ((org.features if org else None) or {}).get("billing_notification_email")
+        if not to:
+            return {"sent": False, "reason": "no_address"}
+
+        digest = build_digest(db, datetime.now(timezone.utc), org.timezone if org else None)
+        if digest.is_empty:
+            return {"sent": False, "reason": "nothing_to_report"}
+
+        try:
+            sent = send_webhook_digest_email(
+                to,
+                digest.events,
+                digest.events_total,
+                digest.rejections,
+                (org.locale if org else None) or "es",
+            )
+        except Exception as exc:  # noqa: BLE001 — notification is best-effort
+            logger.error(f"Webhook digest email failed: to={to}, error={exc}")
+            sent = False
+        return {"sent": bool(sent), "events": digest.events_total, "rejections": len(digest.rejections)}
+    finally:
+        db.close()
+
+
+@celery.task
 def payment_notifications_fanout(receipt_ids: list[int]) -> int:
     """Queue one notification task per receipt that has just been paid.
 
