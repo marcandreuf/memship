@@ -143,10 +143,12 @@ create for the domain propagating.
 - **No managed database.** PostgreSQL runs as one of the seven containers.
 - **No object storage.** Uploads go to a directory on the server's disk.
 - **No separate job queue service.** Redis and Celery are in the stack.
-- **No licence fee, and no per-member cost.** Memship is source-available under the
-  [Elastic License 2.0](https://github.com/marcandreuf/memship/blob/main/LICENSE). You are free to use, modify and self-host it; the licence
-  restricts offering it as a managed service to third parties, which is not what an association
-  running it for its own members is doing.
+- **No licence fee, and no per-member cost.** Memship is open source under the
+  [GNU AGPL v3](https://github.com/marcandreuf/memship/blob/main/LICENSE). You are free to use,
+  modify and self-host it, whether for your own members or as a service for other organisations.
+  The one condition is that if you modify it and let other people use it over a network, you must
+  offer them the source of your modified version. Running it unmodified for your own members asks
+  nothing of you.
 
 ## Who installs it
 

@@ -170,4 +170,23 @@ The version the running app reports comes from the `APP_VERSION` environment var
 
 ## License
 
-By contributing to Memship, you agree that your contributions will be licensed under the [Elastic License 2.0 (ELv2)](LICENSE).
+Memship is licensed under the [GNU Affero General Public License v3](LICENSE).
+By contributing, you agree that your contribution is licensed the same way.
+
+### Sign your work
+
+Contributions are accepted under the [Developer Certificate of Origin](DCO),
+not a contributor licence agreement. **You keep the copyright in your own
+work** — nothing is signed over to anyone, and that is deliberate: Memship is
+not going to be relicensed or sold under commercial terms, so there is no
+reason to ask you for rights beyond the AGPL.
+
+What it does ask is that you certify you have the right to submit what you
+are submitting. Add a sign-off line to each commit:
+
+```
+Signed-off-by: Your Name <your.email@example.com>
+```
+
+`git commit -s` adds it for you. The name must be a real one; anonymous
+contributions cannot be certified.

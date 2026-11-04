@@ -6,7 +6,7 @@
 
 **Gestió de socis per a tothom.**
 
-Memship és un programari autohospedable de gestió de socis, de **codi font obert** i amb llicència [Elastic License 2.0](LICENSE), dissenyat per a associacions culturals, clubs esportius, entitats esportives, col·legis professionals i qualsevol organització basada en membres. Desplegeu-lo a la vostra pròpia infraestructura, manteniu el control de les vostres dades i gestioneu la vostra comunitat amb eines modernes. Amb Memship podeu portar el control de socis, la gestió de quotes, la facturació de socis, les inscripcions a activitats i molt més, tot des d'una única plataforma autohospedable.
+Memship és un programari autohospedable de gestió de socis, de **codi font obert** i de codi obert sota l'[AGPL v3 de GNU](LICENSE), dissenyat per a associacions culturals, clubs esportius, entitats esportives, col·legis professionals i qualsevol organització basada en membres. Desplegeu-lo a la vostra pròpia infraestructura, manteniu el control de les vostres dades i gestioneu la vostra comunitat amb eines modernes. Amb Memship podeu portar el control de socis, la gestió de quotes, la facturació de socis, les inscripcions a activitats i molt més, tot des d'una única plataforma autohospedable.
 
 ---
 
@@ -286,4 +286,11 @@ Les vulnerabilitats de seguretat es comuniquen per un canal privat, no en una is
 
 ## Llicència
 
-Memship està llicenciat sota la [Elastic License 2.0 (ELv2)](LICENSE). Podeu utilitzar, modificar i autohospedar Memship lliurement. La llicència restringeix oferir-lo com a servei gestionat a tercers.
+Memship és programari lliure sota la [Llicència Pública General Affero de GNU v3](LICENSE).
+Podeu utilitzar-lo, modificar-lo i autohospedar-lo, per a vosaltres o com a servei per a
+tercers. Si el modifiqueu i permeteu que altres persones l'utilitzin a través d'una xarxa,
+els heu d'oferir el codi font de la vostra versió modificada (secció 13 de l'AGPL).
+
+Les versions fins a la v3.0.2 inclosa continuen sota la Elastic License 2.0 amb què es van
+publicar; el canvi de llicència no és retroactiu. Els drets d'autor corresponen a les persones que figuren a
+[AUTHORS](AUTHORS).

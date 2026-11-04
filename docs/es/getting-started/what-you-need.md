@@ -1,5 +1,5 @@
 <!-- source: en/getting-started/what-you-need.md -->
-<!-- source-hash: 9f5a006988a7 -->
+<!-- source-hash: 8dbc13c61ae3 -->
 
 # Qué necesitas para ejecutar Memship
 
@@ -153,10 +153,12 @@ imágenes (358 MB) y la propagación del registro DNS que crees para el dominio.
 - **Base de datos gestionada, no.** PostgreSQL es uno de los siete contenedores.
 - **Almacenamiento de objetos, no.** Lo que se sube va a un directorio del disco del servidor.
 - **Un servicio de colas aparte, no.** Redis y Celery van dentro.
-- **Sin cuota de licencia y sin coste por socio.** Memship es de código fuente abierto, con
-  licencia [Elastic License 2.0](https://github.com/marcandreuf/memship/blob/main/LICENSE). Puedes
-  usarlo, modificarlo y autoalojarlo libremente; la licencia restringe ofrecerlo como servicio
-  gestionado a terceros, que no es lo que hace una entidad que lo ejecuta para sus propios socios.
+- **Sin cuota de licencia y sin coste por socio.** Memship es software libre, con licencia
+  [AGPL v3 de GNU](https://github.com/marcandreuf/memship/blob/main/LICENSE). Puedes usarlo,
+  modificarlo y autoalojarlo, tanto para tus propios socios como ofreciéndolo como servicio a otras
+  organizaciones. La única condición es que, si lo modificas y permites que otras personas lo usen
+  a través de una red, debes ofrecerles el código fuente de tu versión modificada. Ejecutarlo sin
+  modificar para tus propios socios no te exige nada.
 
 ## Quién lo instala
 
