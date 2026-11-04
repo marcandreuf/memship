@@ -342,6 +342,17 @@ def seed_membership_types(db, groups: dict[str, Group]) -> MembershipType:
     senior_group = groups.get("senior-members")
     honorary_group = groups.get("honorary-members")
 
+    # Every tier but Registered issues a member card. The column defaults to
+    # false and stays that way for an upgrade, so a club that already had cards
+    # on decides for itself which tiers keep them (#428). A freshly seeded club
+    # is in that same position and nobody had ticked anything, which left the
+    # card module switched on with no member able to hold one and failed the
+    # member-card specs on correct behaviour (#519).
+    #
+    # Registered is the exception rather than an oversight: it is the free tier
+    # a sign-up lands on until an administrator moves them to a plan, so "no
+    # card yet" is the thing the per-type switch exists to say. Honorary carries
+    # a card despite costing nothing — it is granted by the board, not landed on.
     types = [
         MembershipType(
             name="Registered", slug="registered",
@@ -354,7 +365,7 @@ def seed_membership_types(db, groups: dict[str, Group]) -> MembershipType:
             description="Full membership with access to all facilities and voting rights",
             group_id=adult_group.id if adult_group else None,
             base_price=50.00, billing_frequency="monthly",
-            display_order=1, is_active=True,
+            display_order=1, is_active=True, issues_card=True,
         ),
         MembershipType(
             name="Student", slug="student",
@@ -362,14 +373,14 @@ def seed_membership_types(db, groups: dict[str, Group]) -> MembershipType:
             group_id=adult_group.id if adult_group else None,
             base_price=25.00, billing_frequency="monthly",
             min_age=16, max_age=25,
-            display_order=2, is_active=True,
+            display_order=2, is_active=True, issues_card=True,
         ),
         MembershipType(
             name="Family", slug="family",
             description="Family plan covering up to 2 adults and 3 children under 18",
             group_id=adult_group.id if adult_group else None,
             base_price=90.00, billing_frequency="monthly",
-            display_order=3, is_active=True,
+            display_order=3, is_active=True, issues_card=True,
         ),
         MembershipType(
             name="Youth", slug="youth",
@@ -377,7 +388,7 @@ def seed_membership_types(db, groups: dict[str, Group]) -> MembershipType:
             group_id=youth_group.id if youth_group else None,
             base_price=15.00, billing_frequency="monthly",
             max_age=15,
-            display_order=4, is_active=True,
+            display_order=4, is_active=True, issues_card=True,
         ),
         MembershipType(
             name="Senior", slug="senior",
@@ -385,14 +396,14 @@ def seed_membership_types(db, groups: dict[str, Group]) -> MembershipType:
             group_id=senior_group.id if senior_group else None,
             base_price=30.00, billing_frequency="monthly",
             min_age=65,
-            display_order=5, is_active=True,
+            display_order=5, is_active=True, issues_card=True,
         ),
         MembershipType(
             name="Honorary", slug="honorary",
             description="Complimentary lifetime membership granted by the board",
             group_id=honorary_group.id if honorary_group else None,
             base_price=0, billing_frequency="one_time",
-            display_order=6, is_active=True,
+            display_order=6, is_active=True, issues_card=True,
         ),
         # The only paid plan that is not monthly, and the reason it is here: a
         # monthly period is never prorated, so with monthly plans alone nothing
@@ -404,7 +415,7 @@ def seed_membership_types(db, groups: dict[str, Group]) -> MembershipType:
             description="Full membership paid once a year; a mid-year join is charged for the remaining whole months",
             group_id=adult_group.id if adult_group else None,
             base_price=200.00, billing_frequency="annual",
-            display_order=7, is_active=True,
+            display_order=7, is_active=True, issues_card=True,
         ),
     ]
     existing_slugs = {slug for (slug,) in db.query(MembershipType.slug).all()}
@@ -726,6 +737,27 @@ TEST_ACCOUNTS = [
         "email": "treasurer@examplee6e3b1.com",
         "password": "TestTreasurer1!",
         "role": "treasurer",
+    },
+    {
+        # The member-card specs need a member who actually holds a card, and
+        # `member@` cannot be one: it sits on the default `registered` tier,
+        # which issues no card by design (#519), and 21 specs log in as it, so
+        # moving it would change the tier that now also drives per-type activity
+        # pricing (#427). A second account costs nothing and keeps both paths
+        # testable — `member@` proves the card is withheld, this one proves it
+        # is issued.
+        #
+        # The address must not contain `member@examplee6e3b1.com` as a
+        # substring. `payments/stripe-checkout.cy.ts` and `redsys-flow.cy.ts`
+        # resolve that account with `?search=member@examplee6e3b1.com` and take
+        # `items[0]`, so `card-member@` matched both and handed the payments
+        # specs the wrong member to raise a receipt against.
+        "first_name": "Card",
+        "last_name": "Holder",
+        "email": "cardholder@examplee6e3b1.com",
+        "password": "TestCardMember1!",
+        "role": "member",
+        "membership_type_slug": "full-member",
     },
     {
         # Exists only to be mutated by role-assignment.cy.ts (#185). That spec
@@ -1905,7 +1937,13 @@ def run_test_mode(db, membership_type: MembershipType) -> None:
         if account["role"] in (SUPER_ADMIN_SLUG, ADMIN_SLUG):
             create_staff_user(db, account, account["role"])
         else:
-            create_user_with_member(db, account, account["role"], membership_type)
+            # Most accounts land on the default tier. An account naming a slug
+            # wants a specific one, and the tier is the point of the account.
+            tier = membership_type
+            slug = account.get("membership_type_slug")
+            if slug:
+                tier = db.query(MembershipType).filter_by(slug=slug).first() or membership_type
+            create_user_with_member(db, account, account["role"], tier)
 
     admin_id = any_admin_user_id(db)
     if admin_id:
