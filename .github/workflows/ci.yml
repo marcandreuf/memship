@@ -296,17 +296,24 @@ jobs:
   # and have never once failed in CI (#506). CI was structurally unable to see
   # the category, not merely lucky.
   #
-  # `continue-on-error` because this job is EXPECTED RED on arrival: #506 is
-  # open and this is what reports it. A gate that is red from its first commit
-  # teaches everyone to ignore it, so it reports and does not block. Remove the
-  # flag when #506 is fixed, and not before — that is the point at which this
-  # becomes a gate worth having.
+  # The two tests #506 is about are DESELECTED, so this job is green today and
+  # red only on a NEW leak.
+  #
+  # The alternative was to run them and mark the job `continue-on-error`. That
+  # keeps the workflow green but the check itself still reports failure, so
+  # every backend pull request would carry a red X that means "yes, we know".
+  # A check that is red from its first commit teaches people to ignore the
+  # check, which is the opposite of what this job is for.
+  #
+  # Deselecting makes it a real gate from day one: it asserts that nothing
+  # OTHER than the known pair leaks across the unit/integration boundary, which
+  # is the thing no other job can see at all. #506 keeps the two known failures,
+  # reproduced there with a CI run. Remove the deselects when it is fixed.
   combined:
     name: Full Suite (single process)
     needs: changes
     if: ${{ needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
-    continue-on-error: true
 
     services:
       postgres:
@@ -354,6 +361,10 @@ jobs:
 
       # No `-n`: xdist would put the suites back into separate processes and
       # undo the entire reason this job exists.
+      #
+      # The two deselects are #506, reproduced and evidenced on that issue. They
+      # fail here and pass in `Unit Tests`, which is the whole point, and they
+      # come back the day #506 closes.
       - name: Run the whole suite in one process
         id: suite
         working-directory: backend
@@ -361,20 +372,26 @@ jobs:
           DATABASE_URL: postgresql://memship:memship@localhost:5435/memship_test_db
           DATABASE_TEST_URL: postgresql://memship:memship@localhost:5435/memship_test_db
           SECRET_KEY: test-secret-key-for-ci-minimum-32-chars
-        run: uv run pytest tests/ --tb=short -q
+        run: |
+          uv run pytest tests/ --tb=short -q \
+            --deselect tests/unit/test_rate_limit.py::TestRedisUnavailable::test_the_fallback_is_logged_as_an_error \
+            --deselect tests/unit/test_rate_limit.py::TestRedisUnavailable::test_recovery_is_logged
 
       - name: Report what this job saw
         if: always()
         run: |
           echo "### Full suite, single process" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Two tests are deselected here and tracked in #506." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           if [ "${{ steps.suite.outcome }}" = "success" ]; then
-            echo "Passed. Nothing leaked across the unit/integration boundary." >> $GITHUB_STEP_SUMMARY
+            echo "Passed: nothing else leaks across the unit/integration boundary." >> $GITHUB_STEP_SUMMARY
           else
-            echo "Failed, and this job does not block the build (#506)." >> $GITHUB_STEP_SUMMARY
+            echo "**Failed, and this is worth reading.**" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "A failure here that Unit Tests and Integration Tests do not show is" >> $GITHUB_STEP_SUMMARY
-            echo "process-global state leaking between the two suites." >> $GITHUB_STEP_SUMMARY
+            echo "process-global state leaking between the two suites — a new instance" >> $GITHUB_STEP_SUMMARY
+            echo "of #506, not the known one, which is deselected above." >> $GITHUB_STEP_SUMMARY
           fi
 
   frontend:
