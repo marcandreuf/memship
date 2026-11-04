@@ -33,6 +33,31 @@ on:
         type: boolean
         default: false
 
+# One release at a time, globally, and never cancel one midway.
+#
+# Every release pushes `:X.Y.Z` AND `:latest`, and `:latest` is what
+# docker-compose.yml resolves by default and what the quickstart file names
+# outright. Two tags pushed close together therefore race on a tag they both
+# write, and `:latest` ends up wherever the SLOWER run finished — which need
+# not be the newer release. build-images.yml had the same shape and left
+# `memship-backend:main` a commit behind `memship-frontend:main` with nothing
+# reported as failed (#371); this is that one level further along (#373).
+#
+# The group is global on purpose. Keying it per version would let two releases
+# run at once and race on `:latest` again, which is the thing being fixed.
+#
+# `cancel-in-progress: false` for the reason build-images.yml spells out: a
+# cancelled release can leave a version tagged in git with no promoted images,
+# and the next release has no way to tell that happened. Releases queue; they
+# do not get dropped.
+#
+# v2.16.0 and v2.17.0 were serialised BY HAND on 2026-10-14 — waiting for the
+# first run to report success before pushing the second tag — which worked only
+# because someone knew to wait.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 env:
   REGISTRY: ghcr.io
 
