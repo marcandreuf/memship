@@ -14,6 +14,21 @@
 #
 # The cost is the `changes` job on runs that then skip everything else.
 #
+# `pull_request` matches EVERY base branch, not just main. Scoped to `main` it
+# did not match a PR opened against another branch — the natural thing to do
+# when one change depends on another — so a stacked PR ran nothing at all while
+# GitHub still reported it MERGEABLE/CLEAN. `mergeable` describes conflicts, not
+# checks, so the PR looked ready by every signal a reviewer glances at (#455).
+# `edited` is in the types for the other half: retargeting a PR fires `edited`,
+# which is not in the default set, so a PR opened against another base and then
+# pointed at main kept reporting no checks.
+#
+# One consequence worth knowing: `paths-filter` diffs against the PR's own base,
+# so a stacked PR filters on its own changes rather than on everything since
+# main. That is the right reading for incremental review — the PR underneath
+# already ran its own suites — but it means the filter answers a narrower
+# question on a stacked PR than on one based on main.
+#
 name: CI
 
 on:
@@ -22,7 +37,8 @@ on:
       - main
   pull_request:
     branches:
-      - main
+      - '**'
+    types: [opened, synchronize, reopened, edited]
   workflow_dispatch:
 
 jobs:
