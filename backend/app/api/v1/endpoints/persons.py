@@ -4,13 +4,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.db_utils import get_person_by_party_or_404
-from app.core.security.dependencies import get_current_user
-from app.core.authorization import require_any_permission, require_permission, user_has
+from app.core.authorization import require_any_permission, user_has
 from app.db.session import get_db
 from app.domains.auth.models import User
 from app.domains.members.schemas import PersonResponse
 from app.domains.persons.gender import require_offered_gender
-from app.domains.persons.models import Person
 
 router = APIRouter(prefix="/persons", tags=["persons"])
 

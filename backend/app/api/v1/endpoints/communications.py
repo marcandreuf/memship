@@ -7,7 +7,6 @@ from sqlalchemy.orm import Session
 
 from app.core.authorization import require_permission
 from app.core.pagination import paginate
-from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
 from app.domains.auth.models import User
 from app.domains.communications import service

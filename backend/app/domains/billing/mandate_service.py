@@ -1,7 +1,7 @@
 """Mandate service layer — SEPA mandate CRUD, reference generation, status transitions."""
 
 import re
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
 
 from fastapi import HTTPException, status
 from sqlalchemy import func

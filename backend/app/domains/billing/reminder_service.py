@@ -25,7 +25,7 @@ from app.core.clock import org_today
 from app.core.email import EmailOutcome, send_payment_reminder_email
 from app.db.after_commit import run_after_commit
 from app.domains.billing.models import Receipt, ReceiptReminder
-from app.domains.billing.payment_instructions import PAYABLE_STATUSES, how_to_pay
+from app.domains.billing.payment_instructions import how_to_pay
 from app.domains.mailing.policy import is_enabled as template_enabled
 from app.domains.members.models import Member
 from app.domains.organizations.models import OrganizationSettings

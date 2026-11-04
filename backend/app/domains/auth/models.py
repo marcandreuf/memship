@@ -15,7 +15,7 @@ from sqlalchemy import (
     func,
     text,
 )
-from sqlalchemy.dialects.postgresql import INET, JSONB
+from sqlalchemy.dialects.postgresql import INET
 from sqlalchemy.orm import relationship, validates
 
 from app.core.schema_types import normalize_email
