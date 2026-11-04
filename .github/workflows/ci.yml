@@ -52,6 +52,7 @@ jobs:
       shell: ${{ steps.filter.outputs.shell }}
       docs: ${{ steps.filter.outputs.docs }}
       locales: ${{ steps.filter.outputs.locales }}
+      attribution: ${{ steps.filter.outputs.attribution }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -88,6 +89,13 @@ jobs:
             locales:
               - 'frontend/locales/**'
               - 'scripts/check-locales.sh'
+            # A component added to components/ui/ may be vendored from the
+            # shadcn registry, and the notice is the only record of that.
+            attribution:
+              - 'frontend/components/ui/**'
+              - 'frontend/lib/utils.ts'
+              - 'THIRD_PARTY.md'
+              - 'scripts/check-attribution.sh'
 
   caddy-headers:
     name: Caddy Header Parity
@@ -129,6 +137,18 @@ jobs:
 
       - name: Compare the three locale key sets
         run: ./scripts/check-locales.sh
+
+  attribution:
+    name: Third-party Notices
+    needs: changes
+    if: ${{ needs.changes.outputs.attribution == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Every vendored component is accounted for
+        run: ./scripts/check-attribution.sh
 
   shell:
     name: Deployment Script Tests
