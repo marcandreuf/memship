@@ -28,7 +28,6 @@ import argparse
 import getpass
 import os
 import secrets
-import string
 import sys
 from pathlib import Path
 
@@ -55,7 +54,6 @@ from app.domains.billing.models import (
     InvoiceSequence,
     PaymentProvider,
     Receipt,
-    Remittance,
     SepaMandate,
 )
 
@@ -892,9 +890,6 @@ def seed_extra_members(db, default_membership_type: MembershipType) -> list[Memb
 
 def seed_member_contacts(db) -> None:
     """Add sample contacts and bank IBANs for test members."""
-    mobile_type = db.query(ContactType).filter(ContactType.code == "phone_mobile").first()
-    work_email_type = db.query(ContactType).filter(ContactType.code == "email_work").first()
-
     # Sample contacts for a few members
     contact_data = [
         ("maria@examplee6e3b1.com", "+34 612 345 678", "phone_mobile", True),

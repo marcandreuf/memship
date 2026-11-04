@@ -7,7 +7,6 @@ from sqlalchemy.orm import Session
 
 from app.core.authorization import require_any_permission, require_permission
 from app.core.db_utils import get_or_404
-from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
 from app.domains.activities.discount_schemas import (
     DiscountCodeCreate,

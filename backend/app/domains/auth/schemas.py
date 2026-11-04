@@ -1,6 +1,5 @@
 """Auth request/response schemas."""
 
-from datetime import datetime
 
 from pydantic import BaseModel, Field, field_validator
 
