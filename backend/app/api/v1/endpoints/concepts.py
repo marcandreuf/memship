@@ -4,7 +4,6 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.authorization import require_permission
-from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
 from app.domains.auth.models import User
 from app.domains.billing.models import Concept

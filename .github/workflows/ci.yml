@@ -160,6 +160,47 @@ jobs:
       - name: Run the deployment script tests
         run: ./tests/shell/run.sh
 
+  # The backend had no lint or type gate at all, while the frontend had three
+  # (#356). A type checker reports the shadowed `_frontend_url` behind #353 on
+  # its first run, and that defect shipped two dead links in a member-facing
+  # email for as long as it existed.
+  #
+  # Only `F`. The rule set is argued in `backend/pyproject.toml`; the short
+  # version is that the full default set is four-fifths FastAPI false
+  # positives, and a gate nobody can trust is not a gate. mypy is deliberately
+  # NOT here yet: 55 of its 82 findings are one false positive repeated, and it
+  # needs that suppressed before it can mean anything. Tracked separately.
+  lint:
+    name: Backend Lint
+    needs: changes
+    if: ${{ needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "latest"
+          enable-cache: true
+          cache-dependency-glob: "backend/uv.lock"
+
+      # The pinned dev dependency rather than `uvx ruff`, so CI and a developer
+      # run the same version and cannot disagree about what is a finding.
+      - name: Install dependencies
+        working-directory: backend
+        run: uv sync --extra dev
+
+      - name: Ruff
+        working-directory: backend
+        run: uv run ruff check app/
+
   unit:
     name: Unit Tests
     needs: changes

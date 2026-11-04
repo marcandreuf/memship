@@ -1,7 +1,6 @@
 """Receipt PDF generation using WeasyPrint + Jinja2."""
 
 from decimal import Decimal
-from io import BytesIO
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader

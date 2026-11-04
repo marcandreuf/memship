@@ -6,7 +6,6 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 
 from fastapi import HTTPException, status
-from sqlalchemy import extract, func
 from sqlalchemy.orm import Query, Session, joinedload, selectinload
 
 from app.core.clock import org_today

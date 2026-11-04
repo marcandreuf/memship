@@ -12,7 +12,6 @@ from app.core.clock import org_today
 from app.core.csv_export import stream_csv
 from app.core.db_utils import current_member_or_403
 from app.core.pagination import paginate
-from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
 from app.domains.auth.models import User
 from app.domains.billing.models import Receipt, ReceiptReminder
@@ -714,13 +713,7 @@ def create_stripe_checkout(
     org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
     currency = org.currency if org and org.currency else "EUR"
 
-    # Get member's person for customer sync
-    member_obj = (
-        db.query(Member)
-        .filter(Member.party_id == receipt.party_id)
-        .order_by(Member.is_active.desc(), Member.id.desc())
-        .first()
-    )
+    # The adapter takes the Person, not the Member (#357).
     person = db.query(Person).filter(Person.party_id == receipt.party_id).first()
 
     # Lazy-create Stripe customer
@@ -826,12 +819,6 @@ def initiate_redsys_payment(
     if not adapter:
         raise HTTPException(status_code=500, detail="Redsys adapter not available")
 
-    member_obj = (
-        db.query(Member)
-        .filter(Member.party_id == receipt.party_id)
-        .order_by(Member.is_active.desc(), Member.id.desc())
-        .first()
-    )
     person = db.query(Person).filter(Person.party_id == receipt.party_id).first()
 
     frontend = app_settings.FRONTEND_URL.rstrip("/")

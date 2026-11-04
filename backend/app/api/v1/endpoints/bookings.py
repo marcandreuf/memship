@@ -15,7 +15,6 @@ from sqlalchemy.orm import Session
 from app.core.authorization import require_any_permission, require_permission, user_has
 from app.core.db_utils import current_member_or_403
 from app.core.pagination import paginate
-from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
 from app.domains.auth.models import User
 from app.domains.bookings import service
