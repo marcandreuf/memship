@@ -65,6 +65,11 @@ if port_in_use; then
   exit 1
 fi
 
+# Before the build, not after. run-parallel.sh checks this too, but it only
+# runs once the frontend has been compiled and served, so without this the
+# answer to "is the backend up?" arrives two minutes late (#385).
+./scripts/require-api.sh
+
 echo "-> Building the frontend..."
 (cd "$FRONTEND_DIR" && pnpm build)
 

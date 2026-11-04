@@ -16,14 +16,28 @@ const FORM_MSG = '[data-slot="form-message"]';
 describe("Error Handling — Toast Notifications", () => {
   describe("Settings form — success toast", () => {
     beforeEach(() => {
+      // The form is reset from TWO queries, and waiting on the wrong one is
+      // what made this spec pass only on retry (#390). See below.
+      cy.intercept("GET", "**/api/settings").as("orgSettings");
+      cy.intercept("GET", "**/api/settings/address").as("orgAddress");
       cy.loginAsSuperAdmin();
       cy.visit("/en/settings");
     });
 
     it("shows success toast when saving organization settings", () => {
-      // Visible is not enough: the form mounts empty and is reset once the
-      // settings query resolves. Saving in that window submits a blank name
-      // and gets a 422 instead of the success toast.
+      // `settings/page.tsx` resets the whole form in one effect guarded on
+      // `if (settings)`, with `[settings, address, form]` as its deps. So the
+      // reset runs as soon as the settings query resolves — while `address` is
+      // still undefined, blanking every address field — and runs again when the
+      // address query lands.
+      //
+      // The old guard here waited for `name` to be non-empty, which is true
+      // after the FIRST reset. A click in the window between the two submits a
+      // form whose address half is blank and gets a 422 instead of the success
+      // toast, then passes on retry with both queries cached. Waiting for one
+      // field cannot express "the form has finished resetting" when the reset
+      // has two inputs; waiting for both requests can.
+      cy.wait(["@orgSettings", "@orgAddress"]);
       cy.get('input[name="name"]').should("not.have.value", "");
       cy.contains("button", "Save").click();
       cy.get(TOAST).should("contain.text", "Saved successfully");
