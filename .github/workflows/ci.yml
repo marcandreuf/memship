@@ -51,6 +51,7 @@ jobs:
       caddy: ${{ steps.filter.outputs.caddy }}
       shell: ${{ steps.filter.outputs.shell }}
       docs: ${{ steps.filter.outputs.docs }}
+      locales: ${{ steps.filter.outputs.locales }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -82,6 +83,11 @@ jobs:
             docs:
               - 'docs/**'
               - 'scripts/check-docs-translations.sh'
+            # The UI translations, a different thing from the `docs` filter
+            # above, and checked by nothing at all until now (#509).
+            locales:
+              - 'frontend/locales/**'
+              - 'scripts/check-locales.sh'
 
   caddy-headers:
     name: Caddy Header Parity
@@ -108,6 +114,21 @@ jobs:
 
       - name: Check each translation against the page it came from
         run: ./scripts/check-docs-translations.sh
+
+  # Deliberately NOT called "Translation Drift". That name belongs to the job
+  # above, which checks `docs/`. The two being confusable is half of why the UI
+  # locales went unchecked for so long (#509).
+  locales:
+    name: UI Locale Parity
+    needs: changes
+    if: ${{ needs.changes.outputs.locales == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Compare the three locale key sets
+        run: ./scripts/check-locales.sh
 
   shell:
     name: Deployment Script Tests
@@ -263,6 +284,97 @@ jobs:
             echo "All tests passed." >> $GITHUB_STEP_SUMMARY
           else
             echo "Tests failed." >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # The whole suite in ONE process, which is the thing the two jobs above
+  # cannot do between them.
+  #
+  # `unit` and `integration` run as separate processes, so state that is global
+  # to a process and set by one suite is invisible to the other. The local
+  # runner (`./scripts/dev.sh test`) runs `pytest tests/` as a single process,
+  # which is why two `TestRedisUnavailable` assertions fail there in most runs
+  # and have never once failed in CI (#506). CI was structurally unable to see
+  # the category, not merely lucky.
+  #
+  # `continue-on-error` because this job is EXPECTED RED on arrival: #506 is
+  # open and this is what reports it. A gate that is red from its first commit
+  # teaches everyone to ignore it, so it reports and does not block. Remove the
+  # flag when #506 is fixed, and not before — that is the point at which this
+  # becomes a gate worth having.
+  combined:
+    name: Full Suite (single process)
+    needs: changes
+    if: ${{ needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: memship
+          POSTGRES_PASSWORD: memship
+          POSTGRES_DB: memship_test_db
+        ports:
+          - 5435:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "latest"
+          enable-cache: true
+          cache-dependency-glob: "backend/uv.lock"
+
+      - name: Install dependencies
+        working-directory: backend
+        run: uv sync --extra dev
+
+      # No `-n`: xdist would put the suites back into separate processes and
+      # undo the entire reason this job exists.
+      - name: Run the whole suite in one process
+        id: suite
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://memship:memship@localhost:5435/memship_test_db
+          DATABASE_TEST_URL: postgresql://memship:memship@localhost:5435/memship_test_db
+          SECRET_KEY: test-secret-key-for-ci-minimum-32-chars
+        run: uv run pytest tests/ --tb=short -q
+
+      - name: Report what this job saw
+        if: always()
+        run: |
+          echo "### Full suite, single process" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.suite.outcome }}" = "success" ]; then
+            echo "Passed. Nothing leaked across the unit/integration boundary." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Failed, and this job does not block the build (#506)." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "A failure here that Unit Tests and Integration Tests do not show is" >> $GITHUB_STEP_SUMMARY
+            echo "process-global state leaking between the two suites." >> $GITHUB_STEP_SUMMARY
           fi
 
   frontend:
