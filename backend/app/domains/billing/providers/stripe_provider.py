@@ -160,8 +160,6 @@ class StripeAdapter(PaymentProviderAdapter):
         - checkout.session.completed → mark receipt paid
         - checkout.session.expired → mark receipt returned
         """
-        from app.domains.billing.models import Receipt
-        from app.domains.billing.service import validate_status_transition
 
         event_type = event_data.get("type", "")
         event_obj = event_data.get("data", {}).get("object", {})

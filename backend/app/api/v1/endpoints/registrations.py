@@ -11,7 +11,6 @@ from app.core.authorization import require_any_permission, require_permission, u
 from app.core.csv_export import stream_csv
 from app.core.db_utils import current_member_or_403
 from app.core.pagination import paginate
-from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
 from app.domains.activities.eligibility import check_eligibility
 from app.domains.activities.models import Activity, Registration

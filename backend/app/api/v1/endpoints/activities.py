@@ -8,7 +8,6 @@ from sqlalchemy.orm import Session
 from app.core.authorization import require_any_permission, require_permission, user_has
 from app.core.db_utils import get_or_404
 from app.core.pagination import paginate
-from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
 from app.domains.activities.models import Activity
 from app.domains.activities.pricing import priced, prices_for_viewer

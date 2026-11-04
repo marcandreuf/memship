@@ -8,7 +8,6 @@ from sqlalchemy.orm import Session, joinedload
 from app.core.authorization import require_any_permission, require_permission
 from app.core.encryption import decrypt_config, encrypt_config, mask_config
 from app.core.pagination import paginate
-from app.core.security.dependencies import get_current_user
 from app.db.session import get_db
 from app.domains.auth.models import User
 from app.domains.billing.models import (

@@ -6,14 +6,12 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.core.authorization import require_any_permission, require_permission, user_has
 from app.core.config import settings
-from app.core.db_utils import get_or_404
 from app.core.email import (
     TRANSIENT_FAILURES,
     send_registration_approved_email,
     send_registration_rejected_email,
 )
-from app.core.pagination import PageMeta, paginate
-from app.core.security.dependencies import get_current_user
+from app.core.pagination import paginate
 from app.db.session import get_db
 from app.domains.audit.models import AuditLog
 from app.domains.auth.models import User
