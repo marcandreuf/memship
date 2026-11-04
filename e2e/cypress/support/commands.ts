@@ -8,6 +8,13 @@ export const TEST_ACCOUNTS = {
   superAdmin: { email: "super@examplee6e3b1.com", password: "TestSuper1!" },
   admin: { email: "admin@examplee6e3b1.com", password: "TestAdmin1!" },
   member: { email: "member@examplee6e3b1.com", password: "TestMember1!" },
+  // On the default `registered` tier, which issues no card (#519). That is the
+  // withheld half of the member-card feature, so this account proves the card
+  // is absent and `cardMember` below proves it is present.
+  cardMember: {
+    email: "cardholder@examplee6e3b1.com",
+    password: "TestCardMember1!",
+  },
   // Holds the seeded `treasurer` custom role: billing.* and nothing else. The
   // three system roles cannot express a partial admin, so this is the only
   // account that exercises permission-driven nav.
@@ -37,6 +44,8 @@ declare global {
       loginAsSuperAdmin(): Chainable<void>;
       /** Login as member (member@examplee6e3b1.com) */
       loginAsMember(): Chainable<void>;
+      /** Login as the member on a card-issuing tier (cardholder@examplee6e3b1.com) */
+      loginAsCardMember(): Chainable<void>;
       /** Login as the narrow custom role (treasurer@examplee6e3b1.com) */
       loginAsTreasurer(): Chainable<void>;
       /** Logout via the sidebar user dropdown */
@@ -73,6 +82,10 @@ Cypress.Commands.add("loginAsSuperAdmin", () => {
 
 Cypress.Commands.add("loginAsMember", () => {
   cy.login(TEST_ACCOUNTS.member.email, TEST_ACCOUNTS.member.password);
+});
+
+Cypress.Commands.add("loginAsCardMember", () => {
+  cy.login(TEST_ACCOUNTS.cardMember.email, TEST_ACCOUNTS.cardMember.password);
 });
 
 Cypress.Commands.add("loginAsTreasurer", () => {
