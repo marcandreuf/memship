@@ -49,7 +49,10 @@ describe("Member Card + QR (v0.7.0)", () => {
   });
 
   it("lets the member open their card (number, QR, PDF)", () => {
-    cy.loginAsMember();
+    // `cardholder@` sits on `full-member`, which issues a card. `member@` is
+    // on the default `registered` tier and is withheld one by design, which the
+    // test below covers (#519).
+    cy.loginAsCardMember();
     cy.visit("/en/my-card");
 
     // Card shows the member number and a scannable QR image.
@@ -68,6 +71,23 @@ describe("Member Card + QR (v0.7.0)", () => {
     });
   });
 
+  it("withholds the card from a member whose tier does not issue one", () => {
+    // The per-type switch exists to withhold, so the absent path is the half
+    // worth pinning (#428, #519). `member@` holds the default `registered`
+    // tier, which issues no card.
+    cy.loginAsMember();
+    cy.visit("/en/dashboard");
+
+    // No nav entry: `has_member_card` on /auth/me folds in both the instance
+    // flag and the member's tier, and the sidebar reads it.
+    cy.contains("a", "My Card").should("not.exist");
+
+    // And the endpoints refuse rather than merely being unlinked.
+    cy.request({ url: "/api/me/card/qr.svg", failOnStatusCode: false }).then((r) => {
+      expect(r.status).to.eq(404);
+    });
+  });
+
   it("verifies a member by code on the admin scan page: active → suspended", () => {
     // A member of this test's own, never the shared seed member.
     //
@@ -83,11 +103,24 @@ describe("Member Card + QR (v0.7.0)", () => {
     // needs no login of its own and can be a throwaway. Nothing else reads it,
     // so there is no window to land in and nothing to restore.
     cy.loginAsAdmin();
-    cy.request({
-      method: "POST",
-      url: `${API}/members/`,
-      body: { first_name: MEMBER_FIRST, last_name: `Scan${Date.now()}` },
-    }).then((created) => {
+    // A member created with no tier lands on the default `registered`, which
+    // issues no card, so the scan would have nothing to read (#519). Ask for
+    // the tier that does.
+    cy.request(`${API}/membership-types/`).then((types) => {
+      const issuing = (types.body.items || types.body).find(
+        (mt: { issues_card: boolean }) => mt.issues_card
+      );
+      expect(issuing, "a seeded tier that issues cards").to.exist;
+
+      cy.request({
+        method: "POST",
+        url: `${API}/members/`,
+        body: {
+          first_name: MEMBER_FIRST,
+          last_name: `Scan${Date.now()}`,
+          membership_type_id: issuing.id,
+        },
+      }).then((created) => {
       expect(created.status).to.eq(201);
       const memberId = created.body.id as number;
 
@@ -124,6 +157,7 @@ describe("Member Card + QR (v0.7.0)", () => {
         cy.get('input[aria-label="Enter code manually"]').type(token);
         cy.contains("button", "Verify").click();
         cy.contains("Suspended").should("be.visible");
+        });
       });
     });
   });
