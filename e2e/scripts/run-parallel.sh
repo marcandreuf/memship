@@ -33,6 +33,13 @@ BACKEND_COMPOSE="../backend/docker/docker-compose.yml"
 # per-address login throttle takes the whole suite down in `before each`.
 # Reseeding removes both, and the accumulation across runs in #117 with them.
 #
+# The API has to be up before any of this: the reseed below goes through the
+# api container, and the specs talk to it on :8003. Checked here because every
+# path reaches this script — `pnpm test:parallel`, the prod runner, and an
+# E2E_KEEP_DATA=1 run that skips the reseed and so would otherwise reach cypress
+# with nothing listening (#385).
+./scripts/require-api.sh
+
 # This deletes the club data in the dev database. Super admins, system roles and
 # payment providers survive. Set E2E_KEEP_DATA=1 to run against the data as is.
 if [ "${E2E_KEEP_DATA:-0}" != "1" ]; then
