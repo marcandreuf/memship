@@ -69,10 +69,20 @@ the container does not inherit your shell's environment, and passing it as an ar
 would leave it in your shell history and in `ps`. `--reset-club-data` drives the third
 question. See `python -m app.cli.seed --help`.
 
-Answer **2) demo club** to look around with realistic data: ~60 members across all
-statuses, activities, receipts in every state, SEPA mandates and dashboard reminders.
-Ideal for evaluating the finance dashboard and annual summary. Safe to re-run
-(idempotent).
+### Which path to pick at question 3
+
+**Evaluating Memship for the first time: answer `2) demo club`.** This is not only about
+having data to look at. The demo club switches the optional modules **on**, and a
+real-details install deliberately starts with almost all of them **off**: two of the
+twenty-one feature keys, with seven routes redirecting to the dashboard. Choose real
+details to see what Memship is, and the member card, the bookings calendar and
+announcements are simply not there, with nothing on screen to say the module exists at
+all. [Feature flags](../self-hosting/feature-flags.md) lists every one of them and how
+each is switched on.
+
+The demo club gives you ~60 members across all statuses, activities, receipts in every
+state, SEPA mandates and dashboard reminders, which is enough to evaluate the finance
+dashboard and the annual summary. Safe to re-run (idempotent).
 
 The demo club also creates logins for a **club admin** and **two members**, with
 generated passwords. They are printed once, at the end of the run:
@@ -87,16 +97,29 @@ generated passwords. They are printed once, at the end of the run:
 ```
 
 Keep that output — the passwords are stored only as hashes and cannot be shown again.
+The two member logins are how to see the member portal without handing out an admin
+account, which is the half of the product an admin session never shows you.
+
+**Answer `1) real details` only if you want to evaluate against your own data**, and read
+this first:
+
+> **A quick-start instance is not one to keep.** Whatever you enter, real or not, lives in
+> throwaway Docker volumes behind a fixed database password, and by default every email
+> the instance sends is caught by the local test inbox instead of reaching the person it
+> is addressed to. That is what makes it safe to throw away, and what makes it wrong for a
+> club. When you want an instance you keep, start again with
+> [Installation](installation.md), which generates real secrets and puts your data
+> somewhere you can back up.
 
 ## 4. Open the app
 
 Go to **http://localhost:8081** and log in as the super admin you created.
 
-> **The quick-start stack is for evaluation, not for running a club.** Its compose file
-> ships a fixed database password and keeps data in throwaway Docker volumes. Follow
+> **Still an evaluation stack.** Before putting Memship on a network, follow
 > [Installation](installation.md) and the
-> [Configuration reference](../self-hosting/configuration.md) before putting Memship on a
-> network or entering real member data.
+> [Configuration reference](../self-hosting/configuration.md). See
+> [question 3 above](#which-path-to-pick-at-question-3) for why real member data does not
+> belong here.
 
 ## 5. Try a member joining
 
@@ -125,6 +148,11 @@ a fault — see [Which one is in effect](../self-hosting/email.md#which-one-is-i
 Do not carry the quick-start stack into production — install it properly with
 [Installation](installation.md), which generates real secrets and puts your data
 somewhere you can back up.
+
+A demo club has nine optional modules switched on because an evaluator should see them,
+not because a club should run them. A real install starts with almost all of them off on
+purpose, and you switch each one on when you are ready for it. Do not read the demo club's
+configuration as a recommended one.
 
 If you only want to clear the demo club out of an instance you are keeping, re-run the
 setup and answer *yes* to the club-data question. It deletes the demo club while keeping
