@@ -108,11 +108,13 @@ def _create_member(db, suffix="m1", email=_UNSET):
     return member
 
 
-def _create_receipt(db, member, suffix="r1", status="emitted", due_date=None, paid=False):
+def _create_receipt(
+    db, member, suffix="r1", status="emitted", due_date=None, paid=False, origin="membership"
+):
     receipt = Receipt(
         receipt_number=f"R-{suffix}",
         party_id=member.party_id,
-        origin="membership",
+        origin=origin,
         description="Membership fee",
         base_amount=Decimal("50.00"),
         vat_rate=Decimal("0.00"),
@@ -227,6 +229,46 @@ class TestMarkOverdue:
 
 
 # --- Schedule logic ---
+
+
+class TestDonationsAreNotDebt:
+    """A donation nobody completed leaves an unpaid receipt behind, and chasing
+    it tells a member they owe money for a gift they decided not to make
+    (#432). The dunning run selected purely on status, so it would have."""
+
+    def test_mark_overdue_leaves_a_donation_alone(self, db):
+        member = _create_member(db, "dn1")
+        r = _create_receipt(
+            db, member, "dn1", "emitted", due_date=TODAY - timedelta(days=30), origin="donation"
+        )
+        assert mark_overdue(db, TODAY) == 0
+        db.refresh(r)
+        assert r.status == "emitted"
+
+    def test_mark_overdue_still_flips_the_membership_fee_beside_it(self, db):
+        """Negative control: the same call, the same dates, a membership origin.
+        Without this a filter that excluded everything would pass the test above."""
+        member = _create_member(db, "dn2")
+        donation = _create_receipt(
+            db, member, "dn2a", "emitted", due_date=TODAY - timedelta(days=30), origin="donation"
+        )
+        fee = _create_receipt(
+            db, member, "dn2b", "emitted", due_date=TODAY - timedelta(days=30)
+        )
+        assert mark_overdue(db, TODAY) == 1
+        db.refresh(donation)
+        db.refresh(fee)
+        assert donation.status == "emitted"
+        assert fee.status == "overdue"
+
+    def test_reminders_due_skips_a_donation_already_overdue(self, db):
+        """``mark_overdue`` can no longer produce one, but the receipt endpoints
+        can still set the status, so the send path filters independently."""
+        member = _create_member(db, "dn3")
+        _create_receipt(
+            db, member, "dn3", "overdue", due_date=TODAY - timedelta(days=30), origin="donation"
+        )
+        assert reminders_due(db, TODAY, days_after_due=1, repeat_days=7, max_count=3) == []
 
 
 class TestRemindersDue:

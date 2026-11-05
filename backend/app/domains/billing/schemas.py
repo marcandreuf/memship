@@ -16,6 +16,28 @@ from app.core.sepa_identifiers import (  # noqa: F401  (re-exported)
 )
 
 
+def zero_vat_for_donation(data: object, kind_field: str) -> object:
+    """Start a donation at 0% VAT instead of the 21% everything else inherits.
+
+    Both ``ConceptCreate`` and ``ReceiptCreate`` default ``vat_rate`` to 21.00,
+    which is right for a taxable supply and wrong for a donation. An admin who
+    built a reusable "Donation" concept to save typing got 21% on every donation
+    until somebody noticed (#432).
+
+    ``mode="before"`` and the ``"vat_rate" not in data`` test together mean an
+    explicit rate still wins, including an explicit 21: a donation carrying a
+    counterpart can be taxable, so the decision was to move the default, not to
+    forbid the value.
+    """
+    if (
+        isinstance(data, dict)
+        and "vat_rate" not in data
+        and data.get(kind_field) == "donation"
+    ):
+        return {**data, "vat_rate": Decimal(0)}
+    return data
+
+
 # --- Concept schemas ---
 
 
@@ -23,7 +45,9 @@ class ConceptCreate(BaseModel):
     name: NonBlank(255)
     code: str | None = Field(default=None, max_length=50)
     description: str | None = None
-    concept_type: str = Field(pattern=r"^(membership|activity|manual|service)$")
+    concept_type: str = Field(
+        pattern=r"^(membership|activity|manual|service|donation)$"
+    )
     default_amount: Decimal = Field(default=0, ge=0)
     vat_rate: Decimal = Field(default=21.00, ge=0, le=100)
     default_discount: Decimal | None = Field(default=None, ge=0)
@@ -31,6 +55,11 @@ class ConceptCreate(BaseModel):
         default=None, pattern=r"^(percentage|fixed)$"
     )
     accounting_code: str | None = Field(default=None, max_length=50)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _donation_vat(cls, data: object) -> object:
+        return zero_vat_for_donation(data, "concept_type")
 
 
 class ConceptUpdate(BaseModel):
@@ -72,7 +101,7 @@ class ReceiptCreate(BaseModel):
     party_id: int
     concept_id: int | None = None
     registration_id: int | None = None
-    origin: str = Field(pattern=r"^(membership|activity|manual|service)$")
+    origin: str = Field(pattern=r"^(membership|activity|manual|service|donation)$")
     description: NonBlank(500)
     base_amount: Decimal = Field(ge=0)
     vat_rate: Decimal = Field(default=21.00, ge=0, le=100)
@@ -86,6 +115,11 @@ class ReceiptCreate(BaseModel):
     billing_period_end: date | None = None
     notes: str | None = None
     is_batchable: bool = True
+
+    @model_validator(mode="before")
+    @classmethod
+    def _donation_vat(cls, data: object) -> object:
+        return zero_vat_for_donation(data, "origin")
 
 
 class ReceiptUpdate(BaseModel):

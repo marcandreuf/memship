@@ -29,7 +29,8 @@ class Concept(Base):
     __tablename__ = "concepts"
     __table_args__ = (
         CheckConstraint(
-            "concept_type IN ('membership', 'activity', 'booking', 'manual', 'service')",
+            "concept_type IN ('membership', 'activity', 'booking', 'manual', "
+            "'service', 'donation')",
             name="valid_concept_type",
         ),
         CheckConstraint("default_amount >= 0", name="concept_amount_non_negative"),
@@ -61,6 +62,14 @@ class Concept(Base):
     receipts = relationship("Receipt", back_populates="concept")
 
 
+#: Origins that are not money the organisation is owed, whatever their status.
+#: A donation nobody completed leaves an unpaid receipt behind, and that receipt
+#: is a change of mind rather than a debt: the dunning run must not chase it and
+#: the outstanding figure must not count it (#432). ``lapse_service`` needs no
+#: entry here because it already selects ``origin == "membership"`` positively.
+NON_DEBT_ORIGINS = ("donation",)
+
+
 PAYMENT_METHODS = (
     "cash", "bank_transfer", "card", "direct_debit", "stripe_checkout", "redsys", "bizum"
 )
@@ -79,7 +88,8 @@ class Receipt(Base):
             name="valid_receipt_status",
         ),
         CheckConstraint(
-            "origin IN ('membership', 'activity', 'booking', 'manual', 'service')",
+            "origin IN ('membership', 'activity', 'booking', 'manual', 'service', "
+            "'donation')",
             name="valid_receipt_origin",
         ),
         CheckConstraint(
