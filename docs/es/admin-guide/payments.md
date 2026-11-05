@@ -42,6 +42,9 @@ Un recibo puede tener origen:
 - **Actividad** — generado automáticamente al confirmar una [inscripción](activities.md);
   se anula si la inscripción se cancela.
 - **Manual** — creado a mano desde la ficha del socio.
+- **Donación**: creado a mano, con IVA 0 por defecto. No entra en los avisos de impago ni en
+  el importe pendiente del panel: una donación sin completar no es una deuda. Ver
+  [Donaciones](donations.md).
 
 ## Generar cuotas
 
