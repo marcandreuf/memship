@@ -108,6 +108,11 @@ generated passwords. They are printed once, at the end of the run:
     member       demo1@mediterrani.example   Zj5rWnEcx8VbHtPqM4dy
 ```
 
+That is one interactive run answering all three questions. Driven by the flags above it is
+two commands, and each prints only what it created: the super admin with the first, and
+the club admin and the two members with the `--demo` run. The `--club-name` run creates no
+logins, so it prints no accounts block at all.
+
 Keep that output — the passwords are stored only as hashes and cannot be shown again.
 The two member logins are how to see the member portal without handing out an admin
 account, which is the half of the product an admin session never shows you.
