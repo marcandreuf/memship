@@ -20,9 +20,10 @@ La parte superior muestra los datos de la entidad y se edita en el sitio con **E
 las pestañas:
 
 - **Recibos** — los recibos emitidos a la entidad, con **Nuevo recibo** para crear uno manual.
-  Una donación es simplemente un recibo manual a nombre de la entidad: usa la **descripción** y
-  las **notas** para el detalle (campaña, destino, acuerdo). El recibo sigue el flujo normal:
-  emitir, cobrar en línea o marcar como pagado.
+  Para una donación, elige el origen **Donación**: así cuenta como donación en el listado y en
+  la exportación, empieza con IVA 0 y no entra en los avisos de impago. Usa la **descripción**
+  y las **notas** para el detalle (campaña, destino, acuerdo). El recibo sigue el flujo normal:
+  emitir, cobrar en línea o marcar como pagado. Ver [Donaciones](donations.md).
 - **Dirección** — la dirección postal de la entidad.
 - **Contactos** — personas o medios de contacto de la entidad (teléfono, correo…), con tipo y
   etiqueta, igual que en la ficha de un socio.

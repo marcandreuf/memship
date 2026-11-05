@@ -41,6 +41,8 @@ El panel de administración se organiza en torno a estas áreas:
   elegibilidad, lista de espera, códigos de descuento, consentimientos y adjuntos.
 - **[Pagos](payments.md)** — recibos, generación de cuotas, IVA, facturación, generación de
   PDF y cobro en línea (Stripe, Redsys/Bizum).
+- **[Donaciones](donations.md)**: los tres caminos para recibir una donación, y qué registro
+  deja cada uno.
 - **[SEPA](sepa.md)** — mandatos de domiciliación, remesas (XML pain.008) e importación de
   devoluciones.
 - **[Comunicaciones](communications.md)** — anuncios a todos los socios, a un grupo o a un

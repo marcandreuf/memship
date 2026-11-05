@@ -281,6 +281,9 @@ If the gateway took the money and the receipt is still unpaid, mark it paid by h
 ## Related
 
 - [Payments](../../es/admin-guide/payments.md) — using payments day to day, in Spanish
+- [Donations](../../es/admin-guide/donations.md): a donation link on the organisation's own
+  website, in Spanish. That link is created in the provider's dashboard and has nothing to do
+  with the provider configured here
 - [SEPA](../../es/admin-guide/sepa.md) — direct debit, a separate mechanism
 - [Integrations](integrations.md) — SSO and email, and the full description of secret storage
 - [Configuration reference](../self-hosting/configuration.md) — `BACKEND_PUBLIC_URL` and `FRONTEND_URL`
