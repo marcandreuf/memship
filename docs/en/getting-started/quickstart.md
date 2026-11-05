@@ -70,6 +70,10 @@ there is no terminal to answer prompts:
 docker compose exec -T -e MEMSHIP_ADMIN_PASSWORD='...' demo-memship-api \
   python -m app.cli.seed --admin-email you@example.org
 docker compose exec -T demo-memship-api python -m app.cli.seed --demo
+
+# ... or --club-name instead of --demo, for the real-details path
+docker compose exec -T demo-memship-api \
+  python -m app.cli.seed --club-name 'Your Organization'
 ```
 
 Note `-T` instead of `-it`, and that the password goes through `docker compose exec -e`:
