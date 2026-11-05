@@ -66,11 +66,21 @@ def _member(db, suffix, *, status="active", joined_at=None, status_changed_at=No
     return (member, role_user) if with_user else member
 
 
-def _receipt(db, member, *, suffix, status, emission_date, payment_date=None, total="121.00"):
+def _receipt(
+    db,
+    member,
+    *,
+    suffix,
+    status,
+    emission_date,
+    payment_date=None,
+    total="121.00",
+    origin="membership",
+):
     receipt = Receipt(
         receipt_number=f"FAC-rep-{suffix}",
         party_id=member.party_id,
-        origin="membership",
+        origin=origin,
         description=f"Receipt {suffix}",
         base_amount=Decimal("100.00"),
         vat_rate=Decimal("21.00"),
@@ -129,6 +139,37 @@ class TestAnnualSummary:
         assert sum(data["revenue_by_month"]) == 121.0
         assert data["outstanding_by_month"][5] == 121.0
         assert sum(data["outstanding_by_month"]) == 121.0
+
+    def test_an_unpaid_donation_is_not_outstanding(self, client, db):
+        """An abandoned donation is a change of mind, not money the organisation
+        is owed, so it must not inflate the figure a treasurer reads as debt
+        (#432). The membership fee beside it is the control: it keeps counting,
+        so this cannot pass by excluding everything."""
+        admin = _admin(db, "dn-out")
+        member = _member(db, "dn-out-m")
+        _receipt(db, member, suffix="dn-emit", status="emitted",
+                 emission_date=date(YEAR, 6, 10), origin="donation")
+        _receipt(db, member, suffix="fee-emit", status="emitted",
+                 emission_date=date(YEAR, 6, 10))
+        client.cookies.update(_auth_cookie(admin))
+
+        data = client.get(f"/api/v1/reports/annual-summary?year={YEAR}").json()
+        assert data["outstanding_by_month"][5] == 121.0
+        assert sum(data["outstanding_by_month"]) == 121.0
+
+    def test_a_paid_donation_still_counts_as_revenue(self, client, db):
+        """The exclusion is about debt, not about donations. Money that actually
+        arrived is income like any other, so the revenue line stays unfiltered."""
+        admin = _admin(db, "dn-rev")
+        member = _member(db, "dn-rev-m")
+        _receipt(db, member, suffix="dn-paid", status="paid",
+                 emission_date=date(YEAR, 3, 1), payment_date=date(YEAR, 3, 15),
+                 origin="donation")
+        client.cookies.update(_auth_cookie(admin))
+
+        data = client.get(f"/api/v1/reports/annual-summary?year={YEAR}").json()
+        assert data["revenue_by_month"][2] == 121.0
+        assert sum(data["revenue_by_month"]) == 121.0
 
     def test_new_members_and_net_growth(self, client, db):
         admin = _admin(db, "grow")

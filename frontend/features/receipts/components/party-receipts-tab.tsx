@@ -165,6 +165,20 @@ function CreatePartyReceiptForm({
     },
   });
 
+  /**
+   * Picking "donation" drops the VAT field to 0, because a donation is not a
+   * taxable supply and this form's default is 21 (#432). It is a default, not a
+   * lock: the field stays editable, since a donation carrying a counterpart can
+   * be taxable. Leaving an origin behind does not restore 21 -- that would
+   * overwrite a rate the admin had typed on purpose.
+   */
+  function onOriginChange(onChange: (value: string) => void) {
+    return (value: string) => {
+      onChange(value);
+      if (value === "donation") form.setValue("vat_rate", 0);
+    };
+  }
+
   async function onSubmit(data: z.infer<typeof createSchema>) {
     const payload: Record<string, unknown> = {
       party_id: partyId,
@@ -192,13 +206,14 @@ function CreatePartyReceiptForm({
         <FormField control={form.control} name="origin" render={({ field }) => (
           <FormItem>
             <FormLabel>{t("receipts.origin")}</FormLabel>
-            <Select onValueChange={field.onChange} value={field.value}>
+            <Select onValueChange={onOriginChange(field.onChange)} value={field.value}>
               <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
               <SelectContent>
                 <SelectItem value="manual">{t("receipts.originManual")}</SelectItem>
                 <SelectItem value="membership">{t("receipts.originMembership")}</SelectItem>
                 <SelectItem value="activity">{t("receipts.originActivity")}</SelectItem>
                 <SelectItem value="service">{t("receipts.originService")}</SelectItem>
+                <SelectItem value="donation">{t("receipts.originDonation")}</SelectItem>
               </SelectContent>
             </Select>
             <FormMessage />

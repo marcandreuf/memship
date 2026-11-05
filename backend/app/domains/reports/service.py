@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.core.pagination import paginate
 from app.domains.activities.models import Activity, Registration
-from app.domains.billing.models import Receipt
+from app.domains.billing.models import NON_DEBT_ORIGINS, Receipt
 from app.domains.members.models import Member, MembershipType
 from app.domains.persons.models import Person
 from app.domains.reports.schemas import (
@@ -65,6 +65,12 @@ def annual_summary(db: Session, year: int) -> AnnualSummary:
     )
 
     # Outstanding per month — unpaid receipts, bucketed by emission date.
+    #
+    # Excludes NON_DEBT_ORIGINS, so this no longer equals the sum of every
+    # unpaid receipt. A donation that was never completed leaves one behind, and
+    # counting it here would report a change of mind as money the organisation
+    # is owed (#432). The revenue line above is deliberately unfiltered: a
+    # donation that WAS paid is income like any other.
     outstanding_rows = (
         db.query(
             extract("month", Receipt.emission_date),
@@ -73,6 +79,7 @@ def annual_summary(db: Session, year: int) -> AnnualSummary:
         .filter(
             Receipt.is_active.is_(True),
             Receipt.status.in_(OUTSTANDING_STATUSES),
+            Receipt.origin.notin_(NON_DEBT_ORIGINS),
             extract("year", Receipt.emission_date) == year,
         )
         .group_by(extract("month", Receipt.emission_date))

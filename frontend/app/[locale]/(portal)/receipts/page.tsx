@@ -23,7 +23,7 @@ import { ExportButton } from "@/components/entity/export-button";
 import { TableSkeleton } from "@/components/ui/skeletons";
 import { toast } from "sonner";
 import { useReceipts, useGenerateMembershipFees } from "@/features/receipts/hooks/use-receipts";
-import { useSearchParam, usePageParam, useStatusParam } from "@/hooks/use-url-state";
+import { useSearchParam, usePageParam, useStatusParam, useOriginParam } from "@/hooks/use-url-state";
 import { useFormatters } from "@/hooks/use-formatters";
 import type { ReceiptData } from "@/features/receipts/services/receipts-api";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
@@ -57,6 +57,7 @@ export default function ReceiptsPage() {
   const [page, setPage] = usePageParam();
   const [search, setSearch] = useSearchParam();
   const [statusFilter, setStatusFilter] = useStatusParam();
+  const [originFilter, setOriginFilter] = useOriginParam();
   const [generateOpen, setGenerateOpen] = useState(false);
 
   const params = useMemo(() => {
@@ -65,8 +66,9 @@ export default function ReceiptsPage() {
     p.set("per_page", "20");
     if (search) p.set("search", search);
     if (statusFilter) p.set("status", statusFilter);
+    if (originFilter) p.set("origin", originFilter);
     return p;
-  }, [page, search, statusFilter]);
+  }, [page, search, statusFilter, originFilter]);
 
   const { data, isLoading } = useReceipts(params);
   const { formatCurrency, formatDate } = useFormatters();
@@ -86,7 +88,11 @@ export default function ReceiptsPage() {
         <div className="flex items-center gap-2">
           <ExportButton
             path="/api/receipts/export.csv"
-            params={{ search: search || undefined, status: statusFilter || undefined }}
+            params={{
+              search: search || undefined,
+              status: statusFilter || undefined,
+              origin: originFilter || undefined,
+            }}
           />
           <GenerateFeesButton t={t} />
         </div>
@@ -106,6 +112,23 @@ export default function ReceiptsPage() {
             <SelectItem value="returned">{t("receipts.statusReturned")}</SelectItem>
             <SelectItem value="overdue">{t("receipts.statusOverdue")}</SelectItem>
             <SelectItem value="cancelled">{t("receipts.statusCancelled")}</SelectItem>
+          </SelectContent>
+        </Select>
+        {/* The endpoint has accepted ?origin= all along; nothing exposed it, so
+            "how much did we raise in donations this year" was not reachable
+            without calling the API by hand (#432). */}
+        <Select value={originFilter} onValueChange={(v) => { setOriginFilter(v === "all" ? "" : v); setPage(1); }}>
+          <SelectTrigger className="w-40">
+            <SelectValue placeholder={t("receipts.origin")} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t("common.all")}</SelectItem>
+            <SelectItem value="membership">{t("receipts.originMembership")}</SelectItem>
+            <SelectItem value="activity">{t("receipts.originActivity")}</SelectItem>
+            <SelectItem value="booking">{t("receipts.originBooking")}</SelectItem>
+            <SelectItem value="service">{t("receipts.originService")}</SelectItem>
+            <SelectItem value="manual">{t("receipts.originManual")}</SelectItem>
+            <SelectItem value="donation">{t("receipts.originDonation")}</SelectItem>
           </SelectContent>
         </Select>
       </div>

@@ -24,7 +24,7 @@ from sqlalchemy.orm import Session
 from app.core.clock import org_today
 from app.core.email import EmailOutcome, send_payment_reminder_email
 from app.db.after_commit import run_after_commit
-from app.domains.billing.models import Receipt, ReceiptReminder
+from app.domains.billing.models import NON_DEBT_ORIGINS, Receipt, ReceiptReminder
 from app.domains.billing.payment_instructions import how_to_pay
 from app.domains.mailing.policy import is_enabled as template_enabled
 from app.domains.members.models import Member
@@ -46,6 +46,11 @@ def mark_overdue(db: Session, today: date | None = None) -> int:
     of the whole dunning pipeline, since ``reminders_due`` only looks at
     ``overdue``.
 
+    Excludes ``NON_DEBT_ORIGINS``, so a donation never reaches ``overdue`` at
+    all. ``reminders_due`` filters them too rather than relying on this: the
+    status is also settable through the receipt endpoints, and an ``overdue``
+    donation arriving by that route must still not be emailed.
+
     Returns the number of receipts transitioned. Does not commit.
     """
     today = today or org_today(db)
@@ -53,6 +58,7 @@ def mark_overdue(db: Session, today: date | None = None) -> int:
         db.query(Receipt)
         .filter(
             Receipt.status.in_(OVERDUE_ELIGIBLE_STATUSES),
+            Receipt.origin.notin_(NON_DEBT_ORIGINS),
             Receipt.document_type == "invoice",
             Receipt.is_active.is_(True),
             Receipt.payment_date.is_(None),
@@ -94,6 +100,7 @@ def reminders_due(
         db.query(Receipt)
         .filter(
             Receipt.status == "overdue",
+            Receipt.origin.notin_(NON_DEBT_ORIGINS),
             Receipt.document_type == "invoice",
             Receipt.is_active.is_(True),
             Receipt.payment_date.is_(None),

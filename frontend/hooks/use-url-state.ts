@@ -25,6 +25,14 @@ export function useStatusParam() {
 }
 
 /**
+ * URL-persisted origin filter parameter (?origin=...).
+ * Defaults to empty string, shallow updates.
+ */
+export function useOriginParam() {
+  return useQueryState("origin", parseAsString.withDefault("").withOptions({ shallow: true }));
+}
+
+/**
  * URL-persisted open tab parameter (?tab=...).
  * Defaults to empty string, shallow updates.
  *
