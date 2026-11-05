@@ -19,7 +19,15 @@ looks for a different project and will not find your containers or your data.
 ```bash
 mkdir -p "$HOME/memship-quickstart"
 cd "$HOME/memship-quickstart"
+echo "STACK_PREFIX=$(date +%Y%m%d-%H%M%S)" > .env
 ```
+
+That last line names this stack's containers after the moment you started it, so
+`docker ps` tells you which evaluation is which and when you began it:
+`20261105-043107-memship-api`. Compose reads `.env` from this folder on every command, so
+you set it once. It also means a second evaluation in a second folder gets its own names
+and can run alongside this one, on its own `PORT` and `MAILPIT_PORT`. Skip the line and
+the containers are named `demo-memship-*`, which works until you want two.
 
 ## 2. Download the quick-start compose file and start
 
@@ -62,6 +70,10 @@ there is no terminal to answer prompts:
 docker compose exec -T -e MEMSHIP_ADMIN_PASSWORD='...' demo-memship-api \
   python -m app.cli.seed --admin-email you@example.org
 docker compose exec -T demo-memship-api python -m app.cli.seed --demo
+
+# ... or --club-name instead of --demo, for the real-details path
+docker compose exec -T demo-memship-api \
+  python -m app.cli.seed --club-name 'Your Organization'
 ```
 
 Note `-T` instead of `-it`, and that the password goes through `docker compose exec -e`:
@@ -69,10 +81,20 @@ the container does not inherit your shell's environment, and passing it as an ar
 would leave it in your shell history and in `ps`. `--reset-club-data` drives the third
 question. See `python -m app.cli.seed --help`.
 
-Answer **2) demo club** to look around with realistic data: ~60 members across all
-statuses, activities, receipts in every state, SEPA mandates and dashboard reminders.
-Ideal for evaluating the finance dashboard and annual summary. Safe to re-run
-(idempotent).
+### Which path to pick at question 3
+
+**Evaluating Memship for the first time: answer `2) demo club`.** This is not only about
+having data to look at. The demo club switches the optional modules **on**, and a
+real-details install deliberately starts with almost all of them **off**: two of the
+twenty-one feature keys, with seven routes redirecting to the dashboard. Choose real
+details to see what Memship is, and the member card, the bookings calendar and
+announcements are simply not there, with nothing on screen to say the module exists at
+all. [Feature flags](../self-hosting/feature-flags.md) lists every one of them and how
+each is switched on.
+
+The demo club gives you ~60 members across all statuses, activities, receipts in every
+state, SEPA mandates and dashboard reminders, which is enough to evaluate the finance
+dashboard and the annual summary. Safe to re-run (idempotent).
 
 The demo club also creates logins for a **club admin** and **two members**, with
 generated passwords. They are printed once, at the end of the run:
@@ -86,17 +108,35 @@ generated passwords. They are printed once, at the end of the run:
     member       demo1@mediterrani.example   Zj5rWnEcx8VbHtPqM4dy
 ```
 
+That is one interactive run answering all three questions. Driven by the flags above it is
+two commands, and each prints only what it created: the super admin with the first, and
+the club admin and the two members with the `--demo` run. The `--club-name` run creates no
+logins, so it prints no accounts block at all.
+
 Keep that output — the passwords are stored only as hashes and cannot be shown again.
+The two member logins are how to see the member portal without handing out an admin
+account, which is the half of the product an admin session never shows you.
+
+**Answer `1) real details` only if you want to evaluate against your own data**, and read
+this first:
+
+> **A quick-start instance is not one to keep.** Whatever you enter, real or not, lives in
+> throwaway Docker volumes behind a fixed database password, and by default every email
+> the instance sends is caught by the local test inbox instead of reaching the person it
+> is addressed to. That is what makes it safe to throw away, and what makes it wrong for a
+> club. When you want an instance you keep, start again with
+> [Installation](installation.md), which generates real secrets and puts your data
+> somewhere you can back up.
 
 ## 4. Open the app
 
 Go to **http://localhost:8081** and log in as the super admin you created.
 
-> **The quick-start stack is for evaluation, not for running a club.** Its compose file
-> ships a fixed database password and keeps data in throwaway Docker volumes. Follow
+> **Still an evaluation stack.** Before putting Memship on a network, follow
 > [Installation](installation.md) and the
-> [Configuration reference](../self-hosting/configuration.md) before putting Memship on a
-> network or entering real member data.
+> [Configuration reference](../self-hosting/configuration.md). See
+> [question 3 above](#which-path-to-pick-at-question-3) for why real member data does not
+> belong here.
 
 ## 5. Try a member joining
 
@@ -125,6 +165,11 @@ a fault — see [Which one is in effect](../self-hosting/email.md#which-one-is-i
 Do not carry the quick-start stack into production — install it properly with
 [Installation](installation.md), which generates real secrets and puts your data
 somewhere you can back up.
+
+A demo club has nine optional modules switched on because an evaluator should see them,
+not because a club should run them. A real install starts with almost all of them off on
+purpose, and you switch each one on when you are ready for it. Do not read the demo club's
+configuration as a recommended one.
 
 If you only want to clear the demo club out of an instance you are keeping, re-run the
 setup and answer *yes* to the club-data question. It deletes the demo club while keeping
@@ -163,14 +208,18 @@ uses them — they are ordinary public images and something else may well.
 
 ### If you are not in that folder any more
 
-The quick-start containers have fixed names, so you can always stop them by name from
-anywhere — useful if you deleted the directory, or cannot remember where you put it:
+Every quick-start container carries `-memship-` in its name whatever prefix it was
+started with, so you can find and stop one from anywhere, useful if you deleted the
+directory or cannot remember where you put it:
 
 ```bash
-docker rm -f demo-memship-caddy demo-memship-frontend demo-memship-api \
-             demo-memship-celery-worker demo-memship-celery-beat \
-             demo-memship-redis demo-memship-db demo-memship-mailpit
+docker ps -a --format '{{.Names}}' --filter name=-memship-   # which stacks exist
+docker rm -f $(docker ps -aq --filter name=-memship-)        # remove all of them
 ```
+
+The timestamp prefix is what tells the runs apart in that listing. The second command
+removes every quick-start container on the machine, so check the first if you are running
+more than one.
 
 That removes the containers but not the data. The volumes are named after the Compose
 project, which is the folder name — `docker volume ls | grep demo-memship` finds them, and
