@@ -19,7 +19,15 @@ looks for a different project and will not find your containers or your data.
 ```bash
 mkdir -p "$HOME/memship-quickstart"
 cd "$HOME/memship-quickstart"
+echo "STACK_PREFIX=$(date +%Y%m%d-%H%M%S)" > .env
 ```
+
+That last line names this stack's containers after the moment you started it, so
+`docker ps` tells you which evaluation is which and when you began it:
+`20261105-043107-memship-api`. Compose reads `.env` from this folder on every command, so
+you set it once. It also means a second evaluation in a second folder gets its own names
+and can run alongside this one, on its own `PORT` and `MAILPIT_PORT`. Skip the line and
+the containers are named `demo-memship-*`, which works until you want two.
 
 ## 2. Download the quick-start compose file and start
 
@@ -191,14 +199,18 @@ uses them — they are ordinary public images and something else may well.
 
 ### If you are not in that folder any more
 
-The quick-start containers have fixed names, so you can always stop them by name from
-anywhere — useful if you deleted the directory, or cannot remember where you put it:
+Every quick-start container carries `-memship-` in its name whatever prefix it was
+started with, so you can find and stop one from anywhere, useful if you deleted the
+directory or cannot remember where you put it:
 
 ```bash
-docker rm -f demo-memship-caddy demo-memship-frontend demo-memship-api \
-             demo-memship-celery-worker demo-memship-celery-beat \
-             demo-memship-redis demo-memship-db demo-memship-mailpit
+docker ps -a --format '{{.Names}}' --filter name=-memship-   # which stacks exist
+docker rm -f $(docker ps -aq --filter name=-memship-)        # remove all of them
 ```
+
+The timestamp prefix is what tells the runs apart in that listing. The second command
+removes every quick-start container on the machine, so check the first if you are running
+more than one.
 
 That removes the containers but not the data. The volumes are named after the Compose
 project, which is the folder name — `docker volume ls | grep demo-memship` finds them, and

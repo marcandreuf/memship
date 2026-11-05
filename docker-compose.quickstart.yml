@@ -11,6 +11,12 @@
 # scripts/install.sh and the root docker-compose.yml — see
 # docs/en/getting-started/installation.md.
 #
+# STACK_PREFIX names the containers, and defaults to "demo". The quick start
+# writes it as a timestamp, so the names say when the stack was started and two
+# evaluations on one host cannot collide on a name. Service names are NOT
+# prefixed: `docker compose exec demo-memship-api ...` and the DATABASE_URL host
+# below address the service, not the container, so both are unaffected by it.
+#
 
 # The API, the Celery worker and Celery beat run the same image with the same
 # settings — only the command differs. Kept in one anchor so a new setting cannot
@@ -52,7 +58,7 @@ x-backend-env: &backend-env
 services:
   demo-memship-caddy:
     image: caddy:2-alpine
-    container_name: demo-memship-caddy
+    container_name: ${STACK_PREFIX:-demo}-memship-caddy
     ports:
       - "${PORT:-80}:80"
     command:
@@ -96,7 +102,7 @@ services:
   demo-memship-api:
     image: ghcr.io/marcandreuf/memship-backend:${IMAGE_TAG:-latest}
     pull_policy: always
-    container_name: demo-memship-api
+    container_name: ${STACK_PREFIX:-demo}-memship-api
     expose:
       - "8000"
     environment:
@@ -119,7 +125,7 @@ services:
   demo-memship-celery-worker:
     image: ghcr.io/marcandreuf/memship-backend:${IMAGE_TAG:-latest}
     pull_policy: always
-    container_name: demo-memship-celery-worker
+    container_name: ${STACK_PREFIX:-demo}-memship-celery-worker
     command: celery -A app.core.celery_app worker --loglevel=info
     environment:
       <<: *backend-env
@@ -149,7 +155,7 @@ services:
   demo-memship-celery-beat:
     image: ghcr.io/marcandreuf/memship-backend:${IMAGE_TAG:-latest}
     pull_policy: always
-    container_name: demo-memship-celery-beat
+    container_name: ${STACK_PREFIX:-demo}-memship-celery-beat
     command: celery -A app.core.celery_app beat --loglevel=info --schedule=/var/lib/celery/celerybeat-schedule
     environment:
       <<: *backend-env
@@ -166,7 +172,7 @@ services:
   demo-memship-frontend:
     image: ghcr.io/marcandreuf/memship-frontend:${IMAGE_TAG:-latest}
     pull_policy: always
-    container_name: demo-memship-frontend
+    container_name: ${STACK_PREFIX:-demo}-memship-frontend
     expose:
       - "3000"
     environment:
@@ -180,7 +186,7 @@ services:
   # inbox is not reachable from the network even when the app is.
   demo-memship-mailpit:
     image: axllent/mailpit:v1.29
-    container_name: demo-memship-mailpit
+    container_name: ${STACK_PREFIX:-demo}-memship-mailpit
     expose:
       - "1025"
     ports:
@@ -189,7 +195,7 @@ services:
 
   demo-memship-redis:
     image: redis:7-alpine
-    container_name: demo-memship-redis
+    container_name: ${STACK_PREFIX:-demo}-memship-redis
     expose:
       - "6379"
     healthcheck:
@@ -201,7 +207,7 @@ services:
 
   demo-memship-db:
     image: postgres:15-alpine
-    container_name: demo-memship-db
+    container_name: ${STACK_PREFIX:-demo}-memship-db
     environment:
       - POSTGRES_USER=memship
       - POSTGRES_PASSWORD=memship
