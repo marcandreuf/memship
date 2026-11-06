@@ -3,7 +3,7 @@
 
 # El domini de la teva entitat
 
-[Installation](../../en/getting-started/installation.md) _(en anglès)_ dona per fet un nom de
+[Instal·lació (Docker)](../getting-started/installation.md) dona per fet un nom de
 màquina que ja resol cap al teu servidor. Aquesta pàgina tracta de com arribar-hi quan el domini és
 d'una entitat i no teu: quin nom triar, quins registres crear, i les dues o tres maneres com surt
 malament que et costen una hora cadascuna.
@@ -11,7 +11,7 @@ malament que et costen una hora cadascuna.
 > **En anglès:** [Your organisation's domain](../../en/self-hosting/domain-and-dns.md).
 
 Res d'aquí és específic del funcionament intern de memship. Si el teu DNS ja està configurat i
-només vols instal·lar, ves directament a [Installation](../../en/getting-started/installation.md)
+només vols instal·lar, ves directament a [Instal·lació (Docker)](../getting-started/installation.md)
 _(en anglès)_.
 
 ## Qui ha de fer què
@@ -107,7 +107,7 @@ curl -fsS https://api.ipify.org      # what this host's public IPv4 actually is
 La primera i la tercera han de coincidir. La propagació sol ser qüestió de minuts; un nom que abans
 resolia cap a una altra cosa pot trigar tant com el seu TTL antic.
 
-Després instal·la amb el nom, seguint [Installation](../../en/getting-started/installation.md)
+Després instal·la amb el nom, seguint [Instal·lació (Docker)](../getting-started/installation.md)
 _(en anglès)_:
 
 ```bash
@@ -122,7 +122,7 @@ _(en anglès)_:
 
 Si el DNS encara no està a punt i igualment vols tenir la plataforma en marxa, instal·la sense
 `--domain` i afegeix-lo en una execució posterior. És el camí d'assaig documentat, i
-[Installation](../../en/getting-started/installation.md#without-a-domain) _(en anglès)_ explica per
+[Instal·lació (Docker)](../getting-started/installation.md#sense-domini) explica per
 què, a més, t'estalvia gastar certificats.
 
 ## El correu és una decisió de domini a part
@@ -173,7 +173,7 @@ posada en marxa, val deu minuts de reflexió.
 
 ## Mira també
 
-- [Installation](../../en/getting-started/installation.md) _(en anglès)_, la instal·lació en si, i
+- [Instal·lació (Docker)](../getting-started/installation.md), la instal·lació en si, i
   els avisos sobre el límit de certificats que val la pena llegir abans del primer intent
 - [Primera posada en marxa](../getting-started/first-setup.md), el que l'entitat ha de decidir un
   cop la instància està en marxa

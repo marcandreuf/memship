@@ -1,5 +1,5 @@
 <!-- source: es/admin-guide/donations.md -->
-<!-- source-hash: 16f506f1bbae -->
+<!-- source-hash: e9c67dd3edf3 -->
 
 # Donations
 

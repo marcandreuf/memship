@@ -104,7 +104,7 @@ identificador del pago) para poder cuadrarlo con el banco.
 
 > **Para darlos de alta paso a paso**, qué credencial pedir a Stripe o al banco, cómo crear
 > el webhook de Stripe y por qué Redsys no lo necesita, consulta la
-> [guía de proveedores de pago](../../en/admin-guide/payment-providers.md) _(en inglés)_.
+> [guía de proveedores de pago](payment-providers.md).
 
 ## Panel financiero
 

@@ -7,14 +7,13 @@ Documentation for **self-hosting operators**, **organization admins**, and **mem
 >
 > - **[Castellano](es/README.md)**, the default language of the published site
 > - **[English](en/README.md)**
-> - **[Català](ca/README.md)**, every page except *Quick start* and *Installation*, which are
->   still served in English, marked as such
+> - **[Català](ca/README.md)**
 
 > **Languages.** Every page is published in `es`, `ca` and `en`, addressed by a directory rather
 > than a filename suffix: `docs/<locale>/<section>/<page>.md`. `es` is the default, so a Spanish
-> page is served without a locale prefix in its URL. Where a language has no translation yet the
-> reader is served the next available one, marked as such, coverage is tracked in
-> [#423](https://github.com/marcandreuf/memship/issues/423).
+> page is served without a locale prefix in its URL. Every page exists in all three. A page added
+> later is served in the next available language until it is translated, marked as such, and
+> `scripts/check-docs-translations.sh` fails CI when a translation falls behind its source.
 
 ## Which version these docs describe
 

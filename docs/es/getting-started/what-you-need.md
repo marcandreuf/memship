@@ -5,7 +5,7 @@
 
 Esta página es para decidir **si** vas a ejecutar Memship. Dice qué necesita la plataforma, cuánto
 cuesta eso y qué no necesita. Quien siga adelante después lee la
-[Instalación](../../en/getting-started/installation.md), escrita para quien se pone delante del terminal.
+[Instalación](installation.md), escrita para quien se pone delante del terminal.
 
 > **En inglés:** [What you need to run Memship](../../en/getting-started/what-you-need.md).
 > **En català:** [Què necessites per executar Memship](../../ca/getting-started/what-you-need.md).
@@ -165,12 +165,12 @@ imágenes (358 MB) y la propagación del registro DNS que crees para el dominio.
 
 - **Tú mismo**, o cualquiera que se maneje con un servidor Linux y un panel de DNS.
 - **El informático que ya use la entidad**, que no necesita nada de este proyecto más allá de la
-  [Instalación](../../en/getting-started/installation.md).
+  [Instalación](installation.md).
 - **El mantenedor, como servicio de pago**, si nadie en la entidad quiere hacerse cargo de un
   servidor.
 
 ## Y ahora
 
-- Si ya está decidido, lo siguiente es instalar: [Instalación](../../en/getting-started/installation.md).
-- Si prefieres tocarlo antes, sin servidor ninguno: la [Prueba rápida](../../en/getting-started/quickstart.md) levanta toda
+- Si ya está decidido, lo siguiente es instalar: [Instalación](installation.md).
+- Si prefieres tocarlo antes, sin servidor ninguno: la [Prueba rápida](quickstart.md) levanta toda
   la plataforma en tu propia máquina con una sola orden. Es solo para evaluar.

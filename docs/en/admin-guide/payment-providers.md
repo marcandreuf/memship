@@ -3,6 +3,7 @@
 **Who this is for:** the person who runs a memship installation for their club or association (the **superadmin**).
 **What it covers:** everything under **Settings → Payments → Payment Providers**, connecting **Stripe** for card payments, and **Redsys** for the Spanish bank gateway and **Bizum**.
 
+> **En español:** [Proveedores de pago: guía de configuración](../../es/admin-guide/payment-providers.md).
 > **En català:** [Proveïdors de pagament: guia de configuració](../../ca/admin-guide/payment-providers.md).
 
 You do not need to edit any file or restart anything. Every credential in this guide is entered in the web interface and takes effect on the next request.
@@ -36,7 +37,7 @@ You do not need to edit any file or restart anything. Every credential in this g
 
 ## 1. Before you start
 
-**Access.** Payments is visible only to users with the **superadmin** role. A plain admin does not see the tab. Go to **Settings → Payments**, then the **Providers** sub-tab.
+**Access.** Payments is visible only to users with the **superadmin** role. A plain admin does not see the tab. Go to **Settings → Payments**, then the **Payment Providers** sub-tab.
 
 **A public address.** Both providers need to reach your installation from the internet to confirm a payment. That address is configured once at install time in `BACKEND_PUBLIC_URL` and `FRONTEND_URL`. A provider configured on an installation that the internet cannot reach will take money and never mark the receipt paid.
 

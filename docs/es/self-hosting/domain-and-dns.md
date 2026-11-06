@@ -3,7 +3,7 @@
 
 # El dominio de tu organización
 
-La [Instalación](../../en/getting-started/installation.md) _(en inglés)_ da por hecho un nombre de
+La [Instalación](../getting-started/installation.md) da por hecho un nombre de
 máquina que ya resuelve a tu servidor. Esta página trata de cómo llegar ahí cuando el dominio es
 de una organización y no tuyo: qué nombre elegir, qué registros crear, y las dos o tres formas en
 que sale mal que te cuestan una hora cada una.
@@ -12,7 +12,7 @@ que sale mal que te cuestan una hora cada una.
 > **En català:** [El domini de la teva entitat](../../ca/self-hosting/domain-and-dns.md).
 
 Nada de esto es específico de las tripas de memship. Si tu DNS ya está configurado y solo quieres
-instalar, ve directamente a la [Instalación](../../en/getting-started/installation.md)
+instalar, ve directamente a la [Instalación](../getting-started/installation.md)
 _(en inglés)_.
 
 ## Quién tiene que hacer qué
@@ -109,7 +109,7 @@ curl -fsS https://api.ipify.org      # what this host's public IPv4 actually is
 La primera y la tercera tienen que coincidir. La propagación suele ser cuestión de minutos; un
 nombre que antes resolvía a otra cosa puede tardar tanto como su TTL anterior.
 
-Luego instala con el nombre, siguiendo la [Instalación](../../en/getting-started/installation.md)
+Luego instala con el nombre, siguiendo la [Instalación](../getting-started/installation.md)
 _(en inglés)_:
 
 ```bash
@@ -124,7 +124,7 @@ _(en inglés)_:
 
 Si el DNS todavía no está listo y quieres poner la plataforma en marcha igualmente, instala sin
 `--domain` y añádelo en una ejecución posterior. Ese es el camino de ensayo documentado, y la
-[Instalación](../../en/getting-started/installation.md#without-a-domain) _(en inglés)_ explica por
+[Instalación](../getting-started/installation.md#sin-dominio) explica por
 qué además te ahorra gastar certificados.
 
 ## El correo es una decisión de dominio aparte
@@ -138,7 +138,7 @@ Eso supone un segundo juego de registros DNS, sin relación con el de arriba:
 - El registro `A` del sitio hace que la aplicación sea accesible. Para el correo no hace nada.
 - Un dominio de envío necesita los registros que pida tu proveedor de correo; con Resend, un
   registro DKIM más un par SPF/MX en un subdominio `send.`. El recorrido está en
-  [Integraciones → Correo](../../en/admin-guide/integrations.md#4-mailing) _(en inglés)_, y
+  [Integraciones → Correo](../admin-guide/integrations.md#4-correo), y
   [Envío de correo](email.md) cubre cómo elegir entre Resend y SMTP.
 
 Dos cosas que hay que acordar con quien lleve el correo de la organización, porque son suyas y no
@@ -163,7 +163,7 @@ todo lo que hay fuera de memship y al que se le dio el nombre antiguo:
 
 | Dónde | Qué se rompe |
 |---|---|
-| SSO de Google / Apple | la URI de redirección se registra por nombre de máquina y tiene que coincidir exactamente, o el inicio de sesión falla. [Integraciones → SSO](../../en/admin-guide/integrations.md#3-single-sign-on-sso) _(en inglés)_ |
+| SSO de Google / Apple | la URI de redirección se registra por nombre de máquina y tiene que coincidir exactamente, o el inicio de sesión falla. [Integraciones → SSO](../admin-guide/integrations.md#3-inicio-de-sesión-único-sso) |
 | Webhooks de Stripe | la URL del endpoint se registra en el panel de Stripe. **Edita el endpoint existente** en vez de crear otro: un destino nuevo emite un secreto de firma nuevo, memship guarda uno, y entonces todos los eventos fallarían la verificación, lo que se ve exactamente igual que un pago que, sin avisar, nunca llega |
 | Correos ya enviados | sus enlaces siguen apuntando al nombre antiguo mientras resuelva |
 | Marcadores de los socios | el nombre antiguo tiene que seguir resolviendo, o redirigiendo, mientras te importe |
@@ -176,7 +176,7 @@ la puesta en marcha, merezca diez minutos de reflexión.
 
 ## Ver también
 
-- [Instalación](../../en/getting-started/installation.md) _(en inglés)_, la instalación en sí, y
+- [Instalación](../getting-started/installation.md), la instalación en sí, y
   los avisos sobre el límite de certificados que conviene leer antes del primer intento
 - [Primera puesta en marcha](../getting-started/first-setup.md), lo que la organización tiene que
   decidir una vez la instancia está levantada

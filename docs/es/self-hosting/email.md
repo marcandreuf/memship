@@ -30,7 +30,7 @@ Entra como superadministrador y ve a **Configuración → Integraciones → Corr
 El recorrido completo (cómo obtener las credenciales, los registros DNS que necesita Resend, los
 datos de tu servidor SMTP o una contraseña de aplicación de Gmail, el botón **Enviar prueba** y una
 tabla de resolución de problemas) está en la
-[guía de configuración de integraciones, sección 4](../../en/admin-guide/integrations.md#4-mailing)
+[guía de configuración de integraciones, sección 4](../admin-guide/integrations.md#4-correo)
 _(en inglés)_. Dos puntos de esa guía merecen repetirse aquí, porque son los que fallan sin avisar:
 
 - **Guardar las credenciales no las activa.** La insignia de la tarjeta pasa a *Listo*, no a
@@ -79,7 +79,7 @@ SMTP_TLS=true
 ```
 
 La correspondencia completa entre campo de pantalla y variable de entorno está en la
-[guía de configuración de integraciones, sección 6](../../en/admin-guide/integrations.md#6-configuration-file-fallback-env)
+[guía de configuración de integraciones, sección 6](../admin-guide/integrations.md#6-alternativa-con-el-archivo-de-configuración-env)
 _(en inglés)_.
 
 ## Cuál está en vigor
@@ -92,7 +92,7 @@ Tres casos, y la diferencia importa:
 | **La pantalla se ha guardado y se ha elegido un proveedor activo** | Ese proveedor. Campo a campo, un valor guardado en la pantalla manda; un campo que se deja vacío ahí recurre a la variable de entorno correspondiente. |
 | **La pantalla se ha guardado pero no se ha elegido proveedor activo** | **Nada.** El correo se omite sin avisar, diga lo que diga el `.env`. |
 
-El [entorno de prueba rápida](../../en/getting-started/quickstart.md#5-try-a-member-joining)
+El [entorno de prueba rápida](../getting-started/quickstart.md#5-prueba-el-alta-de-un-socio)
 _(en inglés)_ depende de la primera fila: su fichero compose apunta `SMTP_HOST` a un buzón de
 pruebas local, así que guardar la pantalla sustituye ese buzón de pruebas por el proveedor que se
 elija ahí, o por nada si no se elige ninguno.

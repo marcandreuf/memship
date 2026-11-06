@@ -3,7 +3,7 @@
 
 # Configuración inicial
 
-Después de [instalar](../../en/getting-started/installation.md) _(en inglés)_ Memship y arrancar
+Después de [instalar](installation.md) Memship y arrancar
 los servicios, ejecuta la orden de configuración para crear tu cuenta y configurar tu organización.
 Es la misma orden en todos los entornos, y es interactiva.
 

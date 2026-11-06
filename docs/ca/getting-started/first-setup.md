@@ -5,7 +5,7 @@
 
 > **En anglès:** [First-time setup](../../en/getting-started/first-setup.md).
 
-Després d'[instal·lar](../../en/getting-started/installation.md) _(en anglès)_ Memship i engegar
+Després d'[instal·lar](installation.md) Memship i engegar
 els serveis, executa l'ordre de posada en marxa per crear el teu compte i configurar l'entitat. És
 la mateixa ordre a tots els entorns, i és interactiva:
 

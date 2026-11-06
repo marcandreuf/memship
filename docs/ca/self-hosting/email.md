@@ -89,7 +89,7 @@ Tres casos, i la diferència importa:
 | **La pantalla s'ha desat i s'ha triat un proveïdor actiu** | Aquell proveïdor. Camp per camp, un valor desat a la pantalla mana; un camp que s'hi ha deixat buit recorre a la variable d'entorn corresponent. |
 | **La pantalla s'ha desat però no s'ha triat cap proveïdor actiu** | **Res.** El correu s'omet en silenci, digui el que digui el `.env`. |
 
-La [plataforma d'inici ràpid](../../en/getting-started/quickstart.md#5-try-a-member-joining)
+La [plataforma d'inici ràpid](../getting-started/quickstart.md#5-prova-lalta-dun-soci)
 _(en anglès)_ es basa en la primera fila: el seu fitxer compose apunta `SMTP_HOST` a una safata de
 proves local, així que desar la pantalla substitueix la safata de proves pel proveïdor que s'hi
 triï, o per res si no se'n tria cap.

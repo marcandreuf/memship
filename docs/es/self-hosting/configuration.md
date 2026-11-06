@@ -17,7 +17,7 @@ ajustes que lee el backend.
 
 | Variable            | Por defecto  | Descripción                                                        |
 |---------------------|----------|--------------------------------------------------------------------|
-| `MEMSHIP_DATA_ROOT` | `./data` | Ruta absoluta que contiene todas las rutas persistentes: base de datos, archivos subidos, estado del planificador, certificados TLS y copias de seguridad. Haz copia de seguridad de ella. Ver la [Instalación](../../en/getting-started/installation.md#the-data-root) _(en inglés)_. |
+| `MEMSHIP_DATA_ROOT` | `./data` | Ruta absoluta que contiene todas las rutas persistentes: base de datos, archivos subidos, estado del planificador, certificados TLS y copias de seguridad. Haz copia de seguridad de ella. Ver la [Instalación](../getting-started/installation.md#el-directorio-de-datos). |
 | `SITE_ADDRESS`      | _(vacío)_ | La dirección que sirve Caddy. Un nombre de máquina sin más (`memship.example.com`) hace que Caddy obtenga automáticamente un certificado de Let's Encrypt; vacío sirve HTTP sin cifrar en el puerto 80. |
 | `HOST_UID`          | `1001`   | Uid con el que se ejecutan los contenedores del backend. Ponle tu `id -u` para que los archivos subidos montados con bind mount sean tuyos y se puedan leer sin `sudo`. |
 | `HOST_GID`          | `1001`   | Gid, igualmente: tu `id -g`.                                      |

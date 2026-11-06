@@ -35,12 +35,10 @@ una recogen los cambios de comportamiento y las migraciones que no conviene salt
 - [Qué necesitas para ejecutar Memship](getting-started/what-you-need.md), el servidor, el
   dominio, el correo y lo que cuestan, medido en vez de estimado. Para decidir, antes de instalar
 
+- [Prueba rápida](getting-started/quickstart.md), probar Memship con un solo comando
+- [Instalación (Docker)](getting-started/installation.md), instalación de producción con Docker
 - [Configuración inicial](getting-started/first-setup.md), crear el superadministrador y dejar la
   organización lista
-
-Estas dos están por ahora solo en inglés:
-[Quick start](../en/getting-started/quickstart.md) e
-[Installation](../en/getting-started/installation.md).
 
 ## Guía del administrador (admin guide)
 
@@ -56,8 +54,8 @@ Para el personal que gestiona la organización desde el panel de administración
 - [Campos de perfil](admin-guide/custom-fields.md), campos personalizados
 - [Informes y panel](admin-guide/reports.md), panel, resumen anual, exportaciones
 - [Configuración](admin-guide/settings.md), organización, facturación, automatizaciones
-- [Integrations](../en/admin-guide/integrations.md), SSO (Google, Apple) y correo, paso a paso _(en inglés)_
-- [Payment providers](../en/admin-guide/payment-providers.md), conectar Stripe, Redsys y Bizum _(en inglés)_
+- [Integraciones: guía de configuración](admin-guide/integrations.md), SSO (Google, Apple) y correo, paso a paso
+- [Proveedores de pago: guía de configuración](admin-guide/payment-providers.md), conectar Stripe, Redsys y Bizum
 
 ## Guía del socio (member guide)
 

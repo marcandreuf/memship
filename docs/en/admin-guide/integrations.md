@@ -3,6 +3,7 @@
 **Who this is for:** the person who runs a memship installation for their club or association (the **superadmin**).
 **What it covers:** everything under **Settings → Integrations**, signing in with Google / Apple (**Single Sign-On**) and sending email (**Mailing**), plus the registration options that go with them.
 
+> **En español:** [Integraciones: guía de configuración](../../es/admin-guide/integrations.md).
 > **En català:** [Integracions: guia de configuració](../../ca/admin-guide/integrations.md).
 
 You do not need to edit any file or restart anything. Every credential in this guide is entered in the web interface and takes effect on the next request.

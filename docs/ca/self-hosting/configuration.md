@@ -16,7 +16,7 @@ opcions que llegeix el backend.
 
 | Variable            | Per defecte | Descripció                                                         |
 |---------------------|----------|--------------------------------------------------------------------|
-| `MEMSHIP_DATA_ROOT` | `./data` | Ruta absoluta que conté totes les rutes persistents: base de dades, fitxers pujats, estat del planificador, certificats TLS, còpies de seguretat. Fes-ne còpia de seguretat. Mira [Installation](../../en/getting-started/installation.md#the-data-root) _(en anglès)_. |
+| `MEMSHIP_DATA_ROOT` | `./data` | Ruta absoluta que conté totes les rutes persistents: base de dades, fitxers pujats, estat del planificador, certificats TLS, còpies de seguretat. Fes-ne còpia de seguretat. Mira [Instal·lació (Docker)](../getting-started/installation.md#larrel-de-dades). |
 | `SITE_ADDRESS`      | _(buit)_ | L'adreça que serveix Caddy. Un nom de màquina sol (`memship.example.com`) fa que Caddy obtingui automàticament un certificat de Let's Encrypt; buit, serveix HTTP sense xifrar al port 80. |
 | `HOST_UID`          | `1001`   | Uid amb què s'executen els contenidors del backend. Posa-hi el teu `id -u` perquè els fitxers pujats als bind mounts siguin teus i els puguis llegir sense `sudo`. |
 | `HOST_GID`          | `1001`   | Gid, igualment, el teu `id -g`.                                    |
