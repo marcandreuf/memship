@@ -1,5 +1,5 @@
 <!-- source: en/getting-started/what-you-need.md -->
-<!-- source-hash: 8dbc13c61ae3 -->
+<!-- source-hash: 104a6e892527 -->
 
 # Qué necesitas para ejecutar Memship
 
@@ -45,10 +45,10 @@ actividades, recibos, remesas y mandatos y el resumen anual:
 | Redis | 5 MiB |
 | **Total** | **682 MiB** |
 
-Así que toda la plataforma funciona en unos **0,7 GB**. La cifra del worker es la que produce una
-máquina de 2 vCPU: Celery dimensiona su conjunto de procesos según el número de CPU, así que ahí
-arranca dos. En una máquina mayor arranca más y consume unos 50 MiB por cada CPU adicional —
-conviene saberlo si pones Memship en una máquina que ya tienes.
+Así que toda la plataforma funciona en unos **0,7 GB**, y eso vale en cualquier máquina: el worker
+de Celery arranca dos procesos tenga la máquina las CPU que tenga. Cada proceso de más cuesta unos
+50 MiB, si subes `CELERY_CONCURRENCY` (ver la
+[Configuración](../../en/self-hosting/configuration.md#background-jobs-celery--redis)).
 
 **Con 2 GB de RAM funciona; la recomendación son 4 GB.** La diferencia no la pide la aplicación.
 La piden PostgreSQL, para tener memoria de sobra con la que cachear, y las actualizaciones, que

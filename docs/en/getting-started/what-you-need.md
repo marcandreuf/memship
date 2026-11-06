@@ -41,10 +41,9 @@ remittance and mandate screens and the annual summary:
 | Redis | 5 MiB |
 | **Total** | **682 MiB** |
 
-So the whole stack works in about **0.7 GB**. The worker figure is the one a 2 vCPU host produces:
-Celery sizes its process pool to the number of CPUs, so it starts two worker processes there. On
-a larger machine it starts more and uses roughly 50 MiB per additional CPU — worth knowing if you
-put Memship on a box you already own.
+So the whole stack works in about **0.7 GB**, and that holds on any host: the Celery worker runs two
+processes however many CPUs the machine has. Each further process costs roughly 50 MiB, should you
+raise `CELERY_CONCURRENCY` (see [Configuration](../self-hosting/configuration.md#background-jobs-celery--redis)).
 
 **2 GB of RAM is enough to run it; 4 GB is the recommendation.** The gap is not the application. It
 is PostgreSQL having spare memory to cache with, and an upgrade briefly holding the new images

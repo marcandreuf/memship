@@ -93,6 +93,7 @@ one it selects: see [Email delivery](email.md#which-one-is-in-effect).
 | Variable            | Default                    | Description                                                |
 |---------------------|----------------------------|------------------------------------------------------------|
 | `CELERY_BROKER_URL` | `redis://localhost:6379/0` | Redis broker for async email, recurring billing, reminders — and where the sign-in and password-reset rate limits are counted, so every API process shares them. Redis is included in the Compose stack. |
+| `CELERY_CONCURRENCY` | `2`                       | Worker processes. Each holds roughly 50 MiB idle. Celery's own default is one per CPU, which grows the worker's memory with the host rather than the workload; the scheduled jobs are light, so two is enough. Raise it only if queued email backs up. |
 
 The worker and scheduler (Celery beat) run as part of the stack and power async emails,
 scheduled fee generation, and payment reminders.
