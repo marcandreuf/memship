@@ -98,6 +98,22 @@ one it selects: see [Email delivery](email.md#which-one-is-in-effect).
 The worker and scheduler (Celery beat) run as part of the stack and power async emails,
 scheduled fee generation, and payment reminders.
 
+## Off-server backups
+
+Read by `scripts/push-backup.sh`, never by the application. See
+[Backups & restore](backups-and-restore.md#off-server-copies) for setting up each target.
+
+| Variable | Default | Description |
+|---|---|---|
+| `BACKUP_TARGET` | _(empty)_ | Where snapshots go: `ssh://user@host[:port]/absolute/path` or `s3://bucket[/prefix]`. Required to run the script. |
+| `BACKUP_RETENTION_DAYS` | `30` | Snapshots older than this are removed from the destination after a successful push. |
+| `BACKUP_SSH_KEY` | _(ssh default)_ | Identity file for an `ssh://` target. |
+| `BACKUP_S3_ACCESS_KEY_ID` | _(empty)_ | Access key for an `s3://` target. |
+| `BACKUP_S3_SECRET_ACCESS_KEY` | _(empty)_ | Its secret. Passed to the container through the environment, never on a command line. |
+| `BACKUP_S3_REGION` | `us-east-1` | Bucket region. |
+| `BACKUP_S3_ENDPOINT` | _(AWS)_ | Endpoint of a non-AWS store, e.g. `https://s3.eu-central-003.backblazeb2.com`. |
+| `BACKUP_AWS_CLI_IMAGE` | `amazon/aws-cli:2.27.0` | The image an `s3://` push runs. |
+
 ## File storage
 
 | Variable             | Default   | Description                                              |

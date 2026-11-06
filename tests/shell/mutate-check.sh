@@ -23,6 +23,7 @@ cd "$REPO_ROOT" || exit 1
 
 INSTALL="scripts/install.sh"
 UPGRADE="scripts/upgrade.sh"
+PUSH="scripts/push-backup.sh"
 
 survivors=0
 checked=0
@@ -97,6 +98,27 @@ mutate "$UPGRADE" "the disk check charges two filesystems separately on one disk
 
 mutate "$UPGRADE" "the disk check uses the upgrade budget for a first install too" \
     's/^            IMAGES_NEEDED_MB="\$IMAGE_BUDGET_FIRST_MB"$/            IMAGES_NEEDED_MB="$IMAGE_BUDGET_STEP_MB"/'
+
+mutate "$PUSH" "a retention of 0 days is accepted, so every snapshot is pruned" \
+    's/^    ..|\*\[!0-9\]\*|0) usage_error/    ""|*[!0-9]*) usage_error/'
+
+mutate "$PUSH" "an ssh path is passed to the far side's shell unchecked" \
+    's/^        \[\[ "\$RPATH" =~ \$SAFE_PATH \]\] \&\& \[ "\$RPATH" != "\/" \] \\$/        true \\/'
+
+mutate "$PUSH" "pre-restore dumps are pushed as if they were backups" \
+    's/memship_\[0-9\]\*\.sql\.gz/memship_*.sql.gz/'
+
+mutate "$PUSH" "pruning keeps the old snapshots and removes the recent ones" \
+    's/\[\[ "\${BASH_REMATCH\[1\]}" < "\$CUTOFF" \]\]/[[ "${BASH_REMATCH[1]}" > "$CUTOFF" ]]/'
+
+mutate "$PUSH" "a failed storage transfer over ssh still completes the snapshot" \
+    's/"\$RHOST:\$RPATH\/\$SNAP\.partial\/storage\/"$/"$RHOST:$RPATH\/$SNAP.partial\/storage\/" || true/'
+
+mutate "$PUSH" "a failed storage upload to s3 still writes COMPLETE" \
+    's/--recursive \/backup\/storage "\$S3_BASE\/\$SNAP\/storage\/"$/--recursive \/backup\/storage "$S3_BASE\/$SNAP\/storage\/" || true/'
+
+mutate "$PUSH" "the S3 secret is put on the docker command line" \
+    's/-e AWS_SECRET_ACCESS_KEY -e/-e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" -e/'
 
 printf '\n%s mutations, %s survived\n' "$checked" "$survivors"
 [ "$survivors" -eq 0 ]

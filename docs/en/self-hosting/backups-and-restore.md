@@ -65,6 +65,10 @@ For unattended backups, schedule it — nightly at 03:30, for example:
 30 3 * * *  cd /srv/openmemship/app && ./scripts/db-backup.sh
 ```
 
+That keeps the dumps on the same disk as the database. To get them off the server as well,
+schedule `push-backup.sh` instead, which takes the dump itself: see
+[Off-server copies](#off-server-copies).
+
 > The script resolves the backup directory from `MEMSHIP_DATA_ROOT` in `.env`, the same way
 > Compose does, so it always writes where the `db` container's `/backups` mount points. If you
 > move the data root, both the backups and the script follow it — no second setting to update.
@@ -123,20 +127,140 @@ The same is true of the pre-upgrade snapshot the deploy pipeline takes: `upgrade
 It covers a failed migration. It does not cover losing the machine, and a green deploy log is
 not evidence that anything left the building.
 
-`scripts/pull-backup.sh` is a starting point you run from your own machine, not from the
-server:
+### Pushing from the server
+
+`scripts/push-backup.sh` runs on the instance. It takes a fresh dump and pushes one **snapshot**
+to another machine:
+
+```
+memship-20261106T033000Z/
+├── db.sql.gz    the pg_dump
+├── env          .env: the keys that decrypt the credentials inside the dump
+└── storage/     uploads, plus session.key and secret.key
+```
+
+Those are the three things that cannot be rebuilt once the server is gone. It does not copy
+`data/postgres`; the dump is the consistent copy of the database.
+
+The destination is `BACKUP_TARGET` in `.env`, either an SSH host or S3-compatible object storage.
+The settings are listed in [Configuration](configuration.md#off-server-backups).
+
+**A snapshot that exists is a whole one.** Over SSH, it is written as `memship-<stamp>.partial`
+and renamed only after every file has arrived; `latest` then points at it. On S3, a `COMPLETE`
+object is uploaded last. A run that fails part-way leaves an incomplete snapshot behind. Restore
+ignores it, and a later run removes it.
+
+**Retention.** After a successful push, snapshots older than `BACKUP_RETENTION_DAYS` (default 30)
+are removed from the destination. This is separate from the 10 days of dumps kept locally in
+`backups/`.
+
+**Failure is loud.** Any error exits non-zero and prints `PUSH FAILED`, along with what was and was
+not done, so a backup that stopped is not mistaken for one that works.
+
+#### To another host over SSH
+
+The backup host needs a user with a shell and `rsync`. Nothing else, and no root.
+
+1. On the instance, create a key used only for backups:
+   ```bash
+   ssh-keygen -t ed25519 -N "" -f ~/.ssh/memship-backup
+   ```
+2. On the backup host, add `~/.ssh/memship-backup.pub` to that user's `~/.ssh/authorized_keys`.
+3. From the instance, connect once to accept the host key. The script runs SSH in batch mode,
+   so it will never answer that prompt for you:
+   ```bash
+   ssh -i ~/.ssh/memship-backup backup@backup.example.org true
+   ```
+4. In `.env`:
+   ```bash
+   BACKUP_TARGET=ssh://backup@backup.example.org/srv/memship-backups
+   BACKUP_SSH_KEY=/home/deploy/.ssh/memship-backup
+   ```
+   Add a port when it is not 22: `ssh://backup@backup.example.org:2222/srv/memship-backups`.
+
+Unchanged uploads are hard-linked against the previous snapshot rather than sent and stored
+again. A month of snapshots therefore costs one copy of `storage/` plus whatever changed.
+
+#### To S3-compatible object storage
+
+Works with AWS S3 and any compatible store (MinIO, Backblaze B2, Wasabi, OVH, Scaleway…). It
+runs the official `amazon/aws-cli` image through Docker, which is already on the server, so
+nothing has to be installed.
+
+1. Create a bucket, and an access key allowed to put, list and delete objects under the prefix
+   you will use, and nothing else.
+2. In `.env`:
+   ```bash
+   BACKUP_TARGET=s3://club-backups/memship
+   BACKUP_S3_ACCESS_KEY_ID=…
+   BACKUP_S3_SECRET_ACCESS_KEY=…
+   BACKUP_S3_REGION=eu-west-1
+   # Only for a store that is not AWS:
+   BACKUP_S3_ENDPOINT=https://s3.eu-central-003.backblazeb2.com
+   ```
+
+The secret reaches the container through the environment, never on a command line.
+
+#### Schedule it
+
+`push-backup.sh` takes its own dump, so it replaces the nightly `db-backup.sh` line rather than
+running beside it:
+
+```cron
+MAILTO=admin@example.org
+30 3 * * *  cd /srv/openmemship/app && ./scripts/push-backup.sh
+```
+
+`MAILTO` only reaches you if the server can send mail. A check-in service is more reliable. It
+alerts you when the ping **stops** arriving, which also covers cron itself not running:
+
+```cron
+30 3 * * *  cd /srv/openmemship/app && ./scripts/push-backup.sh && curl -fsS https://hc-ping.com/<your-uuid>
+```
+
+> **What you push contains everything.** `env` holds the keys and `db.sql.gz` holds every member
+> record. Snapshots are not encrypted by memship. Give the destination the same protection as
+> the server: a dedicated user or key, no public access to the bucket, and server-side
+> encryption on the bucket where the store offers it.
+
+### Restoring from a pushed snapshot
+
+Use a complete snapshot: over SSH, the one `latest` points at (or any directory not ending in
+`.partial`); on S3, one that contains `COMPLETE`.
+
+1. Install a new server as in [Restoring onto a new server](#restoring-onto-a-new-server), steps
+   1–2.
+2. Fetch the snapshot onto it:
+   ```bash
+   # SSH
+   rsync -a backup@backup.example.org:/srv/memship-backups/latest/ ~/restore/
+   # S3, using the same image the push used
+   docker run --rm -v ~/restore:/restore -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY        amazon/aws-cli:2.27.0 s3 cp --recursive s3://club-backups/memship/memship-<stamp>/ /restore/
+   ```
+3. Put the pieces back. `.env` goes first, because the database is unreadable without it:
+   ```bash
+   cp ~/restore/env /srv/openmemship/app/.env
+   rsync -a ~/restore/storage/ /srv/openmemship/data/storage/
+   cp ~/restore/db.sql.gz /srv/openmemship/data/backups/memship_<YYYYMMDD_HHMMSS>.sql.gz
+   ```
+   Name the dump after the snapshot. Any name starting `memship_` works. For a store that is
+   not AWS, add `--endpoint-url <BACKUP_S3_ENDPOINT>` after the image name in the `docker run`.
+4. `docker compose up -d db`, then
+   `./scripts/db-restore.sh --confirm --yes memship_<YYYYMMDD_HHMMSS>.sql.gz`, then
+   `docker compose up -d`.
+
+Do this once against a scratch server before you rely on it.
+
+### Pulling from your own machine
+
+`scripts/pull-backup.sh` is the reverse: it runs on your workstation and pulls from the server. Use
+it when the server should not hold credentials to anything else.
 
 ```bash
 ./scripts/pull-backup.sh <ssh-host> --dump              # fresh dump, then fetch .env + dumps
 ./scripts/pull-backup.sh <ssh-host> --with-data         # also uploads and TLS certificates
 ```
 
-It needs root on neither machine, and it skips `data/postgres` on purpose — those files need
-sudo and a file-level copy of a running database is not crash-consistent. The `pg_dump` in
-`backups/` is the consistent copy.
-
-It is deliberately not a backup system: no schedule, no retention, no verification, no
-encryption at rest. Run it from cron on a machine that stays on, and point `--dest` at storage
-that is itself backed up. A fuller system — S3 and other object stores, push to another host
-over SSH or rsync, retention and restore testing — is tracked in
-[#137](https://github.com/marcandreuf/memship/issues/137).
+It needs root on neither machine, and it skips `data/postgres` for the same reason. It has no
+schedule and no retention of its own: run it from cron on a machine that stays on, and point
+`--dest` at storage that is itself backed up.
