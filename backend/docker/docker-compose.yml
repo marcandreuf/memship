@@ -60,7 +60,7 @@ services:
       context: ..
       dockerfile: docker/Dockerfile
     container_name: memship-celery-worker
-    command: celery -A app.core.celery_app worker --loglevel=info
+    command: celery -A app.core.celery_app worker --loglevel=info --concurrency=${CELERY_CONCURRENCY:-2}
     # The image deliberately excludes .env (.dockerignore), so SMTP_*/RESEND_*
     # never reached the worker and every queued email hit the log-and-skip path.
     # The `environment:` keys below still win over the file, so the localhost
