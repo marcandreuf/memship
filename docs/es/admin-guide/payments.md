@@ -7,14 +7,14 @@ Gestión de recibos, generación de cuotas, IVA y cobros (incluido el pago en l�
 Cada recibo tiene un **número**, un **socio**, una **descripción**, importes (**base**, **IVA**,
 **descuento**, **total**) y un **estado**. El ciclo de vida es:
 
-**Nuevo → Emitido → Cobrado** — y, según el caso, **Devuelto**, **Anulado** o **Vencido**.
+**Nuevo → Emitido → Cobrado**, y, según el caso, **Devuelto**, **Anulado** o **Vencido**.
 
 Acciones disponibles según el estado: **Emitir**, **Cobrar**, **Devolver**, **Anular** y
 **Reemitir** (para un recibo devuelto). Desde el recibo también puedes **Descargar PDF**.
 
 Un recibo incluido en una remesa ya **Enviada** o **Procesada** no se puede **Cobrar** ni
-**Anular** a mano: el cobro está en curso en el banco. Importa la devolución o cierra la remesa
-— ver [Domiciliación SEPA](sepa.md#remesas).
+**Anular** a mano: el cobro está en curso en el banco. Importa la devolución o cierra la remesa,
+ver [Domiciliación SEPA](sepa.md#remesas).
 
 ## Corregir un recibo emitido
 
@@ -24,7 +24,7 @@ y su estado; la rectificativa es un documento nuevo, con importe negativo, que t
 siguiente número de la misma serie y enlaza con el documento que rectifica. Los dos juntos
 suman lo que el socio debe realmente.
 
-Puedes rectificar un recibo **emitido, vencido, devuelto o ya cobrado** — incluida, por tanto,
+Puedes rectificar un recibo **emitido, vencido, devuelto o ya cobrado**, incluida, por tanto,
 una cantidad cobrada de más. Indicas el **motivo** y, si no quieres rectificar el total, el
 **importe**; se pueden emitir varias rectificativas parciales hasta cubrir el importe del
 recibo. Una rectificativa no se cobra por remesa ni se puede anular: la devolución del dinero
@@ -37,11 +37,11 @@ cobrado solo se corrige con una rectificativa.
 
 Un recibo puede tener origen:
 
-- **Cuota** — cuota de socio (ver *Generar cuotas* y la
+- **Cuota**, cuota de socio (ver *Generar cuotas* y la
   [facturación recurrente](settings.md#facturación-recurrente)).
-- **Actividad** — generado automáticamente al confirmar una [inscripción](activities.md);
+- **Actividad**, generado automáticamente al confirmar una [inscripción](activities.md);
   se anula si la inscripción se cancela.
-- **Manual** — creado a mano desde la ficha del socio.
+- **Manual**, creado a mano desde la ficha del socio.
 - **Donación**: creado a mano, con IVA 0 por defecto. No entra en los avisos de impago ni en
   el importe pendiente del panel: una donación sin completar no es una deuda. Ver
   [Donaciones](donations.md).
@@ -68,9 +68,9 @@ Un recibo puede cobrarse por **efectivo**, **transferencia**, **tarjeta**, **dom
 Cuando hay un proveedor configurado, el socio ve el botón **Pagar ahora** en sus recibos
 pendientes y puede pagar con:
 
-- **Stripe** — pago con tarjeta.
-- **Redsys** — pasarela bancaria española con 3D Secure.
-- **Bizum** — a través de Redsys, y solo si **Ofrecer Bizum** está activado en ese proveedor.
+- **Stripe**, pago con tarjeta.
+- **Redsys**, pasarela bancaria española con 3D Secure.
+- **Bizum**, a través de Redsys, y solo si **Ofrecer Bizum** está activado en ese proveedor.
   Tu banco tiene que habilitarlo antes en el terminal.
 
 > La confirmación definitiva de los pagos con pasarela llega por la **notificación asíncrona**
@@ -82,11 +82,11 @@ pendientes y puede pagar con:
 En **Ajustes → Proveedores de pago**, bajo los proveedores, **Notificaciones de pago** lista lo
 que las pasarelas enviaron y memship no aplicó:
 
-- **Fallida** — no se pudo aplicar. La pasarela reintenta; si sigue fallando, hay que revisarla.
-- **Ignorada** — se recibió y no se hizo nada a propósito: un tipo de aviso que no se trata, un
+- **Fallida**, no se pudo aplicar. La pasarela reintenta; si sigue fallando, hay que revisarla.
+- **Ignorada**, se recibió y no se hizo nada a propósito: un tipo de aviso que no se trata, un
   importe distinto o un pago de un recibo **ya pagado**. Esto último es un doble cobro: hay que
   devolver el segundo pago desde la pasarela.
-- **Rechazadas por la firma** — un recuento por proveedor encima de la lista. Si no para de
+- **Rechazadas por la firma**, un recuento por proveedor encima de la lista. Si no para de
   crecer, la clave configurada no es la correcta y no se está confirmando ningún pago.
 
 Para recibir un aviso, indica la dirección de notificaciones de facturación: llega un correo al
@@ -98,8 +98,8 @@ Si la pasarela cobró y el recibo sigue pendiente, márcalo como pagado eligiend
 Stripe: memship pide la **referencia de la pasarela** (el código de autorización o el
 identificador del pago) para poder cuadrarlo con el banco.
 
-> **Para darlos de alta paso a paso** — qué credencial pedir a Stripe o al banco, cómo crear
-> el webhook de Stripe y por qué Redsys no lo necesita — consulta la
+> **Para darlos de alta paso a paso**, qué credencial pedir a Stripe o al banco, cómo crear
+> el webhook de Stripe y por qué Redsys no lo necesita, consulta la
 > [guía de proveedores de pago](../../en/admin-guide/payment-providers.md) _(en inglés)_.
 
 ## Panel financiero

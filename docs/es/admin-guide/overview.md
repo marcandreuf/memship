@@ -31,27 +31,27 @@ usa el enlace de recuperación de la pantalla de inicio de sesión (requiere que
 
 El panel de administración se organiza en torno a estas áreas:
 
-- **Panel (Dashboard)** — resumen con gráficos de estado de socios y de recibos, e importes
+- **Panel (Dashboard)**, resumen con gráficos de estado de socios y de recibos, e importes
   pendientes, pagados y vencidos.
-- **[Socios](members.md)** — ciclo de vida completo (alta, cambios de estado, baja), tipos de
+- **[Socios](members.md)**, ciclo de vida completo (alta, cambios de estado, baja), tipos de
   cuota, grupos y soporte para menores con tutor.
-- **[Entidades](entities.md)** — empresas, fundaciones y organismos con los que trata el club,
+- **[Entidades](entities.md)**, empresas, fundaciones y organismos con los que trata el club,
   con recibos a su nombre (donaciones) sin necesidad de hacerlos socios.
-- **[Actividades](activities.md)** — creación y publicación, inscripciones con control de
+- **[Actividades](activities.md)**, creación y publicación, inscripciones con control de
   elegibilidad, lista de espera, códigos de descuento, consentimientos y adjuntos.
-- **[Pagos](payments.md)** — recibos, generación de cuotas, IVA, facturación, generación de
+- **[Pagos](payments.md)**, recibos, generación de cuotas, IVA, facturación, generación de
   PDF y cobro en línea (Stripe, Redsys/Bizum).
 - **[Donaciones](donations.md)**: los tres caminos para recibir una donación, y qué registro
   deja cada uno.
-- **[SEPA](sepa.md)** — mandatos de domiciliación, remesas (XML pain.008) e importación de
+- **[SEPA](sepa.md)**, mandatos de domiciliación, remesas (XML pain.008) e importación de
   devoluciones.
-- **[Comunicaciones](communications.md)** — anuncios a todos los socios, a un grupo o a un
+- **[Comunicaciones](communications.md)**, anuncios a todos los socios, a un grupo o a un
   tipo de cuota.
-- **[Carné digital](member-cards.md)** — carné en PDF con número de socio y check-in por QR.
-- **[Campos personalizados](custom-fields.md)** — campos de perfil configurables por la
+- **[Carné digital](member-cards.md)**, carné en PDF con número de socio y check-in por QR.
+- **[Campos personalizados](custom-fields.md)**, campos de perfil configurables por la
   organización.
-- **[Informes](reports.md)** — exportaciones CSV, panel financiero y resumen anual.
-- **[Configuración](settings.md)** — marca (nombre, color, logotipo), dirección, datos
+- **[Informes](reports.md)**, exportaciones CSV, panel financiero y resumen anual.
+- **[Configuración](settings.md)**, marca (nombre, color, logotipo), dirección, datos
   bancarios, facturación y automatizaciones.
 
 > La reserva de espacios (**Simple Bookings**) aún no forma parte de una versión publicada y se

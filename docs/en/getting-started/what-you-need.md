@@ -50,7 +50,7 @@ is PostgreSQL having spare memory to cache with, and an upgrade briefly holding 
 alongside the running ones. 4 GB is also what the entry plan at every provider below includes, so
 asking for less saves nothing.
 
-**Measured disk.** The five images occupy **1.06 GB** on disk and are a **358 MB** download — five
+**Measured disk.** The five images occupy **1.06 GB** on disk and are a **358 MB** download, five
 rather than seven, because the API, the worker and the beat scheduler all run the same image. A
 database holding the club described above was 12 MB, inside a 50 MB PostgreSQL data directory.
 
@@ -101,11 +101,11 @@ per member, per admin or per receipt.
 ## A domain name
 
 One hostname, with a DNS **A record** pointing at the server's IP address. Once that resolves,
-the bundled Caddy obtains and renews a Let's Encrypt certificate on its own — there is no
+the bundled Caddy obtains and renews a Let's Encrypt certificate on its own, there is no
 certificate to buy, install or remember to renew.
 
-If the domain belongs to an association rather than to the person installing — so the hostname, the
-DNS zone and the mail domain are three different people's business — read
+If the domain belongs to an association rather than to the person installing, so the hostname, the
+DNS zone and the mail domain are three different people's business, read
 [Your organisation's domain](../self-hosting/domain-and-dns.md) before starting.
 
 ## A way to send email
@@ -116,12 +116,12 @@ time until it works.
 
 Three options, configured from the Settings screen or from `.env`:
 
-- **Resend** — an email API. Free tier: 3,000 messages a month, 3 domains, but **100 a day**. That
+- **Resend**, an email API. Free tier: 3,000 messages a month, 3 domains, but **100 a day**. That
   daily cap is the one that bites: sending reminders to more than 100 members in a single run
   exceeds it. The paid tier is 20 USD a month.
-- **Gmail** — an ordinary Google account with an app password. Google applies its own daily sending
+- **Gmail**, an ordinary Google account with an app password. Google applies its own daily sending
   limits.
-- **Any SMTP server** — including the one that comes with the association's existing mail hosting,
+- **Any SMTP server**, including the one that comes with the association's existing mail hosting,
   as long as it accepts STARTTLS, usually on port 587. A server reachable only on port 465 is not
   supported.
 
@@ -131,8 +131,8 @@ Three options, configured from the Settings screen or from `.env`:
 
 Once the images are on the server, the stack starts and answers as healthy in **16 seconds**.
 
-The end-to-end time for a first install on a bare server — `scripts/vps-bootstrap.sh`, then
-`scripts/install.sh`, then creating the first admin — has not been measured, and this page will not
+The end-to-end time for a first install on a bare server, `scripts/vps-bootstrap.sh`, then
+`scripts/install.sh`, then creating the first admin, has not been measured, and this page will not
 guess at it. The parts that dominate it are the image download (358 MB) and the DNS record you
 create for the domain propagating.
 

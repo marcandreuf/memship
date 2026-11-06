@@ -1,7 +1,7 @@
 # Troubleshooting
 
 Symptoms an operator actually hits, and what causes them. If something here is wrong or missing,
-[open an issue](https://github.com/marcandreuf/memship/issues) — this page is built from real
+[open an issue](https://github.com/marcandreuf/memship/issues), this page is built from real
 installs, not from theory.
 
 First, two commands worth running before anything else:
@@ -12,7 +12,7 @@ curl -s http://localhost/api/v1/health  # {"status":"healthy","version":"2.19.0"
 ```
 
 `version` is the image tag you are on. If it reads `latest` you are on an unpinned install and
-cannot tell what is running — pin it with `./scripts/upgrade.sh <version>`, which checks the
+cannot tell what is running, pin it with `./scripts/upgrade.sh <version>`, which checks the
 release against your data before replacing anything. `install.sh` refuses to run against an
 instance that is already up, precisely so that check is not skipped.
 
@@ -41,7 +41,7 @@ ls -l "$MEMSHIP_DATA_ROOT"     # storage/ and celerybeat/ should be yours, postg
 sudo chown -R "$(id -u):$(id -g)" "$MEMSHIP_DATA_ROOT"/{storage,celerybeat,caddy,backups}
 ```
 
-`postgres/` is different: mode `0700` owned by uid 70, unreadable by you. That is correct — read
+`postgres/` is different: mode `0700` owned by uid 70, unreadable by you. That is correct, read
 the database with `./scripts/db-backup.sh`, not with `ls`.
 
 If you are upgrading from a release where the backend ran as root, see the note in
@@ -63,12 +63,12 @@ differing only by case or surrounding whitespace.
 
 Decide which account keeps each address and remove or change the others, then run
 the upgrade again.
-Nothing has been changed — this migration made no writes.
+Nothing has been changed, this migration made no writes.
 ```
 
 **This is deliberate, not a broken release.** Some migrations inspect the data before changing it
 and stop when they find something only a person should decide about. The guard wrote nothing, so
-the database is exactly as it was. **Do not restore the pre-upgrade snapshot** — there is nothing
+the database is exactly as it was. **Do not restore the pre-upgrade snapshot**, there is nothing
 to undo, and restoring it loses anything written since it was taken.
 
 If the report scrolled past, read it again with:
@@ -79,11 +79,11 @@ docker compose logs api --tail 40
 
 **Fix it by changing a row, not by deleting one.** Deleting the duplicate account is the obvious
 move and the wrong one: `members.user_id` is `ON DELETE SET NULL`, so removing the account
-detaches that person's membership and leaves no way to reconnect it — and if the account ever
+detaches that person's membership and leaves no way to reconnect it, and if the account ever
 triggered a billing run or created an announcement, the delete fails outright on a foreign key.
 
-Pick the account to retire using the report's annotations — when it last signed in, whether it
-holds a member record — and give it a different address:
+Pick the account to retire using the report's annotations, when it last signed in, whether it
+holds a member record, and give it a different address:
 
 ```bash
 docker compose exec -T db psql -U memship -d memship_db \
@@ -102,12 +102,12 @@ can see both accounts and deactivate or re-address the one you do not want. Doin
 than in SQL means the change is audited.
 
 If the report names more accounts than you can work through quickly, note that the instance stays
-down throughout — the check runs after the stack has been replaced. Moving it earlier is
+down throughout, the check runs after the stack has been replaced. Moving it earlier is
 [issue #194](https://github.com/marcandreuf/memship/issues/194).
 
 ### Postgres will not start on RHEL, Fedora, Rocky or AlmaLinux
 
-SELinux. Bind mounts need relabelling — see the SELinux section of
+SELinux. Bind mounts need relabelling, see the SELinux section of
 [Installation](../getting-started/installation.md).
 
 ### `port is already allocated`
@@ -119,7 +119,7 @@ sudo ss -ltnp | grep -E ':(80|443)\b'
 ```
 
 Stop it, or set `HTTP_PORT` / `HTTPS_PORT` in `.env` and recreate. Note that automatic HTTPS needs
-port 80 reachable from the internet — Let's Encrypt validates over HTTP-01.
+port 80 reachable from the internet, Let's Encrypt validates over HTTP-01.
 
 ## It is running but I cannot reach it
 
@@ -149,7 +149,7 @@ rate-limited at 5 per hostname per hour.
 ### "Too many certificates already issued"
 
 Let's Encrypt allows **5 certificates per week for the same set of hostnames**. The issued
-certificate lives in `<data-root>/caddy/data`; deleting that directory — as a full teardown does —
+certificate lives in `<data-root>/caddy/data`; deleting that directory, as a full teardown does,
 makes the next start request a *new* certificate instead of renewing. Preserve `caddy/data` across
 rebuilds, and rehearse installs without `--domain`.
 
@@ -181,14 +181,14 @@ MEMSHIP_ADMIN_PASSWORD='...' docker compose exec -T -e MEMSHIP_ADMIN_PASSWORD \
 
 ### Nobody can log in / the super admin password is lost
 
-Reset it from the host with the same command. It is deliberately the only way in — there is no
+Reset it from the host with the same command. It is deliberately the only way in, there is no
 recovery through the web interface for a super admin, and every reset is written to the audit log
 with no acting user, since whoever ran it had shell access.
 
 ### A member cannot sign in: "Confirm your email address before signing in"
 
 Signing in requires a confirmed address, so an account that never followed its confirmation link
-is locked out. Normally they request a new link from the sign-in page — but that needs a working
+is locked out. Normally they request a new link from the sign-in page, but that needs a working
 mail transport, and a mail transport that had been failing silently is the usual reason the
 address was never confirmed in the first place.
 
@@ -211,19 +211,19 @@ That confirms addresses **without anyone proving they own them**, which is why i
 `--yes`. Use it when you know the accounts are genuine and the mail was the problem; use `--email`
 one at a time when you are not sure.
 
-The command never sends anything — it is for the case where sending is what is broken.
+The command never sends anything, it is for the case where sending is what is broken.
 
 ### The API refuses to start, complaining about `SECRET_KEY`
 
 The placeholder key shipped in `.env.example` and the Compose default are published in this
-repository, and they sign the session token, the member-card QR HMAC and the OAuth state — so they
+repository, and they sign the session token, the member-card QR HMAC and the OAuth state, so they
 are refused. Generate one:
 
 ```bash
 openssl rand -hex 32
 ```
 
-Leaving `SECRET_KEY` empty is allowed — the server generates and persists one — but setting it
+Leaving `SECRET_KEY` empty is allowed, the server generates and persists one, but setting it
 explicitly is what lets a rebuilt host keep working sessions.
 
 ## Backups and restore
@@ -233,7 +233,7 @@ explicitly is what lets a rebuilt host keep working sessions.
 The script leaves the API stopped on purpose. Starting it would run migrations against the
 half-restored database and give you an instance that reports `"healthy"` and contains nothing.
 
-Restore the pre-restore dump named in the failure message — not simply the newest one, which after
+Restore the pre-restore dump named in the failure message, not simply the newest one, which after
 a second failed attempt is a copy of the already-damaged database.
 
 ### A restore says there is no terminal
@@ -247,7 +247,7 @@ and pass `--yes`:
 
 ### "Restore complete" but the data is gone
 
-Releases before 2.3.0 could report success after a failed restore — `psql` ran without
+Releases before 2.3.0 could report success after a failed restore, `psql` ran without
 `ON_ERROR_STOP`, so a corrupt or truncated dump emptied the database and still printed a green
 result. Upgrade, and re-test your restores. A backup you have never restored is a guess.
 
@@ -260,4 +260,4 @@ docker compose logs -f caddy           # TLS issuance and proxying
 docker compose logs --since 10m        # everything, recent
 ```
 
-Celery is the component that fails quietly — if reminders or emails stop, look there first.
+Celery is the component that fails quietly, if reminders or emails stop, look there first.

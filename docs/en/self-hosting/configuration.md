@@ -11,10 +11,10 @@ setting the backend reads.
 
 | Variable            | Default  | Description                                                        |
 |---------------------|----------|--------------------------------------------------------------------|
-| `MEMSHIP_DATA_ROOT` | `./data` | Absolute path holding every persistent path — database, uploads, scheduler state, TLS certificates, backups. Back this up. See [Installation](../getting-started/installation.md#the-data-root). |
+| `MEMSHIP_DATA_ROOT` | `./data` | Absolute path holding every persistent path, database, uploads, scheduler state, TLS certificates, backups. Back this up. See [Installation](../getting-started/installation.md#the-data-root). |
 | `SITE_ADDRESS`      | _(empty)_ | The address Caddy serves. A bare hostname (`memship.example.com`) makes Caddy provision a Let's Encrypt certificate automatically; empty serves plain HTTP on port 80. |
 | `HOST_UID`          | `1001`   | Uid the backend containers run as. Set to your `id -u` so bind-mounted uploads belong to you and are readable without `sudo`. |
-| `HOST_GID`          | `1001`   | Gid, likewise — your `id -g`.                                      |
+| `HOST_GID`          | `1001`   | Gid, likewise, your `id -g`.                                      |
 
 `scripts/install.sh` sets all four for you.
 
@@ -22,10 +22,10 @@ setting the backend reads.
 
 | Variable      | Default                 | Description                                                                 |
 |---------------|-------------------------|-----------------------------------------------------------------------------|
-| `SECRET_KEY`  | _(generated into `storage/session.key`)_ | Signs session cookies and member-card QR codes, and derives the key encrypting stored payment-provider credentials. Leave blank and a per-install key is generated on first boot; **set it explicitly** if you want it to survive a lost data root. Generate with `openssl rand -hex 32`. The placeholder values shipped in the example files are recognised and ignored — anything signed with a published key is forgeable. |
+| `SECRET_KEY`  | _(generated into `storage/session.key`)_ | Signs session cookies and member-card QR codes, and derives the key encrypting stored payment-provider credentials. Leave blank and a per-install key is generated on first boot; **set it explicitly** if you want it to survive a lost data root. Generate with `openssl rand -hex 32`. The placeholder values shipped in the example files are recognised and ignored, anything signed with a published key is forgeable. |
 | `SESSION_KEY_FILE` | `<STORAGE_LOCAL_PATH>/session.key` | Where the auto-generated signing key is persisted when `SECRET_KEY` is blank. Must sit on persistent storage, or every restart logs all users out and stored payment credentials stop decrypting. |
-| `COOKIE_SECURE` | _(derived from `FRONTEND_URL`)_ | Forces the `Secure` attribute on the session cookie on/off. The default reads the `FRONTEND_URL` scheme, which is correct unless TLS is terminated by an upstream proxy that talks plain HTTP to Caddy — set `true` there. |
-| `MEMSHIP_SECRET_KEY` | _(generated into `storage/secret.key`)_ | Encrypts SSO and payment-provider credentials stored in the database. **Set it explicitly** — an auto-generated key lives only in the data root, so a rebuilt host cannot decrypt a restored backup without it. Rotating it makes existing stored credentials unreadable. |
+| `COOKIE_SECURE` | _(derived from `FRONTEND_URL`)_ | Forces the `Secure` attribute on the session cookie on/off. The default reads the `FRONTEND_URL` scheme, which is correct unless TLS is terminated by an upstream proxy that talks plain HTTP to Caddy, set `true` there. |
+| `MEMSHIP_SECRET_KEY` | _(generated into `storage/secret.key`)_ | Encrypts SSO and payment-provider credentials stored in the database. **Set it explicitly**, an auto-generated key lives only in the data root, so a rebuilt host cannot decrypt a restored backup without it. Rotating it makes existing stored credentials unreadable. |
 | `SECRETS_KEY_FILE` | `<STORAGE_LOCAL_PATH>/secret.key` | Where the auto-generated key is persisted when `MEMSHIP_SECRET_KEY` is unset. Must sit on persistent storage, or stored credentials become unreadable after a restart. |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | `30`      | Access token lifetime in minutes.                                          |
 
@@ -45,7 +45,7 @@ setting the backend reads.
 | `DEFAULT_LOCALE` | `es`                     | Default interface language: `es`, `ca`, or `en`.                  |
 | `CORS_ORIGINS`   | `http://localhost:3000`  | Comma-separated list of allowed browser origins. Set to your site URL(s). |
 | `FRONTEND_URL`   | `http://localhost:3000`  | Public URL of the frontend; used in email links.                  |
-| `TRUSTED_PROXY_HOPS` | `1`                  | How many proxies sit in front of the API. Each appends the peer it accepted to `X-Forwarded-For`, so the caller's address is this many entries from the right. `1` is the bundled Caddy. The frontend is not a hop: its proxy routes pass the header through unchanged, so the API sees the same chain whether a request came through them or straight to `/api/v1`. Raise it if you put anything else in front — a CDN, a load balancer, your own reverse proxy — or the per-IP login throttle keys every caller to that proxy and rate-limits your whole site at once. Set it to `0` only if the API is published with nothing in front, which makes the header caller-supplied and the per-IP limit evadable. |
+| `TRUSTED_PROXY_HOPS` | `1`                  | How many proxies sit in front of the API. Each appends the peer it accepted to `X-Forwarded-For`, so the caller's address is this many entries from the right. `1` is the bundled Caddy. The frontend is not a hop: its proxy routes pass the header through unchanged, so the API sees the same chain whether a request came through them or straight to `/api/v1`. Raise it if you put anything else in front (a CDN, a load balancer, your own reverse proxy) or the per-IP login throttle keys every caller to that proxy and rate-limits your whole site at once. Set it to `0` only if the API is published with nothing in front, which makes the header caller-supplied and the per-IP limit evadable. |
 | `BACKEND_PUBLIC_URL` | `http://localhost:8003` | Publicly reachable backend URL for payment-provider callbacks (e.g. Redsys `Ds_Merchant_MerchantURL`). In production this **must** be the external hostname the gateway can POST to. |
 
 ## Ports
@@ -92,7 +92,7 @@ one it selects: see [Email delivery](email.md#which-one-is-in-effect).
 
 | Variable            | Default                    | Description                                                |
 |---------------------|----------------------------|------------------------------------------------------------|
-| `CELERY_BROKER_URL` | `redis://localhost:6379/0` | Redis broker for async email, recurring billing, reminders — and where the sign-in and password-reset rate limits are counted, so every API process shares them. Redis is included in the Compose stack. |
+| `CELERY_BROKER_URL` | `redis://localhost:6379/0` | Redis broker for async email, recurring billing, reminders, and where the sign-in and password-reset rate limits are counted, so every API process shares them. Redis is included in the Compose stack. |
 | `CELERY_CONCURRENCY` | `2`                       | Worker processes. Each holds roughly 50 MiB idle. Celery's own default is one per CPU, which grows the worker's memory with the host rather than the workload; the scheduled jobs are light, so two is enough. Raise it only if queued email backs up. |
 
 The worker and scheduler (Celery beat) run as part of the stack and power async emails,
@@ -118,7 +118,7 @@ Read by `scripts/push-backup.sh`, never by the application. See
 
 | Variable             | Default   | Description                                              |
 |----------------------|-----------|----------------------------------------------------------|
-| `STORAGE_LOCAL_PATH` | `storage` | In-container path for uploads (logos, activity images, PDFs). Bind-mounted from `$MEMSHIP_DATA_ROOT/storage`, which also holds `secret.key` — include it in [backups](backups-and-restore.md). |
+| `STORAGE_LOCAL_PATH` | `storage` | In-container path for uploads (logos, activity images, PDFs). Bind-mounted from `$MEMSHIP_DATA_ROOT/storage`, which also holds `secret.key`, include it in [backups](backups-and-restore.md). |
 | `MAX_UPLOAD_SIZE_MB` | `10`      | Maximum upload size in megabytes.                        |
 
 ## Server

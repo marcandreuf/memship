@@ -10,9 +10,9 @@ Envío de anuncios a los socios por correo electrónico y con notificación en l
 
 Desde **Comunicaciones → Nuevo anuncio**:
 
-1. **Contenido** — un **asunto** y el **mensaje**. El cuerpo admite **Markdown básico**
+1. **Contenido**, un **asunto** y el **mensaje**. El cuerpo admite **Markdown básico**
    (negrita, cursiva, enlaces y listas) y dispone de **vista previa**.
-2. **Audiencia** — elige a quién se envía:
+2. **Audiencia**, elige a quién se envía:
    - **Todos los miembros**.
    - Un **grupo** concreto.
    - Un **tipo de cuota** (tipo de membresía).

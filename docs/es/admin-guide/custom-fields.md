@@ -9,21 +9,21 @@ ejemplo: talla de equipación, número de licencia federativa, alergias…).
 
 Desde **Añadir campo** configuras:
 
-- **Clave** — identificador estable en minúsculas. **No se puede cambiar** después de crear el
+- **Clave**, identificador estable en minúsculas. **No se puede cambiar** después de crear el
   campo.
-- **Tipo** — **Texto**, **Texto largo**, **Número**, **Fecha**, **Sí/No** o **Lista de
+- **Tipo**, **Texto**, **Texto largo**, **Número**, **Fecha**, **Sí/No** o **Lista de
   opciones**. **No se puede cambiar** después de crear el campo.
-- **Etiqueta** — en cada idioma (ES/CA/EN) y un **texto de ayuda** opcional.
-- **Opciones** — para el tipo *Lista de opciones*, cada una con su valor y etiqueta.
+- **Etiqueta**, en cada idioma (ES/CA/EN) y un **texto de ayuda** opcional.
+- **Opciones**, para el tipo *Lista de opciones*, cada una con su valor y etiqueta.
 - **Obligatorio**, **Activo** y **Orden**.
 
 ## Visibilidad y edición
 
 Cada campo controla por separado quién puede verlo y editarlo:
 
-- **Acceso del socio** — qué puede hacer el socio con su propio valor: **Oculto**, **Solo
+- **Acceso del socio**, qué puede hacer el socio con su propio valor: **Oculto**, **Solo
   lectura** o **Editable**.
-- **Acceso del administrador** — los administradores **siempre pueden ver** el campo; el
+- **Acceso del administrador**, los administradores **siempre pueden ver** el campo; el
   superadministrador **siempre puede editarlo**.
 
 ## Eliminar un campo

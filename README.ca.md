@@ -12,22 +12,22 @@ Memship és un programari autohospedable de gestió de socis, de **codi font obe
 
 ## Què estem construint
 
-La majoria d'eines de gestió de socis són plataformes SaaS cares o programari obsolet. Memship vol canviar això — una solució moderna i completa que vosaltres controleu. Sense dependència de proveïdors, sense preus per soci, sense que les vostres dades surtin dels vostres servidors.
+La majoria d'eines de gestió de socis són plataformes SaaS cares o programari obsolet. Memship vol canviar això, una solució moderna i completa que vosaltres controleu. Sense dependència de proveïdors, sense preus per soci, sense que les vostres dades surtin dels vostres servidors.
 
-- **Autohospedable** — funciona a qualsevol servidor amb Docker
-- **Monoentitat** — una base de dades per organització, aïllament complet de dades
-- **Multiidioma** — castellà, català i anglès des del primer dia. Extensible a qualsevol idioma mitjançant contribucions de la comunitat
-- **Preparat per al RGPD** — plantilles de termes legals i gestió del consentiment integrades
+- **Autohospedable**, funciona a qualsevol servidor amb Docker
+- **Monoentitat**, una base de dades per organització, aïllament complet de dades
+- **Multiidioma**, castellà, català i anglès des del primer dia. Extensible a qualsevol idioma mitjançant contribucions de la comunitat
+- **Preparat per al RGPD**, plantilles de termes legals i gestió del consentiment integrades
 
 ## Inici ràpid (Docker)
 
 > **Per provar Memship, no per fer-lo servir.** És la via més ràpida a una instància
 > funcionant a la vostra màquina: imatges publicades, volums llencívols i una
 > contrasenya de base de dades fixa. Per gestionar una organització real, seguiu la
-> [Instal·lació](docs/en/getting-started/installation.md) — el mateix producte, configurat
+> [Instal·lació](docs/en/getting-started/installation.md), el mateix producte, configurat
 > per poder-lo copiar, actualitzar i conservar.
 
-Proveu Memship amb una sola comanda — sense necessitat de clonar el repositori:
+Proveu Memship amb una sola comanda, sense necessitat de clonar el repositori:
 
 ```bash
 mkdir -p "$HOME/memship-quickstart" && cd "$HOME/memship-quickstart"
@@ -42,12 +42,12 @@ A continuació, executeu la configuració, que us fa tres preguntes:
 docker compose exec -it demo-memship-api python -m app.cli.seed
 ```
 
-1. **Superadministrador** — trieu l'adreça i la contrasenya. No hi ha res predefinit.
-2. **Dades del club** — només s'ofereix si n'hi ha, així que en una instal·lació nova no fa res.
-3. **Configuració del club** — introduïu les dades reals de la vostra organització, o genereu un club de demostració.
+1. **Superadministrador**, trieu l'adreça i la contrasenya. No hi ha res predefinit.
+2. **Dades del club**, només s'ofereix si n'hi ha, així que en una instal·lació nova no fa res.
+3. **Configuració del club**, introduïu les dades reals de la vostra organització, o genereu un club de demostració.
 
 Trieu el club de demostració per explorar: crea un any complet de dades d'exemple
-realistes — ~60 socis en tots els estats, activitats, rebuts en tots els estats repartits
+realistes, ~60 socis en tots els estats, activitats, rebuts en tots els estats repartits
 pels mesos, mandats SEPA i recordatoris del tauler. També genera accessos per a un
 administrador de club i dos socis, i **mostra aquestes contrasenyes una sola vegada**, així
 que deseu la sortida. Es pot tornar a executar sense duplicar (idempotent).
@@ -66,85 +66,85 @@ Memship segueix el [versionat semàntic](https://semver.org/) i **els números d
 
 | Versió | Fita | Estat |
 |--------|------|-------|
-| v0.1.0 | Gestió de socis MVP — autenticació, RBAC, CRUD de socis, tipus de membresies, i18n, Docker, CI | Fet |
-| v0.1.1 | Enviament de correus (SMTP) — correus de benvinguda, correus de restabliment de contrasenya | Fet |
+| v0.1.0 | Gestió de socis MVP: autenticació, RBAC, CRUD de socis, tipus de membresies, i18n, Docker, CI | Fet |
+| v0.1.1 | Enviament de correus (SMTP): correus de benvinguda, correus de restabliment de contrasenya | Fet |
 | v0.1.2 | Grups, suport tutor/menor, rol restringit (esquema) | Fet |
 | v0.1.3 | Proxy invers Caddy, scripts de còpia de seguretat/restauració, millores d'autohospedatge | Fet |
 | v0.1.4 | Gestió de la configuració de l'organització (API + frontend) | Fet |
-| v0.1.5 | CRUD d'activitats — models, modalitats, preus, frontend d'administració | Fet |
-| v0.1.6 | Patró d'entitat fort — llista/detall/pestanyes unificats per a totes les entitats | Fet |
-| v0.2.0 | Gestió d'activitats — inscripcions, elegibilitat, llista d'espera, descomptes, consentiments, adjunts | Fet |
-| v0.2.1 | Millora d'UX — barra lateral Shadcn, mode fosc, colors de marca, taules compactes, inici ràpid | Fet |
-| v0.2.2 | Base de proves E2E (Cypress) — autenticació, socis, activitats, inscripcions | Fet |
-| v0.2.3 | Gestió d'errors i validació — notificacions toast, gestor global d'errors, validació d'esquemes, StrEnum, 76 proves de validació, 16 proves E2E | Fet |
-| v0.2.4 | Correccions — mode fosc a la barra lateral, visualització d'errors de formulari, guards de ruta, visibilitat de socis cancel·lats, eliminació de soci suprimida | Fet |
-| v0.2.5 | UX d'activitats — redisseny de targeta d'activitat, imatge de portada, insígnies d'estat d'inscripció, miniatures a la llista, graella "Les meves activitats", volum Docker | Fet |
-| v0.2.6 | Correccions i proves — diàlegs de confirmació Shadcn (substitueixen 13 alertes del navegador), correcció de codis de descompte, comprovació de termini d'autocancelació, reinscripció després de cancel·lació, 21 noves proves d'API, 9 noves proves E2E d'elegibilitat | Fet |
-| v0.2.7 | Millores d'activitats — esquelets de càrrega, estat d'URL amb nuqs | Fet |
-| v0.2.9 | Prerequisits de pagament — adreça i dades bancàries de l'organització, pujada de logotip, pestanya d'informació de contacte, IBAN del soci, Celery/Redis, notificacions per correu (Jinja2 + SMTP/Resend) | Fet |
-| v0.3.0 | Pagaments i facturació bàsics — rebuts, generació de PDF, IVA, generació de quotes, historial de pagaments del soci | Fet |
-| v0.3.1 | Correccions — proves fallides i README traduïts | Fet |
-| v0.3.2 | Correccions — arranjament del pipeline de build del frontend | Fet |
-| v0.3.3 | Millores de CI — execució de proves més ràpida | Fet |
-| v0.3.4 | Correccions — neteja de warnings i optimització de proves d'integració | Fet |
-| v0.3.5 | Correccions — proves d'integració fallides | Fet |
-| v0.3.6 | Optimització de CI — setup-uv v7, cache de hash de contrasenyes, workers de proves paral·lels, hooks de versionat automàtic | Fet |
-| v0.4.0 | Domiciliació SEPA — gestió de mandats, remeses, XML pain.008, forma de pagament del soci | Fet |
-| v0.4.1 | Configuració de passarel·les de pagament — gestió configurable des del panell de super admin | Fet |
-| v0.4.2 | Infraestructura de webhooks + Stripe Checkout — webhooks de passarel·la, estat de pagament en temps real, flux "Paga ara" del soci | Fet |
-| v0.4.3 | Integració Redsys — passarel·la bancària espanyola amb 3D Secure + Bizum | Fet |
-| v0.4.4 | Facturació recurrent — generació automàtica de quotes | Fet |
-| v0.4.5 | Recordatoris de pagament — notificacions per correu de rebuts vençuts | Fet |
-| v0.5.0 | Comunicacions simples — anuncis de l'administrador a tots els socis / grup / tipus de quota | Fet |
-| v0.5.1 | Vista d'enviaments de comunicacions — seguiment de destinataris + "Vist" a l'app | Fet |
-| v0.7.0 | Carnet digital de soci + registre QR — carnet en PDF, numeració automàtica de socis | Fet |
-| v0.7.1 | Millores del carnet — vista de carnet per a l'admin, foto de perfil del soci, redisseny del perfil | Fet |
-| v1.0.0 | Estabilització i llançament — exportacions CSV, tauler financer, notes i recordatoris, resum anual, dades demo, polit de docs | Fet |
-| v1.0.1 | Pedaç — corregeix el registre de tasques programades de facturació/recordatoris a Celery; protecció de CI contra la sobreescriptura d'etiquetes d'imatge | Fet |
-| v1.1.0 | Camps de perfil personalitzats — dades de soci configurables per l'organització (text, número, data, selecció, …) amb validació per camp i visibilitat/edició per camp | Fet |
-| v1.1.1 | Pedaç — reorganització de la navegació de configuració: ajustos de pagaments i de socis agrupats a les pestanyes Pagaments i Socis | Fet |
-| v1.2.2 | SSO i configuració de correu — alta pública amb verificació per correu i aprovació per la junta, inici de sessió amb Google / Apple, i configuració de Resend / Google SMTP des d'una pestanya d'Integracions | Fet |
-| v1.3.0 | Reserves simples — reserves de socis en espais compartits mitjançant un calendari setmanal, amb aforament per franja i llista d'espera FIFO | Fet |
-| v1.4.0 | Rols i permisos flexibles — assignació multi-rol i comprovacions granulars per permís en lloc dels quatre rols fixos. També repara els stacks de desplegament que no executaven cap worker de Celery ni muntaven volum al servei d'API | Fet |
-| v2.0.0 | Revisió de l'autoallotjament — muntatges bind visibles a l'amfitrió sota un únic `MEMSHIP_DATA_ROOT`, contenidors del backend amb l'uid de l'operador i un `install.sh` d'una sola ordre. **Seguretat:** PostgreSQL i l'API deixen de publicar-se a internet. **Canvi incompatible:** `uv run` ja no funciona als contenidors. | Fet |
-| v2.1.0 | Configuració inicial sense credencials publicades — el mateix procés interactiu a tots els entorns, sense comptes amb contrasenyes publicades en aquest repositori, més opcions desateses per a instal·lacions automatitzades | Fet |
-| v2.2.0 | Recuperació del superadministrador des del servidor — la seva contrasenya es restableix amb `python -m app.cli.seed` a la màquina, no per correu. **Seguretat:** l'accés a la bústia equivalia a controlar tota la instància | Fet |
-| v2.3.0 | Fitxers pujats després d'autenticació, i un inici de sessió que no es pot endevinar indefinidament — l'emmagatzematge es servia com a fitxers estàtics, els testimonis de restabliment tornaven en la resposta de l'API i la clau de signatura publicada era el valor per defecte. **Canvi incompatible:** qui la feia servir rep una de nova i es tanquen totes les sessions. | Fet |
-| v2.3.1 | Rutes de diners que fallaven en silenci — un fitxer SEPA ja no descarta rebuts el mandat dels quals es va cancel·lar, un webhook de pagament ja no registra un import diferent com a pagament complet, i una activitat ja no supera el seu aforament si dues persones s'inscriuen alhora. | Fet |
+| v0.1.5 | CRUD d'activitats: models, modalitats, preus, frontend d'administració | Fet |
+| v0.1.6 | Patró d'entitat fort: llista/detall/pestanyes unificats per a totes les entitats | Fet |
+| v0.2.0 | Gestió d'activitats: inscripcions, elegibilitat, llista d'espera, descomptes, consentiments, adjunts | Fet |
+| v0.2.1 | Millora d'UX: barra lateral Shadcn, mode fosc, colors de marca, taules compactes, inici ràpid | Fet |
+| v0.2.2 | Base de proves E2E (Cypress): autenticació, socis, activitats, inscripcions | Fet |
+| v0.2.3 | Gestió d'errors i validació: notificacions toast, gestor global d'errors, validació d'esquemes, StrEnum, 76 proves de validació, 16 proves E2E | Fet |
+| v0.2.4 | Correccions: mode fosc a la barra lateral, visualització d'errors de formulari, guards de ruta, visibilitat de socis cancel·lats, eliminació de soci suprimida | Fet |
+| v0.2.5 | UX d'activitats: redisseny de targeta d'activitat, imatge de portada, insígnies d'estat d'inscripció, miniatures a la llista, graella "Les meves activitats", volum Docker | Fet |
+| v0.2.6 | Correccions i proves: diàlegs de confirmació Shadcn (substitueixen 13 alertes del navegador), correcció de codis de descompte, comprovació de termini d'autocancelació, reinscripció després de cancel·lació, 21 noves proves d'API, 9 noves proves E2E d'elegibilitat | Fet |
+| v0.2.7 | Millores d'activitats: esquelets de càrrega, estat d'URL amb nuqs | Fet |
+| v0.2.9 | Prerequisits de pagament: adreça i dades bancàries de l'organització, pujada de logotip, pestanya d'informació de contacte, IBAN del soci, Celery/Redis, notificacions per correu (Jinja2 + SMTP/Resend) | Fet |
+| v0.3.0 | Pagaments i facturació bàsics: rebuts, generació de PDF, IVA, generació de quotes, historial de pagaments del soci | Fet |
+| v0.3.1 | Correccions: proves fallides i README traduïts | Fet |
+| v0.3.2 | Correccions: arranjament del pipeline de build del frontend | Fet |
+| v0.3.3 | Millores de CI: execució de proves més ràpida | Fet |
+| v0.3.4 | Correccions: neteja de warnings i optimització de proves d'integració | Fet |
+| v0.3.5 | Correccions: proves d'integració fallides | Fet |
+| v0.3.6 | Optimització de CI: setup-uv v7, cache de hash de contrasenyes, workers de proves paral·lels, hooks de versionat automàtic | Fet |
+| v0.4.0 | Domiciliació SEPA: gestió de mandats, remeses, XML pain.008, forma de pagament del soci | Fet |
+| v0.4.1 | Configuració de passarel·les de pagament: gestió configurable des del panell de super admin | Fet |
+| v0.4.2 | Infraestructura de webhooks + Stripe Checkout: webhooks de passarel·la, estat de pagament en temps real, flux "Paga ara" del soci | Fet |
+| v0.4.3 | Integració Redsys: passarel·la bancària espanyola amb 3D Secure + Bizum | Fet |
+| v0.4.4 | Facturació recurrent: generació automàtica de quotes | Fet |
+| v0.4.5 | Recordatoris de pagament: notificacions per correu de rebuts vençuts | Fet |
+| v0.5.0 | Comunicacions simples: anuncis de l'administrador a tots els socis / grup / tipus de quota | Fet |
+| v0.5.1 | Vista d'enviaments de comunicacions: seguiment de destinataris + "Vist" a l'app | Fet |
+| v0.7.0 | Carnet digital de soci + registre QR: carnet en PDF, numeració automàtica de socis | Fet |
+| v0.7.1 | Millores del carnet: vista de carnet per a l'admin, foto de perfil del soci, redisseny del perfil | Fet |
+| v1.0.0 | Estabilització i llançament: exportacions CSV, tauler financer, notes i recordatoris, resum anual, dades demo, polit de docs | Fet |
+| v1.0.1 | Pedaç: corregeix el registre de tasques programades de facturació/recordatoris a Celery; protecció de CI contra la sobreescriptura d'etiquetes d'imatge | Fet |
+| v1.1.0 | Camps de perfil personalitzats: dades de soci configurables per l'organització (text, número, data, selecció, …) amb validació per camp i visibilitat/edició per camp | Fet |
+| v1.1.1 | Pedaç: reorganització de la navegació de configuració: ajustos de pagaments i de socis agrupats a les pestanyes Pagaments i Socis | Fet |
+| v1.2.2 | SSO i configuració de correu: alta pública amb verificació per correu i aprovació per la junta, inici de sessió amb Google / Apple, i configuració de Resend / Google SMTP des d'una pestanya d'Integracions | Fet |
+| v1.3.0 | Reserves simples: reserves de socis en espais compartits mitjançant un calendari setmanal, amb aforament per franja i llista d'espera FIFO | Fet |
+| v1.4.0 | Rols i permisos flexibles: assignació multi-rol i comprovacions granulars per permís en lloc dels quatre rols fixos. També repara els stacks de desplegament que no executaven cap worker de Celery ni muntaven volum al servei d'API | Fet |
+| v2.0.0 | Revisió de l'autoallotjament: muntatges bind visibles a l'amfitrió sota un únic `MEMSHIP_DATA_ROOT`, contenidors del backend amb l'uid de l'operador i un `install.sh` d'una sola ordre. **Seguretat:** PostgreSQL i l'API deixen de publicar-se a internet. **Canvi incompatible:** `uv run` ja no funciona als contenidors. | Fet |
+| v2.1.0 | Configuració inicial sense credencials publicades: el mateix procés interactiu a tots els entorns, sense comptes amb contrasenyes publicades en aquest repositori, més opcions desateses per a instal·lacions automatitzades | Fet |
+| v2.2.0 | Recuperació del superadministrador des del servidor: la seva contrasenya es restableix amb `python -m app.cli.seed` a la màquina, no per correu. **Seguretat:** l'accés a la bústia equivalia a controlar tota la instància | Fet |
+| v2.3.0 | Fitxers pujats després d'autenticació, i un inici de sessió que no es pot endevinar indefinidament: l'emmagatzematge es servia com a fitxers estàtics, els testimonis de restabliment tornaven en la resposta de l'API i la clau de signatura publicada era el valor per defecte. **Canvi incompatible:** qui la feia servir rep una de nova i es tanquen totes les sessions. | Fet |
+| v2.3.1 | Rutes de diners que fallaven en silenci: un fitxer SEPA ja no descarta rebuts el mandat dels quals es va cancel·lar, un webhook de pagament ja no registra un import diferent com a pagament complet, i una activitat ja no supera el seu aforament si dues persones s'inscriuen alhora. | Fet |
 | v2.4.0 | L'inici de sessió exigeix una adreça de correu confirmada, i la numeració de rebuts és correlativa i sense buits. **Canvi incompatible:** un compte que mai va confirmar la seva adreça ja no pot entrar. **Migració:** la numeració passa a un comptador per any, inicialitzat amb els números ja emesos. | Fet |
-| v2.5.0 | Tot el correu sortint en una única plantilla amb la identitat de l'organització — nom, logotip i color es llegeixen de la configuració, cada missatge porta una alternativa en text pla al costat de l'HTML, i l'enviament de rebuts i el resum de facturació passen a ser plantilles. | Fet |
-| v2.6.0 | Un super administrador decideix quins correus envia el sistema — una pantalla de Configuració amb un interruptor per plantilla i els 17 punts d'enviament passant per una única porta. **Canvi incompatible:** el correu opcional queda desactivat, així que una instal·lació existent es queda en silenci en actualitzar. | Fet |
-| v2.7.0 | Sessions que es desplacen en lloc de caducar a mitja tasca — una sessió activa es renova a la meitat de la seva finestra i, en esgotar-se, ho diu i et torna a l'inici de sessió. **Autoallotjament:** una versió es desplega en un VPS sense git ni còpia del codi, des d'un tarball de la publicació. | Fet |
-| v2.7.1 | Una primera instal·lació deixa un `POST-INSTALL.md` al servidor amb el que l'instal·lador no pot fer per tu — copiar `.env` fora de l'amfitrió, crear l'organització i el super administrador, programar còpies i configurar el correu — amb totes les rutes emplenades. L'avís de la v2.7.0 era correcte i ningú el va llegir. | Fet |
-| v2.8.0 | Una quota que el soci compra, i pot perdre — el pla es compra des del portal del soci a un preu prorratejat amb impostos inclosos, es concedeix quan arriba el diner per qualsevol via, i es retira 21 dies després que venci una quota impagada, desant el nivell perdut per restituir-lo en pagar. | Fet |
-| v2.9.0 | La pantalla on el soci compra el seu pla — la v2.8.0 sabia cobrar però no deixava demanar-ho. **El meu pla** mostra el pla contractat i els disponibles, amb el primer càrrec prorratejat abans de confirmar res. Comprar emet un rebut; el pla s'activa en cobrar-lo. | Fet |
-| v2.9.1 | Una primera instal·lació capaç de seguir les seves pròpies instruccions — cada correcció va sortir d'executar la guia de dalt a baix en un servidor nou. `vps-bootstrap.sh` s'interrompia pel bloqueig d'apt en arrencar Ubuntu i deixava l'amfitrió sense tallafocs ni fail2ban. | Fet |
+| v2.5.0 | Tot el correu sortint en una única plantilla amb la identitat de l'organització: nom, logotip i color es llegeixen de la configuració, cada missatge porta una alternativa en text pla al costat de l'HTML, i l'enviament de rebuts i el resum de facturació passen a ser plantilles. | Fet |
+| v2.6.0 | Un super administrador decideix quins correus envia el sistema: una pantalla de Configuració amb un interruptor per plantilla i els 17 punts d'enviament passant per una única porta. **Canvi incompatible:** el correu opcional queda desactivat, així que una instal·lació existent es queda en silenci en actualitzar. | Fet |
+| v2.7.0 | Sessions que es desplacen en lloc de caducar a mitja tasca: una sessió activa es renova a la meitat de la seva finestra i, en esgotar-se, ho diu i et torna a l'inici de sessió. **Autoallotjament:** una versió es desplega en un VPS sense git ni còpia del codi, des d'un tarball de la publicació. | Fet |
+| v2.7.1 | Una primera instal·lació deixa un `POST-INSTALL.md` al servidor amb el que l'instal·lador no pot fer per tu: copiar `.env` fora de l'amfitrió, crear l'organització i el super administrador, programar còpies i configurar el correu, amb totes les rutes emplenades. L'avís de la v2.7.0 era correcte i ningú el va llegir. | Fet |
+| v2.8.0 | Una quota que el soci compra, i pot perdre: el pla es compra des del portal del soci a un preu prorratejat amb impostos inclosos, es concedeix quan arriba el diner per qualsevol via, i es retira 21 dies després que venci una quota impagada, desant el nivell perdut per restituir-lo en pagar. | Fet |
+| v2.9.0 | La pantalla on el soci compra el seu pla: la v2.8.0 sabia cobrar però no deixava demanar-ho. **El meu pla** mostra el pla contractat i els disponibles, amb el primer càrrec prorratejat abans de confirmar res. Comprar emet un rebut; el pla s'activa en cobrar-lo. | Fet |
+| v2.9.1 | Una primera instal·lació capaç de seguir les seves pròpies instruccions: cada correcció va sortir d'executar la guia de dalt a baix en un servidor nou. `vps-bootstrap.sh` s'interrompia pel bloqueig d'apt en arrencar Ubuntu i deixava l'amfitrió sense tallafocs ni fail2ban. | Fet |
 | v2.10.0 | Tretze correccions a les rutes que gestionen diners, dades personals i càrrega; cap pantalla nova. Els testimonis de restabliment es desen com a resum, l'IBAN complet deixa de retornar-se al costat de l'emmascarat i les exportacions CSV neutralitzen les cel·les amb fórmula. **Canvi incompatible:** els enllaços de restabliment pendents deixen de funcionar en actualitzar. | Fet |
-| v2.11.0 | El personal no és soci del club — un super administrador o un administrador gestiona la instància sense pertànyer-hi, en lloc de portar número de soci i comptar en cada llistat, exportació i facturació. **Migració irreversible:** els comptes de personal perden la seva fitxa de soci. | Fet |
-| v2.12.0 | Accés, correu, pagaments i la mateixa actualització — les rutes amb què ensopega un club les primeres setmanes. Les adreces es desen i es comparen en minúscules, i `upgrade.sh` pregunta a l'API nova per les dades abans de substituir la pila. **Migració:** les adreces existents passen a minúscules. | Fet |
-| v2.13.0 | La versió d'auditoria — disset defectes trobats llegint el codi contra la seva pròpia documentació, cap funció nova. Restablir la contrasenya tanca totes les sessions que va obrir, el límit d'intents s'aplica a qui truca en lloc de blocar tots els socis, i la facturació data en la zona horària del club. | Fet |
-| v2.14.0 | La versió de caça d'errors — setze defectes reportats i una compilació que podia publicar una imatge incapaç d'arrencar, sense funcions noves. Les compilacions instal·len `uv.lock` amb `--locked` i cada imatge candidata s'arrenca abans de publicar-se; els preus d'activitat deixen de retornar l'IVA a zero. | Fet |
-| v2.15.0 | Funcions assolibles i la ruta d'actualització — tres funcions publicades que no es podien fer servir, i les comprovacions que ho haurien detectat. | Fet |
-| v2.16.0 | La versió de les rutes dels diners — el circuit de cobrament SEPA que un club executa cada mes, repassat a mà en lloc de llegit. | Fet |
-| v2.17.0 | La versió de revisió — onze defectes trobats llegint l'arbre i treballant les pantalles, cap reportat per ningú, i la canonada de compilació que publicava imatges descompassades. | Fet |
-| v2.18.0 | La versió de validació SEPA — setze defectes trobats conduint el cobrament en una instància desplegada. Una devolució contra un rebut ja cobrat deixa de constar com a atesa, i un fitxer bancari generat no se sobreescriu. **Canvi incompatible:** `import-returns` informa per grups. **Migració:** els mandats actius duplicats es cancel·len, es conserva el més recent. | Fet |
-| v2.19.0 | La versió dels proveïdors de pagament — Bizum es pot oferir per separat de la targeta, un secret desat ja no s'esborra amb un desament en blanc, i una remesa enviada anomena el rebut que el banc va retornar. **Canvi incompatible:** Bizum ve desactivat. **Migració:** `remittance_receipts` registra quins rebuts va portar cada remesa. | Fet |
-| v3.0.0 | La versió de la identitat party — tota identitat del sistema és ara una **party**, així que un rebut, un mandat, una adreça o un contacte pot pertànyer a algú que no és soci. Afegeix **Entitats** per a empreses i donants sense alta, de manera que una donació es registra sense inventar un soci. També: qualsevol **servidor SMTP** es configura des de Configuració, amb predefinit de Gmail i un enviament de prova obligatori abans d'activar un proveïdor, i la documentació passa a un directori per idioma. **Ruptura:** els camps d'identitat de l'API són `party_id` i no `member_id`; el nom, el NIF, el logotip i les dades bancàries de l'organització passen a la seva party; una nova parella de permisos `entities.*` es concedeix per migració. **Migració:** persones, usuaris, socis, rebuts, mandats, inscripcions, adreces i contactes es reapunten a una party; les dades bancàries passen a `bank_accounts`; el telèfon i el web de l'organització passen a contactes; els contactes principals duplicats es degraden i es conserva el primer de cada canal. | Fet |
+| v2.11.0 | El personal no és soci del club: un super administrador o un administrador gestiona la instància sense pertànyer-hi, en lloc de portar número de soci i comptar en cada llistat, exportació i facturació. **Migració irreversible:** els comptes de personal perden la seva fitxa de soci. | Fet |
+| v2.12.0 | Accés, correu, pagaments i la mateixa actualització: les rutes amb què ensopega un club les primeres setmanes. Les adreces es desen i es comparen en minúscules, i `upgrade.sh` pregunta a l'API nova per les dades abans de substituir la pila. **Migració:** les adreces existents passen a minúscules. | Fet |
+| v2.13.0 | La versió d'auditoria: disset defectes trobats llegint el codi contra la seva pròpia documentació, cap funció nova. Restablir la contrasenya tanca totes les sessions que va obrir, el límit d'intents s'aplica a qui truca en lloc de blocar tots els socis, i la facturació data en la zona horària del club. | Fet |
+| v2.14.0 | La versió de caça d'errors: setze defectes reportats i una compilació que podia publicar una imatge incapaç d'arrencar, sense funcions noves. Les compilacions instal·len `uv.lock` amb `--locked` i cada imatge candidata s'arrenca abans de publicar-se; els preus d'activitat deixen de retornar l'IVA a zero. | Fet |
+| v2.15.0 | Funcions assolibles i la ruta d'actualització: tres funcions publicades que no es podien fer servir, i les comprovacions que ho haurien detectat. | Fet |
+| v2.16.0 | La versió de les rutes dels diners: el circuit de cobrament SEPA que un club executa cada mes, repassat a mà en lloc de llegit. | Fet |
+| v2.17.0 | La versió de revisió: onze defectes trobats llegint l'arbre i treballant les pantalles, cap reportat per ningú, i la canonada de compilació que publicava imatges descompassades. | Fet |
+| v2.18.0 | La versió de validació SEPA: setze defectes trobats conduint el cobrament en una instància desplegada. Una devolució contra un rebut ja cobrat deixa de constar com a atesa, i un fitxer bancari generat no se sobreescriu. **Canvi incompatible:** `import-returns` informa per grups. **Migració:** els mandats actius duplicats es cancel·len, es conserva el més recent. | Fet |
+| v2.19.0 | La versió dels proveïdors de pagament: Bizum es pot oferir per separat de la targeta, un secret desat ja no s'esborra amb un desament en blanc, i una remesa enviada anomena el rebut que el banc va retornar. **Canvi incompatible:** Bizum ve desactivat. **Migració:** `remittance_receipts` registra quins rebuts va portar cada remesa. | Fet |
+| v3.0.0 | La versió de la identitat party: tota identitat del sistema és ara una **party**, així que un rebut, un mandat, una adreça o un contacte pot pertànyer a algú que no és soci. Afegeix **Entitats** per a empreses i donants sense alta, de manera que una donació es registra sense inventar un soci. També: qualsevol **servidor SMTP** es configura des de Configuració, amb predefinit de Gmail i un enviament de prova obligatori abans d'activar un proveïdor, i la documentació passa a un directori per idioma. **Ruptura:** els camps d'identitat de l'API són `party_id` i no `member_id`; el nom, el NIF, el logotip i les dades bancàries de l'organització passen a la seva party; una nova parella de permisos `entities.*` es concedeix per migració. **Migració:** persones, usuaris, socis, rebuts, mandats, inscripcions, adreces i contactes es reapunten a una party; les dades bancàries passen a `bank_accounts`; el telèfon i el web de l'organització passen a contactes; els contactes principals duplicats es degraden i es conserva el primer de cada canal. | Fet |
 
 ## Full de ruta
 
-Prioritzat, encara sense versió. Cada element esdevé un llançament versionat quan es publica, i el llançament pren el següent número semàntic per ordre. Cada element té una incidència amb el seu resum i les idees actuals — consulta les [incidències amb l'etiqueta `roadmap`](https://github.com/marcandreuf/memship/labels/roadmap).
+Prioritzat, encara sense versió. Cada element esdevé un llançament versionat quan es publica, i el llançament pren el següent número semàntic per ordre. Cada element té una incidència amb el seu resum i les idees actuals, consulta les [incidències amb l'etiqueta `roadmap`](https://github.com/marcandreuf/memship/labels/roadmap).
 
-- **Invitacions d'usuaris** — convidar un nou superadministrador, administrador del club o soci indicant la seva adreça de correu i el seu rol; la persona tria el seu propi nom i contrasenya. S'envien per correu quan el correu està configurat, i com a enllaç copiable quan no ho està, de manera que una instal·lació acabada de crear pugui afegir un segon administrador sense accés per consola
-- **Còpies de seguretat** — descarregar una còpia completa des de l'àrea d'administració, amb la base de dades i els fitxers pujats, i una restauració documentada i provada
-- **Convocatòries** — convocatòries formals d'Assemblea General amb confirmació del soci mitjançant token
-- **Biblioteca de documents** — estatuts, actes, formularis amb visibilitat per grup
-- **Calendari d'esdeveniments + confirmació d'assistència** — vista de calendari i seguiment de participació
-- **Integracions** — connectar memship amb les eines que el club ja utilitza, en comptes de demanar-li que les abandoni. Primer missatgeria instantània (WhatsApp, Telegram, Signal, Instagram), que és on la majoria de clubs es comuniquen realment; després subscripcions de calendari, exportacions a comptabilitat i facturació electrònica, enviament de llicències a federacions esportives i webhooks sortints com a via genèrica per a la resta. Cada connector té el seu propi cost i les seves pròpies limitacions, i es publica per separat
+- **Invitacions d'usuaris**, convidar un nou superadministrador, administrador del club o soci indicant la seva adreça de correu i el seu rol; la persona tria el seu propi nom i contrasenya. S'envien per correu quan el correu està configurat, i com a enllaç copiable quan no ho està, de manera que una instal·lació acabada de crear pugui afegir un segon administrador sense accés per consola
+- **Còpies de seguretat**, descarregar una còpia completa des de l'àrea d'administració, amb la base de dades i els fitxers pujats, i una restauració documentada i provada
+- **Convocatòries**, convocatòries formals d'Assemblea General amb confirmació del soci mitjançant token
+- **Biblioteca de documents**, estatuts, actes, formularis amb visibilitat per grup
+- **Calendari d'esdeveniments + confirmació d'assistència**, vista de calendari i seguiment de participació
+- **Integracions**, connectar memship amb les eines que el club ja utilitza, en comptes de demanar-li que les abandoni. Primer missatgeria instantània (WhatsApp, Telegram, Signal, Instagram), que és on la majoria de clubs es comuniquen realment; després subscripcions de calendari, exportacions a comptabilitat i facturació electrònica, enviament de llicències a federacions esportives i webhooks sortints com a via genèrica per a la resta. Cada connector té el seu propi cost i les seves pròpies limitacions, i es publica per separat
 
 Les variacions complexes es construeixen sota demanda, quan una implementació real les necessita: GoCardless e-mandats, PayPal, flux d'Stripe Invoice, accions massives en rebuts, generador d'informes personalitzats, enquestes, facturació familiar, pagaments i reserves recurrents, lloguer d'equipament, votació i adjunts en convocatòries, i variants més profundes de les funcions anteriors.
 
-**Ajornat — les extensions com a sistema de mòduls/connectors.** Els complements opcionals com àlbums de fotos, fòrum, llibre de visites, directori d'enllaços, inventari/préstecs i ginys del portal necessiten un sistema de mòduls dissenyat dins de l'arquitectura, no afegit al damunt. Això espera una futura revisió d'aquesta arquitectura en lloc de publicar-se com una funció.
+**Ajornat, les extensions com a sistema de mòduls/connectors.** Els complements opcionals com àlbums de fotos, fòrum, llibre de visites, directori d'enllaços, inventari/préstecs i ginys del portal necessiten un sistema de mòduls dissenyat dins de l'arquitectura, no afegit al damunt. Això espera una futura revisió d'aquesta arquitectura en lloc de publicar-se com una funció.
 
 ---
 
@@ -181,7 +181,7 @@ Les variacions complexes es construeixen sota demanda, quan una implementació r
 
 **Pagaments i facturació** (disponible ara)
 - Gestió de rebuts amb cicle de vida de 7 estats (nou → emès → pagat / retornat / cancel·lat / vençut)
-- Generació de rebuts en PDF (WeasyPrint) amb capçalera de l'organització, dades del soci, desglossament d'IVA — 3 idiomes (ES/CA/EN)
+- Generació de rebuts en PDF (WeasyPrint) amb capçalera de l'organització, dades del soci, desglossament d'IVA, 3 idiomes (ES/CA/EN)
 - Generació massiva de quotes de membresia a partir dels tipus de membresia
 - Rebut automàtic en inscriure's a una activitat (emès en confirmar, cancel·lat en cancel·lar)
 - Creació manual de rebuts des de la pàgina de detall del soci
@@ -193,16 +193,16 @@ Les variacions complexes es construeixen sota demanda, quan una implementació r
 - Notificació per correu amb el rebut en PDF adjunt (via Celery + Resend o SMTP)
 - Configuració → pestanya Pagaments per a facturació i dades bancàries
 
-**Domiciliació SEPA** (disponible — v0.4.0)
+**Domiciliació SEPA** (disponible, v0.4.0)
 - Gestió de mandats SEPA (crear, PDF, pujar signat, cancel·lar)
 - Processament de remeses amb XML SEPA (pain.008.001.02)
 - Importació de devolucions bancàries i seguiment d'estat
 - Pàgina de forma de pagament per a socis
 
-**Passarel·les de pagament** (previst — v0.4.x)
+**Passarel·les de pagament** (previst, v0.4.x)
 - Gestió configurable de passarel·les de pagament (configuració del super admin)
-- Integració Stripe — pagaments amb targeta basats en factura amb webhooks
-- GoCardless — e-mandats SEPA gestionats amb flux allotjat
+- Integració Stripe, pagaments amb targeta basats en factura amb webhooks
+- GoCardless, e-mandats SEPA gestionats amb flux allotjat
 - Patró d'adaptador extensible per a proveïdors regionals (MercadoPago, Razorpay, etc.)
 
 **Comunicacions** (previst)
@@ -230,7 +230,7 @@ Les variacions complexes es construeixen sota demanda, quan una implementació r
 | Frontend | Next.js / React / Tailwind CSS / Shadcn/ui |
 | Base de dades | PostgreSQL 15 |
 | Tasques en segon pla | Celery worker + beat, amb Redis com a broker |
-| Proxy invers | Caddy — obté i renova els certificats TLS pel seu compte |
+| Proxy invers | Caddy, obté i renova els certificats TLS pel seu compte |
 | Contenidors | Docker + Docker Compose |
 | CI | GitHub Actions |
 | Registre | GitHub Container Registry (ghcr.io) |
@@ -256,33 +256,33 @@ Consulta [CONTRIBUTING](CONTRIBUTING.md) per a branques, versionat i com es publ
 
 L'autoallotjament en producció viu a la documentació, perquè només hi hagi una còpia per mantenir correcta:
 
-- **[Què necessites per executar Memship](docs/es/getting-started/what-you-need.md)** — un servidor
+- **[Què necessites per executar Memship](docs/es/getting-started/what-you-need.md)**, un servidor
   de 2 vCPU / 4 GB / 40 GB, un domini i una manera d'enviar correu, per uns 8–12 € al mes. Llegeix-ho
   abans de decidir; les xifres estan mesurades, no estimades. _De moment només en castellà_
-- **[Instal·lació](docs/en/getting-started/installation.md)** — `vps-bootstrap.sh` en un servidor nou i
+- **[Instal·lació](docs/en/getting-started/installation.md)**, `vps-bootstrap.sh` en un servidor nou i
   després `install.sh`, que genera secrets reals, fixa una versió i posa les teves dades en un únic
   directori amb còpia de seguretat
-- **[Configuració inicial](docs/en/getting-started/first-setup.md)** — crear el super administrador i
+- **[Configuració inicial](docs/en/getting-started/first-setup.md)**, crear el super administrador i
   l'organització
-- **[Referència de configuració](docs/en/self-hosting/configuration.md)** — totes les variables
+- **[Referència de configuració](docs/en/self-hosting/configuration.md)**, totes les variables
   d'entorn
-- **[Còpies de seguretat i restauració](docs/en/self-hosting/backups-and-restore.md)** — configura-ho
+- **[Còpies de seguretat i restauració](docs/en/self-hosting/backups-and-restore.md)**, configura-ho
   abans de posar-ho en producció
-- **[Actualitzacions](docs/en/self-hosting/upgrading.md)** — passar a una versió nova
-- **[Resolució de problemes](docs/en/self-hosting/troubleshooting.md)** — quan alguna cosa no arrenca
+- **[Actualitzacions](docs/en/self-hosting/upgrading.md)**, passar a una versió nova
+- **[Resolució de problemes](docs/en/self-hosting/troubleshooting.md)**, quan alguna cosa no arrenca
 
 L'[Inici ràpid](#inici-ràpid-docker) de dalt és només per avaluar: imatges publicades, volums
 llencívols i una contrasenya de base de dades fixa.
 
 ## Contribucions
 
-Les contribucions de codi són benvingudes. La base del projecte — infraestructura, CI/CD i l'arquitectura central — ja està consolidada, i [CONTRIBUTING](CONTRIBUTING.md) explica el model de branques, les convencions de commits i pull requests, el versionatge i com es publica una release _(en anglès)_. En resum: creeu una branca `feature/*` de vida curta a partir de `main` i obriu un pull request cap a `main`. Per preparar l'entorn, comenceu per [Local development environment](docs/en/development/local-environment.md) _(en anglès)_.
+Les contribucions de codi són benvingudes. La base del projecte (infraestructura, CI/CD i l'arquitectura central) ja està consolidada, i [CONTRIBUTING](CONTRIBUTING.md) explica el model de branques, les convencions de commits i pull requests, el versionatge i com es publica una release _(en anglès)_. En resum: creeu una branca `feature/*` de vida curta a partir de `main` i obriu un pull request cap a `main`. Per preparar l'entorn, comenceu per [Local development environment](docs/en/development/local-environment.md) _(en anglès)_.
 
-No escriviu codi? [Obriu una issue](https://github.com/marcandreuf/memship/issues) — els informes d'errors, les propostes de funcionalitats, les preguntes i explicar com faríeu servir Memship són igual de benvinguts, i per als dos primers hi ha plantilles.
+No escriviu codi? [Obriu una issue](https://github.com/marcandreuf/memship/issues), els informes d'errors, les propostes de funcionalitats, les preguntes i explicar com faríeu servir Memship són igual de benvinguts, i per als dos primers hi ha plantilles.
 
-Les vulnerabilitats de seguretat es comuniquen per un canal privat, no en una issue pública — vegeu [SECURITY](SECURITY.md). Qui participa en el projecte queda cobert pel [Codi de conducta](CODE_OF_CONDUCT.md).
+Les vulnerabilitats de seguretat es comuniquen per un canal privat, no en una issue pública, vegeu [SECURITY](SECURITY.md). Qui participa en el projecte queda cobert pel [Codi de conducta](CODE_OF_CONDUCT.md).
 
-[Accessibilitat](ACCESSIBILITY.md) explica a què aspira el projecte, què s'espera que comprovi qui hi contribueix i com informar d'una barrera — inclòs què s'ha provat de debò i què no _(en anglès)_. Si us topeu amb una, allà hi ha la via per informar, amb una adreça de correu per quan GitHub sigui precisament l'obstacle.
+[Accessibilitat](ACCESSIBILITY.md) explica a què aspira el projecte, què s'espera que comprovi qui hi contribueix i com informar d'una barrera, inclòs què s'ha provat de debò i què no _(en anglès)_. Si us topeu amb una, allà hi ha la via per informar, amb una adreça de correu per quan GitHub sigui precisament l'obstacle.
 
 ## Llicència
 

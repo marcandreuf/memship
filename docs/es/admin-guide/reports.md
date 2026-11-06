@@ -6,12 +6,12 @@ Panel de control, resumen financiero, resumen anual y exportaciones de datos.
 
 El panel del administrador resume el estado de la organización:
 
-- **Socios** — activos, pendientes y total.
-- **Actividades** — publicadas, en borrador y total; y **inscripciones** por estado
+- **Socios**, activos, pendientes y total.
+- **Actividades**, publicadas, en borrador y total; y **inscripciones** por estado
   (confirmadas, en espera, canceladas, pendientes).
-- **Resumen financiero** — importe **pendiente**, **cobrado este mes** y **vencido**, con
+- **Resumen financiero**, importe **pendiente**, **cobrado este mes** y **vencido**, con
   gráficos de estado de recibos.
-- **Próxima facturación recurrente** — día y días restantes, si está activada.
+- **Próxima facturación recurrente**, día y días restantes, si está activada.
 
 ## Resumen anual
 

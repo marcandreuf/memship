@@ -1,5 +1,5 @@
 <!-- source: en/getting-started/what-you-need.md -->
-<!-- source-hash: 104a6e892527 -->
+<!-- source-hash: 2e8d68b226b3 -->
 
 # Qué necesitas para ejecutar Memship
 
@@ -55,8 +55,8 @@ La piden PostgreSQL, para tener memoria de sobra con la que cachear, y las actua
 mantienen un rato las imágenes nuevas junto a las que están en marcha. 4 GB es además lo que
 incluye el plan de entrada de todos los proveedores de abajo, así que pedir menos no ahorra nada.
 
-**Disco medido.** Las cinco imágenes ocupan **1,06 GB** en disco y son una descarga de **358 MB**
-— cinco y no siete, porque la API, el worker y el planificador usan la misma imagen. Una base de
+**Disco medido.** Las cinco imágenes ocupan **1,06 GB** en disco y son una descarga de **358 MB**,
+cinco y no siete, porque la API, el worker y el planificador usan la misma imagen. Una base de
 datos con el club descrito arriba ocupaba 12 MB, dentro de un directorio de datos de PostgreSQL de
 50 MB.
 
@@ -111,10 +111,10 @@ por socio, ni por administrador, ni por recibo.
 
 Un nombre de máquina, con un registro **A** del DNS apuntando a la IP del servidor. En cuanto eso
 resuelve, el Caddy que viene incluido obtiene y renueva un certificado de Let's Encrypt por su
-cuenta — no hay certificado que comprar, ni instalar, ni acordarse de renovar.
+cuenta, no hay certificado que comprar, ni instalar, ni acordarse de renovar.
 
-Si el dominio es de la entidad y no de quien instala — de forma que el nombre de máquina, la zona
-DNS y el dominio del correo son asunto de tres personas distintas — lee
+Si el dominio es de la entidad y no de quien instala, de forma que el nombre de máquina, la zona
+DNS y el dominio del correo son asunto de tres personas distintas, lee
 [El dominio de tu organización](../../en/self-hosting/domain-and-dns.md) antes de empezar.
 
 ## Una forma de enviar correo
@@ -125,12 +125,12 @@ puede entrar por primera vez hasta que funcione.
 
 Tres opciones, configurables desde la pantalla de Ajustes o desde el `.env`:
 
-- **Resend** — una API de correo. Plan gratuito: 3.000 mensajes al mes y 3 dominios, pero **100 al
+- **Resend**, una API de correo. Plan gratuito: 3.000 mensajes al mes y 3 dominios, pero **100 al
   día**. Ese límite diario es el que molesta: mandar avisos a más de 100 socios de una tirada lo
   supera. El plan de pago son 20 USD al mes.
-- **Gmail** — una cuenta de Google normal con una contraseña de aplicación. Google aplica sus
+- **Gmail**, una cuenta de Google normal con una contraseña de aplicación. Google aplica sus
   propios límites diarios de envío.
-- **Cualquier servidor SMTP** — incluido el del alojamiento de correo que ya tenga la entidad,
+- **Cualquier servidor SMTP**, incluido el del alojamiento de correo que ya tenga la entidad,
   siempre que acepte STARTTLS, normalmente en el puerto 587. Un servidor accesible solo por el
   puerto 465 no está soportado.
 
@@ -142,8 +142,8 @@ necesita Resend.
 Con las imágenes ya en el servidor, la plataforma arranca y responde como saludable en **16
 segundos**.
 
-El tiempo de principio a fin de una primera instalación en un servidor recién creado —
-`scripts/vps-bootstrap.sh`, luego `scripts/install.sh`, y luego crear el primer administrador — no
+El tiempo de principio a fin de una primera instalación en un servidor recién creado,
+`scripts/vps-bootstrap.sh`, luego `scripts/install.sh`, y luego crear el primer administrador, no
 está medido, y esta página no se lo va a inventar. Lo que domina ese tiempo es la descarga de las
 imágenes (358 MB) y la propagación del registro DNS que crees para el dominio.
 

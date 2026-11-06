@@ -3,7 +3,7 @@
 Memship ships every module in one image. Which of them an organization actually
 uses is decided by **twenty-one keys** in a single JSONB column,
 `organization_settings.features`, on the one row the database allows
-(`CHECK (id = 1)`). They are edited from **Settings** in the admin portal — not
+(`CHECK (id = 1)`). They are edited from **Settings** in the admin portal, not
 from `.env`, and not from a file on the server. Nothing here needs a restart.
 
 This page exists because "the flag is absent" and "the flag is off" are the same
@@ -34,16 +34,16 @@ is switched on.
 A module that is off also **404s its own endpoints**, which is why the frontend
 redirects rather than rendering a shell over a dead API.
 
-**Absent does not always mean off.** Two keys default to *enabled* when missing —
+**Absent does not always mean off.** Two keys default to *enabled* when missing,
 `public_registration` and `registration_requires_approval`, both read as
 `features.get(key, True)` in `domains/auth/service.py`. So sign-up is open *by
 policy* on a fresh install, and each sign-up lands in the pending-approval queue
 rather than becoming an active member. If you do not want an open sign-up form,
-set `public_registration` to `false` explicitly — removing the key does the
+set `public_registration` to `false` explicitly, removing the key does the
 opposite of what it looks like.
 
 Open by policy is not the same as working. `POST /auth/register` refuses with
-**503 — "the club has not finished setting up email"** until a mail transport is
+**503, "the club has not finished setting up email"** until a mail transport is
 configured, because confirming an address needs a link and the link needs a
 transport. That is deliberate: it is better than minting an account nobody can
 ever sign in to. On a fresh self-hosted install it is the answer every visitor
@@ -57,7 +57,7 @@ python -m app.cli.seed --demo     # or: ./scripts/dev.sh seed demo
 ```
 
 The demo path switches on **all twenty-one** and fills a club's worth of data
-behind them. It is for evaluation and review — never for a real organization,
+behind them. It is for evaluation and review, never for a real organization,
 because it also creates demo members and receipts.
 
 > **It arms the scheduled jobs too.** `recurring_billing_enabled`,
@@ -68,13 +68,13 @@ because it also creates demo members and receipts.
 > its data will not be exactly as you left it.
 >
 > **Lapsing does not suspend anyone.** A lapsed member is a full member on the
-> free tier — `Member.status` is deliberately untouched, and the previous tier
+> free tier, `Member.status` is deliberately untouched, and the previous tier
 > is parked on `Member.membership_reverted_from_id` so that paying the fee
 > restores it (see `lapse_service.py` and memship#145). Member status counts on
 > the dashboard therefore do not move when a lapse run does.
 >
 > **Those are UTC hours, and UTC is not your working day.** At UTC+9 they fire
-> at 11:00, 12:00 and 13:00 — the middle of a working morning, not overnight. If
+> at 11:00, 12:00 and 13:00, the middle of a working morning, not overnight. If
 > you are reviewing or demoing an instance and want its data to hold still,
 > switch these three off for the duration. They gate scheduled work and have no
 > screen of their own, so nothing you can look at is lost by doing so.
@@ -83,11 +83,11 @@ because it also creates demo members and receipts.
 
 Three different kinds of thing live in this column, and they do not behave alike.
 
-- **Gates** — off means a request is refused. These are the ones that redirect.
-- **Values** — they parameterise behaviour rather than gate it. An absent one
+- **Gates**, off means a request is refused. These are the ones that redirect.
+- **Values**, they parameterise behaviour rather than gate it. An absent one
   falls back to a default written in code, so the instance is *already running
   on that number* whether or not the key exists.
-- **Data** — a list, validated per entry on the way in.
+- **Data**, a list, validated per entry on the way in.
 
 | Key | Kind | Absent means | Gates |
 |---|---|---|---|
@@ -96,7 +96,7 @@ Three different kinds of thing live in this column, and they do not behave alike
 | `member_card` | gate | off | `/scan`, `/my-card` |
 | `bookings` | gate | off | `/spaces`, `/book`, `/my-bookings` |
 | `custom_profile_fields` | gate | off | custom member fields |
-| `public_registration` | gate | **on** | self sign-up — but 503s until email is configured |
+| `public_registration` | gate | **on** | self sign-up, but 503s until email is configured |
 | `registration_requires_approval` | gate | **on** | the pending-approval queue |
 | `payment_reminders_enabled` | gate | off | the dunning run and manual reminders |
 | `recurring_billing_enabled` | gate | off | the scheduled membership-fee run |
@@ -121,7 +121,7 @@ flags that are **on while absent**.
 
 Be precise about what that does and does not cover: both compare *code* against
 *code*. Neither reads this page, so a row here can still drift from the fallback
-it describes — which is what happened to `booking_waitlist_enabled`, listed as
+it describes, which is what happened to `booking_waitlist_enabled`, listed as
 off for as long as the code defaulted it to on.
 
 ## Switching one off is not the same as never switching it on
@@ -153,7 +153,7 @@ Two consequences worth knowing:
   resolve through the defaults in the table above.
 - **Send only the keys you are changing.** A key already in the column from
   before this was enforced is left alone, so an instance holding one keeps
-  working — but a client that reads the whole `features` dict and posts it back
+  working, but a client that reads the whole `features` dict and posts it back
   re-sends that key and will be refused. Posting back a snapshot was never
   necessary, because the endpoint merges.
 
@@ -169,6 +169,6 @@ key has nothing to do with `booking_waitlist_enabled`.
 
 ## Related
 
-- [Configuration reference](configuration.md) — environment variables, which are
+- [Configuration reference](configuration.md), environment variables, which are
   a separate mechanism entirely
 - [First-time setup](../getting-started/first-setup.md)

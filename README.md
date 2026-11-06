@@ -12,22 +12,22 @@ Memship is a self-hosted membership management system, open source under the [GN
 
 ## What we're building
 
-Most membership tools are either expensive SaaS platforms or outdated legacy software. Memship aims to change that — a modern, full-featured solution that you control. No vendor lock-in, no per-member pricing, no data leaving your servers.
+Most membership tools are either expensive SaaS platforms or outdated legacy software. Memship aims to change that, a modern, full-featured solution that you control. No vendor lock-in, no per-member pricing, no data leaving your servers.
 
-- **Self-hosted** — runs on any server with Docker
-- **Single-tenant** — one database per organization, complete data isolation
-- **Multi-language** — Spanish, Catalan, and English from day one. Extensible to any language via community contributions
-- **GDPR-ready** — built-in legal terms templates and consent management
+- **Self-hosted**, runs on any server with Docker
+- **Single-tenant**, one database per organization, complete data isolation
+- **Multi-language**, Spanish, Catalan, and English from day one. Extensible to any language via community contributions
+- **GDPR-ready**, built-in legal terms templates and consent management
 
 ## Quick Start (Docker)
 
 > **For trying memship out, not for running it.** This is the fastest path to a
 > working instance on your own machine: published images, throwaway volumes, and
 > a fixed database password. To run memship for a real organization, follow
-> [Installation](docs/en/getting-started/installation.md) instead — same product,
+> [Installation](docs/en/getting-started/installation.md) instead, same product,
 > set up so it can be backed up, upgraded and kept.
 
-Try memship with a single command — no cloning required:
+Try memship with a single command, no cloning required:
 
 ```bash
 mkdir -p "$HOME/memship-quickstart" && cd "$HOME/memship-quickstart"
@@ -42,12 +42,12 @@ Then run the setup, which walks you through three questions:
 docker compose exec -it demo-memship-api python -m app.cli.seed
 ```
 
-1. **Super admin** — you choose the address and password. Nothing is preset.
-2. **Club data** — offered only if there is any, so it is a no-op on a fresh install.
-3. **Club setup** — enter your organization's real details, or generate a demo club.
+1. **Super admin**, you choose the address and password. Nothing is preset.
+2. **Club data**, offered only if there is any, so it is a no-op on a fresh install.
+3. **Club setup**, enter your organization's real details, or generate a demo club.
 
 Choose the demo club to look around: it creates a full year of realistic sample
-data — ~60 members across all statuses, activities, receipts in every state
+data, ~60 members across all statuses, activities, receipts in every state
 spread across the months, SEPA mandates and dashboard reminders. It also
 generates logins for a club admin and two members and **prints those passwords
 once**, so keep the output. Safe to re-run (idempotent).
@@ -62,91 +62,91 @@ any payment providers you configured. See
 
 ## Releases
 
-Memship follows [semantic versioning](https://semver.org/), and **version numbers are assigned at release time — never reserved in advance.** A few lines per version below — three at most; the full notes for each are on the [releases page](https://github.com/marcandreuf/memship/releases). What is coming next is under [Roadmap](#roadmap), and [Choosing a version](CONTRIBUTING.md#choosing-a-version) covers how a number is picked.
+Memship follows [semantic versioning](https://semver.org/), and **version numbers are assigned at release time, never reserved in advance.** A few lines per version below, three at most; the full notes for each are on the [releases page](https://github.com/marcandreuf/memship/releases). What is coming next is under [Roadmap](#roadmap), and [Choosing a version](CONTRIBUTING.md#choosing-a-version) covers how a number is picked.
 
 | Version | Milestone | Status |
 |---------|-----------|--------|
-| v0.1.0 | Member Management MVP — auth, RBAC, member CRUD, membership types, i18n, Docker, CI | Done |
-| v0.1.1 | Email sending (SMTP) — welcome emails, password reset emails | Done |
+| v0.1.0 | Member Management MVP: auth, RBAC, member CRUD, membership types, i18n, Docker, CI | Done |
+| v0.1.1 | Email sending (SMTP): welcome emails, password reset emails | Done |
 | v0.1.2 | Groups, guardian/minor support, restricted role (schema) | Done |
 | v0.1.3 | Caddy reverse proxy, backup/restore scripts, self-hosted polish | Done |
 | v0.1.4 | Organization settings management (API + frontend) | Done |
-| v0.1.5 | Activity CRUD — models, modalities, pricing, admin frontend | Done |
-| v0.1.6 | Strong entity pattern — unified list/detail/tabs across all entities | Done |
-| v0.2.0 | Activity Management — registration, eligibility, waitlist, discounts, consents, attachments | Done |
-| v0.2.1 | UX refactor — Shadcn sidebar, dark mode, brand colors, compact tables, quick start | Done |
-| v0.2.2 | E2E test foundation (Cypress) — auth, members, activities, registrations | Done |
-| v0.2.3 | Error handling & validation hardening — toast notifications, global error handler, backend schema validation, StrEnum, 76 validation tests, 16 E2E tests | Done |
-| v0.2.4 | Bug fixes — dark mode sidebar, form error display, route guards, member list cancelled visibility, member delete removed | Done |
-| v0.2.5 | Activity UX — member activity card redesign, cover image upload, registration status badges, activity list thumbnails, My Activities grid, Docker storage volume | Done |
-| v0.2.6 | Bug fixes & testing — Shadcn confirm dialogs (replaced 13 browser alerts), seed discount code fix, self-cancellation deadline check, re-registration after cancel, 21 new API tests, 9 new E2E eligibility tests | Done |
-| v0.2.7 | Activity polish — loading skeletons, nuqs URL state | Done |
-| v0.2.9 | Payment prerequisites — org address & banking, logo upload, contact info tab, member IBAN, Celery/Redis, email notifications (Jinja2 + SMTP/Resend) | Done |
-| v0.3.0 | Basic Payments & Invoicing — receipts, PDF generation, VAT, fee generation, member payment history | Done |
-| v0.3.1 | Bug fixes — failing tests and translated readme files | Done |
-| v0.3.2 | Bug fixes — frontend build pipeline fix | Done |
-| v0.3.3 | CI improvements — faster test execution | Done |
-| v0.3.4 | Bug fixes — warning cleanup and integration test optimizations | Done |
-| v0.3.5 | Bug fixes — failing integration tests | Done |
-| v0.3.6 | CI optimization — setup-uv v7, cached password hashing, pytest-xdist parallel workers, automated version hooks | Done |
-| v0.4.0 | SEPA Direct Debit — mandate management, remittance batches, pain.008 XML, member payment method | Done |
-| v0.4.1 | Payment provider settings — super admin configurable payment gateway management | Done |
-| v0.4.2 | Webhook infrastructure + Stripe Checkout — provider webhooks, real-time payment status, member "Pay Now" flow | Done |
-| v0.4.3 | Redsys integration — Spanish bank gateway with 3D Secure + Bizum | Done |
-| v0.4.4 | Recurring billing — scheduled fee generation | Done |
-| v0.4.5 | Payment reminders — overdue email notifications | Done |
-| v0.5.0 | Simple Communications — admin announcements to all/group/membership type | Done |
-| v0.5.1 | Communications sent view — recipient tracking + in-app "Seen" | Done |
-| v0.7.0 | Digital Member Card + QR Check-in — PDF card, auto member numbers | Done |
-| v0.7.1 | Member card polish — admin card view on member page, member profile photo upload, profile page redesign | Done |
-| v1.0.0 | Stabilization & Release — CSV exports, finance dashboard, notes & reminders, annual summary, demo seed, docs polish | Done |
-| v1.0.1 | Patch — fix Celery scheduled billing/reminder task registration; CI guard against image tag overwrite | Done |
-| v1.1.0 | Custom profile fields — org-configurable member data (text, number, date, select, …) with per-field validation and per-field visibility/editability | Done |
-| v1.1.1 | Patch — settings navigation reorganised: payment and member settings grouped under Payments and Members tabs | Done |
-| v1.2.2 | SSO and mailing configuration — public registration with email verification and an admin approval flow, Google / Apple sign-in, and Resend / Google SMTP setup from an Integrations tab | Done |
-| v1.3.0 | Simple Bookings — member reservations of shared spaces on a week calendar, with per-slot capacity and a FIFO waitlist | Done |
-| v1.4.0 | Flexible roles & permissions — multi-role assignment and granular per-permission checks in place of the four fixed roles. Also repairs deployment stacks that ran no Celery worker and mounted no volume on the API service | Done |
-| v2.0.0 | Self-hosting overhaul — host-visible bind mounts under one `MEMSHIP_DATA_ROOT`, backend containers running as the operator's uid, and a one-command `install.sh`. **Security:** PostgreSQL and the API are no longer published to the internet. **Breaking:** `uv run` no longer works in the containers, and existing installs need a one-off `chown` | Done |
-| v2.1.0 | Setup without published credentials — the same interactive setup on every environment, with no accounts whose passwords ship in this repository, plus unattended flags for scripted installs | Done |
-| v2.2.0 | Super admin recovery from the host — a super admin's password is reset with `python -m app.cli.seed` on the server rather than by email. **Security:** mailbox access was equivalent to owning the instance | Done |
-| v2.3.0 | Uploaded files behind authentication, and sign-in that cannot be guessed at forever — the storage directory was served by a static-file mount, reset tokens came back in API responses, and the published placeholder signing key was the Compose default. **Breaking:** installs on that key get a fresh one, signing everyone out | Done |
-| v2.3.1 | Money paths that were wrong quietly — a SEPA file no longer drops receipts whose mandate was cancelled, a payment webhook no longer records a mismatched amount as paid in full, and an activity can no longer be over-booked by two people registering at once. | Done |
+| v0.1.5 | Activity CRUD: models, modalities, pricing, admin frontend | Done |
+| v0.1.6 | Strong entity pattern: unified list/detail/tabs across all entities | Done |
+| v0.2.0 | Activity Management: registration, eligibility, waitlist, discounts, consents, attachments | Done |
+| v0.2.1 | UX refactor: Shadcn sidebar, dark mode, brand colors, compact tables, quick start | Done |
+| v0.2.2 | E2E test foundation (Cypress): auth, members, activities, registrations | Done |
+| v0.2.3 | Error handling & validation hardening: toast notifications, global error handler, backend schema validation, StrEnum, 76 validation tests, 16 E2E tests | Done |
+| v0.2.4 | Bug fixes: dark mode sidebar, form error display, route guards, member list cancelled visibility, member delete removed | Done |
+| v0.2.5 | Activity UX: member activity card redesign, cover image upload, registration status badges, activity list thumbnails, My Activities grid, Docker storage volume | Done |
+| v0.2.6 | Bug fixes & testing: Shadcn confirm dialogs (replaced 13 browser alerts), seed discount code fix, self-cancellation deadline check, re-registration after cancel, 21 new API tests, 9 new E2E eligibility tests | Done |
+| v0.2.7 | Activity polish: loading skeletons, nuqs URL state | Done |
+| v0.2.9 | Payment prerequisites: org address & banking, logo upload, contact info tab, member IBAN, Celery/Redis, email notifications (Jinja2 + SMTP/Resend) | Done |
+| v0.3.0 | Basic Payments & Invoicing: receipts, PDF generation, VAT, fee generation, member payment history | Done |
+| v0.3.1 | Bug fixes: failing tests and translated readme files | Done |
+| v0.3.2 | Bug fixes: frontend build pipeline fix | Done |
+| v0.3.3 | CI improvements: faster test execution | Done |
+| v0.3.4 | Bug fixes: warning cleanup and integration test optimizations | Done |
+| v0.3.5 | Bug fixes: failing integration tests | Done |
+| v0.3.6 | CI optimization: setup-uv v7, cached password hashing, pytest-xdist parallel workers, automated version hooks | Done |
+| v0.4.0 | SEPA Direct Debit: mandate management, remittance batches, pain.008 XML, member payment method | Done |
+| v0.4.1 | Payment provider settings: super admin configurable payment gateway management | Done |
+| v0.4.2 | Webhook infrastructure + Stripe Checkout: provider webhooks, real-time payment status, member "Pay Now" flow | Done |
+| v0.4.3 | Redsys integration: Spanish bank gateway with 3D Secure + Bizum | Done |
+| v0.4.4 | Recurring billing: scheduled fee generation | Done |
+| v0.4.5 | Payment reminders: overdue email notifications | Done |
+| v0.5.0 | Simple Communications: admin announcements to all/group/membership type | Done |
+| v0.5.1 | Communications sent view: recipient tracking + in-app "Seen" | Done |
+| v0.7.0 | Digital Member Card + QR Check-in: PDF card, auto member numbers | Done |
+| v0.7.1 | Member card polish: admin card view on member page, member profile photo upload, profile page redesign | Done |
+| v1.0.0 | Stabilization & Release: CSV exports, finance dashboard, notes & reminders, annual summary, demo seed, docs polish | Done |
+| v1.0.1 | Patch: fix Celery scheduled billing/reminder task registration; CI guard against image tag overwrite | Done |
+| v1.1.0 | Custom profile fields: org-configurable member data (text, number, date, select, …) with per-field validation and per-field visibility/editability | Done |
+| v1.1.1 | Patch: settings navigation reorganised: payment and member settings grouped under Payments and Members tabs | Done |
+| v1.2.2 | SSO and mailing configuration: public registration with email verification and an admin approval flow, Google / Apple sign-in, and Resend / Google SMTP setup from an Integrations tab | Done |
+| v1.3.0 | Simple Bookings: member reservations of shared spaces on a week calendar, with per-slot capacity and a FIFO waitlist | Done |
+| v1.4.0 | Flexible roles & permissions: multi-role assignment and granular per-permission checks in place of the four fixed roles. Also repairs deployment stacks that ran no Celery worker and mounted no volume on the API service | Done |
+| v2.0.0 | Self-hosting overhaul: host-visible bind mounts under one `MEMSHIP_DATA_ROOT`, backend containers running as the operator's uid, and a one-command `install.sh`. **Security:** PostgreSQL and the API are no longer published to the internet. **Breaking:** `uv run` no longer works in the containers, and existing installs need a one-off `chown` | Done |
+| v2.1.0 | Setup without published credentials: the same interactive setup on every environment, with no accounts whose passwords ship in this repository, plus unattended flags for scripted installs | Done |
+| v2.2.0 | Super admin recovery from the host: a super admin's password is reset with `python -m app.cli.seed` on the server rather than by email. **Security:** mailbox access was equivalent to owning the instance | Done |
+| v2.3.0 | Uploaded files behind authentication, and sign-in that cannot be guessed at forever: the storage directory was served by a static-file mount, reset tokens came back in API responses, and the published placeholder signing key was the Compose default. **Breaking:** installs on that key get a fresh one, signing everyone out | Done |
+| v2.3.1 | Money paths that were wrong quietly: a SEPA file no longer drops receipts whose mandate was cancelled, a payment webhook no longer records a mismatched amount as paid in full, and an activity can no longer be over-booked by two people registering at once. | Done |
 | v2.4.0 | Sign-in requires a confirmed email address, and invoice numbers are sequential and unbroken. **Breaking:** an account that never confirmed its address can no longer sign in. **Migration:** receipt numbering moves to a counter per year, seeded from the numbers already issued. | Done |
-| v2.5.0 | Every outbound email in one branded layout — the organisation's name, logo and colour come from the settings row, every message carries a plain-text alternative alongside the HTML, and receipt delivery and the recurring-billing summary become templates rather than inline markup. | Done |
-| v2.6.0 | A super admin chooses which emails the system sends — a Settings screen with a switch per template, and all 17 senders routed through one gate. **Breaking:** optional email defaults to off, so an existing installation goes quiet on upgrade until a super admin enables what it wants. | Done |
-| v2.7.0 | Sessions that slide rather than expiring mid-task — an active session renews itself halfway through its window, and says so and returns you to sign-in when it does run out. **Self-hosting:** a release deploys to a VPS holding no git and no source checkout, from a release tarball rather than a clone. | Done |
-| v2.7.1 | A first install now leaves a `POST-INSTALL.md` on the server listing what the installer cannot do for you — copy `.env` off the host, create the organization and super admin, schedule backups, configure email — with every path filled in. The v2.7.0 warning was correct and unread. | Done |
-| v2.8.0 | Membership a member buys, and can lose — a plan is bought from the member's own portal at a prorated, tax-inclusive price, granted when the money arrives by any route, and given up 21 days after an unpaid fee falls due, with the tier that was lost recorded so paying restores it. | Done |
-| v2.9.0 | The screen a member buys their plan on — v2.8.0 could take the money but left no way to ask for it. A **My plan** page lists the plan held and those available, and shows the prorated first charge before anything is confirmed. Buying raises a receipt; the plan activates when it is paid. | Done |
-| v2.9.1 | A first install that can follow its own instructions — every fix here was found running the guide end to end on a fresh server. `vps-bootstrap.sh` aborted part-way on Ubuntu's boot-time apt lock, leaving a host with no firewall and no fail2ban after output that read like success. | Done |
-| v2.10.0 | Thirteen fixes to the paths that handle money, personal data and load — no new screens. Reset tokens are stored as digests, the full IBAN stops being returned beside its masked form, and CSV exports neutralise formula-leading cells. **Breaking:** outstanding reset and verification links stop working on upgrade. | Done |
-| v2.11.0 | Staff are not members of the club — a super admin or club admin now administers the instance without belonging to it, instead of carrying a member number and a place in every member count, export and billing run. **Migration, not reversible:** staff accounts lose their member record. | Done |
-| v2.12.0 | Sign-in, mail, payments and the upgrade itself — the paths a club trips over in its first weeks on a fresh install. Addresses are stored and compared lower-cased, and `upgrade.sh` asks the new API about the data before replacing the stack. **Migration:** existing addresses are lower-cased. | Done |
-| v2.13.0 | The audit release — seventeen defects found by reading the code against its own documentation, none of them a feature. Resetting a password now ends every session it opened, the login throttles key on the caller rather than locking every member out, and billing stamps its dates in the club's timezone. | Done |
-| v2.14.0 | The bug-bash release — sixteen reported defects and a build that could ship an image unable to start, no new features. Builds install `uv.lock` with `--locked` and every RC image is booted before it is pushed; activity prices stop returning VAT zeroed; and age limits and booking windows bind at last. | Done |
-| v2.15.0 | Reachability and the upgrade path — three shipped features that could not be used, and the guards that would have caught them. | Done |
-| v2.16.0 | The money-path release — the SEPA collection flow a club runs every month, found by working through it by hand rather than by reading it. | Done |
-| v2.17.0 | The review release — eleven defects found by reading the tree and working the screens, none of them reported by anybody, and the build pipeline that was quietly shipping mismatched images. | Done |
-| v2.18.0 | The SEPA validation release — sixteen defects found by driving the collection flow on a deployed instance. A return against a paid receipt no longer reads as handled, and a generated bank file is never overwritten. **Breaking:** `import-returns` reports named buckets. **Migration:** duplicate active mandates are cancelled, newest kept. | Done |
-| v2.19.0 | The payment-provider release — Bizum can be offered separately from card, a stored secret can no longer be erased by a blank save, and a sent SEPA batch names the receipt the bank returned rather than only counting it. **Breaking:** Bizum defaults to off. **Migration:** `remittance_receipts` records what each batch carried. | Done |
-| v3.0.1 | The party identity release — every identity in the system is now a **party**, so a receipt, a mandate, an address or a contact can belong to somebody who is not a member. Adds **Entidades** for companies and donors with no membership, so a donation is recorded without inventing a socio. Also: any **SMTP server** is configurable from Settings, with a Gmail preset and a test send required before a provider can be activated, and the documentation moves to one directory per language. **Breaking:** the API's identity fields are `party_id` rather than `member_id`; the organisation's own name, tax id, logo and bank details move onto its party row; a new `entities.*` permission pair is granted by migration. **Migration:** persons, users, members, receipts, mandates, registrations, addresses and contacts all repoint to a party; bank details become `bank_accounts`; the organisation's phone and website become contact rows; duplicate primary contacts are demoted, keeping the first per channel. The whole chain is reversible, and the pre-upgrade checks run whatever version the database is on. | Done |
-| v3.0.2 | Navigation keeps its place — the open tab is in the URL, the breadcrumb returns to the record you came through, and a filtered, paged list comes back filtered. Also: the receipt API returns the Redsys order and authorisation code, a quick-start instance reports a version rather than a build sha, and the pre-upgrade gate names the check that could not run. **No migration**, and no breaking change. | Done |
+| v2.5.0 | Every outbound email in one branded layout: the organisation's name, logo and colour come from the settings row, every message carries a plain-text alternative alongside the HTML, and receipt delivery and the recurring-billing summary become templates rather than inline markup. | Done |
+| v2.6.0 | A super admin chooses which emails the system sends: a Settings screen with a switch per template, and all 17 senders routed through one gate. **Breaking:** optional email defaults to off, so an existing installation goes quiet on upgrade until a super admin enables what it wants. | Done |
+| v2.7.0 | Sessions that slide rather than expiring mid-task: an active session renews itself halfway through its window, and says so and returns you to sign-in when it does run out. **Self-hosting:** a release deploys to a VPS holding no git and no source checkout, from a release tarball rather than a clone. | Done |
+| v2.7.1 | A first install now leaves a `POST-INSTALL.md` on the server listing what the installer cannot do for you: copy `.env` off the host, create the organization and super admin, schedule backups, configure email, with every path filled in. The v2.7.0 warning was correct and unread. | Done |
+| v2.8.0 | Membership a member buys, and can lose: a plan is bought from the member's own portal at a prorated, tax-inclusive price, granted when the money arrives by any route, and given up 21 days after an unpaid fee falls due, with the tier that was lost recorded so paying restores it. | Done |
+| v2.9.0 | The screen a member buys their plan on: v2.8.0 could take the money but left no way to ask for it. A **My plan** page lists the plan held and those available, and shows the prorated first charge before anything is confirmed. Buying raises a receipt; the plan activates when it is paid. | Done |
+| v2.9.1 | A first install that can follow its own instructions: every fix here was found running the guide end to end on a fresh server. `vps-bootstrap.sh` aborted part-way on Ubuntu's boot-time apt lock, leaving a host with no firewall and no fail2ban after output that read like success. | Done |
+| v2.10.0 | Thirteen fixes to the paths that handle money, personal data and load: no new screens. Reset tokens are stored as digests, the full IBAN stops being returned beside its masked form, and CSV exports neutralise formula-leading cells. **Breaking:** outstanding reset and verification links stop working on upgrade. | Done |
+| v2.11.0 | Staff are not members of the club: a super admin or club admin now administers the instance without belonging to it, instead of carrying a member number and a place in every member count, export and billing run. **Migration, not reversible:** staff accounts lose their member record. | Done |
+| v2.12.0 | Sign-in, mail, payments and the upgrade itself: the paths a club trips over in its first weeks on a fresh install. Addresses are stored and compared lower-cased, and `upgrade.sh` asks the new API about the data before replacing the stack. **Migration:** existing addresses are lower-cased. | Done |
+| v2.13.0 | The audit release: seventeen defects found by reading the code against its own documentation, none of them a feature. Resetting a password now ends every session it opened, the login throttles key on the caller rather than locking every member out, and billing stamps its dates in the club's timezone. | Done |
+| v2.14.0 | The bug-bash release: sixteen reported defects and a build that could ship an image unable to start, no new features. Builds install `uv.lock` with `--locked` and every RC image is booted before it is pushed; activity prices stop returning VAT zeroed; and age limits and booking windows bind at last. | Done |
+| v2.15.0 | Reachability and the upgrade path: three shipped features that could not be used, and the guards that would have caught them. | Done |
+| v2.16.0 | The money-path release: the SEPA collection flow a club runs every month, found by working through it by hand rather than by reading it. | Done |
+| v2.17.0 | The review release: eleven defects found by reading the tree and working the screens, none of them reported by anybody, and the build pipeline that was quietly shipping mismatched images. | Done |
+| v2.18.0 | The SEPA validation release: sixteen defects found by driving the collection flow on a deployed instance. A return against a paid receipt no longer reads as handled, and a generated bank file is never overwritten. **Breaking:** `import-returns` reports named buckets. **Migration:** duplicate active mandates are cancelled, newest kept. | Done |
+| v2.19.0 | The payment-provider release: Bizum can be offered separately from card, a stored secret can no longer be erased by a blank save, and a sent SEPA batch names the receipt the bank returned rather than only counting it. **Breaking:** Bizum defaults to off. **Migration:** `remittance_receipts` records what each batch carried. | Done |
+| v3.0.1 | The party identity release: every identity in the system is now a **party**, so a receipt, a mandate, an address or a contact can belong to somebody who is not a member. Adds **Entidades** for companies and donors with no membership, so a donation is recorded without inventing a socio. Also: any **SMTP server** is configurable from Settings, with a Gmail preset and a test send required before a provider can be activated, and the documentation moves to one directory per language. **Breaking:** the API's identity fields are `party_id` rather than `member_id`; the organisation's own name, tax id, logo and bank details move onto its party row; a new `entities.*` permission pair is granted by migration. **Migration:** persons, users, members, receipts, mandates, registrations, addresses and contacts all repoint to a party; bank details become `bank_accounts`; the organisation's phone and website become contact rows; duplicate primary contacts are demoted, keeping the first per channel. The whole chain is reversible, and the pre-upgrade checks run whatever version the database is on. | Done |
+| v3.0.2 | Navigation keeps its place: the open tab is in the URL, the breadcrumb returns to the record you came through, and a filtered, paged list comes back filtered. Also: the receipt API returns the Redsys order and authorisation code, a quick-start instance reports a version rather than a build sha, and the pre-upgrade gate names the check that could not run. **No migration**, and no breaking change. | Done |
 | v3.1.0 | The AGPL release: Memship is now free software under the GNU AGPL v3, with the licence and a link to the source in the footer of every screen. Also: an activity price can apply to only some membership types, the member card is issued per membership type rather than once for the whole instance, an administrator can see the payment notifications a gateway sent that were refused and can record a gateway payment by hand with its reference, the receipt email says how to pay it, and a donation has its own origin so the dunning run never chases one. Auth throttles now count in Redis, so two API processes share one limit instead of allowing twice it. **Breaking:** the member card is off on every membership type after the upgrade, existing ones included, and is switched on per type in Settings; an unrecognised key in `features` is now refused rather than stored and ignored. **Migration:** `activity_prices.membership_type_ids` and `membership_types.issues_card` are added, and `donation` joins the receipt-origin and concept-type checks. | Done |
 
 ## Roadmap
 
-Priority-ordered, not yet versioned. Each becomes a versioned release when it ships, and the release claims the next semver number in order. Each item has an issue carrying its summary and current thinking — see the [`roadmap` issues](https://github.com/marcandreuf/memship/labels/roadmap).
+Priority-ordered, not yet versioned. Each becomes a versioned release when it ships, and the release claims the next semver number in order. Each item has an issue carrying its summary and current thinking, see the [`roadmap` issues](https://github.com/marcandreuf/memship/labels/roadmap).
 
-- **User invitations** — invite a new super admin, club admin or member by email address and role; they set their own name and password. Sent by email where email is configured, and as a copyable link where it is not, so a freshly installed instance can add a second administrator without shell access
-- **Data backups** — download a full backup from the admin area, covering the database and the uploaded files, with a documented and tested restore
-- **Convocations** — formal General Assembly calls with token-based member RSVP
-- **Document library** — statutes, minutes, forms with per-group visibility
-- **Events calendar + RSVP** — calendar view and participation tracking
-- **Integrations** — connect memship to the tools a club already runs on, instead of asking it to move. Instant messaging first (WhatsApp, Telegram, Signal, Instagram), since that is where most clubs actually communicate; then calendar subscriptions, accounting and e-invoicing exports, sports-federation licence submissions, and outbound webhooks as the generic escape hatch. Each connector has its own cost and constraints and ships on its own
+- **User invitations**, invite a new super admin, club admin or member by email address and role; they set their own name and password. Sent by email where email is configured, and as a copyable link where it is not, so a freshly installed instance can add a second administrator without shell access
+- **Data backups**, download a full backup from the admin area, covering the database and the uploaded files, with a documented and tested restore
+- **Convocations**, formal General Assembly calls with token-based member RSVP
+- **Document library**, statutes, minutes, forms with per-group visibility
+- **Events calendar + RSVP**, calendar view and participation tracking
+- **Integrations**, connect memship to the tools a club already runs on, instead of asking it to move. Instant messaging first (WhatsApp, Telegram, Signal, Instagram), since that is where most clubs actually communicate; then calendar subscriptions, accounting and e-invoicing exports, sports-federation licence submissions, and outbound webhooks as the generic escape hatch. Each connector has its own cost and constraints and ships on its own
 
 Complex variations are built on demand, when a real deployment needs them: GoCardless e-mandates, PayPal, Stripe Invoice flow, bulk receipt actions, custom report builder, surveys, family group billing, paid & recurring bookings, equipment rental, convocation voting & document attachments, and similar deeper cuts of the features above.
 
-**Deferred — extensions as a modules/plugins system.** Optional add-ons such as photo albums, a forum, a guestbook, a weblinks directory, inventory/lending and portal widgets need a module system designed into the architecture rather than added on top of it. This waits for a future revision of that architecture instead of shipping as a feature.
+**Deferred, extensions as a modules/plugins system.** Optional add-ons such as photo albums, a forum, a guestbook, a weblinks directory, inventory/lending and portal widgets need a module system designed into the architecture rather than added on top of it. This waits for a future revision of that architecture instead of shipping as a feature.
 
 ---
 
@@ -183,7 +183,7 @@ Complex variations are built on demand, when a real deployment needs them: GoCar
 
 **Payments & Invoicing** (available now)
 - Receipt management with 7-status lifecycle (new → emitted → paid / returned / cancelled / overdue)
-- PDF receipt generation (WeasyPrint) with org header, member details, VAT breakdown — 3 locales (ES/CA/EN)
+- PDF receipt generation (WeasyPrint) with org header, member details, VAT breakdown, 3 locales (ES/CA/EN)
 - Bulk membership fee generation from membership types
 - Auto-receipt on activity registration (emitted on confirmation, cancelled on cancellation)
 - Manual receipt creation from member detail page
@@ -195,16 +195,16 @@ Complex variations are built on demand, when a real deployment needs them: GoCar
 - Receipt email notification with PDF attachment (via Celery + Resend or SMTP)
 - Settings → Payments tab for invoicing and banking configuration
 
-**SEPA Direct Debit** (available — v0.4.0)
+**SEPA Direct Debit** (available, v0.4.0)
 - SEPA mandate management (create, PDF, upload signed, cancel)
 - Remittance batch processing with SEPA XML (pain.008.001.02)
 - Bank return file import and receipt status tracking
 - Member self-service payment method page
 
-**Payment Providers** (in progress — v0.4.x)
+**Payment Providers** (in progress, v0.4.x)
 - Configurable payment gateway management (super admin settings)
-- Stripe Checkout — member self-service "Pay Now" for pending receipts
-- Redsys SIS (TPV Virtual) — Spanish bank gateway with hosted 3D Secure V2 and Bizum (v0.4.3)
+- Stripe Checkout, member self-service "Pay Now" for pending receipts
+- Redsys SIS (TPV Virtual), Spanish bank gateway with hosted 3D Secure V2 and Bizum (v0.4.3)
 - Webhook infrastructure for real-time payment status updates (POST /webhooks/{provider})
 - Extensible adapter pattern for regional providers (GoCardless, MercadoPago, Razorpay, etc.)
 
@@ -233,14 +233,14 @@ Complex variations are built on demand, when a real deployment needs them: GoCar
 | Frontend | Next.js / React / Tailwind CSS / Shadcn/ui |
 | Database | PostgreSQL 15 |
 | Background jobs | Celery worker + beat, Redis as the broker |
-| Reverse proxy | Caddy — obtains and renews TLS certificates itself |
+| Reverse proxy | Caddy, obtains and renews TLS certificates itself |
 | Containers | Docker + Docker Compose |
 | CI | GitHub Actions |
 | Registry | GitHub Container Registry (ghcr.io) |
 
 ## Development
 
-Backend in Docker, frontend locally with pnpm hot reload — driven by `scripts/dev.sh`:
+Backend in Docker, frontend locally with pnpm hot reload, driven by `scripts/dev.sh`:
 
 ```bash
 ./scripts/dev.sh start all      # backend (Docker) + frontend (local)
@@ -257,18 +257,18 @@ See [CONTRIBUTING](CONTRIBUTING.md) for branching, versioning and how a release 
 
 Production self-hosting lives in the docs, so there is one copy of it to keep correct:
 
-- **[What you need to run Memship](docs/en/getting-started/what-you-need.md)** — a 2 vCPU / 4 GB /
+- **[What you need to run Memship](docs/en/getting-started/what-you-need.md)**, a 2 vCPU / 4 GB /
   40 GB server, a domain and a way to send email, at about 8–12 € a month. Read this before
   deciding; the figures are measured, not estimated
-- **[Installation](docs/en/getting-started/installation.md)** — `vps-bootstrap.sh` on a bare server,
+- **[Installation](docs/en/getting-started/installation.md)**, `vps-bootstrap.sh` on a bare server,
   then `install.sh`, which generates real secrets, pins a version and puts your data under one
   backed-up directory
-- **[First-time setup](docs/en/getting-started/first-setup.md)** — create the super admin and the
+- **[First-time setup](docs/en/getting-started/first-setup.md)**, create the super admin and the
   organization
-- **[Configuration reference](docs/en/self-hosting/configuration.md)** — every environment variable
-- **[Backups & restore](docs/en/self-hosting/backups-and-restore.md)** — set this up before going live
-- **[Upgrading](docs/en/self-hosting/upgrading.md)** — moving to a new release
-- **[Troubleshooting](docs/en/self-hosting/troubleshooting.md)** — when something will not start
+- **[Configuration reference](docs/en/self-hosting/configuration.md)**, every environment variable
+- **[Backups & restore](docs/en/self-hosting/backups-and-restore.md)**, set this up before going live
+- **[Upgrading](docs/en/self-hosting/upgrading.md)**, moving to a new release
+- **[Troubleshooting](docs/en/self-hosting/troubleshooting.md)**, when something will not start
 
 The [Quick Start](#quick-start-docker) above is for evaluation only: published images, throwaway
 volumes and a fixed database password.
@@ -276,13 +276,13 @@ volumes and a fixed database password.
 
 ## Contributing
 
-Code contributions are welcome. The foundation — infrastructure, CI/CD and the core architecture — is in place, and [CONTRIBUTING](CONTRIBUTING.md) covers the branching model, the commit and pull-request conventions, versioning and how a release is cut. The short version: take a short-lived `feature/*` branch off `main`, and open a pull request back into it. To get set up, start with [Local development environment](docs/en/development/local-environment.md).
+Code contributions are welcome. The foundation (infrastructure, CI/CD and the core architecture) is in place, and [CONTRIBUTING](CONTRIBUTING.md) covers the branching model, the commit and pull-request conventions, versioning and how a release is cut. The short version: take a short-lived `feature/*` branch off `main`, and open a pull request back into it. To get set up, start with [Local development environment](docs/en/development/local-environment.md).
 
-Not writing code? [Open an issue](https://github.com/marcandreuf/memship/issues) — bug reports, feature requests, questions and an account of how you would use Memship are all welcome, and there are templates for the first two.
+Not writing code? [Open an issue](https://github.com/marcandreuf/memship/issues), bug reports, feature requests, questions and an account of how you would use Memship are all welcome, and there are templates for the first two.
 
-Security vulnerabilities go through a private channel rather than a public issue — see [SECURITY](SECURITY.md). Everyone taking part is covered by the [Code of Conduct](CODE_OF_CONDUCT.md).
+Security vulnerabilities go through a private channel rather than a public issue, see [SECURITY](SECURITY.md). Everyone taking part is covered by the [Code of Conduct](CODE_OF_CONDUCT.md).
 
-[Accessibility](ACCESSIBILITY.md) covers what the project aims for, what contributors are expected to check, and how to report a barrier — including what has and has not actually been tested. If you hit one, that page has the reporting path and an email route for when GitHub itself is in the way.
+[Accessibility](ACCESSIBILITY.md) covers what the project aims for, what contributors are expected to check, and how to report a barrier, including what has and has not actually been tested. If you hit one, that page has the reporting path and an email route for when GitHub itself is in the way.
 
 ## License
 

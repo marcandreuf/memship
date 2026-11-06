@@ -3,7 +3,7 @@
 Empresas, fundaciones, organismos públicos y otras organizaciones con las que trata el club:
 donantes, patrocinadores o colaboradores. No son socios: no tienen cuota, acceso al portal ni
 inscripciones. Lo que sí tienen es ficha propia, direcciones, contactos y, sobre todo,
-**recibos a su nombre** — así se registra una donación de una empresa sin inventar un socio.
+**recibos a su nombre**, así se registra una donación de una empresa sin inventar un socio.
 
 El acceso requiere los permisos **Ver entidades** / **Editar entidades**, que el rol de
 administrador tiene de serie y que puedes conceder por separado en un rol personalizado.
@@ -19,13 +19,13 @@ filtrar por **tipo** (empresa, asociación, organismo público, fundación u otr
 La parte superior muestra los datos de la entidad y se edita en el sitio con **Editar**. Debajo,
 las pestañas:
 
-- **Recibos** — los recibos emitidos a la entidad, con **Nuevo recibo** para crear uno manual.
+- **Recibos**, los recibos emitidos a la entidad, con **Nuevo recibo** para crear uno manual.
   Para una donación, elige el origen **Donación**: así cuenta como donación en el listado y en
   la exportación, empieza con IVA 0 y no entra en los avisos de impago. Usa la **descripción**
   y las **notas** para el detalle (campaña, destino, acuerdo). El recibo sigue el flujo normal:
   emitir, cobrar en línea o marcar como pagado. Ver [Donaciones](donations.md).
-- **Dirección** — la dirección postal de la entidad.
-- **Contactos** — personas o medios de contacto de la entidad (teléfono, correo…), con tipo y
+- **Dirección**, la dirección postal de la entidad.
+- **Contactos**, personas o medios de contacto de la entidad (teléfono, correo…), con tipo y
   etiqueta, igual que en la ficha de un socio.
 
 ## Mandatos SEPA
@@ -36,5 +36,5 @@ entidades) por nombre, NIF o correo.
 
 ## Eliminar una entidad
 
-Una entidad solo puede eliminarse si no tiene recibos ni mandatos asociados — el historial
+Una entidad solo puede eliminarse si no tiene recibos ni mandatos asociados, el historial
 económico no se borra. Si los tiene, la aplicación lo impide y lo indica.

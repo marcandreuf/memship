@@ -9,7 +9,7 @@ Two things, and you need both:
 
 | What | Why |
 |---|---|
-| **The data root** (`MEMSHIP_DATA_ROOT`, e.g. `/srv/openmemship/data`) | The database, uploads, `secret.key`, `session.key`, TLS certificates — everything that must survive |
+| **The data root** (`MEMSHIP_DATA_ROOT`, e.g. `/srv/openmemship/data`) | The database, uploads, `secret.key`, `session.key`, TLS certificates, everything that must survive |
 | **`.env`** | Your generated secrets. Losing `SECRET_KEY` and `MEMSHIP_SECRET_KEY` means losing access to encrypted data even with a perfect database dump |
 
 Because every persistent path is a bind mount under one directory, backing memship up is copying
@@ -21,13 +21,13 @@ sudo tar czf memship-$(date +%F).tar.gz \
     -C /srv/openmemship/app .env
 ```
 
-`sudo` is needed because `data/postgres` is owned by uid 70 and mode `0700` — that is Postgres
+`sudo` is needed because `data/postgres` is owned by uid 70 and mode `0700`, that is Postgres
 protecting its own files, not a misconfiguration.
 
 ### Do this on the day you install
 
 `install.sh` generates `SECRET_KEY` and `MEMSHIP_SECRET_KEY` on the server, once, at first
-install. They are never regenerated and no copy exists anywhere else — not in the repository,
+install. They are never regenerated and no copy exists anywhere else, not in the repository,
 not in your CI secrets, not in any dump. The install prints a warning saying so; it does not
 print the values, because the same script runs from a deploy pipeline whose log may be public.
 
@@ -41,12 +41,12 @@ scp -P <ssh-port> <user>@<host>:/srv/openmemship/app/.env  ~/memship-env-backup
 Store it in a password manager, not only on your laptop, and give a second administrator
 access. A recovery that depends on one person's machine stalls exactly when you need it.
 
-This applies to a first deploy through the pipeline too — the pipeline creates `.env` on the
+This applies to a first deploy through the pipeline too, the pipeline creates `.env` on the
 server the same way, and copies nothing back.
 
 > **A file-level copy of `data/postgres` while the database is running is not
 > crash-consistent.** For a dependable database backup use `db-backup.sh` below, which runs
-> `pg_dump` inside the container. Use the `tar` copy for uploads, certificates and config — or
+> `pg_dump` inside the container. Use the `tar` copy for uploads, certificates and config, or
 > stop the stack first if you want the whole tree in one consistent shot.
 
 ## Database backups
@@ -56,10 +56,10 @@ server the same way, and copies nothing back.
 ```
 
 The dump is written to `$MEMSHIP_DATA_ROOT/backups/` as a timestamped `.sql.gz`, mode `600` and
-owned by the account that runs the script — it is a complete copy of your members' data, so it is
+owned by the account that runs the script, it is a complete copy of your members' data, so it is
 not left world-readable. Dumps older than 10 days are removed automatically.
 
-For unattended backups, schedule it — nightly at 03:30, for example:
+For unattended backups, schedule it, nightly at 03:30, for example:
 
 ```cron
 30 3 * * *  cd /srv/openmemship/app && ./scripts/db-backup.sh
@@ -71,7 +71,7 @@ schedule `push-backup.sh` instead, which takes the dump itself: see
 
 > The script resolves the backup directory from `MEMSHIP_DATA_ROOT` in `.env`, the same way
 > Compose does, so it always writes where the `db` container's `/backups` mount points. If you
-> move the data root, both the backups and the script follow it — no second setting to update.
+> move the data root, both the backups and the script follow it, no second setting to update.
 
 ## Restore
 
@@ -83,7 +83,7 @@ default**, so you can confirm the target before anything changes:
 ./scripts/db-restore.sh --confirm  # actually restore, asking you to type a confirmation
 ```
 
-Both of those need a terminal — the picker and the confirmation both read from one. For a restore
+Both of those need a terminal, the picker and the confirmation both read from one. For a restore
 run from a script, a cron job or a non-interactive `ssh host '…'`, name the dump and pass `--yes`:
 
 ```bash
@@ -96,11 +96,11 @@ run from a script, a cron job or a non-interactive `ssh host '…'`, name the du
 Before it drops anything the script checks that the archive is readable and looks like a
 `pg_dump` file, and dumps the current database to `memship_pre-restore_<timestamp>.sql.gz` in the
 same directory. If the restore then fails part-way it says so, exits non-zero, and **leaves the API
-stopped on purpose** — starting it would run migrations against the half-restored database and
+stopped on purpose**, starting it would run migrations against the half-restored database and
 leave you with an instance that answers "healthy" and contains nothing. Put back what you had with
 the pre-restore dump it names.
 
-> When several restores fail in a row, each one writes its own pre-restore dump — and the newest is
+> When several restores fail in a row, each one writes its own pre-restore dump, and the newest is
 > the one taken from the already-damaged database. Restore the file the failure message named, not
 > whichever is most recent.
 
@@ -108,7 +108,7 @@ the pre-restore dump it names.
 
 1. Run [`vps-bootstrap.sh` and `install.sh`](../getting-started/installation.md) as normal.
 2. Stop the stack: `docker compose down`.
-3. Restore `.env` from your backup — **the old one, not the newly generated one.** A fresh
+3. Restore `.env` from your backup, **the old one, not the newly generated one.** A fresh
    `MEMSHIP_SECRET_KEY` cannot decrypt SSO and payment-provider credentials stored in the old
    database.
 4. Unpack the data root over the new one, keeping ownership: `sudo tar xzf … -C /srv/openmemship`.
@@ -118,8 +118,8 @@ the pre-restore dump it names.
 ## Off-server copies
 
 The `backups/` directory sits on the same disk as the database it protects, so on its own it
-survives nothing worse than a bad migration. Copy the dumps somewhere else on a schedule —
-object storage, another host, anywhere with a different failure mode — or a single server loss
+survives nothing worse than a bad migration. Copy the dumps somewhere else on a schedule,
+object storage, another host, anywhere with a different failure mode, or a single server loss
 takes your only copy with it.
 
 The same is true of the pre-upgrade snapshot the deploy pipeline takes: `upgrade.sh` runs

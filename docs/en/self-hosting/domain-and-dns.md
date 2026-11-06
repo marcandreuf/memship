@@ -11,12 +11,12 @@ to install, go straight to [Installation](../getting-started/installation.md).
 ## Who has to do what
 
 An association's domain is usually not held by the person doing the install. Find out who holds
-these before you book an evening for it — waiting on a registrar login is the most common reason
+these before you book an evening for it, waiting on a registrar login is the most common reason
 a go-live slips.
 
 | What | Who typically holds it | Needed for |
 |---|---|---|
-| The registrar account (where the domain was bought) | a board member, or the person who set up the website | nothing, usually — unless DNS is also served there |
+| The registrar account (where the domain was bought) | a board member, or the person who set up the website | nothing, usually, unless DNS is also served there |
 | The DNS zone (where records are edited) | whoever runs the organisation's website | the `A` record for memship |
 | The organisation's email | sometimes a different provider again | the sending domain, later |
 | The server | you | everything else |
@@ -26,7 +26,7 @@ whoever can add a record to the zone.
 
 ## Choose the hostname
 
-**Use a subdomain, not the apex.** `socios.myclub.org`, `members.myclub.org`, `app.myclub.org` —
+**Use a subdomain, not the apex.** `socios.myclub.org`, `members.myclub.org`, `app.myclub.org`,
 whatever the organisation will recognise. The apex (`myclub.org` with no prefix) almost always
 already points at the organisation's website, and pointing it at memship takes that website down.
 
@@ -38,9 +38,9 @@ working throughout. If it goes wrong, deleting the record you added puts everyth
 > resolve, and if you did put memship on the apex, `www.myclub.org` would not reach it either.
 > Choose the name people will be given, and use that one everywhere.
 
-Pick the name before you install rather than after. It is written into four settings — Caddy's site
+Pick the name before you install rather than after. It is written into four settings, Caddy's site
 address plus the three public URLs that build email links, the CORS origin and the payment-provider
-callback — and it is registered by hand in a few other places afterwards; see
+callback, and it is registered by hand in a few other places afterwards; see
 [Changing it later](#changing-it-later) for what that costs.
 
 ## The records to create
@@ -50,7 +50,7 @@ One record. At your DNS provider, in the zone for `myclub.org`:
 | Field | Value |
 |---|---|
 | Type | `A` |
-| Name / Host | `socios` (just the label — most providers append the domain for you) |
+| Name / Host | `socios` (just the label, most providers append the domain for you) |
 | Value | your server's **public IPv4 address** |
 | TTL | 300 seconds while you are setting up |
 
@@ -60,13 +60,13 @@ Raise it afterwards if you like.
 ### If the server has IPv6
 
 Either add an `AAAA` record with the server's IPv6 address, or make sure the name has **no** `AAAA`
-record at all. Both are fine. What is not fine is an `AAAA` record pointing somewhere else — and
+record at all. Both are fine. What is not fine is an `AAAA` record pointing somewhere else, and
 on an organisation's domain that is a real possibility, because a wildcard or an inherited record
 from the website's host can supply one you never created.
 
 > **This is the trap worth knowing about.** `install.sh` checks the `A` record only, so it reports
 > success. Let's Encrypt, validating the certificate, connects over IPv6 when an `AAAA` record
-> exists — and it falls back to IPv4 only when the connection *fails*, not when it succeeds and
+> exists, and it falls back to IPv4 only when the connection *fails*, not when it succeeds and
 > returns the wrong thing. A stale `AAAA` pointing at a live web host answers, serves a 404, and
 > validation fails. You then have five failed attempts per hour before Let's Encrypt makes you
 > wait.
@@ -76,7 +76,7 @@ from the website's host can supply one you never created.
 
 ### What not to do
 
-- **Do not enable your DNS provider's proxy** — Cloudflare's orange cloud, or any "CDN"/"web
+- **Do not enable your DNS provider's proxy**, Cloudflare's orange cloud, or any "CDN"/"web
   proxy" toggle on the record. Certificate validation has to reach your box directly, and the
   proxy would terminate TLS itself. `install.sh` warns when it detects this, naming it.
 - **A `CNAME` works only if it ultimately resolves to this server.** An `A` record is simpler and
@@ -107,7 +107,7 @@ Then install with the name, following [Installation](../getting-started/installa
 
 > **Leave port 80 open afterwards.** Certificates renew through the same HTTP validation that
 > issued them, roughly every 60 days, and a firewall tightened later to "443 only" breaks renewal
-> silently — you find out when the certificate expires. `vps-bootstrap.sh` opens 80 and 443, and
+> silently, you find out when the certificate expires. `vps-bootstrap.sh` opens 80 and 443, and
 > both should stay open.
 
 If DNS is not ready yet and you want to get the stack running anyway, install without `--domain`
@@ -117,14 +117,14 @@ from spending certificates.
 
 ## Email is a separate domain decision
 
-The address memship sends from does **not** have to be — and usually should not be — on the
+The address memship sends from does **not** have to be, and usually should not be, on the
 subdomain you just created. Members recognise `no-reply@myclub.org`; nobody recognises
 `no-reply@socios.myclub.org`.
 
 That means a second set of DNS records, unrelated to the one above:
 
 - The site's `A` record makes the application reachable. It does nothing for email.
-- A sending domain needs the records your mail provider asks for — with Resend, a DKIM record plus
+- A sending domain needs the records your mail provider asks for, with Resend, a DKIM record plus
   an SPF/MX pair on a `send.` subdomain. The walkthrough is
   [Integrations → Mailing](../admin-guide/integrations.md#4-mailing), and
   [Email delivery](email.md) covers choosing between Resend and SMTP.
@@ -137,7 +137,7 @@ yours:
   with it or the organisation's own mail reputation is affected. Adding memship as a sender is a
   change to their mail setup, not only to yours.
 
-Mail that is not working is invisible by design — [Email delivery](email.md) explains that with no
+Mail that is not working is invisible by design, [Email delivery](email.md) explains that with no
 active provider, sends are skipped and logged rather than queued or reported. Send a test message
 from the settings screen before you tell anybody the instance is live, and remember that members
 cannot sign in until email works, because they confirm their address first.
@@ -151,7 +151,7 @@ memship that was told the old name:
 | Where | What breaks |
 |---|---|
 | Google / Apple SSO | the redirect URI is registered per-hostname and must match exactly, or sign-in fails. [Integrations → SSO](../admin-guide/integrations.md#3-single-sign-on-sso) |
-| Stripe webhooks | the endpoint URL is registered in Stripe's dashboard. **Edit the existing endpoint** rather than creating one: a new destination issues a new signing secret, memship stores one, and every event would then fail verification — which looks exactly like a payment that silently never arrives |
+| Stripe webhooks | the endpoint URL is registered in Stripe's dashboard. **Edit the existing endpoint** rather than creating one: a new destination issues a new signing secret, memship stores one, and every event would then fail verification, which looks exactly like a payment that silently never arrives |
 | Emails already sent | links in them keep pointing at the old hostname for as long as it resolves |
 | Members' bookmarks | the old name has to keep resolving, or be redirected, for as long as you care |
 
@@ -163,10 +163,10 @@ minutes of thought.
 
 ## See also
 
-- [Installation](../getting-started/installation.md) — the install itself, and the certificate
+- [Installation](../getting-started/installation.md), the install itself, and the certificate
   rate-limit warnings worth reading before your first attempt
-- [First-time setup](../getting-started/first-setup.md) — what the organisation has to decide once
+- [First-time setup](../getting-started/first-setup.md), what the organisation has to decide once
   the instance is up
-- [Configuration reference](configuration.md) — `SITE_ADDRESS`, `FRONTEND_URL`, `CORS_ORIGINS`,
+- [Configuration reference](configuration.md), `SITE_ADDRESS`, `FRONTEND_URL`, `CORS_ORIGINS`,
   `BACKEND_PUBLIC_URL` and the rest
-- [Troubleshooting](troubleshooting.md) — when the stack is up but the site is not reachable
+- [Troubleshooting](troubleshooting.md), when the stack is up but the site is not reachable

@@ -13,7 +13,7 @@ Si tu organización tiene el pago en línea activado, los recibos pendientes mue
 **Pagar ahora**, con estas opciones según la configuración:
 
 - **Tarjeta (Stripe)**.
-- **Tarjeta (Redsys)** — con verificación 3D Secure.
+- **Tarjeta (Redsys)**, con verificación 3D Secure.
 - **Bizum** (a través de Redsys).
 
 Tras el pago verás una confirmación. La **confirmación definitiva** puede tardar unos instantes,
@@ -24,10 +24,10 @@ confirme. Si un pago no se completa, puedes **reintentarlo**.
 
 En **Forma de pago** eliges cómo prefieres pagar tus cuotas:
 
-- **Domiciliación bancaria (SEPA)** — cargo automático en tu cuenta. Requiere un **mandato SEPA
+- **Domiciliación bancaria (SEPA)**, cargo automático en tu cuenta. Requiere un **mandato SEPA
   activo**.
-- **Transferencia bancaria** — transferencia manual a la cuenta de la organización.
-- **Efectivo** — pago presencial.
+- **Transferencia bancaria**, transferencia manual a la cuenta de la organización.
+- **Efectivo**, pago presencial.
 - **Tarjeta**.
 
 ### Domiciliación (SEPA)
