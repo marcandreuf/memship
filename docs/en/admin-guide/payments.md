@@ -1,5 +1,5 @@
 <!-- source: es/admin-guide/payments.md -->
-<!-- source-hash: 528119cdc45d -->
+<!-- source-hash: 46c598dd7831 -->
 
 # Payments and receipts
 

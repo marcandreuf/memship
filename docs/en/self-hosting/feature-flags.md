@@ -6,6 +6,8 @@ uses is decided by **twenty-one keys** in a single JSONB column,
 (`CHECK (id = 1)`). They are edited from **Settings** in the admin portal, not
 from `.env`, and not from a file on the server. Nothing here needs a restart.
 
+> **En español:** [Feature flags](../../es/self-hosting/feature-flags.md).
+
 This page exists because "the flag is absent" and "the flag is off" are the same
 thing to the application but not to a person reading a screen, and until it was
 written down there was no way to tell a module nobody had switched on from a

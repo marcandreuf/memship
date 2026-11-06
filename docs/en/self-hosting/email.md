@@ -4,6 +4,8 @@ Memship sends transactional email for address confirmations, password resets, ac
 confirmations, waitlist promotions, payment receipts, and overdue reminders. **Email is
 disabled until you configure a transport.**
 
+> **En español:** [Envío de correo](../../es/self-hosting/email.md).
+
 There are two ways to configure one, and **they are not equivalent**, the settings screen
 wins over `.env`. Read [Which one is in effect](#which-one-is-in-effect) before editing
 anything, especially on an installation that is already running.
@@ -139,7 +141,7 @@ debt, which a club may be obliged to send. Staff can set the toggle on a member'
 behalf from the member record, for someone who asks at the desk or has no portal
 login.
 
-Which templates sit in which tier is **Settings → Communications**, and the
+Which templates sit in which tier is **Settings → Members → Communications**, and the
 organization's own switch is checked first: a template switched off there does not
 send to anybody, whatever the member chose.
 

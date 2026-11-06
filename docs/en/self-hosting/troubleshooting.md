@@ -4,6 +4,8 @@ Symptoms an operator actually hits, and what causes them. If something here is w
 [open an issue](https://github.com/marcandreuf/memship/issues), this page is built from real
 installs, not from theory.
 
+> **En español:** [Resolución de problemas](../../es/self-hosting/troubleshooting.md).
+
 First, two commands worth running before anything else:
 
 ```bash
@@ -213,18 +215,18 @@ one at a time when you are not sure.
 
 The command never sends anything, it is for the case where sending is what is broken.
 
-### The API refuses to start, complaining about `SECRET_KEY`
+### `SECRET_KEY` is still the example value
 
 The placeholder key shipped in `.env.example` and the Compose default are published in this
-repository, and they sign the session token, the member-card QR HMAC and the OAuth state, so they
-are refused. Generate one:
+repository, and they sign the session token, the member-card QR HMAC and the OAuth state. So the
+server treats a placeholder as no key at all: it generates one and persists it in
+`storage/session.key`, as it does when `SECRET_KEY` is empty. Nothing breaks while that file
+survives. Setting the key explicitly is what lets a rebuilt host, or a lost data root, keep
+working sessions:
 
 ```bash
 openssl rand -hex 32
 ```
-
-Leaving `SECRET_KEY` empty is allowed, the server generates and persists one, but setting it
-explicitly is what lets a rebuilt host keep working sessions.
 
 ## Backups and restore
 

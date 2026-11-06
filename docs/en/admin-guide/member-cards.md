@@ -1,5 +1,5 @@
 <!-- source: es/admin-guide/member-cards.md -->
-<!-- source-hash: 91a608d051a7 -->
+<!-- source-hash: 3264e31abe30 -->
 
 # Digital member card and access control
 

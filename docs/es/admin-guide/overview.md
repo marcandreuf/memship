@@ -29,7 +29,7 @@ superadministrador puede además crear **roles personalizados** con los permisos
 
 El acceso se realiza con **correo electrónico y contraseña**. Si has olvidado la contraseña,
 usa el enlace de recuperación de la pantalla de inicio de sesión (requiere que el
-[envío de correo](../../en/self-hosting/email.md) esté configurado).
+[envío de correo](../self-hosting/email.md) esté configurado).
 
 ## Áreas del panel
 
@@ -63,7 +63,7 @@ El panel de administración se organiza en torno a estas áreas:
 
 ## Configuración inicial
 
-Antes de dar de alta a socios reales, completa la [configuración inicial](../../en/getting-started/first-setup.md):
+Antes de dar de alta a socios reales, completa la [configuración inicial](../getting-started/first-setup.md):
 datos de la organización, marca, datos bancarios y facturación, y verifica el envío de correo.
 
 ## Páginas de la guía

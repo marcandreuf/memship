@@ -5,6 +5,8 @@ the Compose file, the Caddy configuration, the scripts. Upgrading means refreshi
 running one command that backs up, applies the version and verifies it. Database migrations run
 automatically on startup.
 
+> **En español:** [Actualizar](../../es/self-hosting/upgrading.md).
+
 ## Versioning
 
 Memship follows [semantic versioning](https://semver.org/). **Git tags are the single source

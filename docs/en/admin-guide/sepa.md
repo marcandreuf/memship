@@ -1,5 +1,5 @@
 <!-- source: es/admin-guide/sepa.md -->
-<!-- source-hash: d51ffa20924d -->
+<!-- source-hash: ad9dec598839 -->
 
 # SEPA Direct Debit
 

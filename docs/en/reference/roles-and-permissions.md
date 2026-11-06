@@ -1,5 +1,5 @@
 <!-- source: es/reference/roles-and-permissions.md -->
-<!-- source-hash: 82c741c57681 -->
+<!-- source-hash: e547e379985f -->
 
 # Roles and permissions
 

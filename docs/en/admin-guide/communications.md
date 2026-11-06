@@ -1,5 +1,5 @@
 <!-- source: es/admin-guide/communications.md -->
-<!-- source-hash: 7a15fde66956 -->
+<!-- source-hash: 623d3be955b9 -->
 
 # Communications
 

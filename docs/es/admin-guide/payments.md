@@ -57,7 +57,7 @@ membresía**. Es la forma de emitir la cuota periódica de forma masiva sin crea
 ## IVA y facturación
 
 - El **tipo de IVA** se calcula sobre la base; el tipo por defecto se configura en
-  [Ajustes → Pagos → General](settings.md#banca-y-facturación).
+  [Configuración → Pagos → General](settings.md#banca-y-facturación).
 - La **numeración** usa un prefijo configurable y, opcionalmente, se reinicia cada año
   (p. ej. `FAC-2026-0001`).
 - El **PDF** del recibo incluye la cabecera de la organización, los datos del socio y el
@@ -78,11 +78,11 @@ pendientes y puede pagar con:
 
 > La confirmación definitiva de los pagos con pasarela llega por la **notificación asíncrona**
 > del proveedor, no por la vuelta del navegador. La configuración de proveedores se hace en
-> [Ajustes → Pagos → Proveedores de pago](settings.md#proveedores-de-pago).
+> [Configuración → Pagos → Proveedores de pago](settings.md#proveedores-de-pago).
 
 ### Cuando una notificación de pago falla
 
-En **Ajustes → Pagos → Proveedores de pago**, bajo los proveedores, **Notificaciones de pago** lista lo
+En **Configuración → Pagos → Proveedores de pago**, bajo los proveedores, **Notificaciones de pago** lista lo
 que las pasarelas enviaron y memship no aplicó:
 
 - **Fallida**, no se pudo aplicar. La pasarela reintenta; si sigue fallando, hay que revisarla.
@@ -94,7 +94,7 @@ que las pasarelas enviaron y memship no aplicó:
 
 Para recibir un aviso, indica la dirección de notificaciones de facturación: llega un correo al
 día, solo si en las últimas 24 horas hubo algo. Es **Incidencias en notificaciones de pago** en
-Ajustes → Socios → Comunicaciones: activado por defecto en una instalación nueva, y se puede desactivar
+Configuración → Socios → Comunicaciones: activado por defecto en una instalación nueva, y se puede desactivar
 ahí. Una instalación anterior empieza con él desactivado; actívalo ahí.
 
 Si la pasarela cobró y el recibo sigue pendiente, márcalo como pagado eligiendo Redsys, Bizum o

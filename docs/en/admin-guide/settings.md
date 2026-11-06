@@ -1,5 +1,5 @@
 <!-- source: es/admin-guide/settings.md -->
-<!-- source-hash: 5939ed7e1cc1 -->
+<!-- source-hash: 661c6dafd727 -->
 
 # Organisation settings
 
