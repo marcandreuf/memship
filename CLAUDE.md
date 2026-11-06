@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Memship is a self-hosted membership management system for professional associations, sports clubs, and similar organizations. Licensed under Elastic License 2.0 (ELv2).
+Memship is a self-hosted membership management system for professional associations, sports clubs, and similar organizations. Free software under the GNU Affero General Public License v3 (AGPL-3.0-only).
 
 **Current version:** the latest `git tag` (`git describe --tags`) — git tags are the single source of truth; there is no VERSION file
 
@@ -186,7 +186,9 @@ afterwards because the file is restored by then.
 memship/
 ├── CLAUDE.md                    # This file
 ├── README.md                    # Plus README.es.md and README.ca.md
-├── LICENSE                      # ELv2
+├── LICENSE                      # AGPL-3.0-only
+├── AUTHORS                      # Copyright holders
+├── DCO                          # Developer Certificate of Origin
 ├── CONTRIBUTING.md              # Branching, versioning, release flow
 ├── CODE_OF_CONDUCT.md
 ├── SECURITY.md                  # Private vulnerability reporting

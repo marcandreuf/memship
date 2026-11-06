@@ -6,7 +6,7 @@
 
 **Membership management for everyone.**
 
-Memship is a self-hosted membership management system, source-available under the [Elastic License 2.0](LICENSE), designed for professional associations, sports clubs, cultural organizations, and any member-based entity. Deploy it on your own infrastructure, own your data, and manage your community with modern tooling.
+Memship is a self-hosted membership management system, open source under the [GNU AGPL v3](LICENSE), designed for professional associations, sports clubs, cultural organizations, and any member-based entity. Deploy it on your own infrastructure, own your data, and manage your community with modern tooling.
 
 ---
 
@@ -285,4 +285,10 @@ Security vulnerabilities go through a private channel rather than a public issue
 
 ## License
 
-Memship is licensed under the [Elastic License 2.0 (ELv2)](LICENSE). You are free to use, modify, and self-host Memship. The license restricts offering it as a managed service to third parties.
+Memship is free software under the [GNU Affero General Public License v3](LICENSE).
+You may use, modify and self-host it, for yourself or as a service for others.
+If you modify it and let other people use it over a network, you must offer them
+the source of your modified version (AGPL section 13).
+
+Releases up to and including v3.0.2 remain under the Elastic License 2.0 they were
+published under; relicensing is not retroactive. Copyright is held by the authors listed in [AUTHORS](AUTHORS).

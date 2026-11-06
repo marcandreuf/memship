@@ -36,6 +36,8 @@ dependencies = [
     "itsdangerous>=2.2",
 ]
 
+license = "AGPL-3.0-only"
+
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",

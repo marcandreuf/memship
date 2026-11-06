@@ -6,7 +6,7 @@
 
 **Gestión de socios para todo tipo de entidades.**
 
-Memship es un **software de gestión de socios** autohospedable y de **código fuente abierto**, con licencia [Elastic License 2.0](LICENSE), diseñado para **asociaciones culturales**, **clubs deportivos**, **colegios profesionales** y cualquier entidad basada en membresías. Controla las **cuotas**, las **inscripciones**, la **facturación de socios** y los **recibos** desde tu propia infraestructura. Con soporte para **domiciliación SEPA**, gestión de actividades y un portal completo para socios, Memship ofrece una solución moderna de **control de socios** y **gestión de clubs** sin depender de terceros. Despliega en tu servidor, mantén tus datos bajo tu control y gestiona tu comunidad con herramientas actuales.
+Memship es un **software de gestión de socios** autohospedable y de **código fuente abierto**, de código abierto bajo la [AGPL v3 de GNU](LICENSE), diseñado para **asociaciones culturales**, **clubs deportivos**, **colegios profesionales** y cualquier entidad basada en membresías. Controla las **cuotas**, las **inscripciones**, la **facturación de socios** y los **recibos** desde tu propia infraestructura. Con soporte para **domiciliación SEPA**, gestión de actividades y un portal completo para socios, Memship ofrece una solución moderna de **control de socios** y **gestión de clubs** sin depender de terceros. Despliega en tu servidor, mantén tus datos bajo tu control y gestiona tu comunidad con herramientas actuales.
 
 ---
 
@@ -286,4 +286,11 @@ Las vulnerabilidades de seguridad se comunican por un canal privado, no en un is
 
 ## Licencia
 
-Memship se distribuye bajo la [Elastic License 2.0 (ELv2)](LICENSE). Puedes usar, modificar y autoalojar Memship libremente. La licencia restringe ofrecerlo como servicio gestionado a terceros.
+Memship es software libre bajo la [Licencia Pública General Affero de GNU v3](LICENSE).
+Puedes usarlo, modificarlo y autoalojarlo, para ti o como servicio para terceros.
+Si lo modificas y permites que otras personas lo usen a través de una red, debes
+ofrecerles el código fuente de tu versión modificada (sección 13 de la AGPL).
+
+Las versiones hasta la v3.0.2 incluida siguen bajo la Elastic License 2.0 con la que se
+publicaron; el cambio de licencia no es retroactivo. Los derechos de autor corresponden a las
+personas que figuran en [AUTHORS](AUTHORS).
