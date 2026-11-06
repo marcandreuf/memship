@@ -42,6 +42,7 @@ Full reference: [docs/en/development/local-environment.md](docs/en/development/l
 ./scripts/dev.sh seed demo       # Demo club with generated credentials (prefer this)
 ./scripts/dev.sh passwd          # Replace the super admin password with a generated one
 ./scripts/dev.sh test            # Run backend tests
+./scripts/dev.sh shelltest       # Shell guards in a Linux container (also: mutate, lint)
 ./scripts/dev.sh start backend   # Start only backend (Docker)
 ./scripts/dev.sh start frontend  # Start only frontend (local)
 ```
@@ -171,7 +172,10 @@ docker compose down              # Stop all
 ```
 
 **After any change under `scripts/`, run both shell guards** — `./tests/shell/run.sh` and
-`./tests/shell/mutate-check.sh`.
+`./tests/shell/mutate-check.sh`, or `./scripts/dev.sh shelltest` and `./scripts/dev.sh shelltest
+mutate`, which run the same two in a Linux container on a copy of the tree. Prefer the
+`shelltest` forms: they match CI on any machine (Git Bash skips the file-mode and symlink checks
+NTFS cannot honour), and `shelltest mutate` cannot leave a mutated script in the checkout.
 
 **`mutate-check.sh` rewrites tracked files in place.** It edits a guard in `scripts/` to prove the
 tests catch it, then restores it. So it must finish, and `git status` be clean, **before anything is

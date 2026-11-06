@@ -80,6 +80,7 @@ right one without installing it yourself.
 | `./scripts/dev.sh passwd [email]` | Replace the super admin password with a generated one |
 | `./scripts/dev.sh test [args]` | Backend test suite, in a container — extra arguments go to pytest |
 | `./scripts/dev.sh shell` | A shell inside the API container |
+| `./scripts/dev.sh shelltest [run\|mutate\|lint]` | The deployment scripts' shell guards, in a Linux container on a copy of the tree |
 | `./scripts/dev.sh migration "msg"` | Autogenerate an Alembic revision from your model changes |
 | `./scripts/dev.sh e2e` | Cypress, headless |
 | `./scripts/dev.sh e2e:open` | Cypress GUI |
@@ -88,6 +89,14 @@ right one without installing it yourself.
 
 `start`, `stop` and `restart` take `backend`, `frontend`, `worker`, `beat` or `all` (the default).
 `start all` brings up the worker and beat alongside the API and database.
+
+`shelltest` is the way to run the shell guards required after any change under `scripts/`. It
+gives CI's answer from any machine, including Windows, and runs in about a minute.
+`./tests/shell/run.sh` also runs natively. On Git Bash it skips the two checks that need file
+modes and symlinks, which NTFS does not keep, and takes several times longer. Run
+`shelltest mutate` rather than `./tests/shell/mutate-check.sh`. Both prove each guard is
+tested, but the native one rewrites your tracked scripts while it works, and `shelltest`
+only touches a copy.
 
 > **`reset` deletes your volumes.** It runs `docker compose down -v`, which destroys the dev
 > database *and* the storage volume — uploads and `storage/secret.key` with it. Losing that key

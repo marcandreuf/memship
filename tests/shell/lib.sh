@@ -68,7 +68,35 @@ new_sandbox() {
     STUB_BACKUP_DIR="$STUB_DATA_ROOT/backups"
     STUB_LOG="$SANDBOX_ROOT/$1.calls"
     : >"$STUB_LOG"
-    export STUB_DATA_ROOT STUB_BACKUP_DIR STUB_LOG
+    # Docker's data root as the stub reports it. It used to default to
+    # /var/lib/docker, which the upgrade disk check then handed to the real df,
+    # so every case reaching that check failed on any machine without Docker's
+    # own directory: a Windows checkout, a bare container (#548).
+    STUB_SANDBOX_DOCKER_ROOT="$SANDBOX_ROOT/$1-docker"
+    mkdir -p "$STUB_SANDBOX_DOCKER_ROOT"
+    export STUB_DATA_ROOT STUB_BACKUP_DIR STUB_LOG STUB_SANDBOX_DOCKER_ROOT
+}
+
+# fs_keeps_modes — whether the sandbox filesystem stores permission bits. NTFS
+# under Git Bash accepts chmod and ignores it, so a mode assertion there tests
+# the filesystem rather than the script. Linux, CI and every server keep them.
+fs_keeps_modes() {
+    local probe="$SANDBOX_ROOT/.mode-probe"
+    : >"$probe" && chmod 600 "$probe"
+    [ "$(stat -c '%a' "$probe")" = "600" ]
+}
+
+# fs_keeps_symlinks — whether `ln -s` makes a link. Git Bash makes a copy unless
+# MSYS is set up for native symlinks, so `latest` cannot be pointed anywhere.
+fs_keeps_symlinks() {
+    local probe="$SANDBOX_ROOT/.link-probe"
+    rm -rf "$probe" && ln -s . "$probe" 2>/dev/null && [ -L "$probe" ]
+}
+
+# skip_case <reason> — end the current case as not applicable here, visibly.
+skip_case() {
+    printf '  skip  %s (%s)\n' "$CURRENT_CASE" "$1"
+    TESTS_RUN=$((TESTS_RUN - 1))
 }
 
 # The checksums the deployment files in the current sandbox actually have, in

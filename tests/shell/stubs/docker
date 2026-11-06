@@ -32,7 +32,10 @@
 #                         the label existed
 #   STUB_IMAGES_LOCAL     1 → `image inspect` finds every image, 0 → none
 #   STUB_HAS_USERS        1 → the `select 1 from users` probe returns a row
-#   STUB_DOCKER_ROOT      what `docker info` reports as its data root
+#   STUB_DOCKER_ROOT      what `docker info` reports as its data root; unset →
+#                         STUB_SANDBOX_DOCKER_ROOT, a directory new_sandbox
+#                         creates, so the real df the disk check falls back
+#                         to always has a path that exists (#548)
 #
 # It is deliberately not a docker emulator. It answers the calls these scripts
 # make, and anything else it does not recognise exits 0 silently — a stub that
@@ -54,7 +57,7 @@ case "${1:-}" in
         exit 0 ;;
     info)
         # `--format '{{.DockerRootDir}}'` is the only use.
-        printf '%s\n' "${STUB_DOCKER_ROOT:-${STUB_DIR:-/var/lib/docker}}"
+        printf '%s\n' "${STUB_DOCKER_ROOT:-${STUB_SANDBOX_DOCKER_ROOT:-/var/lib/docker}}"
         exit 0 ;;
     image)
         # `docker image inspect [--format …] <ref>`

@@ -85,7 +85,9 @@ snap="$(snapshots)"
 [ -s "$REMOTE/$snap/db.sql.gz" ] || fail "the snapshot has no dump"
 cmp -s "$SANDBOX/.env" "$REMOTE/$snap/env" || fail "the snapshot's env is not this .env"
 [ -f "$REMOTE/$snap/storage/logo.png" ] || fail "the snapshot has no uploads"
-[ "$(readlink "$REMOTE/latest")" = "$snap" ] || fail "latest does not point at the new snapshot"
+if fs_keeps_symlinks; then
+    [ "$(readlink "$REMOTE/latest")" = "$snap" ] || fail "latest does not point at the new snapshot"
+fi
 [ -z "$(find "$REMOTE" -maxdepth 1 -name '*.partial')" ] || fail "a .partial directory was left behind"
 done_case
 
@@ -126,14 +128,18 @@ assert_status 0
 done_case
 
 it "hard-links uploads against the previous snapshot rather than resending them"
-instance push-ssh-link
-write_env 2.20.0 "BACKUP_TARGET=ssh://backup@backup.example.org$REMOTE"
-mkdir -p "$REMOTE/memship-20261101T000000Z/storage"
-ln -s memship-20261101T000000Z "$REMOTE/latest"
-run_script scripts/push-backup.sh
-assert_status 0
-assert_called "^rsync .*--link-dest=$REMOTE/latest/storage"
-done_case
+if fs_keeps_symlinks; then
+    instance push-ssh-link
+    write_env 2.20.0 "BACKUP_TARGET=ssh://backup@backup.example.org$REMOTE"
+    mkdir -p "$REMOTE/memship-20261101T000000Z/storage"
+    ln -s memship-20261101T000000Z "$REMOTE/latest"
+    run_script scripts/push-backup.sh
+    assert_status 0
+    assert_called "^rsync .*--link-dest=$REMOTE/latest/storage"
+    done_case
+else
+    skip_case "this filesystem makes a copy for ln -s, so there is no latest link"
+fi
 
 
 # ------------------------------------------------------------ the dump

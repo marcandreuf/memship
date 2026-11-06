@@ -3,3 +3,5 @@
 # image, and every container dies with "exec /entrypoint.sh: no such file or
 # directory".
 *.sh text eol=lf
+# The shell tests' stubs have no extension, so the rule above misses them.
+tests/shell/stubs/* text eol=lf

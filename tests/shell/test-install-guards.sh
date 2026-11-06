@@ -102,7 +102,11 @@ STUB_DB_RUNNING=0 DATA_ROOT_OVERRIDE="$STUB_DATA_ROOT" \
     run_script scripts/install.sh --tag 2.14.0
 assert_status 0
 grep -qx 'IMAGE_TAG=2.14.0' "$SANDBOX/.env" || fail "IMAGE_TAG was not pinned"
-[ "$(stat -c '%a' "$SANDBOX/.env")" = "600" ] || fail ".env is not mode 600"
+if fs_keeps_modes; then
+    [ "$(stat -c '%a' "$SANDBOX/.env")" = "600" ] || fail ".env is not mode 600"
+else
+    printf '        (mode check skipped: this filesystem does not store permissions)\n'
+fi
 [ -f "$SANDBOX/POST-INSTALL.md" ] || fail "POST-INSTALL.md was not written"
 # No secret may reach this output: install.sh also runs from a deploy pipeline
 # whose log can be public.
