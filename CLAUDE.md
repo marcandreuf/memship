@@ -194,7 +194,7 @@ memship/
 ├── SECURITY.md                  # Private vulnerability reporting
 ├── ACCESSIBILITY.md             # Targets, what is tested, how to report a barrier
 ├── docker-compose.yml           # Production stack: caddy, api, worker, beat, frontend, redis, db
-├── docker-compose.quickstart.yml  # Evaluation only — published signing key, throwaway volumes
+├── docker-compose.quickstart.yml  # Evaluation only: fixed database password, throwaway volumes
 ├── Caddyfile
 ├── docs/                        # Product documentation only (see docs/README.md)
 │   ├── getting-started/         # quickstart, installation, first-setup

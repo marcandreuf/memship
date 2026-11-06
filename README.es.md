@@ -271,8 +271,8 @@ El autoalojamiento en producción vive en la documentación, para que haya una s
 - **[Actualizaciones](docs/en/self-hosting/upgrading.md)** — pasar a una nueva versión
 - **[Resolución de problemas](docs/en/self-hosting/troubleshooting.md)** — cuando algo no arranca
 
-El [Inicio rápido](#inicio-rápido-docker) de arriba es solo para evaluación: incluye una clave de
-firma publicada en este repositorio y guarda los datos en volúmenes desechables.
+El [Inicio rápido](#inicio-rápido-docker) de arriba es solo para evaluación: imágenes publicadas,
+volúmenes desechables y una contraseña de base de datos fija.
 
 ## Contribuir
 
