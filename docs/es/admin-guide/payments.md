@@ -2,6 +2,8 @@
 
 Gestión de recibos, generación de cuotas, IVA y cobros (incluido el pago en línea).
 
+> **In English:** [Payments and receipts](../../en/admin-guide/payments.md).
+
 ## El recibo y su ciclo de vida
 
 Cada recibo tiene un **número**, un **socio**, una **descripción**, importes (**base**, **IVA**,

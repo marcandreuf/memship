@@ -60,12 +60,20 @@ Running Memship on your own server.
 
 ## Administration
 
+- [Introduction](admin-guide/overview.md), roles, navigation and dashboard
+- [Members](admin-guide/members.md), life cycle, membership types, groups
+- [Entities](admin-guide/entities.md), donors, sponsors and partners that are not members
+- [Activities](admin-guide/activities.md), registrations, modalities, discounts
+- [Payments and receipts](admin-guide/payments.md), receipts, fees, VAT, online payment
+- [SEPA Direct Debit](admin-guide/sepa.md), mandates and remittances
+- [Donations](admin-guide/donations.md), a donation link on the organisation's own website
+- [Communications](admin-guide/communications.md), announcements to members
+- [Digital member card](admin-guide/member-cards.md), QR card and access control
+- [Custom profile fields](admin-guide/custom-fields.md), custom fields
+- [Reports and dashboard](admin-guide/reports.md), dashboard, annual summary, exports
+- [Organisation settings](admin-guide/settings.md), organisation, invoicing, automations
 - [Integrations](admin-guide/integrations.md), SSO (Google, Apple) and email, step by step
 - [Payment providers](admin-guide/payment-providers.md), connecting Stripe, Redsys and Bizum
-
-The rest of the administrator guide exists in Spanish only for now, and is listed in
-[the Spanish index](../es/README.md#guía-del-administrador-admin-guide). Coverage is tracked in
-[#423](https://github.com/marcandreuf/memship/issues/423).
 
 ## Development (contributors)
 
@@ -77,12 +85,14 @@ Working on Memship itself.
 
 ## Member guide
 
-The member-facing guide exists in Spanish only for now:
-[Guía del socio](../es/README.md#guía-del-socio-member-guide).
+- [Your account and profile](member-guide/account.md), access, profile, language, photo
+- [Activities](member-guide/activities.md), registering, the waitlist
+- [Payments and receipts](member-guide/payments.md), my receipts, paying online, payment method
+- [Digital member card](member-guide/member-card.md), QR card
 
 ## Reference
 
-- [Roles y permisos](../es/reference/roles-and-permissions.md), Spanish only for now
+- [Roles and permissions](reference/roles-and-permissions.md)
 - FAQ, _planned_
 - Glossary, _planned_
 

@@ -2,6 +2,8 @@
 
 Envío de anuncios a los socios por correo electrónico y con notificación en la app.
 
+> **In English:** [Communications](../../en/admin-guide/communications.md).
+
 > **Requisito previo.** Activa las comunicaciones en
 > [Ajustes → Comunicaciones](settings.md) y configura el
 > [envío de correo](../../en/self-hosting/email.md).

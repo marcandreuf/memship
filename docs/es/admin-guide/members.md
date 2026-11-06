@@ -2,6 +2,8 @@
 
 Gestión del ciclo de vida de los socios, los tipos de membresía y los grupos.
 
+> **In English:** [Members](../../en/admin-guide/members.md).
+
 ## Lista de socios
 
 La lista permite buscar, filtrar por **estado** y por **tipo de membresía**, y paginar los

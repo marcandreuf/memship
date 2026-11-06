@@ -38,7 +38,7 @@ You do not need to edit any file or restart anything. Every credential in this g
 
 **A public address.** Both providers need to reach your installation from the internet to confirm a payment. That address is configured once at install time in `BACKEND_PUBLIC_URL` and `FRONTEND_URL`. A provider configured on an installation that the internet cannot reach will take money and never mark the receipt paid.
 
-**Direct debit is a different thing.** If your members pay by SEPA direct debit, none of this applies, see [SEPA](../../es/admin-guide/sepa.md). This guide is only about paying online by card or Bizum.
+**Direct debit is a different thing.** If your members pay by SEPA direct debit, none of this applies, see [SEPA](sepa.md). This guide is only about paying online by card or Bizum.
 
 ---
 
@@ -280,10 +280,10 @@ If the gateway took the money and the receipt is still unpaid, mark it paid by h
 
 ## Related
 
-- [Payments](../../es/admin-guide/payments.md), using payments day to day, in Spanish
-- [Donations](../../es/admin-guide/donations.md): a donation link on the organisation's own
-  website, in Spanish. That link is created in the provider's dashboard and has nothing to do
+- [Payments](payments.md), using payments day to day
+- [Donations](donations.md): a donation link on the organisation's own
+  website. That link is created in the provider's dashboard and has nothing to do
   with the provider configured here
-- [SEPA](../../es/admin-guide/sepa.md), direct debit, a separate mechanism
+- [SEPA](sepa.md), direct debit, a separate mechanism
 - [Integrations](integrations.md), SSO and email, and the full description of secret storage
 - [Configuration reference](../self-hosting/configuration.md), `BACKEND_PUBLIC_URL` and `FRONTEND_URL`

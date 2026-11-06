@@ -2,6 +2,8 @@
 
 Tu carné de socio digital con código QR, para identificarte en el control de acceso.
 
+> **In English:** [Digital member card](../../en/member-guide/member-card.md).
+
 ## Tu carné
 
 En **Mi tarjeta** encontrarás tu **carné digital**, con tu **número de socio**, tu **estado** y

@@ -2,6 +2,8 @@
 
 Cobro de recibos por domiciliación bancaria mediante mandatos SEPA y remesas.
 
+> **In English:** [SEPA Direct Debit](../../en/admin-guide/sepa.md).
+
 > **Requisito previo.** Configura el **identificador de acreedor** y los datos bancarios de la
 > organización en [Ajustes → Domiciliación SEPA](settings.md#domiciliación-sepa).
 

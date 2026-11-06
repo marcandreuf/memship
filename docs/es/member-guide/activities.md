@@ -2,6 +2,8 @@
 
 Cómo inscribirte en las actividades de tu organización y gestionar tus inscripciones.
 
+> **In English:** [Activities](../../en/member-guide/activities.md).
+
 ## Explorar e inscribirte
 
 En la sección de **actividades** verás las actividades publicadas, con su imagen, fechas, plazas

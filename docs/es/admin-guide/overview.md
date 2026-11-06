@@ -4,6 +4,8 @@ Esta guía está dirigida al **personal que gestiona la organización** desde el
 administración de Memship: altas de socios, actividades, cobros, comunicaciones y
 configuración.
 
+> **In English:** [Introduction to the administrator guide](../../en/admin-guide/overview.md).
+
 > **Idioma.** Las guías del administrador y del socio se escriben primero en español
 > (`docs/es/`), porque quienes gestionan un club y sus socios son mayoritariamente
 > hispanohablantes. Las traducciones al catalán (`docs/ca/`) y al inglés (`docs/en/`) se añaden

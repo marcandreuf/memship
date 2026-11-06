@@ -2,6 +2,8 @@
 
 Cómo acceder al portal del socio y gestionar tus datos.
 
+> **In English:** [Your account and profile](../../en/member-guide/account.md).
+
 ## Iniciar sesión
 
 Accede con tu **correo electrónico** y tu **contraseña**.
