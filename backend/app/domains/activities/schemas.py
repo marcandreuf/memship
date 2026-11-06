@@ -50,7 +50,10 @@ class ActivityPriceCreate(BaseModel):
     name: NonBlank(255) = "General Price"
     description: str | None = Field(default=None, max_length=2000)
     amount: float = Field(ge=0)
-    modality_id: int | None = None
+    # ``ge=1``: 0 is not a modality, it is an emptied form field that reached
+    # the API as a number. Without the bound it passed validation and failed on
+    # the foreign key, answering 500 where 422 is the honest reply (#542).
+    modality_id: int | None = Field(default=None, ge=1)
     display_order: int = Field(default=1, ge=0)
     is_optional: bool = False
     is_default: bool = False
@@ -72,7 +75,10 @@ class ActivityPriceUpdate(BaseModel):
     name: NonBlank(255) | None = None
     description: str | None = Field(default=None, max_length=2000)
     amount: float | None = Field(default=None, ge=0)
-    modality_id: int | None = None
+    # ``ge=1``: 0 is not a modality, it is an emptied form field that reached
+    # the API as a number. Without the bound it passed validation and failed on
+    # the foreign key, answering 500 where 422 is the honest reply (#542).
+    modality_id: int | None = Field(default=None, ge=1)
     display_order: int | None = Field(default=None, ge=0)
     is_optional: bool | None = None
     is_default: bool | None = None

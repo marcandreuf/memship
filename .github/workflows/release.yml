@@ -262,9 +262,35 @@ jobs:
             exit 1
           fi
 
-          # "Feature name — the rest of the sentence" → the part before the first
-          # em dash, matching the vX.Y.Z — Feature name title convention.
-          HEADLINE="${SUMMARY%% — *}"
+          # The title is the row's lead phrase: "Feature name — the rest" or
+          # "Feature name: the rest", whichever delimiter appears first.
+          #
+          # The em dash was once the only one accepted, which quietly made a
+          # punctuation preference load-bearing: the project's writing convention
+          # avoids that character in new prose, every earlier row happened to
+          # contain one, and the first row written without it produced a title
+          # 1041 characters long and a bare `422` from the API — after the images
+          # had already been promoted (#543). Hence both delimiters, and a check
+          # that fails with a readable message instead of an API rejection.
+          EM="${SUMMARY%% — *}"
+          COLON="${SUMMARY%%: *}"
+          HEADLINE="$SUMMARY"
+          if [[ "$EM" != "$SUMMARY" ]]; then
+            HEADLINE="$EM"
+          fi
+          if [[ "$COLON" != "$SUMMARY" && ${#COLON} -lt ${#HEADLINE} ]]; then
+            HEADLINE="$COLON"
+          fi
+
+          # The length cap is a backstop for "parsed, but absurd", not a style
+          # rule: the real failure is a row with no delimiter at all, which the
+          # first condition catches because the title then IS the whole summary.
+          # 120 leaves room for the longest title any release has actually used
+          # (v2.7.1, at 105) rather than rejecting history.
+          if [[ "$HEADLINE" == "$SUMMARY" || ${#HEADLINE} -gt 120 ]]; then
+            echo "::error::Could not derive a release title from the v$VERSION README row. The title is the lead phrase before the first ' — ' or ': ', and must be 120 characters or fewer; this row gave ${#HEADLINE}. Add one of those delimiters after the lead phrase."
+            exit 1
+          fi
 
           PREV="$(git tag -l 'v*.*.*' --sort=v:refname | grep -B1 -x -F "$TAG" | head -1 || true)"
           if [[ -n "$PREV" && "$PREV" != "$TAG" ]]; then

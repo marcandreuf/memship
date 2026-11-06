@@ -56,6 +56,29 @@ if ! grep -qF "| v$VERSION " README.md; then
   [[ "$ok" =~ ^[Yy]$ ]] || { echo "Aborted."; exit 1; }
 fi
 
+# Mirror the CI release-title parse too. The Release workflow derives the GitHub
+# release name from this row's lead phrase, and when it cannot it fails *after*
+# promoting the images: the version ships with no notes, and recovering means
+# creating the release by hand (#543). Catch it here, where nothing has happened yet.
+ROW="$(grep -F "| v$VERSION " README.md | head -1 || true)"
+if [[ -n "$ROW" ]]; then
+  SUMMARY="$(printf '%s' "$ROW" | sed -E "s/^\| v${VERSION} \| //; s/ \| [^|]*\|[[:space:]]*$//")"
+  EM="${SUMMARY%% — *}"
+  COLON="${SUMMARY%%: *}"
+  HEADLINE="$SUMMARY"
+  if [[ "$EM" != "$SUMMARY" ]]; then HEADLINE="$EM"; fi
+  if [[ "$COLON" != "$SUMMARY" && ${#COLON} -lt ${#HEADLINE} ]]; then HEADLINE="$COLON"; fi
+  # 120, not 80: the cap is a backstop for a title that parsed but is absurd,
+  # and the longest any release has actually used is 105 (v2.7.1).
+  if [[ "$HEADLINE" == "$SUMMARY" || ${#HEADLINE} -gt 120 ]]; then
+    echo -e "${RED}The v$VERSION README row has no usable release title.${NC}" >&2
+    echo -e "${RED}The title is the lead phrase before the first ' — ' or ': ', 120 characters or fewer; this row gives ${#HEADLINE}.${NC}" >&2
+    echo -e "${RED}Add one of those delimiters after the lead phrase, or the Release workflow will fail after promoting the images.${NC}" >&2
+    exit 1
+  fi
+  echo -e "${GREEN}Release title will be:${NC} v$VERSION — $HEADLINE"
+fi
+
 # Warn if releasing a commit that is not on the main branch (staging validates main).
 if ! git merge-base --is-ancestor "$SHA" origin/main 2>/dev/null; then
   echo -e "${YELLOW}Warning: ${SHA:0:12} is not on origin/main.${NC}"

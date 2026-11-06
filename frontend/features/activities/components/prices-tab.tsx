@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { useZodResolver } from "@/hooks/use-zod-resolver";
 import { z } from "zod";
+import { optionalNumber } from "@/lib/validation";
 import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
@@ -50,7 +51,7 @@ const priceSchema = z.object({
   name: z.string().trim().min(1).max(255),
   description: z.string().max(2000).optional().or(z.literal("")),
   amount: z.coerce.number<number>().min(0),
-  modality_id: z.coerce.number<number>().int().optional().or(z.literal("")),
+  modality_id: optionalNumber({ min: 1 }),
   display_order: z.coerce.number<number>().int().min(0),
   is_optional: z.boolean(),
   is_default: z.boolean(),
@@ -58,7 +59,10 @@ const priceSchema = z.object({
   valid_from: z.string().optional().or(z.literal("")),
   valid_until: z.string().optional().or(z.literal("")),
 });
-type PriceFormValues = z.infer<typeof priceSchema>;
+type PriceFormValues = z.output<typeof priceSchema>;
+// What the fields hold: an emptied number input holds "", which the schema
+// turns into undefined on submit. RHF's third generic carries that split.
+type PriceFormValuesInput = z.input<typeof priceSchema>;
 
 function toLocalDatetime(iso: string) {
   const d = new Date(iso);
@@ -190,7 +194,7 @@ function PriceForm({
   const { data: membershipTypes } = useMembershipTypes();
   const activeTypes = (membershipTypes ?? []).filter((mt) => mt.is_active);
 
-  const form = useForm<PriceFormValues>({
+  const form = useForm<PriceFormValuesInput, unknown, PriceFormValues>({
     resolver: useZodResolver(priceSchema),
     defaultValues: {
       name: price?.name || "",
@@ -219,7 +223,7 @@ function PriceForm({
       membership_type_ids: data.membership_type_ids,
     };
     if (data.description) payload.description = data.description;
-    if (data.modality_id !== "" && data.modality_id !== undefined) payload.modality_id = Number(data.modality_id);
+    if (data.modality_id !== undefined) payload.modality_id = data.modality_id;
     if (data.valid_from) payload.valid_from = new Date(data.valid_from).toISOString();
     if (data.valid_until) payload.valid_until = new Date(data.valid_until).toISOString();
 

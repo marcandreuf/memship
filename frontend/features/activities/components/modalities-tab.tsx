@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { useZodResolver } from "@/hooks/use-zod-resolver";
 import { z } from "zod";
+import { optionalNumber } from "@/lib/validation";
 import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
@@ -45,11 +46,14 @@ import { useLocaleDate } from "@/hooks/use-locale-date";
 const modalitySchema = z.object({
   name: z.string().trim().min(1).max(255),
   description: z.string().max(2000).optional().or(z.literal("")),
-  max_participants: z.coerce.number<number>().int().min(0).optional().or(z.literal("")),
+  max_participants: optionalNumber({ min: 0 }),
   registration_deadline: z.string().optional().or(z.literal("")),
   display_order: z.coerce.number<number>().int().min(0),
 });
-type ModalityFormValues = z.infer<typeof modalitySchema>;
+type ModalityFormValues = z.output<typeof modalitySchema>;
+// What the fields hold: an emptied number input holds "", which the schema
+// turns into undefined on submit. RHF's third generic carries that split.
+type ModalityFormValuesInput = z.input<typeof modalitySchema>;
 
 function toLocalDatetime(iso: string) {
   const d = new Date(iso);
@@ -136,7 +140,7 @@ function ModalityForm({
   const createMutation = useCreateModality(activityId);
   const updateMutation = useUpdateModality(activityId);
 
-  const form = useForm<ModalityFormValues>({
+  const form = useForm<ModalityFormValuesInput, unknown, ModalityFormValues>({
     resolver: useZodResolver(modalitySchema),
     defaultValues: {
       name: modality?.name || "",
@@ -153,7 +157,7 @@ function ModalityForm({
       display_order: data.display_order,
     };
     if (data.description) payload.description = data.description;
-    if (data.max_participants !== "" && data.max_participants !== undefined) payload.max_participants = Number(data.max_participants);
+    if (data.max_participants !== undefined) payload.max_participants = data.max_participants;
     if (data.registration_deadline) payload.registration_deadline = new Date(data.registration_deadline).toISOString();
 
     try {

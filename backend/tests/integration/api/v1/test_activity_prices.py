@@ -110,6 +110,50 @@ class TestPriceCRUD:
         assert data["name"] == "New Price"
         assert data["amount"] == 15.0
 
+    def test_modality_id_zero_is_refused_on_update(self, client, db):
+        """0 is an emptied form field, not a modality, and must not reach the FK.
+
+        The form sent 0 for "no modality", the schema accepted it as a valid
+        int, and PostgreSQL refused it against ``activity_modalities`` — so a
+        price edit answered 500 instead of 422 (#542).
+        """
+        user = _create_user(db, "admin", suffix="-pz")
+        activity = _create_activity(db, user.id, slug="price-zero-mod")
+        price = ActivityPrice(activity_id=activity.id, name="Price", amount=10.0)
+        db.add(price)
+        db.flush()
+        client.cookies.update(_auth_cookie(user))
+
+        response = client.put(
+            f"/api/v1/activities/{activity.id}/prices/{price.id}",
+            json={"name": "Price", "amount": 10.0, "modality_id": 0},
+        )
+        assert response.status_code == 422
+
+    def test_modality_id_zero_is_refused_on_create(self, client, db):
+        user = _create_user(db, "admin", suffix="-pzc")
+        activity = _create_activity(db, user.id, slug="price-zero-mod-create")
+        client.cookies.update(_auth_cookie(user))
+
+        response = client.post(
+            f"/api/v1/activities/{activity.id}/prices/",
+            json={"name": "Price", "amount": 10.0, "modality_id": 0},
+        )
+        assert response.status_code == 422
+
+    def test_modality_id_null_still_means_no_modality(self, client, db):
+        """The bound must not break the legitimate "no modality" case."""
+        user = _create_user(db, "admin", suffix="-pn")
+        activity = _create_activity(db, user.id, slug="price-null-mod")
+        client.cookies.update(_auth_cookie(user))
+
+        response = client.post(
+            f"/api/v1/activities/{activity.id}/prices/",
+            json={"name": "Price", "amount": 10.0, "modality_id": None},
+        )
+        assert response.status_code == 201
+        assert response.json()["modality_id"] is None
+
     def test_delete_price(self, client, db):
         user = _create_user(db, "admin", suffix="-pd")
         activity = _create_activity(db, user.id, slug="price-delete")

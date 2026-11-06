@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { useZodResolver } from "@/hooks/use-zod-resolver";
 import { z } from "zod";
+import { optionalNumber } from "@/lib/validation";
 import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { TabContentSkeleton } from "@/components/ui/skeletons";
@@ -62,8 +63,8 @@ const createSchema = z.object({
   description: z.string().max(2000).optional(),
   base_price: z.coerce.number<number>().min(0),
   group_id: z.coerce.number<number>().optional(),
-  min_age: z.coerce.number<number>().int().min(0).max(150).optional().or(z.literal("")),
-  max_age: z.coerce.number<number>().int().min(0).max(150).optional().or(z.literal("")),
+  min_age: optionalNumber({ min: 0, max: 150 }),
+  max_age: optionalNumber({ min: 0, max: 150 }),
   issues_card: z.boolean(),
 }).refine((data) => !data.min_age || !data.max_age || Number(data.max_age) >= Number(data.min_age), {
   message: "validation.maxLessThanMin",
@@ -71,9 +72,12 @@ const createSchema = z.object({
 });
 
 // An emptied age field clears that limit.
-const ageOrNull = (v: number | "" | undefined) => (v === "" || v === undefined ? null : Number(v));
+const ageOrNull = (v: number | undefined) => (v === undefined ? null : v);
 
-type CreateFormValues = z.infer<typeof createSchema>;
+type CreateFormValues = z.output<typeof createSchema>;
+// What the fields hold: an emptied number input holds "", which the schema
+// turns into undefined on submit. RHF's third generic carries that split.
+type CreateFormValuesInput = z.input<typeof createSchema>;
 
 export function MembershipTypesSettings() {
   const { formatCurrency } = useFormatters();
@@ -90,7 +94,7 @@ export function MembershipTypesSettings() {
   const [editing, setEditing] = useState<MembershipTypeData | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const form = useForm<CreateFormValues>({
+  const form = useForm<CreateFormValuesInput, unknown, CreateFormValues>({
     resolver: useZodResolver(createSchema),
     defaultValues: { name: "", slug: "", description: "", base_price: 0, min_age: "", max_age: "", issues_card: false },
   });
