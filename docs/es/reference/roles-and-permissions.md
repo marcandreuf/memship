@@ -2,6 +2,8 @@
 
 Memship distingue tres roles. El acceso a cada función depende del rol de la persona usuaria.
 
+> **In English:** [Roles and permissions](../../en/reference/roles-and-permissions.md).
+
 | Rol                    | Ámbito                                                                       |
 |------------------------|------------------------------------------------------------------------------|
 | **Superadministrador** | Administración a nivel de plataforma. Además de lo que puede el administrador de la organización, gestiona la **configuración de las pasarelas de pago** y otros ajustes de plataforma. |

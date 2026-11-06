@@ -3,6 +3,8 @@
 Ajustes generales, facturación, SEPA, proveedores de pago y automatizaciones. Requiere permisos
 de administración.
 
+> **In English:** [Organisation settings](../../en/admin-guide/settings.md).
+
 ## Datos de la organización
 
 - **Datos de la organización**, nombre, razón social, CIF/NIF, correo, teléfono y sitio web.

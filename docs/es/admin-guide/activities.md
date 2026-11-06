@@ -4,6 +4,8 @@ Las actividades son eventos, cursos, talleres o competiciones en los que los soc
 inscribirse. Cada actividad puede tener modalidades, niveles de precio y reglas de
 elegibilidad.
 
+> **In English:** [Activities](../../en/admin-guide/activities.md).
+
 ## Crear una actividad
 
 Al crear una actividad configuras:

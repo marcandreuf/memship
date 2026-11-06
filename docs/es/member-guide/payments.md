@@ -2,6 +2,8 @@
 
 Cómo consultar tus recibos, pagarlos en línea y elegir tu forma de pago.
 
+> **In English:** [Payments and receipts](../../en/member-guide/payments.md).
+
 ## Mis recibos
 
 En **Mis recibos** ves tus recibos con su **estado** (Pendiente, Emitido, Cobrado, Vencido…),

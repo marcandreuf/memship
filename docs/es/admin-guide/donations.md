@@ -3,6 +3,8 @@
 Hay tres formas de recibir una donación. La diferencia no es técnica: es **qué registro
 necesitas que quede** y **quién dona**.
 
+> **In English:** [Donations](../../en/admin-guide/donations.md).
+
 ## Qué camino te toca
 
 Dos preguntas, en este orden.

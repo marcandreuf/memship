@@ -2,6 +2,8 @@
 
 Carné de socio digital con código QR y verificación en el control de acceso.
 
+> **In English:** [Digital member card and access control](../../en/admin-guide/member-cards.md).
+
 > **Requisito previo.** Activa las tarjetas de socio en
 > [Ajustes → Tarjeta de socio](settings.md).
 
