@@ -5,6 +5,7 @@ costs, and what it does not need. Whoever goes ahead afterwards reads
 [Installation](installation.md), which is written for the person at the terminal.
 
 > **En español:** [Qué necesitas para ejecutar Memship](../../es/getting-started/what-you-need.md).
+> **En català:** [Què necessites per executar Memship](../../ca/getting-started/what-you-need.md).
 
 Everything below was measured on release 2.19.0 rather than estimated. Where a number is a
 judgement rather than a measurement, it says so.

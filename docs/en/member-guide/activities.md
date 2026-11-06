@@ -1,5 +1,5 @@
 <!-- source: es/member-guide/activities.md -->
-<!-- source-hash: beac33adfc7e -->
+<!-- source-hash: cb3912a13759 -->
 
 # Activities
 

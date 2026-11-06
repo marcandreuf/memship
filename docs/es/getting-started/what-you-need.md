@@ -1,5 +1,5 @@
 <!-- source: en/getting-started/what-you-need.md -->
-<!-- source-hash: 2e8d68b226b3 -->
+<!-- source-hash: b00dd8346157 -->
 
 # Qué necesitas para ejecutar Memship
 
@@ -8,6 +8,7 @@ cuesta eso y qué no necesita. Quien siga adelante después lee la
 [Instalación](../../en/getting-started/installation.md), escrita para quien se pone delante del terminal.
 
 > **En inglés:** [What you need to run Memship](../../en/getting-started/what-you-need.md).
+> **En català:** [Què necessites per executar Memship](../../ca/getting-started/what-you-need.md).
 
 Todo lo que sigue está **medido** sobre la versión 2.19.0, no estimado. Donde una cifra es un
 criterio y no una medición, se dice.
