@@ -1,5 +1,5 @@
 <!-- source: es/admin-guide/donations.md -->
-<!-- source-hash: b6cb319b4585 -->
+<!-- source-hash: 2a9ea2cb5f0b -->
 
 # Donations
 
@@ -94,7 +94,7 @@ summary.
 
 ### If you want to reconcile it with your books
 
-Someone records it by hand. From a member's record, **Receipts → Add receipt**, with origin
+Someone records it by hand. From a member's record, **Receipts → New Receipt**, with origin
 **Donation** (see below). It is manual work with no automation: if that is a burden, path 1 is
 not yours.
 
@@ -111,7 +111,7 @@ second provider just for this.
 ## Paths 2 and 3: the donation as a receipt in memship
 
 When you do want the record, the donation is a receipt with **origin Donation**, created by hand
-from **Receipts → Add receipt** on the entity's or the member's record. The screen is the same in
+from **Receipts → New Receipt** on the entity's or the member's record. The screen is the same in
 both places.
 
 The origin does three things that `Manual` did not:

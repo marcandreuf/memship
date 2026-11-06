@@ -1,5 +1,5 @@
 <!-- source: es/admin-guide/payments.md -->
-<!-- source-hash: ba3d9b73d02d -->
+<!-- source-hash: 528119cdc45d -->
 
 # Payments and receipts
 
@@ -12,7 +12,8 @@ Managing receipts, generating membership fees, VAT and collections (including on
 Each receipt has a **number**, a **member**, a **description**, amounts (**base**, **VAT**,
 **discount**, **total**) and a **status**. The life cycle is:
 
-**New → Issued → Paid**, and, depending on the case, **Returned**, **Cancelled** or **Overdue**.
+**New** or **Pending** → **Issued** → **Paid**, and, depending on the case, **Returned**, **Cancelled**
+or **Overdue**. A returned receipt that is re-emitted goes back to **Pending**.
 
 Actions available depending on the status: **Emit**, **Mark Paid**, **Mark Returned**, **Cancel**
 and **Re-emit** (for a returned receipt). From the receipt you can also **Download PDF**.
@@ -60,7 +61,7 @@ one.
 ## VAT and invoicing
 
 - The **VAT rate** is applied to the base; the default rate is configured in
-  [Settings → Banking & Invoicing](settings.md#banking-and-invoicing).
+  [Settings → Payments → General](settings.md#banking-and-invoicing).
 - The **numbering** uses a configurable prefix and, optionally, restarts every year
   (e.g. `FAC-2026-0001`).
 - The receipt **PDF** includes the organisation's header, the member's details and the VAT
@@ -81,11 +82,11 @@ and can pay with:
 
 > The final confirmation of gateway payments arrives through the provider's **asynchronous
 > notification**, not through the browser's return. Providers are configured in
-> [Settings → Payment Providers](settings.md#payment-providers).
+> [Settings → Payments → Payment Providers](settings.md#payment-providers).
 
 ### When a payment notification fails
 
-In **Settings → Payment Providers**, below the providers, **Payment notifications** lists what the
+In **Settings → Payments → Payment Providers**, below the providers, **Payment notifications** lists what the
 gateways sent and memship did not apply:
 
 - **Failed**, it could not be applied. The gateway retries; if it keeps failing, it needs looking
@@ -98,7 +99,7 @@ gateways sent and memship did not apply:
 
 To receive an alert, set the billing notifications address: an email arrives once a day, only if
 something happened in the last 24 hours. It is **Payment notification problems** in
-Settings → Communications: enabled by default on a new installation, and it can be disabled there.
+Settings → Members → Communications: enabled by default on a new installation, and it can be disabled there.
 An older installation starts with it disabled; enable it there.
 
 If the gateway collected the money and the receipt is still pending, mark it as paid choosing

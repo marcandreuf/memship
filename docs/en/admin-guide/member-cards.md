@@ -1,5 +1,5 @@
 <!-- source: es/admin-guide/member-cards.md -->
-<!-- source-hash: 0ff0aba3f5f8 -->
+<!-- source-hash: 91a608d051a7 -->
 
 # Digital member card and access control
 
@@ -8,7 +8,7 @@ A digital member card with a QR code, verified at access control.
 > **In Spanish:** [Carné digital y control de acceso](../../es/admin-guide/member-cards.md).
 
 > **Prerequisite.** Enable member cards in
-> [Settings → Member Card](settings.md).
+> [Settings → Members → Member Card](settings.md#other-options).
 
 ## Member numbering
 

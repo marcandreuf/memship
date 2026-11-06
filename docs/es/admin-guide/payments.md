@@ -9,7 +9,8 @@ Gestión de recibos, generación de cuotas, IVA y cobros (incluido el pago en l�
 Cada recibo tiene un **número**, un **socio**, una **descripción**, importes (**base**, **IVA**,
 **descuento**, **total**) y un **estado**. El ciclo de vida es:
 
-**Nuevo → Emitido → Cobrado**, y, según el caso, **Devuelto**, **Anulado** o **Vencido**.
+**Nuevo** o **Pendiente** → **Emitido** → **Cobrado**, y, según el caso, **Devuelto**, **Anulado** o
+**Vencido**. Un recibo devuelto que se reemite vuelve a **Pendiente**.
 
 Acciones disponibles según el estado: **Emitir**, **Cobrar**, **Devolver**, **Anular** y
 **Reemitir** (para un recibo devuelto). Desde el recibo también puedes **Descargar PDF**.
@@ -56,7 +57,7 @@ membresía**. Es la forma de emitir la cuota periódica de forma masiva sin crea
 ## IVA y facturación
 
 - El **tipo de IVA** se calcula sobre la base; el tipo por defecto se configura en
-  [Ajustes → Banca y facturación](settings.md#banca-y-facturación).
+  [Ajustes → Pagos → General](settings.md#banca-y-facturación).
 - La **numeración** usa un prefijo configurable y, opcionalmente, se reinicia cada año
   (p. ej. `FAC-2026-0001`).
 - El **PDF** del recibo incluye la cabecera de la organización, los datos del socio y el
@@ -77,11 +78,11 @@ pendientes y puede pagar con:
 
 > La confirmación definitiva de los pagos con pasarela llega por la **notificación asíncrona**
 > del proveedor, no por la vuelta del navegador. La configuración de proveedores se hace en
-> [Ajustes → Proveedores de pago](settings.md#proveedores-de-pago).
+> [Ajustes → Pagos → Proveedores de pago](settings.md#proveedores-de-pago).
 
 ### Cuando una notificación de pago falla
 
-En **Ajustes → Proveedores de pago**, bajo los proveedores, **Notificaciones de pago** lista lo
+En **Ajustes → Pagos → Proveedores de pago**, bajo los proveedores, **Notificaciones de pago** lista lo
 que las pasarelas enviaron y memship no aplicó:
 
 - **Fallida**, no se pudo aplicar. La pasarela reintenta; si sigue fallando, hay que revisarla.
@@ -93,7 +94,7 @@ que las pasarelas enviaron y memship no aplicó:
 
 Para recibir un aviso, indica la dirección de notificaciones de facturación: llega un correo al
 día, solo si en las últimas 24 horas hubo algo. Es **Incidencias en notificaciones de pago** en
-Ajustes → Comunicaciones: activado por defecto en una instalación nueva, y se puede desactivar
+Ajustes → Socios → Comunicaciones: activado por defecto en una instalación nueva, y se puede desactivar
 ahí. Una instalación anterior empieza con él desactivado; actívalo ahí.
 
 Si la pasarela cobró y el recibo sigue pendiente, márcalo como pagado eligiendo Redsys, Bizum o

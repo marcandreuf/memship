@@ -8,12 +8,12 @@ configuración.
 
 > **Idioma.** Las guías del administrador y del socio se escriben primero en español
 > (`docs/es/`), porque quienes gestionan un club y sus socios son mayoritariamente
-> hispanohablantes. Las traducciones al catalán (`docs/ca/`) y al inglés (`docs/en/`) se añaden
-> según la demanda; hasta que existan, se sirve la página en español.
+> hispanohablantes. Todas tienen versión en inglés (`docs/en/`); la traducción al catalán
+> (`docs/ca/`) está en curso, y hasta que exista se sirve la página en español.
 
 ## Roles
 
-Memship distingue tres roles:
+Memship trae tres roles del sistema:
 
 | Rol                    | Qué puede hacer                                                              |
 |------------------------|------------------------------------------------------------------------------|
@@ -21,7 +21,9 @@ Memship distingue tres roles:
 | **Administrador de la organización** | Gestión diaria: socios, actividades, facturación y comunicaciones. |
 | **Socio**              | Uso del portal del socio: perfil, actividades, pagos, carné y reservas.       |
 
-La mayor parte de esta guía se refiere al **administrador de la organización**.
+La mayor parte de esta guía se refiere al **administrador de la organización**. El
+superadministrador puede además crear **roles personalizados** con los permisos que elija; ver
+[Roles y permisos](../reference/roles-and-permissions.md).
 
 ## Iniciar sesión
 
@@ -64,7 +66,7 @@ El panel de administración se organiza en torno a estas áreas:
 Antes de dar de alta a socios reales, completa la [configuración inicial](../../en/getting-started/first-setup.md):
 datos de la organización, marca, datos bancarios y facturación, y verifica el envío de correo.
 
-## Próximas páginas
+## Páginas de la guía
 
-Las páginas detalladas de cada área (Socios, Actividades, Pagos, etc.) se irán añadiendo a esta
-guía. Consulta el [índice de la documentación](../README.md) para ver el estado.
+Cada área (Socios, Actividades, Pagos, etc.) tiene su propia página. El
+[índice de la documentación](../README.md) las enumera todas.

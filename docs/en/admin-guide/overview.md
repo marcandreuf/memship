@@ -1,5 +1,5 @@
 <!-- source: es/admin-guide/overview.md -->
-<!-- source-hash: 401e5947f662 -->
+<!-- source-hash: 7fd3c3f9121b -->
 
 # Introduction to the administrator guide
 
@@ -10,12 +10,12 @@ member registrations, activities, payments, communications and settings.
 
 > **Language.** The administrator and member guides are written in Spanish first
 > (`docs/es/`), because the people who run a club and its members are mostly Spanish speakers.
-> Translations into Catalan (`docs/ca/`) and English (`docs/en/`) are added as demand
-> requires; until they exist, the Spanish page is served.
+> All of them have an English version (`docs/en/`); the Catalan translation (`docs/ca/`) is in
+> progress, and until it exists the Spanish page is served.
 
 ## Roles
 
-Memship distinguishes three roles:
+Memship ships three system roles:
 
 | Role                   | What they can do                                                             |
 |------------------------|------------------------------------------------------------------------------|
@@ -23,7 +23,9 @@ Memship distinguishes three roles:
 | **Organisation administrator** | Day-to-day management: members, activities, billing and communications. |
 | **Member**             | Using the member portal: profile, activities, payments, member card and bookings. |
 
-Most of this guide is about the **organisation administrator**.
+Most of this guide is about the **organisation administrator**. The superadmin can also create
+**custom roles** with the permissions they choose; see
+[Roles and permissions](../reference/roles-and-permissions.md).
 
 ## Signing in
 
@@ -66,7 +68,7 @@ The administration panel is organised around these areas:
 Before registering real members, complete the [first setup](../getting-started/first-setup.md):
 organisation details, branding, bank details and invoicing, and check that email delivery works.
 
-## Coming pages
+## Guide pages
 
-The detailed pages for each area (Members, Activities, Payments, etc.) will be added to this
-guide over time. See the [documentation index](../README.md) for their status.
+Each area (Members, Activities, Payments, etc.) has its own page. The
+[documentation index](../README.md) lists them all.
