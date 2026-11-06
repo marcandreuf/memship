@@ -214,6 +214,60 @@ class TestTheFanOutRecordsWhatItManaged:
         assert row.email_sent is False
 
 
+class TestARetryResumesTheFanOut:
+    def test_a_retry_skips_whoever_was_already_mailed(self, client, db):
+        """An exception part-way through the loop retries the whole task (#547).
+
+        Every recipient's outcome is committed as it goes, so the retry can see
+        who was already reached. Before the fix it started from the first
+        recipient again and mailed them a second time.
+        """
+        _org(db)
+        admin = _admin(db, "rt")
+        delivered = _member(db, "rtdelivered")
+        bounced = _member(db, "rtbounced")
+        crashed = _member(db, "rtcrashed")
+        ids = {delivered.id: "delivered", bounced.id: "bounced", crashed.id: "crashed"}
+        address = {
+            delivered.person.email: "delivered",
+            bounced.person.email: "bounced",
+            crashed.person.email: "crashed",
+        }
+        ann_id = _sent_announcement(db, client, admin)
+
+        attempts = {"delivered": 0, "bounced": 0, "crashed": 0}
+
+        def _first_attempt_goes_wrong(to, *args, **kwargs):
+            who = address[to]
+            attempts[who] += 1
+            if who == "crashed" and attempts[who] == 1:
+                # Anything that raises inside the loop — a dropped database
+                # connection is the realistic one — retries the task.
+                raise ConnectionError("connection to the database was lost")
+            if who == "bounced" and attempts[who] == 1:
+                return False
+            return True
+
+        with patch(
+            "app.core.email.send_announcement_email",
+            side_effect=_first_attempt_goes_wrong,
+        ):
+            result = send_announcement_task.apply(args=[ann_id])
+
+        assert result.successful()
+        # Mailed once, whichever order the audience came back in.
+        assert attempts["delivered"] == 1
+        # A recorded failure is retried, and so is the recipient the crash hit.
+        assert attempts["bounced"] == 2
+        assert attempts["crashed"] == 2
+        rows = _rows(db, ann_id)
+        assert {ids[m]: r.email_sent for m, r in rows.items() if m in ids} == {
+            "delivered": True,
+            "bounced": True,
+            "crashed": True,
+        }
+
+
 class TestTheStatsSayWhichIsWhich:
     def test_eligible_and_delivered_are_reported_apart(self, client, db):
         _org(db)

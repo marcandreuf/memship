@@ -64,9 +64,23 @@ def send_announcement_task(self, announcement_id: int) -> int:
                 ann.body, link_color=get_email_branding().color
             )
 
+            # A retry resumes rather than restarts: whoever an earlier attempt
+            # already reached is skipped, so an exception part-way through the
+            # loop does not mail them again (#547). A recorded failure is not
+            # skipped — the retry is that recipient's next chance.
+            already_sent = {
+                member_id
+                for (member_id,) in db.query(AnnouncementRecipient.member_id).filter(
+                    AnnouncementRecipient.announcement_id == announcement_id,
+                    AnnouncementRecipient.email_sent.is_(True),
+                )
+            }
+
             members = resolve_audience(db, ann.target_type, ann.target_id)
             sent = 0
             for member, person in email_recipients(db, members):
+                if member.id in already_sent:
+                    continue
                 delivered = send_announcement_email(
                     person.email, ann.subject, body_html, org_name, locale
                 )
