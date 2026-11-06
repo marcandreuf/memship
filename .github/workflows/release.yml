@@ -282,8 +282,13 @@ jobs:
             HEADLINE="$COLON"
           fi
 
-          if [[ "$HEADLINE" == "$SUMMARY" || ${#HEADLINE} -gt 80 ]]; then
-            echo "::error::Could not derive a release title from the v$VERSION README row. The title is the lead phrase before the first ' — ' or ': ', and must be 80 characters or fewer; this row gave ${#HEADLINE}. Add one of those delimiters after the lead phrase."
+          # The length cap is a backstop for "parsed, but absurd", not a style
+          # rule: the real failure is a row with no delimiter at all, which the
+          # first condition catches because the title then IS the whole summary.
+          # 120 leaves room for the longest title any release has actually used
+          # (v2.7.1, at 105) rather than rejecting history.
+          if [[ "$HEADLINE" == "$SUMMARY" || ${#HEADLINE} -gt 120 ]]; then
+            echo "::error::Could not derive a release title from the v$VERSION README row. The title is the lead phrase before the first ' — ' or ': ', and must be 120 characters or fewer; this row gave ${#HEADLINE}. Add one of those delimiters after the lead phrase."
             exit 1
           fi
 

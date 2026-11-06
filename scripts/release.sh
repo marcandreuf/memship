@@ -68,9 +68,11 @@ if [[ -n "$ROW" ]]; then
   HEADLINE="$SUMMARY"
   if [[ "$EM" != "$SUMMARY" ]]; then HEADLINE="$EM"; fi
   if [[ "$COLON" != "$SUMMARY" && ${#COLON} -lt ${#HEADLINE} ]]; then HEADLINE="$COLON"; fi
-  if [[ "$HEADLINE" == "$SUMMARY" || ${#HEADLINE} -gt 80 ]]; then
+  # 120, not 80: the cap is a backstop for a title that parsed but is absurd,
+  # and the longest any release has actually used is 105 (v2.7.1).
+  if [[ "$HEADLINE" == "$SUMMARY" || ${#HEADLINE} -gt 120 ]]; then
     echo -e "${RED}The v$VERSION README row has no usable release title.${NC}" >&2
-    echo -e "${RED}The title is the lead phrase before the first ' — ' or ': ', 80 characters or fewer; this row gives ${#HEADLINE}.${NC}" >&2
+    echo -e "${RED}The title is the lead phrase before the first ' — ' or ': ', 120 characters or fewer; this row gives ${#HEADLINE}.${NC}" >&2
     echo -e "${RED}Add one of those delimiters after the lead phrase, or the Release workflow will fail after promoting the images.${NC}" >&2
     exit 1
   fi
