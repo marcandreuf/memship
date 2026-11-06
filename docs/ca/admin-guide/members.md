@@ -17,7 +17,7 @@ resultats. Des d'allà pots obrir la fitxa de cada soci o crear-ne un de nou amb
 En donar d'alta un soci es registren, entre altres dades:
 
 - **Nom**, **Data de naixement**, **DNI/NIE** i **Gènere**.
-- **Tipus de afiliació** (vegeu més avall).
+- **Tipus d'afiliació** (vegeu més avall).
 - **Notes internes**, visibles només per als administradors.
 
 La **Data d'alta** queda registrada automàticament.

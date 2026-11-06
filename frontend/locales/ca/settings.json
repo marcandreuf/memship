@@ -423,11 +423,11 @@
       "publicEnabledDesc": "Mostra el formulari d'alta i accepta registres de qui hi arribi",
       "requiresApproval": "Revisar cada alta",
       "requiresApprovalDesc": "Les altes noves queden pendents fins que un administrador les aprova; el número de soci s'assigna llavors, així que una alta abandonada no en gasta cap",
-      "defaultTier": "Tipus de afiliació per defecte",
+      "defaultTier": "Tipus d'afiliació per defecte",
       "defaultTierLabel": "On aterren les altes noves",
-      "defaultTierDesc": "Només un tipus de afiliació gratuït pot ser el predeterminat, així que registrar-se mai no inicia una quota per si sol",
+      "defaultTierDesc": "Només un tipus d'afiliació gratuït pot ser el predeterminat, així que registrar-se mai no inicia una quota per si sol",
       "noDefaultTier": "Cap seleccionat",
-      "noFreeTiers": "Encara no hi ha cap tipus de afiliació gratuït. Crea'n un a Tipus de afiliació i podrà ser el predeterminat."
+      "noFreeTiers": "Encara no hi ha cap tipus d'afiliació gratuït. Crea'n un a Tipus d'afiliació i podrà ser el predeterminat."
     }
   }
 }
