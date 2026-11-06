@@ -4,7 +4,9 @@
     "tagline": "Gestión de socios para todos"
   },
   "footer": {
-    "version": "Versión {version}"
+    "version": "Versión {version}",
+    "license": "AGPL-3.0",
+    "source": "Código fuente"
   },
   "nav": {
     "dashboard": "Panel",

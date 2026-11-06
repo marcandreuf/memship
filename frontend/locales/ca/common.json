@@ -4,7 +4,9 @@
     "tagline": "Gestió de socis per a tothom"
   },
   "footer": {
-    "version": "Versió {version}"
+    "version": "Versió {version}",
+    "license": "AGPL-3.0",
+    "source": "Codi font"
   },
   "nav": {
     "dashboard": "Tauler",

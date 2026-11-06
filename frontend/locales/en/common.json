@@ -4,7 +4,9 @@
     "tagline": "Membership management for everyone"
   },
   "footer": {
-    "version": "Version {version}"
+    "version": "Version {version}",
+    "license": "AGPL-3.0",
+    "source": "Source code"
   },
   "nav": {
     "dashboard": "Dashboard",

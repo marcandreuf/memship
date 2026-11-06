@@ -3,7 +3,7 @@ import { LoginForm } from "@/features/auth/components/login-form";
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
+    <div className="flex flex-1 items-center justify-center p-4">
       {/* LoginForm reads the ?error= code an SSO redirect can carry. */}
       <Suspense>
         <LoginForm />

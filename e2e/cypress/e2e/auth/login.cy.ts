@@ -17,6 +17,23 @@ describe("Login @smoke", () => {
     cy.contains("Sign up").should("be.visible");
   });
 
+  // #527: the AGPL release ships a licence notice in the footer. Login is the
+  // screen that had no footer at all, so it is where a regression would be
+  // least visible.
+  it("shows the licence and source links in the footer", () => {
+    cy.get("footer").within(() => {
+      cy.contains("Memship").should("be.visible");
+      cy.contains("a", "AGPL-3.0")
+        .should("have.attr", "href")
+        .and("include", "/blob/main/LICENSE");
+      cy.contains("a", "Source code").should(
+        "have.attr",
+        "href",
+        "https://github.com/marcandreuf/memship",
+      );
+    });
+  });
+
   it("logs in with valid admin credentials", () => {
     cy.get('input[type="email"]').type(TEST_ACCOUNTS.admin.email);
     cy.get('input[type="password"]').type(TEST_ACCOUNTS.admin.password);
