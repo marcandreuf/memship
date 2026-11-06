@@ -28,16 +28,11 @@ import { useFormatters } from "@/hooks/use-formatters";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
 import { type ErrorTranslator } from "@/lib/errors";
 import { useReturnToHere } from "@/hooks/use-return-to";
-
-const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  active: "default",
-  cancelled: "destructive",
-  expired: "secondary",
-};
+import { MANDATE_STATUS_VARIANTS } from "@/lib/status-variants";
 
 function StatusBadge({ status, t }: { status: string; t: (key: string) => string }) {
   const label = t(`mandates.status${status.charAt(0).toUpperCase() + status.slice(1)}`);
-  return <Badge variant={STATUS_VARIANTS[status] || "outline"}>{label}</Badge>;
+  return <Badge variant={MANDATE_STATUS_VARIANTS[status] || "outline"}>{label}</Badge>;
 }
 
 export default function MandatesPage() {

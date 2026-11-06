@@ -16,13 +16,7 @@ import {
 import { useActivity } from "@/features/activities/hooks/use-activities";
 import { useLocaleDate } from "@/hooks/use-locale-date";
 import type { RegistrationData } from "@/features/activities/services/registrations-api";
-
-const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  confirmed: "default",
-  waitlist: "secondary",
-  cancelled: "destructive",
-  pending: "outline",
-};
+import { REGISTRATION_STATUS_VARIANTS } from "@/lib/status-variants";
 
 function RegistrationCard({ registration }: { registration: RegistrationData }) {
   const t = useTranslations();
@@ -73,7 +67,7 @@ function RegistrationCard({ registration }: { registration: RegistrationData }) 
           {t("activities.registration.registeredOn")}: {formatDate(registration.created_at)}
         </p>
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
-          <Badge variant={STATUS_VARIANTS[registration.status] || "outline"}>
+          <Badge variant={REGISTRATION_STATUS_VARIANTS[registration.status] || "outline"}>
             {t(`activities.registration.status.${registration.status}`)}
           </Badge>
           {canCancel && (

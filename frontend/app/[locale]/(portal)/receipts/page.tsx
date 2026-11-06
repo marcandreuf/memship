@@ -28,20 +28,11 @@ import { useFormatters } from "@/hooks/use-formatters";
 import type { ReceiptData } from "@/features/receipts/services/receipts-api";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
 import { useReturnToHere } from "@/hooks/use-return-to";
-
-const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  new: "outline",
-  pending: "secondary",
-  emitted: "secondary",
-  paid: "default",
-  returned: "destructive",
-  cancelled: "destructive",
-  overdue: "destructive",
-};
+import { RECEIPT_STATUS_VARIANTS } from "@/lib/status-variants";
 
 function StatusBadge({ status, t }: { status: string; t: (key: string) => string }) {
   const label = t(`receipts.status${status.charAt(0).toUpperCase() + status.slice(1)}`);
-  return <Badge variant={STATUS_VARIANTS[status] || "outline"}>{label}</Badge>;
+  return <Badge variant={RECEIPT_STATUS_VARIANTS[status] || "outline"}>{label}</Badge>;
 }
 
 function OriginBadge({ origin, t }: { origin: string; t: (key: string) => string }) {

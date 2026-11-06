@@ -20,18 +20,13 @@ import {
   useCancelMandate,
   useUploadSignedMandate,
 } from "@/features/mandates/hooks/use-mandates";
+import { MANDATE_STATUS_VARIANTS } from "@/lib/status-variants";
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
-
-const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  active: "default",
-  cancelled: "destructive",
-  expired: "secondary",
-};
 
 export default function MandateDetailPage() {
   const t = useTranslations();
@@ -104,7 +99,7 @@ export default function MandateDetailPage() {
           { label: mandate.mandate_reference },
         ]}
         title={mandate.mandate_reference}
-        badge={{ label: statusLabel, variant: STATUS_VARIANTS[mandate.status] || "outline" }}
+        badge={{ label: statusLabel, variant: MANDATE_STATUS_VARIANTS[mandate.status] || "outline" }}
         actions={
           <div className="flex gap-2 flex-wrap">
             <Button size="sm" variant="outline" asChild>

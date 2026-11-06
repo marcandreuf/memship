@@ -18,16 +18,7 @@ import { useMyReceipts, useStripeCheckout } from "@/features/receipts/hooks/use-
 import { RedsysPayButton } from "@/features/receipts/components/redsys-pay-button";
 import { useActivePaymentMethods } from "@/features/settings/hooks/use-payment-providers";
 import { usePageParam } from "@/hooks/use-url-state";
-
-const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  new: "outline",
-  pending: "secondary",
-  emitted: "secondary",
-  paid: "default",
-  returned: "destructive",
-  cancelled: "destructive",
-  overdue: "destructive",
-};
+import { RECEIPT_STATUS_VARIANTS } from "@/lib/status-variants";
 
 export default function MyReceiptsPage() {
   const t = useTranslations();
@@ -94,7 +85,7 @@ export default function MyReceiptsPage() {
                   <TableCell className="max-w-[200px] truncate">{r.description}</TableCell>
                   <TableCell className="text-right font-mono">{formatCurrency(r.total_amount)}</TableCell>
                   <TableCell>
-                    <Badge variant={STATUS_VARIANTS[r.status] || "outline"}>{statusLabel}</Badge>
+                    <Badge variant={RECEIPT_STATUS_VARIANTS[r.status] || "outline"}>{statusLabel}</Badge>
                   </TableCell>
                   <TableCell className="text-sm">{formatDate(r.emission_date)}</TableCell>
                   <TableCell className="text-sm">{formatDate(r.payment_date)}</TableCell>

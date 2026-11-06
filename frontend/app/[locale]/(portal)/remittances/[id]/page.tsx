@@ -32,23 +32,7 @@ import {
   useCancelRemittance,
 } from "@/features/remittances/hooks/use-remittances";
 import type { ImportReturnResult } from "@/features/remittances/services/remittances-api";
-
-const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  draft: "outline",
-  ready: "secondary",
-  submitted: "secondary",
-  processed: "default",
-  closed: "default",
-  cancelled: "destructive",
-};
-
-const RECEIPT_STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  emitted: "secondary",
-  paid: "default",
-  returned: "destructive",
-  overdue: "destructive",
-  cancelled: "destructive",
-};
+import { RECEIPT_STATUS_VARIANTS, REMITTANCE_STATUS_VARIANTS } from "@/lib/status-variants";
 
 export default function RemittanceDetailPage() {
   const t = useTranslations();
@@ -201,7 +185,7 @@ export default function RemittanceDetailPage() {
           { label: remittance.remittance_number },
         ]}
         title={remittance.remittance_number}
-        badge={{ label: statusLabel, variant: STATUS_VARIANTS[remittance.status] || "outline" }}
+        badge={{ label: statusLabel, variant: REMITTANCE_STATUS_VARIANTS[remittance.status] || "outline" }}
         actions={
           !isTerminal ? (
             <div className="flex gap-2 flex-wrap">
