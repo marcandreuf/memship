@@ -30,7 +30,7 @@ import { FormSkeleton } from "@/components/ui/skeletons";
 
 const paymentsSchema = z.object({
   // Invoicing
-  invoice_prefix: z.string().min(1).max(10),
+  invoice_prefix: z.string().regex(/^[A-Za-z0-9]{1,10}$/, "validation.invalidInvoicePrefix"),
   invoice_next_number: z.coerce.number<number>().int().min(1),
   invoice_annual_reset: z.boolean(),
   default_vat_rate: z.coerce.number<number>().min(0).max(100),

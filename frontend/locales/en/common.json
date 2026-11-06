@@ -131,6 +131,7 @@
     "invalidSlug": "Lowercase letters, numbers and hyphens only",
     "invalidKey": "Lowercase letters, numbers and underscores only",
     "invalidColor": "Use a hex colour, e.g. #3B82F6",
+    "invalidInvoicePrefix": "Letters and numbers only, up to 10",
     "endBeforeStart": "End date must be after start date",
     "endTimeBeforeStart": "End time must be after start time",
     "closeTimeBeforeOpen": "Closing time must be after opening time",

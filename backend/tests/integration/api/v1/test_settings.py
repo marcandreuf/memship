@@ -213,6 +213,24 @@ class TestBankingFields:
         assert data["bank_iban"] == "ES9121000418450200051332"
         assert data["bank_bic"] == "CAIXESBBXXX"
 
+    @pytest.mark.parametrize("prefix", ["FAC-A", "FAC A", "FAC%", "", "ABCDEFGHIJK"])
+    def test_invoice_prefix_rejects_non_alphanumeric(self, client, db, prefix):
+        _ensure_org_settings(db)
+        user = _create_user(db, "super_admin", "inv-prefix")
+        client.cookies.update(_auth_cookie(user))
+
+        response = client.put("/api/v1/settings/", json={"invoice_prefix": prefix})
+        assert response.status_code == 422
+
+    def test_invoice_prefix_accepts_alphanumeric(self, client, db):
+        _ensure_org_settings(db)
+        user = _create_user(db, "super_admin", "inv-prefix-ok")
+        client.cookies.update(_auth_cookie(user))
+
+        response = client.put("/api/v1/settings/", json={"invoice_prefix": "Fac2026"})
+        assert response.status_code == 200
+        assert response.json()["invoice_prefix"] == "Fac2026"
+
     def test_update_invoice_series(self, client, db):
         _ensure_org_settings(db)
         user = _create_user(db, "super_admin", "inv1")

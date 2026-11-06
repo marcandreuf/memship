@@ -131,6 +131,7 @@
     "invalidSlug": "Solo minúsculas, números y guiones",
     "invalidKey": "Solo minúsculas, números y guiones bajos",
     "invalidColor": "Usa un color hexadecimal, p. ej. #3B82F6",
+    "invalidInvoicePrefix": "Solo letras y números, hasta 10",
     "endBeforeStart": "La fecha de fin debe ser posterior a la de inicio",
     "endTimeBeforeStart": "La hora de fin debe ser posterior a la de inicio",
     "closeTimeBeforeOpen": "La hora de cierre debe ser posterior a la de apertura",
