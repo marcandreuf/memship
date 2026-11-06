@@ -5,6 +5,7 @@ import { useRouter } from "@/lib/i18n/routing";
 import { useForm } from "react-hook-form";
 import { useZodResolver } from "@/hooks/use-zod-resolver";
 import { z } from "zod";
+import { optionalNumber } from "@/lib/validation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -42,12 +43,12 @@ const activitySchema = z.object({
   location_url: z.string().max(500).optional().or(z.literal("")),
   min_participants: z.coerce.number<number>().int().min(0),
   max_participants: z.coerce.number<number>().int().min(1),
-  min_age: z.coerce.number<number>().int().min(0).optional().or(z.literal("")),
-  max_age: z.coerce.number<number>().int().min(0).optional().or(z.literal("")),
+  min_age: optionalNumber({ min: 0 }),
+  max_age: optionalNumber({ min: 0 }),
   tax_rate: z.coerce.number<number>().min(0).max(100),
   allowed_membership_types: z.array(z.number()),
   allow_self_cancellation: z.boolean(),
-  self_cancellation_deadline_hours: z.coerce.number<number>().int().min(0).optional().or(z.literal("")),
+  self_cancellation_deadline_hours: optionalNumber({ min: 0 }),
 }).refine((data) => new Date(data.ends_at) > new Date(data.starts_at), {
   message: "validation.endBeforeStart",
   path: ["ends_at"],
@@ -65,7 +66,10 @@ const activitySchema = z.object({
   path: ["max_participants"],
 });
 
-type ActivityFormValues = z.infer<typeof activitySchema>;
+type ActivityFormValues = z.output<typeof activitySchema>;
+// What the fields hold: an emptied number input holds "", which the schema
+// turns into undefined on submit. RHF's third generic carries that split.
+type ActivityFormValuesInput = z.input<typeof activitySchema>;
 
 export default function NewActivityPage() {
   const t = useTranslations();
@@ -74,7 +78,7 @@ export default function NewActivityPage() {
   const { data: membershipTypes } = useMembershipTypes();
   const activeTypes = (membershipTypes ?? []).filter((mt) => mt.is_active);
 
-  const form = useForm<ActivityFormValues>({
+  const form = useForm<ActivityFormValuesInput, unknown, ActivityFormValues>({
     resolver: useZodResolver(activitySchema),
     defaultValues: {
       name: "",
@@ -118,10 +122,10 @@ export default function NewActivityPage() {
     if (data.location) payload.location = data.location;
     if (data.location_details) payload.location_details = data.location_details;
     if (data.location_url) payload.location_url = data.location_url;
-    if (data.min_age !== "" && data.min_age !== undefined) payload.min_age = Number(data.min_age);
-    if (data.max_age !== "" && data.max_age !== undefined) payload.max_age = Number(data.max_age);
-    if (data.allow_self_cancellation && data.self_cancellation_deadline_hours !== "" && data.self_cancellation_deadline_hours !== undefined) {
-      payload.self_cancellation_deadline_hours = Number(data.self_cancellation_deadline_hours);
+    if (data.min_age !== undefined) payload.min_age = data.min_age;
+    if (data.max_age !== undefined) payload.max_age = data.max_age;
+    if (data.allow_self_cancellation && data.self_cancellation_deadline_hours !== undefined) {
+      payload.self_cancellation_deadline_hours = data.self_cancellation_deadline_hours;
     }
 
     try {

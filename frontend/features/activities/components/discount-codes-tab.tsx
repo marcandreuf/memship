@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { useZodResolver } from "@/hooks/use-zod-resolver";
 import { z } from "zod";
+import { optionalNumber } from "@/lib/validation";
 import { Button } from "@/components/ui/button";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
@@ -35,11 +36,14 @@ const discountSchema = z.object({
   description: z.string().max(2000).optional().or(z.literal("")),
   discount_type: z.enum(["percentage", "fixed"]),
   discount_value: z.coerce.number<number>().gt(0),
-  max_uses: z.coerce.number<number>().int().min(1).optional().or(z.literal("")),
+  max_uses: optionalNumber({ min: 1 }),
   valid_from: z.string().optional().or(z.literal("")),
   valid_until: z.string().optional().or(z.literal("")),
 });
-type DiscountFormValues = z.infer<typeof discountSchema>;
+type DiscountFormValues = z.output<typeof discountSchema>;
+// What the fields hold: an emptied number input holds "", which the schema
+// turns into undefined on submit. RHF's third generic carries that split.
+type DiscountFormValuesInput = z.input<typeof discountSchema>;
 
 function toLocalDatetime(iso: string) {
   const d = new Date(iso);
@@ -127,7 +131,7 @@ function DiscountForm({
   const createMutation = useCreateDiscountCode(activityId);
   const updateMutation = useUpdateDiscountCode(activityId);
 
-  const form = useForm<DiscountFormValues>({
+  const form = useForm<DiscountFormValuesInput, unknown, DiscountFormValues>({
     resolver: useZodResolver(discountSchema),
     defaultValues: {
       code: discount?.code || "",
@@ -147,7 +151,7 @@ function DiscountForm({
       discount_value: data.discount_value,
     };
     if (data.description) payload.description = data.description;
-    if (data.max_uses !== "" && data.max_uses !== undefined) payload.max_uses = Number(data.max_uses);
+    if (data.max_uses !== undefined) payload.max_uses = data.max_uses;
     if (data.valid_from) payload.valid_from = new Date(data.valid_from).toISOString();
     if (data.valid_until) payload.valid_until = new Date(data.valid_until).toISOString();
 

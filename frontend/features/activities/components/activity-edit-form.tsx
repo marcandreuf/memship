@@ -3,6 +3,7 @@
 import { useForm } from "react-hook-form";
 import { useZodResolver } from "@/hooks/use-zod-resolver";
 import { z } from "zod";
+import { optionalNumber } from "@/lib/validation";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,12 +34,12 @@ const editActivitySchema = z.object({
   location_url: z.string().max(500).optional().or(z.literal("")),
   min_participants: z.coerce.number<number>().int().min(0),
   max_participants: z.coerce.number<number>().int().min(1),
-  min_age: z.coerce.number<number>().int().min(0).optional().or(z.literal("")),
-  max_age: z.coerce.number<number>().int().min(0).optional().or(z.literal("")),
+  min_age: optionalNumber({ min: 0 }),
+  max_age: optionalNumber({ min: 0 }),
   tax_rate: z.coerce.number<number>().min(0).max(100),
   allowed_membership_types: z.array(z.number()),
   allow_self_cancellation: z.boolean(),
-  self_cancellation_deadline_hours: z.coerce.number<number>().int().min(0).optional().or(z.literal("")),
+  self_cancellation_deadline_hours: optionalNumber({ min: 0 }),
 }).refine((data) => new Date(data.ends_at) > new Date(data.starts_at), {
   message: "validation.endBeforeStart",
   path: ["ends_at"],
@@ -56,7 +57,10 @@ const editActivitySchema = z.object({
   path: ["max_participants"],
 });
 
-type EditActivityFormValues = z.infer<typeof editActivitySchema>;
+type EditActivityFormValues = z.output<typeof editActivitySchema>;
+// What the fields hold: an emptied number input holds "", which the schema
+// turns into undefined on submit. RHF's third generic carries that split.
+type EditActivityFormValuesInput = z.input<typeof editActivitySchema>;
 
 function toLocalDatetime(iso: string) {
   const d = new Date(iso);
@@ -81,7 +85,7 @@ export function ActivityEditForm({
   const { data: membershipTypes } = useMembershipTypes();
   const activeTypes = (membershipTypes ?? []).filter((mt) => mt.is_active);
 
-  const form = useForm<EditActivityFormValues>({
+  const form = useForm<EditActivityFormValuesInput, unknown, EditActivityFormValues>({
     resolver: useZodResolver(editActivitySchema),
     defaultValues: {
       name: activity.name,
@@ -124,9 +128,9 @@ export function ActivityEditForm({
       location: data.location || null,
       location_details: data.location_details || null,
       location_url: data.location_url || null,
-      min_age: data.min_age !== "" && data.min_age !== undefined ? Number(data.min_age) : null,
-      max_age: data.max_age !== "" && data.max_age !== undefined ? Number(data.max_age) : null,
-      self_cancellation_deadline_hours: data.allow_self_cancellation && data.self_cancellation_deadline_hours !== "" && data.self_cancellation_deadline_hours !== undefined ? Number(data.self_cancellation_deadline_hours) : null,
+      min_age: data.min_age ?? null,
+      max_age: data.max_age ?? null,
+      self_cancellation_deadline_hours: data.allow_self_cancellation ? data.self_cancellation_deadline_hours ?? null : null,
     };
     await onSubmit(payload);
   }
