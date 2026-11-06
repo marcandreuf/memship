@@ -140,4 +140,4 @@ class OrganizationSettingsUpdate(BaseModel):
     _check_iban = field_validator("bank_iban")(refuse_invalid_iban)
     _check_creditor_id = field_validator("creditor_id")(refuse_invalid_creditor_id)
 
-    _not_null = field_validator("name")(refuse_null)
+    _not_null = field_validator("name", "invoice_prefix")(refuse_null)
