@@ -1,5 +1,5 @@
 <!-- source: en/self-hosting/feature-flags.md -->
-<!-- source-hash: 10e7375424aa -->
+<!-- source-hash: 70b6870a042d -->
 
 # Feature flags
 
@@ -10,6 +10,7 @@ administración, no desde el `.env` ni desde un fichero del servidor. Nada de es
 reiniciar.
 
 > **En inglés:** [Feature flags](../../en/self-hosting/feature-flags.md).
+> **En català:** [Feature flags](../../ca/self-hosting/feature-flags.md).
 
 Esta página existe porque "el flag no está" y "el flag está desactivado" son lo mismo para la
 aplicación pero no para una persona que mira una pantalla, y hasta que se puso por escrito no

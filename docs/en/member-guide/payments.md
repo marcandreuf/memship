@@ -6,6 +6,7 @@
 How to view your receipts, pay them online and choose your payment method.
 
 > **In Spanish:** [Pagos y recibos](../../es/member-guide/payments.md).
+> **En català:** [Pagaments i rebuts](../../ca/member-guide/payments.md).
 
 ## My Receipts
 

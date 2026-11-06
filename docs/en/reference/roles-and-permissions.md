@@ -1,5 +1,5 @@
 <!-- source: es/reference/roles-and-permissions.md -->
-<!-- source-hash: e547e379985f -->
+<!-- source-hash: ba3f1f3a29f7 -->
 
 # Roles and permissions
 
@@ -7,6 +7,7 @@ What each account can do depends on its **roles**, and each role is a set of **p
 account can hold several roles and has the permissions of all of them.
 
 > **In Spanish:** [Roles y permisos](../../es/reference/roles-and-permissions.md).
+> **En català:** [Rols i permisos](../../ca/reference/roles-and-permissions.md).
 
 ## System roles
 

@@ -1,5 +1,5 @@
 <!-- source: es/admin-guide/entities.md -->
-<!-- source-hash: 7a3abc620686 -->
+<!-- source-hash: 49fb1fa84949 -->
 
 # Entities
 
@@ -9,6 +9,7 @@ registrations. What they do have is their own record, addresses, contacts and, a
 **receipts in their name**, so a donation from a company is recorded without inventing a member.
 
 > **In Spanish:** [Entidades](../../es/admin-guide/entities.md).
+> **En català:** [Entitats](../../ca/admin-guide/entities.md).
 
 Access requires the **View entities** / **Edit entities** permissions, which the
 administrator role has out of the box and which you can grant separately in a custom role.

@@ -3,6 +3,8 @@
 **Who this is for:** the person who runs a memship installation for their club or association (the **superadmin**).
 **What it covers:** everything under **Settings → Integrations**, signing in with Google / Apple (**Single Sign-On**) and sending email (**Mailing**), plus the registration options that go with them.
 
+> **En català:** [Integracions: guia de configuració](../../ca/admin-guide/integrations.md).
+
 You do not need to edit any file or restart anything. Every credential in this guide is entered in the web interface and takes effect on the next request.
 
 ---
@@ -349,7 +351,7 @@ Everything on the Integrations screen can also be supplied through the installat
 | SMTP server → Password | `SMTP_PASSWORD` |
 | SMTP server → From address | `SMTP_FROM` |
 | Backend URL (read-only) | `BACKEND_PUBLIC_URL` |
-|, (secret encryption key) | `MEMSHIP_SECRET_KEY`, `SECRETS_KEY_FILE` |
+| _(no field)_ (secret encryption key) | `MEMSHIP_SECRET_KEY`, `SECRETS_KEY_FILE` |
 
 Notes:
 

@@ -6,6 +6,7 @@ inscripciones. Lo que sí tienen es ficha propia, direcciones, contactos y, sobr
 **recibos a su nombre**, así se registra una donación de una empresa sin inventar un socio.
 
 > **In English:** [Entities](../../en/admin-guide/entities.md).
+> **En català:** [Entitats](../../ca/admin-guide/entities.md).
 
 El acceso requiere los permisos **Ver entidades** / **Editar entidades**, que el rol de
 administrador tiene de serie y que puedes conceder por separado en un rol personalizado.

@@ -7,8 +7,8 @@ Documentation for **self-hosting operators**, **organization admins**, and **mem
 >
 > - **[Castellano](es/README.md)**, the default language of the published site
 > - **[English](en/README.md)**
-> - **[Català](ca/README.md)**, the member guide and *What you need*; every other page it lists
->   is still served in Spanish or English, marked as such
+> - **[Català](ca/README.md)**, every page except *Quick start* and *Installation*, which are
+>   still served in English, marked as such
 
 > **Languages.** Every page is published in `es`, `ca` and `en`, addressed by a directory rather
 > than a filename suffix: `docs/<locale>/<section>/<page>.md`. `es` is the default, so a Spanish

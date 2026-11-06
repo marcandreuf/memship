@@ -6,6 +6,7 @@ running one command that backs up, applies the version and verifies it. Database
 automatically on startup.
 
 > **En español:** [Actualizar](../../es/self-hosting/upgrading.md).
+> **En català:** [Actualitzar](../../ca/self-hosting/upgrading.md).
 
 ## Versioning
 

@@ -1,11 +1,12 @@
 <!-- source: es/admin-guide/reports.md -->
-<!-- source-hash: c2f912674822 -->
+<!-- source-hash: 84b42a3bb9ae -->
 
 # Reports and dashboard
 
 Dashboard, financial overview, annual summary and data exports.
 
 > **In Spanish:** [Informes y panel](../../es/admin-guide/reports.md).
+> **En català:** [Informes i tauler](../../ca/admin-guide/reports.md).
 
 ## Dashboard
 

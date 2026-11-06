@@ -4,6 +4,7 @@ Ajustes generales, facturación, SEPA, proveedores de pago y automatizaciones. R
 de administración.
 
 > **In English:** [Organisation settings](../../en/admin-guide/settings.md).
+> **En català:** [Configuració de l'organització](../../ca/admin-guide/settings.md).
 
 ## Datos de la organización
 

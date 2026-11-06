@@ -1,5 +1,5 @@
 <!-- source: es/admin-guide/activities.md -->
-<!-- source-hash: 454d47e596b4 -->
+<!-- source-hash: 34ea228d9946 -->
 
 # Activities
 
@@ -7,6 +7,7 @@ Activities are events, courses, workshops or competitions that members can regis
 activity can have modalities, price tiers and eligibility rules.
 
 > **In Spanish:** [Actividades](../../es/admin-guide/activities.md).
+> **En català:** [Activitats](../../ca/admin-guide/activities.md).
 
 ## Creating an activity
 

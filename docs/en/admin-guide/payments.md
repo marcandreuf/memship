@@ -1,11 +1,12 @@
 <!-- source: es/admin-guide/payments.md -->
-<!-- source-hash: 46c598dd7831 -->
+<!-- source-hash: 990a4f1807a6 -->
 
 # Payments and receipts
 
 Managing receipts, generating membership fees, VAT and collections (including online payment).
 
 > **In Spanish:** [Pagos y recibos](../../es/admin-guide/payments.md).
+> **En català:** [Pagaments i rebuts](../../ca/admin-guide/payments.md).
 
 ## The receipt and its life cycle
 

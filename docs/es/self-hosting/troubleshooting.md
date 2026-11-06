@@ -1,5 +1,5 @@
 <!-- source: en/self-hosting/troubleshooting.md -->
-<!-- source-hash: 98952a08561a -->
+<!-- source-hash: beba2acfbaab -->
 
 # Resolución de problemas
 
@@ -8,6 +8,7 @@ de aquí está mal o falta, [abre una incidencia](https://github.com/marcandreuf
 esta página sale de instalaciones reales, no de la teoría.
 
 > **En inglés:** [Troubleshooting](../../en/self-hosting/troubleshooting.md).
+> **En català:** [Resolució de problemes](../../ca/self-hosting/troubleshooting.md).
 
 Antes de nada, dos órdenes que vale la pena ejecutar:
 

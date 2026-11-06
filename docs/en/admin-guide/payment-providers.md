@@ -1,7 +1,9 @@
 # Payment providers: Setup Guide
 
 **Who this is for:** the person who runs a memship installation for their club or association (the **superadmin**).
-**What it covers:** everything under **Settings → Payments → Providers**, connecting **Stripe** for card payments, and **Redsys** for the Spanish bank gateway and **Bizum**.
+**What it covers:** everything under **Settings → Payments → Payment Providers**, connecting **Stripe** for card payments, and **Redsys** for the Spanish bank gateway and **Bizum**.
+
+> **En català:** [Proveïdors de pagament: guia de configuració](../../ca/admin-guide/payment-providers.md).
 
 You do not need to edit any file or restart anything. Every credential in this guide is entered in the web interface and takes effect on the next request.
 
@@ -107,7 +109,7 @@ Stripe keeps separate keys for test mode and live mode, selected by the toggle i
 https://<your-memship-address>/api/v1/webhooks/stripe
 ```
 
-You do not have to build it by hand: the Stripe provider's form in **Settings → Payment Providers** shows it, built from `BACKEND_PUBLIC_URL`, with a copy button. The `/api/v1/` prefix matters: the bundled reverse-proxy configuration routes only `/api/v1/*` to the API and sends everything else to the web interface, so a URL without it reaches the wrong service and Stripe will report failures.
+You do not have to build it by hand: the Stripe provider's form in **Settings → Payments → Payment Providers** shows it, built from `BACKEND_PUBLIC_URL`, with a copy button. The `/api/v1/` prefix matters: the bundled reverse-proxy configuration routes only `/api/v1/*` to the API and sends everything else to the web interface, so a URL without it reaches the wrong service and Stripe will report failures.
 
 Then, in the Stripe dashboard ([webhook docs](https://docs.stripe.com/webhooks)):
 
@@ -125,7 +127,7 @@ Then, in the Stripe dashboard ([webhook docs](https://docs.stripe.com/webhooks))
 
 ### 4.4 Filling in the screen
 
-In **Settings → Payments → Providers**, add a Stripe provider and enter:
+In **Settings → Payments → Payment Providers**, add a Stripe provider and enter:
 
 | Field | Value |
 |---|---|
@@ -249,7 +251,7 @@ Under the providers, **Payment notifications** lists what the gateways sent that
 - **Ignored**, memship received it and deliberately did nothing: an event type it does not handle, a wrong amount, or a payment for a receipt **already paid**. That last one is how a double charge shows up, the member paid twice and the second payment needs refunding at the gateway.
 - **Refused at the signature check**, shown as a count per provider above the list, with the last reason. These are never stored, because nothing in an unverified message can be trusted. A count that keeps rising means the configured secret is wrong and **no** payment is being confirmed.
 
-To be told rather than having to look, set the billing notification address. memship then sends one email a day, only when something went wrong in the previous 24 hours. The email is **Payment notification problems** under Settings → Communications: on by default on a new install, and switchable there. An install that predates it starts with it off, switch it on there.
+To be told rather than having to look, set the billing notification address. memship then sends one email a day, only when something went wrong in the previous 24 hours. The email is **Payment notification problems** under Settings → Members → Communications: on by default on a new install, and switchable there. An install that predates it starts with it off, switch it on there.
 
 If the gateway took the money and the receipt is still unpaid, mark it paid by hand choosing Redsys, Bizum or Stripe as the method: memship asks for the gateway reference (the authorisation code or payment id from the settlement) so the payment can still be matched to the bank.
 
@@ -263,7 +265,7 @@ If the gateway took the money and the receipt is still unpaid, mark it paid by h
 |---|---|---|---|---|
 | Secret Key | yes | yes | must start `sk_` | Stripe → Developers → API keys |
 | Publishable Key | yes | no | must start `pk_` | Stripe → Developers → API keys |
-| Webhook Secret | yes | yes | **no** | Stripe → Developers → Webhooks, after creating the endpoint |
+| Webhook Secret | yes | yes | must start `whsec_` | Stripe → Developers → Webhooks, after creating the endpoint |
 
 **Redsys**
 
@@ -274,7 +276,7 @@ If the gateway took the money and the receipt is still unpaid, mark it paid by h
 | Signing Key | yes | yes | no | your bank, per environment |
 | Environment | yes | no | `test` or `production` | your choice |
 | Currency Code | yes | no | exactly 3 digits | ISO 4217, `978` for euro |
-| Offer Bizum | no | no |, | your bank, once it confirms Bizum on the terminal. Off by default |
+| Offer Bizum | no | no | n/a | your bank, once it confirms Bizum on the terminal. Off by default |
 
 ---
 

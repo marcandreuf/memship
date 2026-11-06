@@ -3,6 +3,7 @@
 Envío de anuncios a los socios por correo electrónico y con notificación en la app.
 
 > **In English:** [Communications](../../en/admin-guide/communications.md).
+> **En català:** [Comunicacions](../../ca/admin-guide/communications.md).
 
 > **Requisito previo.** Activa las comunicaciones en
 > [Configuración → Socios → Comunicaciones](settings.md#correos-a-los-miembros) y configura el

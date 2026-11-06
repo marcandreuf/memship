@@ -3,6 +3,7 @@
 Gestión del ciclo de vida de los socios, los tipos de membresía y los grupos.
 
 > **In English:** [Members](../../en/admin-guide/members.md).
+> **En català:** [Socis](../../ca/admin-guide/members.md).
 
 ## Lista de socios
 

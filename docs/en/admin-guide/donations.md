@@ -1,5 +1,5 @@
 <!-- source: es/admin-guide/donations.md -->
-<!-- source-hash: 2a9ea2cb5f0b -->
+<!-- source-hash: 16f506f1bbae -->
 
 # Donations
 
@@ -7,6 +7,7 @@ There are three ways to receive a donation. The difference is not technical: it 
 you need to be left** and **who is donating**.
 
 > **In Spanish:** [Donaciones](../../es/admin-guide/donations.md).
+> **En català:** [Donacions](../../ca/admin-guide/donations.md).
 
 ## Which path is yours
 

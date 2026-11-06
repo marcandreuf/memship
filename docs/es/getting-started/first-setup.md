@@ -1,5 +1,5 @@
 <!-- source: en/getting-started/first-setup.md -->
-<!-- source-hash: 23d54dbd62a9 -->
+<!-- source-hash: 8d263d302d8b -->
 
 # Configuración inicial
 
@@ -8,6 +8,7 @@ los servicios, ejecuta la orden de configuración para crear tu cuenta y configu
 Es la misma orden en todos los entornos, y es interactiva.
 
 > **En inglés:** [First-time setup](../../en/getting-started/first-setup.md).
+> **En català:** [Configuració inicial](../../ca/getting-started/first-setup.md).
 
 ```bash
 docker compose exec -it api python -m app.cli.seed

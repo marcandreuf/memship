@@ -3,6 +3,7 @@
 Panel de control, resumen financiero, resumen anual y exportaciones de datos.
 
 > **In English:** [Reports and dashboard](../../en/admin-guide/reports.md).
+> **En català:** [Informes i tauler](../../ca/admin-guide/reports.md).
 
 ## Panel (Dashboard)
 

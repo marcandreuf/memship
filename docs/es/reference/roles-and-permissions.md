@@ -4,6 +4,7 @@ Lo que puede hacer cada cuenta depende de sus **roles**, y cada rol es un conjun
 **permisos**. Una cuenta puede tener varios roles y reúne los permisos de todos ellos.
 
 > **In English:** [Roles and permissions](../../en/reference/roles-and-permissions.md).
+> **En català:** [Rols i permisos](../../ca/reference/roles-and-permissions.md).
 
 ## Roles del sistema
 

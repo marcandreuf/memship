@@ -1,5 +1,5 @@
 <!-- source: es/admin-guide/overview.md -->
-<!-- source-hash: 0caadd01dc0f -->
+<!-- source-hash: 5086916e23fd -->
 
 # Introduction to the administrator guide
 
@@ -7,6 +7,7 @@ This guide is for the **staff who run the organisation** from Memship's administ
 member registrations, activities, payments, communications and settings.
 
 > **In Spanish:** [Introducción a la guía del administrador](../../es/admin-guide/overview.md).
+> **En català:** [Introducció a la guia de l'administrador](../../ca/admin-guide/overview.md).
 
 > **Language.** The administrator and member guides are written in Spanish first
 > (`docs/es/`), because the people who run a club and its members are mostly Spanish speakers.

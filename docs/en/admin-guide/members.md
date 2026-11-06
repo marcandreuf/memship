@@ -1,11 +1,12 @@
 <!-- source: es/admin-guide/members.md -->
-<!-- source-hash: ef317f9d1d6a -->
+<!-- source-hash: 499db6850771 -->
 
 # Members
 
 Managing the member life cycle, membership types and groups.
 
 > **In Spanish:** [Socios](../../es/admin-guide/members.md).
+> **En català:** [Socis](../../ca/admin-guide/members.md).
 
 ## Member list
 

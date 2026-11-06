@@ -1,5 +1,5 @@
 <!-- source: en/self-hosting/email.md -->
-<!-- source-hash: 509dbb62bd7b -->
+<!-- source-hash: 16d2ae445324 -->
 
 # Envío de correo
 
@@ -8,6 +8,7 @@ inscripciones a actividades, avisar de ascensos desde la lista de espera, enviar
 avisar de recibos vencidos. **El correo está desactivado hasta que configuras un transporte.**
 
 > **En inglés:** [Email delivery](../../en/self-hosting/email.md).
+> **En català:** [Enviament de correu](../../ca/self-hosting/email.md).
 
 Hay dos formas de configurarlo, y **no son equivalentes**: la pantalla de ajustes manda sobre el
 `.env`. Lee [Cuál está en vigor](#cuál-está-en-vigor) antes de tocar nada, sobre todo en una

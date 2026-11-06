@@ -1,11 +1,12 @@
 <!-- source: es/admin-guide/communications.md -->
-<!-- source-hash: 623d3be955b9 -->
+<!-- source-hash: b0ad537d24e4 -->
 
 # Communications
 
 Sending announcements to members by email and as an in-app notification.
 
 > **In Spanish:** [Comunicaciones](../../es/admin-guide/communications.md).
+> **En català:** [Comunicacions](../../ca/admin-guide/communications.md).
 
 > **Prerequisite.** Enable communications in
 > [Settings → Members → Communications](settings.md#emails-to-members) and set up
