@@ -95,7 +95,17 @@
         "webhook_secret": "Secreto del webhook"
       },
       "fieldHints": {
-        "enable_bizum": "Actívalo solo cuando tu banco haya confirmado que Bizum está habilitado en este terminal. Memship no puede comprobarlo."
+        "enable_bizum": "Actívalo solo cuando tu banco haya confirmado que Bizum está habilitado en este terminal. Memship no puede comprobarlo.",
+        "stripe": {
+          "secret_key": "En Stripe, Desarrolladores → Claves de API. Empieza por sk_test_ en modo de prueba y por sk_live_ en modo real.",
+          "webhook_secret": "Lo emite Stripe, no memship: crea primero en Stripe el endpoint de webhook que aparece más abajo y luego muestra su secreto de firma. Empieza por whsec_."
+        },
+        "redsys": {
+          "merchant_code": "Tu identificador de comercio, de 7 a 9 dígitos, del contrato del TPV Virtual o del portal de tu banco.",
+          "terminal_id": "Numérico; normalmente 1, salvo que el banco te haya dado varios terminales.",
+          "secret_key": "En los portales bancarios suele llamarse clave secreta de encriptación o clave de firma. Pruebas y producción tienen claves distintas.",
+          "currency_code": "Código numérico ISO 4217: 978 es el euro."
+        }
       },
       "errors": {
         "missing_required_field": "{field} es obligatorio",

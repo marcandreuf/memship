@@ -400,9 +400,9 @@ export function PaymentProvidersSettings() {
                     >
                       <div className="space-y-0.5">
                         <div className="text-xs font-medium">{fieldLabel(field.key)}</div>
-                        {fieldHint(field.key) && (
+                        {fieldHint(field.key, selectedType ?? undefined) && (
                           <p className="text-xs text-muted-foreground">
-                            {fieldHint(field.key)}
+                            {fieldHint(field.key, selectedType ?? undefined)}
                           </p>
                         )}
                       </div>
@@ -472,6 +472,11 @@ export function PaymentProvidersSettings() {
                           }))
                         }
                       />
+                    )}
+                    {fieldHint(field.key, selectedType ?? undefined) && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {fieldHint(field.key, selectedType ?? undefined)}
+                      </p>
                     )}
                   </div>
                 )
