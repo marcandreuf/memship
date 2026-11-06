@@ -131,6 +131,7 @@
     "invalidSlug": "Només minúscules, números i guions",
     "invalidKey": "Només minúscules, números i guions baixos",
     "invalidColor": "Fes servir un color hexadecimal, p. ex. #3B82F6",
+    "invalidInvoicePrefix": "Només lletres i números, fins a 10",
     "endBeforeStart": "La data de fi ha de ser posterior a la d'inici",
     "endTimeBeforeStart": "L'hora de fi ha de ser posterior a la d'inici",
     "closeTimeBeforeOpen": "L'hora de tancament ha de ser posterior a la d'obertura",

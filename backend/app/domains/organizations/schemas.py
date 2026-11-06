@@ -101,7 +101,10 @@ class OrganizationSettingsUpdate(BaseModel):
     # every collection in every batch rather than one member's (#393).
     bank_iban: str | None = Field(default=None, max_length=34)
     bank_bic: str | None = Field(default=None, max_length=11, pattern=r"^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$")
-    invoice_prefix: str | None = Field(default=None, max_length=10)
+    # Alphanumeric only: the prefix is joined to the year and counter with
+    # dashes, and the first five characters go into every SEPA mandate
+    # reference, so a separator or a space here breaks both (#91).
+    invoice_prefix: str | None = Field(default=None, pattern=r"^[A-Za-z0-9]{1,10}$")
     invoice_next_number: int | None = Field(default=None, ge=1)
     invoice_annual_reset: bool | None = None
     member_number_prefix: str | None = Field(default=None, max_length=20)
