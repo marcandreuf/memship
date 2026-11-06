@@ -4,7 +4,7 @@ Memship sends transactional email for address confirmations, password resets, ac
 confirmations, waitlist promotions, payment receipts, and overdue reminders. **Email is
 disabled until you configure a transport.**
 
-There are two ways to configure one, and **they are not equivalent** — the settings screen
+There are two ways to configure one, and **they are not equivalent**, the settings screen
 wins over `.env`. Read [Which one is in effect](#which-one-is-in-effect) before editing
 anything, especially on an installation that is already running.
 
@@ -16,13 +16,13 @@ anything, especially on an installation that is already running.
 SMTP means a server that accepts **STARTTLS**, usually on port 587, or no encryption at all.
 A server reachable only on port 465, which encrypts from the first byte, is not supported.
 
-## Option A — the settings screen
+## Option A: the settings screen
 
 Sign in as superadmin and go to **Settings → Integrations → Mailing**.
 
-The full walkthrough — obtaining the credentials, the DNS records Resend needs, the details of
+The full walkthrough, obtaining the credentials, the DNS records Resend needs, the details of
 your SMTP server (or a Gmail app password), the **Send test** button, and a troubleshooting
-table — is in the
+table, is in the
 [Integrations setup guide, section 4](../admin-guide/integrations.md#4-mailing). Two points
 from it are worth repeating here because they are the ones that silently bite:
 
@@ -30,7 +30,7 @@ from it are worth repeating here because they are the ones that silently bite:
   You must then set the **Active provider** selector and save again. Configure → test →
   activate, in that order. The order is enforced: a provider cannot be activated until a send
   through its current saved credentials has passed.
-- **With no active provider, mail is silently skipped** — logged, not queued, no error. Nothing
+- **With no active provider, mail is silently skipped**, logged, not queued, no error. Nothing
   in the interface reports a send that never happened.
 
 Each provider card also shows whether its credentials are known to work: *Not verified*,
@@ -43,7 +43,7 @@ are tried again automatically after 1, 5 and 25 minutes, and the approval messag
 other failure, such as rejected credentials, is reported straight away and not retried, because
 it would fail the same way again. The retries run on the `worker` service, which must be up.
 
-## Option B — `.env`
+## Option B: `.env`
 
 Set the variables and recreate the backend so it picks them up:
 
@@ -58,7 +58,7 @@ RESEND_API_KEY=re_your_key_here
 RESEND_FROM_EMAIL=noreply@yourdomain.org
 ```
 
-**SMTP** (any server, Gmail included — for Gmail use `smtp.gmail.com` and an app password):
+**SMTP** (any server, Gmail included, for Gmail use `smtp.gmail.com` and an app password):
 
 ```bash
 SMTP_HOST=smtp.yourprovider.com
@@ -84,10 +84,10 @@ Three cases, and the difference matters:
 
 The [quick-start stack](../getting-started/quickstart.md#5-try-a-member-joining) relies on the
 first row: its compose file points `SMTP_HOST` at a local test inbox, so saving the screen
-replaces the test inbox — with the provider chosen there, or with nothing if none is.
+replaces the test inbox, with the provider chosen there, or with nothing if none is.
 
 The consequence to watch for: once anyone has saved the Mailing screen, **editing `.env` may
-have no visible effect** — the saved value wins and no error is raised. If you configured Resend
+have no visible effect**, the saved value wins and no error is raised. If you configured Resend
 in the screen and later change `RESEND_API_KEY` in `.env`, the old key keeps sending. Clear the
 field in the screen to fall back to the environment value.
 
@@ -109,7 +109,7 @@ record belonged to the old provider. It stays active meanwhile.
 
 ## Verify
 
-Trigger a real send to confirm delivery — for example, request a **password reset** from the
+Trigger a real send to confirm delivery, for example, request a **password reset** from the
 login page, or approve a pending registration and check the approval email arrives. Emails are localized
 (ES/CA/EN) based on the recipient's language.
 
@@ -118,14 +118,14 @@ one specific provider even when that provider is not the active one, so you can 
 credentials before switching real traffic to them.
 
 Use a member or club admin account for the reset test. Super admins are excluded from that
-flow by design — their password is reset from the host with `python -m app.cli.seed`, see
-[Recovering the super admin password](../getting-started/first-setup.md#recovering-the-super-admin-password)
-— so testing with one looks like mail that never arrives.
+flow by design, their password is reset from the host with `python -m app.cli.seed`, see
+[Recovering the super admin password](../getting-started/first-setup.md#recovering-the-super-admin-password),
+so testing with one looks like mail that never arrives.
 
 ## What a member can switch off
 
 Each member has a **Receive club emails** toggle on their profile. It covers the
-`optional` templates — booking and activity confirmations, and club announcements —
+`optional` templates, booking and activity confirmations, and club announcements,
 and nothing else:
 
 | Tier | Examples | Member opt-out |
@@ -160,30 +160,30 @@ is the link sent at sign-up. So until a provider is configured:
 - **A member who registered earlier and never confirmed** shows as *active* and cannot
   sign in. Open their member record: it says the address is unconfirmed and offers
   **Confirm address**. That needs `users.write`, and it is recorded in the audit log as
-  confirmed by an administrator rather than by the member — confirm only an address you
+  confirmed by an administrator rather than by the member, confirm only an address you
   have established is theirs by some other means.
 - From the host, the same thing without the UI:
   `python -m app.cli.verify_email --email someone@example.org`, or `--list` to see who
   is waiting.
 
-A provider that is *configured but broken* — a wrong API key, say — is not caught by the
+A provider that is *configured but broken*, a wrong API key, say, is not caught by the
 registration guard: it looks usable and fails at the transport. Those members get stuck
 the same way, and **Confirm address** is the way out.
 
 ## Troubleshooting
 
-- **No email at all** — check in this order: (1) **Settings → Integrations → Mailing**, is
+- **No email at all**, check in this order: (1) **Settings → Integrations → Mailing**, is
   *Active provider* set to something other than *None*? A saved-but-not-activated provider sends
   nothing. (2) If the screen has never been used, confirm `RESEND_API_KEY` or `SMTP_HOST` is set
   in `.env`; if neither is, email is intentionally disabled.
-- **Changing `.env` did nothing** — the Mailing screen has a saved value for that field, and it
+- **Changing `.env` did nothing**, the Mailing screen has a saved value for that field, and it
   wins. See [Which one is in effect](#which-one-is-in-effect).
-- **Resend rejects the send (403, "domain is not verified")** — the From address is not on a
+- **Resend rejects the send (403, "domain is not verified")**, the From address is not on a
   domain verified in Resend, or its DNS records have not propagated. Resend refuses any From
   address outside a verified domain. The one exception is `onboarding@resend.dev`, which needs
-  no domain but delivers **only to the address that owns the Resend account** — usable for a
+  no domain but delivers **only to the address that owns the Resend account**, usable for a
   test, not for real traffic.
-- **Emails delayed** — sending is asynchronous via Celery. Check the worker logs:
+- **Emails delayed**, sending is asynchronous via Celery. Check the worker logs:
   `docker compose logs -f worker`.
-- **Links point to the wrong host** — set `FRONTEND_URL` to your public site URL (see the
+- **Links point to the wrong host**, set `FRONTEND_URL` to your public site URL (see the
   [Configuration reference](configuration.md)).

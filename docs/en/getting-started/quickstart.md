@@ -1,6 +1,6 @@
 # Quick start
 
-Try Memship on your machine in about a minute — no cloning required. This uses pre-built
+Try Memship on your machine in about a minute, no cloning required. This uses pre-built
 images and is meant for **evaluation**, not production. For a real deployment, see
 [Installation](installation.md).
 
@@ -12,7 +12,7 @@ images and is meant for **evaluation**, not production. For a real deployment, s
 
 Everything below runs from one directory, which ends up holding the single file this
 needs. Compose takes its **project name** from that directory's name, and the quick-start
-stack keeps its data in Docker volumes named after that project — so run every
+stack keeps its data in Docker volumes named after that project, so run every
 `docker compose` command in this guide from inside this folder. From anywhere else Compose
 looks for a different project and will not find your containers or your data.
 
@@ -57,10 +57,10 @@ three independent questions:
 docker compose exec -it demo-memship-api python -m app.cli.seed
 ```
 
-1. **Super admin** — you choose the address and password. Nothing is preset, and no
+1. **Super admin**, you choose the address and password. Nothing is preset, and no
    credentials are published anywhere.
-2. **Club data** — offered only when there is some, so on a fresh install it is a no-op.
-3. **Club setup** — enter your organization's real details, or generate a demo club.
+2. **Club data**, offered only when there is some, so on a fresh install it is a no-op.
+3. **Club setup**, enter your organization's real details, or generate a demo club.
 
 The three questions also have flags, for scripting an evaluation or running it where
 there is no terminal to answer prompts:
@@ -113,7 +113,7 @@ two commands, and each prints only what it created: the super admin with the fir
 the club admin and the two members with the `--demo` run. The `--club-name` run creates no
 logins, so it prints no accounts block at all.
 
-Keep that output — the passwords are stored only as hashes and cannot be shown again.
+Keep that output, the passwords are stored only as hashes and cannot be shown again.
 The two member logins are how to see the member portal without handing out an admin
 account, which is the half of the product an admin session never shows you.
 
@@ -141,7 +141,7 @@ Go to **http://localhost:8081** and log in as the super admin you created.
 ## 5. Try a member joining
 
 The stack ships with a **test inbox** at **http://localhost:8025**. Every email the instance
-sends — address verification, registration approval, receipts, payment reminders — lands
+sends, address verification, registration approval, receipts, payment reminders, lands
 there instead of being delivered, whatever address it was sent to. This is the flow to try
 first:
 
@@ -149,20 +149,20 @@ first:
    address, real or not.
 2. Open the test inbox, find the verification email and follow its link.
 3. Back in your admin session, open **Pending registrations** in the sidebar. The new sign-up
-   is listed there — alongside a few the demo club seeds — so click **Approve** on its row and
+   is listed there, alongside a few the demo club seeds, so click **Approve** on its row and
    confirm.
 4. The approval email arrives in the test inbox, and the member can now log in.
 
-The inbox is local to your machine — it is published on `127.0.0.1` only — and holds nothing
+The inbox is local to your machine, it is published on `127.0.0.1` only, and holds nothing
 real. Set `MAILPIT_PORT` alongside `PORT` if 8025 is taken.
 
 It stays in effect **only while Settings → Mailing has never been saved**. Configure a real
 provider there and that provider sends from then on, which is the intended precedence and not
-a fault — see [Which one is in effect](../self-hosting/email.md#which-one-is-in-effect).
+a fault, see [Which one is in effect](../self-hosting/email.md#which-one-is-in-effect).
 
 ## Moving from evaluation to real use
 
-Do not carry the quick-start stack into production — install it properly with
+Do not carry the quick-start stack into production, install it properly with
 [Installation](installation.md), which generates real secrets and puts your data
 somewhere you can back up.
 
@@ -173,12 +173,12 @@ configuration as a recommended one.
 
 If you only want to clear the demo club out of an instance you are keeping, re-run the
 setup and answer *yes* to the club-data question. It deletes the demo club while keeping
-your super admin, the system roles and any payment providers you configured — see
+your super admin, the system roles and any payment providers you configured, see
 [First-time setup](first-setup.md).
 
 ## Stop everything
 
-Run these from the folder you created in step 1 — Compose identifies the stack by the
+Run these from the folder you created in step 1, Compose identifies the stack by the
 directory it is run from.
 
 ```bash
@@ -192,7 +192,7 @@ docker compose down -v       # ... and delete the data volumes with them
 ```
 
 `down` keeps your database and uploads, so `docker compose up -d` afterwards brings back the
-same club. **`down -v` is the one that leaves nothing behind** — the demo club, the super
+same club. **`down -v` is the one that leaves nothing behind**, the demo club, the super
 admin you created and every receipt go with it, and there is no undo.
 
 To get the disk space back as well, remove the images once the stack is down:
@@ -204,7 +204,7 @@ docker image rm ghcr.io/marcandreuf/memship-backend:latest \
 ```
 
 Leave `caddy`, `postgres` and `redis` alone unless you are sure nothing else on the machine
-uses them — they are ordinary public images and something else may well.
+uses them, they are ordinary public images and something else may well.
 
 ### If you are not in that folder any more
 
@@ -222,5 +222,5 @@ removes every quick-start container on the machine, so check the first if you ar
 more than one.
 
 That removes the containers but not the data. The volumes are named after the Compose
-project, which is the folder name — `docker volume ls | grep demo-memship` finds them, and
+project, which is the folder name, `docker volume ls | grep demo-memship` finds them, and
 `docker volume rm <name>` deletes one.

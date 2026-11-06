@@ -7,7 +7,7 @@ Tu carné de socio digital con código QR, para identificarte en el control de a
 En **Mi tarjeta** encontrarás tu **carné digital**, con tu **número de socio**, tu **estado** y
 un **código QR**.
 
-- **Descargar PDF** — para guardarlo en el móvil o imprimirlo.
+- **Descargar PDF**, para guardarlo en el móvil o imprimirlo.
 - En el **control de acceso**, muestra el código QR para que el personal verifique tu estado.
 
 Si tu carné no está disponible, es posible que tu organización aún no haya activado las tarjetas

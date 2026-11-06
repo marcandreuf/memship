@@ -6,20 +6,20 @@ This guide covers a **production** self-hosted install. For a quick local evalua
 ## Prerequisites
 
 - A server running Docker Engine and the Compose plugin
-- An ordinary (non-root) user in the `docker` group — the stack is not installed as root
+- An ordinary (non-root) user in the `docker` group, the stack is not installed as root
 - `curl` and `tar`, to fetch a release. `tar` is on every Debian/Ubuntu server; minimal images
   sometimes lack `curl`: `sudo apt-get update && sudo apt-get install -y curl`
-- **Not `git`.** A release is fetched as a tarball, and the server holds no source checkout —
+- **Not `git`.** A release is fetched as a tarball, and the server holds no source checkout,
   nothing in a running instance uses git, so there is no reason to install it
 - A domain name, with a DNS A record already pointing at the server, if you want automatic HTTPS.
-  If the domain belongs to an organisation rather than to you — so the hostname, the DNS zone and
-  the mail domain are three different people's business — read
+  If the domain belongs to an organisation rather than to you, so the hostname, the DNS zone and
+  the mail domain are three different people's business, read
   [Your organisation's domain](../self-hosting/domain-and-dns.md) first
 
 > **One memship instance per host.** The Compose file names its containers explicitly
 > (`memship-db`, `memship-api`, …), which is what makes the scripts and the docs able to refer to
-> them. Names are global to the Docker daemon, so a second instance — even from another directory,
-> with its own data root and its own Compose project — fails part-way with
+> them. Names are global to the Docker daemon, so a second instance, even from another directory,
+> with its own data root and its own Compose project, fails part-way with
 > `Conflict. The container name "/memship-db" is already in use`. Use a second host, or a VM.
 
 ### Starting from a bare server
@@ -27,7 +27,7 @@ This guide covers a **production** self-hosted install. For a quick local evalua
 `scripts/vps-bootstrap.sh` does the root half of the preparation. Run it **once, as root**, on a
 fresh Debian 12 or Ubuntu 24.04 box:
 
-Download it somewhere you can already write — your own home directory. The install itself lives
+Download it somewhere you can already write, your own home directory. The install itself lives
 under `/srv`, but nothing can write there until the bootstrap has run. Pick a release from the
 [releases page](https://github.com/marcandreuf/memship/releases) and use it throughout:
 
@@ -39,12 +39,12 @@ chmod +x vps-bootstrap.sh
 sudo ./vps-bootstrap.sh --user deploy --ssh-key-file ~/.ssh/authorized_keys
 ```
 
-The script is self-contained — it needs no other file from the repository, which is why one
+The script is self-contained, it needs no other file from the repository, which is why one
 `curl` is enough.
 
 `--user` names the account that will own the install; pass the account you are already logged in
 as (`--user "$USER"`) to use it instead of creating a separate `deploy`. `--ssh-key-file` takes a
-file containing an SSH **public** key — your own `~/.ssh/authorized_keys` is the reliable choice,
+file containing an SSH **public** key, your own `~/.ssh/authorized_keys` is the reliable choice,
 since a fresh server has no `.pub` file lying around. Without a key you cannot log in as the new
 user. The `~` above is expanded by your own shell before `sudo` runs, so it is your home
 directory; from a **root shell** (`sudo -i`) it would be root's, so pass an absolute path there.
@@ -52,7 +52,7 @@ directory; from a **root shell** (`sudo -i`) it would be root's, so pass an abso
 It creates the deploy user, installs Docker from Docker's own repository, enables
 `unattended-upgrades`, `fail2ban` and `ufw`, sets the timezone, and adds a weekly image prune.
 
-It deliberately does **not** harden SSH — it prints those commands instead, in an order that
+It deliberately does **not** harden SSH, it prints those commands instead, in an order that
 keeps a working session open while you verify each step. A script cannot check that you can
 still log in, and getting the order wrong locks you out of a server that may have no console.
 
@@ -67,7 +67,7 @@ Log out and back in afterwards, so the deploy user's `docker` group membership t
 `/srv` belongs to root, so the two directories are made **as root** first, and everything after
 that runs as the deploy user. Name **both** of them: `install -d` gives the ownership to the
 directories it creates, not to the parent, so creating only `app` leaves `/srv/openmemship` owned
-by root and the deploy user unable to create the data root — `install.sh` then stops with
+by root and the deploy user unable to create the data root, `install.sh` then stops with
 `cannot create /srv/openmemship/data`.
 
 ```bash
@@ -77,11 +77,11 @@ sudo install -d -o deploy -g deploy /srv/openmemship/app /srv/openmemship/data
 If the deploy user is the account you are already logged in as, use `-o "$USER" -g "$USER"`.
 
 > **The deploy user cannot `sudo`.** `vps-bootstrap.sh` creates it with `adduser
-> --disabled-password`, so it has no password to type at a sudo prompt. That is deliberate — the
+> --disabled-password`, so it has no password to type at a sudo prompt. That is deliberate, the
 > account already holds the docker socket, which is effective root, and a second route to root
 > buys nothing. It is why the command above is run as root rather than as the deploy user.
 
-Now become the deploy user — nothing below needs root. `install.sh` writes `.env` inside the
+Now become the deploy user, nothing below needs root. `install.sh` writes `.env` inside the
 install directory and needs to own it:
 
 ```bash
@@ -101,7 +101,7 @@ images and starts the stack.
 `MEMSHIP_SECRET_KEY` were just generated here, are never regenerated, and exist in no other
 place. They decrypt the payment-provider, SSO and mail credentials stored in the database, so
 without this file a perfect database dump restores those as unreadable ciphertext. Put it in a
-password manager a second administrator can reach — see
+password manager a second administrator can reach, see
 [Backups & restore](../self-hosting/backups-and-restore.md#do-this-on-the-day-you-install).
 
 `install.sh` also writes **`POST-INSTALL.md`** next to `.env` on a first install: this step
@@ -119,33 +119,33 @@ omitting `--tag` stops the install:
 Error: --tag is required here: there is no git tag to read a version from.
 ```
 
-It used to resolve to `latest` instead — a moving target, and an instance that reports its own
+It used to resolve to `latest` instead, a moving target, and an instance that reports its own
 version as the literal string `latest`. It refuses before writing `.env` or generating any
 secret, so name the version and run it again. In a git checkout `--tag` may still be omitted, where it defaults to
 the most recent release tag; `--tag latest` remains available for deliberately tracking whichever
 images are newest.
 
 **To upgrade later, follow [Upgrading](../self-hosting/upgrading.md).** Moving `IMAGE_TAG` on its
-own is not enough — `docker-compose.yml`, the `Caddyfile` and `scripts/` ship alongside the images
+own is not enough, `docker-compose.yml`, the `Caddyfile` and `scripts/` ship alongside the images
 rather than inside them, so an upgrade starts by refreshing those files from the new release.
 
 **Point DNS at the server first.** `install.sh` refuses to start when the hostname does not
 resolve to this host, because Caddy validates over HTTP-01 and Let's Encrypt rate-limits *failed*
-validations at 5 per hostname per hour — a premature start can lock you out of certificates for
+validations at 5 per hostname per hour, a premature start can lock you out of certificates for
 an hour. Use `--skip-dns-check` only if you know why you are skipping it.
 
 The script is safe to re-run. It never overwrites an existing `.env`, and re-running is how you
 pick up a new `IMAGE_TAG` later.
 
 > **Reinstalling from scratch burns certificates.** The issued certificate lives in
-> `<data-root>/caddy/data`. Delete that directory — as a full teardown does — and the next start
+> `<data-root>/caddy/data`. Delete that directory, as a full teardown does, and the next start
 > requests a **new** certificate rather than renewing the old one. Let's Encrypt allows **5
 > certificates per week for the same set of hostnames**, so a handful of from-scratch reinstalls
 > against one domain will exhaust it and leave you without HTTPS until the window rolls forward.
 > When rehearsing an install, omit `--domain` and run on plain HTTP, then add the domain on the
 > final pass. Preserving `caddy/data` across a rebuild avoids the reissue entirely.
 
-Then run the setup — it creates your super admin and your organization:
+Then run the setup, it creates your super admin and your organization:
 
 ```bash
 docker compose exec -it api python -m app.cli.seed
@@ -154,7 +154,7 @@ docker compose exec -it api python -m app.cli.seed
 The `-it` matters: the command prompts. See [First-time setup](first-setup.md) for what it
 asks and for the unattended flags an automated deployment uses instead.
 
-Open your domain — or, if you installed without one, **http://&lt;server-address&gt;**, the hostname or
+Open your domain, or, if you installed without one, **http://&lt;server-address&gt;**, the hostname or
 IP you reach the box on. `localhost` only works when you are installing on the machine in front of
 you.
 
@@ -190,13 +190,13 @@ Three things worth knowing about it:
   `docker compose down -v` and `docker system prune --volumes`.
 - `storage/` is written by the backend running as your uid, so uploads are readable without
   `sudo`.
-- `postgres/` is mode `0700` owned by uid 70 — visible as a path but not readable by you. That is
+- `postgres/` is mode `0700` owned by uid 70, visible as a path but not readable by you. That is
   correct and expected. Read the database with `scripts/db-backup.sh`, not with `ls`.
 
 > **Put the data root in `/srv`, not in a home directory.** `/srv` is the FHS location for service
 > data, it survives deleting the user, and it stays reachable when a home directory's permissions
-> change. A data root under `$HOME` does work with ordinary Docker — the daemon resolves bind-mount
-> sources as root, so a `0700` home does not stop Postgres from starting — but it does break under
+> change. A data root under `$HOME` does work with ordinary Docker, the daemon resolves bind-mount
+> sources as root, so a `0700` home does not stop Postgres from starting, but it does break under
 > **rootless Docker and Podman**, where the container's own uid has to traverse the path.
 
 ### SELinux hosts (RHEL, Fedora, Rocky, AlmaLinux)
@@ -234,18 +234,18 @@ cp .env.example .env
 
 Then set, at minimum:
 
-- **`MEMSHIP_DATA_ROOT`** — absolute path to the data root described above
-- **`SECRET_KEY`** and **`DB_PASSWORD`** — random values, never the placeholders. `SECRET_KEY` may
+- **`MEMSHIP_DATA_ROOT`**, absolute path to the data root described above
+- **`SECRET_KEY`** and **`DB_PASSWORD`**, random values, never the placeholders. `SECRET_KEY` may
   be left blank (the server generates one into `storage/session.key`), but setting it explicitly is
   what lets a rebuilt host keep working sessions and readable payment credentials
-- **`MEMSHIP_SECRET_KEY`** — encrypts stored SSO and payment-provider credentials. Set it
+- **`MEMSHIP_SECRET_KEY`**, encrypts stored SSO and payment-provider credentials. Set it
   explicitly so a rebuilt host can still decrypt a restored backup
-- **`HOST_UID`** / **`HOST_GID`** — your `id -u` and `id -g`, so bind-mounted uploads belong to you
-- **`SITE_ADDRESS`** — your hostname for automatic HTTPS, or leave empty for plain HTTP
-- **`IMAGE_TAG`** — pin a released version; see [Upgrading](../self-hosting/upgrading.md)
+- **`HOST_UID`** / **`HOST_GID`**, your `id -u` and `id -g`, so bind-mounted uploads belong to you
+- **`SITE_ADDRESS`**, your hostname for automatic HTTPS, or leave empty for plain HTTP
+- **`IMAGE_TAG`**, pin a released version; see [Upgrading](../self-hosting/upgrading.md)
 
 Create the directory tree, then start the stack. `.env` is read by Compose, not by your shell, so
-export the path here too — or write it out in full:
+export the path here too, or write it out in full:
 
 ```bash
 export MEMSHIP_DATA_ROOT=/srv/openmemship/data
@@ -254,7 +254,7 @@ docker compose pull
 docker compose up -d
 ```
 
-Do not skip the `mkdir`. Docker creates a missing bind-mount source itself, but as **root** — and
+Do not skip the `mkdir`. Docker creates a missing bind-mount source itself, but as **root**, and
 the backend runs as your uid, so it then cannot write its own uploads.
 
 See the [Configuration reference](../self-hosting/configuration.md) for every available setting.
@@ -262,7 +262,7 @@ See the [Configuration reference](../self-hosting/configuration.md) for every av
 ## Services
 
 The default Compose stack runs behind a Caddy reverse proxy. These URLs are **as seen from the
-server itself** — the API and database are bound to `127.0.0.1`, so `localhost` is the only way to
+server itself**, the API and database are bound to `127.0.0.1`, so `localhost` is the only way to
 reach them. From anywhere else, use your domain or the server's address, which reaches the first
 two rows only:
 
@@ -276,14 +276,14 @@ two rows only:
 > firewall's, so a port published to all interfaces stays reachable from the internet even while
 > `ufw` denies it. The shipped stack therefore publishes the API (8003) and Postgres (5433) on
 > **`127.0.0.1` only**, which is why they are reachable from the server itself and nowhere else.
-> Setting `API_BIND` or `DB_BIND` to `0.0.0.0` — or adding your own `ports:` entry — puts that
+> Setting `API_BIND` or `DB_BIND` to `0.0.0.0`, or adding your own `ports:` entry, puts that
 > service on the public internet regardless of your firewall rules. Verify from another machine
 > with `nmap -Pn -p 22,80,443,5433,8003 <your-host>` rather than trusting `ufw status`.
 
 ## Next steps
 
-1. [First-time setup](first-setup.md) — create your organization and admin.
-2. [Configuration reference](../self-hosting/configuration.md) — review production settings.
-3. [Email delivery](../self-hosting/email.md) — required for address confirmations, password
+1. [First-time setup](first-setup.md), create your organization and admin.
+2. [Configuration reference](../self-hosting/configuration.md), review production settings.
+3. [Email delivery](../self-hosting/email.md), required for address confirmations, password
    resets, and payment notifications.
-4. [Backups & restore](../self-hosting/backups-and-restore.md) — set up before going live.
+4. [Backups & restore](../self-hosting/backups-and-restore.md), set up before going live.

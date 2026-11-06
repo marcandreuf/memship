@@ -8,15 +8,15 @@ elegibilidad.
 
 Al crear una actividad configuras:
 
-- **Información básica** — nombre, descripción y descripción breve.
-- **Fechas** — inicio y fin de la actividad, y el **periodo de inscripción** (apertura y
+- **Información básica**, nombre, descripción y descripción breve.
+- **Fechas**, inicio y fin de la actividad, y el **periodo de inscripción** (apertura y
   cierre).
-- **Ubicación** — con detalles y URL opcionales.
-- **Capacidad** — mínimo y máximo de participantes.
-- **Elegibilidad** — rango de edad (edad mínima/máxima).
-- **Cancelación** — permitir o no la cancelación por el socio, y el plazo (horas antes del
+- **Ubicación**, con detalles y URL opcionales.
+- **Capacidad**, mínimo y máximo de participantes.
+- **Elegibilidad**, rango de edad (edad mínima/máxima).
+- **Cancelación**, permitir o no la cancelación por el socio, y el plazo (horas antes del
   inicio).
-- **Imagen de portada** — visible para los socios como miniatura.
+- **Imagen de portada**, visible para los socios como miniatura.
 
 ## Estados y publicación
 

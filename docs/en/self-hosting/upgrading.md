@@ -1,6 +1,6 @@
 # Upgrading
 
-Memship is released as versioned Docker images, plus a handful of files that live beside them —
+Memship is released as versioned Docker images, plus a handful of files that live beside them,
 the Compose file, the Caddy configuration, the scripts. Upgrading means refreshing both, then
 running one command that backs up, applies the version and verifies it. Database migrations run
 automatically on startup.
@@ -8,7 +8,7 @@ automatically on startup.
 ## Versioning
 
 Memship follows [semantic versioning](https://semver.org/). **Git tags are the single source
-of truth** for the version — there is no `VERSION` file. Published images are tagged with the
+of truth** for the version, there is no `VERSION` file. Published images are tagged with the
 release version (e.g. `2.19.0`) and `latest`.
 
 Every install is pinned to a version rather than tracking `latest`, so upgrades are deliberate
@@ -22,7 +22,7 @@ curl -s http://127.0.0.1:8003/api/v1/health
 
 ## Upgrade procedure
 
-**Review the release notes** for the target version first — breaking changes and new required
+**Review the release notes** for the target version first, breaking changes and new required
 settings are called out there, on the [releases page](https://github.com/marcandreuf/memship/releases).
 
 Then two commands. Refresh the deployment files, then apply the version:
@@ -39,17 +39,17 @@ cd "$MEMSHIP_APP"
 ```
 
 **Why the first command.** Part of a release ships alongside the images rather than inside
-them — `docker-compose.yml`, the `Caddyfile`, `scripts/`. Bumping `IMAGE_TAG` alone leaves an
+them, `docker-compose.yml`, the `Caddyfile`, `scripts/`. Bumping `IMAGE_TAG` alone leaves an
 install half-upgraded: the new backend running behind the old proxy configuration. Unpacking
 over the directory replaces those files and leaves `.env` untouched, since `.env` is not in the
 archive. No git and no source checkout are involved.
 
 `tar -xz` writes into its `-C` directory, so name it rather than relying on the shell's current
-directory — a `curl | tar` pasted on its own, without the `cd`, unpacks a release wherever you
+directory, a `curl | tar` pasted on its own, without the `cd`, unpacks a release wherever you
 happen to be standing and says nothing. Note also that unpacking *adds and replaces*; it never
 deletes, so a file a release removed stays behind until you remove it.
 
-**You do not have to remember this step.** `upgrade.sh` checks it — see step 5 below.
+**You do not have to remember this step.** `upgrade.sh` checks it, see step 5 below.
 
 **What the second one does**, in order, stopping if any step fails. Steps 1 to 7 all run **before
 anything on the instance is replaced**, so any of them stopping leaves the version you were on still
@@ -57,7 +57,7 @@ serving, and each refusal names the state it found:
 
 1. **Refuses to go backwards.** Re-pinning `IMAGE_TAG` moves the images back but not the schema,
    so an older release meets a database it does not understand. Restore the snapshot taken before
-   you upgraded instead — see [Rolling back](#rolling-back). If you know the release you are
+   you upgraded instead, see [Rolling back](#rolling-back). If you know the release you are
    leaving carried no migration, or you have already restored the database, `--allow-downgrade`
    proceeds. Compared only between two release versions: an RC or a `latest` install has no
    ordering to reason about, so it is left alone rather than guessed at.
@@ -68,7 +68,7 @@ serving, and each refusal names the state it found:
    names what has been added since, which is the release-notes paragraph you might not have read.
 
    Only one of them stops the upgrade: **a `.env` with no `IMAGE_TAG` line at all.** Applying a
-   version rewrites that line in place, and there is nothing to rewrite — so the tag would be
+   version rewrites that line in place, and there is nothing to rewrite, so the tag would be
    accepted, dropped, and the stack would come up on whatever `latest` points at. Add the line and
    run it again.
 
@@ -77,47 +77,47 @@ serving, and each refusal names the state it found:
    one that declines: the database and the proxy are writing to the same disk the pull is filling.
 
    The figures are measured rather than guessed. The images are budgeted at 1 GB for an upgrade and
-   1.8 GB for a first install — a first install pulls the whole stack (1.55 GB measured), an upgrade
+   1.8 GB for a first install, a first install pulls the whole stack (1.55 GB measured), an upgrade
    only what changed (771 MB measured between two adjacent releases, because the backend's
    dependency layer is rebuilt every release). Nothing is asked for on account of images that are
    already local, so re-running this against the version already installed is never refused for want
    of room to pull it. The snapshot is sized from **your own last dump**, doubled, and when there is
    no dump to learn from nothing is asked for rather than a number invented.
 
-   `--skip-disk-check` proceeds anyway, for a host whose storage `df` misreports — a network
+   `--skip-disk-check` proceeds anyway, for a host whose storage `df` misreports, a network
    filesystem, or thin provisioning underneath.
 
 4. **Fetches the release's images.** Every one of them, before anything on the instance is
-   touched, so a version that does not exist — or a release whose images did not all publish —
+   touched, so a version that does not exist, or a release whose images did not all publish,
    is an upgrade that declines while the old one keeps serving. Nothing is replaced and no
    snapshot is written yet, so this costs nothing when it stops.
 
 5. **Confirms the deployment files here are the release's.** It compares `docker-compose.yml`
    and the `Caddyfile` in the install directory, by checksum, against what the release expects
-   them to be, and stops if they differ — which is what an upgrade whose first command was
+   them to be, and stops if they differ, which is what an upgrade whose first command was
    skipped looks like. This runs before the snapshot, so a missed refresh costs nothing.
 
    The expected checksums travel **in the image**, written as a label when it was built, and are
    read out of the copy just pulled. Reading them needs the registry and nothing else, which the
-   upgrade needed anyway — so a deployment that can pull can also check, and no part of this
+   upgrade needed anyway, so a deployment that can pull can also check, and no part of this
    depends on reaching GitHub.
 
    Two things follow. A release that ships deployment files identical to the previous one is
-   silent here, as it should be — the bytes match, so there is nothing to report. And a release
+   silent here, as it should be, the bytes match, so there is nothing to report. And a release
    built before this label existed carries nothing to compare against; that is said plainly and
    the upgrade continues, so older releases stay installable.
 
-   If you maintain these files yourself — a deployment that keeps a customised Compose file, say
-   — `--skip-file-check` proceeds without comparing them.
+   If you maintain these files yourself (a deployment that keeps a customised Compose file,
+   say), `--skip-file-check` proceeds without comparing them.
 
 6. **Backs up the database** with `scripts/db-backup.sh`. A release carrying a schema migration
-   cannot be rolled back by re-pinning `IMAGE_TAG` — the images go back, the migrated schema
-   does not — so this dump is the only way out of a bad upgrade. If it fails, the upgrade does
+   cannot be rolled back by re-pinning `IMAGE_TAG`, the images go back, the migrated schema
+   does not, so this dump is the only way out of a bad upgrade. If it fails, the upgrade does
    not happen. On a first install there is no database yet and it says so instead.
 
 7. **Runs the release's own checks against the database** the old version is still serving. A
    migration that would refuse (see below) says so now, while the instance is still up, and
-   nothing is changed. A pass means no migration's declared data precondition is violated — not
+   nothing is changed. A pass means no migration's declared data precondition is violated, not
    that the upgrade cannot fail for other reasons.
 
 8. **Applies the version** through `scripts/install.sh --tag "$MEMSHIP_VERSION"`, which writes
@@ -128,7 +128,7 @@ serving, and each refusal names the state it found:
 
 9. **Verifies the result** with `scripts/verify-deployment.sh`, which waits for the API, checks
    that it reports the version you just deployed, and pings the Celery worker. `docker compose
-   up -d` returning says only that containers were created — migrations run before the API
+   up -d` returning says only that containers were created, migrations run before the API
    serves, so a failed one looks like an API that never answers rather than a container that
    died.
 
@@ -136,14 +136,14 @@ This is the same command the deploy workflow runs over SSH, deliberately: what i
 what an operator types should not drift apart.
 
 > The pre-upgrade dump lands in `$MEMSHIP_DATA_ROOT/backups`, on the same disk as the database
-> it protects. It covers a bad upgrade, not a lost machine — see
+> it protects. It covers a bad upgrade, not a lost machine, see
 > [Backups & restore](backups-and-restore.md#off-server-copies) for getting copies off the host.
 
 ## Upgrading from a release before the non-root backend
 
 The backend containers used to run as root, so anything they wrote into the storage directory
 landed root-owned. They now run as `HOST_UID`/`HOST_GID`, which is what makes bind-mounted
-uploads readable on the host without `sudo` — but the container can no longer write the files
+uploads readable on the host without `sudo`, but the container can no longer write the files
 its root-era self left behind.
 
 Take ownership once, after upgrading:
@@ -158,7 +158,7 @@ effect.
 Two related changes in the same release:
 
 - **`uv run` no longer works inside the containers.** The virtualenv is on `PATH` instead, so
-  nothing under `/app` is written at runtime — that is what lets the container run under any uid.
+  nothing under `/app` is written at runtime, that is what lets the container run under any uid.
   Use `docker compose exec api python -m …`, not `docker compose exec api uv run python -m …`.
   Anything you have scripted against the containers needs the same edit.
 - **Persistent data moved from named volumes to bind mounts** under `MEMSHIP_DATA_ROOT`. If you
@@ -176,7 +176,7 @@ Compose stack). No manual migration step is needed for a standard upgrade, and a
 there is nothing to think about here.
 
 **A migration is allowed to refuse.** Some carry a guard: they inspect the data before changing
-it and stop if they find something only a person should decide about — two accounts that differ
+it and stop if they find something only a person should decide about, two accounts that differ
 only by the case of their email address, say, where folding them would pick a winner between two
 people's logins. The guard writes a report naming exactly what it found, makes **no changes at
 all**, and the upgrade stops there.
@@ -187,17 +187,17 @@ naming the migration that would refuse.
 Three things worth knowing when it happens:
 
 - **The database is untouched.** A guard writes nothing before it refuses, so there is no
-  half-migrated state. Do not restore the pre-upgrade snapshot — there is nothing to undo, and
+  half-migrated state. Do not restore the pre-upgrade snapshot, there is nothing to undo, and
   restoring loses anything written since it was taken.
 - **Your instance is still serving.** The checks run before anything is replaced, so the version
   you were on keeps answering while you resolve the report. Take the time you need.
-- **Resolve the data, then run the same upgrade command again** — you do not need to re-download
+- **Resolve the data, then run the same upgrade command again**, you do not need to re-download
   or re-pin anything.
 
 > Upgrades before this existed ran the check on API start, *after* the stack had been replaced,
 > so a refusal meant the API crash-looped and members got errors until someone resolved the data
 > ([issue #194](https://github.com/marcandreuf/memship/issues/194)). If you reach a refusal that
-> way — because you ran `install.sh` directly, or upgraded from an older release — the data
+> way, because you ran `install.sh` directly, or upgraded from an older release, the data
 > advice above is unchanged; the instance is simply down while you follow it.
 
 [Troubleshooting](troubleshooting.md#a-migration-refused-to-run-and-the-api-will-not-start) has
@@ -208,11 +208,11 @@ the backend container after pulling the new image.
 
 ## Rolling back
 
-Roll back by re-running the upgrade against the older version — refresh the files from that
+Roll back by re-running the upgrade against the older version, refresh the files from that
 release's tarball, then `./scripts/upgrade.sh <older-version>`. Going back through the same path
 you came in by keeps the deployment files and the images on the same release.
 
 Note that **database migrations are not automatically reversed.** If the release you are leaving
 included one, the images go back and the migrated schema does not, so restore the dump
-`upgrade.sh` took before it applied that version — it is in `$MEMSHIP_DATA_ROOT/backups`, named
-by timestamp — rather than only downgrading the image.
+`upgrade.sh` took before it applied that version, it is in `$MEMSHIP_DATA_ROOT/backups`, named
+by timestamp, rather than only downgrading the image.

@@ -1,7 +1,7 @@
-# Payment providers — Setup Guide
+# Payment providers: Setup Guide
 
 **Who this is for:** the person who runs a memship installation for their club or association (the **superadmin**).
-**What it covers:** everything under **Settings → Payments → Providers** — connecting **Stripe** for card payments, and **Redsys** for the Spanish bank gateway and **Bizum**.
+**What it covers:** everything under **Settings → Payments → Providers**, connecting **Stripe** for card payments, and **Redsys** for the Spanish bank gateway and **Bizum**.
 
 You do not need to edit any file or restart anything. Every credential in this guide is entered in the web interface and takes effect on the next request.
 
@@ -38,7 +38,7 @@ You do not need to edit any file or restart anything. Every credential in this g
 
 **A public address.** Both providers need to reach your installation from the internet to confirm a payment. That address is configured once at install time in `BACKEND_PUBLIC_URL` and `FRONTEND_URL`. A provider configured on an installation that the internet cannot reach will take money and never mark the receipt paid.
 
-**Direct debit is a different thing.** If your members pay by SEPA direct debit, none of this applies — see [SEPA](../../es/admin-guide/sepa.md). This guide is only about paying online by card or Bizum.
+**Direct debit is a different thing.** If your members pay by SEPA direct debit, none of this applies, see [SEPA](../../es/admin-guide/sepa.md). This guide is only about paying online by card or Bizum.
 
 ---
 
@@ -47,13 +47,13 @@ You do not need to edit any file or restart anything. Every credential in this g
 Encryption, storage and backup work the same way as everywhere else in Settings, and are described in full in [Integrations → How secrets are protected](integrations.md#2-how-secrets-are-protected). Editing differs in one way, in the last point below. In short:
 
 - Secret values are **encrypted before being stored** in the database.
-- They are **never sent back to the browser**. A stored secret is not an input at all: it renders as text — `••••` plus the last four characters, and the word *stored* — beside a **Replace** button, and the input appears only once you press it. That is expected, not a bug, and it is deliberate: a password manager has no field to fill, so it cannot quietly overwrite a working credential on your next save.
+- They are **never sent back to the browser**. A stored secret is not an input at all: it renders as text (`••••` plus the last four characters, and the word *stored*) beside a **Replace** button, and the input appears only once you press it. That is expected, not a bug, and it is deliberate: a password manager has no field to fill, so it cannot quietly overwrite a working credential on your next save.
 - **Back up the encryption key file together with your database.** Restoring a dump on a machine with a different key file leaves the stored secrets undecryptable and you will have to re-enter them.
-- **A stored secret cannot be emptied.** Saving a blank over one is refused, naming the field, and the stored value is left as it was. There is no *Clear* here — unlike the Integrations screens, which have one because an integration can legitimately be switched off by removing its credential. A payment provider's secret is only ever replaced: press **Replace** and paste the new value. If the provider is being retired, delete the provider row instead, which the screen refuses while receipts are linked to it.
+- **A stored secret cannot be emptied.** Saving a blank over one is refused, naming the field, and the stored value is left as it was. There is no *Clear* here, unlike the Integrations screens, which have one because an integration can legitimately be switched off by removing its credential. A payment provider's secret is only ever replaced: press **Replace** and paste the new value. If the provider is being retired, delete the provider row instead, which the screen refuses while receipts are linked to it.
 
-> **Why refuse rather than accept the blank?** The stored value is encrypted and it is the only copy — nothing can recover it once overwritten. A blank field is almost always a paste that went wrong rather than an instruction, and before v2.19.0 it was accepted: the secret was replaced with nothing, and on a provider that was still *disabled* the save reported success.
+> **Why refuse rather than accept the blank?** The stored value is encrypted and it is the only copy, nothing can recover it once overwritten. A blank field is almost always a paste that went wrong rather than an instruction, and before v2.19.0 it was accepted: the secret was replaced with nothing, and on a provider that was still *disabled* the save reported success.
 
-Which fields are treated as secret differs by provider, and it is not arbitrary — a publishable key is meant to be public, so it is stored in the clear and shown in full.
+Which fields are treated as secret differs by provider, and it is not arbitrary, a publishable key is meant to be public, so it is stored in the clear and shown in full.
 
 | Provider | Encrypted | Stored in the clear |
 |---|---|---|
@@ -69,12 +69,12 @@ This is worth understanding before configuring anything, because it explains wha
 When a member pays, three things happen, and only one of them is authoritative:
 
 1. **memship sends the member to the provider.** For Stripe this is a redirect to a Checkout session; for Redsys it is an auto-submitted signed form to the bank's TPV page.
-2. **The member pays, and their browser comes back** to a memship page. **This return is not the confirmation.** The member can close the tab, lose signal, or hit back — and the browser is not a party memship can trust about whether money moved.
+2. **The member pays, and their browser comes back** to a memship page. **This return is not the confirmation.** The member can close the tab, lose signal, or hit back, and the browser is not a party memship can trust about whether money moved.
 3. **The provider makes a server-to-server call to memship** confirming the outcome. **This is the source of truth**, and it is the only thing that marks a receipt paid.
 
 Everything in this guide about webhooks, notification URLs and signing keys exists to make step 3 work and to prove the call really came from the provider.
 
-**That is also why a broken configuration is quiet.** The receiving endpoint is unauthenticated by design — security comes from verifying the provider's signature, not from a login. If the signing secret is wrong, every confirmation fails verification and is discarded. From the member's side the payment succeeded; in memship the receipt simply stays unpaid, and no screen reports an error. **Always complete a real test payment end to end before announcing a payment method to members.**
+**That is also why a broken configuration is quiet.** The receiving endpoint is unauthenticated by design, security comes from verifying the provider's signature, not from a login. If the signing secret is wrong, every confirmation fails verification and is discarded. From the member's side the payment succeeded; in memship the receipt simply stays unpaid, and no screen reports an error. **Always complete a real test payment end to end before announcing a payment method to members.**
 
 ---
 
@@ -84,18 +84,18 @@ Stripe handles card payments through Stripe Checkout, a payment page hosted by S
 
 ### 4.1 What you need
 
-A Stripe account, and from it three values: a **secret key**, a **publishable key**, and a **webhook signing secret**. The first two come from the API keys page. The third does not exist yet — you create it in step 4.3.
+A Stripe account, and from it three values: a **secret key**, a **publishable key**, and a **webhook signing secret**. The first two come from the API keys page. The third does not exist yet, you create it in step 4.3.
 
 ### 4.2 Obtaining the API keys
 
 1. Sign in at [dashboard.stripe.com](https://dashboard.stripe.com).
 2. Go to **Developers → API keys** ([docs](https://docs.stripe.com/keys)).
-3. Copy the **Publishable key** — it begins `pk_`.
-4. Reveal and copy the **Secret key** — it begins `sk_`.
+3. Copy the **Publishable key**, it begins `pk_`.
+4. Reveal and copy the **Secret key**, it begins `sk_`.
 
 Stripe keeps separate keys for test mode and live mode, selected by the toggle in the dashboard. Test keys read `pk_test_` / `sk_test_`, live keys `pk_live_` / `sk_live_`. Use test keys until you have completed a test payment end to end.
 
-> memship checks that the secret key starts with `sk_` and the publishable key with `pk_`, and refuses to save a value in the wrong field. It does **not** check which mode a key belongs to — pairing a live secret key with a test publishable key is accepted and will fail at payment time.
+> memship checks that the secret key starts with `sk_` and the publishable key with `pk_`, and refuses to save a value in the wrong field. It does **not** check which mode a key belongs to, pairing a live secret key with a test publishable key is accepted and will fail at payment time.
 
 ### 4.3 Creating the webhook endpoint
 
@@ -112,16 +112,16 @@ You do not have to build it by hand: the Stripe provider's form in **Settings �
 Then, in the Stripe dashboard ([webhook docs](https://docs.stripe.com/webhooks)):
 
 1. Go to **Developers → Webhooks → Add endpoint**.
-2. **Endpoint URL** — the URL above.
-3. **Events from** — *Your account*.
-4. **Payload style** — **Snapshot**. This matters: memship reads the full event object, and a *Thin* payload carries only identifiers, so confirmations would arrive with nothing to act on.
-5. **API version** — the default is fine. memship pins no version and reads only long-stable Checkout Session fields.
-6. **Select events** — choose exactly these two:
+2. **Endpoint URL**, the URL above.
+3. **Events from**, *Your account*.
+4. **Payload style**, **Snapshot**. This matters: memship reads the full event object, and a *Thin* payload carries only identifiers, so confirmations would arrive with nothing to act on.
+5. **API version**, the default is fine. memship pins no version and reads only long-stable Checkout Session fields.
+6. **Select events**, choose exactly these two:
    - `checkout.session.completed`
    - `checkout.session.expired`
 7. Create the endpoint, then **reveal the Signing secret**. It begins `whsec_`. This is the value memship calls **Webhook Secret**.
 
-> **Subscribe to those two events only.** memship ignores every other event type, so subscribing to more does no harm beyond generating traffic and noise in your Stripe logs — but a dashboard full of deliveries memship deliberately discards makes a real problem harder to spot.
+> **Subscribe to those two events only.** memship ignores every other event type, so subscribing to more does no harm beyond generating traffic and noise in your Stripe logs, but a dashboard full of deliveries memship deliberately discards makes a real problem harder to spot.
 
 ### 4.4 Filling in the screen
 
@@ -135,7 +135,7 @@ In **Settings → Payments → Providers**, add a Stripe provider and enter:
 
 A newly created provider starts **disabled**. Configure it first, test it, then activate it.
 
-> **The Webhook Secret is format-checked, but only for its shape.** memship refuses to save a value that does not begin `whsec_`, so the common paste error — a secret key, a publishable key, something from the wrong box — is caught the moment you save it rather than at activation. What no local check can catch is a *correctly shaped* secret from the wrong endpoint: an old one, or one from an endpoint you deleted. It looks identical, saves cleanly, and then fails verification on every event — the member sees success and the receipt stays unpaid. memship refuses each of those notifications and counts it, so **Payment notifications** (see [6.1](#61-when-a-payment-notification-goes-wrong)) shows the refusals and why — but only once a real payment has been attempted. The end-to-end test in 4.5 is what tells you the value is the right one.
+> **The Webhook Secret is format-checked, but only for its shape.** memship refuses to save a value that does not begin `whsec_`, so the common paste error, a secret key, a publishable key, something from the wrong box, is caught the moment you save it rather than at activation. What no local check can catch is a *correctly shaped* secret from the wrong endpoint: an old one, or one from an endpoint you deleted. It looks identical, saves cleanly, and then fails verification on every event, the member sees success and the receipt stays unpaid. memship refuses each of those notifications and counts it, so **Payment notifications** (see [6.1](#61-when-a-payment-notification-goes-wrong)) shows the refusals and why, but only once a real payment has been attempted. The end-to-end test in 4.5 is what tells you the value is the right one.
 
 ### 4.5 Testing
 
@@ -164,24 +164,24 @@ A delivery showing `400` with a signature error means the Webhook Secret is wron
 
 ## 5. Redsys and Bizum
 
-Redsys is the gateway used by most Spanish banks, operating the *TPV Virtual*. The same provider entry also serves **Bizum** — it is a payment method within Redsys, not a separate connection to configure. There are no second credentials for it; there is one switch, **Offer Bizum**, and it is off until you turn it on.
+Redsys is the gateway used by most Spanish banks, operating the *TPV Virtual*. The same provider entry also serves **Bizum**, it is a payment method within Redsys, not a separate connection to configure. There are no second credentials for it; there is one switch, **Offer Bizum**, and it is off until you turn it on.
 
 ### 5.1 What you need
 
 Your bank must have issued you a TPV Virtual. From the contract or the bank's portal you need four values: the **merchant code (FUC)**, a **terminal number**, a **signing key**, and to know whether you are working against the test or production environment.
 
-**If you want Bizum, ask your bank to enable it on that terminal.** Bizum is activated per merchant and terminal by the bank, not by anything you enter here — the same credentials serve both card and Bizum once it is switched on. It is worth asking for at the same time as the TPV, because a terminal without Bizum rejects Bizum payments at the gateway. Ask for your **test** credentials too: those are what you use while the Environment field says `test`.
+**If you want Bizum, ask your bank to enable it on that terminal.** Bizum is activated per merchant and terminal by the bank, not by anything you enter here, the same credentials serve both card and Bizum once it is switched on. It is worth asking for at the same time as the TPV, because a terminal without Bizum rejects Bizum payments at the gateway. Ask for your **test** credentials too: those are what you use while the Environment field says `test`.
 
-Once the bank confirms it, turn on **Offer Bizum** in the Redsys entry. memship cannot check the terminal itself — the gateway offers no way to ask — so that switch is your statement that the bank has done it, and the first real Bizum payment is still the proof.
+Once the bank confirms it, turn on **Offer Bizum** in the Redsys entry. memship cannot check the terminal itself, the gateway offers no way to ask, so that switch is your statement that the bank has done it, and the first real Bizum payment is still the proof.
 
 ### 5.2 Obtaining the credentials from your bank
 
-These do not come from a self-service dashboard the way Stripe's do — they are issued by whichever bank sold you the TPV, and the portal differs by bank. Redsys publishes the technical documentation at [pagosonline.redsys.es](https://pagosonline.redsys.es/).
+These do not come from a self-service dashboard the way Stripe's do, they are issued by whichever bank sold you the TPV, and the portal differs by bank. Redsys publishes the technical documentation at [pagosonline.redsys.es](https://pagosonline.redsys.es/).
 
-- **Merchant Code (FUC)** — your merchant identifier, 7 to 9 digits.
-- **Terminal ID** — numeric, usually `1` unless your bank issued several.
-- **Signing Key** — the secret used to sign requests and verify notifications. In bank portals it is usually labelled *clave secreta de encriptación* or *clave de firma*. **The test and production environments have different keys.**
-- **Currency Code** — ISO 4217 numeric. For euro this is **978**, which is the default.
+- **Merchant Code (FUC)**, your merchant identifier, 7 to 9 digits.
+- **Terminal ID**, numeric, usually `1` unless your bank issued several.
+- **Signing Key**, the secret used to sign requests and verify notifications. In bank portals it is usually labelled *clave secreta de encriptación* or *clave de firma*. **The test and production environments have different keys.**
+- **Currency Code**, ISO 4217 numeric. For euro this is **978**, which is the default.
 
 ### 5.3 Why there is no webhook to configure
 
@@ -189,7 +189,7 @@ Unlike Stripe, **you do not register a notification URL anywhere.** memship incl
 
 For the same reason there is no separate webhook secret. The **Signing Key** does both jobs: memship signs outgoing requests with it and verifies incoming notifications against it. One value, entered once.
 
-If you ever need to know the address memship sends, it is `https://<your-memship-address>/api/v1/webhooks/redsys` — but you should not have to configure it anywhere.
+If you ever need to know the address memship sends, it is `https://<your-memship-address>/api/v1/webhooks/redsys`, but you should not have to configure it anywhere.
 
 ### 5.4 Filling in the screen
 
@@ -207,7 +207,7 @@ If you ever need to know the address memship sends, it is `https://<your-memship
 
 **The Test button does not contact Redsys.** Redsys has no endpoint to ping, so the button validates your configuration locally. It is deliberately stricter than saving: it rejects a merchant code that is not 7 to 9 digits, which is the length a real TPV refuses outright.
 
-Real testing means a payment against the test environment, with the test signing key and the card numbers your bank provides. Confirm the receipt moves to **paid** afterwards — the browser returning to a success page is not confirmation, as explained in section 3.
+Real testing means a payment against the test environment, with the test signing key and the card numbers your bank provides. Confirm the receipt moves to **paid** afterwards, the browser returning to a success page is not confirmation, as explained in section 3.
 
 ### 5.6 Redsys troubleshooting
 
@@ -216,9 +216,9 @@ Real testing means a payment against the test environment, with the test signing
 | Test button reports the merchant code must be 7–9 digits | The FUC is wrong, or has spaces or letters in it |
 | Gateway rejects the payment immediately | The signing key does not match the environment |
 | Payments succeed but land nowhere you can find | Environment is `test` (or a typo falling back to it) while you believed it was production |
-| Receipt stays unpaid after a successful payment | The notification could not reach your installation — check that it is reachable from the internet |
-| `SIS0051 — Pedido repetido` | A duplicate order number. memship generates a fresh random prefix per attempt, so this should be rare; retrying issues a new one |
-| `SIS0475` on a Bizum payment, card payments fine | Bizum is not enabled on that merchant and terminal. Ask your bank to activate it — nothing in memship's configuration changes this |
+| Receipt stays unpaid after a successful payment | The notification could not reach your installation, check that it is reachable from the internet |
+| `SIS0051, Pedido repetido` | A duplicate order number. memship generates a fresh random prefix per attempt, so this should be rare; retrying issues a new one |
+| `SIS0475` on a Bizum payment, card payments fine | Bizum is not enabled on that merchant and terminal. Ask your bank to activate it, nothing in memship's configuration changes this |
 | `SIS0027`, and the gateway shows the amount in another currency | The terminal is not set up for the currency you are sending. Check the Currency Code field, and check with your bank which terminal to use for euro |
 
 ---
@@ -233,11 +233,11 @@ A provider has three states:
 | **test** | Offered, for trying the flow end to end |
 | **active** | Offered to members as a real payment method |
 
-**Activating Redsys offers card. Bizum is a separate switch.** Members see *Tarjeta* on their receipts and on their membership page as soon as the Redsys entry is active; *Bizum* appears only when **Offer Bizum** is on as well. Leave it off until your bank has confirmed Bizum on the terminal — a Bizum button on a terminal without it fails at the gateway for every member who presses it, and nothing on their screen explains why.
+**Activating Redsys offers card. Bizum is a separate switch.** Members see *Tarjeta* on their receipts and on their membership page as soon as the Redsys entry is active; *Bizum* appears only when **Offer Bizum** is on as well. Leave it off until your bank has confirmed Bizum on the terminal, a Bizum button on a terminal without it fails at the gateway for every member who presses it, and nothing on their screen explains why.
 
 Whichever you offer, use the **test** status first and complete one real payment of each kind you intend to accept before going active.
 
-**memship refuses to activate a provider that could not take a payment.** Activation is the last moment an incomplete configuration is still a settings problem — past it, the missing field resurfaces as a failed payment on a member's screen. If activation is refused, the message names the fields at fault.
+**memship refuses to activate a provider that could not take a payment.** Activation is the last moment an incomplete configuration is still a settings problem, past it, the missing field resurfaces as a failed payment on a member's screen. If activation is refused, the message names the fields at fault.
 
 This check is local. It confirms your configuration is internally coherent; it cannot know that a key was revoked at the provider yesterday. That is one more reason to complete a real payment before relying on it.
 
@@ -245,11 +245,11 @@ This check is local. It confirms your configuration is internally coherent; it c
 
 Under the providers, **Payment notifications** lists what the gateways sent that memship did not apply:
 
-- **Failed** — memship could not apply it. The gateway retries, so a failure that clears on its own is normal; one that stays is not.
-- **Ignored** — memship received it and deliberately did nothing: an event type it does not handle, a wrong amount, or a payment for a receipt **already paid**. That last one is how a double charge shows up — the member paid twice and the second payment needs refunding at the gateway.
-- **Refused at the signature check** — shown as a count per provider above the list, with the last reason. These are never stored, because nothing in an unverified message can be trusted. A count that keeps rising means the configured secret is wrong and **no** payment is being confirmed.
+- **Failed**, memship could not apply it. The gateway retries, so a failure that clears on its own is normal; one that stays is not.
+- **Ignored**, memship received it and deliberately did nothing: an event type it does not handle, a wrong amount, or a payment for a receipt **already paid**. That last one is how a double charge shows up, the member paid twice and the second payment needs refunding at the gateway.
+- **Refused at the signature check**, shown as a count per provider above the list, with the last reason. These are never stored, because nothing in an unverified message can be trusted. A count that keeps rising means the configured secret is wrong and **no** payment is being confirmed.
 
-To be told rather than having to look, set the billing notification address. memship then sends one email a day, only when something went wrong in the previous 24 hours. The email is **Payment notification problems** under Settings → Communications: on by default on a new install, and switchable there. An install that predates it starts with it off — switch it on there.
+To be told rather than having to look, set the billing notification address. memship then sends one email a day, only when something went wrong in the previous 24 hours. The email is **Payment notification problems** under Settings → Communications: on by default on a new install, and switchable there. An install that predates it starts with it off, switch it on there.
 
 If the gateway took the money and the receipt is still unpaid, mark it paid by hand choosing Redsys, Bizum or Stripe as the method: memship asks for the gateway reference (the authorisation code or payment id from the settlement) so the payment can still be matched to the bank.
 
@@ -273,17 +273,17 @@ If the gateway took the money and the receipt is still unpaid, mark it paid by h
 | Terminal ID | yes | no | digits only | your bank |
 | Signing Key | yes | yes | no | your bank, per environment |
 | Environment | yes | no | `test` or `production` | your choice |
-| Currency Code | yes | no | exactly 3 digits | ISO 4217 — `978` for euro |
-| Offer Bizum | no | no | — | your bank, once it confirms Bizum on the terminal. Off by default |
+| Currency Code | yes | no | exactly 3 digits | ISO 4217, `978` for euro |
+| Offer Bizum | no | no |, | your bank, once it confirms Bizum on the terminal. Off by default |
 
 ---
 
 ## Related
 
-- [Payments](../../es/admin-guide/payments.md) — using payments day to day, in Spanish
+- [Payments](../../es/admin-guide/payments.md), using payments day to day, in Spanish
 - [Donations](../../es/admin-guide/donations.md): a donation link on the organisation's own
   website, in Spanish. That link is created in the provider's dashboard and has nothing to do
   with the provider configured here
-- [SEPA](../../es/admin-guide/sepa.md) — direct debit, a separate mechanism
-- [Integrations](integrations.md) — SSO and email, and the full description of secret storage
-- [Configuration reference](../self-hosting/configuration.md) — `BACKEND_PUBLIC_URL` and `FRONTEND_URL`
+- [SEPA](../../es/admin-guide/sepa.md), direct debit, a separate mechanism
+- [Integrations](integrations.md), SSO and email, and the full description of secret storage
+- [Configuration reference](../self-hosting/configuration.md), `BACKEND_PUBLIC_URL` and `FRONTEND_URL`

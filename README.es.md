@@ -14,17 +14,17 @@ Memship es un **software de gestión de socios** autohospedable y de **código f
 
 La mayoría de herramientas de gestión de socios son plataformas SaaS caras o software obsoleto. Memship quiere cambiar eso: una solución moderna y completa que tú controlas. Sin dependencia del proveedor, sin coste por socio, sin que tus datos salgan de tus servidores.
 
-- **Autohospedable** — funciona en cualquier servidor con Docker
-- **Monotenant** — una base de datos por organización, aislamiento total de datos
-- **Multiidioma** — castellano, catalán e inglés desde el primer día. Ampliable a cualquier idioma mediante contribuciones de la comunidad
-- **Preparado para RGPD** — plantillas de términos legales y gestión de consentimientos integradas
+- **Autohospedable**, funciona en cualquier servidor con Docker
+- **Monotenant**, una base de datos por organización, aislamiento total de datos
+- **Multiidioma**, castellano, catalán e inglés desde el primer día. Ampliable a cualquier idioma mediante contribuciones de la comunidad
+- **Preparado para RGPD**, plantillas de términos legales y gestión de consentimientos integradas
 
 ## Inicio rápido (Docker)
 
 > **Para probar Memship, no para usarlo.** Es la vía más rápida a una instancia
 > funcionando en tu propia máquina: imágenes publicadas, volúmenes desechables y una
 > contraseña de base de datos fija. Para gestionar una organización real, sigue
-> la [Instalación](docs/en/getting-started/installation.md) — el mismo producto,
+> la [Instalación](docs/en/getting-started/installation.md), el mismo producto,
 > configurado para poder respaldarlo, actualizarlo y conservarlo.
 
 Prueba Memship con un solo comando, sin necesidad de clonar el repositorio:
@@ -42,12 +42,12 @@ A continuación, ejecuta la configuración, que te hace tres preguntas:
 docker compose exec -it demo-memship-api python -m app.cli.seed
 ```
 
-1. **Super admin** — eliges la dirección y la contraseña. No hay nada predefinido.
-2. **Datos del club** — solo se ofrece si los hay, así que en una instalación nueva no hace nada.
-3. **Configuración del club** — introduce los datos reales de tu organización, o genera un club de demostración.
+1. **Super admin**, eliges la dirección y la contraseña. No hay nada predefinido.
+2. **Datos del club**, solo se ofrece si los hay, así que en una instalación nueva no hace nada.
+3. **Configuración del club**, introduce los datos reales de tu organización, o genera un club de demostración.
 
 Elige el club de demostración para explorar: crea un año completo de datos de ejemplo
-realistas — ~60 socios en todos los estados, actividades, recibos en todos los estados
+realistas, ~60 socios en todos los estados, actividades, recibos en todos los estados
 repartidos por los meses, mandatos SEPA y recordatorios del panel. También genera accesos
 para un administrador de club y dos socios, y **muestra esas contraseñas una sola vez**,
 así que guarda la salida. Se puede volver a ejecutar sin duplicar (idempotente).
@@ -66,85 +66,85 @@ Memship sigue el [versionado semántico](https://semver.org/) y **los números d
 
 | Versión | Hito | Estado |
 |---------|------|--------|
-| v0.1.0 | Gestión de socios MVP — autenticación, RBAC, CRUD de socios, tipos de membresía, i18n, Docker, CI | Hecho |
-| v0.1.1 | Envío de emails (SMTP) — correos de bienvenida, recuperación de contraseña | Hecho |
+| v0.1.0 | Gestión de socios MVP: autenticación, RBAC, CRUD de socios, tipos de membresía, i18n, Docker, CI | Hecho |
+| v0.1.1 | Envío de emails (SMTP): correos de bienvenida, recuperación de contraseña | Hecho |
 | v0.1.2 | Grupos, soporte tutores/menores, rol restringido (schema) | Hecho |
 | v0.1.3 | Proxy inverso Caddy, scripts de copia de seguridad/restauración, mejoras para autoalojamiento | Hecho |
 | v0.1.4 | Gestión de configuración de la organización (API + frontend) | Hecho |
-| v0.1.5 | CRUD de actividades — modelos, modalidades, precios, frontend admin | Hecho |
-| v0.1.6 | Patrón de entidad unificado — listado/detalle/pestañas consistente en todas las entidades | Hecho |
-| v0.2.0 | Gestión de actividades — inscripciones, elegibilidad, lista de espera, descuentos, consentimientos, adjuntos | Hecho |
-| v0.2.1 | Rediseño UX — sidebar Shadcn, modo oscuro, colores de marca, tablas compactas, inicio rápido | Hecho |
-| v0.2.2 | Base de tests E2E (Cypress) — auth, socios, actividades, inscripciones | Hecho |
-| v0.2.3 | Endurecimiento de errores y validación — notificaciones toast, handler global de errores, validación backend, StrEnum, 76 tests de validación, 16 tests E2E | Hecho |
-| v0.2.4 | Corrección de errores — sidebar en modo oscuro, visualización de errores en formularios, protección de rutas, visibilidad de socios cancelados, eliminación de socio eliminada | Hecho |
-| v0.2.5 | UX de actividades — rediseño de tarjeta de actividad, subida de imagen de portada, badges de estado de inscripción, miniaturas en listado, cuadrícula "Mis actividades", volumen Docker para almacenamiento | Hecho |
-| v0.2.6 | Correcciones y testing — diálogos de confirmación Shadcn (reemplazan 13 alertas del navegador), corrección de código de descuento en seed, comprobación de plazo de autocancelación, reinscripción tras cancelación, 21 nuevos tests API, 9 nuevos tests E2E de elegibilidad | Hecho |
-| v0.2.7 | Mejoras de actividades — skeletons de carga, estado de URL con nuqs | Hecho |
-| v0.2.9 | Prerrequisitos de pagos — dirección y datos bancarios de la org, subida de logotipo, pestaña de contactos, IBAN del socio, Celery/Redis, notificaciones por email (Jinja2 + SMTP/Resend) | Hecho |
-| v0.3.0 | Pagos y facturación básica — recibos, generación de PDF, IVA, generación de cuotas, historial de pagos del socio | Hecho |
-| v0.3.1 | Correcciones — tests fallidos y README traducidos | Hecho |
-| v0.3.2 | Correcciones — arreglo del pipeline de build del frontend | Hecho |
-| v0.3.3 | Mejoras de CI — ejecución de tests más rápida | Hecho |
-| v0.3.4 | Correcciones — limpieza de warnings y optimización de tests de integración | Hecho |
-| v0.3.5 | Correcciones — tests de integración fallidos | Hecho |
-| v0.3.6 | Optimización de CI — setup-uv v7, cache de hash de contraseñas, workers de test paralelos, hooks de versionado automático | Hecho |
-| v0.4.0 | Domiciliación SEPA — gestión de mandatos, remesas, XML pain.008, forma de pago del socio | Hecho |
-| v0.4.1 | Configuración de pasarelas de pago — gestión configurable desde el panel de super admin | Hecho |
-| v0.4.2 | Infraestructura de webhooks + Stripe Checkout — webhooks de pasarela, estado de pago en tiempo real, flujo "Pagar ahora" del socio | Hecho |
-| v0.4.3 | Integración Redsys — pasarela bancaria española con 3D Secure + Bizum | Hecho |
-| v0.4.4 | Facturación recurrente — generación automática de cuotas | Hecho |
-| v0.4.5 | Recordatorios de pago — notificaciones por email de recibos vencidos | Hecho |
-| v0.5.0 | Comunicaciones simples — anuncios del admin a todos los socios / grupo / tipo de cuota | Hecho |
-| v0.5.1 | Vista de envíos de comunicaciones — seguimiento de destinatarios + "Visto" en la app | Hecho |
-| v0.7.0 | Carnet digital de socio + registro QR — carnet en PDF, numeración automática de socios | Hecho |
-| v0.7.1 | Mejoras del carnet — vista de carnet para el admin, foto de perfil del socio, rediseño del perfil | Hecho |
-| v1.0.0 | Estabilización y lanzamiento — exportaciones CSV, panel financiero, notas y recordatorios, resumen anual, datos demo, pulido de docs | Hecho |
-| v1.0.1 | Parche — corrige el registro de tareas programadas de facturación/recordatorios en Celery; protección de CI contra la sobrescritura de etiquetas de imagen | Hecho |
-| v1.1.0 | Campos de perfil personalizados — datos de socio configurables por la organización (texto, número, fecha, selección, …) con validación por campo y visibilidad/edición por campo | Hecho |
-| v1.1.1 | Parche — reorganización de la navegación de configuración: ajustes de pagos y de socios agrupados en las pestañas Pagos y Socios | Hecho |
-| v1.2.2 | SSO y configuración de correo — alta pública con verificación por correo y aprobación por la directiva, inicio de sesión con Google / Apple, y ajuste de Resend / Google SMTP desde una pestaña de Integraciones | Hecho |
-| v1.3.0 | Reservas simples — reservas de socios en espacios compartidos mediante un calendario semanal, con aforo por franja y lista de espera FIFO | Hecho |
-| v1.4.0 | Roles y permisos flexibles — asignación multi-rol y comprobaciones granulares por permiso en lugar de los cuatro roles fijos. También repara los stacks de despliegue que no ejecutaban ningún worker de Celery ni montaban volumen en el servicio de API | Hecho |
-| v2.0.0 | Revisión del autoalojamiento — montajes bind visibles en el host bajo un único `MEMSHIP_DATA_ROOT`, contenedores del backend con el uid del operador y un `install.sh` de un solo comando. **Seguridad:** PostgreSQL y la API dejan de publicarse en internet. **Cambio incompatible:** `uv run` ya no funciona en los contenedores. | Hecho |
-| v2.1.0 | Configuración inicial sin credenciales publicadas — el mismo proceso interactivo en todos los entornos, sin cuentas cuyas contraseñas se publiquen en este repositorio, más opciones desatendidas para instalaciones automatizadas | Hecho |
-| v2.2.0 | Recuperación del superadministrador desde el servidor — su contraseña se restablece con `python -m app.cli.seed` en la máquina, no por correo. **Seguridad:** el acceso al buzón equivalía a controlar toda la instancia | Hecho |
-| v2.3.0 | Archivos subidos tras autenticación, y un inicio de sesión que no se puede adivinar indefinidamente — el almacenamiento se servía como archivos estáticos, los tokens de restablecimiento volvían en la respuesta de la API y la clave de firma publicada era el valor por defecto. **Cambio incompatible:** quien la usaba recibe una nueva y se cierran todas las sesiones. | Hecho |
-| v2.3.1 | Rutas de dinero que fallaban en silencio — un fichero SEPA ya no descarta recibos cuyo mandato se canceló, un webhook de pago ya no registra un importe distinto como pago completo, y una actividad ya no supera su aforo si dos personas se inscriben a la vez. | Hecho |
+| v0.1.5 | CRUD de actividades: modelos, modalidades, precios, frontend admin | Hecho |
+| v0.1.6 | Patrón de entidad unificado: listado/detalle/pestañas consistente en todas las entidades | Hecho |
+| v0.2.0 | Gestión de actividades: inscripciones, elegibilidad, lista de espera, descuentos, consentimientos, adjuntos | Hecho |
+| v0.2.1 | Rediseño UX: sidebar Shadcn, modo oscuro, colores de marca, tablas compactas, inicio rápido | Hecho |
+| v0.2.2 | Base de tests E2E (Cypress): auth, socios, actividades, inscripciones | Hecho |
+| v0.2.3 | Endurecimiento de errores y validación: notificaciones toast, handler global de errores, validación backend, StrEnum, 76 tests de validación, 16 tests E2E | Hecho |
+| v0.2.4 | Corrección de errores: sidebar en modo oscuro, visualización de errores en formularios, protección de rutas, visibilidad de socios cancelados, eliminación de socio eliminada | Hecho |
+| v0.2.5 | UX de actividades: rediseño de tarjeta de actividad, subida de imagen de portada, badges de estado de inscripción, miniaturas en listado, cuadrícula "Mis actividades", volumen Docker para almacenamiento | Hecho |
+| v0.2.6 | Correcciones y testing: diálogos de confirmación Shadcn (reemplazan 13 alertas del navegador), corrección de código de descuento en seed, comprobación de plazo de autocancelación, reinscripción tras cancelación, 21 nuevos tests API, 9 nuevos tests E2E de elegibilidad | Hecho |
+| v0.2.7 | Mejoras de actividades: skeletons de carga, estado de URL con nuqs | Hecho |
+| v0.2.9 | Prerrequisitos de pagos: dirección y datos bancarios de la org, subida de logotipo, pestaña de contactos, IBAN del socio, Celery/Redis, notificaciones por email (Jinja2 + SMTP/Resend) | Hecho |
+| v0.3.0 | Pagos y facturación básica: recibos, generación de PDF, IVA, generación de cuotas, historial de pagos del socio | Hecho |
+| v0.3.1 | Correcciones: tests fallidos y README traducidos | Hecho |
+| v0.3.2 | Correcciones: arreglo del pipeline de build del frontend | Hecho |
+| v0.3.3 | Mejoras de CI: ejecución de tests más rápida | Hecho |
+| v0.3.4 | Correcciones: limpieza de warnings y optimización de tests de integración | Hecho |
+| v0.3.5 | Correcciones: tests de integración fallidos | Hecho |
+| v0.3.6 | Optimización de CI: setup-uv v7, cache de hash de contraseñas, workers de test paralelos, hooks de versionado automático | Hecho |
+| v0.4.0 | Domiciliación SEPA: gestión de mandatos, remesas, XML pain.008, forma de pago del socio | Hecho |
+| v0.4.1 | Configuración de pasarelas de pago: gestión configurable desde el panel de super admin | Hecho |
+| v0.4.2 | Infraestructura de webhooks + Stripe Checkout: webhooks de pasarela, estado de pago en tiempo real, flujo "Pagar ahora" del socio | Hecho |
+| v0.4.3 | Integración Redsys: pasarela bancaria española con 3D Secure + Bizum | Hecho |
+| v0.4.4 | Facturación recurrente: generación automática de cuotas | Hecho |
+| v0.4.5 | Recordatorios de pago: notificaciones por email de recibos vencidos | Hecho |
+| v0.5.0 | Comunicaciones simples: anuncios del admin a todos los socios / grupo / tipo de cuota | Hecho |
+| v0.5.1 | Vista de envíos de comunicaciones: seguimiento de destinatarios + "Visto" en la app | Hecho |
+| v0.7.0 | Carnet digital de socio + registro QR: carnet en PDF, numeración automática de socios | Hecho |
+| v0.7.1 | Mejoras del carnet: vista de carnet para el admin, foto de perfil del socio, rediseño del perfil | Hecho |
+| v1.0.0 | Estabilización y lanzamiento: exportaciones CSV, panel financiero, notas y recordatorios, resumen anual, datos demo, pulido de docs | Hecho |
+| v1.0.1 | Parche: corrige el registro de tareas programadas de facturación/recordatorios en Celery; protección de CI contra la sobrescritura de etiquetas de imagen | Hecho |
+| v1.1.0 | Campos de perfil personalizados: datos de socio configurables por la organización (texto, número, fecha, selección, …) con validación por campo y visibilidad/edición por campo | Hecho |
+| v1.1.1 | Parche: reorganización de la navegación de configuración: ajustes de pagos y de socios agrupados en las pestañas Pagos y Socios | Hecho |
+| v1.2.2 | SSO y configuración de correo: alta pública con verificación por correo y aprobación por la directiva, inicio de sesión con Google / Apple, y ajuste de Resend / Google SMTP desde una pestaña de Integraciones | Hecho |
+| v1.3.0 | Reservas simples: reservas de socios en espacios compartidos mediante un calendario semanal, con aforo por franja y lista de espera FIFO | Hecho |
+| v1.4.0 | Roles y permisos flexibles: asignación multi-rol y comprobaciones granulares por permiso en lugar de los cuatro roles fijos. También repara los stacks de despliegue que no ejecutaban ningún worker de Celery ni montaban volumen en el servicio de API | Hecho |
+| v2.0.0 | Revisión del autoalojamiento: montajes bind visibles en el host bajo un único `MEMSHIP_DATA_ROOT`, contenedores del backend con el uid del operador y un `install.sh` de un solo comando. **Seguridad:** PostgreSQL y la API dejan de publicarse en internet. **Cambio incompatible:** `uv run` ya no funciona en los contenedores. | Hecho |
+| v2.1.0 | Configuración inicial sin credenciales publicadas: el mismo proceso interactivo en todos los entornos, sin cuentas cuyas contraseñas se publiquen en este repositorio, más opciones desatendidas para instalaciones automatizadas | Hecho |
+| v2.2.0 | Recuperación del superadministrador desde el servidor: su contraseña se restablece con `python -m app.cli.seed` en la máquina, no por correo. **Seguridad:** el acceso al buzón equivalía a controlar toda la instancia | Hecho |
+| v2.3.0 | Archivos subidos tras autenticación, y un inicio de sesión que no se puede adivinar indefinidamente: el almacenamiento se servía como archivos estáticos, los tokens de restablecimiento volvían en la respuesta de la API y la clave de firma publicada era el valor por defecto. **Cambio incompatible:** quien la usaba recibe una nueva y se cierran todas las sesiones. | Hecho |
+| v2.3.1 | Rutas de dinero que fallaban en silencio: un fichero SEPA ya no descarta recibos cuyo mandato se canceló, un webhook de pago ya no registra un importe distinto como pago completo, y una actividad ya no supera su aforo si dos personas se inscriben a la vez. | Hecho |
 | v2.4.0 | El inicio de sesión exige una dirección de correo confirmada, y la numeración de recibos es correlativa y sin huecos. **Cambio incompatible:** una cuenta que nunca confirmó su dirección ya no puede entrar. **Migración:** la numeración pasa a un contador por año, inicializado con los números ya emitidos. | Hecho |
-| v2.5.0 | Todo el correo saliente en una única plantilla con la identidad de la organización — nombre, logotipo y color se leen de la configuración, cada mensaje lleva una alternativa en texto plano junto al HTML, y el envío de recibos y el resumen de facturación pasan a ser plantillas. | Hecho |
-| v2.6.0 | Un super administrador decide qué correos envía el sistema — una pantalla de Configuración con un interruptor por plantilla y los 17 puntos de envío pasando por una única puerta. **Cambio incompatible:** el correo opcional queda desactivado, así que una instalación existente se queda en silencio al actualizar. | Hecho |
-| v2.7.0 | Sesiones que se deslizan en vez de caducar a mitad de tarea — una sesión activa se renueva a la mitad de su ventana y, al agotarse, lo dice y te devuelve al inicio de sesión. **Autoalojamiento:** una versión se despliega en un VPS sin git ni copia del código, desde un tarball de la publicación. | Hecho |
-| v2.7.1 | Una primera instalación deja un `POST-INSTALL.md` en el servidor con lo que el instalador no puede hacer por ti — copiar `.env` fuera del host, crear la organización y el super administrador, programar copias y configurar el correo — con todas las rutas rellenadas. El aviso de la v2.7.0 era correcto y nadie lo leyó. | Hecho |
-| v2.8.0 | Una cuota que el socio compra, y puede perder — el plan se compra desde el portal del socio a un precio prorrateado con impuestos incluidos, se concede cuando llega el dinero por cualquier vía, y se retira 21 días después de que venza una cuota impagada, guardando el nivel perdido para restituirlo al pagar. | Hecho |
-| v2.9.0 | La pantalla en la que el socio compra su plan — la v2.8.0 sabía cobrar pero no dejaba pedirlo. **Mi plan** muestra el plan contratado y los disponibles, con el primer cargo prorrateado antes de confirmar nada. Comprar emite un recibo; el plan se activa al cobrarlo. | Hecho |
-| v2.9.1 | Una primera instalación capaz de seguir sus propias instrucciones — cada arreglo salió de ejecutar la guía de principio a fin en un servidor nuevo. `vps-bootstrap.sh` se interrumpía por el bloqueo de apt al arrancar Ubuntu y dejaba el host sin cortafuegos ni fail2ban tras una salida que parecía correcta. | Hecho |
+| v2.5.0 | Todo el correo saliente en una única plantilla con la identidad de la organización: nombre, logotipo y color se leen de la configuración, cada mensaje lleva una alternativa en texto plano junto al HTML, y el envío de recibos y el resumen de facturación pasan a ser plantillas. | Hecho |
+| v2.6.0 | Un super administrador decide qué correos envía el sistema: una pantalla de Configuración con un interruptor por plantilla y los 17 puntos de envío pasando por una única puerta. **Cambio incompatible:** el correo opcional queda desactivado, así que una instalación existente se queda en silencio al actualizar. | Hecho |
+| v2.7.0 | Sesiones que se deslizan en vez de caducar a mitad de tarea: una sesión activa se renueva a la mitad de su ventana y, al agotarse, lo dice y te devuelve al inicio de sesión. **Autoalojamiento:** una versión se despliega en un VPS sin git ni copia del código, desde un tarball de la publicación. | Hecho |
+| v2.7.1 | Una primera instalación deja un `POST-INSTALL.md` en el servidor con lo que el instalador no puede hacer por ti: copiar `.env` fuera del host, crear la organización y el super administrador, programar copias y configurar el correo, con todas las rutas rellenadas. El aviso de la v2.7.0 era correcto y nadie lo leyó. | Hecho |
+| v2.8.0 | Una cuota que el socio compra, y puede perder: el plan se compra desde el portal del socio a un precio prorrateado con impuestos incluidos, se concede cuando llega el dinero por cualquier vía, y se retira 21 días después de que venza una cuota impagada, guardando el nivel perdido para restituirlo al pagar. | Hecho |
+| v2.9.0 | La pantalla en la que el socio compra su plan: la v2.8.0 sabía cobrar pero no dejaba pedirlo. **Mi plan** muestra el plan contratado y los disponibles, con el primer cargo prorrateado antes de confirmar nada. Comprar emite un recibo; el plan se activa al cobrarlo. | Hecho |
+| v2.9.1 | Una primera instalación capaz de seguir sus propias instrucciones: cada arreglo salió de ejecutar la guía de principio a fin en un servidor nuevo. `vps-bootstrap.sh` se interrumpía por el bloqueo de apt al arrancar Ubuntu y dejaba el host sin cortafuegos ni fail2ban tras una salida que parecía correcta. | Hecho |
 | v2.10.0 | Trece arreglos en las rutas que manejan dinero, datos personales y carga; ninguna pantalla nueva. Los tokens de restablecimiento se guardan como resumen, el IBAN completo deja de devolverse junto al enmascarado y las exportaciones CSV neutralizan las celdas con fórmula. **Cambio incompatible:** los enlaces de restablecimiento pendientes dejan de funcionar al actualizar. | Hecho |
-| v2.11.0 | El personal no es socio del club — un super administrador o un administrador gestiona la instancia sin pertenecer a ella, en vez de llevar número de socio y contar en cada listado, exportación y facturación. **Migración irreversible:** las cuentas de personal pierden su ficha de socio. | Hecho |
-| v2.12.0 | Acceso, correo, pagos y la propia actualización — las rutas con las que tropieza un club en sus primeras semanas. Las direcciones se guardan y comparan en minúsculas, y `upgrade.sh` pregunta a la API nueva por los datos antes de sustituir la pila. **Migración:** las direcciones existentes pasan a minúsculas. | Hecho |
-| v2.13.0 | La versión de auditoría — diecisiete defectos encontrados leyendo el código contra su propia documentación, ninguna función nueva. Restablecer la contraseña cierra todas las sesiones que abrió, el límite de intentos se aplica a quien llama en vez de bloquear a todos los socios, y la facturación fecha en la zona horaria del club. | Hecho |
-| v2.14.0 | La versión de caza de errores — dieciséis defectos reportados y una compilación que podía publicar una imagen incapaz de arrancar, sin funciones nuevas. Las compilaciones instalan `uv.lock` con `--locked` y cada imagen candidata se arranca antes de publicarse; los precios de actividad dejan de devolver el IVA a cero. | Hecho |
-| v2.15.0 | Funciones alcanzables y la ruta de actualización — tres funciones publicadas que no se podían usar, y las comprobaciones que lo habrían detectado. | Hecho |
-| v2.16.0 | La versión de las rutas del dinero — el circuito de cobro SEPA que un club ejecuta cada mes, repasado a mano en lugar de leído. | Hecho |
-| v2.17.0 | La versión de revisión — once defectos encontrados leyendo el árbol y trabajando las pantallas, ninguno reportado por nadie, y la tubería de compilación que publicaba imágenes descuadradas. | Hecho |
-| v2.18.0 | La versión de validación SEPA — dieciséis defectos encontrados conduciendo el cobro en una instancia desplegada. Una devolución contra un recibo ya cobrado deja de constar como atendida, y un fichero bancario generado no se sobrescribe. **Cambio incompatible:** `import-returns` informa por grupos. **Migración:** los mandatos activos duplicados se cancelan, se conserva el más reciente. | Hecho |
-| v2.19.0 | La versión de los proveedores de pago — Bizum puede ofrecerse por separado de la tarjeta, un secreto guardado ya no se borra con un guardado en blanco, y una remesa enviada nombra el recibo que el banco devolvió. **Cambio incompatible:** Bizum viene desactivado. **Migración:** `remittance_receipts` registra qué recibos llevó cada remesa. | Hecho |
-| v3.0.0 | La versión de la identidad party — toda identidad del sistema es ahora una **party**, así que un recibo, un mandato, una dirección o un contacto puede pertenecer a alguien que no es socio. Añade **Entidades** para empresas y donantes sin alta, de modo que una donación se registra sin inventar un socio. También: cualquier **servidor SMTP** se configura desde Ajustes, con preajuste de Gmail y un envío de prueba obligatorio antes de activar un proveedor, y la documentación pasa a un directorio por idioma. **Ruptura:** los campos de identidad de la API son `party_id` y no `member_id`; el nombre, el CIF, el logotipo y los datos bancarios de la organización pasan a su party; una nueva pareja de permisos `entities.*` se concede por migración. **Migración:** personas, usuarios, socios, recibos, mandatos, inscripciones, direcciones y contactos se repuntan a una party; los datos bancarios pasan a `bank_accounts`; el teléfono y la web de la organización pasan a contactos; los contactos principales duplicados se degradan y se conserva el primero de cada canal. | Hecho |
+| v2.11.0 | El personal no es socio del club: un super administrador o un administrador gestiona la instancia sin pertenecer a ella, en vez de llevar número de socio y contar en cada listado, exportación y facturación. **Migración irreversible:** las cuentas de personal pierden su ficha de socio. | Hecho |
+| v2.12.0 | Acceso, correo, pagos y la propia actualización: las rutas con las que tropieza un club en sus primeras semanas. Las direcciones se guardan y comparan en minúsculas, y `upgrade.sh` pregunta a la API nueva por los datos antes de sustituir la pila. **Migración:** las direcciones existentes pasan a minúsculas. | Hecho |
+| v2.13.0 | La versión de auditoría: diecisiete defectos encontrados leyendo el código contra su propia documentación, ninguna función nueva. Restablecer la contraseña cierra todas las sesiones que abrió, el límite de intentos se aplica a quien llama en vez de bloquear a todos los socios, y la facturación fecha en la zona horaria del club. | Hecho |
+| v2.14.0 | La versión de caza de errores: dieciséis defectos reportados y una compilación que podía publicar una imagen incapaz de arrancar, sin funciones nuevas. Las compilaciones instalan `uv.lock` con `--locked` y cada imagen candidata se arranca antes de publicarse; los precios de actividad dejan de devolver el IVA a cero. | Hecho |
+| v2.15.0 | Funciones alcanzables y la ruta de actualización: tres funciones publicadas que no se podían usar, y las comprobaciones que lo habrían detectado. | Hecho |
+| v2.16.0 | La versión de las rutas del dinero: el circuito de cobro SEPA que un club ejecuta cada mes, repasado a mano en lugar de leído. | Hecho |
+| v2.17.0 | La versión de revisión: once defectos encontrados leyendo el árbol y trabajando las pantallas, ninguno reportado por nadie, y la tubería de compilación que publicaba imágenes descuadradas. | Hecho |
+| v2.18.0 | La versión de validación SEPA: dieciséis defectos encontrados conduciendo el cobro en una instancia desplegada. Una devolución contra un recibo ya cobrado deja de constar como atendida, y un fichero bancario generado no se sobrescribe. **Cambio incompatible:** `import-returns` informa por grupos. **Migración:** los mandatos activos duplicados se cancelan, se conserva el más reciente. | Hecho |
+| v2.19.0 | La versión de los proveedores de pago: Bizum puede ofrecerse por separado de la tarjeta, un secreto guardado ya no se borra con un guardado en blanco, y una remesa enviada nombra el recibo que el banco devolvió. **Cambio incompatible:** Bizum viene desactivado. **Migración:** `remittance_receipts` registra qué recibos llevó cada remesa. | Hecho |
+| v3.0.0 | La versión de la identidad party: toda identidad del sistema es ahora una **party**, así que un recibo, un mandato, una dirección o un contacto puede pertenecer a alguien que no es socio. Añade **Entidades** para empresas y donantes sin alta, de modo que una donación se registra sin inventar un socio. También: cualquier **servidor SMTP** se configura desde Ajustes, con preajuste de Gmail y un envío de prueba obligatorio antes de activar un proveedor, y la documentación pasa a un directorio por idioma. **Ruptura:** los campos de identidad de la API son `party_id` y no `member_id`; el nombre, el CIF, el logotipo y los datos bancarios de la organización pasan a su party; una nueva pareja de permisos `entities.*` se concede por migración. **Migración:** personas, usuarios, socios, recibos, mandatos, inscripciones, direcciones y contactos se repuntan a una party; los datos bancarios pasan a `bank_accounts`; el teléfono y la web de la organización pasan a contactos; los contactos principales duplicados se degradan y se conserva el primero de cada canal. | Hecho |
 
 ## Hoja de ruta
 
-Priorizado, aún sin versión. Cada elemento se convierte en un lanzamiento versionado cuando se publica, y el lanzamiento toma el siguiente número semántico por orden. Cada elemento tiene una incidencia con su resumen y las ideas actuales — consulta las [incidencias con la etiqueta `roadmap`](https://github.com/marcandreuf/memship/labels/roadmap).
+Priorizado, aún sin versión. Cada elemento se convierte en un lanzamiento versionado cuando se publica, y el lanzamiento toma el siguiente número semántico por orden. Cada elemento tiene una incidencia con su resumen y las ideas actuales, consulta las [incidencias con la etiqueta `roadmap`](https://github.com/marcandreuf/memship/labels/roadmap).
 
-- **Invitaciones de usuarios** — invitar a un nuevo superadministrador, administrador del club o socio indicando su dirección de correo y su rol; la persona elige su propio nombre y contraseña. Se envían por correo cuando el correo está configurado, y como enlace copiable cuando no lo está, de modo que una instalación recién creada pueda añadir un segundo administrador sin acceso por consola
-- **Copias de seguridad** — descargar una copia completa desde el área de administración, con la base de datos y los archivos subidos, y una restauración documentada y probada
-- **Convocatorias** — convocatorias formales de Asamblea General con confirmación del socio mediante token
-- **Biblioteca de documentos** — estatutos, actas, formularios con visibilidad por grupo
-- **Calendario de eventos + confirmación de asistencia** — vista de calendario y seguimiento de participación
-- **Integraciones** — conectar memship con las herramientas que el club ya utiliza, en lugar de pedirle que las abandone. Primero mensajería instantánea (WhatsApp, Telegram, Signal, Instagram), que es donde la mayoría de los clubes se comunican realmente; después suscripciones de calendario, exportaciones a contabilidad y facturación electrónica, envío de licencias a federaciones deportivas y webhooks salientes como vía genérica para todo lo demás. Cada conector tiene su propio coste y sus propias limitaciones, y se publica por separado
+- **Invitaciones de usuarios**, invitar a un nuevo superadministrador, administrador del club o socio indicando su dirección de correo y su rol; la persona elige su propio nombre y contraseña. Se envían por correo cuando el correo está configurado, y como enlace copiable cuando no lo está, de modo que una instalación recién creada pueda añadir un segundo administrador sin acceso por consola
+- **Copias de seguridad**, descargar una copia completa desde el área de administración, con la base de datos y los archivos subidos, y una restauración documentada y probada
+- **Convocatorias**, convocatorias formales de Asamblea General con confirmación del socio mediante token
+- **Biblioteca de documentos**, estatutos, actas, formularios con visibilidad por grupo
+- **Calendario de eventos + confirmación de asistencia**, vista de calendario y seguimiento de participación
+- **Integraciones**, conectar memship con las herramientas que el club ya utiliza, en lugar de pedirle que las abandone. Primero mensajería instantánea (WhatsApp, Telegram, Signal, Instagram), que es donde la mayoría de los clubes se comunican realmente; después suscripciones de calendario, exportaciones a contabilidad y facturación electrónica, envío de licencias a federaciones deportivas y webhooks salientes como vía genérica para todo lo demás. Cada conector tiene su propio coste y sus propias limitaciones, y se publica por separado
 
 Las variaciones complejas se construyen bajo demanda, cuando una implementación real las necesita: GoCardless e-mandatos, PayPal, flujo de Stripe Invoice, acciones masivas en recibos, generador de informes personalizados, encuestas, facturación familiar, pagos y reservas recurrentes, alquiler de equipamiento, votación y adjuntos en convocatorias, y variantes más profundas de las funciones anteriores.
 
-**Aplazado — las extensiones como sistema de módulos/plugins.** Los complementos opcionales como álbumes de fotos, foro, libro de visitas, directorio de enlaces, inventario/préstamos y widgets del portal necesitan un sistema de módulos diseñado dentro de la arquitectura, no añadido sobre ella. Esto espera a una futura revisión de esa arquitectura en lugar de publicarse como una función.
+**Aplazado, las extensiones como sistema de módulos/plugins.** Los complementos opcionales como álbumes de fotos, foro, libro de visitas, directorio de enlaces, inventario/préstamos y widgets del portal necesitan un sistema de módulos diseñado dentro de la arquitectura, no añadido sobre ella. Esto espera a una futura revisión de esa arquitectura en lugar de publicarse como una función.
 
 ---
 
@@ -181,7 +181,7 @@ Las variaciones complejas se construyen bajo demanda, cuando una implementación
 
 **Pagos y facturación** (disponible)
 - Gestión de recibos con ciclo de vida de 7 estados (nuevo → emitido → pagado / devuelto / cancelado / vencido)
-- Generación de recibos en PDF (WeasyPrint) con cabecera de la organización, datos del socio, desglose de IVA — en 3 idiomas (ES/CA/EN)
+- Generación de recibos en PDF (WeasyPrint) con cabecera de la organización, datos del socio, desglose de IVA, en 3 idiomas (ES/CA/EN)
 - Generación masiva de cuotas de membresía a partir de los tipos de membresía
 - Recibo automático al inscribirse en una actividad (emitido al confirmar, cancelado al cancelar)
 - Creación manual de recibos desde la ficha del socio
@@ -193,16 +193,16 @@ Las variaciones complejas se construyen bajo demanda, cuando una implementación
 - Notificación por email del recibo con PDF adjunto (mediante Celery + Resend o SMTP)
 - Configuración → pestaña Pagos para facturación y datos bancarios
 
-**Domiciliación SEPA** (disponible — v0.4.0)
+**Domiciliación SEPA** (disponible, v0.4.0)
 - Gestión de mandatos SEPA (crear, PDF, subir firmado, cancelar)
 - Procesamiento de remesas con XML SEPA (pain.008.001.02)
 - Importación de devoluciones bancarias y seguimiento de estado
 - Página de forma de pago para socios
 
-**Pasarelas de pago** (previsto — v0.4.x)
+**Pasarelas de pago** (previsto, v0.4.x)
 - Gestión configurable de pasarelas de pago (configuración del super admin)
-- Integración Stripe — pagos con tarjeta basados en factura con webhooks
-- GoCardless — e-mandatos SEPA gestionados con flujo alojado
+- Integración Stripe, pagos con tarjeta basados en factura con webhooks
+- GoCardless, e-mandatos SEPA gestionados con flujo alojado
 - Patrón de adaptador extensible para proveedores regionales (MercadoPago, Razorpay, etc.)
 
 **Comunicaciones** (previsto)
@@ -230,7 +230,7 @@ Las variaciones complejas se construyen bajo demanda, cuando una implementación
 | Frontend | Next.js / React / Tailwind CSS / Shadcn/ui |
 | Base de datos | PostgreSQL 15 |
 | Tareas en segundo plano | Celery worker + beat, con Redis como broker |
-| Proxy inverso | Caddy — obtiene y renueva los certificados TLS por su cuenta |
+| Proxy inverso | Caddy, obtiene y renueva los certificados TLS por su cuenta |
 | Contenedores | Docker + Docker Compose |
 | CI | GitHub Actions |
 | Registro | GitHub Container Registry (ghcr.io) |
@@ -256,33 +256,33 @@ Consulta [CONTRIBUTING](CONTRIBUTING.md) para ramas, versionado y cómo se publi
 
 El autoalojamiento en producción vive en la documentación, para que haya una sola copia que mantener correcta:
 
-- **[Qué necesitas para ejecutar Memship](docs/es/getting-started/what-you-need.md)** — un servidor
+- **[Qué necesitas para ejecutar Memship](docs/es/getting-started/what-you-need.md)**, un servidor
   de 2 vCPU / 4 GB / 40 GB, un dominio y una forma de enviar correo, por unos 8–12 € al mes. Léelo
   antes de decidir; las cifras están medidas, no estimadas
-- **[Instalación](docs/en/getting-started/installation.md)** — `vps-bootstrap.sh` en un servidor
+- **[Instalación](docs/en/getting-started/installation.md)**, `vps-bootstrap.sh` en un servidor
   recién creado y después `install.sh`, que genera secretos reales, fija una versión y coloca tus
   datos en un único directorio respaldado
-- **[Configuración inicial](docs/en/getting-started/first-setup.md)** — crear el super administrador y
+- **[Configuración inicial](docs/en/getting-started/first-setup.md)**, crear el super administrador y
   la organización
-- **[Referencia de configuración](docs/en/self-hosting/configuration.md)** — todas las variables de
+- **[Referencia de configuración](docs/en/self-hosting/configuration.md)**, todas las variables de
   entorno
-- **[Copias de seguridad y restauración](docs/en/self-hosting/backups-and-restore.md)** — configúralo
+- **[Copias de seguridad y restauración](docs/en/self-hosting/backups-and-restore.md)**, configúralo
   antes de entrar en producción
-- **[Actualizaciones](docs/en/self-hosting/upgrading.md)** — pasar a una nueva versión
-- **[Resolución de problemas](docs/en/self-hosting/troubleshooting.md)** — cuando algo no arranca
+- **[Actualizaciones](docs/en/self-hosting/upgrading.md)**, pasar a una nueva versión
+- **[Resolución de problemas](docs/en/self-hosting/troubleshooting.md)**, cuando algo no arranca
 
 El [Inicio rápido](#inicio-rápido-docker) de arriba es solo para evaluación: imágenes publicadas,
 volúmenes desechables y una contraseña de base de datos fija.
 
 ## Contribuir
 
-Las contribuciones de código son bienvenidas. La base del proyecto — infraestructura, CI/CD y la arquitectura central — ya está asentada, y [CONTRIBUTING](CONTRIBUTING.md) explica el modelo de ramas, las convenciones de commits y pull requests, el versionado y cómo se publica una release _(en inglés)_. En resumen: crea una rama `feature/*` de vida corta a partir de `main` y abre un pull request de vuelta a `main`. Para preparar el entorno, empieza por [Local development environment](docs/en/development/local-environment.md) _(en inglés)_.
+Las contribuciones de código son bienvenidas. La base del proyecto (infraestructura, CI/CD y la arquitectura central) ya está asentada, y [CONTRIBUTING](CONTRIBUTING.md) explica el modelo de ramas, las convenciones de commits y pull requests, el versionado y cómo se publica una release _(en inglés)_. En resumen: crea una rama `feature/*` de vida corta a partir de `main` y abre un pull request de vuelta a `main`. Para preparar el entorno, empieza por [Local development environment](docs/en/development/local-environment.md) _(en inglés)_.
 
-¿No escribes código? [Abre un issue](https://github.com/marcandreuf/memship/issues) — los informes de errores, las propuestas de funcionalidades, las preguntas y contar cómo usarías Memship son igual de bienvenidos, y para los dos primeros hay plantillas.
+¿No escribes código? [Abre un issue](https://github.com/marcandreuf/memship/issues), los informes de errores, las propuestas de funcionalidades, las preguntas y contar cómo usarías Memship son igual de bienvenidos, y para los dos primeros hay plantillas.
 
-Las vulnerabilidades de seguridad se comunican por un canal privado, no en un issue público — consulta [SECURITY](SECURITY.md). Quien participa en el proyecto queda cubierto por el [Código de conducta](CODE_OF_CONDUCT.md).
+Las vulnerabilidades de seguridad se comunican por un canal privado, no en un issue público, consulta [SECURITY](SECURITY.md). Quien participa en el proyecto queda cubierto por el [Código de conducta](CODE_OF_CONDUCT.md).
 
-[Accesibilidad](ACCESSIBILITY.md) explica a qué aspira el proyecto, qué se espera que compruebe quien contribuye y cómo informar de una barrera — incluido qué se ha probado de verdad y qué no _(en inglés)_. Si te topas con una, ahí está la vía para informar, con una dirección de correo para cuando GitHub sea precisamente el obstáculo.
+[Accesibilidad](ACCESSIBILITY.md) explica a qué aspira el proyecto, qué se espera que compruebe quien contribuye y cómo informar de una barrera, incluido qué se ha probado de verdad y qué no _(en inglés)_. Si te topas con una, ahí está la vía para informar, con una dirección de correo para cuando GitHub sea precisamente el obstáculo.
 
 ## Licencia
 

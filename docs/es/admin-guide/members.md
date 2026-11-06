@@ -13,7 +13,7 @@ Al dar de alta un socio se registran, entre otros datos:
 
 - **Nombre**, **Fecha de nacimiento**, **DNI/NIE** y **Género**.
 - **Tipo de membresía** (ver más abajo).
-- **Notas internas** — visibles solo para administradores.
+- **Notas internas**, visibles solo para administradores.
 
 La **Fecha de alta** queda registrada automáticamente.
 

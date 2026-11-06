@@ -9,8 +9,8 @@ Carné de socio digital con código QR y verificación en el control de acceso.
 
 En los ajustes de la tarjeta configuras la **numeración**:
 
-- **Prefijo** — p. ej. `SCB-` genera `SCB-0001`.
-- **Dígitos** — longitud de la secuencia rellenada con ceros.
+- **Prefijo**, p. ej. `SCB-` genera `SCB-0001`.
+- **Dígitos**, longitud de la secuencia rellenada con ceros.
 - **Asignar números** a los socios que aún no tengan uno; se indica cuántos números se han
   asignado.
 

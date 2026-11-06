@@ -9,15 +9,15 @@ locally with pnpm, so you get Next.js hot reload without a container in the way.
 
 | Tool | Why |
 |---|---|
-| Docker Engine + Compose plugin | The whole backend — API, database, Redis, worker, beat, migrations and the test suite |
+| Docker Engine + Compose plugin | The whole backend, API, database, Redis, worker, beat, migrations and the test suite |
 | **Node 22** and **pnpm** | The frontend dev server |
 
 That is the complete list. **The backend never runs on the host**: no `uv sync`, no virtualenv, no
 Python version to match, so the same checkout behaves the same on any machine with Docker.
-`backend/app`, `backend/tests` and `backend/alembic` are bind-mounted into the containers — you
+`backend/app`, `backend/tests` and `backend/alembic` are bind-mounted into the containers, you
 edit them in your editor and the running code changes. The API restarts itself on a change under
 `backend/app` (uvicorn's reloader, `APP_ENV=development` only; watch `dev.sh logs backend` for
-"Reloading..."). The worker and beat do not — restart them after editing a task. The container is
+"Reloading..."). The worker and beat do not, restart them after editing a task. The container is
 where the code executes, not where it lives.
 
 Only the frontend stays on the host, and deliberately: the Next.js dev server is there for hot
@@ -25,17 +25,17 @@ reload, which is the one thing a container does not do as well. Cypress needs a 
 the e2e suite is on the host too.
 
 The Node major is pinned in `frontend/.nvmrc` and enforced as a warning by `engines` in
-`frontend/package.json`. **Use 22** — it is what CI runs and what the production image is built on,
+`frontend/package.json`. **Use 22**, it is what CI runs and what the production image is built on,
 and a different major is the kind of difference that only shows up as a build that works on one
 machine and not another. With `nvm`:
 
 ```bash
 cd frontend
 nvm install       # reads .nvmrc; `nvm use` on its own only switches to an already-installed major
-corepack enable   # re-run this after every version switch — see below
+corepack enable   # re-run this after every version switch, see below
 ```
 
-A mismatch prints `WARN Unsupported engine` and carries on, which is deliberate — it should tell
+A mismatch prints `WARN Unsupported engine` and carries on, which is deliberate, it should tell
 you, not stop you mid-session. `pnpm install --engine-strict` turns the same check into a hard
 failure if you ever want it enforced.
 
@@ -49,7 +49,7 @@ right one without installing it yourself.
 
 > **You do not need Node at all just to run memship.** The frontend ships as a container, and the
 > [Quick start](../getting-started/quickstart.md) runs the whole app from published images in one
-> command. Install the toolchain when you want to *work on* the frontend — the local dev server
+> command. Install the toolchain when you want to *work on* the frontend, the local dev server
 > exists for hot reload, which is the one thing a container cannot do as well.
 
 ## Start
@@ -65,7 +65,7 @@ right one without installing it yourself.
 | Command | Description |
 |---------|-------------|
 | `./scripts/dev.sh start all` | Start backend (Docker) + frontend (local) |
-| `./scripts/dev.sh start backend` | Start only the backend — API, DB, Redis, worker, beat |
+| `./scripts/dev.sh start backend` | Start only the backend, API, DB, Redis, worker, beat |
 | `./scripts/dev.sh start frontend` | Start only the Next.js dev server |
 | `./scripts/dev.sh stop all` | Stop all services |
 | `./scripts/dev.sh restart all` | Restart all services |
@@ -74,18 +74,18 @@ right one without installing it yourself.
 | `./scripts/dev.sh logs frontend` | Frontend logs (`tail -f`) |
 | `./scripts/dev.sh logs worker` | Celery worker logs |
 | `./scripts/dev.sh logs beat` | Celery beat (scheduler) logs |
-| `./scripts/dev.sh seed` | Interactive setup — the same one every environment uses |
-| `./scripts/dev.sh seed demo` | Demo club with **generated** credentials — prefer this |
+| `./scripts/dev.sh seed` | Interactive setup, the same one every environment uses |
+| `./scripts/dev.sh seed demo` | Demo club with **generated** credentials, prefer this |
 | `./scripts/dev.sh seed test` | Fixed e2e test accounts, whose passwords are public |
 | `./scripts/dev.sh passwd [email]` | Replace the super admin password with a generated one |
-| `./scripts/dev.sh test [args]` | Backend test suite, in a container — extra arguments go to pytest |
+| `./scripts/dev.sh test [args]` | Backend test suite, in a container, extra arguments go to pytest |
 | `./scripts/dev.sh shell` | A shell inside the API container |
 | `./scripts/dev.sh shelltest [run\|mutate\|lint]` | The deployment scripts' shell guards, in a Linux container on a copy of the tree |
 | `./scripts/dev.sh migration "msg"` | Autogenerate an Alembic revision from your model changes |
 | `./scripts/dev.sh e2e` | Cypress, headless |
 | `./scripts/dev.sh e2e:open` | Cypress GUI |
 | `./scripts/dev.sh e2e:parallel` | Cypress, 4 workers |
-| `./scripts/dev.sh reset` | **Destructive** — see below |
+| `./scripts/dev.sh reset` | **Destructive**, see below |
 
 `start`, `stop` and `restart` take `backend`, `frontend`, `worker`, `beat` or `all` (the default).
 `start all` brings up the worker and beat alongside the API and database.
@@ -99,7 +99,7 @@ tested, but the native one rewrites your tracked scripts while it works, and `sh
 only touches a copy.
 
 > **`reset` deletes your volumes.** It runs `docker compose down -v`, which destroys the dev
-> database *and* the storage volume — uploads and `storage/secret.key` with it. Losing that key
+> database *and* the storage volume, uploads and `storage/secret.key` with it. Losing that key
 > means any payment-provider or SSO credentials stored in that database can no longer be
 > decrypted. There is no confirmation prompt. Use it when you want a clean slate, not to fix a
 > stuck container.
@@ -114,7 +114,7 @@ only touches a copy.
 | Database | localhost:5433 |
 | Test database | localhost:5434 (started by `dev.sh test`) |
 | Redis | localhost:6379 |
-| Adminer (DB UI) | http://localhost:8181 — not started by `dev.sh`, see below |
+| Adminer (DB UI) | http://localhost:8181, not started by `dev.sh`, see below |
 
 Adminer sits behind a Compose profile and has no `dev.sh` command:
 
@@ -122,16 +122,16 @@ Adminer sits behind a Compose profile and has no `dev.sh` command:
 docker compose -f backend/docker/docker-compose.yml --profile tools up -d adminer
 ```
 
-## The dev stack is not hardened — everything binds to localhost
+## The dev stack is not hardened, everything binds to localhost
 
 The dev stack ships deliberately weak settings: a fixed database password (`memship`), Redis with
-no authentication, and — after `seed test` — **super admin credentials that are published in this
+no authentication, and, after `seed test`, **super admin credentials that are published in this
 repository**. That is fine on a laptop and disastrous on a shared network, so **nothing is exposed
 beyond loopback by default**: the API, database, Redis and Adminer bind to `127.0.0.1`, and the
 Next.js dev server does too.
 
 Binding the containers is not enough on its own. Next.js binds `0.0.0.0` out of the box, and the
-frontend proxies to the API server-side — so a dev server on every interface is a complete path
+frontend proxies to the API server-side, so a dev server on every interface is a complete path
 into the app, login included, even when every container is on loopback. Both halves are pinned.
 
 ### Working on a public network
@@ -167,18 +167,18 @@ the same on all three platforms. What differs is what surrounds it:
 
 | Platform | What to know |
 |---|---|
-| **Linux (Ubuntu 24.04+)** | Docker inserts its iptables rules **ahead of `ufw`**, so a published port is reachable even while the firewall denies it. `ufw` will not save you from `DEV_BIND=0.0.0.0` — the bind address is the control that works. |
+| **Linux (Ubuntu 24.04+)** | Docker inserts its iptables rules **ahead of `ufw`**, so a published port is reachable even while the firewall denies it. `ufw` will not save you from `DEV_BIND=0.0.0.0`, the bind address is the control that works. |
 | **macOS (Docker Desktop)** | Ports are forwarded by the VM to the host and the bind address is honoured, so loopback stays loopback. macOS may prompt for incoming connections the first time you use `dev:lan`. |
-| **Windows (Docker Desktop + WSL2)** | Loopback binding works through WSL2's localhost forwarding. In **mirrored** networking mode (Windows 11, `networkingMode=mirrored` in `.wslconfig`) the WSL instance shares the host's interfaces, so `0.0.0.0` inside WSL is genuinely on the LAN — and Windows Firewall, not `ufw`, is what prompts. Run `dev.sh` from WSL or Git Bash; it is a bash script. |
+| **Windows (Docker Desktop + WSL2)** | Loopback binding works through WSL2's localhost forwarding. In **mirrored** networking mode (Windows 11, `networkingMode=mirrored` in `.wslconfig`) the WSL instance shares the host's interfaces, so `0.0.0.0` inside WSL is genuinely on the LAN, and Windows Firewall, not `ufw`, is what prompts. Run `dev.sh` from WSL or Git Bash; it is a bash script. |
 
-`0.0.0.0` means *every* interface, which includes VPN and Tailscale adapters — those reach further
+`0.0.0.0` means *every* interface, which includes VPN and Tailscale adapters, those reach further
 than the café's wifi.
 
 ## First-time setup
 
 ```bash
 ./scripts/dev.sh seed          # interactive, the same setup every environment uses
-./scripts/dev.sh seed demo     # demo club, generated credentials — the everyday choice
+./scripts/dev.sh seed demo     # demo club, generated credentials, the everyday choice
 ./scripts/dev.sh seed test     # fixed test accounts + sample data, for the e2e suite
 ```
 
@@ -189,23 +189,23 @@ are a contract with the test suite rather than a seeding choice, so they live wi
 
 > **`seed test` refuses to run outside development.** It plants fixed, repository-visible
 > passwords, so it requires `APP_ENV=development` or `CI`. For anything real, use the interactive
-> setup — see [First-time setup](../getting-started/first-setup.md).
+> setup, see [First-time setup](../getting-started/first-setup.md).
 
 ## Email in dev
 
-The dev stack dispatches nothing until a provider is configured — every send is logged and
+The dev stack dispatches nothing until a provider is configured, every send is logged and
 skipped. Two ways in, and the first wins:
 
 1. **Settings > Mailing** in the running app. It is stored in the database, so the API and the
    Celery worker both pick it up without a restart. Prefer it: it is the same path a self-hosting
    operator uses, and it is the only one the API container reads.
-2. **`backend/.env`** — copy `backend/.env.example` and fill in `RESEND_API_KEY` or the `SMTP_*`
+2. **`backend/.env`**, copy `backend/.env.example` and fill in `RESEND_API_KEY` or the `SMTP_*`
    block. The file is optional, no setup step creates it, and the worker reads it only if it is
-   there. Its `DATABASE_URL` and `CELERY_BROKER_URL` are ignored inside the containers — the
-   Compose `environment:` keys win — so the localhost values it ships with cannot break the stack.
+   there. Its `DATABASE_URL` and `CELERY_BROKER_URL` are ignored inside the containers, the
+   Compose `environment:` keys win, so the localhost values it ships with cannot break the stack.
 
-Mind the asymmetry: mail sent straight from a request — password reset, email verification, the
-Mailing screen's own test send — leaves the `api` container, which does not read `backend/.env`.
+Mind the asymmetry: mail sent straight from a request, password reset, email verification, the
+Mailing screen's own test send, leaves the `api` container, which does not read `backend/.env`.
 Only queued mail goes through the worker. Configure through the Mailing screen to exercise both.
 
 ## Tests
@@ -221,20 +221,20 @@ whose data directory is a tmpfs, so a run leaves nothing behind. Everything afte
 straight to pytest.
 
 The container points Celery at `redis://redis:6379/15` rather than the default. The suite enqueues
-tasks — registering a member fires verification and confirmation emails — and the default broker
+tasks, registering a member fires verification and confirmation emails, and the default broker
 URL is `localhost:6379`, which on a host machine happens to be the dev Redis. So a host run was
 publishing test-triggered tasks into the *dev* broker on database 0, where the dev worker picked
 them up and ran them against the dev database. Database 15 has no consumer, so a task an assertion
 provokes goes nowhere. (It is also what keeps the suite fast: with no listener at all, kombu retries
-each publish for ~19 seconds — that alone took one file from 3s to 9m53s.)
+each publish for ~19 seconds, that alone took one file from 3s to 9m53s.)
 
 That container is the only place the `dev` stage of `backend/docker/Dockerfile` is built. It
-carries the `dev` extra — pytest, xdist, factory-boy — that the shipped image deliberately leaves
+carries the `dev` extra (pytest, xdist, factory-boy) that the shipped image deliberately leaves
 out, while the API, worker and beat containers keep building the production stage. So the stack
 you develop against stays the one that ships, and the test dependencies never reach a registry.
 `backend/tests` is bind-mounted, so an edited test runs immediately; only a dependency change
-needs a rebuild. The test database is recreated on every run — `dev.sh test` removes `db-test`
-before starting — so a column added to a model is there the next time the suite runs.
+needs a rebuild. The test database is recreated on every run, `dev.sh test` removes `db-test`
+before starting, so a column added to a model is there the next time the suite runs.
 
 For end-to-end tests, **run the full suite against a production build**:
 
@@ -243,7 +243,7 @@ cd e2e && pnpm test:parallel:prod
 ```
 
 `next dev` compiles each route on first request, and with 4 workers sharing one dev server that
-stall pushes navigations past their timeouts — specs fail, or pass only on retry, and which ones
+stall pushes navigations past their timeouts, specs fail, or pass only on retry, and which ones
 varies between runs. `test:parallel:prod` builds, serves, runs and tears down.
 
 **Both parallel runners reseed the dev database before the suite starts** (`seed --test
@@ -265,7 +265,7 @@ The counters are in-memory, so `docker compose restart api` clears them all.
 Retries mask failures, so read the screenshots in `e2e/cypress/screenshots/` (gitignored,
 overwritten each run): a screenshot with no `attempt N` suffix means a test failed once and passed
 on retry. A clean run leaves none. Intermittent retry-only passes under parallel load are a known
-open problem — see [issue #58](https://github.com/marcandreuf/memship/issues/58).
+open problem, see [issue #58](https://github.com/marcandreuf/memship/issues/58).
 
 ## Adding a backend dependency
 
@@ -304,7 +304,7 @@ in your database by the time the container is up. Creating one:
 
 It autogenerates against the running dev database and writes the revision into
 `backend/alembic/versions` on the host. The command runs as **your** uid rather than the image's,
-which is what makes the new file yours to edit — the container's built-in user is uid 1001, and
+which is what makes the new file yours to edit, the container's built-in user is uid 1001, and
 that is not the operator on every machine.
 
 ## Editor tooling
@@ -313,9 +313,9 @@ The backend runs in a container; your editor does not. Autocomplete, go-to-defin
 type checking need an interpreter that can resolve `fastapi`, `sqlalchemy` and the rest, and this
 is the one reason a Python toolchain might still touch your machine:
 
-- **Point the editor at the container** — VS Code Dev Containers or a JetBrains remote interpreter,
+- **Point the editor at the container**, VS Code Dev Containers or a JetBrains remote interpreter,
   against the `api` service. Nothing is installed on the host.
-- **Keep a host virtualenv purely as a language-server target** — `cd backend && uv sync --extra dev`.
+- **Keep a host virtualenv purely as a language-server target**, `cd backend && uv sync --extra dev`.
   Nothing ever runs from it: `dev.sh` does not read it, and neither do the tests.
 
 Both are optional. The stack, the suite and the migrations all work with neither installed.

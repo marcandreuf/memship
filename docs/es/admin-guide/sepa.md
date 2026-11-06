@@ -20,12 +20,12 @@ Flujo habitual:
 
 **Un socio solo puede tener un mandato activo.** Si intentas registrar un segundo, Memship lo
 rechaza e indica la referencia y la cuenta del mandato vigente. Cuando un socio cambia de banco,
-**anula primero** el mandato actual y registra después el nuevo — el mismo orden que sigue el
+**anula primero** el mandato actual y registra después el nuevo, el mismo orden que sigue el
 papeleo. Si tu instancia viene de una versión anterior a la **2.18.0** y tenía mandatos activos
 duplicados, la actualización los canceló y conservó el más reciente.
 
 El **IBAN** se valida al guardarlo, **dígitos de control incluidos**, así que un IBAN con una
-cifra mal se rechaza en el formulario en vez de acabar en el fichero del banco — que devolvería
+cifra mal se rechaza en el formulario en vez de acabar en el fichero del banco, que devolvería
 la remesa entera. Puedes pegarlo tal como viene del extracto: mayúsculas y espacios se
 normalizan.
 
@@ -36,48 +36,48 @@ constar como **Expirado**.
 
 Una **remesa** agrupa recibos domiciliados en un lote para enviarlo al banco.
 
-1. **Nueva remesa** y **selecciona los recibos** — solo recibos **emitidos** o **vencidos** con
+1. **Nueva remesa** y **selecciona los recibos**, solo recibos **emitidos** o **vencidos** con
    mandatos SEPA activos. Verás el número de recibos seleccionados y el total.
 
-   La **fecha de cobro** no puede ser anterior a hoy — se comprueba contra el día de la
-   organización, no el del servidor — porque el banco rechaza el fichero completo si lo es. Si
+   La **fecha de cobro** no puede ser anterior a hoy, se comprueba contra el día de la
+   organización, no el del servidor, porque el banco rechaza el fichero completo si lo es. Si
    cae en fin de semana, el formulario te avisa pero no te lo impide: el plazo mínimo y el
    calendario de liquidación los fija cada banco.
-2. **Generar XML** — produce el fichero **ISO 20022 pain.008**, estándar para los bancos de la
+2. **Generar XML**, produce el fichero **ISO 20022 pain.008**, estándar para los bancos de la
    zona SEPA. **Descarga el XML** y preséntalo en tu banca electrónica.
 
    **El fichero se genera una sola vez y no se sobrescribe**: es el registro de lo que se envió
-   al banco. Si necesitas uno distinto — porque un mandato ha cambiado, por ejemplo — **cancela
+   al banco. Si necesitas uno distinto (porque un mandato ha cambiado, por ejemplo) **cancela
    la remesa y vuelve a crearla**; al cancelarla sus recibos quedan libres para otra.
 3. **Marcar enviada** cuando lo hayas presentado al banco.
 
    Desde ese momento y hasta que cierres la remesa, sus recibos **no se pueden cobrar ni anular
    a mano**: hay una orden en curso en el banco y Memship no puede afirmar lo contrario. Las dos
-   salidas son las de los pasos siguientes — importar la devolución, o cerrar la remesa. Un pago
+   salidas son las de los pasos siguientes, importar la devolución, o cerrar la remesa. Un pago
    con tarjeta o Bizum confirmado por el proveedor sí marca el recibo como cobrado, porque ahí
    el dinero se ha movido de verdad; esa es justamente la situación que describe el aviso del
    paso 4.
-4. **Importar devoluciones** — SEPA solo informa de los cobros que **fallan**. Pega las líneas
+4. **Importar devoluciones**, SEPA solo informa de los cobros que **fallan**. Pega las líneas
    de devolución en **JSON** (el cuadro del diálogo muestra el formato), con el número de recibo
    y, si lo tienes, el motivo; no se sube el fichero del banco tal cual. Un texto vacío se
    rechaza: no equivale a "el banco no ha devuelto nada". Si no hay devoluciones, **sáltate este
    paso** en lugar de importar una lista vacía.
 
-   El resultado agrupa los recibos por lo que ha pasado con cada uno — **Devueltos**, **Ya
+   El resultado agrupa los recibos por lo que ha pasado con cada uno, **Devueltos**, **Ya
    constaban devueltos**, **Sin cambios: su estado no admite una devolución**, **Líneas
    repetidas en el fichero**, **No están en esta remesa** (indicando en cuál están) y **No
-   encontrados** — y nombra los recibos de cada grupo. Solo pueden marcarse como devueltos los
+   encontrados**, y nombra los recibos de cada grupo. Solo pueden marcarse como devueltos los
    recibos **emitidos** o **vencidos**.
 
    **Si alguna línea corresponde a un recibo que en Memship consta como cobrado, no se importa
    nada.** El banco dice que ha devuelto el dinero y Memship dice que lo cobró: alguien lo cobró
    por otra vía mientras el adeudo estaba en curso. Revisa esos recibos, decide qué cobro es el
    real y vuelve a importar el fichero sin esas líneas.
-5. **Volver a cobrar lo devuelto** — una devolución por saldo insuficiente es rutina, y
+5. **Volver a cobrar lo devuelto**, una devolución por saldo insuficiente es rutina, y
    recuperarla son **dos pasos**, no uno. En el recibo devuelto pulsa **Reemitir**: vuelve al
    estado **Pendiente** y sale de la remesa en la que estaba, porque un recibo no puede entrar
    en una remesa nueva mientras pertenezca a otra. Un recibo **Pendiente** todavía no se ofrece
-   para cobrar, así que pulsa después **Emitir** — ahí aparece ya en el selector de **Nueva
+   para cobrar, así que pulsa después **Emitir**, ahí aparece ya en el selector de **Nueva
    remesa**. No consume un número de documento nuevo: es el mismo recibo, con el mismo número.
 
    Si vas a *Nueva remesa* justo después de **Reemitir** y el recibo no aparece, es que falta
@@ -95,13 +95,13 @@ devoluciones que importar.
 
 ### Qué ves en una remesa ya enviada
 
-Los contadores de la ficha — **Recibos** e **Importe** — son el registro de **lo que se envió al
+Los contadores de la ficha, **Recibos** e **Importe**, son el registro de **lo que se envió al
 banco** y no se recalculan: el banco tiene ese fichero, y cambiar la cifra después reescribiría lo
 que se le pidió. Una remesa en **Borrador** o **Lista** sí se recalcula, porque de ahí todavía
 puede salir un fichero y tiene que pedir exactamente lo que dice.
 
 Por eso la tabla de recibos de una remesa enviada incluye también los que **ya han salido de
-ella** — el devuelto que has reemitido, por ejemplo. Cada línea así lo indica, con la fecha y el
+ella**, el devuelto que has reemitido, por ejemplo. Cada línea así lo indica, con la fecha y el
 motivo (*devuelto y reemitido*, *recibo anulado*, *cobrado por otra vía*, *remesa cancelada*), y
 muestra el estado que el recibo tiene **ahora**, que es lo que te dice qué te queda por hacer: un
 recibo reemitido aparece como **Pendiente**, lo que significa que falta emitirlo otra vez. El
