@@ -23,6 +23,11 @@
 
 set -euo pipefail
 
+# Named in every refusal and in POST-INSTALL.md. A login shell sets it, but
+# `env -i`, some cron setups and Git Bash do not, and under `set -u` the first
+# reference would abort the install instead of the message it was building (#548).
+USER="${USER:-$(id -un)}"
+
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DATA_ROOT=""
 DOMAIN=""

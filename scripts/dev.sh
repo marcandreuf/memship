@@ -327,6 +327,37 @@ case "$ACTION" in
     shell)
         docker compose -f "$BACKEND_COMPOSE" exec api bash
         ;;
+    shelltest)
+        # The deployment scripts' shell guards, in a Linux container on a copy
+        # of the tree (#548). They also run natively on Linux, macOS and Git
+        # Bash, but this gives CI's environment from any machine, and it is the
+        # safe way to run mutate-check.sh: that rewrites the scripts it mutates,
+        # and here it rewrites the copy, never the checkout.
+        #
+        # The copy goes in through tar on stdin rather than a bind mount, so a
+        # Windows path never has to be translated. Carriage returns are stripped
+        # because a checkout made before .gitattributes covered the stubs still
+        # has CRLF in them.
+        SHELLTEST_MODE="${2:-run}"
+        case "$SHELLTEST_MODE" in
+            run)    SHELLTEST_CMD="./tests/shell/run.sh" ;;
+            mutate) SHELLTEST_CMD="./tests/shell/mutate-check.sh" ;;
+            lint)   SHELLTEST_CMD="shellcheck -x --severity=warning scripts/*.sh && shellcheck -x --severity=warning tests/shell/*.sh" ;;
+            *)
+                echo -e "${RED}x${NC} Unknown shelltest mode '$SHELLTEST_MODE' (expected run, mutate or lint)"
+                exit 2 ;;
+        esac
+        echo -e "${BLUE}i${NC} Running shell guards ($SHELLTEST_MODE) in a Linux container..."
+        printf '%s\n' \
+            'FROM ubuntu:24.04' \
+            'RUN apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends git openssl python3 jq iproute2 dnsutils curl ca-certificates shellcheck >/dev/null && rm -rf /var/lib/apt/lists/* && useradd -m shelltest' \
+            'USER shelltest' \
+            'WORKDIR /home/shelltest' \
+            | docker build -q -t memship-shelltest - >/dev/null
+        tar -C "$REPO_ROOT" -cf - scripts tests docker-compose.yml Caddyfile \
+            | docker run --rm -i memship-shelltest bash -c \
+                "mkdir w && tar -xf - -C w && cd w && find scripts tests -type f -exec sed -i 's/\r\$//' {} + && $SHELLTEST_CMD"
+        ;;
     migration)
         # Autogenerate against the running dev database. --user is the point:
         # the file lands in the bind-mounted backend/alembic/versions, and the
@@ -370,6 +401,7 @@ case "$ACTION" in
         echo "  reset             - Wipe DB, restart backend, and re-seed with test data"
         echo "  test [args]       - Run backend tests in the container (args go to pytest)"
         echo "  shell             - Open a shell in the API container"
+        echo "  shelltest [mode]  - Shell guards in a Linux container: run (default), mutate, lint"
         echo "  migration \"msg\"   - Autogenerate an Alembic revision from the model changes"
         echo "  e2e               - Run Cypress E2E tests (headless)"
         echo "  e2e:open          - Open Cypress GUI (interactive)"
