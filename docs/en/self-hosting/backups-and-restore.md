@@ -100,6 +100,13 @@ stopped on purpose**, starting it would run migrations against the half-restored
 leave you with an instance that answers "healthy" and contains nothing. Put back what you had with
 the pre-restore dump it names.
 
+Once the dump has loaded, the script sets the database password to `DB_PASSWORD` from `.env`, starts
+the stack, and waits for the API to answer before it prints `Restore complete`. Setting the password
+matters on a new server: its database was created with the password the new install generated,
+while the `.env` you restore carries the old one, and a `pg_dump` does not contain passwords. If the
+API does not answer, the script says `RESTORE INCOMPLETE`, shows the API's last log lines and exits
+non-zero. The restored data stays in place.
+
 > When several restores fail in a row, each one writes its own pre-restore dump, and the newest is
 > the one taken from the already-damaged database. Restore the file the failure message named, not
 > whichever is most recent.

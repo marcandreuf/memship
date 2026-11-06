@@ -200,6 +200,23 @@ case "$SUB" in
             [ "${STUB_HAS_USERS:-0}" = "1" ] && printf '1\n'
             exit 0
         fi
+        # db-restore.sh: DROP/CREATE, the dump piped into `psql … -d memship_db
+        # --quiet`, and the role password set through a `sh -c` running psql.
+        # The load has to drain its stdin, or gunzip dies of SIGPIPE and
+        # `pipefail` fails the restore for a reason no test asked about.
+        #
+        #   STUB_PSQL_FAIL_ON   a substring; the psql exec whose argv contains
+        #                       it fails, as a refused statement does
+        if printf '%s' "$*" | grep -q 'psql'; then
+            case " $* " in
+                *' -d memship_db --quiet '*) cat >/dev/null ;;
+            esac
+            if [ -n "${STUB_PSQL_FAIL_ON:-}" ] && [[ "$*" == *"$STUB_PSQL_FAIL_ON"* ]]; then
+                printf 'ERROR:  permission denied\n' >&2
+                exit 3
+            fi
+            exit 0
+        fi
         # verify-deployment.sh's celery ping.
         exit 0 ;;
 

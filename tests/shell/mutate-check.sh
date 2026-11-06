@@ -24,6 +24,7 @@ cd "$REPO_ROOT" || exit 1
 INSTALL="scripts/install.sh"
 UPGRADE="scripts/upgrade.sh"
 PUSH="scripts/push-backup.sh"
+RESTORE="scripts/db-restore.sh"
 
 survivors=0
 checked=0
@@ -119,6 +120,15 @@ mutate "$PUSH" "a failed storage upload to s3 still writes COMPLETE" \
 
 mutate "$PUSH" "the S3 secret is put on the docker command line" \
     's/-e AWS_SECRET_ACCESS_KEY -e/-e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" -e/'
+
+mutate "$RESTORE" "the role password is never set, so a new server's API cannot log in" \
+    's/ALTER ROLE memship PASSWORD/COMMENT ON ROLE memship IS/'
+
+mutate "$RESTORE" "the database password is put on the docker command line" \
+    's/-e MEMSHIP_RESTORE_DB_PASSWORD db/-e MEMSHIP_RESTORE_DB_PASSWORD="$MEMSHIP_RESTORE_DB_PASSWORD" db/'
+
+mutate "$RESTORE" "complete is announced whether or not the API answered" \
+    's/if \[\[ "\$api_up" -eq 0 \]\]/if [[ "$api_up" -eq 9 ]]/'
 
 printf '\n%s mutations, %s survived\n' "$checked" "$survivors"
 [ "$survivors" -eq 0 ]
