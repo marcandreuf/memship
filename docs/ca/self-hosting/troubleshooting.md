@@ -120,7 +120,7 @@ s'hagi reemplaçat. Avançar-la és la
 ### Postgres no arrenca a RHEL, Fedora, Rocky o AlmaLinux
 
 SELinux. Els bind mounts s'han de tornar a etiquetar, mira la secció de SELinux
-d'[Installation](../../en/getting-started/installation.md) _(en anglès)_.
+d'[Instal·lació (Docker)](../getting-started/installation.md).
 
 ### `port is already allocated`
 

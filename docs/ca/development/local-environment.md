@@ -54,7 +54,7 @@ dona la correcta sense haver-la d'instal·lar tu.
 > arregla per sempre.
 
 > **No necessites Node per a res si només vols executar memship.** El frontend es distribueix com
-> a contenidor, i el [Quick start](../../en/getting-started/quickstart.md) _(en anglès)_ executa
+> a contenidor, i el [Inici ràpid](../getting-started/quickstart.md) executa
 > tota l'aplicació a partir d'imatges publicades amb una sola ordre. Instal·la les eines quan
 > vulguis *treballar en* el frontend: el servidor de desenvolupament local existeix pel hot
 > reload, que és l'única cosa que un contenidor no pot fer tan bé.

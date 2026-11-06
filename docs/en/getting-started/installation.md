@@ -3,6 +3,9 @@
 This guide covers a **production** self-hosted install. For a quick local evaluation, use the
 [Quick start](quickstart.md) instead.
 
+> **En español:** [Instalación (Docker)](../../es/getting-started/installation.md).
+> **En català:** [Instal·lació (Docker)](../../ca/getting-started/installation.md).
+
 ## Prerequisites
 
 - A server running Docker Engine and the Compose plugin
@@ -175,7 +178,7 @@ Everything that must survive a redeploy lives under one directory:
 | Path             | Contents                                                        |
 |------------------|-----------------------------------------------------------------|
 | `postgres/`      | The database                                                     |
-| `storage/`       | Uploads (logos, activity images, generated PDFs) **and `secret.key`** |
+| `storage/`       | Uploads (logos, activity images, generated PDFs) **and the generated `secret.key` and `session.key`** |
 | `celerybeat/`    | The scheduler's state                                            |
 | `caddy/data`     | ACME account key and issued TLS certificates                     |
 | `caddy/config`   | Caddy's autosaved configuration                                  |

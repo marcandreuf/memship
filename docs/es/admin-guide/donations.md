@@ -141,5 +141,5 @@ hasta ahora. De esta versión en adelante, filtra por origen.
 - [Pagos y recibos](payments.md): el recibo, su ciclo de vida, el IVA y la numeración
 - [Entidades](entities.md): empresas, fundaciones y organismos, con recibos a su nombre y sin
   hacerlos socios
-- [Guía de proveedores de pago](../../en/admin-guide/payment-providers.md) _(en inglés)_: dar
+- [Guía de proveedores de pago](payment-providers.md): dar
   de alta Stripe o Redsys en la instancia, para cobrar cuotas

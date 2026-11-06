@@ -4,6 +4,9 @@ Try Memship on your machine in about a minute, no cloning required. This uses pr
 images and is meant for **evaluation**, not production. For a real deployment, see
 [Installation](installation.md).
 
+> **En español:** [Prueba rápida](../../es/getting-started/quickstart.md).
+> **En català:** [Inici ràpid](../../ca/getting-started/quickstart.md).
+
 ## Prerequisites
 
 - Docker and Docker Compose

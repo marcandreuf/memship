@@ -55,7 +55,7 @@ correcta sin que tengas que instalarla tú.
 > arregla para siempre.
 
 > **No necesitas Node para nada si solo quieres ejecutar memship.** El frontend se distribuye como
-> contenedor, y la [Prueba rápida](../../en/getting-started/quickstart.md) _(en inglés)_ ejecuta
+> contenedor, y la [Prueba rápida](../getting-started/quickstart.md) ejecuta
 > toda la aplicación a partir de las imágenes publicadas con una sola orden. Instala las
 > herramientas cuando quieras *trabajar en* el frontend: el servidor de desarrollo local existe por
 > la recarga en caliente, que es lo único que un contenedor no puede hacer igual de bien.

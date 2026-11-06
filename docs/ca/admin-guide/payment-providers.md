@@ -1,5 +1,5 @@
 <!-- source: en/admin-guide/payment-providers.md -->
-<!-- source-hash: 2e0c55d58406 -->
+<!-- source-hash: 08601d737a6b -->
 
 # Proveïdors de pagament: guia de configuració
 

@@ -4,10 +4,8 @@ Documentació per a **qui allotja Memship**, **qui administra una entitat** i **
 sòcies**. Aquest és l'arbre en català; el castellà és a [`../es/README.md`](../es/README.md) i
 l'anglès a [`../en/README.md`](../en/README.md).
 
-> **Tot és en català excepte dues pàgines**, el *Quick start* i la *Installation*, que encara
-> canvien i es traduiran les últimes. Els seus enllaços porten a la pàgina en anglès, i al web
-> se serveix en anglès amb un avís. La cobertura es segueix a
-> [#423](https://github.com/marcandreuf/memship/issues/423).
+> **Tota la documentació és en català**, igual que en castellà i en anglès. Cada pàgina enllaça
+> les seves versions en els altres dos idiomes.
 
 ## Quina versió descriu aquesta documentació
 
@@ -40,10 +38,8 @@ recullen els canvis de comportament i les migracions que més val no saltar-se.
 
 - [Què necessites per executar Memship](getting-started/what-you-need.md), el servidor, el
   domini, el correu i què costen, mesurat i no estimat. Per decidir, abans d'instal·lar
-- [Quick start](../en/getting-started/quickstart.md), provar Memship amb una sola ordre _(en
-  anglès)_
-- [Installation](../en/getting-started/installation.md), instal·lació de producció amb Docker
-  _(en anglès)_
+- [Inici ràpid](getting-started/quickstart.md), provar Memship amb una sola ordre
+- [Instal·lació (Docker)](getting-started/installation.md), instal·lació de producció amb Docker
 - [Configuració inicial](getting-started/first-setup.md), crear el super administrador i deixar
   l'entitat a punt
 

@@ -1,5 +1,5 @@
 <!-- source: es/admin-guide/payments.md -->
-<!-- source-hash: 990a4f1807a6 -->
+<!-- source-hash: a7d0f48a5ea4 -->
 
 # Pagaments i rebuts
 

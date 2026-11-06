@@ -118,7 +118,7 @@ plataforma. Adelantarla es la [incidencia #194](https://github.com/marcandreuf/m
 ### Postgres no arranca en RHEL, Fedora, Rocky o AlmaLinux
 
 SELinux. Los bind mounts necesitan reetiquetado, mira la sección de SELinux de la
-[Instalación](../../en/getting-started/installation.md) _(en inglés)_.
+[Instalación](../getting-started/installation.md).
 
 ### `port is already allocated`
 

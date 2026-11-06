@@ -125,8 +125,7 @@ restaurades es queden on són.
 
 ## Restaurar en un servidor nou
 
-1. Executa [`vps-bootstrap.sh` i `install.sh`](../../en/getting-started/installation.md) _(en
-   anglès)_ com sempre.
+1. Executa [`vps-bootstrap.sh` i `install.sh`](../getting-started/installation.md) com sempre.
 2. Atura la pila: `docker compose down`.
 3. Restaura `.env` des de la teva còpia, **l'antic, no el que s'acaba de generar.** Una
    `MEMSHIP_SECRET_KEY` nova no pot desxifrar les credencials d'SSO i dels proveïdors de pagament

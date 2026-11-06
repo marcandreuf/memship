@@ -5,7 +5,7 @@
 
 Aquesta pàgina és per decidir **si** executaràs Memship. Explica què necessita la plataforma, què
 costa i què no necessita. Qui tiri endavant després llegeix
-[Installation](../../en/getting-started/installation.md) _(en anglès)_, escrita per a qui es posa
+[Instal·lació (Docker)](installation.md), escrita per a qui es posa
 davant del terminal.
 
 > **En anglès:** [What you need to run Memship](../../en/getting-started/what-you-need.md).
@@ -166,14 +166,14 @@ de les imatges (358 MB) i la propagació del registre DNS que creïs per al domi
 
 - **Tu mateix**, o qualsevol persona que es manegi amb un servidor Linux i un tauler de DNS.
 - **L'informàtic que ja faci servir l'entitat**, que no necessita res d'aquest projecte més enllà
-  d'[Installation](../../en/getting-started/installation.md) _(en anglès)_.
+  d'[Instal·lació (Docker)](installation.md).
 - **El mantenidor, com a servei de pagament**, si ningú de l'entitat no vol fer-se càrrec d'un
   servidor.
 
 ## I ara
 
-- Si ja està decidit, el següent és instal·lar: [Installation](../../en/getting-started/installation.md)
+- Si ja està decidit, el següent és instal·lar: [Instal·lació (Docker)](installation.md)
   _(en anglès)_.
-- Si prefereixes tafanejar-lo abans, sense cap servidor: [Quick start](../../en/getting-started/quickstart.md)
+- Si prefereixes tafanejar-lo abans, sense cap servidor: [Inici ràpid](quickstart.md)
   _(en anglès)_ aixeca tota la plataforma a la teva pròpia màquina amb una sola ordre. És només per
   avaluar.
