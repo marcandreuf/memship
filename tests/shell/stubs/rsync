@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+#
+# A stand-in for `rsync`, for the shell tests.
+#
+# Copies locally, treating `host:/path` as `/path` — the ssh stub's far side is
+# the local filesystem too. It honours the one distinction the scripts rely on:
+# a source ending in `/` copies the directory's contents, not the directory.
+# Options are logged and otherwise ignored.
+#
+#   STUB_RSYNC_FAIL   1 → fail as an interrupted transfer does (23), after
+#                     logging, so a case can assert what was attempted
+#   STUB_RSYNC_FAIL_ON  a substring; only a call whose argv contains it fails
+
+set -u
+
+[ -z "${STUB_LOG:-}" ] || printf 'rsync %s\n' "$*" >>"$STUB_LOG"
+
+if [ "${STUB_RSYNC_FAIL:-0}" = "1" ]; then
+    if [ -z "${STUB_RSYNC_FAIL_ON:-}" ] || [[ "$*" == *"$STUB_RSYNC_FAIL_ON"* ]]; then
+        printf 'rsync error: some files could not be transferred (code 23)\n' >&2
+        exit 23
+    fi
+fi
+
+paths=()
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -e) shift 2 ;;
+        -*) shift ;;
+        *) paths+=("$1"); shift ;;
+    esac
+done
+
+src="${paths[0]}"
+dest="${paths[1]}"
+case "$dest" in /*) ;; *:*) dest="${dest#*:}" ;; esac
+
+if [ -d "$src" ]; then
+    mkdir -p "$dest"
+    case "$src" in
+        */) cp -R "$src". "$dest" ;;
+        *) cp -R "$src" "$dest" ;;
+    esac
+else
+    mkdir -p "$(dirname "$dest")"
+    cp "$src" "$dest"
+fi

@@ -322,16 +322,20 @@ It prompts, so it needs a terminal — keep the \`-it\`.
 
 \`scripts/db-backup.sh\` dumps the database into \`$DATA_ROOT/backups\`, which is
 the same disk as the database it protects. That covers a bad migration and
-nothing worse. Schedule it, then copy the dumps somewhere with a different
-failure mode:
+nothing worse.
+
+\`scripts/push-backup.sh\` takes a fresh dump and pushes it, with \`.env\` and the
+uploads, to another host over SSH or to S3-compatible storage, keeping 30 days
+there. Set \`BACKUP_TARGET\` in \`.env\`, then schedule it:
 
 \`\`\`cron
-30 3 * * *  cd $REPO_ROOT && ./scripts/db-backup.sh
+MAILTO=you@example.org
+30 3 * * *  cd $REPO_ROOT && ./scripts/push-backup.sh
 \`\`\`
 
-\`scripts/pull-backup.sh\` runs on **your** machine and pulls \`.env\`, the dumps
-and optionally uploads and certificates off this one. It is a starting point,
-not a backup system.
+It exits non-zero and says PUSH FAILED when a push does not complete.
+\`scripts/pull-backup.sh\` is the alternative that runs on **your** machine and
+pulls from this one instead.
 
 Read \`docs/en/self-hosting/backups-and-restore.md\` before you go live, and test a
 restore once. A backup you have never restored is a guess.

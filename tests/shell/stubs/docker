@@ -82,6 +82,21 @@ case "${1:-}" in
         # verify-deployment.sh's failure report only.
         printf '  state=running exit=0 restarts=0\n'
         exit 0 ;;
+    run)
+        # push-backup.sh's s3:// target: `docker run … <aws-cli image> s3 <op> …`.
+        #
+        #   STUB_S3_FAIL_ON   a substring; the aws call whose argv contains it
+        #                     fails, as a refused upload does
+        #   STUB_S3_LISTING   what `s3 ls` prints, one `PRE <name>/` per line
+        if [ -n "${STUB_S3_FAIL_ON:-}" ] && [[ "$*" == *"$STUB_S3_FAIL_ON"* ]]; then
+            printf 'upload failed: An error occurred (AccessDenied)\n' >&2
+            exit 1
+        fi
+        case " $* " in
+            *' s3 ls '*) printf '%b' "${STUB_S3_LISTING:-}" ;;
+            *' - s3://'*) cat >/dev/null ;;
+        esac
+        exit 0 ;;
     compose) shift ;;
     *) exit 0 ;;
 esac

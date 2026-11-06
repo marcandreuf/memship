@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+#
+# A stand-in for `ssh`, for the shell tests.
+#
+# push-backup.sh drives the far side of an ssh:// target with one-line commands
+# (mkdir, test, mv, ls, rm). The test points BACKUP_TARGET at an absolute path
+# inside the sandbox, so running that command locally IS the far side: what the
+# script leaves on the "backup host" can be asserted on as files.
+#
+#   STUB_SSH_FAIL   1 → every call fails as an unreachable host does (255)
+#
+# The remote command is the last argument; everything before it is ssh options
+# and the destination, which only the call log needs.
+
+set -u
+
+[ -z "${STUB_LOG:-}" ] || printf 'ssh %s\n' "$*" >>"$STUB_LOG"
+
+if [ "${STUB_SSH_FAIL:-0}" = "1" ]; then
+    printf 'ssh: connect to host backup.example.org port 22: Connection refused\n' >&2
+    exit 255
+fi
+
+cmd="${*: -1}"
+exec bash -c "$cmd"
