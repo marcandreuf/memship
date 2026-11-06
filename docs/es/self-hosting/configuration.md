@@ -1,5 +1,5 @@
 <!-- source: en/self-hosting/configuration.md -->
-<!-- source-hash: b64110bc176e -->
+<!-- source-hash: 500c0f9893b8 -->
 
 # Referencia de configuración
 
@@ -8,6 +8,7 @@ Memship se configura con variables de entorno, normalmente definidas en un fiche
 ajustes que lee el backend.
 
 > **En inglés:** [Configuration reference](../../en/self-hosting/configuration.md).
+> **En català:** [Referència de configuració](../../ca/self-hosting/configuration.md).
 
 > **Mínimo para producción:** cambia `SECRET_KEY` y `DB_PASSWORD`, pon en `IMAGE_TAG` una versión
 > publicada y configura el [correo](email.md).

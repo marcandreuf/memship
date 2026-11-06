@@ -1,5 +1,5 @@
 <!-- source: es/admin-guide/custom-fields.md -->
-<!-- source-hash: 55575ae3cad6 -->
+<!-- source-hash: b517f44617a3 -->
 
 # Custom profile fields
 
@@ -7,6 +7,7 @@ They let you define your own fields for member records **without changing the co
 example: kit size, federation licence number, allergies…).
 
 > **In Spanish:** [Campos de perfil personalizados](../../es/admin-guide/custom-fields.md).
+> **En català:** [Camps de perfil personalitzats](../../ca/admin-guide/custom-fields.md).
 
 > **Prerequisite.** Enable them in **Settings → Members → Profile fields**.
 

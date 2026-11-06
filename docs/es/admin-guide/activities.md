@@ -5,6 +5,7 @@ inscribirse. Cada actividad puede tener modalidades, niveles de precio y reglas 
 elegibilidad.
 
 > **In English:** [Activities](../../en/admin-guide/activities.md).
+> **En català:** [Activitats](../../ca/admin-guide/activities.md).
 
 ## Crear una actividad
 

@@ -4,6 +4,7 @@ Hay tres formas de recibir una donación. La diferencia no es técnica: es **qu�
 necesitas que quede** y **quién dona**.
 
 > **In English:** [Donations](../../en/admin-guide/donations.md).
+> **En català:** [Donacions](../../ca/admin-guide/donations.md).
 
 ## Qué camino te toca
 

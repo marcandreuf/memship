@@ -25,7 +25,7 @@
     "uploadSigned": "Pujar signat",
     "uploadSignedDesc": "Puja el document de mandat signat (PDF, JPG, PNG)",
     "cancelMandate": "Cancel·lar mandat",
-    "confirmCancel": "Segur que vols cancel·lar aquest mandat? Aquesta accio no es pot desfer.",
+    "confirmCancel": "Segur que vols cancel·lar aquest mandat? Aquesta acció no es pot desfer.",
     "confirmCancelDescription": "Els seus rebuts deixaran de poder-se cobrar per domiciliació. Per canviar de compte, anul·la aquest mandat i registra'n un de nou.",
     "noMandates": "No s'han trobat mandats",
     "notes": "Notes",
@@ -37,6 +37,6 @@
     "docUploadedAt": "Pujat",
     "detail": "Detall del mandat",
     "creditorId": "ID del creditor",
-    "cancelledAt": "Data de cancel·lacio"
+    "cancelledAt": "Data de cancel·lació"
   }
 }

@@ -6,6 +6,7 @@
 How to register for your organisation's activities and manage your registrations.
 
 > **In Spanish:** [Actividades](../../es/member-guide/activities.md).
+> **En català:** [Activitats](../../ca/member-guide/activities.md).
 
 ## Browsing and registering
 

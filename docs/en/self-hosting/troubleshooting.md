@@ -5,6 +5,7 @@ Symptoms an operator actually hits, and what causes them. If something here is w
 installs, not from theory.
 
 > **En español:** [Resolución de problemas](../../es/self-hosting/troubleshooting.md).
+> **En català:** [Resolució de problemes](../../ca/self-hosting/troubleshooting.md).
 
 First, two commands worth running before anything else:
 

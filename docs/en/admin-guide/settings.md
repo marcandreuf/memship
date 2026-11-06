@@ -1,5 +1,5 @@
 <!-- source: es/admin-guide/settings.md -->
-<!-- source-hash: 661c6dafd727 -->
+<!-- source-hash: d581d4591573 -->
 
 # Organisation settings
 
@@ -7,6 +7,7 @@ General settings, invoicing, SEPA, payment providers and automations. Requires a
 permissions.
 
 > **In Spanish:** [Configuración de la organización](../../es/admin-guide/settings.md).
+> **En català:** [Configuració de l'organització](../../ca/admin-guide/settings.md).
 
 ## Organisation details
 

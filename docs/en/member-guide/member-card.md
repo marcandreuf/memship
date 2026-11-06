@@ -6,6 +6,7 @@
 Your digital member card with a QR code, to identify yourself at access control.
 
 > **In Spanish:** [Carné digital](../../es/member-guide/member-card.md).
+> **En català:** [Carnet digital](../../ca/member-guide/member-card.md).
 
 ## Your card
 

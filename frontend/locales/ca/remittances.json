@@ -41,7 +41,7 @@
     "detail": "Detall de la remesa",
     "receipts": "Rebuts del lot",
     "selectReceipts": "Seleccionar rebuts",
-    "selectReceiptsDesc": "Selecciona rebuts emesos o vencits amb mandats SEPA actius",
+    "selectReceiptsDesc": "Selecciona rebuts emesos o vençuts amb mandats SEPA actius",
     "selectedCount": "{count, plural, one {# rebut seleccionat} other {# rebuts seleccionats}}",
     "selectedTotal": "Total: {total}",
     "notes": "Notes",

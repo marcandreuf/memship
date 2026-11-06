@@ -1,5 +1,5 @@
 <!-- source: en/self-hosting/domain-and-dns.md -->
-<!-- source-hash: 1e552ff6ffdd -->
+<!-- source-hash: 2d38b31431ce -->
 
 # El dominio de tu organización
 
@@ -9,6 +9,7 @@ de una organización y no tuyo: qué nombre elegir, qué registros crear, y las 
 que sale mal que te cuestan una hora cada una.
 
 > **En inglés:** [Your organisation's domain](../../en/self-hosting/domain-and-dns.md).
+> **En català:** [El domini de la teva entitat](../../ca/self-hosting/domain-and-dns.md).
 
 Nada de esto es específico de las tripas de memship. Si tu DNS ya está configurado y solo quieres
 instalar, ve directamente a la [Instalación](../../en/getting-started/installation.md)

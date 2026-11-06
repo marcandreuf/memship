@@ -4,6 +4,7 @@ Set up backups **before** going live, and test a restore at least once. A backup
 restored is a guess, not a backup.
 
 > **En español:** [Copias de seguridad y restauración](../../es/self-hosting/backups-and-restore.md).
+> **En català:** [Còpies de seguretat i restauració](../../ca/self-hosting/backups-and-restore.md).
 
 ## What to back up
 
@@ -244,7 +245,8 @@ Use a complete snapshot: over SSH, the one `latest` points at (or any directory 
    # SSH
    rsync -a backup@backup.example.org:/srv/memship-backups/latest/ ~/restore/
    # S3, using the same image the push used
-   docker run --rm -v ~/restore:/restore -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY \n       amazon/aws-cli:2.27.0 s3 cp --recursive s3://club-backups/memship/memship-<stamp>/ /restore/
+   docker run --rm -v ~/restore:/restore -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY \
+       amazon/aws-cli:2.27.0 s3 cp --recursive s3://club-backups/memship/memship-<stamp>/ /restore/
    ```
 3. Put the pieces back. `.env` goes first, because the database is unreadable without it:
    ```bash

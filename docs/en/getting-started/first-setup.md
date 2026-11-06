@@ -1,6 +1,7 @@
 # First-time setup
 
 > **En español:** [Configuración inicial](../../es/getting-started/first-setup.md).
+> **En català:** [Configuració inicial](../../ca/getting-started/first-setup.md).
 
 After [installing](installation.md) Memship and starting the services, run the setup command to
 create your account and configure your organization. It is the same command on every

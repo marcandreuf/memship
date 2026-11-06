@@ -6,6 +6,7 @@
 How to access the member portal and manage your details.
 
 > **In Spanish:** [Tu cuenta y tu perfil](../../es/member-guide/account.md).
+> **En català:** [El teu compte i el teu perfil](../../ca/member-guide/account.md).
 
 ## Signing in
 

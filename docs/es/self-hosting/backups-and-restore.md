@@ -1,5 +1,5 @@
 <!-- source: en/self-hosting/backups-and-restore.md -->
-<!-- source-hash: cf19362649d6 -->
+<!-- source-hash: 1349a9eb7e59 -->
 
 # Copias de seguridad y restauración
 
@@ -8,6 +8,7 @@ menos una vez. Una copia de seguridad que nunca has restaurado es una suposició
 seguridad.
 
 > **En inglés:** [Backups & restore](../../en/self-hosting/backups-and-restore.md).
+> **En català:** [Còpies de seguretat i restauració](../../ca/self-hosting/backups-and-restore.md).
 
 ## Qué copiar
 
@@ -260,7 +261,8 @@ que no termine en `.partial`); en S3, una que contenga `COMPLETE`.
    # SSH
    rsync -a backup@backup.example.org:/srv/memship-backups/latest/ ~/restore/
    # S3, using the same image the push used
-   docker run --rm -v ~/restore:/restore -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY \n       amazon/aws-cli:2.27.0 s3 cp --recursive s3://club-backups/memship/memship-<stamp>/ /restore/
+   docker run --rm -v ~/restore:/restore -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY \
+       amazon/aws-cli:2.27.0 s3 cp --recursive s3://club-backups/memship/memship-<stamp>/ /restore/
    ```
 3. Vuelve a poner las piezas en su sitio. `.env` va primero, porque sin él la base de datos no se
    puede leer:

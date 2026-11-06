@@ -1,5 +1,5 @@
 <!-- source: en/development/local-environment.md -->
-<!-- source-hash: c161016884ca -->
+<!-- source-hash: 2cf76cf56eb5 -->
 
 # Entorno de desarrollo local
 
@@ -7,6 +7,7 @@ El backend corre en Docker (API, worker y beat de Celery, PostgreSQL, Redis); el
 local con pnpm, así que tienes la recarga en caliente de Next.js sin un contenedor por en medio.
 
 > **En inglés:** [Local development environment](../../en/development/local-environment.md).
+> **En català:** [Entorn de desenvolupament local](../../ca/development/local-environment.md).
 
 `scripts/dev.sh` lo gobierna todo.
 

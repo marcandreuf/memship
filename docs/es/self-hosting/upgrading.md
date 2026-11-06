@@ -1,5 +1,5 @@
 <!-- source: en/self-hosting/upgrading.md -->
-<!-- source-hash: fea582df32bc -->
+<!-- source-hash: 48b55f4628c0 -->
 
 # Actualizar
 
@@ -9,6 +9,7 @@ refrescar las dos cosas y después ejecutar una orden que hace la copia de segur
 versión y la verifica. Las migraciones de la base de datos se ejecutan automáticamente al arrancar.
 
 > **En inglés:** [Upgrading](../../en/self-hosting/upgrading.md).
+> **En català:** [Actualitzar](../../ca/self-hosting/upgrading.md).
 
 ## Versionado
 

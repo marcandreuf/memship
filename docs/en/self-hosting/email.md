@@ -5,6 +5,7 @@ confirmations, waitlist promotions, payment receipts, and overdue reminders. **E
 disabled until you configure a transport.**
 
 > **En español:** [Envío de correo](../../es/self-hosting/email.md).
+> **En català:** [Enviament de correu](../../ca/self-hosting/email.md).
 
 There are two ways to configure one, and **they are not equivalent**, the settings screen
 wins over `.env`. Read [Which one is in effect](#which-one-is-in-effect) before editing

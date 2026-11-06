@@ -4,9 +4,9 @@ Documentació per a **qui allotja Memship**, **qui administra una entitat** i **
 sòcies**. Aquest és l'arbre en català; el castellà és a [`../es/README.md`](../es/README.md) i
 l'anglès a [`../en/README.md`](../en/README.md).
 
-> **Encara no tot és en català.** La guia del soci i *Què necessites per executar Memship* ja ho
-> són; la resta encara no està traduïda, així que el seu enllaç porta a la pàgina en castellà o en
-> anglès, i al web se serveix en aquell idioma amb un avís. La cobertura es segueix a
+> **Tot és en català excepte dues pàgines**, el *Quick start* i la *Installation*, que encara
+> canvien i es traduiran les últimes. Els seus enllaços porten a la pàgina en anglès, i al web
+> se serveix en anglès amb un avís. La cobertura es segueix a
 > [#423](https://github.com/marcandreuf/memship/issues/423).
 
 ## Quina versió descriu aquesta documentació
@@ -23,7 +23,7 @@ curl -s http://localhost/api/v1/health   # {"status":"healthy","version":"2.19.0
 
 `version` és l'etiqueta d'imatge amb què es va desplegar. Si diu `latest`, la instal·lació no està
 fixada a cap versió i des d'aquí no es pot saber, mira
-[Upgrading](../en/self-hosting/upgrading.md).
+[Actualitzar](self-hosting/upgrading.md).
 
 **Si la teva instància és més antiga**, llegeix la documentació tal com era per a la teva versió i
 no aquesta. Cada etiqueta porta la seva pròpia còpia, així que posa la teva versió a la ruta:
@@ -44,28 +44,27 @@ recullen els canvis de comportament i les migracions que més val no saltar-se.
   anglès)_
 - [Installation](../en/getting-started/installation.md), instal·lació de producció amb Docker
   _(en anglès)_
-- [First-time setup](../en/getting-started/first-setup.md), crear el super administrador i deixar
-  l'entitat a punt _(en anglès)_
+- [Configuració inicial](getting-started/first-setup.md), crear el super administrador i deixar
+  l'entitat a punt
 
 ## Guia de l'administrador (admin guide)
 
-Per al personal que gestiona l'entitat des del tauler d'administració. Totes aquestes pàgines
-són, per ara, en castellà.
+Per al personal que gestiona l'entitat des del tauler d'administració.
 
-- [Introducció](../es/admin-guide/overview.md), rols, navegació i tauler
-- [Socis](../es/admin-guide/members.md), cicle de vida, tipus de quota, grups
-- [Activitats](../es/admin-guide/activities.md), inscripcions, modalitats, descomptes
-- [Pagaments i rebuts](../es/admin-guide/payments.md), rebuts, quotes, IVA, pagament en línia
-- [Domiciliació SEPA](../es/admin-guide/sepa.md), mandats i remeses
-- [Comunicacions](../es/admin-guide/communications.md), avisos als socis
-- [Carnet digital](../es/admin-guide/member-cards.md), carnet QR i control d'accés
-- [Camps de perfil](../es/admin-guide/custom-fields.md), camps personalitzats
-- [Informes i tauler](../es/admin-guide/reports.md), tauler, resum anual, exportacions
-- [Configuració](../es/admin-guide/settings.md), entitat, facturació, automatitzacions
-- [Integrations](../en/admin-guide/integrations.md), SSO (Google, Apple) i correu, pas a pas _(en
-  anglès)_
-- [Payment providers](../en/admin-guide/payment-providers.md), connectar Stripe, Redsys i Bizum
-  _(en anglès)_
+- [Introducció a la guia de l'administrador](admin-guide/overview.md), rols, navegació i tauler
+- [Socis](admin-guide/members.md), cicle de vida, tipus de quota, grups
+- [Entitats](admin-guide/entities.md), donants, patrocinadors i col·laboradors que no són socis
+- [Activitats](admin-guide/activities.md), inscripcions, modalitats, descomptes
+- [Pagaments i rebuts](admin-guide/payments.md), rebuts, quotes, IVA, pagament en línia
+- [Domiciliació SEPA](admin-guide/sepa.md), mandats i remeses
+- [Donacions](admin-guide/donations.md), un enllaç de donació al web de l'entitat
+- [Comunicacions](admin-guide/communications.md), avisos als socis
+- [Carnet digital i control d'accés](admin-guide/member-cards.md), carnet QR i control d'accés
+- [Camps de perfil personalitzats](admin-guide/custom-fields.md), camps personalitzats
+- [Informes i tauler](admin-guide/reports.md), tauler, resum anual, exportacions
+- [Configuració de l'organització](admin-guide/settings.md), entitat, facturació, automatitzacions
+- [Integracions: guia de configuració](admin-guide/integrations.md), SSO (Google, Apple) i correu, pas a pas
+- [Proveïdors de pagament: guia de configuració](admin-guide/payment-providers.md), connectar Stripe, Redsys i Bizum
 
 ## Guia del soci (member guide)
 
@@ -79,21 +78,28 @@ Per a les persones sòcies que fan servir el portal.
 
 ## Allotjar Memship (operadors)
 
-Aquestes pàgines són, per ara, només en anglès:
-
-- [Your organisation's domain](../en/self-hosting/domain-and-dns.md), el nom de màquina i els seus
+- [El domini de la teva entitat](self-hosting/domain-and-dns.md), el nom de màquina i els seus
   registres DNS, quan el domini és de l'entitat i no teu
-- [Configuration reference](../en/self-hosting/configuration.md), totes les variables d'entorn
-- [Feature flags](../en/self-hosting/feature-flags.md), els vint-i-un interruptors de mòdul
-- [Email delivery](../en/self-hosting/email.md), Resend, Gmail o qualsevol servidor SMTP
-- [Backups & restore](../en/self-hosting/backups-and-restore.md), còpies de seguretat i
+- [Referència de configuració](self-hosting/configuration.md), totes les variables d'entorn
+- [Feature flags](self-hosting/feature-flags.md), els vint-i-un interruptors de mòdul
+- [Enviament de correu](self-hosting/email.md), Resend, Gmail o qualsevol servidor SMTP
+- [Còpies de seguretat i restauració](self-hosting/backups-and-restore.md), còpies de seguretat i
   restauració
-- [Upgrading](../en/self-hosting/upgrading.md), etiquetes d'imatge i migracions
-- [Troubleshooting](../en/self-hosting/troubleshooting.md), quan alguna cosa no arrenca
+- [Actualitzar](self-hosting/upgrading.md), etiquetes d'imatge i migracions
+- [Resolució de problemes](self-hosting/troubleshooting.md), quan alguna cosa no arrenca
+
+## Desenvolupament (contribuir)
+
+Per treballar en Memship.
+
+- [Entorn de desenvolupament local](development/local-environment.md), l'entorn de desenvolupament, les
+  ordres, les dades de prova i les suites de tests
+- [Contributing](https://github.com/marcandreuf/memship/blob/main/CONTRIBUTING.md), branques,
+  versions i com es publica una versió _(en anglès)_
 
 ## Referència
 
-- [Rols i permisos](../es/reference/roles-and-permissions.md) _(en castellà)_
+- [Rols i permisos](reference/roles-and-permissions.md)
 - Preguntes freqüents, _pendent_
 - Glossari, _pendent_
 

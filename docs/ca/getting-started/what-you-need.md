@@ -49,8 +49,7 @@ rebuts, remeses i mandats i el resum anual:
 Així doncs, tota la plataforma funciona amb uns **0,7 GB**, i això val per a qualsevol màquina: el
 worker de Celery engega dos processos, tingui la màquina les CPU que tingui. Cada procés de més
 costa uns 50 MiB, si puges `CELERY_CONCURRENCY` (mira
-[Configuration](../../en/self-hosting/configuration.md#background-jobs-celery--redis) _(en
-anglès)_).
+[Referència de configuració](../self-hosting/configuration.md#tasques-en-segon-pla-celery--redis)).
 
 **Amb 2 GB de RAM funciona; la recomanació són 4 GB.** La diferència no la demana l'aplicació. La
 demanen PostgreSQL, per tenir memòria de sobres amb què fer memòria cau, i les actualitzacions, que
@@ -118,7 +117,7 @@ cap certificat per comprar, instal·lar ni recordar-se de renovar.
 
 Si el domini és de l'entitat i no de qui instal·la, de manera que el nom de màquina, la zona DNS i
 el domini del correu són cosa de tres persones diferents, llegeix
-[Your organisation's domain](../../en/self-hosting/domain-and-dns.md) _(en anglès)_ abans de
+[El domini de la teva entitat](../self-hosting/domain-and-dns.md) abans de
 començar.
 
 ## Una manera d'enviar correu
@@ -138,7 +137,7 @@ Tres opcions, configurables des de la pantalla de Configuració o des del `.env`
   que accepti STARTTLS, normalment al port 587. Un servidor accessible només pel port 465 no és
   compatible.
 
-[Email delivery](../../en/self-hosting/email.md) _(en anglès)_ cobreix les tres, inclosos els
+[Enviament de correu](../self-hosting/email.md) cobreix les tres, inclosos els
 registres DNS que necessita Resend.
 
 ## Quant de temps porta

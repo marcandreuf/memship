@@ -4,6 +4,7 @@ Permiten definir campos propios para las fichas de los socios **sin cambiar el c
 ejemplo: talla de equipación, número de licencia federativa, alergias…).
 
 > **In English:** [Custom profile fields](../../en/admin-guide/custom-fields.md).
+> **En català:** [Camps de perfil personalitzats](../../ca/admin-guide/custom-fields.md).
 
 > **Requisito previo.** Actívalos en **Configuración → Socios → Campos de perfil**.
 
