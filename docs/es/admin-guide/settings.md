@@ -7,7 +7,7 @@ de administración.
 
 ## Datos de la organización
 
-En **Ajustes → Organización**.
+En **Configuración → Organización**.
 
 - **Datos de la organización**, nombre, razón social, CIF/NIF, correo, teléfono y sitio web.
 - **Imagen de marca**, **color de marca** y **logotipo** (JPG, PNG, WebP o SVG).
@@ -17,7 +17,7 @@ En **Ajustes → Organización**.
 
 ## Banca y facturación
 
-En **Ajustes → Pagos → General**.
+En **Configuración → Pagos → General**.
 
 - **Banca**, nombre del banco, **IBAN** y **BIC/SWIFT** de la organización.
 - **Facturación**, **prefijo de factura**, **siguiente número** y **numeración anual**
@@ -26,7 +26,7 @@ En **Ajustes → Pagos → General**.
 
 ## Domiciliación SEPA
 
-En **Ajustes → Pagos → General**.
+En **Configuración → Pagos → General**.
 
 - **Identificador del acreedor**, identificador de acreedor SEPA (p. ej.
   `ES12000B12345678`), obligatorio para generar remesas.
@@ -36,18 +36,18 @@ Ver [Domiciliación SEPA](sepa.md) para el flujo de mandatos y remesas.
 
 ## Proveedores de pago
 
-En **Ajustes → Pagos → Proveedores de pago**, configura las credenciales de las pasarelas de **pago en línea** que verán los socios en
+En **Configuración → Pagos → Proveedores de pago**, configura las credenciales de las pasarelas de **pago en línea** que verán los socios en
 *Pagar ahora*: **Stripe**, **Redsys**, **Bizum** (vía Redsys, con su propio interruptor
 **Ofrecer Bizum**, desactivado por defecto) y **domiciliación SEPA**. Cada
 proveedor tiene un **nombre visible**, un **estado** (Activo / Pruebas / Desactivado) y la
 opción **Probar conexión** para validar la configuración.
 
 > Los detalles de credenciales y URLs de retorno de cada proveedor se tratan en la
-> [guía de self-hosting](../../en/self-hosting/configuration.md).
+> [guía de self-hosting](../self-hosting/configuration.md).
 
 ## Facturación recurrente
 
-En **Ajustes → Pagos → Facturación recurrente**. Genera automáticamente los recibos de cuota según un calendario:
+En **Configuración → Pagos → Facturación recurrente**. Genera automáticamente los recibos de cuota según un calendario:
 
 - **Activar facturación recurrente**.
 - **Día del mes** (1–28) en que se ejecuta. Las cuotas trimestrales y anuales solo se facturan
@@ -56,7 +56,7 @@ En **Ajustes → Pagos → Facturación recurrente**. Genera automáticamente lo
 
 ## Recordatorios de pago
 
-En **Ajustes → Pagos → Recordatorios de pago**. Envía correos automáticos a los socios con recibos vencidos:
+En **Configuración → Pagos → Recordatorios de pago**. Envía correos automáticos a los socios con recibos vencidos:
 
 - **Días tras el vencimiento** antes del primer recordatorio.
 - **Repetir cada (días)** entre recordatorios sucesivos.
@@ -64,7 +64,7 @@ En **Ajustes → Pagos → Recordatorios de pago**. Envía correos automáticos 
 
 ## Correos a los miembros
 
-En **Ajustes → Socios → Comunicaciones**, bajo el interruptor de anuncios, se elige **qué correos envía
+En **Configuración → Socios → Comunicaciones**, bajo el interruptor de anuncios, se elige **qué correos envía
 el sistema**. Cada correo tiene su propio interruptor, agrupado por área (cuenta y acceso,
 altas, actividades, reservas, facturación, anuncios).
 
@@ -84,12 +84,12 @@ instalación que nunca visite esta pantalla envía todos los correos, como hasta
 
 ## Otras opciones
 
-En **Ajustes → Socios**:
+En **Configuración → Socios**:
 
 - **Comunicaciones**, activa el envío de [anuncios](communications.md).
 - **Tarjeta de socio**, activa el [carné digital](member-cards.md) y su numeración.
 - **Campos de perfil**, activa los [campos personalizados](custom-fields.md).
 
-En **Ajustes → Organización**:
+En **Configuración → Organización**:
 
 - **Opciones de género**, configura las opciones disponibles en los formularios de socios.

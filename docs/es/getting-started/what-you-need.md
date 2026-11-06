@@ -49,7 +49,7 @@ actividades, recibos, remesas y mandatos y el resumen anual:
 Así que toda la plataforma funciona en unos **0,7 GB**, y eso vale en cualquier máquina: el worker
 de Celery arranca dos procesos tenga la máquina las CPU que tenga. Cada proceso de más cuesta unos
 50 MiB, si subes `CELERY_CONCURRENCY` (ver la
-[Configuración](../../en/self-hosting/configuration.md#background-jobs-celery--redis)).
+[Configuración](../self-hosting/configuration.md#tareas-en-segundo-plano-celery--redis)).
 
 **Con 2 GB de RAM funciona; la recomendación son 4 GB.** La diferencia no la pide la aplicación.
 La piden PostgreSQL, para tener memoria de sobra con la que cachear, y las actualizaciones, que
@@ -116,7 +116,7 @@ cuenta, no hay certificado que comprar, ni instalar, ni acordarse de renovar.
 
 Si el dominio es de la entidad y no de quien instala, de forma que el nombre de máquina, la zona
 DNS y el dominio del correo son asunto de tres personas distintas, lee
-[El dominio de tu organización](../../en/self-hosting/domain-and-dns.md) antes de empezar.
+[El dominio de tu organización](../self-hosting/domain-and-dns.md) antes de empezar.
 
 ## Una forma de enviar correo
 
@@ -124,7 +124,7 @@ Memship necesita enviar correo transaccional, y esto **no es opcional**: el rest
 contraseña, la verificación de la dirección y los avisos de pago van todos por ahí, y un socio no
 puede entrar por primera vez hasta que funcione.
 
-Tres opciones, configurables desde la pantalla de Ajustes o desde el `.env`:
+Tres opciones, configurables desde la pantalla de Configuración o desde el `.env`:
 
 - **Resend**, una API de correo. Plan gratuito: 3.000 mensajes al mes y 3 dominios, pero **100 al
   día**. Ese límite diario es el que molesta: mandar avisos a más de 100 socios de una tirada lo
@@ -135,7 +135,7 @@ Tres opciones, configurables desde la pantalla de Ajustes o desde el `.env`:
   siempre que acepte STARTTLS, normalmente en el puerto 587. Un servidor accesible solo por el
   puerto 465 no está soportado.
 
-[Envío de correo](../../en/self-hosting/email.md) cubre las tres, incluidos los registros DNS que
+[Envío de correo](../self-hosting/email.md) cubre las tres, incluidos los registros DNS que
 necesita Resend.
 
 ## Cuánto tarda

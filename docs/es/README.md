@@ -17,7 +17,7 @@ curl -s http://localhost/api/v1/health   # {"status":"healthy","version":"2.19.0
 
 `version` es la etiqueta de imagen con la que se desplegó. Si dice `latest`, la instalación no
 está fijada a una versión y desde aquí no se puede saber, mira
-[Actualizar](../en/self-hosting/upgrading.md).
+[Actualizar](self-hosting/upgrading.md).
 
 **Si tu instancia es más antigua**, lee la documentación tal como estaba para tu versión en vez de
 esta. Cada etiqueta lleva su propia copia, así que pon tu versión en la ruta:
@@ -35,10 +35,12 @@ una recogen los cambios de comportamiento y las migraciones que no conviene salt
 - [Qué necesitas para ejecutar Memship](getting-started/what-you-need.md), el servidor, el
   dominio, el correo y lo que cuestan, medido en vez de estimado. Para decidir, antes de instalar
 
-El resto de las páginas de instalación están por ahora solo en inglés:
-[Quick start](../en/getting-started/quickstart.md),
-[Installation](../en/getting-started/installation.md) y
-[First-time setup](../en/getting-started/first-setup.md).
+- [Configuración inicial](getting-started/first-setup.md), crear el superadministrador y dejar la
+  organización lista
+
+Estas dos están por ahora solo en inglés:
+[Quick start](../en/getting-started/quickstart.md) e
+[Installation](../en/getting-started/installation.md).
 
 ## Guía del administrador (admin guide)
 
@@ -68,17 +70,24 @@ Para las personas socias que usan el portal.
 
 ## Alojar Memship (operadores)
 
-Estas páginas están por ahora solo en inglés, y su cobertura en castellano se sigue en
-[#423](https://github.com/marcandreuf/memship/issues/423):
-
-- [Your organisation's domain](../en/self-hosting/domain-and-dns.md), el nombre de máquina y sus
+- [El dominio de tu organización](self-hosting/domain-and-dns.md), el nombre de máquina y sus
   registros DNS, cuando el dominio es de la entidad y no tuyo
-- [Configuration reference](../en/self-hosting/configuration.md), todas las variables de entorno
-- [Feature flags](../en/self-hosting/feature-flags.md), los veintiún interruptores de módulo
-- [Email delivery](../en/self-hosting/email.md), Resend, Gmail o cualquier servidor SMTP
-- [Backups & restore](../en/self-hosting/backups-and-restore.md), copias de seguridad y restauración
-- [Upgrading](../en/self-hosting/upgrading.md), etiquetas de imagen y migraciones
-- [Troubleshooting](../en/self-hosting/troubleshooting.md), cuando algo no arranca
+- [Referencia de configuración](self-hosting/configuration.md), todas las variables de entorno
+- [Feature flags](self-hosting/feature-flags.md), los veintiún interruptores de módulo
+- [Envío de correo](self-hosting/email.md), Resend, Gmail o cualquier servidor SMTP
+- [Copias de seguridad y restauración](self-hosting/backups-and-restore.md), copias de seguridad
+  y restauración
+- [Actualizar](self-hosting/upgrading.md), etiquetas de imagen y migraciones
+- [Resolución de problemas](self-hosting/troubleshooting.md), cuando algo no arranca
+
+## Desarrollo (contribuir)
+
+Para trabajar en Memship.
+
+- [Entorno de desarrollo local](development/local-environment.md), el entorno de desarrollo, los
+  comandos, los datos de prueba y las suites de tests
+- [Contributing](https://github.com/marcandreuf/memship/blob/main/CONTRIBUTING.md), ramas,
+  versiones y cómo se publica una versión _(en inglés)_
 
 ## Referencia
 

@@ -3,6 +3,8 @@
 The backend runs in Docker (API, Celery worker and beat, PostgreSQL, Redis); the frontend runs
 locally with pnpm, so you get Next.js hot reload without a container in the way.
 
+> **En español:** [Entorno de desarrollo local](../../es/development/local-environment.md).
+
 `scripts/dev.sh` drives all of it.
 
 ## Prerequisites

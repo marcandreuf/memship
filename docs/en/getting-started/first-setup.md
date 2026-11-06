@@ -1,5 +1,7 @@
 # First-time setup
 
+> **En español:** [Configuración inicial](../../es/getting-started/first-setup.md).
+
 After [installing](installation.md) Memship and starting the services, run the setup command to
 create your account and configure your organization. It is the same command on every
 environment, and it is interactive:
@@ -65,7 +67,7 @@ admin from **Settings → Roles**. See
 One super admin is a single point of failure: if that person leaves, the only way back in is
 shell access to the server. Promote a second one early.
 
-A super admin does it from **Settings → Users**: pick the account and tick **Super admin**.
+A super admin does it from **Settings → Accounts**: pick the account and tick **Super Admin**.
 Only a super admin sees that box enabled, for anyone else it is disabled and labelled as
 super-admin-only, because an account cannot grant a role it does not hold. Memship also
 refuses to remove the last super admin, so you cannot lock the instance out by demoting

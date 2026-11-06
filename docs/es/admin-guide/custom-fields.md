@@ -5,7 +5,7 @@ ejemplo: talla de equipación, número de licencia federativa, alergias…).
 
 > **In English:** [Custom profile fields](../../en/admin-guide/custom-fields.md).
 
-> **Requisito previo.** Actívalos en **Ajustes → Socios → Campos de perfil**.
+> **Requisito previo.** Actívalos en **Configuración → Socios → Campos de perfil**.
 
 ## Definir un campo
 

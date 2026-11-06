@@ -5,8 +5,8 @@ Envío de anuncios a los socios por correo electrónico y con notificación en l
 > **In English:** [Communications](../../en/admin-guide/communications.md).
 
 > **Requisito previo.** Activa las comunicaciones en
-> [Ajustes → Socios → Comunicaciones](settings.md#correos-a-los-miembros) y configura el
-> [envío de correo](../../en/self-hosting/email.md).
+> [Configuración → Socios → Comunicaciones](settings.md#correos-a-los-miembros) y configura el
+> [envío de correo](../self-hosting/email.md).
 
 ## Crear un anuncio
 

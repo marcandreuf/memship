@@ -5,6 +5,8 @@ your server. This page is about getting to that point when the domain belongs to
 rather than to you: which name to choose, which records to create, and the two or three ways it
 goes wrong that cost you an hour each.
 
+> **En español:** [El dominio de tu organización](../../es/self-hosting/domain-and-dns.md).
+
 Nothing here is specific to memship's internals. If your DNS is already set up and you only want
 to install, go straight to [Installation](../getting-started/installation.md).
 

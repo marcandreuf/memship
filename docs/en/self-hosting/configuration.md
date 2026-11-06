@@ -4,6 +4,8 @@ Memship is configured through environment variables, typically set in a `.env` f
 `docker-compose.yml`. Copy `.env.example` to `.env` and adjust. This page documents every
 setting the backend reads.
 
+> **En español:** [Referencia de configuración](../../es/self-hosting/configuration.md).
+
 > **Minimum for production:** change `SECRET_KEY` and `DB_PASSWORD`, set `IMAGE_TAG` to a
 > released version, and configure [email](email.md).
 

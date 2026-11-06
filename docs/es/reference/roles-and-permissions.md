@@ -19,17 +19,17 @@ El superadministrador puede ajustar qué permisos tienen **Administrator** y **M
 
 ## Roles personalizados
 
-En **Ajustes → Roles**, el superadministrador crea roles a medida, por ejemplo un tesorero
+En **Configuración → Roles**, el superadministrador crea roles a medida, por ejemplo un tesorero
 que solo ve la facturación, eligiendo sus permisos de una lista agrupada por área
 (**Administración** y **Área personal**). Los permisos **reservados al superadministrador** no
 se pueden dar a un rol personalizado. Un rol solo se puede eliminar cuando ninguna cuenta lo
 tiene.
 
-En **Ajustes → Cuentas**, los administradores asignan roles a las cuentas existentes. Nadie
+En **Configuración → Cuentas**, los administradores asignan roles a las cuentas existentes. Nadie
 puede asignar un rol con más permisos de los que tiene, solo un superadministrador asigna el rol
 **Super Admin**, y no se puede retirar el último.
 
-El interruptor **Roles personalizados** de **Ajustes → Roles** muestra u oculta la creación de
+El interruptor **Roles personalizados** de **Configuración → Roles** muestra u oculta la creación de
 roles y la pestaña **Cuentas**. Está activado en una instalación nueva. Desactivarlo no
 desactiva los permisos: cada cuenta sigue limitada a los de sus roles.
 
