@@ -9,6 +9,10 @@
 # pre-restore dump of the current database is taken, and psql runs with
 # ON_ERROR_STOP=1 under `pipefail` so a failed load is reported as a failure
 # instead of being announced as success.
+#
+# A load that worked is not yet a restore that worked: "complete" is only
+# printed once the API answers, after the database password has been set to the
+# one in .env (see below for why that is needed on a new server).
 
 set -euo pipefail
 
@@ -149,7 +153,8 @@ if [[ "$MODE" == "dry-run" ]]; then
     echo "  3. Stop the API container"
     echo "  4. Drop and recreate the memship_db database"
     echo "  5. Restore from: $(basename "$BACKUP_FILE")"
-    echo "  6. Restart all containers"
+    echo "  6. Set the database password to DB_PASSWORD from .env"
+    echo "  7. Restart all containers and wait for the API to answer"
     echo ""
     echo "To execute, run:"
     echo "  ./scripts/db-restore.sh --confirm $(basename "$BACKUP_FILE")"
@@ -269,9 +274,73 @@ if ! gunzip -c "$BACKUP_FILE" | docker compose -f "$COMPOSE_FILE" exec -T db \
     exit 1
 fi
 
+# The role's password has to be .env's DB_PASSWORD, and after a restore onto a
+# new server it is not. Postgres applies POSTGRES_PASSWORD only when it
+# initialises its data directory, which there was install.sh's first start, with
+# a freshly generated password; the old .env then goes back on top, and a
+# pg_dump carries no roles. Every psql above goes through the local socket,
+# which the image trusts, so the restore never notices. The API, worker and beat
+# connect over TCP with the password and crash-loop (#552). A no-op when the two
+# already match.
+#
+# Passed to the container by name, never by value: argv is readable by anyone on
+# the host.
+export MEMSHIP_RESTORE_DB_PASSWORD="${DB_PASSWORD:-}"
+if [[ -z "$MEMSHIP_RESTORE_DB_PASSWORD" && -f "$REPO_ROOT/.env" ]]; then
+    MEMSHIP_RESTORE_DB_PASSWORD="$(grep -E '^DB_PASSWORD=' "$REPO_ROOT/.env" | tail -1 | cut -d= -f2- || true)"
+fi
+# docker-compose.yml's own default, for an .env without one.
+MEMSHIP_RESTORE_DB_PASSWORD="${MEMSHIP_RESTORE_DB_PASSWORD:-memship}"
+
+echo -e "${BLUE}i${NC} Setting the database password to .env's DB_PASSWORD..."
+if ! docker compose -f "$COMPOSE_FILE" exec -T -e MEMSHIP_RESTORE_DB_PASSWORD db sh -c \
+        'printf "%s\n" "ALTER ROLE memship PASSWORD :'\''pw'\'';" | psql -U memship -d postgres --quiet -v ON_ERROR_STOP=1 -v pw="$MEMSHIP_RESTORE_DB_PASSWORD"' \
+        >/dev/null; then
+    echo ""
+    echo -e "${RED}${BOLD}=== RESTORE INCOMPLETE ===${NC}"
+    echo -e "  The data from $(basename "$BACKUP_FILE") is in place, but the database"
+    echo -e "  password could not be set to DB_PASSWORD from .env, so the API would"
+    echo -e "  not be able to log in. It has been left stopped."
+    echo ""
+    exit 1
+fi
+
 # Restart all services
 echo -e "${BLUE}i${NC} Restarting services..."
 docker compose -f "$COMPOSE_FILE" up -d
+
+# `up -d` returning means the containers were created, not that the instance
+# works: the API logs in to the database and applies migrations before it
+# serves. Ask it, on the loopback port the way verify-deployment.sh does — the
+# backend image has no curl to exec.
+API_PORT="${API_PORT:-}"
+if [[ -z "$API_PORT" && -f "$REPO_ROOT/.env" ]]; then
+    API_PORT="$(grep -E '^API_PORT=' "$REPO_ROOT/.env" | tail -1 | cut -d= -f2- || true)"
+fi
+HEALTH_URL="http://127.0.0.1:${API_PORT:-8003}/api/v1/health"
+TIMEOUT="${VERIFY_TIMEOUT:-300}"
+echo -e "${BLUE}i${NC} Waiting for the API on $HEALTH_URL..."
+deadline=$((SECONDS + TIMEOUT))
+api_up=0
+while [[ "$SECONDS" -lt "$deadline" ]]; do
+    if curl -fsS --max-time 5 "$HEALTH_URL" >/dev/null 2>&1; then
+        api_up=1
+        break
+    fi
+    sleep 5
+done
+if [[ "$api_up" -eq 0 ]]; then
+    echo ""
+    echo -e "${RED}${BOLD}=== RESTORE INCOMPLETE: the API is not answering ===${NC}"
+    echo -e "  The data from $(basename "$BACKUP_FILE") is in place, but the API did not"
+    echo -e "  answer within ${TIMEOUT}s. Its last lines:"
+    echo ""
+    docker compose -f "$COMPOSE_FILE" logs api --tail 20 --no-log-prefix 2>&1 | sed 's/^/    /' || true
+    echo ""
+    echo -e "  Check: docker compose ps; docker compose logs api"
+    echo ""
+    exit 1
+fi
 
 echo ""
 echo -e "${GREEN}=== Restore complete ===${NC}"
