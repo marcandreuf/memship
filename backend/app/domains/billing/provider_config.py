@@ -56,6 +56,12 @@ PROVIDER_CONFIG_SCHEMAS: dict[str, dict] = {
             },
         ],
         "sensitive_fields": ["secret_key", "webhook_secret"],
+        # The events StripeAdapter.handle_webhook acts on; anything else is
+        # acknowledged and ignored. A type that declares this registers a
+        # fixed endpoint at the gateway, so the settings screen shows the
+        # administrator the URL to paste there (#324). Redsys declares none:
+        # each payment request tells it where to reply.
+        "webhook_events": ["checkout.session.completed", "checkout.session.expired"],
     },
     "redsys": {
         "fields": [

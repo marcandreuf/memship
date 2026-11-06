@@ -1,5 +1,6 @@
 """Integration tests for payment provider management endpoints."""
 
+from app.core.config import settings as app_settings
 from app.core.encryption import decrypt_config
 from app.core.security.jwt import create_access_token
 from app.core.security.password import hash_password
@@ -1131,6 +1132,25 @@ class TestProviderTypes:
         stripe = next(t for t in data if t["provider_type"] == "stripe")
         assert len(stripe["fields"]) == 3
         assert stripe["sensitive_fields"] == ["secret_key", "webhook_secret"]
+
+    def test_stripe_carries_its_webhook_url(self, client, db, monkeypatch):
+        monkeypatch.setattr(app_settings, "BACKEND_PUBLIC_URL", "https://club.example.org/")
+        user = _create_user(db, suffix="pp-types5")
+        resp = client.get("/api/v1/payment-providers/types", cookies=_auth_cookie(user))
+        stripe = next(t for t in resp.json() if t["provider_type"] == "stripe")
+        assert stripe["webhook_url"] == "https://club.example.org/api/v1/webhooks/stripe"
+        assert stripe["webhook_events"] == [
+            "checkout.session.completed",
+            "checkout.session.expired",
+        ]
+
+    def test_types_without_a_registered_endpoint_have_no_webhook_url(self, client, db):
+        user = _create_user(db, suffix="pp-types6")
+        resp = client.get("/api/v1/payment-providers/types", cookies=_auth_cookie(user))
+        by_type = {t["provider_type"]: t for t in resp.json()}
+        for provider_type in ("redsys", "sepa_direct_debit"):
+            assert by_type[provider_type]["webhook_url"] is None
+            assert by_type[provider_type]["webhook_events"] == []
 
 
 class TestTestResponseIsTranslatable:

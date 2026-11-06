@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Check, Copy, Lock } from "lucide-react";
+import { Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +23,7 @@ import type {
   SsoSecretStatus,
 } from "../services/sso-api";
 import { StoredSecretField } from "./stored-secret-field";
+import { CopyRow } from "./copy-row";
 
 // `replacing` is the only thing that makes `value` a write: a stored secret has
 // no input until the admin asks to replace it, so nothing else can fill one.
@@ -55,30 +56,6 @@ const PROVIDER_SCHEMA = {
 } as const;
 
 type ProviderName = keyof typeof PROVIDER_SCHEMA;
-
-function CopyRow({ label, value }: { label: string; value: string }) {
-  const [copied, setCopied] = useState(false);
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      /* clipboard unavailable */
-    }
-  }
-  return (
-    <div className="space-y-0.5">
-      <label className="text-xs font-medium text-muted-foreground">{label}</label>
-      <div className="flex items-center gap-2">
-        <Input readOnly value={value} className="h-8 font-mono text-xs" />
-        <Button type="button" variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={copy}>
-          {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-        </Button>
-      </div>
-    </div>
-  );
-}
 
 export function SsoSettings() {
   const t = useTranslations();

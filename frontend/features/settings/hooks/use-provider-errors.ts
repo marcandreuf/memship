@@ -27,10 +27,16 @@ export function useProviderErrors() {
    * it — a Bizum switch has to say that the bank enables it, not memship (#405).
    * Absent for most fields, and absent is the normal case.
    */
-  function fieldHint(key: string | undefined): string {
+  function fieldHint(key: string | undefined, providerType?: string): string {
     if (!key) return "";
-    const path = `settings.providers.fieldHints.${key}`;
-    return t.has(path) ? t(path) : "";
+    // Provider first: Stripe and Redsys both call a field `secret_key`, and
+    // where to find each one has nothing in common.
+    const paths = [
+      ...(providerType ? [`settings.providers.fieldHints.${providerType}.${key}`] : []),
+      `settings.providers.fieldHints.${key}`,
+    ];
+    const path = paths.find((p) => t.has(p));
+    return path ? t(path) : "";
   }
 
   function describe(error: ProviderConfigError): string {

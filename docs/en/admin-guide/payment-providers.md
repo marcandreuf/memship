@@ -107,7 +107,7 @@ Stripe keeps separate keys for test mode and live mode, selected by the toggle i
 https://<your-memship-address>/api/v1/webhooks/stripe
 ```
 
-Use the same address as `BACKEND_PUBLIC_URL`. The `/api/v1/` prefix matters: the bundled reverse-proxy configuration routes only `/api/v1/*` to the API and sends everything else to the web interface, so a URL without it reaches the wrong service and Stripe will report failures.
+You do not have to build it by hand: the Stripe provider's form in **Settings → Payment Providers** shows it, built from `BACKEND_PUBLIC_URL`, with a copy button. The `/api/v1/` prefix matters: the bundled reverse-proxy configuration routes only `/api/v1/*` to the API and sends everything else to the web interface, so a URL without it reaches the wrong service and Stripe will report failures.
 
 Then, in the Stripe dashboard ([webhook docs](https://docs.stripe.com/webhooks)):
 

@@ -65,6 +65,8 @@
       "empty": "No hi ha proveïdors de pagament configurats",
       "configured": "Ja configurat",
       "comingSoon": "Properament",
+      "webhookUrl": "URL del webhook",
+      "webhookHint": "Registra aquesta adreça com a endpoint de webhook al tauler del proveïdor. Subscriu-t'hi a {events}, amb l'estil de payload Snapshot; memship ignora qualsevol altre esdeveniment.",
       "default": "Per defecte",
       "status": {
         "active": "Actiu",
@@ -93,7 +95,17 @@
         "webhook_secret": "Secret del webhook"
       },
       "fieldHints": {
-        "enable_bizum": "Activa-ho només quan el teu banc hagi confirmat que Bizum està habilitat en aquest terminal. Memship no ho pot comprovar."
+        "enable_bizum": "Activa-ho només quan el teu banc hagi confirmat que Bizum està habilitat en aquest terminal. Memship no ho pot comprovar.",
+        "stripe": {
+          "secret_key": "A Stripe, Desenvolupadors → Claus d'API. Comença per sk_test_ en mode de prova i per sk_live_ en mode real.",
+          "webhook_secret": "L'emet Stripe, no memship: crea primer a Stripe l'endpoint de webhook que apareix més avall i després mostra'n el secret de signatura. Comença per whsec_."
+        },
+        "redsys": {
+          "merchant_code": "El teu identificador de comerç, de 7 a 9 dígits, del contracte del TPV Virtual o del portal del teu banc.",
+          "terminal_id": "Numèric; normalment 1, tret que el banc t'hagi donat diversos terminals.",
+          "secret_key": "Als portals bancaris sol anomenar-se clau secreta d'encriptació o clau de signatura. Proves i producció tenen claus diferents.",
+          "currency_code": "Codi numèric ISO 4217: 978 és l'euro."
+        }
       },
       "errors": {
         "missing_required_field": "{field} és obligatori",

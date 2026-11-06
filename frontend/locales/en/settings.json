@@ -65,6 +65,8 @@
       "empty": "No payment providers configured",
       "configured": "Already configured",
       "comingSoon": "Coming soon",
+      "webhookUrl": "Webhook URL",
+      "webhookHint": "Register this address as the webhook endpoint in the provider's dashboard. Subscribe to {events}, with the Snapshot payload style; memship ignores every other event.",
       "default": "Default",
       "status": {
         "active": "Active",
@@ -93,7 +95,17 @@
         "webhook_secret": "Webhook Secret"
       },
       "fieldHints": {
-        "enable_bizum": "Turn this on only once your bank has confirmed Bizum is enabled on this terminal. Memship cannot check it."
+        "enable_bizum": "Turn this on only once your bank has confirmed Bizum is enabled on this terminal. Memship cannot check it.",
+        "stripe": {
+          "secret_key": "In Stripe, Developers → API keys. Starts with sk_test_ in test mode and sk_live_ in live mode.",
+          "webhook_secret": "Issued by Stripe, not by memship: first create the webhook endpoint shown below in Stripe, then reveal its signing secret. Starts with whsec_."
+        },
+        "redsys": {
+          "merchant_code": "Your merchant identifier, 7 to 9 digits, from the TPV Virtual contract or your bank's portal.",
+          "terminal_id": "Numeric, usually 1 unless your bank issued several terminals.",
+          "secret_key": "Bank portals usually call it clave secreta de encriptación or clave de firma. Test and production have different keys.",
+          "currency_code": "ISO 4217 numeric code: 978 is the euro."
+        }
       },
       "errors": {
         "missing_required_field": "{field} is required",

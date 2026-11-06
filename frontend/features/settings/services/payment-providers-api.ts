@@ -14,6 +14,9 @@ export interface ProviderTypeSchema {
   fields: ProviderField[];
   sensitive_fields: string[];
   available: boolean;
+  /** Where the gateway must send its notifications; null when it is told per payment. */
+  webhook_url: string | null;
+  webhook_events: string[];
 }
 
 export interface PaymentProvider {
