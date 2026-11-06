@@ -1,5 +1,5 @@
 <!-- source: es/admin-guide/settings.md -->
-<!-- source-hash: 3303faf41a8e -->
+<!-- source-hash: 5939ed7e1cc1 -->
 
 # Organisation settings
 
@@ -10,6 +10,8 @@ permissions.
 
 ## Organisation details
 
+In **Settings → Organization**.
+
 - **Organization Info**: name, legal name, tax ID (CIF/NIF), email, phone and website.
 - **Branding**, **Brand Color** and **Logo** (JPG, PNG, WebP or SVG).
 - **Address**, used on receipts and legal documents.
@@ -18,12 +20,16 @@ permissions.
 
 ## Banking and invoicing
 
+In **Settings → Payments → General**.
+
 - **Banking**: the organisation's bank name, **IBAN** and **BIC / SWIFT**.
 - **Invoicing**: **Invoice Prefix**, **Next Invoice Number** and **Annual Numbering Reset**
   (restarts the numbering at the start of each year).
 - **Default VAT Rate**: the rate applied by default when calculating receipts.
 
 ## SEPA direct debit
+
+In **Settings → Payments → General**.
 
 - **Creditor ID**: the SEPA creditor identifier (e.g.
   `ES12000B12345678`), required to generate remittances.
@@ -33,7 +39,7 @@ See [SEPA direct debit](sepa.md) for the mandate and remittance flow.
 
 ## Payment providers
 
-Configure the credentials of the **online payment** gateways that members will see under
+In **Settings → Payments → Payment Providers**, configure the credentials of the **online payment** gateways that members will see under
 *Pay Now*: **Stripe**, **Redsys**, **Bizum** (through Redsys, with its own **Offer Bizum**
 switch, off by default) and **SEPA direct debit**. Each
 provider has a **Display Name**, a **status** (Active / Test / Disabled) and the
@@ -44,7 +50,7 @@ provider has a **Display Name**, a **status** (Active / Test / Disabled) and the
 
 ## Recurring billing
 
-Automatically generates membership fee receipts on a schedule:
+In **Settings → Payments → Recurring billing**. Automatically generates membership fee receipts on a schedule:
 
 - **Enable recurring billing**.
 - **Day of month** (1–28) on which it runs. Quarterly and annual fees are only billed
@@ -53,7 +59,7 @@ Automatically generates membership fee receipts on a schedule:
 
 ## Payment reminders
 
-Sends automatic emails to members with overdue receipts:
+In **Settings → Payments → Payment reminders**. Sends automatic emails to members with overdue receipts:
 
 - **Days after due date** before the first reminder.
 - **Repeat every (days)** between successive reminders.
@@ -61,7 +67,7 @@ Sends automatic emails to members with overdue receipts:
 
 ## Emails to members
 
-Under **Members → Communications**, below the announcements switch, you choose **which emails
+Under **Settings → Members → Communications**, below the announcements switch, you choose **which emails
 the system sends**. Each email has its own switch, grouped by area (account and access,
 sign-ups, activities, bookings, billing, announcements).
 
@@ -81,7 +87,12 @@ installation that never visits this screen sends every email, as before.
 
 ## Other options
 
+In **Settings → Members**:
+
 - **Communications**: enables sending [announcements](communications.md).
 - **Member Card**: enables the [digital member card](member-cards.md) and its numbering.
 - **Profile fields**: enables [custom fields](custom-fields.md).
+
+In **Settings → Organization**:
+
 - **Gender Options**: configures the options available in member forms.

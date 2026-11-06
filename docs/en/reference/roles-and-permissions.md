@@ -1,17 +1,39 @@
 <!-- source: es/reference/roles-and-permissions.md -->
-<!-- source-hash: 5a3e8950b7cf -->
+<!-- source-hash: 82c741c57681 -->
 
 # Roles and permissions
 
-Memship distinguishes three roles. Access to each feature depends on the user's role.
+What each account can do depends on its **roles**, and each role is a set of **permissions**. An
+account can hold several roles and has the permissions of all of them.
 
 > **In Spanish:** [Roles y permisos](../../es/reference/roles-and-permissions.md).
 
-| Role                   | Scope                                                                        |
-|------------------------|------------------------------------------------------------------------------|
-| **Super admin**        | Platform-level administration. On top of everything the organisation administrator can do, manages the **payment gateway configuration** and other platform settings. |
-| **Organisation administrator** | Day-to-day management of the organisation: **members**, **activities**, **payments and receipts**, **SEPA**, **communications**, **digital member card**, **profile fields**, **reports** and **settings**. |
-| **Member**             | Member portal: their **profile**, their **activities**, their **receipts and payment method**, and their **digital member card**. |
+## System roles
+
+Memship ships three roles, marked **System**. They cannot be renamed or deleted.
+
+| Role | Scope |
+|------|-------|
+| **Super Admin** | Everything, including the **reserved permissions**: creating and editing roles, and managing integration credentials (payment gateways, SSO, email). Its permissions cannot be changed. |
+| **Administrator** (organisation administrator) | Day-to-day management: **members**, **entities**, **activities**, **payments and receipts**, **SEPA**, **communications**, **bookings**, **reports** and **membership types**. It does not have the reserved permissions and cannot edit profile field definitions. |
+| **Member** | The member portal: their **profile**, their **activities**, their **receipts and payment method**, their **digital member card**, their **bookings** and their **communications**. |
+
+The superadmin can adjust which permissions **Administrator** and **Member** have.
+
+## Custom roles
+
+In **Settings → Roles**, the superadmin creates tailored roles, for example a treasurer who
+only sees billing, choosing their permissions from a list grouped by area (**Administration**
+and **Personal area**). Permissions **reserved to the super admin** cannot be given to a custom
+role. A role can only be deleted when no account holds it.
+
+In **Settings → Accounts**, administrators assign roles to existing accounts. Nobody can assign
+a role with more permissions than they have, only a superadmin assigns the **Super Admin** role,
+and the last one cannot be removed.
+
+The **Custom roles** switch in **Settings → Roles** shows or hides role authoring and the
+**Accounts** tab. It is on in a new installation. Turning it off does not turn permissions off:
+every account stays limited to those of its roles.
 
 ## Notes
 
@@ -23,6 +45,3 @@ Memship distinguishes three roles. Access to each feature depends on the user's 
   edit it**; for the member, each field can be hidden, read-only or editable. See
   [Profile fields](../admin-guide/custom-fields.md).
 - Memship is **single-tenant**: one database per organisation.
-
-> A model of **flexible roles and permissions** (multiple roles and permissions per role, beyond
-> the current three) is on the roadmap; this page will be updated when it is released.

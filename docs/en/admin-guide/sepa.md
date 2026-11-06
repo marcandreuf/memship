@@ -1,5 +1,5 @@
 <!-- source: es/admin-guide/sepa.md -->
-<!-- source-hash: 6949f8cbc7ac -->
+<!-- source-hash: d51ffa20924d -->
 
 # SEPA Direct Debit
 
@@ -8,7 +8,7 @@ Collecting receipts by direct debit through SEPA mandates and remittances.
 > **In Spanish:** [Domiciliación SEPA](../../es/admin-guide/sepa.md).
 
 > **Prerequisite.** Set up the organisation's **creditor identifier** and bank details in
-> [Settings → SEPA Direct Debit](settings.md#sepa-direct-debit).
+> [Settings → Payments → General](settings.md#sepa-direct-debit).
 
 ## Mandates
 

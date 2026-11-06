@@ -1,14 +1,37 @@
 # Roles y permisos
 
-Memship distingue tres roles. El acceso a cada función depende del rol de la persona usuaria.
+Lo que puede hacer cada cuenta depende de sus **roles**, y cada rol es un conjunto de
+**permisos**. Una cuenta puede tener varios roles y reúne los permisos de todos ellos.
 
 > **In English:** [Roles and permissions](../../en/reference/roles-and-permissions.md).
 
-| Rol                    | Ámbito                                                                       |
-|------------------------|------------------------------------------------------------------------------|
-| **Superadministrador** | Administración a nivel de plataforma. Además de lo que puede el administrador de la organización, gestiona la **configuración de las pasarelas de pago** y otros ajustes de plataforma. |
-| **Administrador de la organización** | Gestión diaria de la organización: **socios**, **actividades**, **pagos y recibos**, **SEPA**, **comunicaciones**, **carné digital**, **campos de perfil**, **informes** y **configuración**. |
-| **Socio**              | Portal del socio: su **perfil**, sus **actividades**, sus **recibos y forma de pago**, y su **carné digital**. |
+## Roles del sistema
+
+Memship trae tres roles, marcados como **Del sistema**. No se pueden renombrar ni eliminar.
+
+| Rol | Ámbito |
+|-----|--------|
+| **Super Admin** (superadministrador) | Todo, incluidos los **permisos reservados**: crear y editar roles y gestionar las credenciales de las integraciones (pasarelas de pago, SSO, correo). Sus permisos no se pueden cambiar. |
+| **Administrator** (administrador de la organización) | Gestión diaria: **socios**, **entidades**, **actividades**, **pagos y recibos**, **SEPA**, **comunicaciones**, **reservas**, **informes** y **tipos de membresía**. No tiene los permisos reservados ni puede editar las definiciones de los campos de perfil. |
+| **Member** (socio) | Portal del socio: su **perfil**, sus **actividades**, sus **recibos y forma de pago**, su **carné digital**, sus **reservas** y sus **comunicaciones**. |
+
+El superadministrador puede ajustar qué permisos tienen **Administrator** y **Member**.
+
+## Roles personalizados
+
+En **Ajustes → Roles**, el superadministrador crea roles a medida, por ejemplo un tesorero
+que solo ve la facturación, eligiendo sus permisos de una lista agrupada por área
+(**Administración** y **Área personal**). Los permisos **reservados al superadministrador** no
+se pueden dar a un rol personalizado. Un rol solo se puede eliminar cuando ninguna cuenta lo
+tiene.
+
+En **Ajustes → Cuentas**, los administradores asignan roles a las cuentas existentes. Nadie
+puede asignar un rol con más permisos de los que tiene, solo un superadministrador asigna el rol
+**Super Admin**, y no se puede retirar el último.
+
+El interruptor **Roles personalizados** de **Ajustes → Roles** muestra u oculta la creación de
+roles y la pestaña **Cuentas**. Está activado en una instalación nueva. Desactivarlo no
+desactiva los permisos: cada cuenta sigue limitada a los de sus roles.
 
 ## Notas
 
@@ -20,6 +43,3 @@ Memship distingue tres roles. El acceso a cada función depende del rol de la pe
   editarlo**; para el socio, cada campo puede ser oculto, de solo lectura o editable. Ver
   [Campos de perfil](../admin-guide/custom-fields.md).
 - Memship es de **un solo inquilino** (single-tenant): una base de datos por organización.
-
-> Un modelo de **roles y permisos flexibles** (múltiples roles y permisos por rol, más allá de
-> los tres actuales) está en la hoja de ruta; esta página se actualizará cuando se publique.

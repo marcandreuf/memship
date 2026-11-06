@@ -91,7 +91,7 @@ La donación **no aparece en memship**. Ni recibo, ni socio, ni nada en el resum
 
 ### Si quieres cuadrarlo con tus libros
 
-Alguien lo anota a mano. Desde la ficha de un socio, **Recibos → Añadir recibo**, con origen
+Alguien lo anota a mano. Desde la ficha de un socio, **Recibos → Nuevo recibo**, con origen
 **Donación** (ver abajo). Es trabajo manual y sin automatizar: si eso pesa, el camino 1 no es
 el tuyo.
 
@@ -108,7 +108,7 @@ segundo proveedor solo para esto.
 ## Caminos 2 y 3: la donación como recibo en memship
 
 Cuando sí quieres el registro, la donación es un recibo con **origen Donación**, creado a mano
-desde **Recibos → Añadir recibo** en la ficha de la entidad o del socio. La pantalla es la
+desde **Recibos → Nuevo recibo** en la ficha de la entidad o del socio. La pantalla es la
 misma en los dos sitios.
 
 El origen hace tres cosas que `Manual` no hacía:
