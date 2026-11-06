@@ -3,6 +3,7 @@
 Cómo acceder al portal del socio y gestionar tus datos.
 
 > **In English:** [Your account and profile](../../en/member-guide/account.md).
+> **En català:** [El teu compte i el teu perfil](../../ca/member-guide/account.md).
 
 ## Iniciar sesión
 

@@ -3,6 +3,7 @@
 Cómo inscribirte en las actividades de tu organización y gestionar tus inscripciones.
 
 > **In English:** [Activities](../../en/member-guide/activities.md).
+> **En català:** [Activitats](../../ca/member-guide/activities.md).
 
 ## Explorar e inscribirte
 

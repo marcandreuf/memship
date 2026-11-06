@@ -1,5 +1,5 @@
 <!-- source: es/member-guide/member-card.md -->
-<!-- source-hash: 7c46bd0b18ee -->
+<!-- source-hash: 302c49fc6168 -->
 
 # Digital member card
 

@@ -4,9 +4,9 @@ Documentació per a **qui allotja Memship**, **qui administra una entitat** i **
 sòcies**. Aquest és l'arbre en català; el castellà és a [`../es/README.md`](../es/README.md) i
 l'anglès a [`../en/README.md`](../en/README.md).
 
-> **Aquesta pàgina és, per ara, l'única en català.** La resta encara no està traduïda, així que
-> cada enllaç d'aquest índex porta a la pàgina en castellà o en anglès, i al web se serveix en
-> aquell idioma amb un avís. La cobertura es segueix a
+> **Encara no tot és en català.** La guia del soci i *Què necessites per executar Memship* ja ho
+> són; la resta encara no està traduïda, així que el seu enllaç porta a la pàgina en castellà o en
+> anglès, i al web se serveix en aquell idioma amb un avís. La cobertura es segueix a
 > [#423](https://github.com/marcandreuf/memship/issues/423).
 
 ## Quina versió descriu aquesta documentació
@@ -38,9 +38,8 @@ recullen els canvis de comportament i les migracions que més val no saltar-se.
 
 ## Primers passos
 
-- [Què necessites per executar Memship](../es/getting-started/what-you-need.md), el servidor, el
-  domini, el correu i què costen, mesurat i no estimat. Per decidir, abans d'instal·lar _(en
-  castellà)_
+- [Què necessites per executar Memship](getting-started/what-you-need.md), el servidor, el
+  domini, el correu i què costen, mesurat i no estimat. Per decidir, abans d'instal·lar
 - [Quick start](../en/getting-started/quickstart.md), provar Memship amb una sola ordre _(en
   anglès)_
 - [Installation](../en/getting-started/installation.md), instal·lació de producció amb Docker
@@ -70,13 +69,13 @@ són, per ara, en castellà.
 
 ## Guia del soci (member guide)
 
-Per a les persones sòcies que fan servir el portal. En castellà, per ara.
+Per a les persones sòcies que fan servir el portal.
 
-- [El teu compte i el teu perfil](../es/member-guide/account.md), accés, perfil, idioma, foto
-- [Activitats](../es/member-guide/activities.md), inscriure's, llista d'espera
-- [Pagaments i rebuts](../es/member-guide/payments.md), els meus rebuts, pagar en línia, forma de
+- [El teu compte i el teu perfil](member-guide/account.md), accés, perfil, idioma, foto
+- [Activitats](member-guide/activities.md), inscriure's, llista d'espera
+- [Pagaments i rebuts](member-guide/payments.md), els meus rebuts, pagar en línia, forma de
   pagament
-- [Carnet digital](../es/member-guide/member-card.md), carnet QR
+- [Carnet digital](member-guide/member-card.md), carnet QR
 
 ## Allotjar Memship (operadors)
 
