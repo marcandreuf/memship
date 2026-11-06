@@ -29,13 +29,7 @@ import {
 import { TabContentSkeleton } from "@/components/ui/skeletons";
 import type { RegistrationData } from "../services/registrations-api";
 import { useLocaleDate } from "@/hooks/use-locale-date";
-
-const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  confirmed: "default",
-  waitlist: "secondary",
-  cancelled: "destructive",
-  pending: "outline",
-};
+import { REGISTRATION_STATUS_VARIANTS } from "@/lib/status-variants";
 
 interface RegistrationsTabProps {
   activityId: number;
@@ -144,7 +138,7 @@ function RegistrationRow({ registration }: { registration: RegistrationData }) {
         </div>
       </TableCell>
       <TableCell>
-        <Badge variant={STATUS_VARIANTS[registration.status] || "outline"}>
+        <Badge variant={REGISTRATION_STATUS_VARIANTS[registration.status] || "outline"}>
           {t(`activities.registration.status.${registration.status}`)}
         </Badge>
       </TableCell>

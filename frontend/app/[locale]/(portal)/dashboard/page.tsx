@@ -30,6 +30,7 @@ import { useAnnualSummary } from "@/features/reports/hooks/use-annual-summary";
 import { ReminderList } from "@/features/reminders/components/reminder-list";
 import { useFormatters } from "@/hooks/use-formatters";
 import type { RegistrationData } from "@/features/activities/services/registrations-api";
+import { REGISTRATION_STATUS_VARIANTS } from "@/lib/status-variants";
 
 const MEMBER_COLORS: Record<string, string> = {
   active: "hsl(142, 71%, 45%)",
@@ -284,13 +285,6 @@ function FinanceGraphCard() {
   );
 }
 
-const REG_STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  confirmed: "default",
-  waitlist: "secondary",
-  cancelled: "destructive",
-  pending: "outline",
-};
-
 function UpcomingActivityCard({ registration }: { registration: RegistrationData }) {
   const t = useTranslations();
   const { formatDate } = useFormatters();
@@ -310,7 +304,7 @@ function UpcomingActivityCard({ registration }: { registration: RegistrationData
           {activity.location && ` · ${activity.location}`}
         </span>
       )}
-      <Badge variant={REG_STATUS_VARIANTS[registration.status] || "outline"} className="shrink-0">
+      <Badge variant={REGISTRATION_STATUS_VARIANTS[registration.status] || "outline"} className="shrink-0">
         {t(`activities.registration.status.${registration.status}`)}
       </Badge>
     </Link>

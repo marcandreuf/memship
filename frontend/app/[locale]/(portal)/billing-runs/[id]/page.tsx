@@ -10,12 +10,7 @@ import { DetailSection } from "@/components/entity/detail-section";
 import { DetailSkeleton } from "@/components/ui/skeletons";
 import { useFormatters } from "@/hooks/use-formatters";
 import { useBillingRun } from "@/features/settings/hooks/use-billing-runs";
-
-const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  success: "default",
-  failed: "destructive",
-  partial_failure: "secondary",
-};
+import { BILLING_RUN_STATUS_VARIANTS } from "@/lib/status-variants";
 
 export default function BillingRunDetailPage() {
   const t = useTranslations();
@@ -46,7 +41,7 @@ export default function BillingRunDetailPage() {
         title={`#${run.id}`}
         badge={{
           label: t(`billingRuns.statusValue.${run.status}`),
-          variant: STATUS_VARIANTS[run.status] || "outline",
+          variant: BILLING_RUN_STATUS_VARIANTS[run.status] || "outline",
         }}
       />
 

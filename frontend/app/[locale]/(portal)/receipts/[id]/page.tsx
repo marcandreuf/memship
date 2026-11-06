@@ -39,16 +39,7 @@ import {
 } from "@/features/receipts/hooks/use-receipt-reminders";
 import { useSettings } from "@/features/settings/hooks/use-settings";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
-
-const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  new: "outline",
-  pending: "secondary",
-  emitted: "secondary",
-  paid: "default",
-  returned: "destructive",
-  cancelled: "destructive",
-  overdue: "destructive",
-};
+import { RECEIPT_STATUS_VARIANTS } from "@/lib/status-variants";
 
 export default function ReceiptDetailPage() {
   const t = useTranslations();
@@ -292,7 +283,7 @@ export default function ReceiptDetailPage() {
           { label: receipt.receipt_number },
         ]}
         title={receipt.receipt_number}
-        badge={{ label: statusLabel, variant: STATUS_VARIANTS[receipt.status] || "outline" }}
+        badge={{ label: statusLabel, variant: RECEIPT_STATUS_VARIANTS[receipt.status] || "outline" }}
         actions={
           <div className="flex gap-2 flex-wrap">
             {canEdit && <Button size="sm" variant="outline" onClick={() => setEditOpen(true)}>{t("common.edit")}</Button>}

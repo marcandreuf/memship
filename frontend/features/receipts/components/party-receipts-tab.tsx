@@ -28,16 +28,7 @@ import { mapApiErrorsToForm } from "@/lib/errors";
 import { useFormatters } from "@/hooks/use-formatters";
 import { useReturnToHere } from "@/hooks/use-return-to";
 import { useReceipts, useCreateReceipt } from "../hooks/use-receipts";
-
-const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  new: "outline",
-  pending: "secondary",
-  emitted: "secondary",
-  paid: "default",
-  returned: "destructive",
-  cancelled: "destructive",
-  overdue: "destructive",
-};
+import { RECEIPT_STATUS_VARIANTS } from "@/lib/status-variants";
 
 const createSchema = z.object({
   origin: z.string().min(1),
@@ -127,7 +118,7 @@ export function PartyReceiptsTab({ partyId, returnLabel }: PartyReceiptsTabProps
                   <TableCell className="max-w-[200px] truncate">{r.description}</TableCell>
                   <TableCell className="text-right font-mono">{formatCurrency(r.total_amount)}</TableCell>
                   <TableCell>
-                    <Badge variant={STATUS_VARIANTS[r.status] || "outline"}>{statusLabel}</Badge>
+                    <Badge variant={RECEIPT_STATUS_VARIANTS[r.status] || "outline"}>{statusLabel}</Badge>
                   </TableCell>
                   <TableCell className="text-sm">{formatDate(r.emission_date)}</TableCell>
                   <TableCell className="text-sm">{formatDate(r.payment_date)}</TableCell>

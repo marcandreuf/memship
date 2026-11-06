@@ -29,19 +29,11 @@ import { usePageParam, useStatusParam } from "@/hooks/use-url-state";
 import { useFormatters } from "@/hooks/use-formatters";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
 import { useReturnToHere } from "@/hooks/use-return-to";
-
-const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  draft: "outline",
-  ready: "secondary",
-  submitted: "secondary",
-  processed: "default",
-  closed: "default",
-  cancelled: "destructive",
-};
+import { REMITTANCE_STATUS_VARIANTS } from "@/lib/status-variants";
 
 function StatusBadge({ status, t }: { status: string; t: (key: string) => string }) {
   const label = t(`remittances.status${status.charAt(0).toUpperCase() + status.slice(1)}`);
-  return <Badge variant={STATUS_VARIANTS[status] || "outline"}>{label}</Badge>;
+  return <Badge variant={REMITTANCE_STATUS_VARIANTS[status] || "outline"}>{label}</Badge>;
 }
 
 export default function RemittancesPage() {
