@@ -271,8 +271,8 @@ L'autoallotjament en producció viu a la documentació, perquè només hi hagi u
 - **[Actualitzacions](docs/en/self-hosting/upgrading.md)** — passar a una versió nova
 - **[Resolució de problemes](docs/en/self-hosting/troubleshooting.md)** — quan alguna cosa no arrenca
 
-L'[Inici ràpid](#inici-ràpid-docker) de dalt és només per avaluar: inclou una clau de signatura
-publicada en aquest repositori i guarda les dades en volums d'un sol ús.
+L'[Inici ràpid](#inici-ràpid-docker) de dalt és només per avaluar: imatges publicades, volums
+llencívols i una contrasenya de base de dades fixa.
 
 ## Contribucions
 

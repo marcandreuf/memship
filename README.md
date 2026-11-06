@@ -269,8 +269,8 @@ Production self-hosting lives in the docs, so there is one copy of it to keep co
 - **[Upgrading](docs/en/self-hosting/upgrading.md)** — moving to a new release
 - **[Troubleshooting](docs/en/self-hosting/troubleshooting.md)** — when something will not start
 
-The [Quick Start](#quick-start-docker) above is for evaluation only: it ships a signing key that is
-published in this repository and keeps data in throwaway volumes.
+The [Quick Start](#quick-start-docker) above is for evaluation only: published images, throwaway
+volumes and a fixed database password.
 
 
 ## Contributing
