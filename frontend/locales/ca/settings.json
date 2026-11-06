@@ -65,6 +65,8 @@
       "empty": "No hi ha proveïdors de pagament configurats",
       "configured": "Ja configurat",
       "comingSoon": "Properament",
+      "webhookUrl": "URL del webhook",
+      "webhookHint": "Registra aquesta adreça com a endpoint de webhook al tauler del proveïdor. Subscriu-t'hi a {events}, amb l'estil de payload Snapshot; memship ignora qualsevol altre esdeveniment.",
       "default": "Per defecte",
       "status": {
         "active": "Actiu",

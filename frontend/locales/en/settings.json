@@ -65,6 +65,8 @@
       "empty": "No payment providers configured",
       "configured": "Already configured",
       "comingSoon": "Coming soon",
+      "webhookUrl": "Webhook URL",
+      "webhookHint": "Register this address as the webhook endpoint in the provider's dashboard. Subscribe to {events}, with the Snapshot payload style; memship ignores every other event.",
       "default": "Default",
       "status": {
         "active": "Active",

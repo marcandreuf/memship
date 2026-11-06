@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.authorization import require_any_permission, require_permission
+from app.core.config import settings as app_settings
 from app.core.encryption import decrypt_config, encrypt_config, mask_config
 from app.core.pagination import paginate
 from app.db.session import get_db
@@ -144,14 +145,23 @@ def list_active_methods(
 def list_provider_types(
     current_user: User = Depends(require_permission("settings.integrations.write")),
 ):
-    """List available provider types with config schemas and availability status."""
+    """List available provider types with config schemas and availability status.
+
+    ``webhook_url`` is set for a type that needs an endpoint registered at the
+    gateway. Only memship knows it, and the ``/api/v1`` prefix is what routes
+    it past Caddy to the API rather than to the frontend.
+    """
+    backend = app_settings.BACKEND_PUBLIC_URL.rstrip("/")
     result = []
     for provider_type, schema in PROVIDER_CONFIG_SCHEMAS.items():
+        webhook_events = schema.get("webhook_events", [])
         result.append({
             "provider_type": provider_type,
             "fields": schema["fields"],
             "sensitive_fields": schema["sensitive_fields"],
             "available": provider_type in AVAILABLE_PROVIDER_TYPES,
+            "webhook_url": f"{backend}/api/v1/webhooks/{provider_type}" if webhook_events else None,
+            "webhook_events": webhook_events,
         })
     return result
 

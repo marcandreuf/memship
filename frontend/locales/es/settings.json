@@ -65,6 +65,8 @@
       "empty": "No hay proveedores de pago configurados",
       "configured": "Ya configurado",
       "comingSoon": "Próximamente",
+      "webhookUrl": "URL del webhook",
+      "webhookHint": "Registra esta dirección como endpoint de webhook en el panel del proveedor. Suscríbete a {events}, con el estilo de payload Snapshot; memship ignora cualquier otro evento.",
       "default": "Por defecto",
       "status": {
         "active": "Activo",

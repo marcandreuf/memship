@@ -48,6 +48,7 @@ import type {
 import { useProviderErrors } from "../hooks/use-provider-errors";
 import { StoredSecretField } from "./stored-secret-field";
 import { WebhookEventsCard } from "./webhook-events-card";
+import { CopyRow } from "./copy-row";
 
 const STATUS_VARIANT: Record<string, "default" | "secondary" | "outline"> = {
   active: "default",
@@ -474,6 +475,20 @@ export function PaymentProvidersSettings() {
                     )}
                   </div>
                 )
+              )}
+
+              {getSchema()?.webhook_url && (
+                <div className="space-y-1 rounded-md border p-3">
+                  <CopyRow
+                    label={t("settings.providers.webhookUrl")}
+                    value={getSchema()!.webhook_url!}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {t("settings.providers.webhookHint", {
+                      events: getSchema()!.webhook_events.join(", "),
+                    })}
+                  </p>
+                </div>
               )}
 
               <div className="flex justify-end gap-2 pt-2">
