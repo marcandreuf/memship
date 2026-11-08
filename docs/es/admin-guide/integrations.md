@@ -1,5 +1,5 @@
 <!-- source: en/admin-guide/integrations.md -->
-<!-- source-hash: 59ca234b17f3 -->
+<!-- source-hash: 7d143bf2539b -->
 
 # Integraciones: guía de configuración
 
@@ -91,11 +91,13 @@ contraseña de aplicación).
 En la parte superior de cada pantalla de Integraciones verás uno de estos dos avisos:
 
 - 🟢 **"Cifrado activo"**, estado normal. No hay nada que hacer.
-- 🟠 **"El servidor no pudo inicializar su clave de cifrado; comprueba que el volumen de
-  almacenamiento tiene permisos de escritura."**, el servidor no ha podido ni leer ni crear su
-  archivo de clave. Hasta que se solucione, los campos secretos no se pueden guardar (los no
-  secretos, sí). Corrige los permisos del volumen de almacenamiento montado en el contenedor del
-  backend y después recarga la página.
+- 🟠 **"El servidor no tiene una clave de cifrado válida: o no pudo crear su archivo de clave
+  (comprueba que el volumen de almacenamiento tiene permisos de escritura) o MEMSHIP_SECRET_KEY no
+  es una clave válida."**, el servidor no ha podido ni leer ni crear su archivo de clave, o
+  `MEMSHIP_SECRET_KEY` contiene algo que no es una clave válida. Hasta que se solucione, los campos
+  secretos no se pueden guardar (los no secretos, sí). Corrige los permisos del volumen de
+  almacenamiento montado en el contenedor del backend, o corrige o quita `MEMSHIP_SECRET_KEY`, y
+  después recarga la página.
 
 > **Haz la copia de seguridad del archivo de clave junto con la base de datos.** Si restauras un
 > volcado de la base de datos en una máquina que tiene un archivo de clave *distinto*, los

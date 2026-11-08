@@ -1,5 +1,5 @@
 <!-- source: en/admin-guide/integrations.md -->
-<!-- source-hash: 59ca234b17f3 -->
+<!-- source-hash: 7d143bf2539b -->
 
 # Integracions: guia de configuració
 
@@ -90,10 +90,12 @@ d'aplicació).
 A la part superior de cada pantalla d'Integracions veuràs un d'aquests dos avisos:
 
 - 🟢 **"Xifratge actiu"**, estat normal. No cal fer res.
-- 🟠 **"El servidor no ha pogut inicialitzar la seva clau de xifratge; comprova que el volum
-  d'emmagatzematge té permisos d'escriptura."**, el servidor no ha pogut ni llegir ni crear el
-  fitxer de clau. Fins que no se solucioni, els camps secrets no es poden desar (els no secrets,
-  sí). Corregeix els permisos del volum d'emmagatzematge muntat al contenidor del backend i
+- 🟠 **"El servidor no té una clau de xifratge vàlida: o no ha pogut crear el fitxer de clau
+  (comprova que el volum d'emmagatzematge té permisos d'escriptura) o MEMSHIP_SECRET_KEY no és una
+  clau vàlida."**, el servidor no ha pogut ni llegir ni crear el fitxer de clau, o
+  `MEMSHIP_SECRET_KEY` conté una cosa que no és una clau vàlida. Fins que no se solucioni, els
+  camps secrets no es poden desar (els no secrets, sí). Corregeix els permisos del volum
+  d'emmagatzematge muntat al contenidor del backend, o corregeix o treu `MEMSHIP_SECRET_KEY`, i
   després recarrega la pàgina.
 
 > **Fes la còpia de seguretat del fitxer de clau juntament amb la base de dades.** Si restaures

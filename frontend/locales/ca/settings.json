@@ -222,7 +222,7 @@
       "redirectUri": "URI de redirecció",
       "backendUrl": "URL del backend",
       "consoleHint": "Enganxa la URL del backend i cada URI de redirecció a la consola de desenvolupador de Google / Apple.",
-      "encryptionKeyMissing": "El servidor no ha pogut inicialitzar la seva clau de xifratge; comprova que el volum d'emmagatzematge té permisos d'escriptura. Els camps secrets no es poden desar fins llavors.",
+      "encryptionKeyMissing": "El servidor no té una clau de xifratge vàlida: o no ha pogut crear el fitxer de clau (comprova que el volum d'emmagatzematge té permisos d'escriptura) o MEMSHIP_SECRET_KEY no és una clau vàlida. Els camps secrets no es poden desar fins que se solucioni.",
       "encryptionKeyRequired": "No s'ha pogut desar el secret: el servidor no té una clau de xifratge vàlida.",
       "nothingToSave": "No hi ha canvis per desar.",
       "encryptionActive": "Xifratge actiu: els secrets es desen xifrats amb una clau gestionada pel servidor i mai no es mostren aquí."
@@ -283,9 +283,9 @@
       "providerNotReady": "Falten credencials per a aquest proveïdor.",
       "providerNotVerified": "Aquest proveïdor no ha superat cap prova amb les credencials actuals. Desa-les, envia una prova i després activa'l.",
       "nothingToSave": "No hi ha canvis per desar.",
-      "encryptionActive": "Xifratge actiu: els secrets es desen xifrats.",
-      "encryptionKeyMissing": "Configura MEMSHIP_SECRET_KEY per poder desar secrets del proveïdor.",
-      "encryptionKeyRequired": "No es poden desar secrets sense una clau de xifratge.",
+      "encryptionActive": "Xifratge actiu: els secrets es desen xifrats amb una clau gestionada pel servidor i mai no es mostren aquí.",
+      "encryptionKeyMissing": "El servidor no té una clau de xifratge vàlida: o no ha pogut crear el fitxer de clau (comprova que el volum d'emmagatzematge té permisos d'escriptura) o MEMSHIP_SECRET_KEY no és una clau vàlida. Els camps secrets no es poden desar fins que se solucioni.",
+      "encryptionKeyRequired": "No s'ha pogut desar el secret: el servidor no té una clau de xifratge vàlida.",
       "health": {
         "unverified": "Sense verificar: encara no s'ha enviat res amb aquestes credencials. Envia una prova per comprovar-les.",
         "ok": "Funciona: l'últim correu enviat amb aquestes credencials es va acceptar el {date}.",

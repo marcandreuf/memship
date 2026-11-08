@@ -65,7 +65,7 @@ Some of the values you type here are real secrets: a Google client secret, an Ap
 At the top of each Integrations screen you will see one of two banners:
 
 - 🟢 **"Encryption active"**, normal state. Nothing to do.
-- 🟠 **"The server could not initialise its encryption key — check that the storage volume is writable."**, the server could neither read nor create its key file. Until this is fixed, secret fields cannot be saved (non-secret fields still can). Fix the permissions on the storage volume mounted into the backend container, then reload the page.
+- 🟠 **"The server has no usable encryption key: either its key file could not be created (check that the storage volume is writable) or MEMSHIP_SECRET_KEY is not a valid key."**, the server could neither read nor create its key file, or `MEMSHIP_SECRET_KEY` is set to something that is not a valid key. Until this is fixed, secret fields cannot be saved (non-secret fields still can). Fix the permissions on the storage volume mounted into the backend container, or correct or remove `MEMSHIP_SECRET_KEY`, then reload the page.
 
 > **Back up the key file together with your database.** If you restore a database dump on a machine that has a *different* key file, the stored secrets can no longer be decrypted. Nothing crashes, memship falls back to whatever is in `.env`, and the affected fields simply behave as if empty, but you will have to re-enter every secret. The key file lives on the storage volume; its path is `SECRETS_KEY_FILE`, by default `<storage>/secret.key`.
 

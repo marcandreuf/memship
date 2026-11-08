@@ -79,7 +79,7 @@ PROVIDER_CONFIG_SCHEMAS: dict[str, dict] = {
             },
             {
                 "key": "secret_key",
-                "label": "Signing Key",
+                "label": "Secret Key",
                 "type": "password",
                 "required": True,
             },
