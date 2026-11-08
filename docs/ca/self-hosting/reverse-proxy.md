@@ -1,5 +1,5 @@
 <!-- source: en/self-hosting/reverse-proxy.md -->
-<!-- source-hash: f28547d2c7c4 -->
+<!-- source-hash: de71d1cd1a5b -->
 
 # Darrere del teu propi proxy invers
 
@@ -44,7 +44,7 @@ Cada resposta també necessita aquestes capçaleres, les mateixes que posa el Ca
 
 No les jutgis des d'una pestanya del navegador: el frontend en posa quatre ell mateix, de manera
 que una pàgina pot semblar completa mentre totes les respostes de `/api/v1/*` no les tenen.
-Comprova-ho amb `curl -sI https://<your-host>/api/v1/health`.
+Comprova-ho amb `curl -s -D - -o /dev/null https://<your-host>/api/v1/health`.
 
 ## Configurar-ho amb Traefik
 
@@ -97,7 +97,7 @@ s'executa al mateix servidor.
 **5. Comprova-ho**, des de qualsevol màquina:
 
 ```bash
-curl -sI https://memship.example.org/api/v1/health
+curl -s -D - -o /dev/null https://memship.example.org/api/v1/health
 ```
 
 Hauria de respondre `200` amb les cinc capçaleres de la taula anterior i cap línia `Server`.

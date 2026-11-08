@@ -1,5 +1,5 @@
 <!-- source: en/self-hosting/reverse-proxy.md -->
-<!-- source-hash: f28547d2c7c4 -->
+<!-- source-hash: de71d1cd1a5b -->
 
 # Detrás de tu propio proxy inverso
 
@@ -45,7 +45,7 @@ Además, cada respuesta necesita estas cabeceras, las mismas que pone el Caddy i
 
 No las juzgues desde una pestaña del navegador: el frontend pone cuatro de ellas por su cuenta,
 así que una página puede parecer completa mientras a todas las respuestas de `/api/v1/*` les
-faltan. Compruébalo con `curl -sI https://<your-host>/api/v1/health`.
+faltan. Compruébalo con `curl -s -D - -o /dev/null https://<your-host>/api/v1/health`.
 
 ## Configurarlo con Traefik
 
@@ -99,7 +99,7 @@ en el mismo servidor.
 **5. Compruébalo**, desde cualquier máquina:
 
 ```bash
-curl -sI https://memship.example.org/api/v1/health
+curl -s -D - -o /dev/null https://memship.example.org/api/v1/health
 ```
 
 Debe responder `200` con las cinco cabeceras de la tabla de arriba y sin línea `Server`.

@@ -41,7 +41,7 @@ Every response also needs these headers, the same ones the bundled Caddy sets:
 
 Do not judge them from a browser tab: the frontend sets four of them itself, so a page can look
 complete while every `/api/v1/*` response lacks them. Check with
-`curl -sI https://<your-host>/api/v1/health`.
+`curl -s -D - -o /dev/null https://<your-host>/api/v1/health`.
 
 ## Setting it up with Traefik
 
@@ -93,7 +93,7 @@ same server.
 **5. Check it**, from any machine:
 
 ```bash
-curl -sI https://memship.example.org/api/v1/health
+curl -s -D - -o /dev/null https://memship.example.org/api/v1/health
 ```
 
 It should answer `200` with the five headers in the table above and no `Server` line.
