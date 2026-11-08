@@ -222,7 +222,7 @@
       "redirectUri": "URI de redirección",
       "backendUrl": "URL del backend",
       "consoleHint": "Pega la URL del backend y cada URI de redirección en la consola de desarrollador de Google / Apple.",
-      "encryptionKeyMissing": "El servidor no pudo inicializar su clave de cifrado; comprueba que el volumen de almacenamiento tiene permisos de escritura. Los campos secretos no se pueden guardar hasta entonces.",
+      "encryptionKeyMissing": "El servidor no tiene una clave de cifrado válida: o no pudo crear su archivo de clave (comprueba que el volumen de almacenamiento tiene permisos de escritura) o MEMSHIP_SECRET_KEY no es una clave válida. Los campos secretos no se pueden guardar hasta que se solucione.",
       "encryptionKeyRequired": "No se pudo guardar el secreto: el servidor no tiene una clave de cifrado válida.",
       "nothingToSave": "No hay cambios que guardar.",
       "encryptionActive": "Cifrado activo: los secretos se guardan cifrados con una clave gestionada por el servidor y nunca se muestran aquí."
@@ -283,9 +283,9 @@
       "providerNotReady": "Faltan credenciales para ese proveedor.",
       "providerNotVerified": "Ese proveedor no ha superado una prueba con sus credenciales actuales. Guárdalas, envía una prueba y después actívalo.",
       "nothingToSave": "No hay cambios que guardar.",
-      "encryptionActive": "Cifrado activo: los secretos se guardan cifrados.",
-      "encryptionKeyMissing": "Configura MEMSHIP_SECRET_KEY para poder guardar secretos del proveedor.",
-      "encryptionKeyRequired": "No se pueden guardar secretos sin una clave de cifrado.",
+      "encryptionActive": "Cifrado activo: los secretos se guardan cifrados con una clave gestionada por el servidor y nunca se muestran aquí.",
+      "encryptionKeyMissing": "El servidor no tiene una clave de cifrado válida: o no pudo crear su archivo de clave (comprueba que el volumen de almacenamiento tiene permisos de escritura) o MEMSHIP_SECRET_KEY no es una clave válida. Los campos secretos no se pueden guardar hasta que se solucione.",
+      "encryptionKeyRequired": "No se pudo guardar el secreto: el servidor no tiene una clave de cifrado válida.",
       "health": {
         "unverified": "Sin verificar: todavía no se ha enviado nada con estas credenciales. Envía una prueba para comprobarlas.",
         "ok": "Funciona: el último correo enviado con estas credenciales se aceptó el {date}.",

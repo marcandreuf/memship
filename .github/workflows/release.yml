@@ -122,6 +122,11 @@ jobs:
       # a website reader only ever sees docs/<locale>/README.md. Each states the
       # version in its own language, so the grep is for "memship <version>"
       # rather than for an English sentence.
+      #
+      # The worked examples are checked too: every MEMSHIP_VERSION= and
+      # IMAGE_TAG=<x.y.z> an operator copies out of a guide. 3.1.0 shipped with
+      # all of them still on 3.0.1, in three languages, because nothing here
+      # looked past the index pages (#561).
       - name: Docs version guard
         env:
           VERSION: ${{ steps.ver.outputs.version }}
@@ -136,6 +141,13 @@ jobs:
               failed=1
             fi
           done
+          stale="$(grep -rnoE '(MEMSHIP_VERSION|IMAGE_TAG)=[0-9]+\.[0-9]+\.[0-9]+' docs | grep -vF "=$VERSION" || true)"
+          if [ -n "$stale" ]; then
+            while IFS= read -r hit; do
+              echo "::error file=${hit%%:*}::${hit} pins a release other than $VERSION. Bump the worked example before releasing."
+            done <<<"$stale"
+            failed=1
+          fi
           [ "$failed" -eq 0 ] || exit 1
 
       - name: Set up Buildx

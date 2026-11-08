@@ -1,5 +1,5 @@
 <!-- source: en/getting-started/installation.md -->
-<!-- source-hash: 03f6cba44be8 -->
+<!-- source-hash: 0a7e881cfb43 -->
 
 # Instalación (Docker)
 
@@ -41,7 +41,7 @@ una versión de la [página de versiones](https://github.com/marcandreuf/memship
 todo el proceso:
 
 ```bash
-MEMSHIP_VERSION=3.0.1
+MEMSHIP_VERSION=3.1.0
 
 curl -fsSLO "https://raw.githubusercontent.com/marcandreuf/memship/v${MEMSHIP_VERSION}/scripts/vps-bootstrap.sh"
 chmod +x vps-bootstrap.sh
@@ -99,6 +99,8 @@ Ahora conviértete en el usuario de despliegue; nada de lo que sigue necesita ro
 escribe `.env` dentro del directorio de instalación y tiene que ser su dueño:
 
 ```bash
+MEMSHIP_VERSION=3.1.0
+
 curl -fsSL "https://github.com/marcandreuf/memship/archive/refs/tags/v${MEMSHIP_VERSION}.tar.gz" \
   | tar -xz -C /srv/openmemship/app --strip-components=1
 cd /srv/openmemship/app
@@ -243,7 +245,7 @@ Las máquinas con Debian y Ubuntu no se ven afectadas.
 Si prefieres no usar `install.sh`, los pasos manuales equivalentes son:
 
 ```bash
-MEMSHIP_VERSION=3.0.1
+MEMSHIP_VERSION=3.1.0
 
 mkdir -p memship
 curl -fsSL "https://github.com/marcandreuf/memship/archive/refs/tags/v${MEMSHIP_VERSION}.tar.gz" \

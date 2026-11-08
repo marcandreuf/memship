@@ -1,5 +1,5 @@
 <!-- source: en/admin-guide/payment-providers.md -->
-<!-- source-hash: 08601d737a6b -->
+<!-- source-hash: f4b97193d484 -->
 
 # Proveïdors de pagament: guia de configuració
 
@@ -285,7 +285,7 @@ el portal canvia d'un banc a un altre. Redsys publica la documentació tècnica 
 
 - **Codi de comerç (FUC)**, el teu identificador de comerç, de 7 a 9 dígits.
 - **ID de terminal**, numèric, normalment `1` tret que el banc te n'hagi emès diversos.
-- **Clau de signatura**, el secret que serveix per signar les peticions i verificar les
+- **Clau secreta** (la clau de signatura), el secret que serveix per signar les peticions i verificar les
   notificacions. Als portals dels bancs sol aparèixer com a *clave secreta de encriptación* o
   *clave de firma*. **Els entorns de proves i de producció tenen claus diferents.**
 - **Codi de moneda**, numèric ISO 4217. Per a l'euro és **978**, que és el valor per defecte.
@@ -297,7 +297,7 @@ l'adreça de retorn a cada petició de pagament, així que a la passarel·la se 
 respondre cada vegada. No hi ha res a configurar al portal del banc ni res a mantenir
 sincronitzat.
 
-Per la mateixa raó no hi ha un secret de webhook separat. La **Clau de signatura** fa les dues
+Per la mateixa raó no hi ha un secret de webhook separat. La **Clau secreta** fa les dues
 feines: memship signa amb ella les peticions sortints i verifica amb ella les notificacions
 entrants. Un sol valor, introduït una sola vegada.
 
@@ -310,7 +310,7 @@ Si mai necessites saber l'adreça que envia memship, és
 |---|---|
 | Codi de comerç (FUC) | 7–9 dígits, del teu banc |
 | ID de terminal | numèric, del teu banc |
-| Clau de signatura | la clau de signatura **de l'entorn que has seleccionat** |
+| Clau secreta | la clau de signatura **de l'entorn que has seleccionat** |
 | Entorn | `test` mentre fas proves, `production` quan és real |
 | Codi de moneda | `978` per a l'euro |
 
@@ -419,7 +419,7 @@ continuar quadrant amb el banc.
 |---|---|---|---|---|
 | Codi de comerç (FUC) | sí | no | només dígits; 7–9 amb Provar connexió | el teu banc |
 | ID de terminal | sí | no | només dígits | el teu banc |
-| Clau de signatura | sí | sí | no | el teu banc, per entorn |
+| Clau secreta | sí | sí | no | el teu banc, per entorn |
 | Entorn | sí | no | `test` o `production` | tria teva |
 | Codi de moneda | sí | no | exactament 3 dígits | ISO 4217, `978` per a l'euro |
 | Oferir Bizum | no | no | n/a | el teu banc, un cop et confirmi Bizum al terminal. Desactivat per defecte |

@@ -222,10 +222,10 @@
       "redirectUri": "Redirect URI",
       "backendUrl": "Backend URL",
       "consoleHint": "Paste the backend URL and each redirect URI into the Google / Apple developer console.",
-      "encryptionKeyMissing": "The server could not initialise its encryption key — check that the storage volume is writable. Secret fields cannot be saved until it is.",
+      "encryptionKeyMissing": "The server has no usable encryption key: either its key file could not be created (check that the storage volume is writable) or MEMSHIP_SECRET_KEY is not a valid key. Secret fields cannot be saved until this is fixed.",
       "encryptionKeyRequired": "Could not save the secret: the server has no working encryption key.",
       "nothingToSave": "No changes to save.",
-      "encryptionActive": "Encryption active — secrets are stored encrypted with a server-managed key and are never shown here."
+      "encryptionActive": "Encryption active: secrets are stored encrypted with a server-managed key and are never shown here."
     },
     "paymentsGeneral": "General",
     "secretField": {
@@ -283,9 +283,9 @@
       "providerNotReady": "Credentials for that provider are missing.",
       "providerNotVerified": "That provider has not passed a test with its current credentials. Save them, send a test, then activate it.",
       "nothingToSave": "No changes to save.",
-      "encryptionActive": "Encryption active: secrets are stored encrypted.",
-      "encryptionKeyMissing": "Set MEMSHIP_SECRET_KEY to store provider secrets.",
-      "encryptionKeyRequired": "Secrets cannot be saved without an encryption key.",
+      "encryptionActive": "Encryption active: secrets are stored encrypted with a server-managed key and are never shown here.",
+      "encryptionKeyMissing": "The server has no usable encryption key: either its key file could not be created (check that the storage volume is writable) or MEMSHIP_SECRET_KEY is not a valid key. Secret fields cannot be saved until this is fixed.",
+      "encryptionKeyRequired": "Could not save the secret: the server has no working encryption key.",
       "health": {
         "unverified": "Not verified: nothing has been sent with these credentials yet. Send a test to check them.",
         "ok": "Working: the last email through these credentials was accepted on {date}.",

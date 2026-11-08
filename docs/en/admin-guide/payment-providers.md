@@ -183,14 +183,14 @@ These do not come from a self-service dashboard the way Stripe's do, they are is
 
 - **Merchant Code (FUC)**, your merchant identifier, 7 to 9 digits.
 - **Terminal ID**, numeric, usually `1` unless your bank issued several.
-- **Signing Key**, the secret used to sign requests and verify notifications. In bank portals it is usually labelled *clave secreta de encriptación* or *clave de firma*. **The test and production environments have different keys.**
+- **Secret Key** (the signing key), the secret used to sign requests and verify notifications. In bank portals it is usually labelled *clave secreta de encriptación* or *clave de firma*. **The test and production environments have different keys.**
 - **Currency Code**, ISO 4217 numeric. For euro this is **978**, which is the default.
 
 ### 5.3 Why there is no webhook to configure
 
 Unlike Stripe, **you do not register a notification URL anywhere.** memship includes the callback address with every individual payment request, so the gateway is told where to reply each time. There is nothing to set up in the bank's portal and nothing to keep in sync.
 
-For the same reason there is no separate webhook secret. The **Signing Key** does both jobs: memship signs outgoing requests with it and verifies incoming notifications against it. One value, entered once.
+For the same reason there is no separate webhook secret. The **Secret Key** does both jobs: memship signs outgoing requests with it and verifies incoming notifications against it. One value, entered once.
 
 If you ever need to know the address memship sends, it is `https://<your-memship-address>/api/v1/webhooks/redsys`, but you should not have to configure it anywhere.
 
@@ -200,7 +200,7 @@ If you ever need to know the address memship sends, it is `https://<your-memship
 |---|---|
 | Merchant Code (FUC) | 7–9 digits, from your bank |
 | Terminal ID | numeric, from your bank |
-| Signing Key | the signing key **for the environment you selected** |
+| Secret Key | the signing key **for the environment you selected** |
 | Environment | `test` while testing, `production` when live |
 | Currency Code | `978` for euro |
 
@@ -274,7 +274,7 @@ If the gateway took the money and the receipt is still unpaid, mark it paid by h
 |---|---|---|---|---|
 | Merchant Code (FUC) | yes | no | digits only; 7–9 on Test | your bank |
 | Terminal ID | yes | no | digits only | your bank |
-| Signing Key | yes | yes | no | your bank, per environment |
+| Secret Key | yes | yes | no | your bank, per environment |
 | Environment | yes | no | `test` or `production` | your choice |
 | Currency Code | yes | no | exactly 3 digits | ISO 4217, `978` for euro |
 | Offer Bizum | no | no | n/a | your bank, once it confirms Bizum on the terminal. Off by default |

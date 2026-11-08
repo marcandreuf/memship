@@ -1,5 +1,5 @@
 <!-- source: en/admin-guide/payment-providers.md -->
-<!-- source-hash: 08601d737a6b -->
+<!-- source-hash: f4b97193d484 -->
 
 # Proveedores de pago: guía de configuración
 
@@ -289,7 +289,7 @@ incluye la dirección de retorno en cada petición de pago, así que a la pasare
 adónde responder. No hay nada que configurar en el portal del banco ni nada que mantener
 sincronizado.
 
-Por la misma razón no hay un secreto de webhook aparte. La **clave de firma** hace los dos
+Por la misma razón no hay un secreto de webhook aparte. La **Clave secreta** hace los dos
 trabajos: memship firma con ella las peticiones que salen y verifica con ella las notificaciones que
 llegan. Un solo valor, introducido una vez.
 

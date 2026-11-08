@@ -1,5 +1,5 @@
 <!-- source: en/getting-started/quickstart.md -->
-<!-- source-hash: d496fab5e3d2 -->
+<!-- source-hash: 191c18947f23 -->
 
 # Inici ràpid
 
@@ -50,8 +50,8 @@ Per avaluar una versió concreta, defineix `IMAGE_TAG` a totes dues ordres. Ales
 d'aquesta versió:
 
 ```bash
-IMAGE_TAG=3.0.1 docker compose pull
-IMAGE_TAG=3.0.1 PORT=8081 docker compose up -d
+IMAGE_TAG=3.1.0 docker compose pull
+IMAGE_TAG=3.1.0 PORT=8081 docker compose up -d
 ```
 
 ## 3. Executa la posada en marxa

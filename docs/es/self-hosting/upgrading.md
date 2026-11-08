@@ -1,5 +1,5 @@
 <!-- source: en/self-hosting/upgrading.md -->
-<!-- source-hash: 48b55f4628c0 -->
+<!-- source-hash: ff3c3ecab047 -->
 
 # Actualizar
 
@@ -35,7 +35,7 @@ los ajustes obligatorios nuevos se indican ahí, en la
 Después, dos órdenes. Refresca los archivos de despliegue y luego aplica la versión:
 
 ```bash
-MEMSHIP_VERSION=3.0.1
+MEMSHIP_VERSION=3.1.0
 MEMSHIP_APP=/srv/openmemship/app          # wherever your install lives
 
 curl -fsSL "https://github.com/marcandreuf/memship/archive/refs/tags/v${MEMSHIP_VERSION}.tar.gz" \
