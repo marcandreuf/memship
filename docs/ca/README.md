@@ -83,6 +83,8 @@ Per a les persones sòcies que fan servir el portal.
   restauració
 - [Actualitzar](self-hosting/upgrading.md), etiquetes d'imatge i migracions
 - [Resolució de problemes](self-hosting/troubleshooting.md), quan alguna cosa no arrenca
+- [Darrere del teu propi proxy invers](self-hosting/reverse-proxy.md), Traefik en lloc del Caddy inclòs, per a un
+  servidor que ja té un proxy
 
 ## Desenvolupament (contribuir)
 

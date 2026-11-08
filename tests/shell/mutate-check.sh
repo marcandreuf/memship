@@ -130,5 +130,14 @@ mutate "$RESTORE" "the database password is put on the docker command line" \
 mutate "$RESTORE" "complete is announced whether or not the API answered" \
     's/if \[\[ "\$api_up" -eq 0 \]\]/if [[ "$api_up" -eq 9 ]]/'
 
+mutate "$INSTALL" "Caddy is reloaded whether or not it is part of the stack" \
+    's/if docker compose config --services | grep -qx caddy; then/if true; then/'
+
+mutate "$RESTORE" "a restore pins docker-compose.yml, so its up -d drops the external-proxy overlay" \
+    's/^docker compose up -d$/docker compose -f docker-compose.yml up -d/'
+
+mutate "scripts/db-backup.sh" "the pre-upgrade snapshot pins docker-compose.yml" \
+    's/^docker compose exec -T db /docker compose -f docker-compose.yml exec -T db /'
+
 printf '\n%s mutations, %s survived\n' "$checked" "$survivors"
 [ "$survivors" -eq 0 ]

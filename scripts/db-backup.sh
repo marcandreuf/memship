@@ -7,7 +7,12 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
-COMPOSE_FILE="$REPO_ROOT/docker-compose.yml"
+# Compose runs from the deployment directory with no -f, so it reads the same
+# files as every other script: docker-compose.yml, plus whatever COMPOSE_FILE in
+# .env layers over it (the external-proxy overlay). Pinning -f here used to make
+# a restore's `up -d` recreate the stack without the overlay, starting the
+# bundled Caddy on 80/443 and dropping the proxy's routing.
+cd "$REPO_ROOT"
 RETENTION_DAYS=10
 
 # Backups live under the data root: that is what docker-compose.yml bind-mounts
@@ -43,7 +48,7 @@ echo -e "${BLUE}=== Memship Database Backup ===${NC}"
 echo ""
 
 # Check if db container is running
-if ! docker compose -f "$COMPOSE_FILE" ps --status running 2>/dev/null | grep -q "memship-db"; then
+if ! docker compose ps --status running 2>/dev/null | grep -q "memship-db"; then
     echo -e "${RED}x${NC} Database container is not running"
     echo "Start it with: docker compose up -d db"
     exit 1
@@ -65,7 +70,7 @@ HOST_GID_VAL="${HOST_GID_VAL:-$(id -g)}"
 # Run pg_dump inside the container and write to the bind-mounted /backups dir
 BACKUP_NAME="memship_${TIMESTAMP}.sql.gz"
 echo -e "${BLUE}i${NC} Creating backup..."
-docker compose -f "$COMPOSE_FILE" exec -T db \
+docker compose exec -T db \
     sh -c "pg_dump -U memship -d memship_db --clean --if-exists | gzip > /backups/${BACKUP_NAME} \
            && chown ${HOST_UID_VAL}:${HOST_GID_VAL} /backups/${BACKUP_NAME} \
            && chmod 600 /backups/${BACKUP_NAME}"

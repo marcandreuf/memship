@@ -52,6 +52,20 @@ assert_called 'compose up -d --force-recreate caddy'
 done_case
 
 
+it "does not start the bundled Caddy when an external proxy has it switched off"
+# The external-proxy overlay parks Caddy in a profile nobody activates. Naming
+# it in `up --force-recreate caddy` would start it anyway, on 80/443, next to
+# the operator's own proxy.
+new_sandbox install-external-proxy
+write_env 2.13.0
+STUB_DB_RUNNING=1 STUB_HAS_USERS=1 STUB_NO_CADDY=1 run_script scripts/install.sh --tag 2.14.0 --upgrade
+assert_status 0
+assert_called 'compose up -d'
+assert_not_called 'compose .*caddy'
+assert_says "the bundled Caddy is off"
+done_case
+
+
 it "moves IMAGE_TAG in place and leaves the rest of .env alone"
 new_sandbox install-retag
 write_env 2.13.0

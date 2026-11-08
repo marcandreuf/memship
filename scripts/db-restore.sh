@@ -18,7 +18,12 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
-COMPOSE_FILE="$REPO_ROOT/docker-compose.yml"
+# Compose runs from the deployment directory with no -f, so it reads the same
+# files as every other script: docker-compose.yml, plus whatever COMPOSE_FILE in
+# .env layers over it (the external-proxy overlay). Pinning -f here used to make
+# a restore's `up -d` recreate the stack without the overlay, starting the
+# bundled Caddy on 80/443 and dropping the proxy's routing.
+cd "$REPO_ROOT"
 
 # Must match db-backup.sh: backups live under the data root, which is what
 # docker-compose.yml bind-mounts onto /backups in the db container.
@@ -184,7 +189,7 @@ fi
 echo ""
 
 # Check if containers are running
-if ! docker compose -f "$COMPOSE_FILE" ps --status running 2>/dev/null | grep -q "memship-db"; then
+if ! docker compose ps --status running 2>/dev/null | grep -q "memship-db"; then
     echo -e "${RED}x${NC} Database container is not running"
     echo "Start it with: docker compose up -d db"
     exit 1
@@ -225,7 +230,7 @@ fi
 HOST_UID_VAL="${HOST_UID_VAL:-$(id -u)}"
 HOST_GID_VAL="${HOST_GID_VAL:-$(id -g)}"
 
-if docker compose -f "$COMPOSE_FILE" exec -T db \
+if docker compose exec -T db \
         sh -c "pg_dump -U memship -d memship_db --clean --if-exists | gzip > /backups/${SAFETY_NAME} \
                && chown ${HOST_UID_VAL}:${HOST_GID_VAL} /backups/${SAFETY_NAME} \
                && chmod 600 /backups/${SAFETY_NAME}" \
@@ -241,20 +246,20 @@ fi
 
 # Stop API to prevent connections during restore
 echo -e "${BLUE}i${NC} Stopping API container..."
-docker compose -f "$COMPOSE_FILE" stop api 2>/dev/null || true
+docker compose stop api 2>/dev/null || true
 
 # Drop and recreate database
 echo -e "${BLUE}i${NC} Dropping and recreating database..."
-docker compose -f "$COMPOSE_FILE" exec -T db \
+docker compose exec -T db \
     psql -U memship -d postgres -c "DROP DATABASE IF EXISTS memship_db;"
-docker compose -f "$COMPOSE_FILE" exec -T db \
+docker compose exec -T db \
     psql -U memship -d postgres -c "CREATE DATABASE memship_db OWNER memship;"
 
 # Restore from backup. ON_ERROR_STOP makes psql exit non-zero on the first failed
 # statement; pipefail (set above) makes that the pipeline's status rather than
 # gunzip's. Without both, a dump that fails every statement still reports success.
 echo -e "${BLUE}i${NC} Restoring from backup..."
-if ! gunzip -c "$BACKUP_FILE" | docker compose -f "$COMPOSE_FILE" exec -T db \
+if ! gunzip -c "$BACKUP_FILE" | docker compose exec -T db \
         psql -U memship -d memship_db --quiet -v ON_ERROR_STOP=1; then
     echo ""
     echo -e "${RED}${BOLD}=== RESTORE FAILED ===${NC}"
@@ -293,7 +298,7 @@ fi
 MEMSHIP_RESTORE_DB_PASSWORD="${MEMSHIP_RESTORE_DB_PASSWORD:-memship}"
 
 echo -e "${BLUE}i${NC} Setting the database password to .env's DB_PASSWORD..."
-if ! docker compose -f "$COMPOSE_FILE" exec -T -e MEMSHIP_RESTORE_DB_PASSWORD db sh -c \
+if ! docker compose exec -T -e MEMSHIP_RESTORE_DB_PASSWORD db sh -c \
         'printf "%s\n" "ALTER ROLE memship PASSWORD :'\''pw'\'';" | psql -U memship -d postgres --quiet -v ON_ERROR_STOP=1 -v pw="$MEMSHIP_RESTORE_DB_PASSWORD"' \
         >/dev/null; then
     echo ""
@@ -307,7 +312,7 @@ fi
 
 # Restart all services
 echo -e "${BLUE}i${NC} Restarting services..."
-docker compose -f "$COMPOSE_FILE" up -d
+docker compose up -d
 
 # `up -d` returning means the containers were created, not that the instance
 # works: the API logs in to the database and applies migrations before it
@@ -335,7 +340,7 @@ if [[ "$api_up" -eq 0 ]]; then
     echo -e "  The data from $(basename "$BACKUP_FILE") is in place, but the API did not"
     echo -e "  answer within ${TIMEOUT}s. Its last lines:"
     echo ""
-    docker compose -f "$COMPOSE_FILE" logs api --tail 20 --no-log-prefix 2>&1 | sed 's/^/    /' || true
+    docker compose logs api --tail 20 --no-log-prefix 2>&1 | sed 's/^/    /' || true
     echo ""
     echo -e "  Check: docker compose ps; docker compose logs api"
     echo ""

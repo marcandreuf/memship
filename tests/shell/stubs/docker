@@ -142,6 +142,12 @@ case "$SUB" in
 
     config)
         case " $* " in
+            *' --services '*)
+                # install.sh asks whether Caddy is part of the stack before it
+                # reloads it. STUB_NO_CADDY=1 is the external-proxy overlay,
+                # which parks Caddy in a profile nobody activates.
+                printf 'db\nredis\napi\nfrontend\ncelery-worker\ncelery-beat\n'
+                [ "${STUB_NO_CADDY:-0}" = "1" ] || printf 'caddy\n' ;;
             *' --images '*)
                 printf 'ghcr.io/marcandreuf/memship-backend:%s\n' "${IMAGE_TAG:-latest}"
                 printf 'ghcr.io/marcandreuf/memship-frontend:%s\n' "${IMAGE_TAG:-latest}"

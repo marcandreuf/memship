@@ -69,6 +69,7 @@ jobs:
             caddy:
               - 'Caddyfile'
               - 'docker-compose.quickstart.yml'
+              - 'docker-compose.external-proxy.yml'
               - 'scripts/check-caddy-headers.sh'
             # scripts/ matched nothing here until now, so a PR touching only the
             # deployment scripts reported `Detect changes: pass` and every test

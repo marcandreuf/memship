@@ -1,0 +1,95 @@
+# Run Memship behind a reverse proxy you already operate (Traefik), instead of
+# the bundled Caddy. Layered over docker-compose.yml; turn it on in .env:
+#
+#   COMPOSE_FILE=docker-compose.yml:docker-compose.external-proxy.yml
+#   MEMSHIP_HOST=memship.example.org
+#   TRAEFIK_NETWORK=traefik
+#
+# so every `docker compose` the scripts run reads both files. Full guide:
+# docs/en/self-hosting/reverse-proxy.md. The bundled Caddy stays the default and
+# the recommended path; nothing below changes the application containers, only
+# what sits in front of them.
+#
+# The routes and headers are the Caddyfile's, re-derived, not invented:
+#
+# - /api/v1/* goes to the API, everything else to the frontend. There is no
+#   /uploads route, on purpose. Uploaded files reach the browser through the
+#   frontend's /api/uploads proxy, which forwards the session cookie to the
+#   API's authenticated uploads router. A /uploads rule pointing at the API
+#   bypasses the frontend, and once handed out the encryption key and the SEPA
+#   files (see the Caddyfile).
+# - The response headers are the Caddyfile's header block, label for label.
+#   scripts/check-caddy-headers.sh fails CI if this list and the Caddyfile's
+#   drift apart: the frontend sets four of the same headers itself, so a
+#   missing one only shows on a direct request to /api/v1/* (#73).
+
+# The Caddyfile's header block, as one Traefik middleware. It is attached to the
+# api and the frontend both, so neither container's routers depend on the other
+# being up: a middleware defined on one container only disappears with it, and
+# the routers using it stop serving. An empty value removes the header, which is
+# how Traefik spells Caddy's `-Server`.
+x-memship-headers: &memship-headers
+  traefik.http.middlewares.memship-headers.headers.customresponseheaders.X-Content-Type-Options: "nosniff"
+  traefik.http.middlewares.memship-headers.headers.customresponseheaders.Content-Security-Policy: "frame-ancestors 'none'"
+  traefik.http.middlewares.memship-headers.headers.customresponseheaders.X-Frame-Options: "DENY"
+  traefik.http.middlewares.memship-headers.headers.customresponseheaders.Referrer-Policy: "strict-origin-when-cross-origin"
+  traefik.http.middlewares.memship-headers.headers.customresponseheaders.Strict-Transport-Security: "max-age=31536000"
+  traefik.http.middlewares.memship-headers.headers.customresponseheaders.Server: ""
+
+services:
+  # Off. A profile nobody activates keeps the service defined, so the base
+  # file's depends_on and the scripts still resolve, without it binding 80/443
+  # next to your proxy. scripts/install.sh only reloads Caddy when it is part
+  # of the stack, so an upgrade does not start it either.
+  caddy:
+    profiles: ["bundled-proxy-disabled"]
+
+  api:
+    networks: [default, proxy]
+    labels:
+      <<: *memship-headers
+      traefik.enable: "true"
+      traefik.docker.network: "${TRAEFIK_NETWORK:-traefik}"
+      traefik.http.services.memship-api.loadbalancer.server.port: "8000"
+
+      traefik.http.routers.memship-api.rule: "Host(`${MEMSHIP_HOST:?set MEMSHIP_HOST in .env}`) && PathPrefix(`/api/v1/`)"
+      traefik.http.routers.memship-api.priority: "200"
+      traefik.http.routers.memship-api.entrypoints: "${TRAEFIK_ENTRYPOINT:-websecure}"
+      traefik.http.routers.memship-api.tls: "true"
+      traefik.http.routers.memship-api.tls.certresolver: "${TRAEFIK_CERTRESOLVER:-letsencrypt}"
+      traefik.http.routers.memship-api.service: "memship-api"
+      traefik.http.routers.memship-api.middlewares: "memship-headers"
+
+      # Payment-provider callbacks get a router of their own, above the API's.
+      # They POST from the provider's servers and authenticate by signature, so
+      # they can never present credentials: if you put the site behind basic
+      # auth or an SSO middleware, add it to the other two routers, never here,
+      # or every payment confirmation is refused.
+      traefik.http.routers.memship-webhooks.rule: "Host(`${MEMSHIP_HOST:?set MEMSHIP_HOST in .env}`) && PathPrefix(`/api/v1/webhooks/`)"
+      traefik.http.routers.memship-webhooks.priority: "300"
+      traefik.http.routers.memship-webhooks.entrypoints: "${TRAEFIK_ENTRYPOINT:-websecure}"
+      traefik.http.routers.memship-webhooks.tls: "true"
+      traefik.http.routers.memship-webhooks.tls.certresolver: "${TRAEFIK_CERTRESOLVER:-letsencrypt}"
+      traefik.http.routers.memship-webhooks.service: "memship-api"
+      traefik.http.routers.memship-webhooks.middlewares: "memship-headers"
+
+  frontend:
+    networks: [default, proxy]
+    labels:
+      <<: *memship-headers
+      traefik.enable: "true"
+      traefik.docker.network: "${TRAEFIK_NETWORK:-traefik}"
+      traefik.http.services.memship-frontend.loadbalancer.server.port: "3000"
+
+      traefik.http.routers.memship-frontend.rule: "Host(`${MEMSHIP_HOST:?set MEMSHIP_HOST in .env}`)"
+      traefik.http.routers.memship-frontend.priority: "100"
+      traefik.http.routers.memship-frontend.entrypoints: "${TRAEFIK_ENTRYPOINT:-websecure}"
+      traefik.http.routers.memship-frontend.tls: "true"
+      traefik.http.routers.memship-frontend.tls.certresolver: "${TRAEFIK_CERTRESOLVER:-letsencrypt}"
+      traefik.http.routers.memship-frontend.service: "memship-frontend"
+      traefik.http.routers.memship-frontend.middlewares: "memship-headers"
+
+networks:
+  proxy:
+    external: true
+    name: "${TRAEFIK_NETWORK:-traefik}"

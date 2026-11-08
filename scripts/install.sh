@@ -476,8 +476,17 @@ docker compose up -d
 # container running the old one. That makes re-running this script — the
 # documented way to upgrade — silently skip any proxy change a release ships,
 # which is how a 2.3.0 upgrade could end up serving no security headers.
-step "Reloading the proxy"
-docker compose up -d --force-recreate caddy
+#
+# Only when Caddy is part of this stack. Behind an external proxy the overlay
+# parks it in a profile nobody activates, and naming a service explicitly starts
+# it whatever its profile says: this line would bring Caddy up on 80/443 next to
+# the operator's own proxy. `config --services` lists only the active ones.
+if docker compose config --services | grep -qx caddy; then
+    step "Reloading the proxy"
+    docker compose up -d --force-recreate caddy
+else
+    info "the bundled Caddy is off (external proxy), not starting it"
+fi
 
 step "Done"
 cat <<EOF
