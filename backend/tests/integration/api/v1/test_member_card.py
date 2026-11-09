@@ -595,6 +595,65 @@ class TestTheCardIsWithheldPerType:
         assert response.status_code == 200, response.text
         assert response.json()["member_id"] == member.id
 
+    def test_an_admin_ticking_the_type_issues_the_card(self, client, db):
+        """The transition itself, through the endpoint the Settings form calls.
+
+        The test above starts from a type that already issues one, and every
+        other test here sets ``issues_card`` on the model, so nothing covered
+        the single act the v3.1.0 notes instruct every self-hoster to perform:
+        the card is off on every type after the upgrade, including existing
+        ones, and is switched on per type from Settings. The Cypress spec only
+        reads the flag to find a type that already issues a card, so it did not
+        cover it either.
+        """
+        _ensure_org(db)
+        admin = _create_admin(db, email="tick-admin@examplee6e3b1.com")
+        user, member = _create_member_user(
+            db,
+            email="tick-member@examplee6e3b1.com",
+            type_name="Friends",
+            issues_card=False,
+        )
+        type_id = member.membership_type_id
+
+        client.cookies.update(_auth_cookie(user))
+        assert client.get("/api/v1/me/card").status_code == 404
+
+        client.cookies.update(_auth_cookie(admin))
+        ticked = client.put(
+            f"/api/v1/membership-types/{type_id}", json={"issues_card": True}
+        )
+        assert ticked.status_code == 200, ticked.text
+        assert ticked.json()["issues_card"] is True
+
+        client.cookies.update(_auth_cookie(user))
+        assert client.get("/api/v1/me/card").status_code == 200
+
+    def test_unticking_the_type_withholds_it_again(self, client, db):
+        """The same switch in the other direction, so an administrator who
+        turns it on by mistake can take it back."""
+        _ensure_org(db)
+        admin = _create_admin(db, email="untick-admin@examplee6e3b1.com")
+        user, member = _create_member_user(
+            db,
+            email="untick-member@examplee6e3b1.com",
+            type_name="Paid",
+            issues_card=True,
+        )
+        type_id = member.membership_type_id
+
+        client.cookies.update(_auth_cookie(user))
+        assert client.get("/api/v1/me/card").status_code == 200
+
+        client.cookies.update(_auth_cookie(admin))
+        untick = client.put(
+            f"/api/v1/membership-types/{type_id}", json={"issues_card": False}
+        )
+        assert untick.status_code == 200, untick.text
+
+        client.cookies.update(_auth_cookie(user))
+        assert client.get("/api/v1/me/card").status_code == 404
+
     def test_the_instance_flag_still_governs_above_the_type(self, client, db):
         """Two levels with distinct meanings, which is the decision on #428: the
         flag answers whether the card module exists on this instance at all, the
