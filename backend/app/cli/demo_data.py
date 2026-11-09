@@ -371,13 +371,15 @@ def _next_date_for(weekday: int, min_ahead: int = 1) -> date:
 # the ``--demo`` path only: a real first install opts into each module one at a
 # time, `install.sh` produces exactly that, and #301 and #302 were both defects a
 # pre-configured seed would have hidden. What this adds is the other half — an
-# instance somebody can review, rather than one where nineteen of the twenty-one
-# flags are absent and seven routes redirect to the dashboard (#317).
+# instance somebody can review, rather than one where almost every flag is
+# absent and seven routes redirect to the dashboard (#317). Stated without a
+# count on purpose: the set grows, and a number here goes stale silently.
 #
 # The numerics repeat the values the code already falls back to when the key is
 # absent — ``reminder_service.py`` (3/7/3), ``recurring_billing_service.py``
-# (day 1, 7 due days), ``lapse_service.py`` (21 grace days) and
-# ``bookings/rules.py`` (14 days, 24 hours). Repeating them rather than picking
+# (day 1, 7 due days), ``lapse_service.py`` (21 grace days),
+# ``bookings/rules.py`` (14 days, 24 hours) and ``billing/rules.py`` (the 5 and
+# 1000 donation bounds). Repeating them rather than picking
 # new ones means the Settings form shows a reviewer the numbers the instance was
 # already running on, instead of a second set invented here.
 DEMO_FEATURES: dict[str, object] = {
@@ -399,6 +401,9 @@ DEMO_FEATURES: dict[str, object] = {
     "membership_lapse_enabled": True,
     "membership_fee_due_days": 7,
     "membership_lapse_grace_days": 21,
+    "member_donations_enabled": True,
+    "donation_min_amount": 5,
+    "donation_max_amount": 1000,
     # The one value here that is an address rather than a switch. The reserved
     # `.example` TLD cannot receive mail — the same guarantee the member
     # addresses in this module rely on — so a configured instance can be

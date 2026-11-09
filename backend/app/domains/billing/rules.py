@@ -48,6 +48,21 @@ INT_RULES: IntRules = {
     # `max(billing_day, 1)` already clamped it, but the type: `max("x", 1)`
     # raises.
     "recurring_billing_day": (1, 1, 31),
+    # The bounds on a member-initiated donation, in whole units of the org's
+    # currency. Both are configured rather than fixed in code because the
+    # sensible ceiling for a village club and for a professional association
+    # differ by two orders of magnitude (#434).
+    #
+    # The minimum also drives the suggested amounts, so it is the one knob that
+    # shapes the page: see ``suggested_donation_amounts``. A minimum above zero
+    # is the point of it, which is why 0 is refused here where the reminder
+    # values accept it.
+    "donation_min_amount": (5, 1, 100_000),
+    # 100.000 is the widest any instance could want and still be a donation
+    # rather than a transfer its bank will ask about. It bounds the *setting*;
+    # what stops a typo at the keyboard is the per-donation check against
+    # whatever this is set to.
+    "donation_max_amount": (1_000, 1, 100_000),
 }
 
 
@@ -83,6 +98,11 @@ BOOL_KEYS = frozenset(
         "payment_reminders_enabled",
         "recurring_billing_enabled",
         "membership_lapse_enabled",
+        # The gate on the member-facing donate page. A module gate in every way
+        # that matters — absent means off, and the endpoints answer 404 — but it
+        # is declared here rather than in ``MODULE_GATE_KEYS`` because this
+        # domain has a ``rules.py`` and owns the two values beside it.
+        "member_donations_enabled",
     }
 )
 
@@ -106,10 +126,32 @@ FEATURE_KEYS = (
 )
 
 
+def validate_donation_bounds(features: dict) -> dict:
+    """Refuse a maximum below the minimum, when one request carries both.
+
+    Deliberately partial. ``PUT /settings/`` merges *after* the schema runs, so
+    a request setting only the maximum cannot be compared against a minimum
+    that is still only in the row. Rather than read the database from a
+    validator, the read side resolves the pair itself and never trusts the
+    stored order (see ``donation_amount_bounds``); this check exists for the
+    case the settings form actually produces, which submits both together, so
+    an administrator is told at the keyboard instead of silently having the
+    narrower pair applied.
+
+    Runs after ``validate_int_rules``, which has already refused a non-integer
+    in either key, so the comparison cannot raise on a type.
+    """
+    lo, hi = features.get("donation_min_amount"), features.get("donation_max_amount")
+    if lo is not None and hi is not None and hi < lo:
+        raise ValueError("donation_max_amount must not be below donation_min_amount")
+    return features
+
+
 def validate_billing_rules(features: dict) -> dict:
     validate_int_rules(features, INT_RULES)
     validate_int_rules(features, SAVE_ONLY_INT_RULES)
     validate_bool_keys(features, BOOL_KEYS)
+    validate_donation_bounds(features)
     return validate_email_keys(features, EMAIL_KEYS)
 
 

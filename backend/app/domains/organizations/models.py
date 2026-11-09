@@ -11,6 +11,7 @@ from sqlalchemy import (
     Numeric,
     SmallInteger,
     String,
+    Text,
     event,
     func,
     insert,
@@ -70,6 +71,11 @@ class OrganizationSettings(Base):
     # organization and is not an account fact, so it stays configuration.
     creditor_id = Column(String(35))
     sepa_format = Column(String(20), default="pain.008")
+    # The organisation's own reason to give, shown on the member-facing donate
+    # page. A donation is not a purchase: the ask has to come from the club, in
+    # its words and its language, rather than from a string we translate three
+    # ways (#434).
+    donation_message = Column(Text)
     features = Column(JSONB, default=dict)
     custom_settings = Column(JSONB, default=dict)
     # SSO provider configuration (Google/Apple) editable from the settings screen.

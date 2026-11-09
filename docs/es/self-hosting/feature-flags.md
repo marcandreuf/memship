@@ -1,10 +1,10 @@
 <!-- source: en/self-hosting/feature-flags.md -->
-<!-- source-hash: 70b6870a042d -->
+<!-- source-hash: d8d0082e4c66 -->
 
 # Feature flags
 
 Memship trae todos los módulos en una sola imagen. Cuáles usa de verdad una organización lo deciden
-**veintiuna claves** en una única columna JSONB, `organization_settings.features`, en la única fila
+**veinticuatro claves** en una única columna JSONB, `organization_settings.features`, en la única fila
 que admite la base de datos (`CHECK (id = 1)`). Se editan desde **Configuración** en el portal de
 administración, no desde el `.env` ni desde un fichero del servidor. Nada de esto necesita
 reiniciar.
@@ -18,7 +18,7 @@ había forma de distinguir un módulo que nadie había activado de un módulo qu
 
 ## Con qué empieza una instalación nueva
 
-**Dos de las veintiuna.** Todas las demás están ausentes.
+**Dos de las veinticuatro.** Todas las demás están ausentes.
 
 | Definida | Por qué |
 |---|---|
@@ -27,13 +27,14 @@ había forma de distinguir un módulo que nadie había activado de un módulo qu
 
 Es deliberado, no un descuido. Un club activa cada módulo cuando está preparado para él, e
 `install.sh` produce exactamente este estado. Eso sí, hace que un primer arranque se vea escaso:
-**siete rutas redirigen al panel** hasta que se activa su módulo.
+**ocho rutas redirigen al panel** hasta que se activa su módulo.
 
 | Ruta | Necesita |
 |---|---|
 | `/communications`, `/announcements` | `communications` |
 | `/spaces`, `/book`, `/my-bookings` | `bookings` |
 | `/scan`, `/my-card` | `member_card` |
+| `/donate` | `member_donations_enabled` |
 
 Un módulo desactivado además **responde 404 en sus propios endpoints**, y por eso el frontend
 redirige en vez de pintar un armazón sobre una API muerta.
@@ -59,7 +60,7 @@ una instalación limpia, no deducido.
 python -m app.cli.seed --demo     # or: ./scripts/dev.sh seed demo
 ```
 
-El camino de demostración activa **las veintiuna** y llena detrás de ellas los datos de un club
+El camino de demostración activa **las veinticuatro** y llena detrás de ellas los datos de un club
 entero. Es para evaluar y revisar, nunca para una organización real, porque además crea socios y
 recibos de demostración.
 
@@ -82,7 +83,7 @@ recibos de demostración.
 > Controlan trabajo programado y no tienen pantalla propia, así que no pierdes nada que puedas ver
 > por hacerlo.
 
-## Las veintiuna
+## Las veinticuatro
 
 En esta columna conviven tres tipos de cosa distintos, y no se comportan igual.
 
@@ -104,6 +105,7 @@ En esta columna conviven tres tipos de cosa distintos, y no se comportan igual.
 | `payment_reminders_enabled` | compuerta | desactivada | la pasada de recordatorios de impago y los recordatorios manuales |
 | `recurring_billing_enabled` | compuerta | desactivada | la pasada programada de cuotas de socio |
 | `membership_lapse_enabled` | compuerta | desactivada | la pasada programada que devuelve a los socios caducados al plan gratuito |
+| `member_donations_enabled` | compuerta | desactivada | `/donate`, el donativo que hace el propio socio |
 | `reminder_days_after_due` | valor | **3** | días tras el vencimiento antes del primer recordatorio |
 | `reminder_repeat_days` | valor | **7** | días entre repeticiones |
 | `reminder_max_count` | valor | **3** | recordatorios por recibo |
@@ -113,6 +115,8 @@ En esta columna conviven tres tipos de cosa distintos, y no se comportan igual.
 | `booking_window_days` | valor | **14** | con cuánta antelación puede reservar un socio (1–365) |
 | `booking_cancellation_deadline_hours` | valor | **24** | plazo límite de cancelación (0–8760) |
 | `booking_waitlist_enabled` | valor | **activado** | si una franja llena ofrece lista de espera |
+| `donation_min_amount` | valor | **5** | donativo mínimo que se acepta, y del que salen los importes sugeridos |
+| `donation_max_amount` | valor | **1000** | donativo máximo que se acepta, para que una errata no se convierta en un cargo enorme |
 | `billing_notification_email` | valor | *sin definir* | adónde van los resúmenes de las pasadas de facturación y el resumen diario de notificaciones de pago; sin efecto si no está definido, se valida como dirección al guardar |
 | `gender_options` | datos | no se ofrece ninguna opción | el campo de género del formulario de socio |
 
@@ -138,7 +142,7 @@ sentido*, algo que las compuertas no necesitan en absoluto.
 
 ## Se rechaza cualquier clave que esta página no liste
 
-Las veintiuna de arriba son el conjunto completo, y `PUT /api/v1/settings/` responde **422** a
+Las veinticuatro de arriba son el conjunto completo, y `PUT /api/v1/settings/` responde **422** a
 cualquier otra, nombrando la clave que no ha reconocido.
 
 Esto importa si configuras una instancia a través de la API en vez de las pantallas de

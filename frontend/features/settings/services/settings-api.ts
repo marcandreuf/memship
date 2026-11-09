@@ -26,6 +26,8 @@ export interface SettingsData {
   default_vat_rate: number;
   creditor_id: string | null;
   sepa_format: string | null;
+  /** The club's own reason to give, shown on the member donate page. */
+  donation_message: string | null;
   features: Record<string, unknown>;
   custom_settings: Record<string, unknown>;
   created_at: string;

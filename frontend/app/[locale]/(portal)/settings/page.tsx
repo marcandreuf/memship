@@ -49,6 +49,7 @@ import { PaymentProvidersSettings } from "@/features/settings/components/payment
 import { RecurringBillingSettings } from "@/features/settings/components/recurring-billing-settings";
 import { MembershipLapseSettings } from "@/features/settings/components/membership-lapse-settings";
 import { PaymentRemindersSettings } from "@/features/settings/components/payment-reminders-settings";
+import { DonationsSettings } from "@/features/settings/components/donations-settings";
 import { CommunicationsSettings } from "@/features/settings/components/communications-settings";
 import { EmailTemplatesSettings } from "@/features/settings/components/email-templates-settings";
 import { MemberCardSettings } from "@/features/settings/components/member-card-settings";
@@ -196,6 +197,7 @@ export default function SettingsPage() {
     { value: "recurring-billing", label: t("settings.recurringBilling.tab") },
     { value: "payment-reminders", label: t("settings.paymentReminders.tab") },
     { value: "membership-lapse", label: t("settings.membershipLapse.tab") },
+    { value: "donations", label: t("settings.donations.tab") },
   ];
 
   const membersSubtabs = [
@@ -495,6 +497,9 @@ export default function SettingsPage() {
             </TabsContent>
             <TabsContent value="membership-lapse">
               <MembershipLapseSettings />
+            </TabsContent>
+            <TabsContent value="donations">
+              <DonationsSettings />
             </TabsContent>
           </Tabs>
         </TabsContent>}

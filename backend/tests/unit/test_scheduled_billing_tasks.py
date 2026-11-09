@@ -114,19 +114,33 @@ def test_a_failed_billing_run_rolls_back_and_raises(db):
 # ---------------------------------------------------------------- reminders
 
 
-def test_reminders_void_expired_purchases_before_chasing_anyone(db):
+def test_reminders_void_what_was_abandoned_before_chasing_anyone(db):
     order = MagicMock()
     order.expire.return_value = 2
+    order.expire_donations.return_value = 1
     order.remind.return_value = {"marked_overdue": 4, "reminders_sent": 3}
     with patch(
         "app.domains.billing.membership_purchase_service.expire_unpaid_purchases",
         order.expire,
+    ), patch(
+        "app.domains.billing.donation_service.expire_unpaid_donations",
+        order.expire_donations,
     ), patch("app.domains.billing.reminder_service.run_scheduled_reminders", order.remind):
         summary = scheduled_payment_reminders.apply().get()
-    # An abandoned purchase is not a debt: it must be voided before the pass
-    # that marks receipts overdue could see it.
-    assert order.mock_calls[:2] == [call.expire(db), call.remind(db)]
-    assert summary == {"purchases_expired": 2, "marked_overdue": 4, "reminders_sent": 3}
+    # Neither an abandoned purchase nor an abandoned donation is a debt: both
+    # must be voided before the pass that marks receipts overdue could see
+    # them.
+    assert order.mock_calls[:3] == [
+        call.expire(db),
+        call.expire_donations(db),
+        call.remind(db),
+    ]
+    assert summary == {
+        "purchases_expired": 2,
+        "donations_expired": 1,
+        "marked_overdue": 4,
+        "reminders_sent": 3,
+    }
     db.commit.assert_called_once()
     db.close.assert_called_once()
 
@@ -135,6 +149,9 @@ def test_a_failed_reminder_pass_rolls_back_the_voided_purchases_too(db):
     with patch(
         "app.domains.billing.membership_purchase_service.expire_unpaid_purchases",
         return_value=2,
+    ), patch(
+        "app.domains.billing.donation_service.expire_unpaid_donations",
+        return_value=1,
     ), patch(
         "app.domains.billing.reminder_service.run_scheduled_reminders",
         side_effect=RuntimeError("mail transport misconfigured"),

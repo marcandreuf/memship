@@ -437,8 +437,56 @@ CANONICAL = {
     "reminder_repeat_days": 7,
     "reminder_max_count": 3,
     "recurring_billing_day": 1,
+    "member_donations_enabled": True,
+    "donation_min_amount": 5,
+    "donation_max_amount": 1000,
     "billing_notification_email": "tesoreria@club.example",
 }
+
+
+class TestTheDonationBounds:
+    """The one pair of keys where each is valid alone and the pair can be wrong."""
+
+    def test_a_maximum_below_the_minimum_is_refused_when_both_are_sent(
+        self, client, db
+    ):
+        _org(db)
+        client.cookies.update(_auth_cookie(_admin(db, "donation-bounds")))
+
+        response = client.put(
+            "/api/v1/settings/",
+            json={"features": {"donation_min_amount": 50, "donation_max_amount": 10}},
+        )
+
+        assert response.status_code == 422
+
+    def test_the_same_pair_the_right_way_round_is_accepted(self, client, db):
+        _org(db)
+        client.cookies.update(_auth_cookie(_admin(db, "donation-bounds-ok")))
+
+        response = client.put(
+            "/api/v1/settings/",
+            json={"features": {"donation_min_amount": 10, "donation_max_amount": 50}},
+        )
+
+        assert response.status_code == 200
+
+    def test_one_key_alone_is_accepted_even_against_a_stored_pair(self, client, db):
+        """The merge runs after the schema, so a validator cannot see the key it
+        is not sent with. The read side resolves the pair instead, which is
+        what ``test_a_ceiling_below_the_floor_resolves_to_the_floor`` pins."""
+        _org(db)
+        client.cookies.update(_auth_cookie(_admin(db, "donation-bounds-sparse")))
+        client.put(
+            "/api/v1/settings/",
+            json={"features": {"donation_min_amount": 50, "donation_max_amount": 500}},
+        )
+
+        response = client.put(
+            "/api/v1/settings/", json={"features": {"donation_max_amount": 10}}
+        )
+
+        assert response.status_code == 200
 
 
 class TestTheCanonicalSetIsPinned:

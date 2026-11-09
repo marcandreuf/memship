@@ -22,6 +22,7 @@ import {
   TrendingUp,
   TriangleAlert,
   BadgeEuro,
+  HandCoins,
   MapPin,
   LogOut,
   ChevronsUpDown,
@@ -68,6 +69,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
 
   const { isStaff: isAdmin, has, hasAny } = usePermissions();
   const commsEnabled = Boolean(settings?.features?.communications);
+  const donationsEnabled = Boolean(settings?.features?.member_donations_enabled);
   const cardEnabled = Boolean(settings?.features?.member_card);
   const bookingsEnabled = Boolean(settings?.features?.bookings);
 
@@ -199,6 +201,25 @@ export function AppSidebar({ user }: AppSidebarProps) {
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
+
+          {/* Donating is an offer, not a destination, so it sits under the
+              club's name rather than inside a navigation group (#434). Only
+              for an account that is actually a member: an operator with no
+              member record has no receipts to raise one against. */}
+          {donationsEnabled && isMember && (
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === "/donate"}
+                tooltip={t("donations.nav")}
+              >
+                <Link href="/donate">
+                  <HandCoins />
+                  <span>{t("donations.nav")}</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
         </SidebarMenu>
       </SidebarHeader>
 

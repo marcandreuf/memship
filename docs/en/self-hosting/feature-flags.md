@@ -1,7 +1,7 @@
 # Feature flags
 
 Memship ships every module in one image. Which of them an organization actually
-uses is decided by **twenty-one keys** in a single JSONB column,
+uses is decided by **twenty-four keys** in a single JSONB column,
 `organization_settings.features`, on the one row the database allows
 (`CHECK (id = 1)`). They are edited from **Settings** in the admin portal, not
 from `.env`, and not from a file on the server. Nothing here needs a restart.
@@ -16,7 +16,7 @@ module that was broken.
 
 ## What a fresh install starts with
 
-**Two of the twenty-one.** Everything else is absent.
+**Two of the twenty-four.** Everything else is absent.
 
 | Set | Why |
 |---|---|
@@ -25,7 +25,7 @@ module that was broken.
 
 That is deliberate, not an oversight. A club opts into each module when it is
 ready for it, and `install.sh` produces exactly this state. It does mean a first
-boot looks sparse: **seven routes redirect to the dashboard** until their module
+boot looks sparse: **eight routes redirect to the dashboard** until their module
 is switched on.
 
 | Route | Needs |
@@ -33,6 +33,7 @@ is switched on.
 | `/communications`, `/announcements` | `communications` |
 | `/spaces`, `/book`, `/my-bookings` | `bookings` |
 | `/scan`, `/my-card` | `member_card` |
+| `/donate` | `member_donations_enabled` |
 
 A module that is off also **404s its own endpoints**, which is why the frontend
 redirects rather than rendering a shell over a dead API.
@@ -59,7 +60,7 @@ configure Resend or SMTP. Verified on a clean install, not inferred.
 python -m app.cli.seed --demo     # or: ./scripts/dev.sh seed demo
 ```
 
-The demo path switches on **all twenty-one** and fills a club's worth of data
+The demo path switches on **all twenty-four** and fills a club's worth of data
 behind them. It is for evaluation and review, never for a real organization,
 because it also creates demo members and receipts.
 
@@ -82,7 +83,7 @@ because it also creates demo members and receipts.
 > switch these three off for the duration. They gate scheduled work and have no
 > screen of their own, so nothing you can look at is lost by doing so.
 
-## The twenty-one
+## The twenty-four
 
 Three different kinds of thing live in this column, and they do not behave alike.
 
@@ -104,6 +105,7 @@ Three different kinds of thing live in this column, and they do not behave alike
 | `payment_reminders_enabled` | gate | off | the dunning run and manual reminders |
 | `recurring_billing_enabled` | gate | off | the scheduled membership-fee run |
 | `membership_lapse_enabled` | gate | off | the scheduled run that reverts lapsed members to the free tier |
+| `member_donations_enabled` | gate | off | `/donate`, the member's own donation |
 | `reminder_days_after_due` | value | **3** | days after due before the first reminder |
 | `reminder_repeat_days` | value | **7** | days between repeats |
 | `reminder_max_count` | value | **3** | reminders per receipt |
@@ -113,11 +115,14 @@ Three different kinds of thing live in this column, and they do not behave alike
 | `booking_window_days` | value | **14** | how far ahead a member may book (1–365) |
 | `booking_cancellation_deadline_hours` | value | **24** | cancellation cut-off (0–8760) |
 | `booking_waitlist_enabled` | value | **on** | whether a full slot offers a waitlist |
+| `donation_min_amount` | value | **5** | smallest donation accepted, and what the suggested amounts are derived from |
+| `donation_max_amount` | value | **1000** | largest donation accepted, so a typo cannot become an enormous charge |
 | `billing_notification_email` | value | *unset* | where billing-run summaries and the daily payment-notification digest go; no-op when unset, validated as an address on save |
 | `gender_options` | data | no options offered | the member form's gender field |
 
 The defaults above are the literal fallbacks in `reminder_service.py`,
-`recurring_billing_service.py`, `lapse_service.py` and `bookings/rules.py`. Two
+`recurring_billing_service.py`, `lapse_service.py`, `bookings/rules.py` and
+`billing/rules.py`. Two
 tests in `backend/tests/integration/test_demo_data.py` guard them: one pins the
 six numeric defaults against what the demo seed writes, the other pins the three
 flags that are **on while absent**.
@@ -139,7 +144,7 @@ not a gesture the gates need at all.
 
 ## A key this page does not list is refused
 
-The twenty-one above are the whole set, and `PUT /api/v1/settings/` answers
+The twenty-four above are the whole set, and `PUT /api/v1/settings/` answers
 **422** for anything else, naming the key it did not recognise.
 
 This matters if you configure an instance through the API rather than the admin

@@ -18,6 +18,7 @@ from app.api.v1.endpoints import (
     contacts,
     custom_fields,
     discount_codes,
+    donations,
     entities,
     groups,
     health,
@@ -65,6 +66,7 @@ api_router.include_router(member_card.router, dependencies=_approved_only)
 api_router.include_router(member_photo.router, dependencies=_approved_only)
 api_router.include_router(membership_types.router, dependencies=_approved_only)
 api_router.include_router(membership_purchase.router, dependencies=_approved_only)
+api_router.include_router(donations.router, dependencies=_approved_only)
 api_router.include_router(persons.router, dependencies=_approved_only)
 api_router.include_router(registrations.router, dependencies=_approved_only)
 api_router.include_router(reminders.router, dependencies=_approved_only)

@@ -164,6 +164,18 @@
       "maxCount": "Maximum reminders",
       "maxCountDesc": "Maximum number of reminders per receipt (1–10)"
     },
+    "donations": {
+      "tab": "Donations",
+      "title": "Member donations",
+      "enabled": "Allow donations from the portal",
+      "enabledDesc": "Adds a Donate button to the member portal. It charges through the gateway you already use for fees; there is nothing else to configure",
+      "minAmount": "Minimum amount",
+      "minAmountDesc": "The smallest amount accepted, and what the suggested amounts come from (the minimum and its multiples by 2, 5 and 10)",
+      "maxAmount": "Maximum amount",
+      "maxAmountDesc": "The largest amount accepted, so a typo cannot become an enormous charge",
+      "message": "What you are asking for",
+      "messageDesc": "What the member reads before choosing an amount, in your own words. Left empty, the page just shows the amounts"
+    },
     "membershipLapse": {
       "tab": "Membership lapse",
       "title": "Non-payment",

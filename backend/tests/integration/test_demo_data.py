@@ -108,8 +108,11 @@ ALL_FEATURE_FLAGS = {
     "communications",
     "custom_profile_fields",
     "custom_roles",
+    "donation_max_amount",
+    "donation_min_amount",
     "gender_options",
     "member_card",
+    "member_donations_enabled",
     "membership_fee_due_days",
     "membership_lapse_enabled",
     "membership_lapse_grace_days",
@@ -135,7 +138,7 @@ def _features(db) -> dict:
 
 
 class TestFeatureFlagSeeding:
-    """#317: nineteen of the twenty-one flags were absent on every seeded instance.
+    """#317: almost every flag was absent on every seeded instance.
 
     The fresh-install half of that is intended and stays; what these pin is that
     it stays *deliberate* — a flag added to the base install trips the first
@@ -198,7 +201,7 @@ class TestFeatureFlagSeeding:
         assert set(_features(db)) == ALL_FEATURE_FLAGS
 
     def test_three_flags_are_on_while_absent(self, db):
-        """#317 read the nineteen absent flags as nineteen modules switched off.
+        """#317 read every absent flag as a module switched off.
 
         Three of them are not. `get_registration_settings` reads two with a
         `True` default, so sign-up is open *by policy* on a fresh install and

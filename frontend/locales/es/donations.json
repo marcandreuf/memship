@@ -1,0 +1,17 @@
+{
+  "donations": {
+    "title": "Hacer un donativo",
+    "nav": "Donar",
+    "info": "Aporta al club por encima de tu cuota. Se cobra por la misma pasarela con la que pagas los recibos, y recibes un recibo descargable.",
+    "notAMember": "Esta cuenta administra la instancia y no es socia del club, así que no puede hacer un donativo desde aquí.",
+    "unavailable": "Este club no está aceptando donativos ahora mismo.",
+    "chooseAmount": "Elige un importe",
+    "otherAmount": "U otro importe",
+    "bounds": "Entre {min} y {max}.",
+    "confirm": "Continuar al pago",
+    "raised": "Donativo registrado. Ya puedes pagarlo.",
+    "awaitingPayment": "Donativo de {amount} pendiente de pago",
+    "awaitingPaymentExplain": "Hemos emitido el recibo {receipt}. El donativo no está hecho hasta que lo pagues, y si no lo pagas se anula solo: no te lo reclamaremos.",
+    "noGateway": "El club todavía no tiene configurada ninguna pasarela de pago, así que este donativo no se puede pagar en línea. Habla con la junta."
+  }
+}
