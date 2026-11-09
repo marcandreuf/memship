@@ -51,7 +51,7 @@ class MembershipTypeUpdate(BaseModel):
     min_age: int | None = Field(default=None, ge=0, le=150)
     max_age: int | None = Field(default=None, ge=0, le=150)
 
-    _not_null = field_validator("name")(refuse_null)
+    _not_null = field_validator("name", "issues_card", "is_active", "is_default")(refuse_null)
 
 
 class MembershipTypeResponse(BaseModel):
@@ -276,7 +276,7 @@ class GroupUpdate(BaseModel):
     icon: str | None = Field(default=None, max_length=50)
     is_active: bool | None = None
 
-    _not_null = field_validator("name")(refuse_null)
+    _not_null = field_validator("name", "is_active", "is_billable")(refuse_null)
 
 
 class GroupResponse(BaseModel):

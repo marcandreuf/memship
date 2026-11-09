@@ -75,7 +75,7 @@ class ConceptUpdate(BaseModel):
     accounting_code: str | None = Field(default=None, max_length=50)
     is_active: bool | None = None
 
-    _not_null = field_validator("name")(refuse_null)
+    _not_null = field_validator("name", "is_active")(refuse_null)
 
 
 class ConceptResponse(BaseModel):
@@ -134,7 +134,7 @@ class ReceiptUpdate(BaseModel):
     notes: str | None = None
     is_batchable: bool | None = None
 
-    _not_null = field_validator("description")(refuse_null)
+    _not_null = field_validator("description", "is_batchable")(refuse_null)
 
 
 class ReceiptPayRequest(BaseModel):
@@ -429,7 +429,7 @@ class PaymentProviderUpdate(BaseModel):
     config: dict | None = None
     is_default: bool | None = None
 
-    _not_null = field_validator("display_name")(refuse_null)
+    _not_null = field_validator("display_name", "is_default")(refuse_null)
 
 
 class PaymentProviderResponse(BaseModel):

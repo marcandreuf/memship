@@ -57,7 +57,7 @@ class DiscountCodeUpdate(BaseModel):
             raise ValueError("valid_until must be after valid_from")
         return self
 
-    _not_null = field_validator("code")(refuse_null)
+    _not_null = field_validator("code", "is_active")(refuse_null)
 
 
 class DiscountCodeResponse(BaseModel):

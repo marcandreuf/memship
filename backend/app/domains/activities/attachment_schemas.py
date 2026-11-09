@@ -27,7 +27,7 @@ class ActivityAttachmentTypeUpdate(BaseModel):
     display_order: int | None = None
     is_active: bool | None = None
 
-    _not_null = field_validator("name")(refuse_null)
+    _not_null = field_validator("name", "is_active", "is_mandatory")(refuse_null)
 
 
 class ActivityAttachmentTypeResponse(BaseModel):
