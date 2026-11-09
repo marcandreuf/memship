@@ -235,9 +235,23 @@ class ReceiptResponse(BaseModel):
 
 
 class ReceiptDetailResponse(ReceiptResponse):
-    """Extended response with member and concept names for detail views."""
+    """Extended response with the recipient and concept names for detail views.
 
-    member_name: str | None = None
+    A receipt is addressed to a party, so the holder is a *recipient* and may
+    hold no membership at all — a donation receipt to a company is the ordinary
+    case (#472). ``member_name`` named where the value used to be read from
+    rather than what it is, and an integrator reading it now gets an
+    organisation's name back.
+    """
+
+    recipient_name: str | None = None
+    recipient_tax_id: str | None = None
+    member_name: str | None = Field(
+        default=None,
+        deprecated="Renamed to recipient_name; removed in the next major.",
+    )
+    # A genuine membership fact, so it keeps its name. Null when the recipient
+    # holds no membership.
     member_number: str | None = None
     concept_name: str | None = None
     # `remittance_id` alone is not something to put on a screen. The number is

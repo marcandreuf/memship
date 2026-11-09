@@ -62,12 +62,12 @@
 
   <div class="parties">
     <div class="party">
-      <h3>Member details</h3>
-      <p><strong>{{ member.name }}</strong></p>
-      {% if member.tax_id %}<p>Tax ID: {{ member.tax_id }}</p>{% endif %}
-      {% if member.address %}<p>{{ member.address }}</p>{% endif %}
-      {% if member.email %}<p>{{ member.email }}</p>{% endif %}
-      {% if member.member_number %}<p>Member #: {{ member.member_number }}</p>{% endif %}
+      <h3>Recipient details</h3>
+      <p><strong>{{ recipient.name }}</strong></p>
+      {% if recipient.tax_id %}<p>Tax ID: {{ recipient.tax_id }}</p>{% endif %}
+      {% if recipient.address %}<p>{{ recipient.address }}</p>{% endif %}
+      {% if recipient.email %}<p>{{ recipient.email }}</p>{% endif %}
+      {% if recipient.member_number %}<p>Member #: {{ recipient.member_number }}</p>{% endif %}
     </div>
     {% if receipt.billing_period_start %}
     <div class="party">

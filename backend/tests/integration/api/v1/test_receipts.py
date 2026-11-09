@@ -1174,7 +1174,7 @@ class TestReceiptsForAPartyWithNoMembership:
 
         context = build_receipt_context(db, receipt)
 
-        assert context["member"]["name"] == "Fundació Curta per a l'Esport, SL"
+        assert context["recipient"]["name"] == "Fundació Curta per a l'Esport, SL"
 
     def test_the_pdf_context_carries_the_party_as_recipient(self, db):
         """Asserted on the context rather than rendered bytes: WeasyPrint's
@@ -1201,7 +1201,99 @@ class TestReceiptsForAPartyWithNoMembership:
 
         context = build_receipt_context(db, receipt)
 
-        assert context["member"]["name"] == "Fundació PDF"
-        assert context["member"]["tax_id"] == "G55667788"
-        assert context["member"]["address"] is not None
-        assert context["member"]["member_number"] is None
+        assert context["recipient"]["name"] == "Fundació PDF"
+        assert context["recipient"]["tax_id"] == "G55667788"
+        assert context["recipient"]["address"] is not None
+        assert context["recipient"]["member_number"] is None
+
+
+class TestRecipientNaming:
+    """The holder fields say what they are, not where they came from (#472).
+
+    ``member_name`` and ``member_number`` were named after the only route that
+    could reach a holder before receipts hung off a party. ``member_number`` is
+    still a membership fact; the name and the tax id are not, and an integrator
+    reading ``member_name`` now gets an organisation's name back. So the
+    response carries ``recipient_name`` and ``recipient_tax_id``, with
+    ``member_name`` kept as an alias until the next major.
+    """
+
+    def test_a_member_receipt_carries_both_names_and_the_tax_id(self, client, db):
+        user = _create_user(db, "admin", "recipient-member")
+        _ensure_org_settings(db)
+        member, _ = _create_member(db, "recipient")
+        member.person.national_id = "12345678Z"
+        db.flush()
+        client.cookies.update(_auth_cookie(user))
+        created = client.post("/api/v1/receipts/", json={
+            "party_id": member.party_id,
+            "origin": "manual",
+            "description": "Quota",
+            "base_amount": 30.0,
+            "vat_rate": 21.0,
+            "emission_date": str(date.today()),
+        })
+        assert created.status_code == 201, created.text
+
+        body = client.get(f"/api/v1/receipts/{created.json()['id']}").json()
+
+        assert body["recipient_name"] == "María García"
+        assert body["recipient_tax_id"] == "12345678Z"
+        # The alias carries the same value, so an integration that has not
+        # moved yet keeps working.
+        assert body["member_name"] == body["recipient_name"]
+        assert body["member_number"] == "M-recipient"
+
+    def test_a_company_receipt_has_a_tax_id_and_no_member_number(self, client, db):
+        user = _create_user(db, "admin", "recipient-company")
+        _ensure_org_settings(db)
+        party = _company_party(db, "Fundació Destinatària", "G44556677")
+        client.cookies.update(_auth_cookie(user))
+        created = client.post("/api/v1/receipts/", json={
+            "party_id": party.id,
+            "origin": "donation",
+            "description": "Donatiu",
+            "base_amount": 100.0,
+            "vat_rate": 0.0,
+            "emission_date": str(date.today()),
+        })
+        assert created.status_code == 201, created.text
+
+        body = client.get(f"/api/v1/receipts/{created.json()['id']}").json()
+
+        assert body["recipient_name"] == "Fundació Destinatària"
+        assert body["recipient_tax_id"] == "G44556677"
+        assert body["member_name"] == "Fundació Destinatària"
+        assert body["member_number"] is None
+
+    def test_the_list_carries_the_recipient_fields(self, client, db):
+        """The list is built by the same serialiser, and is the response the
+        receipts screen renders."""
+        user = _create_user(db, "admin", "recipient-list")
+        _ensure_org_settings(db)
+        party = _company_party(db, "Associació Llistada", "G33445566")
+        client.cookies.update(_auth_cookie(user))
+        client.post("/api/v1/receipts/", json={
+            "party_id": party.id,
+            "origin": "donation",
+            "description": "Donatiu",
+            "base_amount": 20.0,
+            "vat_rate": 0.0,
+            "emission_date": str(date.today()),
+        })
+
+        items = client.get("/api/v1/receipts/", params={"party_id": party.id}).json()["items"]
+
+        assert len(items) == 1
+        assert items[0]["recipient_name"] == "Associació Llistada"
+        assert items[0]["recipient_tax_id"] == "G33445566"
+
+    def test_the_alias_is_published_as_deprecated(self, client):
+        """The promise to remove it in the next major is only a promise if a
+        consumer can see it coming. Pinned on the schema so the annotation
+        cannot be dropped by accident."""
+        schema = client.get("/openapi.json").json()
+        properties = schema["components"]["schemas"]["ReceiptDetailResponse"]["properties"]
+
+        assert properties["member_name"]["deprecated"] is True
+        assert "deprecated" not in properties["recipient_name"]

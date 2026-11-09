@@ -272,7 +272,8 @@ class TestReceiptsExport:
         headers, rows = _parse_csv(resp)
         assert headers == [
             "receipt_number", "document_type", "rectifies_receipt_number",
-            "member_number", "member_name", "concept", "origin",
+            "member_number", "recipient_name", "recipient_tax_id",
+            "member_name", "concept", "origin",
             "status", "base_amount", "vat_amount", "total_amount",
             "emission_date", "due_date", "payment_date",
         ]
@@ -282,6 +283,8 @@ class TestReceiptsExport:
         assert row[headers.index("document_type")] == "invoice"
         assert row[headers.index("rectifies_receipt_number")] == ""
         assert row[headers.index("member_number")] == "M-r-cols-m"
+        assert row[headers.index("recipient_name")] == "María García-r-cols-m"
+        # The deprecated alias carries the same value until the next major (#472).
         assert row[headers.index("member_name")] == "María García-r-cols-m"
         assert row[headers.index("concept")] == "Membership Fee r-cols"
         assert row[headers.index("total_amount")] == "121.00"
@@ -317,6 +320,8 @@ class TestReceiptsExport:
         assert resp.status_code == 200
         headers, rows = _parse_csv(resp)
         row = next(r for r in rows if r[headers.index("receipt_number")] == "FAC-r-party-1")
+        assert row[headers.index("recipient_name")] == "Fundació Export"
+        assert row[headers.index("recipient_tax_id")] == "G99887766"
         assert row[headers.index("member_name")] == "Fundació Export"
         assert row[headers.index("member_number")] == ""
 

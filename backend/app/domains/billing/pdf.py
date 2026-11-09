@@ -201,7 +201,9 @@ def build_receipt_context(db: Session, receipt: Receipt) -> dict:
             "billing_period_end": receipt.billing_period_end.strftime("%d/%m/%Y") if receipt.billing_period_end else None,
             "notes": receipt.notes,
         },
-        "member": {
+        # Named for what it holds, not for where the values used to come from:
+        # a receipt is addressed to a party, which may hold no membership (#472).
+        "recipient": {
             # legal_name first for a non-person recipient: a factura names the
             # registered entity, while display_name is what the screens show
             # and is often a trading name.
