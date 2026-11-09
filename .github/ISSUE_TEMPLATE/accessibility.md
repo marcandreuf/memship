@@ -9,6 +9,8 @@ assignees: ''
 
 **Every field here is optional.** One sentence saying what you could not do is a real report, and we would much rather have that than nothing. Delete whatever does not apply.
 
+**Write in whatever language you are comfortable in.** The tracker is kept in English and we will translate yours if it arrives in Spanish or Catalan. We answer in the language you wrote in.
+
 **What were you trying to do?**
 The task in your own words — "pay my receipt", "find a member", "sign up for an activity", "show my card at the door".
 

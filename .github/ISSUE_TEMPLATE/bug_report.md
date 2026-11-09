@@ -1,38 +1,27 @@
 ---
 name: Bug report
-about: Create a report to help us improve
+about: Something in memship does not do what it says it does
 title: ''
-labels: ''
+labels: bug
 assignees: ''
 
 ---
 
-**Describe the bug**
-A clear and concise description of what the bug is.
+**Write in whatever language you are comfortable in.** The tracker is kept in English so that anyone reading it can follow a thread they had no part in, and we will translate yours if it arrives in Spanish or Catalan. A report in your own language is worth far more to us than one you decided not to file. We answer in the language you wrote in.
 
-**To Reproduce**
-Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+**What did you expect, and what happened instead?**
+The two sentences that matter most. If this is the only field you fill in, it is still a real report.
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
+**How can we reproduce it?**
+The steps you took, as far as you remember them. "Settings, then Billing, pressed save, got an error" is enough to start from.
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
+**Where were you?**
+The page or URL, and whether you were in the admin panel or in the member portal.
 
-**Desktop (please complete the following information):**
- - OS: [e.g. iOS]
- - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
+**Which install?**
+- memship version (shown in the footer):
+- Self-hosted, or evaluating with the quick start:
+- Browser and version, if it looks like a browser problem:
 
-**Smartphone (please complete the following information):**
- - Device: [e.g. iPhone6]
- - OS: [e.g. iOS8.1]
- - Browser [e.g. stock browser, safari]
- - Version [e.g. 22]
-
-**Additional context**
-Add any other context about the problem here.
+**Anything else**
+A screenshot, the error text, or the relevant lines from `docker compose logs api`. None of it is required.
