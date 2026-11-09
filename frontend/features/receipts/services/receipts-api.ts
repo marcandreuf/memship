@@ -35,6 +35,9 @@ export interface ReceiptData {
   created_at: string | null;
   updated_at: string | null;
   // Detail fields
+  recipient_name?: string | null;
+  recipient_tax_id?: string | null;
+  /** @deprecated Alias of recipient_name; the API drops it in the next major. */
   member_name?: string | null;
   member_number?: string | null;
   remittance_number?: string | null;

@@ -156,7 +156,7 @@ export default function ReceiptsPage() {
                     </Badge>
                   )}
                 </TableCell>
-                <TableCell>{r.member_name || "—"}</TableCell>
+                <TableCell>{r.recipient_name || "—"}</TableCell>
                 <TableCell className="max-w-[200px] truncate">{r.description}</TableCell>
                 <TableCell className="text-right font-mono">{formatCurrency(r.total_amount)}</TableCell>
                 <TableCell><StatusBadge status={r.status} t={t} /></TableCell>
@@ -185,7 +185,7 @@ export default function ReceiptsPage() {
                       </Badge>
                     )}
                   </p>
-                  <p className="truncate font-medium">{r.member_name || "—"}</p>
+                  <p className="truncate font-medium">{r.recipient_name || "—"}</p>
                 </div>
                 <StatusBadge status={r.status} t={t} />
               </div>

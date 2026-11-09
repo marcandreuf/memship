@@ -101,7 +101,7 @@ def _require_own_receipt(
         raise HTTPException(status_code=403, detail="Access denied")
 
 
-def _holder_name(receipt: Receipt) -> str | None:
+def _recipient_name(receipt: Receipt) -> str | None:
     """Who the receipt is addressed to.
 
     Resolved from the party, not from the membership. A receipt is addressed to
@@ -120,10 +120,29 @@ def _holder_name(receipt: Receipt) -> str | None:
     return receipt.party.display_name if receipt.party else None
 
 
+def _recipient_tax_id(receipt: Receipt) -> str | None:
+    """The recipient's NIF or CIF, read from the party.
+
+    Since the Phase 3 column drop ``party.national_id`` is the only copy;
+    ``Person`` reaches it through an association proxy, so there is one source
+    whether the recipient is a person or a company. The PDF has always put this
+    on the document (a factura is invalid without it) while the API never
+    exposed it (#472).
+    """
+    return receipt.party.national_id if receipt.party else None
+
+
 def _to_detail(receipt: Receipt) -> dict:
-    """Convert a Receipt to a detail response dict with member/concept names."""
+    """Convert a Receipt to a detail response dict with recipient/concept names."""
     data = {c.name: getattr(receipt, c.name) for c in receipt.__table__.columns}
-    data["member_name"] = _holder_name(receipt)
+    # `recipient_*` describes what the value is; `member_name` described where
+    # it used to come from and is wrong for a recipient holding no membership.
+    # Kept as an alias with the same value until the next major (#472).
+    data["recipient_name"] = _recipient_name(receipt)
+    data["recipient_tax_id"] = _recipient_tax_id(receipt)
+    data["member_name"] = data["recipient_name"]
+    # Still a genuine membership fact, so it keeps its name, and is null for a
+    # recipient who holds no membership.
     data["member_number"] = (
         receipt.member.member_number if receipt.member else None
     )
@@ -185,6 +204,8 @@ _RECEIPTS_CSV_HEADERS = [
     "document_type",
     "rectifies_receipt_number",
     "member_number",
+    "recipient_name",
+    "recipient_tax_id",
     "member_name",
     "concept",
     "origin",
@@ -199,14 +220,16 @@ _RECEIPTS_CSV_HEADERS = [
 
 
 def _receipt_csv_row(receipt: Receipt) -> list:
-    member_name = _holder_name(receipt)
+    recipient_name = _recipient_name(receipt)
     member_number = receipt.member.member_number if receipt.member else None
     return [
         receipt.receipt_number,
         receipt.document_type,
         receipt.rectifies.receipt_number if receipt.rectifies else None,
         member_number,
-        member_name,
+        recipient_name,
+        _recipient_tax_id(receipt),
+        recipient_name,
         receipt.concept.name if receipt.concept else None,
         receipt.origin,
         receipt.status,
