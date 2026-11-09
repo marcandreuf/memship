@@ -94,7 +94,7 @@ class ActivityPriceUpdate(BaseModel):
             raise ValueError("valid_until must be after valid_from")
         return self
 
-    _not_null = field_validator("name")(refuse_null)
+    _not_null = field_validator("name", "is_optional", "is_default", "is_visible")(refuse_null)
 
 
 class ActivityPriceResponse(BaseModel):
@@ -213,7 +213,7 @@ class ActivityUpdate(BaseModel):
             raise ValueError("max_participants must be greater than or equal to min_participants")
         return self
 
-    _not_null = field_validator("name")(refuse_null)
+    _not_null = field_validator("name", "allow_self_cancellation", "is_featured")(refuse_null)
 
 
 class ActivityResponse(BaseModel):

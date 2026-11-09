@@ -86,10 +86,26 @@ def NonBlankText(max_length: int | None = None):
 
 
 def refuse_null(value: Any) -> Any:
-    """For an update schema's optional field backed by a NOT NULL column:
+    """For an update schema's optional field that has no meaning as ``null``:
     omitting it keeps the stored value, but an explicit ``null`` is refused
     rather than reaching the database. Validators only run on values the body
-    actually carries, so omission is unaffected."""
+    actually carries, so omission is unaffected.
+
+    Two shapes need it, and the second is the reason not to decide this by
+    looking at the column:
+
+    - **A NOT NULL column.** The write is refused by the database, so the only
+      cost is a 500 where 422 is the honest answer.
+    - **A nullable column whose Response model declares a plain ``bool``.** The
+      write *succeeds*, and serialising the reply then fails. The row is left
+      holding NULL, and because a list endpoint validates every row through
+      that same model, one such request makes the whole list 500 for every
+      caller until the row is repaired by hand. An admin cannot undo it from
+      the screen that caused it, because that screen reads the broken list.
+
+    So a nullable column is not grounds for dropping the guard. The Response
+    model is what says whether ``null`` is representable, and for every boolean
+    guarded here it says no."""
     if value is None:
         raise ValueError("This field cannot be empty")
     return value

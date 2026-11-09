@@ -33,4 +33,4 @@ class ContactUpdate(BaseModel):
     label: str | None = Field(default=None, max_length=100)
     is_primary: bool | None = None
 
-    _not_null = field_validator("value")(refuse_null)
+    _not_null = field_validator("value", "is_primary")(refuse_null)

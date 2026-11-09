@@ -270,3 +270,64 @@ class TestAgeBand:
 
         assert r.status_code == 200
         assert (r.json()["min_age"], r.json()["max_age"]) == (None, 99)
+
+
+class TestAnExplicitNullBoolean:
+    """A null boolean is refused at the edge rather than reaching the row (#565).
+
+    Two different failures sat behind one status code. ``issues_card`` and
+    ``is_default`` are NOT NULL, so the write was refused and the request 500ed
+    with nothing lost. ``is_active`` is nullable, so the write *committed* and
+    the reply then failed to serialise: the row was left holding NULL, and
+    because the list validates every row through the same Response model, one
+    request made ``GET /membership-types/`` 500 for every caller until the row
+    was repaired by hand.
+
+    Contrast ``TestAgeBand.test_null_clears_a_limit`` above: for ``min_age`` a
+    null is the documented way to clear the limit. The rule is not "no nulls on
+    an update", it is that a null must mean something the API can hand back.
+    """
+
+    @pytest.fixture
+    def admin(self, client, db):
+        user = _create_user(db, "admin")
+        client.cookies.update(_auth_cookie(user))
+        return user
+
+    @pytest.fixture
+    def tier(self, db):
+        mt = MembershipType(name="Nullable", slug="nullable-bools", is_active=True)
+        db.add(mt)
+        db.flush()
+        return mt
+
+    @pytest.mark.parametrize("field", ["issues_card", "is_active", "is_default"])
+    def test_it_is_refused_with_422(self, client, admin, tier, field):
+        r = client.put(f"/api/v1/membership-types/{tier.id}", json={field: None})
+
+        assert r.status_code == 422, f"{field}=null answered {r.status_code}"
+        assert any(err["loc"][-1] == field for err in r.json()["detail"])
+
+    @pytest.mark.parametrize("field", ["issues_card", "is_active", "is_default"])
+    def test_the_row_is_untouched_and_the_list_still_answers(
+        self, client, db, admin, tier, field
+    ):
+        """The half that made this worth a fix rather than a nicer status code."""
+        before = getattr(tier, field)
+
+        client.put(f"/api/v1/membership-types/{tier.id}", json={field: None})
+
+        db.expire_all()
+        row = db.query(MembershipType).filter(MembershipType.id == tier.id).first()
+        assert getattr(row, field) == before
+        assert client.get("/api/v1/membership-types/").status_code == 200
+
+    def test_omitting_the_field_still_leaves_it_alone(self, client, admin, tier):
+        """The guard must not turn a partial update into a full one."""
+        r = client.put(
+            f"/api/v1/membership-types/{tier.id}", json={"description": "Changed"}
+        )
+
+        assert r.status_code == 200, r.text
+        assert r.json()["issues_card"] is False
+        assert r.json()["is_active"] is True
