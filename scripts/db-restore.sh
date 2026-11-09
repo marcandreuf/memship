@@ -244,14 +244,52 @@ else
     SAFETY_FILE=""
 fi
 
-# Stop API to prevent connections during restore
-echo -e "${BLUE}i${NC} Stopping API container..."
-docker compose stop api 2>/dev/null || true
+# Stop everything that holds a database connection, not just the API. The
+# worker and beat connect over TCP exactly as the API does — the comment below
+# about the password says so — and a single open session is enough to make DROP
+# DATABASE fail with "database is being accessed by other users". That aborted
+# every restore on a default stack, both documented procedures included, since
+# the scripts were written (#567).
+#
+# Intersected with what compose actually reports, so a stack without celery, or
+# one whose overlay has parked a service in an inactive profile, is not a
+# failure. The closing `up -d` starts them all again.
+echo -e "${BLUE}i${NC} Stopping the services that use the database..."
+DB_CLIENTS=()
+while IFS= read -r svc; do
+    case "$svc" in
+        api|celery-worker|celery-beat) DB_CLIENTS+=("$svc") ;;
+    esac
+done < <(docker compose config --services 2>/dev/null || true)
+if [[ ${#DB_CLIENTS[@]} -gt 0 ]]; then
+    docker compose stop "${DB_CLIENTS[@]}" 2>/dev/null || true
+fi
+
+# The guard that does not depend on the list above being complete: terminate
+# whatever is still attached. A container that reconnects between the stop and
+# the drop, a psql someone left open in another window, or a service added later
+# and missed above would each fail the drop on its own. Not fatal if it cannot
+# run — the drop below reports the real problem.
+docker compose exec -T db psql -U memship -d postgres --quiet -c \
+    "SELECT pg_terminate_backend(pid) FROM pg_stat_activity
+      WHERE datname = 'memship_db' AND pid <> pg_backend_pid();" >/dev/null 2>&1 || true
 
 # Drop and recreate database
 echo -e "${BLUE}i${NC} Dropping and recreating database..."
-docker compose exec -T db \
-    psql -U memship -d postgres -c "DROP DATABASE IF EXISTS memship_db;"
+if ! docker compose exec -T db psql -U memship -d postgres --quiet -v ON_ERROR_STOP=1 \
+        -c "DROP DATABASE IF EXISTS memship_db;"; then
+    echo ""
+    echo -e "${RED}${BOLD}=== RESTORE FAILED ===${NC}"
+    echo -e "  The database could not be dropped, so nothing has been restored."
+    echo -e "  Your data is untouched."
+    echo ""
+    echo -e "  Usually something is still connected to it. See what:"
+    echo -e "    docker compose exec -T db psql -U memship -d postgres -c \\"
+    echo -e "      \"SELECT pid, usename, client_addr FROM pg_stat_activity\\"
+    echo -e "        WHERE datname = 'memship_db';\""
+    echo ""
+    exit 1
+fi
 docker compose exec -T db \
     psql -U memship -d postgres -c "CREATE DATABASE memship_db OWNER memship;"
 

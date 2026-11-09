@@ -139,5 +139,14 @@ mutate "$RESTORE" "a restore pins docker-compose.yml, so its up -d drops the ext
 mutate "scripts/db-backup.sh" "the pre-upgrade snapshot pins docker-compose.yml" \
     's/^docker compose exec -T db /docker compose -f docker-compose.yml exec -T db /'
 
+mutate "$RESTORE" "only the API is stopped, so the worker's session refuses the drop" \
+    's/        api|celery-worker|celery-beat) DB_CLIENTS/        api) DB_CLIENTS/'
+
+mutate "$RESTORE" "a service that reconnects before the drop is left attached" \
+    's/SELECT pg_terminate_backend(pid) FROM pg_stat_activity/SELECT pid FROM pg_stat_activity/'
+
+mutate "$RESTORE" "a refused drop is reported as a successful restore" \
+    's/if ! docker compose exec -T db psql -U memship -d postgres --quiet -v ON_ERROR_STOP=1 \\/if docker compose exec -T db psql -U memship -d postgres --quiet -v ON_ERROR_STOP=0 \\/'
+
 printf '\n%s mutations, %s survived\n' "$checked" "$survivors"
 [ "$survivors" -eq 0 ]
