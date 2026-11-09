@@ -1,10 +1,10 @@
 <!-- source: en/self-hosting/feature-flags.md -->
-<!-- source-hash: 70b6870a042d -->
+<!-- source-hash: d8d0082e4c66 -->
 
 # Feature flags
 
 Memship porta tots els mòduls en una sola imatge. Quins fa servir realment una entitat ho decideixen
-**vint-i-una claus** en una única columna JSONB, `organization_settings.features`, a l'única fila
+**vint-i-quatre claus** en una única columna JSONB, `organization_settings.features`, a l'única fila
 que admet la base de dades (`CHECK (id = 1)`). S'editen des de **Configuració** al portal
 d'administració, no des del `.env` ni des d'un fitxer del servidor. Res d'això necessita reiniciar.
 
@@ -16,7 +16,7 @@ no hi havia manera de distingir un mòdul que ningú no havia activat d'un mòdu
 
 ## Amb què comença una instal·lació nova
 
-**Dues de les vint-i-una.** Totes les altres no hi són.
+**Dues de les vint-i-quatre.** Totes les altres no hi són.
 
 | Definida | Per què |
 |---|---|
@@ -24,7 +24,7 @@ no hi havia manera de distingir un mòdul que ningú no havia activat d'un mòdu
 | `gender_options` | Cinc opcions sembrades, perquè el formulari de soci tingui alguna cosa per oferir des del primer dia. |
 
 És deliberat, no un descuit. Un club activa cada mòdul quan hi està preparat, i `install.sh`
-produeix exactament aquest estat. Això sí, vol dir que el primer arrencament es veu escàs: **set
+produeix exactament aquest estat. Això sí, vol dir que el primer arrencament es veu escàs: **vuit
 rutes redirigeixen al tauler** fins que no s'activa el seu mòdul.
 
 | Ruta | Necessita |
@@ -32,6 +32,7 @@ rutes redirigeixen al tauler** fins que no s'activa el seu mòdul.
 | `/communications`, `/announcements` | `communications` |
 | `/spaces`, `/book`, `/my-bookings` | `bookings` |
 | `/scan`, `/my-card` | `member_card` |
+| `/donate` | `member_donations_enabled` |
 
 Un mòdul desactivat també **respon 404 als seus propis endpoints**, i per això el frontend
 redirigeix en lloc de mostrar una carcassa damunt d'una API morta.
@@ -57,7 +58,7 @@ deduït.
 python -m app.cli.seed --demo     # or: ./scripts/dev.sh seed demo
 ```
 
-El camí de demostració activa **totes vint-i-una** i omple al darrere les dades d'un club sencer. És
+El camí de demostració activa **totes vint-i-quatre** i omple al darrere les dades d'un club sencer. És
 per avaluar i revisar, mai per a una entitat real, perquè també crea socis i rebuts de demostració.
 
 > **També arma les tasques programades.** `recurring_billing_enabled`,
@@ -78,7 +79,7 @@ per avaluar i revisar, mai per a una entitat real, perquè també crea socis i r
 > instància i vols que les seves dades es quedin quietes, desactiva aquestes tres mentre duri. Només
 > controlen feina programada i no tenen pantalla pròpia, així que no perds res que puguis veure.
 
-## Les vint-i-una
+## Les vint-i-quatre
 
 En aquesta columna hi viuen tres menes de coses diferents, i no es comporten igual.
 
@@ -100,6 +101,7 @@ En aquesta columna hi viuen tres menes de coses diferents, i no es comporten igu
 | `payment_reminders_enabled` | porta | desactivat | la tanda de reclamacions i els recordatoris manuals |
 | `recurring_billing_enabled` | porta | desactivat | la tanda programada de quotes de soci |
 | `membership_lapse_enabled` | porta | desactivat | la tanda programada que retorna els socis caducats al nivell gratuït |
+| `member_donations_enabled` | porta | desactivat | `/donate`, el donatiu que fa el mateix soci |
 | `reminder_days_after_due` | valor | **3** | dies després del venciment abans del primer recordatori |
 | `reminder_repeat_days` | valor | **7** | dies entre repeticions |
 | `reminder_max_count` | valor | **3** | recordatoris per rebut |
@@ -109,6 +111,8 @@ En aquesta columna hi viuen tres menes de coses diferents, i no es comporten igu
 | `booking_window_days` | valor | **14** | amb quanta antelació pot reservar un soci (1–365) |
 | `booking_cancellation_deadline_hours` | valor | **24** | límit per cancel·lar (0–8760) |
 | `booking_waitlist_enabled` | valor | **activat** | si una franja plena ofereix llista d'espera |
+| `donation_min_amount` | valor | **5** | donatiu mínim que s'accepta, i d'on surten els imports suggerits |
+| `donation_max_amount` | valor | **1000** | donatiu màxim que s'accepta, perquè una errada no es converteixi en un càrrec enorme |
 | `billing_notification_email` | valor | *sense definir* | on van els resums de les tandes de facturació i el resum diari de notificacions de pagament; no fa res si no està definit, i es valida com a adreça en desar |
 | `gender_options` | dades | no s'ofereix cap opció | el camp de gènere del formulari de soci |
 
@@ -134,7 +138,7 @@ sense sentit*, cosa que les portes no necessiten gens.
 
 ## Es rebutja qualsevol clau que aquesta pàgina no llisti
 
-Les vint-i-una de més amunt són el conjunt sencer, i `PUT /api/v1/settings/` respon **422** a
+Les vint-i-quatre de més amunt són el conjunt sencer, i `PUT /api/v1/settings/` respon **422** a
 qualsevol altra, indicant la clau que no ha reconegut.
 
 Això importa si configures una instància a través de l'API en lloc de les pantalles

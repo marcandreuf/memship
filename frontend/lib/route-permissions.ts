@@ -50,6 +50,9 @@ export const ROUTE_PERMISSIONS: ReadonlyArray<readonly [string, readonly string[
   ["/my-bookings", ["self.bookings.read"]],
   ["/my-receipts", ["self.billing.read"]],
   ["/my-membership", ["self.billing.read"]],
+  // Raising the donation receipt is a write, which is what this page does
+  // before handing off to the gateway.
+  ["/donate", ["self.billing.write"]],
   ["/my-card", ["self.card.read"]],
   ["/profile", ["self.profile.read"]],
 ];
@@ -68,6 +71,7 @@ export const ROUTE_FEATURES: ReadonlyArray<readonly [string, string]> = [
   ["/my-bookings", "bookings"],
   ["/scan", "member_card"],
   ["/my-card", "member_card"],
+  ["/donate", "member_donations_enabled"],
 ];
 
 /** The keys that open `pathname`, or `null` when the route is unrestricted. */

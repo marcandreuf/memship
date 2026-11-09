@@ -43,6 +43,7 @@ class OrganizationSettingsResponse(BaseModel):
     default_vat_rate: float | None = 21.00
     creditor_id: str | None = None
     sepa_format: str | None = None
+    donation_message: str | None = None
     features: dict = {}
     custom_settings: dict = {}
     created_at: datetime
@@ -112,6 +113,11 @@ class OrganizationSettingsUpdate(BaseModel):
     default_vat_rate: float | None = Field(default=None, ge=0, le=100)
     creditor_id: str | None = Field(default=None, max_length=35)
     sepa_format: str | None = Field(default=None, pattern=r"^(pain\.008)$")
+    # The club's own reason to give, shown on the donate page. Bounded because
+    # it is free text on a page, not a document: a few paragraphs, not an essay.
+    # Blank clears it, which is how an administrator withdraws the ask without
+    # switching the feature off.
+    donation_message: str | None = Field(default=None, max_length=2000)
     features: dict | None = None
     custom_settings: dict | None = None
 

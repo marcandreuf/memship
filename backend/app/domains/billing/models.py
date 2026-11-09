@@ -236,6 +236,15 @@ class Receipt(Base):
     refund_date = Column(Date)
     refund_reason = Column(String(255))
 
+    # Raised by the member pressing Donate, rather than by an administrator
+    # recording a donation already promised. The abandonment sweep keys on this
+    # and not on ``origin``, because ``ReceiptCreate`` accepts
+    # ``origin='donation'`` and so the administrator's route produces the same
+    # origin: sweeping on it would void a receipt that is legitimately waiting
+    # for a bank transfer (#434). NULL everywhere it was not set, which is why
+    # the sweep tests ``IS TRUE`` rather than falsiness.
+    donation_self_service = Column(Boolean)
+
     # Batch & processor
     is_batchable = Column(Boolean, default=True, nullable=False)
     transaction_id = Column(String(255))

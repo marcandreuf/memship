@@ -1,0 +1,17 @@
+{
+  "donations": {
+    "title": "Fer un donatiu",
+    "nav": "Donar",
+    "info": "Aporta al club per damunt de la teva quota. Es cobra per la mateixa passarel·la amb què pagues els rebuts, i reps un rebut descarregable.",
+    "notAMember": "Aquest compte administra la instància i no és soci del club, així que no pot fer un donatiu des d'aquí.",
+    "unavailable": "Aquest club no està acceptant donatius ara mateix.",
+    "chooseAmount": "Tria un import",
+    "otherAmount": "O un altre import",
+    "bounds": "Entre {min} i {max}.",
+    "confirm": "Continuar al pagament",
+    "raised": "Donatiu registrat. Ja el pots pagar.",
+    "awaitingPayment": "Donatiu de {amount} pendent de pagament",
+    "awaitingPaymentExplain": "Hem emès el rebut {receipt}. El donatiu no està fet fins que el paguis, i si no el pagues s'anul·la tot sol: no te'l reclamarem.",
+    "noGateway": "El club encara no té configurada cap passarel·la de pagament, així que aquest donatiu no es pot pagar en línia. Parla amb la junta."
+  }
+}

@@ -164,6 +164,18 @@
       "maxCount": "Recordatoris màxims",
       "maxCountDesc": "Nombre màxim de recordatoris per rebut (1–10)"
     },
+    "donations": {
+      "tab": "Donatius",
+      "title": "Donatius de socis",
+      "enabled": "Permetre donatius des del portal",
+      "enabledDesc": "Afegeix un botó «Donar» al portal del soci. Es cobra amb la passarel·la que ja feu servir per a les quotes; no cal configurar res més",
+      "minAmount": "Import mínim",
+      "minAmountDesc": "El mínim que s'accepta, i d'on surten els imports suggerits (el mínim i els seus múltiples per 2, 5 i 10)",
+      "maxAmount": "Import màxim",
+      "maxAmountDesc": "El màxim que s'accepta, perquè una errada en teclejar no es converteixi en un càrrec enorme",
+      "message": "Per a què demaneu el donatiu",
+      "messageDesc": "El que llegeix el soci abans de triar l'import, amb les vostres paraules. Si ho deixeu buit, la pàgina només mostra els imports"
+    },
     "membershipLapse": {
       "tab": "Impagament de quota",
       "title": "Impagament",

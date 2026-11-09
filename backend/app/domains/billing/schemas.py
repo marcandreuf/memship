@@ -533,6 +533,50 @@ class MembershipPurchaseRequest(BaseModel):
     membership_type_id: int
 
 
+class DonationOptionsResponse(BaseModel):
+    """What the member-facing donate page may offer.
+
+    ``message`` is the organisation's own reason to give and is null until an
+    administrator writes one, which the page has to render around rather than
+    print an empty heading for. ``suggested_amounts`` is derived from
+    ``min_amount`` rather than configured, so it is served rather than rebuilt
+    in the browser: one definition of the ladder, on the side that also refuses
+    an amount outside it.
+    """
+
+    message: str | None = None
+    min_amount: int
+    max_amount: int
+    suggested_amounts: list[int]
+
+
+class DonationRequest(BaseModel):
+    """How much the member has chosen to give.
+
+    Bounded loosely here and exactly in the service: this refuses a negative or
+    absurd number without the database, and the configured minimum and maximum
+    decide the rest, because they are what an administrator set and can change
+    while this page is open. Two decimal places, like every other amount the
+    product stores.
+    """
+
+    amount: Decimal = Field(gt=0, le=1_000_000, decimal_places=2)
+
+
+class DonationResponse(BaseModel):
+    """The receipt now waiting to be paid at the gateway.
+
+    ``receipt_id`` is what the portal hands to the Stripe or Redsys checkout
+    endpoint that already exists, exactly as a membership purchase does.
+    """
+
+    receipt_id: int
+    receipt_number: str
+    receipt_status: str
+    total_amount: Decimal
+    due_date: date | None = None
+
+
 class MembershipPurchaseQuote(BaseModel):
     """What buying a plan costs today, before and after tax.
 

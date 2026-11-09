@@ -164,6 +164,18 @@
       "maxCount": "Recordatorios máximos",
       "maxCountDesc": "Número máximo de recordatorios por recibo (1–10)"
     },
+    "donations": {
+      "tab": "Donativos",
+      "title": "Donativos de socios",
+      "enabled": "Permitir donativos desde el portal",
+      "enabledDesc": "Añade un botón «Donar» en el portal del socio. Se cobra con la pasarela que ya usas para las cuotas; no hay que configurar nada más",
+      "minAmount": "Importe mínimo",
+      "minAmountDesc": "El mínimo que se acepta, y del que salen los importes sugeridos (el mínimo y sus múltiplos por 2, 5 y 10)",
+      "maxAmount": "Importe máximo",
+      "maxAmountDesc": "El máximo que se acepta, para que una errata al teclear no se convierta en un cargo enorme",
+      "message": "Para qué pedís el donativo",
+      "messageDesc": "Lo que lee el socio antes de elegir el importe, con vuestras palabras. Si lo dejáis vacío, la página solo muestra los importes"
+    },
     "membershipLapse": {
       "tab": "Impago de cuota",
       "title": "Impago",

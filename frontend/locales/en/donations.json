@@ -1,0 +1,17 @@
+{
+  "donations": {
+    "title": "Make a donation",
+    "nav": "Donate",
+    "info": "Give the club something beyond your fee. It is charged through the same gateway you pay receipts with, and you get a downloadable receipt.",
+    "notAMember": "This account administers the instance and is not a member of the club, so it cannot donate from here.",
+    "unavailable": "This club is not taking donations at the moment.",
+    "chooseAmount": "Choose an amount",
+    "otherAmount": "Or another amount",
+    "bounds": "Between {min} and {max}.",
+    "confirm": "Continue to payment",
+    "raised": "Donation recorded. You can pay it now.",
+    "awaitingPayment": "Donation of {amount} awaiting payment",
+    "awaitingPaymentExplain": "We have issued receipt {receipt}. The donation is not made until you pay it, and if you do not, it is voided on its own: nobody will chase you for it.",
+    "noGateway": "The club has no payment gateway configured yet, so this donation cannot be paid online. Talk to the committee."
+  }
+}
