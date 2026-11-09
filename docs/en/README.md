@@ -51,6 +51,8 @@ Running Memship on your own server.
 - [Backups & restore](self-hosting/backups-and-restore.md)
 - [Upgrading](self-hosting/upgrading.md), image tags and migrations
 - [Troubleshooting](self-hosting/troubleshooting.md), when something will not start
+- [Behind your own reverse proxy](self-hosting/reverse-proxy.md), Traefik in place of the bundled
+  Caddy, for a server that already runs a proxy
 - Reverse proxy & TLS, the stack ships a Caddy that obtains and renews certificates on its own.
   Set up in [Installation](getting-started/installation.md), tuned via `SITE_ADDRESS` in the
   [Configuration reference](self-hosting/configuration.md); the DNS side is

@@ -44,6 +44,17 @@ grep -q 'pw-never-in-argv' "$STUB_LOG" && fail "DB_PASSWORD appeared on a comman
 assert_order "compose .*up -d" "^curl .*api/v1/health"
 done_case
 
+it "lets COMPOSE_FILE in .env decide the stack, rather than pinning docker-compose.yml"
+# Behind an external proxy, .env layers the overlay over docker-compose.yml.
+# A restore that pins -f docker-compose.yml recreates the stack without it, and
+# its closing `up -d` starts the bundled Caddy on 80/443 next to that proxy.
+# The dump it takes first goes through db-backup.sh's rules too.
+instance restore-compose-file
+restore
+assert_status 0
+assert_not_called "compose -f"
+done_case
+
 it "does not say complete while the API is not answering"
 instance restore-api-down
 STUB_HEALTH_VERSION="" restore

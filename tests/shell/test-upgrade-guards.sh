@@ -241,6 +241,9 @@ assert_status 0
 assert_order 'compose pull' 'pg_dump'
 assert_order 'pg_dump' 'app\.cli\.preflight'
 assert_order 'app\.cli\.preflight' 'compose up -d'
+# The snapshot is db-backup.sh, which must read the same compose files as the
+# rest of the upgrade, overlay included.
+assert_not_called 'compose -f'
 done_case
 
 

@@ -45,4 +45,27 @@ if [ "$canonical" != "$quickstart" ]; then
   exit 1
 fi
 
-echo "check-caddy-headers: both header blocks list $(echo "$canonical" | wc -l | tr -d ' ') directives, matching."
+# The external-proxy overlay is the third copy (#131): the same headers as
+# Traefik labels. A label with an empty value removes the header, which is how
+# Traefik spells Caddy's `-Server`, so it is compared as `-Name`.
+overlay_directives() {
+  sed -n 's/^[[:space:]]*traefik\.http\.middlewares\.memship-headers\.headers\.customresponseheaders\.\([A-Za-z-]*\):[[:space:]]*\(.*\)$/\1 \2/p' "$1" |
+    while read -r name value; do
+      if [ "$value" = '""' ]; then echo "-$name"; else echo "$name"; fi
+    done | sort
+}
+
+overlay=$(overlay_directives docker-compose.external-proxy.yml)
+
+if [ "$canonical" != "$overlay" ]; then
+  echo "check-caddy-headers: docker-compose.external-proxy.yml's headers have drifted from the Caddyfile." >&2
+  echo >&2
+  diff <(echo "$canonical") <(echo "$overlay") \
+    --label "Caddyfile" --label "docker-compose.external-proxy.yml" -u >&2 || true
+  echo >&2
+  echo "Add the missing header as a customresponseheaders label (an empty value" >&2
+  echo "removes a header), or update this check if the difference is deliberate." >&2
+  exit 1
+fi
+
+echo "check-caddy-headers: all three header blocks list $(echo "$canonical" | wc -l | tr -d ' ') directives, matching."

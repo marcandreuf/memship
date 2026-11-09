@@ -77,6 +77,8 @@ Para las personas socias que usan el portal.
   y restauración
 - [Actualizar](self-hosting/upgrading.md), etiquetas de imagen y migraciones
 - [Resolución de problemas](self-hosting/troubleshooting.md), cuando algo no arranca
+- [Detrás de tu propio proxy inverso](self-hosting/reverse-proxy.md), Traefik en lugar del Caddy incluido, para un
+  servidor que ya tiene un proxy
 
 ## Desarrollo (contribuir)
 
