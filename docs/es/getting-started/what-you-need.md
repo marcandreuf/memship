@@ -1,5 +1,5 @@
 <!-- source: en/getting-started/what-you-need.md -->
-<!-- source-hash: b00dd8346157 -->
+<!-- source-hash: e2cf94f5906d -->
 
 # Qué necesitas para ejecutar Memship
 
@@ -132,8 +132,7 @@ Tres opciones, configurables desde la pantalla de Configuración o desde el `.en
 - **Gmail**, una cuenta de Google normal con una contraseña de aplicación. Google aplica sus
   propios límites diarios de envío.
 - **Cualquier servidor SMTP**, incluido el del alojamiento de correo que ya tenga la entidad,
-  siempre que acepte STARTTLS, normalmente en el puerto 587. Un servidor accesible solo por el
-  puerto 465 no está soportado.
+  siempre que acepte STARTTLS en el puerto 587, o SSL/TLS directo en el puerto 465.
 
 [Envío de correo](../self-hosting/email.md) cubre las tres, incluidos los registros DNS que
 necesita Resend.

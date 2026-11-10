@@ -271,13 +271,18 @@
         "from_email": "Correu del remitent",
         "host": "Servidor",
         "port": "Port",
-        "tls": "Xifrar amb STARTTLS",
+        "security": "Xifratge",
         "user": "Usuari SMTP",
         "password": "Contrasenya"
       },
       "gmailPreset": "Fer servir la configuració de Gmail",
       "gmailPresetHint": "Omple smtp.gmail.com, el port 587 i STARTTLS. Gmail necessita una contrasenya d'aplicació, no la del compte.",
-      "tlsHint": "Deixa-ho activat tret que el teu servidor indiqui el contrari. El port 465, que xifra des del primer byte, no està suportat: fes servir el 587.",
+      "securityHint": "STARTTLS és l'habitual, al port 587. Tria SSL/TLS directe només si el teu servidor xifra des del primer byte, normalment al port 465. Sense xifratge, només per a un servidor de la xarxa local.",
+      "security": {
+        "starttls": "STARTTLS (port 587)",
+        "ssl": "SSL/TLS directe (port 465)",
+        "off": "Sense xifratge"
+      },
       "invalidPort": "El port ha de ser un número entre 1 i 65535.",
       "secretHint": "Deixa-ho en blanc per mantenir el valor desat; introdueix-ne un de nou per reemplaçar-lo.",
       "fromEnv": "de l'entorn",

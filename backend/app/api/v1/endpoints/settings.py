@@ -313,7 +313,7 @@ def _health_view(health: ProviderHealth) -> MailHealthView:
 def _build_mailing_view(db: Session) -> MailingConfigView:
     resolved = resolve_mailing_config(db)
     r, s = resolved.resend, resolved.smtp
-    host, port, tls = resolved.smtp_endpoint()
+    host, port, security = resolved.smtp_endpoint()
     health = provider_health(db, resolved)
     return MailingConfigView(
         active_provider=resolved.active,
@@ -329,7 +329,10 @@ def _build_mailing_view(db: Session) -> MailingConfigView:
         smtp=MailSmtpView(
             host=host,
             port=port,
-            tls=tls,
+            security=security,
+            # The deprecated boolean, derived rather than stored: "is it
+            # encrypted", which both encrypted modes answer yes to (#577).
+            tls=security != "off",
             user=s.get("user"),
             from_email=s.get("from_email"),
             password=MailSecretStatus(
@@ -349,7 +352,9 @@ def _apply_mail_provider_update(pname: str, pupdate, node: dict, changed: list[s
 
     Blank secret = unchanged; ``clear`` wipes; a secret write requires the
     encryption key. Non-secret strings clear on ``""`` and set otherwise; SMTP
-    port and TLS arrive typed and are stored as text like every other field.
+    port and security arrive typed and are stored as text like every other field.
+    A write also drops the node the field was renamed from, so the stored JSON
+    never carries both spellings.
     """
     for spec in MAIL_PROVIDER_FIELDS[pname]:
         field_update = getattr(pupdate, spec.name)
@@ -385,6 +390,8 @@ def _apply_mail_provider_update(pname: str, pupdate, node: dict, changed: list[s
             else:
                 node[spec.name] = {"value": field_update, "secret": False}
                 changed.append(f"{pname}.{spec.name}")
+            if spec.fallback_db_field:
+                node.pop(spec.fallback_db_field, None)
 
 
 @router.get("/mailing", response_model=MailingConfigView)

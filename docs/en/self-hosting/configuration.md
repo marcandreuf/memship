@@ -83,7 +83,8 @@ Email is **disabled** unless either a Resend API key or an SMTP host is set. See
 | `SMTP_USER`     | _(empty)_               | SMTP username.                       |
 | `SMTP_PASSWORD` | _(empty)_               | SMTP password.                       |
 | `SMTP_FROM`     | `noreply@memship.local` | From address.                        |
-| `SMTP_TLS`      | `true`                  | Use STARTTLS.                        |
+| `SMTP_SECURITY` | `starttls`              | `starttls`, `ssl` (port 465) or `off`. |
+| `SMTP_TLS`      | `true`                  | Deprecated: `true` means `starttls`, `false` means `off`. `SMTP_SECURITY` wins. |
 
 If both are configured, Resend takes precedence.
 

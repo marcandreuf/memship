@@ -1,5 +1,5 @@
 <!-- source: en/admin-guide/integrations.md -->
-<!-- source-hash: 7d143bf2539b -->
+<!-- source-hash: ea5f99d8c47e -->
 
 # Integraciones: guía de configuración
 
@@ -356,9 +356,11 @@ correo*:
 - **Correo del remitente**, la dirección que ven los socios. La mayoría de los servidores solo
   aceptan la dirección de un buzón que sea tuyo; déjalo en blanco para enviar como el usuario.
 
-**El puerto 465 no está soportado.** Cifra desde el primer byte en lugar de usar STARTTLS, y
-memship habla STARTTLS. Casi todos los proveedores que ofrecen el 465 también ofrecen el 587, así
-que usa el 587.
+**Cifrado** elige cómo se protege la conexión: **STARTTLS**, normalmente en el puerto 587, que
+mejora una conexión en claro; **SSL/TLS directo**, normalmente en el puerto 465, cifrado desde el
+primer byte; o **sin cifrado**, para un servidor de tu propia red. Ponlo como lo documente tu
+proveedor para el puerto que uses. Casi todos los proveedores que ofrecen el 465 también ofrecen el
+587, y el 587 sigue siendo el valor por defecto.
 
 **Gmail.** Pulsa **Usar la configuración de Gmail** en la tarjeta: rellena `smtp.gmail.com`, el
 puerto `587` y STARTTLS. El usuario es la **dirección de Gmail**, y la contraseña es una
@@ -460,7 +462,7 @@ superar una prueba, si han cambiado desde entonces.
 | Síntoma | Causa y solución |
 | ------- | ------------- |
 | La prueba falla con un error de autenticación SMTP (`535`, "Username and Password not accepted") | El usuario o la contraseña son incorrectos. En Gmail: la contraseña de aplicación es incorrecta, se ha revocado o se ha desactivado la verificación en 2 pasos (lo que invalida todas las contraseñas de aplicación); genera una nueva. En tu propio servidor: comprueba si el proveedor da una contraseña SMTP aparte. |
-| La prueba falla: conexión rechazada, tiempo de espera agotado o la conexión se corta enseguida | Servidor o puerto incorrectos, o el servidor solo escucha en el 465 (no soportado, usa el 587). Algunas redes de alojamiento también bloquean el puerto 587 de salida; pregúntaselo al administrador del servidor. |
+| La prueba falla: conexión rechazada, tiempo de espera agotado o la conexión se corta enseguida | Servidor o puerto incorrectos, o **Cifrado** no concuerda con el puerto: el 465 necesita SSL/TLS directo y el 587 necesita STARTTLS. Algunas redes de alojamiento también bloquean el SMTP de salida; pregúntaselo al administrador del servidor. |
 | [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords) dice *"The setting that you are looking for is not available for your account."* | No se puede crear ninguna contraseña de aplicación para esta cuenta. O bien la verificación en 2 pasos solo está configurada con passkeys/llaves de seguridad (añade un número de teléfono o una aplicación de autenticación y recarga la página), o bien la cuenta tiene la Protección Avanzada, o bien es una cuenta de trabajo/centro educativo cuyo administrador bloquea las contraseñas de aplicación (sin alternativa, usa Resend u otra cuenta). Consulta el paso 1 de la 4.3. |
 | La prueba falla: Resend "domain is not verified" / 403 | El correo del remitente no es de un dominio verificado en Resend, o los registros DNS no se han propagado. Comprueba *Domains* en Resend. |
 | La prueba falla: Resend 401 / "API key is invalid" | Clave mal escrita, revocada o creada sin permiso de envío. Crea una clave nueva. |
@@ -518,7 +520,7 @@ entorno, si lo hay.
 | Resend → Correo del remitente | `RESEND_FROM_EMAIL`, después `SMTP_FROM` |
 | Servidor SMTP → Servidor | `SMTP_HOST` |
 | Servidor SMTP → Puerto | `SMTP_PORT` |
-| Servidor SMTP → STARTTLS | `SMTP_TLS` |
+| Servidor SMTP → Cifrado | `SMTP_SECURITY` y, si no, la obsoleta `SMTP_TLS` |
 | Servidor SMTP → Usuario SMTP | `SMTP_USER` |
 | Servidor SMTP → Contraseña | `SMTP_PASSWORD` |
 | Servidor SMTP → Correo del remitente | `SMTP_FROM` |
@@ -561,7 +563,7 @@ Todos los campos de un proveedor son obligatorios antes de que se pueda activar.
 | Resend | Clave de API | **sí** | sí | Empieza por `re_`; se muestra una vez, al crearla. |
 | Resend | Correo del remitente | no | no | Tiene que ser de un dominio verificado en Resend. |
 | Servidor SMTP | Servidor | no | sí | p. ej. `mail.myclub.org`; `smtp.gmail.com` para Gmail. |
-| Servidor SMTP | Puerto | no | no | Por defecto, `587`. El puerto 465 no está soportado. |
+| Servidor SMTP | Puerto | no | no | Por defecto, `587`. Usa el `465` con SSL/TLS directo. |
 | Servidor SMTP | STARTTLS | no | no | Activado por defecto. |
 | Servidor SMTP | Usuario SMTP | no | consulta las notas | Normalmente la dirección de un buzón; para Gmail, la dirección de Gmail. |
 | Servidor SMTP | Contraseña | **sí** | no | Para Gmail, una contraseña de aplicación de 16 caracteres, no la contraseña de la cuenta. |

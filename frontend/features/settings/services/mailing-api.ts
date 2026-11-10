@@ -23,9 +23,13 @@ export interface MailResendView {
   health: MailHealth;
 }
 
+export type MailSmtpSecurity = "off" | "starttls" | "ssl";
+
 export interface MailSmtpView {
   host: string;
   port: number;
+  security: MailSmtpSecurity;
+  /** @deprecated Replaced by `security`. True for either encrypted mode. */
   tls: boolean;
   user: string;
   from_email: string;
@@ -56,6 +60,8 @@ export interface MailResendUpdate {
 export interface MailSmtpUpdate {
   host?: string;
   port?: number;
+  security?: MailSmtpSecurity;
+  /** @deprecated Replaced by `security`, which wins when both are sent. */
   tls?: boolean;
   user?: string;
   from_email?: string;

@@ -1,5 +1,5 @@
 <!-- source: en/self-hosting/email.md -->
-<!-- source-hash: 16d2ae445324 -->
+<!-- source-hash: a7f08bd46411 -->
 
 # Enviament de correu
 
@@ -18,8 +18,9 @@ una instal·lació que ja està en marxa.
 | **Configuració → Integracions → Correu** | Resend, qualsevol servidor SMTP (Gmail és una configuració predefinida) | Gairebé tothom. S'aplica a la petició següent, sense reiniciar. |
 | **`.env`** | Resend, qualsevol servidor SMTP | Deixar les credencials posades en el moment de desplegar, i les instal·lacions anteriors a la pantalla de configuració. |
 
-SMTP vol dir un servidor que accepti **STARTTLS**, normalment al port 587, o sense cap xifratge.
-Un servidor accessible només pel port 465, que xifra des del primer byte, no és compatible.
+SMTP vol dir un servidor que accepti **STARTTLS**, normalment al port 587, o un que xifri des del
+primer byte, normalment al port 465, o un sense cap xifratge. Tria quin amb l'ajust **Xifratge** de
+la pantalla, o amb `SMTP_SECURITY` al `.env`.
 
 ## Opció A: la pantalla de configuració
 
@@ -73,8 +74,13 @@ SMTP_PORT=587
 SMTP_USER=your-username
 SMTP_PASSWORD=your-password
 SMTP_FROM=noreply@yourdomain.org
-SMTP_TLS=true
+SMTP_SECURITY=starttls   # starttls | ssl | off
 ```
+
+`SMTP_SECURITY` substitueix `SMTP_TLS`. La variable antiga continua funcionant, així que un fitxer
+que ja existeix no necessita cap canvi: `SMTP_TLS=true` vol dir `starttls` i `SMTP_TLS=false` vol
+dir `off`. Defineix `SMTP_SECURITY` quan necessitis `ssl`, que `SMTP_TLS` no podia expressar. Si hi
+són totes dues, manà `SMTP_SECURITY`.
 
 La correspondència completa entre camp de la pantalla i variable d'entorn és a la
 [guia de configuració d'integracions, secció 6](../admin-guide/integrations.md#6-alternativa-amb-el-fitxer-de-configuració-env).
@@ -101,7 +107,7 @@ antiga. Buida el camp a la pantalla per recórrer al valor de l'entorn.
 
 La pantalla marca els camps que està llegint de l'entorn amb la insígnia **"de l'entorn"**, que és
 la manera més ràpida de veure quina font està activa. El port i el TLS sempre tenen un valor, 587 i
-activat, així que només porten la insígnia quan `SMTP_PORT` o `SMTP_TLS` estan definits de debò.
+activat, així que només porten la insígnia quan `SMTP_PORT` o `SMTP_SECURITY` estan definits de debò.
 
 **Si actualitzes des d'una versió que oferia "Gmail" com a proveïdor:** sempre va ser el transport
 SMTP, i ara s'anomena així. El correu continua anant on anava:

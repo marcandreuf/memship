@@ -248,7 +248,7 @@ You need an **API key**, and ideally a **From address** on a domain you have ver
 - **User and password**, usually the full address of a mailbox and its password. Some providers issue a separate SMTP password; use that one if so. A relay that accepts mail from your server's address needs neither, leave both blank.
 - **From address**, the address members see. Most servers only accept an address of a mailbox you own; leave it blank to send as the user.
 
-**Port 465 is not supported.** It encrypts from the first byte instead of using STARTTLS, and memship speaks STARTTLS. Nearly every provider that offers 465 also offers 587, so use 587.
+**Encryption** picks how the connection is protected: **STARTTLS**, usually on port 587, which upgrades a plain connection; **direct SSL/TLS**, usually on port 465, which is encrypted from the first byte; or **none**, for a server on your own network. Set it to match what your provider documents for the port you use. Nearly every provider that offers 465 also offers 587, and 587 remains the default.
 
 **Gmail.** Press **Use Gmail's settings** on the card: it fills in `smtp.gmail.com`, port `587` and STARTTLS. The user is the **Gmail address**, and the password is a Google **app password**, a 16-character password generated for one application. Your normal account password will not work; Google blocks it.
 
@@ -302,7 +302,7 @@ Switching providers later is a two-click operation: select the other provider, s
 | Symptom | Cause and fix |
 | ------- | ------------- |
 | Test fails with an SMTP authentication error (`535`, "Username and Password not accepted") | The user or password is wrong. On Gmail: the app password is wrong, or was revoked, or 2-Step Verification was turned off (which invalidates all app passwords), generate a new one. On your own server: check whether the provider issues a separate SMTP password. |
-| Test fails: connection refused, timed out, or the connection drops straight away | Wrong server or port, or the server only listens on 465 (not supported, use 587). Some hosting networks also block outgoing port 587; ask the server's administrator. |
+| Test fails: connection refused, timed out, or the connection drops straight away | Wrong server or port, or **Encryption** not matching the port: 465 needs direct SSL/TLS, 587 needs STARTTLS. Some hosting networks also block outgoing SMTP; ask the server's administrator. |
 | [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords) says *"The setting that you are looking for is not available for your account."* | No app password can be created for this account. Either 2-Step Verification is enrolled only with passkeys/security keys (add a phone number or authenticator app and reload the page), or the account has Advanced Protection, or it is a work/school account whose administrator blocks app passwords (no workaround, use Resend or another account). See 4.3 step 1. |
 | Test fails: Resend "domain is not verified" / 403 | The From address is not on a domain verified in Resend, or the DNS records have not propagated. Check *Domains* in Resend. |
 | Test fails: Resend 401 / "API key is invalid" | Key mistyped, revoked, or created without sending permission. Create a new key. |
@@ -347,7 +347,7 @@ Everything on the Integrations screen can also be supplied through the installat
 | Resend → From address | `RESEND_FROM_EMAIL`, then `SMTP_FROM` |
 | SMTP server → Server | `SMTP_HOST` |
 | SMTP server → Port | `SMTP_PORT` |
-| SMTP server → STARTTLS | `SMTP_TLS` |
+| SMTP server → Encryption | `SMTP_SECURITY`, then the deprecated `SMTP_TLS` |
 | SMTP server → SMTP user | `SMTP_USER` |
 | SMTP server → Password | `SMTP_PASSWORD` |
 | SMTP server → From address | `SMTP_FROM` |
@@ -384,7 +384,7 @@ All fields of a provider are required before it can be switched on.
 | Resend | API key | **yes** | yes | Starts with `re_`; shown once at creation. |
 | Resend | From address | no | no | Must be on a domain verified in Resend. |
 | SMTP server | Server | no | yes | e.g. `mail.myclub.org`; `smtp.gmail.com` for Gmail. |
-| SMTP server | Port | no | no | Defaults to `587`. Port 465 is not supported. |
+| SMTP server | Port | no | no | Defaults to `587`. Use `465` with direct SSL/TLS. |
 | SMTP server | STARTTLS | no | no | On by default. |
 | SMTP server | SMTP user | no | see notes | Usually a mailbox address; for Gmail, the Gmail address. |
 | SMTP server | Password | **yes** | no | For Gmail, a 16-character app password, not the account password. |

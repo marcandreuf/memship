@@ -383,7 +383,7 @@ def _send_via_smtp(
     html_body: str,
     host: str,
     port: int,
-    tls: bool,
+    security: str,
     user: str,
     password: str,
     from_email: str,
@@ -424,9 +424,13 @@ def _send_via_smtp(
         part.add_header("Content-Disposition", f'attachment; filename="{attachment_filename}"')
         msg.attach(part)
 
+    # ``ssl`` needs a different class, not a different call: the socket is
+    # encrypted before the client says anything, so there is no plain session to
+    # upgrade with ``starttls`` (#577).
+    connect = smtplib.SMTP_SSL if security == "ssl" else smtplib.SMTP
     try:
-        with smtplib.SMTP(host, port) as server:
-            if tls:
+        with connect(host, port) as server:
+            if security == "starttls":
                 server.starttls()
             if user and password:
                 server.login(user, password)
@@ -472,10 +476,10 @@ def _dispatch(
         )
     if provider == "smtp":
         s = resolved.smtp
-        host, port, tls = resolved.smtp_endpoint()
+        host, port, security = resolved.smtp_endpoint()
         return _send_via_smtp(
             to, subject, html_body,
-            host=host, port=port, tls=tls,
+            host=host, port=port, security=security,
             user=s.get("user"),
             password=s.get("password"),
             from_email=s.get("from_email") or s.get("user"),

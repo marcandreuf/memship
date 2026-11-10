@@ -271,13 +271,18 @@
         "from_email": "From address",
         "host": "Server",
         "port": "Port",
-        "tls": "Encrypt with STARTTLS",
+        "security": "Encryption",
         "user": "SMTP user",
         "password": "Password"
       },
       "gmailPreset": "Use Gmail's settings",
       "gmailPresetHint": "Fills in smtp.gmail.com, port 587 and STARTTLS. Gmail needs an app password, not the account password.",
-      "tlsHint": "Leave on unless your server says otherwise. Port 465, which encrypts from the first byte, is not supported: use 587.",
+      "securityHint": "STARTTLS is the usual choice, on port 587. Pick direct SSL/TLS only if your server encrypts from the first byte, usually on port 465. No encryption is for a local-network server only.",
+      "security": {
+        "starttls": "STARTTLS (port 587)",
+        "ssl": "Direct SSL/TLS (port 465)",
+        "off": "No encryption"
+      },
       "invalidPort": "The port must be a number between 1 and 65535.",
       "secretHint": "Leave blank to keep the stored value; enter a new one to replace it.",
       "fromEnv": "from environment",

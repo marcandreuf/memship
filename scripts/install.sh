@@ -261,7 +261,8 @@ SMTP_PORT=587
 SMTP_USER=
 SMTP_PASSWORD=
 SMTP_FROM=
-SMTP_TLS=true
+# starttls (usually port 587), ssl (usually port 465), or off.
+SMTP_SECURITY=starttls
 
 # Single sign-on (optional). A provider's button appears only once configured.
 # Settings > Single sign-on overrides these, so leave them blank if you would

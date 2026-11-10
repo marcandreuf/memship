@@ -16,8 +16,9 @@ anything, especially on an installation that is already running.
 | **Settings → Integrations → Mailing** | Resend, any SMTP server (Gmail is a preset) | Almost everyone. Takes effect on the next request, no restart. |
 | **`.env`** | Resend, any SMTP server | Preseeding credentials at deploy time, and installations older than the settings screen. |
 
-SMTP means a server that accepts **STARTTLS**, usually on port 587, or no encryption at all.
-A server reachable only on port 465, which encrypts from the first byte, is not supported.
+SMTP means a server that accepts **STARTTLS**, usually on port 587, or one that is encrypted
+from the first byte, usually on port 465, or one with no encryption at all. Pick which with the
+**Encryption** setting on the screen, or `SMTP_SECURITY` in the `.env`.
 
 ## Option A: the settings screen
 
@@ -69,8 +70,12 @@ SMTP_PORT=587
 SMTP_USER=your-username
 SMTP_PASSWORD=your-password
 SMTP_FROM=noreply@yourdomain.org
-SMTP_TLS=true
+SMTP_SECURITY=starttls   # starttls | ssl | off
 ```
+
+`SMTP_SECURITY` replaces `SMTP_TLS`. The old variable still works, so an existing file needs no
+change: `SMTP_TLS=true` means `starttls` and `SMTP_TLS=false` means `off`. Set `SMTP_SECURITY` when
+you need `ssl`, which `SMTP_TLS` could not express. If both are set, `SMTP_SECURITY` wins.
 
 The full screen-field → environment-variable mapping is in
 [Integrations setup guide, section 6](../admin-guide/integrations.md#6-configuration-file-fallback-env).
@@ -96,7 +101,7 @@ field in the screen to fall back to the environment value.
 
 The screen marks fields it is reading from the environment with a **"from environment"** badge,
 which is the quickest way to see which source is live. Port and TLS always have a value, 587 and
-on, so they carry the badge only when `SMTP_PORT` or `SMTP_TLS` is actually set.
+on, so they carry the badge only when `SMTP_PORT` or `SMTP_SECURITY` is actually set.
 
 **Upgrading from a version that offered "Gmail" as a provider:** it was always the SMTP
 transport, and is now called that. Mail keeps going where it went before:

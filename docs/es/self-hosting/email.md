@@ -1,5 +1,5 @@
 <!-- source: en/self-hosting/email.md -->
-<!-- source-hash: 16d2ae445324 -->
+<!-- source-hash: a7f08bd46411 -->
 
 # Envío de correo
 
@@ -19,9 +19,9 @@ instalación que ya está en marcha.
 | **Configuración → Integraciones → Correo** | Resend, cualquier servidor SMTP (Gmail es una configuración predefinida) | Casi todo el mundo. Se aplica en la siguiente petición, sin reiniciar. |
 | **`.env`** | Resend, cualquier servidor SMTP | Dejar las credenciales puestas al desplegar, y las instalaciones anteriores a la pantalla de ajustes. |
 
-SMTP quiere decir un servidor que acepte **STARTTLS**, normalmente en el puerto 587, o sin cifrado
-ninguno. Un servidor accesible solo por el puerto 465, que cifra desde el primer byte, no está
-soportado.
+SMTP quiere decir un servidor que acepte **STARTTLS**, normalmente en el puerto 587, o uno que
+cifre desde el primer byte, normalmente en el puerto 465, o uno sin cifrado ninguno. Elige cuál con
+el ajuste **Cifrado** de la pantalla, o con `SMTP_SECURITY` en el `.env`.
 
 ## Opción A: la pantalla de ajustes
 
@@ -75,8 +75,13 @@ SMTP_PORT=587
 SMTP_USER=your-username
 SMTP_PASSWORD=your-password
 SMTP_FROM=noreply@yourdomain.org
-SMTP_TLS=true
+SMTP_SECURITY=starttls   # starttls | ssl | off
 ```
+
+`SMTP_SECURITY` sustituye a `SMTP_TLS`. La variable antigua sigue funcionando, así que un archivo
+que ya existe no necesita cambios: `SMTP_TLS=true` significa `starttls` y `SMTP_TLS=false` significa
+`off`. Define `SMTP_SECURITY` cuando necesites `ssl`, que `SMTP_TLS` no podía expresar. Si están las
+dos, manda `SMTP_SECURITY`.
 
 La correspondencia completa entre campo de pantalla y variable de entorno está en la
 [guía de configuración de integraciones, sección 6](../admin-guide/integrations.md#6-alternativa-con-el-archivo-de-configuración-env)
@@ -104,7 +109,7 @@ con la clave antigua. Vacía el campo en la pantalla para recurrir al valor del 
 
 La pantalla marca los campos que está leyendo del entorno con la insignia **"del entorno"**, que es
 la forma más rápida de ver qué origen está vigente. El puerto y el TLS siempre tienen valor, 587 y
-activado, así que solo llevan la insignia cuando `SMTP_PORT` o `SMTP_TLS` están realmente
+activado, así que solo llevan la insignia cuando `SMTP_PORT` o `SMTP_SECURITY` están realmente
 definidas.
 
 **Si actualizas desde una versión que ofrecía "Gmail" como proveedor:** siempre fue el transporte

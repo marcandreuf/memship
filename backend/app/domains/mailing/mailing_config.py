@@ -29,6 +29,7 @@ one-of-N):
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 
 from sqlalchemy.orm import Session
@@ -38,9 +39,25 @@ from app.core.config import settings as app_settings
 from app.core.security import secrets_crypto
 from app.domains.organizations.models import OrganizationSettings
 
+logger = logging.getLogger(__name__)
+
 PROVIDERS = ("resend", "smtp")
 
 DEFAULT_SMTP_PORT = 587
+
+# How the SMTP connection is encrypted. ``starttls`` upgrades a plain connection,
+# ``ssl`` is encrypted from the first byte (the usual port 465), ``off`` is
+# neither. This replaces a boolean that could only say "STARTTLS or nothing", so
+# a server offering only implicit TLS was unreachable (#577).
+SMTP_SECURITY_MODES = ("off", "starttls", "ssl")
+DEFAULT_SMTP_SECURITY = "starttls"
+
+# The boolean this field replaces. Kept because ``SMTP_TLS`` is a documented
+# ``.env`` variable living in a file on the host, which no migration can rewrite,
+# so these spellings have to keep resolving for as long as that variable is
+# honoured. See ``parse_security``.
+_LEGACY_TLS_ON = ("true", "1", "yes", "on")
+_LEGACY_TLS_OFF = ("false", "0", "no")
 
 
 @dataclass(frozen=True)
@@ -49,6 +66,10 @@ class FieldSpec:
     env: str
     secret_default: bool
     fallback_env: str | None = None
+    # A field this one was renamed from, read from the stored node when the
+    # current name is absent. The counterpart of ``fallback_env`` for the
+    # database side, so a rename needs no data migration.
+    fallback_db_field: str | None = None
 
 
 # Field → env-var mapping mirrors the existing mail settings one-to-one so the
@@ -63,7 +84,13 @@ PROVIDER_FIELDS: dict[str, list[FieldSpec]] = {
     "smtp": [
         FieldSpec("host", "SMTP_HOST", False),
         FieldSpec("port", "SMTP_PORT", False),
-        FieldSpec("tls", "SMTP_TLS", False),
+        FieldSpec(
+            "security",
+            "SMTP_SECURITY",
+            False,
+            fallback_env="SMTP_TLS",
+            fallback_db_field="tls",
+        ),
         FieldSpec("user", "SMTP_USER", False),
         FieldSpec("password", "SMTP_PASSWORD", True),
         FieldSpec("from_email", "SMTP_FROM", False),
@@ -101,8 +128,31 @@ def _env_value(env: str) -> tuple[str, str]:
     return value, "env"
 
 
-def parse_tls(value: str) -> bool:
-    return value.strip().lower() not in ("false", "0", "no", "off")
+class SmtpSecurityError(ValueError):
+    """An SMTP security mode that is not one of ``SMTP_SECURITY_MODES``."""
+
+
+def parse_security(value: str) -> str:
+    """Resolve a stored or configured value to one of ``SMTP_SECURITY_MODES``.
+
+    Accepts the booleans ``SMTP_TLS`` is documented with, mapping a true value to
+    ``starttls`` and a false one to ``off``: that is what the setting has always
+    meant, and the variable is still honoured.
+
+    Raises on anything else rather than falling back, which is the defect this
+    replaces. The old parser treated every unrecognised value as true, so an
+    administrator who typed ``ssl`` silently got STARTTLS.
+    """
+    raw = (value or "").strip().lower()
+    if not raw:
+        return DEFAULT_SMTP_SECURITY
+    if raw in SMTP_SECURITY_MODES:
+        return raw
+    if raw in _LEGACY_TLS_ON:
+        return "starttls"
+    if raw in _LEGACY_TLS_OFF:
+        return "off"
+    raise SmtpSecurityError(value)
 
 
 @dataclass
@@ -158,14 +208,30 @@ class ResolvedMailing:
                 flat[f"{provider.name}.{field_name}"] = source
         return flat
 
-    def smtp_endpoint(self) -> tuple[str, int, bool]:
-        """Effective SMTP host, port and TLS flag, each DB-then-env like any field."""
+    def smtp_endpoint(self) -> tuple[str, int, str]:
+        """Effective SMTP host, port and security mode, each DB-then-env like any field.
+
+        An unparseable mode resolves to ``DEFAULT_SMTP_SECURITY`` rather than
+        raising, because this runs inside the send path. It is the safest
+        direction to be wrong in: the API refuses an unrecognised mode outright,
+        so the only way to reach one here is a hand-edited ``.env``, and
+        defaulting to STARTTLS fails to connect rather than sending in clear.
+        """
         s = self.smtp
         try:
             port = int(s.get("port"))
         except ValueError:
             port = DEFAULT_SMTP_PORT
-        return s.get("host"), port, parse_tls(s.get("tls") or "true")
+        try:
+            security = parse_security(s.get("security"))
+        except SmtpSecurityError:
+            logger.warning(
+                "Unrecognised SMTP security mode %r; falling back to %s",
+                s.get("security"),
+                DEFAULT_SMTP_SECURITY,
+            )
+            security = DEFAULT_SMTP_SECURITY
+        return s.get("host"), port, security
 
 
 def _read_db_field(node: object, spec: FieldSpec) -> tuple[str, bool]:
@@ -197,6 +263,12 @@ def _resolve_provider(name: str, node: object) -> ResolvedProvider:
     for spec in PROVIDER_FIELDS[name]:
         field_node = node.get(spec.name) if isinstance(node, dict) else None
         db_value, secret = _read_db_field(field_node, spec)
+        if not db_value and spec.fallback_db_field and isinstance(node, dict):
+            # A row written before the rename. Read rather than migrated: the
+            # value also arrives from ``.env``, which no migration can reach, so
+            # the compatibility read is permanent and a migration would remove
+            # nothing. The row rewrites itself on the next save of the screen.
+            db_value, secret = _read_db_field(node.get(spec.fallback_db_field), spec)
         secret_flags[spec.name] = secret
         if db_value:
             values[spec.name] = db_value

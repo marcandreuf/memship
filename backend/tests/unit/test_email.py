@@ -77,6 +77,59 @@ class TestEmailTransport:
         mock_server.sendmail.assert_called_once()
 
     @patch("app.core.email._resolve_transport")
+    @patch("app.core.email.smtplib.SMTP_SSL")
+    def test_smtp_ssl_mode_connects_with_smtp_ssl_and_does_not_starttls(
+        self, mock_smtp_ssl_class, mock_resolve
+    ):
+        """Implicit TLS is a different class, not a different call (#577).
+
+        The socket is encrypted before the client speaks, so there is no plain
+        session for ``starttls`` to upgrade. Calling it anyway is the error this
+        mode exists to avoid.
+        """
+        mock_resolve.return_value = _resolved(
+            active="smtp",
+            smtp_values={
+                "host": "smtp-pulse.example",
+                "port": "465",
+                "security": "ssl",
+                "user": "club@club.example",
+                "password": "pw",
+                "from_email": "club@club.example",
+            },
+        )
+        mock_server = MagicMock()
+        mock_smtp_ssl_class.return_value.__enter__.return_value = mock_server
+
+        assert send_email("test@example.com", "Test", "<p>Hello</p>") is True
+
+        mock_smtp_ssl_class.assert_called_once_with("smtp-pulse.example", 465)
+        mock_server.starttls.assert_not_called()
+        mock_server.sendmail.assert_called_once()
+
+    @patch("app.core.email._resolve_transport")
+    @patch("app.core.email.smtplib.SMTP")
+    def test_smtp_off_mode_sends_without_upgrading(self, mock_smtp_class, mock_resolve):
+        """``off`` is a server that offers no encryption, not a default."""
+        mock_resolve.return_value = _resolved(
+            active="smtp",
+            smtp_values={
+                "host": "mail.club.example",
+                "port": "25",
+                "security": "off",
+                "from_email": "club@club.example",
+            },
+        )
+        mock_server = MagicMock()
+        mock_smtp_class.return_value.__enter__.return_value = mock_server
+
+        assert send_email("test@example.com", "Test", "<p>Hello</p>") is True
+
+        mock_smtp_class.assert_called_once_with("mail.club.example", 25)
+        mock_server.starttls.assert_not_called()
+        mock_server.sendmail.assert_called_once()
+
+    @patch("app.core.email._resolve_transport")
     @patch("app.core.email.smtplib.SMTP")
     def test_send_email_smtp_failure(self, mock_smtp_class, mock_resolve):
         mock_resolve.return_value = _resolved(
