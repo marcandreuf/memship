@@ -444,6 +444,74 @@ def _send_via_smtp(
         return False
 
 
+# ---------------------------------------------------------------- send adapters
+#
+# One per provider, with a signature the dispatch table can call blind. Each
+# reads its own credentials off the resolved config and maps them onto its
+# transport, because which field means what is the one thing that is genuinely
+# per-provider. Adding a provider is a function here and an entry in _SENDERS.
+
+
+def _dispatch_resend(
+    resolved: ResolvedMailing,
+    to: str,
+    subject: str,
+    html_body: str,
+    *,
+    text_body: str | None = None,
+    attachment: bytes | None = None,
+    attachment_filename: str = "document.pdf",
+    attachment_mime: str = "application/pdf",
+    raise_errors: bool = False,
+) -> bool:
+    c = resolved.provider("resend")
+    return _send_via_resend(
+        to, subject, html_body,
+        api_key=c.get("api_key"),
+        from_email=c.get("from_email"),
+        text_body=text_body,
+        attachment=attachment,
+        attachment_filename=attachment_filename,
+        attachment_mime=attachment_mime,
+        raise_errors=raise_errors,
+    )
+
+
+def _dispatch_smtp(
+    resolved: ResolvedMailing,
+    to: str,
+    subject: str,
+    html_body: str,
+    *,
+    text_body: str | None = None,
+    attachment: bytes | None = None,
+    attachment_filename: str = "document.pdf",
+    attachment_mime: str = "application/pdf",
+    raise_errors: bool = False,
+) -> bool:
+    s = resolved.provider("smtp")
+    host, port, security = resolved.smtp_endpoint()
+    return _send_via_smtp(
+        to, subject, html_body,
+        host=host, port=port, security=security,
+        user=s.get("user"),
+        password=s.get("password"),
+        # SMTP may send as the account itself when no From address is set.
+        from_email=s.get("from_email") or s.get("user"),
+        text_body=text_body,
+        attachment=attachment,
+        attachment_filename=attachment_filename,
+        attachment_mime=attachment_mime,
+        raise_errors=raise_errors,
+    )
+
+
+_SENDERS = {
+    "resend": _dispatch_resend,
+    "smtp": _dispatch_smtp,
+}
+
+
 def _dispatch(
     provider: str,
     resolved: ResolvedMailing,
@@ -455,41 +523,27 @@ def _dispatch(
     attachment_mime: str = "application/pdf",
     raise_errors: bool = False,
 ) -> bool:
-    """Send through a specific resolved provider (Resend or SMTP).
+    """Send through a specific resolved provider, looked up in ``_SENDERS``.
 
     The plain-text alternative is derived here rather than at each call site, so
     every sender — including the ones that hand over pre-built HTML — ships a
     complete multipart. A mail with no text part is a mild spam signal.
+
+    An unknown provider returns False rather than raising: it can only come from
+    a stored ``active_provider`` this build no longer has, and refusing to send
+    is better than failing the caller.
     """
-    text_body = html_to_text(html_body)
-    if provider == "resend":
-        c = resolved.resend
-        return _send_via_resend(
-            to, subject, html_body,
-            api_key=c.get("api_key"),
-            from_email=c.get("from_email"),
-            text_body=text_body,
-            attachment=attachment,
-            attachment_filename=attachment_filename,
-            attachment_mime=attachment_mime,
-            raise_errors=raise_errors,
-        )
-    if provider == "smtp":
-        s = resolved.smtp
-        host, port, security = resolved.smtp_endpoint()
-        return _send_via_smtp(
-            to, subject, html_body,
-            host=host, port=port, security=security,
-            user=s.get("user"),
-            password=s.get("password"),
-            from_email=s.get("from_email") or s.get("user"),
-            text_body=text_body,
-            attachment=attachment,
-            attachment_filename=attachment_filename,
-            attachment_mime=attachment_mime,
-            raise_errors=raise_errors,
-        )
-    return False
+    sender = _SENDERS.get(provider)
+    if sender is None:
+        return False
+    return sender(
+        resolved, to, subject, html_body,
+        text_body=html_to_text(html_body),
+        attachment=attachment,
+        attachment_filename=attachment_filename,
+        attachment_mime=attachment_mime,
+        raise_errors=raise_errors,
+    )
 
 
 def _record_send_outcome(

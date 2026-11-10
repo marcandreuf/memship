@@ -39,8 +39,10 @@ def _provider(name, values, sources=None):
 def _resolved(active, resend_values=None, smtp_values=None, smtp_sources=None):
     return ResolvedMailing(
         active=active,
-        resend=_provider("resend", resend_values or {}),
-        smtp=_provider("smtp", smtp_values or {}, smtp_sources),
+        providers={
+            "resend": _provider("resend", resend_values or {}),
+            "smtp": _provider("smtp", smtp_values or {}, smtp_sources),
+        },
     )
 
 

@@ -191,22 +191,27 @@ class ResolvedProvider:
 
 @dataclass
 class ResolvedMailing:
-    active: str | None            # "resend" | "smtp" | None, already readiness-gated
-    resend: ResolvedProvider
-    smtp: ResolvedProvider
+    # Keyed by provider name, one entry per ``PROVIDERS``. A dict rather than a
+    # field per provider so that adding one is a change to ``PROVIDERS`` and
+    # ``PROVIDER_FIELDS`` alone, not to this class and everything that builds it.
+    active: str | None            # a ``PROVIDERS`` name or None, already readiness-gated
+    providers: dict[str, ResolvedProvider]
     _env_only: bool = field(default=False, repr=False)
 
-    def provider(self, name: str) -> ResolvedProvider | None:
-        if name in PROVIDERS:
-            return getattr(self, name)
-        return None
+    def provider(self, name: str) -> ResolvedProvider:
+        """The resolved provider by name.
+
+        Every ``PROVIDERS`` name resolves, configured or not, so a miss is a
+        misspelled constant rather than a runtime condition and raises.
+        """
+        return self.providers[name]
 
     def flat_sources(self) -> dict[str, str]:
-        flat: dict[str, str] = {}
-        for provider in (self.resend, self.smtp):
-            for field_name, source in provider.sources.items():
-                flat[f"{provider.name}.{field_name}"] = source
-        return flat
+        return {
+            f"{p.name}.{field_name}": source
+            for p in self.providers.values()
+            for field_name, source in p.sources.items()
+        }
 
     def smtp_endpoint(self) -> tuple[str, int, str]:
         """Effective SMTP host, port and security mode, each DB-then-env like any field.
@@ -217,7 +222,7 @@ class ResolvedMailing:
         so the only way to reach one here is a hand-edited ``.env``, and
         defaulting to STARTTLS fails to connect rather than sending in clear.
         """
-        s = self.smtp
+        s = self.provider("smtp")
         try:
             port = int(s.get("port"))
         except ValueError:
@@ -289,13 +294,11 @@ def _resolve_provider(name: str, node: object) -> ResolvedProvider:
     )
 
 
-def _resolve_active(raw: dict, resend: ResolvedProvider, smtp: ResolvedProvider) -> tuple[str | None, bool]:
+def _resolve_active(raw: dict, providers: dict[str, ResolvedProvider]) -> tuple[str | None, bool]:
     """Resolve which provider is active, and whether this is an env-only deployment.
 
     Returns ``(active, env_only)``.
     """
-    providers = {"resend": resend, "smtp": smtp}
-
     if "active_provider" in raw:
         chosen = raw["active_provider"]
         if chosen in providers and providers[chosen].ready:
@@ -308,6 +311,12 @@ def _resolve_active(raw: dict, resend: ResolvedProvider, smtp: ResolvedProvider)
 
     # No DB node at all → legacy env-only behaviour, matching the old send_email
     # transport priority exactly (Resend first, then SMTP), with no field gate.
+    #
+    # This chain stays closed. It exists to keep installs that predate the
+    # settings screen behaving as they did, and no such install can have a
+    # provider added since. A new provider is configured from the screen only,
+    # so adding one here would extend a compatibility rule to a case that
+    # cannot exist, and change a documented precedence to do it.
     if app_settings.RESEND_API_KEY:
         return "resend", True
     if app_settings.SMTP_HOST:
@@ -319,11 +328,10 @@ def resolve_mailing_config(db: Session) -> ResolvedMailing:
     row = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
     raw = (row.mailing_config if row and row.mailing_config else {}) or {}
 
-    resend = _resolve_provider("resend", raw.get("resend", {}))
-    smtp = _resolve_provider("smtp", raw.get("smtp", {}))
-    active, env_only = _resolve_active(raw, resend, smtp)
+    providers = {name: _resolve_provider(name, raw.get(name, {})) for name in PROVIDERS}
+    active, env_only = _resolve_active(raw, providers)
 
-    return ResolvedMailing(active=active, resend=resend, smtp=smtp, _env_only=env_only)
+    return ResolvedMailing(active=active, providers=providers, _env_only=env_only)
 
 
 def env_only_mailing_config() -> ResolvedMailing:
@@ -333,10 +341,9 @@ def env_only_mailing_config() -> ResolvedMailing:
     cannot be read, so a transient DB problem degrades mail to the legacy env
     behaviour rather than failing the send outright.
     """
-    resend = _resolve_provider("resend", {})
-    smtp = _resolve_provider("smtp", {})
-    active, env_only = _resolve_active({}, resend, smtp)
-    return ResolvedMailing(active=active, resend=resend, smtp=smtp, _env_only=env_only)
+    providers = {name: _resolve_provider(name, {}) for name in PROVIDERS}
+    active, env_only = _resolve_active({}, providers)
+    return ResolvedMailing(active=active, providers=providers, _env_only=env_only)
 
 
 def mailing_enabled(db: Session) -> bool:

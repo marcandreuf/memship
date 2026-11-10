@@ -98,7 +98,7 @@ class TestResolver:
         org.mailing_config = {"resend": {"api_key": {"value": "db-key", "secret": False}}}
         db.flush()
 
-        resend = resolve_mailing_config(db).resend
+        resend = resolve_mailing_config(db).provider("resend")
         assert resend.get("api_key") == "db-key"
         assert resend.sources["api_key"] == "db"
 
@@ -109,7 +109,7 @@ class TestResolver:
         monkeypatch.setattr(settings, "RESEND_API_KEY", "env-key", raising=False)
         _org(db)
 
-        resend = resolve_mailing_config(db).resend
+        resend = resolve_mailing_config(db).provider("resend")
         assert resend.get("api_key") == "env-key"
         assert resend.sources["api_key"] == "env"
 
@@ -175,7 +175,7 @@ class TestResolver:
         org.mailing_config = {"resend": {"api_key": {"value": "k", "secret": False}}}
         db.flush()
 
-        resend = resolve_mailing_config(db).resend
+        resend = resolve_mailing_config(db).provider("resend")
         assert resend.ready is False
         assert resend.sources["from_email"] == "none"
 
@@ -188,13 +188,13 @@ class TestResolver:
         org.mailing_config = {"resend": {"api_key": {"value": "k", "secret": False}}}
         db.flush()
 
-        resend = resolve_mailing_config(db).resend
+        resend = resolve_mailing_config(db).provider("resend")
         assert resend.get("from_email") == "noreply@club.example"
         assert resend.sources["from_email"] == "env"
         assert resend.ready is True
 
         monkeypatch.setattr(settings, "RESEND_FROM_EMAIL", "club@resend.example", raising=False)
-        assert resolve_mailing_config(db).resend.get("from_email") == "club@resend.example"
+        assert resolve_mailing_config(db).provider("resend").get("from_email") == "club@resend.example"
 
     def test_stored_smtp_endpoint_wins_over_env(self, db, monkeypatch):
         from app.core.config import settings
@@ -322,11 +322,11 @@ class TestResolver:
         org = _org(db)
         org.mailing_config = {"smtp": {"user": {"value": "a@club.example", "secret": False}}}
         db.flush()
-        assert resolve_mailing_config(db).smtp.ready is False
+        assert resolve_mailing_config(db).provider("smtp").ready is False
 
         org.mailing_config = {"smtp": {"host": {"value": "mail.club.example", "secret": False}}}
         db.flush()
-        assert resolve_mailing_config(db).smtp.ready is False  # no sender address
+        assert resolve_mailing_config(db).provider("smtp").ready is False  # no sender address
 
         org.mailing_config = {
             "smtp": {
@@ -336,7 +336,7 @@ class TestResolver:
         }
         db.flush()
         # No user or password: a relay that trusts the server needs neither.
-        assert resolve_mailing_config(db).smtp.ready is True
+        assert resolve_mailing_config(db).provider("smtp").ready is True
 
     def test_secret_decrypts(self, db, monkeypatch):
         _clear_env(monkeypatch)
@@ -345,7 +345,7 @@ class TestResolver:
         org.mailing_config = {"resend": {"api_key": build_field_node("re_secret", True)}}
         db.flush()
 
-        assert resolve_mailing_config(db).resend.get("api_key") == "re_secret"
+        assert resolve_mailing_config(db).provider("resend").get("api_key") == "re_secret"
 
 
 class TestGetMailingEndpoint:

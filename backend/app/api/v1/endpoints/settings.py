@@ -312,7 +312,7 @@ def _health_view(health: ProviderHealth) -> MailHealthView:
 
 def _build_mailing_view(db: Session) -> MailingConfigView:
     resolved = resolve_mailing_config(db)
-    r, s = resolved.resend, resolved.smtp
+    r, s = resolved.provider("resend"), resolved.provider("smtp")
     host, port, security = resolved.smtp_endpoint()
     health = provider_health(db, resolved)
     return MailingConfigView(
