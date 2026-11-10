@@ -378,7 +378,7 @@ export function MailingSettings() {
                 {f === "security" ? (
                   <>
                     <Select value={form.fields[f] || "starttls"} onValueChange={setField}>
-                      <SelectTrigger id={id} className="h-8 text-xs">
+                      <SelectTrigger id={id} className="h-8 w-full text-xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
