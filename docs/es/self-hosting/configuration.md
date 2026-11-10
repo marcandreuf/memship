@@ -1,5 +1,5 @@
 <!-- source: en/self-hosting/configuration.md -->
-<!-- source-hash: 500c0f9893b8 -->
+<!-- source-hash: df3b254bf116 -->
 
 # Referencia de configuración
 
@@ -86,7 +86,8 @@ SMTP. Mira [Envío de correo](email.md) para un recorrido completo.
 | `SMTP_USER`     | _(vacío)_               | Usuario SMTP.                        |
 | `SMTP_PASSWORD` | _(vacío)_               | Contraseña SMTP.                     |
 | `SMTP_FROM`     | `noreply@memship.local` | Dirección del remitente.             |
-| `SMTP_TLS`      | `true`                  | Usar STARTTLS.                       |
+| `SMTP_SECURITY` | `starttls`              | `starttls`, `ssl` (puerto 465) u `off`. |
+| `SMTP_TLS`      | `true`                  | Obsoleta: `true` significa `starttls` y `false` significa `off`. Manda `SMTP_SECURITY`. |
 
 Si están configurados los dos, tiene prioridad Resend.
 

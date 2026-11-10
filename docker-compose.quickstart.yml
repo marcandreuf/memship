@@ -46,7 +46,7 @@ x-backend-env: &backend-env
   # in Settings → Mailing takes precedence over them, as it does over any .env.
   SMTP_HOST: demo-memship-mailpit
   SMTP_PORT: 1025
-  SMTP_TLS: "false"
+  SMTP_SECURITY: "off"
   SMTP_FROM: memship@localhost
   # What GET /api/v1/health reports as `version`. The image only has the build
   # sha baked in, because a release promotes the validated image without

@@ -117,7 +117,11 @@ class Settings(BaseSettings):
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
     SMTP_FROM: str = ""
+    # Deprecated in favour of SMTP_SECURITY, and still honoured: it is documented,
+    # and it lives in a file on the host that no migration can rewrite (#577).
     SMTP_TLS: bool = True
+    # "off" | "starttls" | "ssl". Empty means unset, so SMTP_TLS is consulted.
+    SMTP_SECURITY: str = ""
     FRONTEND_URL: str = "http://localhost:3000"
     # Publicly reachable backend URL — used for provider callbacks (e.g. Redsys
     # `Ds_Merchant_MerchantURL`). In dev this is the Docker API port; in prod

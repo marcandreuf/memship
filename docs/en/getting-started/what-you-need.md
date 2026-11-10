@@ -123,8 +123,7 @@ Three options, configured from the Settings screen or from `.env`:
 - **Gmail**, an ordinary Google account with an app password. Google applies its own daily sending
   limits.
 - **Any SMTP server**, including the one that comes with the association's existing mail hosting,
-  as long as it accepts STARTTLS, usually on port 587. A server reachable only on port 465 is not
-  supported.
+  as long as it accepts STARTTLS on port 587, or direct SSL/TLS on port 465.
 
 [Email delivery](../self-hosting/email.md) covers all three, including the DNS records Resend needs.
 

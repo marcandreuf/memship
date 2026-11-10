@@ -271,13 +271,18 @@
         "from_email": "Correo del remitente",
         "host": "Servidor",
         "port": "Puerto",
-        "tls": "Cifrar con STARTTLS",
+        "security": "Cifrado",
         "user": "Usuario SMTP",
         "password": "Contraseña"
       },
       "gmailPreset": "Usar la configuración de Gmail",
       "gmailPresetHint": "Rellena smtp.gmail.com, el puerto 587 y STARTTLS. Gmail necesita una contraseña de aplicación, no la de la cuenta.",
-      "tlsHint": "Déjalo activado salvo que tu servidor indique lo contrario. El puerto 465, que cifra desde el primer byte, no está soportado: usa el 587.",
+      "securityHint": "STARTTLS es lo habitual, en el puerto 587. Elige SSL/TLS directo solo si tu servidor cifra desde el primer byte, normalmente en el puerto 465. Sin cifrado, solo para un servidor de la red local.",
+      "security": {
+        "starttls": "STARTTLS (puerto 587)",
+        "ssl": "SSL/TLS directo (puerto 465)",
+        "off": "Sin cifrado"
+      },
       "invalidPort": "El puerto debe ser un número entre 1 y 65535.",
       "secretHint": "Déjalo en blanco para mantener el valor guardado; introduce uno nuevo para reemplazarlo.",
       "fromEnv": "del entorno",

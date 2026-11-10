@@ -1,5 +1,5 @@
 <!-- source: en/admin-guide/integrations.md -->
-<!-- source-hash: 7d143bf2539b -->
+<!-- source-hash: ea5f99d8c47e -->
 
 # Integracions: guia de configuració
 
@@ -353,9 +353,11 @@ correu*:
 - **Correu del remitent**, l'adreça que veuen els socis. La majoria de servidors només accepten
   l'adreça d'una bústia que sigui teva; deixa-ho en blanc per enviar com l'usuari.
 
-**El port 465 no està suportat.** Xifra des del primer byte en lloc de fer servir STARTTLS, i
-memship parla STARTTLS. Gairebé tots els proveïdors que ofereixen el 465 també ofereixen el 587,
-així que fes servir el 587.
+**Xifratge** tria com es protegeix la connexió: **STARTTLS**, normalment al port 587, que millora
+una connexió en clar; **SSL/TLS directe**, normalment al port 465, xifrat des del primer byte; o
+**sense xifratge**, per a un servidor de la teva xarxa. Posa-ho com ho documenti el teu proveïdor
+per al port que facis servir. Gairebé tots els proveïdors que ofereixen el 465 també ofereixen el
+587, i el 587 continua sent el valor per defecte.
 
 **Gmail.** Prem **Fer servir la configuració de Gmail** a la targeta: omple `smtp.gmail.com`, el
 port `587` i STARTTLS. L'usuari és l'**adreça de Gmail**, i la contrasenya és una **contrasenya
@@ -456,7 +458,7 @@ prova, si han canviat des d'aleshores.
 | Símptoma | Causa i solució |
 | ------- | ------------- |
 | La prova falla amb un error d'autenticació SMTP (`535`, "Username and Password not accepted") | L'usuari o la contrasenya són incorrectes. A Gmail: la contrasenya d'aplicació és incorrecta, s'ha revocat o s'ha desactivat la verificació en 2 passos (cosa que invalida totes les contrasenyes d'aplicació); genera'n una de nova. Al teu propi servidor: comprova si el proveïdor dona una contrasenya SMTP a part. |
-| La prova falla: connexió rebutjada, temps d'espera esgotat o la connexió es talla de seguida | Servidor o port incorrectes, o el servidor només escolta al 465 (no suportat, fes servir el 587). Algunes xarxes d'allotjament també bloquegen el port 587 de sortida; pregunta-ho a l'administrador del servidor. |
+| La prova falla: connexió rebutjada, temps d'espera esgotat o la connexió es talla de seguida | Servidor o port incorrectes, o **Xifratge** no concorda amb el port: el 465 necessita SSL/TLS directe i el 587 necessita STARTTLS. Algunes xarxes d'allotjament també bloquegen l'SMTP de sortida; pregunta-ho a l'administrador del servidor. |
 | [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords) diu *"The setting that you are looking for is not available for your account."* | No es pot crear cap contrasenya d'aplicació per a aquest compte. O bé la verificació en 2 passos només està configurada amb passkeys/claus de seguretat (afegeix un número de telèfon o una aplicació d'autenticació i recarrega la pàgina), o bé el compte té la Protecció avançada, o bé és un compte de feina/escola l'administrador del qual bloqueja les contrasenyes d'aplicació (sense alternativa, fes servir Resend o un altre compte). Mira el pas 1 de la 4.3. |
 | La prova falla: Resend "domain is not verified" / 403 | El correu del remitent no és d'un domini verificat a Resend, o els registres DNS no s'han propagat. Comprova *Domains* a Resend. |
 | La prova falla: Resend 401 / "API key is invalid" | Clau mal escrita, revocada o creada sense permís d'enviament. Crea una clau nova. |
@@ -515,7 +517,7 @@ de l'entorn, si n'hi ha.
 | Resend → Correu del remitent | `RESEND_FROM_EMAIL`, després `SMTP_FROM` |
 | Servidor SMTP → Servidor | `SMTP_HOST` |
 | Servidor SMTP → Port | `SMTP_PORT` |
-| Servidor SMTP → STARTTLS | `SMTP_TLS` |
+| Servidor SMTP → Xifratge | `SMTP_SECURITY` i, si no, l'obsoleta `SMTP_TLS` |
 | Servidor SMTP → Usuari SMTP | `SMTP_USER` |
 | Servidor SMTP → Contrasenya | `SMTP_PASSWORD` |
 | Servidor SMTP → Correu del remitent | `SMTP_FROM` |
@@ -558,7 +560,7 @@ Tots els camps d'un proveïdor són obligatoris abans que es pugui activar.
 | Resend | Clau d'API | **sí** | sí | Comença per `re_`; es mostra un cop, en crear-la. |
 | Resend | Correu del remitent | no | no | Ha de ser d'un domini verificat a Resend. |
 | Servidor SMTP | Servidor | no | sí | p. ex. `mail.myclub.org`; `smtp.gmail.com` per a Gmail. |
-| Servidor SMTP | Port | no | no | Per defecte, `587`. El port 465 no està suportat. |
+| Servidor SMTP | Port | no | no | Per defecte, `587`. Fes servir el `465` amb SSL/TLS directe. |
 | Servidor SMTP | STARTTLS | no | no | Activat per defecte. |
 | Servidor SMTP | Usuari SMTP | no | mira les notes | Normalment l'adreça d'una bústia; per a Gmail, l'adreça de Gmail. |
 | Servidor SMTP | Contrasenya | **sí** | no | Per a Gmail, una contrasenya d'aplicació de 16 caràcters, no la contrasenya del compte. |

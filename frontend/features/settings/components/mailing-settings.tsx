@@ -6,8 +6,14 @@ import { toast } from "sonner";
 import { CircleCheck, CircleHelp, Lock, Mail, Send, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Card,
   CardContent,
@@ -57,7 +63,7 @@ const PROVIDER_SCHEMA = {
   },
   smtp: {
     icon: "✉️",
-    fields: ["host", "port", "tls", "user", "from_email"] as const,
+    fields: ["host", "port", "security", "user", "from_email"] as const,
     secrets: ["password"] as const,
     required: ["host"],
     sender: ["from_email", "user"],
@@ -68,12 +74,17 @@ type ProviderName = keyof typeof PROVIDER_SCHEMA;
 const PROVIDERS: ProviderName[] = ["resend", "smtp"];
 
 // Gmail is a configuration of the SMTP provider, not a provider of its own.
-const GMAIL_PRESET = { host: "smtp.gmail.com", port: "587", tls: "true" };
+const GMAIL_PRESET = { host: "smtp.gmail.com", port: "587", security: "starttls" };
 
-// The form keeps every field as text; the API takes port and TLS typed.
-function toPayloadValue(field: string, value: string): string | number | boolean {
+// How the connection is encrypted. `ssl` is encrypted from the first byte, the
+// usual port 465; `starttls` upgrades a plain one. Replaces a switch that could
+// only say "STARTTLS or nothing" (#577).
+const SECURITY_MODES = ["starttls", "ssl", "off"] as const;
+
+// The form keeps every field as text; the API takes the port typed. `security`
+// is already one of SECURITY_MODES, so it travels as itself.
+function toPayloadValue(field: string, value: string): string | number {
   if (field === "port") return Number(value);
-  if (field === "tls") return value === "true";
   return value;
 }
 
@@ -364,15 +375,22 @@ export function MailingSettings() {
                     </Badge>
                   )}
                 </label>
-                {f === "tls" ? (
+                {f === "security" ? (
                   <>
-                    <Switch
-                      id={id}
-                      checked={form.fields[f] === "true"}
-                      onCheckedChange={(checked) => setField(checked ? "true" : "false")}
-                    />
+                    <Select value={form.fields[f] || "starttls"} onValueChange={setField}>
+                      <SelectTrigger id={id} className="h-8 w-full text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SECURITY_MODES.map((mode) => (
+                          <SelectItem key={mode} value={mode}>
+                            {t(`settings.mailing.security.${mode}`)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <p className="text-[11px] text-muted-foreground">
-                      {t("settings.mailing.tlsHint")}
+                      {t("settings.mailing.securityHint")}
                     </p>
                   </>
                 ) : (

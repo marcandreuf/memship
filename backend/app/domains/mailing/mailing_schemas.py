@@ -9,7 +9,7 @@ provider is active at a time, selected by ``active_provider``.
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 # --- GET (masked) view ---
@@ -41,7 +41,14 @@ class MailSmtpView(BaseModel):
     # Any SMTP server; Gmail is a preset the screen fills in (#442).
     host: str
     port: int
-    tls: bool
+    security: Literal["off", "starttls", "ssl"]
+    # Derived from ``security``, for clients written against the boolean. Either
+    # encrypted mode reads as true: this field's question was ever only "is this
+    # encrypted", so reporting implicit TLS as false would read as encryption
+    # being off (#577).
+    tls: bool = Field(
+        deprecated="Replaced by security; removed in the next major.",
+    )
     user: str
     from_email: str
     password: MailSecretStatus
@@ -55,7 +62,7 @@ class MailingConfigView(BaseModel):
     smtp: MailSmtpView
     secrets_encryption_available: bool
     # Per-field origin of the resolved value: "db" | "env" | "none", or
-    # "default" for a typed setting nobody configured (SMTP port and TLS).
+    # "default" for a typed setting nobody configured (SMTP port and security).
     sources: dict[str, str]
 
 
@@ -78,12 +85,35 @@ class MailResendUpdate(BaseModel):
 
 class MailSmtpUpdate(BaseModel):
     host: str | None = None
-    # Port and TLS: None = unchanged; a value is stored as text like any field.
+    # Port and security: None = unchanged; a value is stored as text like any
+    # field. An unrecognised security mode is refused by the Literal rather than
+    # coerced, which is the defect #577 reports.
     port: int | None = Field(default=None, ge=1, le=65535)
-    tls: bool | None = None
+    security: Literal["off", "starttls", "ssl"] | None = None
+    tls: bool | None = Field(
+        default=None,
+        deprecated="Replaced by security; removed in the next major.",
+    )
     user: str | None = None
     from_email: str | None = None
     password: MailSecretUpdate | None = None
+
+    @model_validator(mode="after")
+    def _tls_means_security(self) -> "MailSmtpUpdate":
+        """Fold the deprecated boolean into ``security``.
+
+        ``security`` wins when a client sends both, so a caller that has migrated
+        is never overridden by a boolean it also still sends. Translating here
+        rather than in the endpoint keeps the alias beside the field it replaces,
+        and leaves exactly one name for the rest of the write path to store.
+        """
+        # Read through ``__dict__``: pydantic implements ``deprecated=`` as a
+        # warning on attribute access, and this translation is the one read that
+        # is not a caller using the old name.
+        tls = self.__dict__.get("tls")
+        if tls is not None and self.security is None:
+            self.security = "starttls" if tls else "off"
+        return self
 
 
 class MailingConfigUpdate(BaseModel):

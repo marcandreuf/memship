@@ -31,6 +31,7 @@ MAIL_ENV_VARS = (
     "SMTP_USER",
     "SMTP_PASSWORD",
     "SMTP_FROM",
+    "SMTP_SECURITY",
 )
 
 
@@ -132,8 +133,9 @@ class TestResolver:
 
         resolved = resolve_mailing_config(db)
         assert resolved.active == "smtp"
-        # An env-only install keeps dialling its own server (#442).
-        assert resolved.smtp_endpoint() == ("smtp.other.com", 587, True)
+        # An env-only install keeps dialling its own server (#442), and with
+        # neither SMTP_SECURITY nor SMTP_TLS set it keeps STARTTLS (#577).
+        assert resolved.smtp_endpoint() == ("smtp.other.com", 587, "starttls")
 
     def test_db_node_without_active_is_inactive(self, db, monkeypatch):
         """Saving credentials must not auto-activate a provider."""
@@ -205,6 +207,7 @@ class TestResolver:
             "smtp": {
                 "host": {"value": "mail.club.example", "secret": False},
                 "port": {"value": "2525", "secret": False},
+                # The pre-rename spelling, deliberately not migrated (#577).
                 "tls": {"value": "false", "secret": False},
                 "user": {"value": "secretaria@club.example", "secret": False},
                 "password": {"value": "pw", "secret": False},
@@ -214,17 +217,105 @@ class TestResolver:
 
         resolved = resolve_mailing_config(db)
         assert resolved.active == "smtp"
-        assert resolved.smtp_endpoint() == ("mail.club.example", 2525, False)
+        assert resolved.smtp_endpoint() == ("mail.club.example", 2525, "off")
 
-    def test_unset_port_and_tls_read_as_defaults_not_env(self, db, monkeypatch):
+    def test_unset_port_and_security_read_as_defaults_not_env(self, db, monkeypatch):
         """The typed settings always hold a value; only a configured one is "env"."""
         _clear_env(monkeypatch)
         _org(db)
 
         sources = resolve_mailing_config(db).flat_sources()
         assert sources["smtp.port"] == "default"
-        assert sources["smtp.tls"] == "default"
+        assert sources["smtp.security"] == "default"
         assert sources["smtp.host"] == "none"
+
+    def test_smtp_tls_true_in_env_resolves_to_starttls(self, db, monkeypatch):
+        """**Do not delete this as redundant.** It is the whole reason the
+        compatibility read is permanent rather than a migration (#577).
+
+        ``SMTP_TLS`` is a documented variable living in a file on the host. No
+        migration can rewrite it, so these spellings have to keep resolving for
+        as long as the variable is honoured, however the database is normalised.
+        """
+        from app.core.config import settings
+
+        _clear_env(monkeypatch)
+        monkeypatch.setattr(settings, "SMTP_HOST", "mail.club.example", raising=False)
+        monkeypatch.setattr(settings, "SMTP_TLS", True, raising=False)
+        _org(db)
+
+        assert resolve_mailing_config(db).smtp_endpoint()[2] == "starttls"
+
+        monkeypatch.setattr(settings, "SMTP_TLS", False, raising=False)
+        assert resolve_mailing_config(db).smtp_endpoint()[2] == "off"
+
+    def test_smtp_security_env_wins_over_the_deprecated_smtp_tls(self, db, monkeypatch):
+        """Both set means the install has migrated; the boolean cannot override."""
+        from app.core.config import settings
+
+        _clear_env(monkeypatch)
+        monkeypatch.setattr(settings, "SMTP_HOST", "mail.club.example", raising=False)
+        monkeypatch.setattr(settings, "SMTP_TLS", False, raising=False)
+        monkeypatch.setattr(settings, "SMTP_SECURITY", "ssl", raising=False)
+        _org(db)
+
+        assert resolve_mailing_config(db).smtp_endpoint()[2] == "ssl"
+
+    def test_a_stored_legacy_tls_true_resolves_to_starttls(self, db, monkeypatch):
+        """Rows written before the rename are read, not migrated (#577)."""
+        _clear_env(monkeypatch)
+        org = _org(db)
+        org.mailing_config = {
+            "active_provider": "smtp",
+            "smtp": {
+                "host": {"value": "mail.club.example", "secret": False},
+                "from_email": {"value": "socios@club.example", "secret": False},
+                "tls": {"value": "true", "secret": False},
+            },
+        }
+        db.flush()
+
+        assert resolve_mailing_config(db).smtp_endpoint()[2] == "starttls"
+
+    def test_a_stored_security_wins_over_a_leftover_tls(self, db, monkeypatch):
+        """Should both spellings ever coexist, the current name decides."""
+        _clear_env(monkeypatch)
+        org = _org(db)
+        org.mailing_config = {
+            "smtp": {
+                "host": {"value": "mail.club.example", "secret": False},
+                "security": {"value": "ssl", "secret": False},
+                "tls": {"value": "false", "secret": False},
+            },
+        }
+        db.flush()
+
+        assert resolve_mailing_config(db).smtp_endpoint()[2] == "ssl"
+
+    def test_an_unrecognised_mode_falls_back_to_starttls_never_off(self, db, monkeypatch):
+        """A hand-edited .env is the only way to reach one, since the API refuses
+        them. STARTTLS is the safe direction to be wrong in: it fails to connect
+        rather than sending in clear, which is what defaulting to ``off`` would
+        do. The old parser treated every unrecognised value as encryption on,
+        which is how typing ``ssl`` silently meant STARTTLS."""
+        from app.core.config import settings
+
+        _clear_env(monkeypatch)
+        monkeypatch.setattr(settings, "SMTP_HOST", "mail.club.example", raising=False)
+        monkeypatch.setattr(settings, "SMTP_SECURITY", "sslv3", raising=False)
+        _org(db)
+
+        assert resolve_mailing_config(db).smtp_endpoint()[2] == "starttls"
+
+    def test_parse_security_refuses_an_unrecognised_value(self):
+        from app.domains.mailing.mailing_config import SmtpSecurityError, parse_security
+
+        assert parse_security("") == "starttls"
+        assert parse_security("SSL") == "ssl"
+        assert parse_security("on") == "starttls"
+        assert parse_security("no") == "off"
+        with pytest.raises(SmtpSecurityError):
+            parse_security("tls")
 
     def test_smtp_needs_a_host_and_a_sender(self, db, monkeypatch):
         _clear_env(monkeypatch)
@@ -723,7 +814,14 @@ class TestSmtpProvider:
         client.cookies.update(_auth_cookie(admin))
         return admin
 
-    def test_stores_host_port_and_tls(self, client, db, monkeypatch):
+    def test_stores_host_port_and_security_from_the_deprecated_tls(
+        self, client, db, monkeypatch
+    ):
+        """A client still sending the boolean keeps working, and writes a mode.
+
+        ``tls: false`` means ``off`` and stores under the new name only, so the
+        JSON never carries both spellings (#577).
+        """
         _clear_env(monkeypatch)
         _set_key(monkeypatch)
         org = _org(db)
@@ -743,15 +841,97 @@ class TestSmtpProvider:
         )
         assert resp.status_code == 200
         smtp = resp.json()["smtp"]
-        assert (smtp["host"], smtp["port"], smtp["tls"]) == ("mail.club.example", 2525, False)
+        assert (smtp["host"], smtp["port"]) == ("mail.club.example", 2525)
+        assert smtp["security"] == "off"
+        assert smtp["tls"] is False
         assert smtp["user"] == "secretaria@club.example"
         assert smtp["password"] == {"configured": True, "last4": "cret"}
         assert smtp["ready"] is True
         assert "s3cret" not in resp.text
         node = org.mailing_config["smtp"]
         assert node["port"] == {"value": "2525", "secret": False}
-        assert node["tls"] == {"value": "false", "secret": False}
+        assert node["security"] == {"value": "off", "secret": False}
+        assert "tls" not in node
         assert secrets_crypto.decrypt(node["password"]["value"]) == "s3cret"
+
+    def test_stores_security_directly_and_reports_the_boolean(
+        self, client, db, monkeypatch
+    ):
+        """``ssl`` reads back as ``tls: true``.
+
+        The deprecated field's question was ever only "is this encrypted", so
+        reporting implicit TLS as false would tell an old client encryption is
+        off (#577).
+        """
+        _clear_env(monkeypatch)
+        _set_key(monkeypatch)
+        org = _org(db)
+        self._admin(client, db, "smtp-ssl")
+
+        resp = client.put(
+            "/api/v1/settings/mailing",
+            json={
+                "smtp": {
+                    "host": "smtp-pulse.example",
+                    "port": 465,
+                    "security": "ssl",
+                    "from_email": "socios@club.example",
+                }
+            },
+        )
+        assert resp.status_code == 200
+        smtp = resp.json()["smtp"]
+        assert smtp["security"] == "ssl"
+        assert smtp["tls"] is True
+        assert org.mailing_config["smtp"]["security"] == {"value": "ssl", "secret": False}
+
+    def test_security_wins_when_a_client_sends_both(self, client, db, monkeypatch):
+        """A caller that has migrated is not overridden by a boolean it still sends."""
+        _clear_env(monkeypatch)
+        _set_key(monkeypatch)
+        _org(db)
+        self._admin(client, db, "smtp-both")
+
+        resp = client.put(
+            "/api/v1/settings/mailing",
+            json={
+                "smtp": {
+                    "host": "smtp-pulse.example",
+                    "security": "ssl",
+                    "tls": False,
+                    "from_email": "socios@club.example",
+                }
+            },
+        )
+        assert resp.status_code == 200
+        assert resp.json()["smtp"]["security"] == "ssl"
+
+    def test_rejects_an_unrecognised_security_mode(self, client, db, monkeypatch):
+        """Refused, not coerced. The old parser read every unrecognised value as
+        encryption on, so an administrator who typed ``ssl`` got STARTTLS and was
+        told nothing (#577)."""
+        _clear_env(monkeypatch)
+        _org(db)
+        self._admin(client, db, "smtp-bad-mode")
+
+        resp = client.put(
+            "/api/v1/settings/mailing",
+            json={"smtp": {"host": "mail.club.example", "security": "tls"}},
+        )
+        assert resp.status_code == 422
+
+    def test_the_deprecated_tls_is_published_as_deprecated(self, client):
+        """The promise to remove it in the next major is only a promise if a
+        consumer can see it coming. Pinned on the schema so the annotation
+        cannot be dropped by accident."""
+        schema = client.get("/openapi.json").json()
+        view = schema["components"]["schemas"]["MailSmtpView"]["properties"]
+        update = schema["components"]["schemas"]["MailSmtpUpdate"]["properties"]
+
+        assert view["tls"]["deprecated"] is True
+        assert "deprecated" not in view["security"]
+        assert update["tls"]["deprecated"] is True
+        assert "deprecated" not in update["security"]
 
     def test_rejects_an_out_of_range_port(self, client, db, monkeypatch):
         _clear_env(monkeypatch)

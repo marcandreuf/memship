@@ -50,6 +50,8 @@ x-backend-env: &backend-env
   SMTP_USER: ${SMTP_USER:-}
   SMTP_PASSWORD: ${SMTP_PASSWORD:-}
   SMTP_FROM: ${SMTP_FROM:-}
+  SMTP_SECURITY: ${SMTP_SECURITY:-}
+  # Deprecated, still honoured. Consulted only when SMTP_SECURITY is unset.
   SMTP_TLS: ${SMTP_TLS:-true}
   RESEND_API_KEY: ${RESEND_API_KEY:-}
   RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-}

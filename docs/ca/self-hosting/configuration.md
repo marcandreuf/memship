@@ -1,5 +1,5 @@
 <!-- source: en/self-hosting/configuration.md -->
-<!-- source-hash: 500c0f9893b8 -->
+<!-- source-hash: df3b254bf116 -->
 
 # Referència de configuració
 
@@ -86,7 +86,8 @@ SMTP. Mira [Enviament de correu](email.md) per a una guia completa.
 | `SMTP_USER`     | _(buit)_                | Usuari SMTP.                         |
 | `SMTP_PASSWORD` | _(buit)_                | Contrasenya SMTP.                    |
 | `SMTP_FROM`     | `noreply@memship.local` | Adreça del remitent.                 |
-| `SMTP_TLS`      | `true`                  | Fa servir STARTTLS.                  |
+| `SMTP_SECURITY` | `starttls`              | `starttls`, `ssl` (port 465) o `off`. |
+| `SMTP_TLS`      | `true`                  | Obsoleta: `true` vol dir `starttls` i `false` vol dir `off`. Manà `SMTP_SECURITY`. |
 
 Si tots dos estan configurats, té preferència Resend.
 
