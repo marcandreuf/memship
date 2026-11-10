@@ -73,16 +73,18 @@ def _resolved_smtp():
 
     return ResolvedMailing(
         active="smtp",
-        resend=provider("resend", {}),
-        smtp=provider(
-            "smtp",
-            {
-                "host": "smtp.gmail.com",
-                "user": "club@gmail.com",
-                "password": "pw",
-                "from_email": "club@gmail.com",
-            },
-        ),
+        providers={
+            "resend": provider("resend", {}),
+            "smtp": provider(
+                "smtp",
+                {
+                    "host": "smtp.gmail.com",
+                    "user": "club@gmail.com",
+                    "password": "pw",
+                    "from_email": "club@gmail.com",
+                },
+            ),
+        },
     )
 
 
@@ -368,13 +370,15 @@ class TestBothTransportsShipTheTextPart:
     def test_resend_payload_has_both_bodies(self, mock_resolve):
         mock_resolve.return_value = ResolvedMailing(
             active="resend",
-            resend=ResolvedProvider(
-                name="resend",
-                values={"api_key": "re_key", "from_email": "no@club.test"},
-                sources={},
-                secret_flags={},
-            ),
-            smtp=ResolvedProvider(name="smtp", values={}, sources={}, secret_flags={}),
+            providers={
+                "resend": ResolvedProvider(
+                    name="resend",
+                    values={"api_key": "re_key", "from_email": "no@club.test"},
+                    sources={},
+                    secret_flags={},
+                ),
+                "smtp": ResolvedProvider(name="smtp", values={}, sources={}, secret_flags={}),
+            },
         )
         sent = {}
 

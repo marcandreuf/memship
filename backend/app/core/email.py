@@ -6,6 +6,7 @@ Transport priority:
   3. Neither           → log and skip (dev mode, no error)
 """
 
+import base64
 import logging
 import smtplib
 from collections.abc import Sequence
@@ -15,6 +16,7 @@ from email.mime.text import MIMEText
 from enum import Enum
 from pathlib import Path
 
+import httpx
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound, select_autoescape
 from sqlalchemy import text
 
@@ -83,7 +85,7 @@ class EmailResult:
 
 
 def classify_transport_error(error: Exception) -> EmailFailure:
-    """Map a Resend or SMTP exception onto an ``EmailFailure``."""
+    """Map a Resend, SMTP or SendPulse exception onto an ``EmailFailure``."""
     # Before the OSError branch: every smtplib exception is an OSError.
     if isinstance(error, smtplib.SMTPAuthenticationError):
         return EmailFailure.INVALID_CREDENTIALS
@@ -94,6 +96,19 @@ def classify_transport_error(error: Exception) -> EmailFailure:
     if isinstance(error, smtplib.SMTPException):
         return EmailFailure.UNKNOWN
     if isinstance(error, OSError):
+        return EmailFailure.TRANSPORT_UNAVAILABLE
+
+    # SendPulse answers over HTTP, so its failures arrive as httpx exceptions
+    # rather than typed ones. Before the Resend branch because neither overlaps.
+    if isinstance(error, httpx.HTTPStatusError):
+        status = error.response.status_code
+        if status in (401, 403):
+            return EmailFailure.INVALID_CREDENTIALS
+        if status == 429:
+            return EmailFailure.RATE_LIMITED
+        return EmailFailure.UNKNOWN
+    if isinstance(error, httpx.RequestError):
+        # Connect, read and timeout errors alike: the API was not reached.
         return EmailFailure.TRANSPORT_UNAVAILABLE
 
     try:
@@ -377,6 +392,65 @@ def _send_via_resend(
         return False
 
 
+SENDPULSE_SEND_URL = "https://api.sendpulse.com/smtp/emails"
+SENDPULSE_TIMEOUT = 15.0
+
+
+def _send_via_sendpulse(
+    to: str,
+    subject: str,
+    html_body: str,
+    api_key: str,
+    from_email: str,
+    from_name: str = "",
+    text_body: str | None = None,
+    attachment: bytes | None = None,
+    attachment_filename: str = "document.pdf",
+    attachment_mime: str = "application/pdf",
+    raise_errors: bool = False,
+) -> bool:
+    """Send through SendPulse's transactional API with explicit credentials.
+
+    A static API key, not their OAuth ``client_credentials`` flow: the key does
+    not expire, so there is no token cache or refresh in the send path.
+
+    Hand-rolled over httpx because SendPulse publish no Python client. The shape
+    differs from Resend in three ways that are easy to get wrong: the body nests
+    under ``email``, the HTML is base64, and ``from``/``to`` are objects rather
+    than plain addresses.
+    """
+    try:
+        payload: dict = {
+            "subject": subject,
+            "from": {"name": from_name or from_email, "email": from_email},
+            "to": [{"email": to}],
+            "html": base64.b64encode(html_body.encode("utf-8")).decode("ascii"),
+        }
+        if text_body:
+            payload["text"] = text_body
+        if attachment is not None:
+            # attachments_binary is the base64 variant; the plain `attachments`
+            # key takes text only and would corrupt a PDF.
+            payload["attachments_binary"] = {
+                attachment_filename: base64.b64encode(attachment).decode("ascii")
+            }
+
+        response = httpx.post(
+            SENDPULSE_SEND_URL,
+            json={"email": payload},
+            headers={"Authorization": f"Bearer {api_key}"},
+            timeout=SENDPULSE_TIMEOUT,
+        )
+        response.raise_for_status()
+        logger.info(f"Email sent via SendPulse: to={to}, subject={subject}")
+        return True
+    except Exception as e:
+        logger.error(f"SendPulse email failed: to={to}, error={e}")
+        if raise_errors:
+            raise
+        return False
+
+
 def _send_via_smtp(
     to: str,
     subject: str,
@@ -444,6 +518,101 @@ def _send_via_smtp(
         return False
 
 
+# ---------------------------------------------------------------- send adapters
+#
+# One per provider, with a signature the dispatch table can call blind. Each
+# reads its own credentials off the resolved config and maps them onto its
+# transport, because which field means what is the one thing that is genuinely
+# per-provider. Adding a provider is a function here and an entry in _SENDERS.
+
+
+def _dispatch_resend(
+    resolved: ResolvedMailing,
+    to: str,
+    subject: str,
+    html_body: str,
+    *,
+    text_body: str | None = None,
+    attachment: bytes | None = None,
+    attachment_filename: str = "document.pdf",
+    attachment_mime: str = "application/pdf",
+    raise_errors: bool = False,
+) -> bool:
+    c = resolved.provider("resend")
+    return _send_via_resend(
+        to, subject, html_body,
+        api_key=c.get("api_key"),
+        from_email=c.get("from_email"),
+        text_body=text_body,
+        attachment=attachment,
+        attachment_filename=attachment_filename,
+        attachment_mime=attachment_mime,
+        raise_errors=raise_errors,
+    )
+
+
+def _dispatch_smtp(
+    resolved: ResolvedMailing,
+    to: str,
+    subject: str,
+    html_body: str,
+    *,
+    text_body: str | None = None,
+    attachment: bytes | None = None,
+    attachment_filename: str = "document.pdf",
+    attachment_mime: str = "application/pdf",
+    raise_errors: bool = False,
+) -> bool:
+    s = resolved.provider("smtp")
+    host, port, security = resolved.smtp_endpoint()
+    return _send_via_smtp(
+        to, subject, html_body,
+        host=host, port=port, security=security,
+        user=s.get("user"),
+        password=s.get("password"),
+        # SMTP may send as the account itself when no From address is set.
+        from_email=s.get("from_email") or s.get("user"),
+        text_body=text_body,
+        attachment=attachment,
+        attachment_filename=attachment_filename,
+        attachment_mime=attachment_mime,
+        raise_errors=raise_errors,
+    )
+
+
+def _dispatch_sendpulse(
+    resolved: ResolvedMailing,
+    to: str,
+    subject: str,
+    html_body: str,
+    *,
+    text_body: str | None = None,
+    attachment: bytes | None = None,
+    attachment_filename: str = "document.pdf",
+    attachment_mime: str = "application/pdf",
+    raise_errors: bool = False,
+) -> bool:
+    c = resolved.provider("sendpulse")
+    return _send_via_sendpulse(
+        to, subject, html_body,
+        api_key=c.get("api_key"),
+        from_email=c.get("from_email"),
+        from_name=c.get("from_name"),
+        text_body=text_body,
+        attachment=attachment,
+        attachment_filename=attachment_filename,
+        attachment_mime=attachment_mime,
+        raise_errors=raise_errors,
+    )
+
+
+_SENDERS = {
+    "resend": _dispatch_resend,
+    "smtp": _dispatch_smtp,
+    "sendpulse": _dispatch_sendpulse,
+}
+
+
 def _dispatch(
     provider: str,
     resolved: ResolvedMailing,
@@ -455,41 +624,27 @@ def _dispatch(
     attachment_mime: str = "application/pdf",
     raise_errors: bool = False,
 ) -> bool:
-    """Send through a specific resolved provider (Resend or SMTP).
+    """Send through a specific resolved provider, looked up in ``_SENDERS``.
 
     The plain-text alternative is derived here rather than at each call site, so
     every sender — including the ones that hand over pre-built HTML — ships a
     complete multipart. A mail with no text part is a mild spam signal.
+
+    An unknown provider returns False rather than raising: it can only come from
+    a stored ``active_provider`` this build no longer has, and refusing to send
+    is better than failing the caller.
     """
-    text_body = html_to_text(html_body)
-    if provider == "resend":
-        c = resolved.resend
-        return _send_via_resend(
-            to, subject, html_body,
-            api_key=c.get("api_key"),
-            from_email=c.get("from_email"),
-            text_body=text_body,
-            attachment=attachment,
-            attachment_filename=attachment_filename,
-            attachment_mime=attachment_mime,
-            raise_errors=raise_errors,
-        )
-    if provider == "smtp":
-        s = resolved.smtp
-        host, port, security = resolved.smtp_endpoint()
-        return _send_via_smtp(
-            to, subject, html_body,
-            host=host, port=port, security=security,
-            user=s.get("user"),
-            password=s.get("password"),
-            from_email=s.get("from_email") or s.get("user"),
-            text_body=text_body,
-            attachment=attachment,
-            attachment_filename=attachment_filename,
-            attachment_mime=attachment_mime,
-            raise_errors=raise_errors,
-        )
-    return False
+    sender = _SENDERS.get(provider)
+    if sender is None:
+        return False
+    return sender(
+        resolved, to, subject, html_body,
+        text_body=html_to_text(html_body),
+        attachment=attachment,
+        attachment_filename=attachment_filename,
+        attachment_mime=attachment_mime,
+        raise_errors=raise_errors,
+    )
 
 
 def _record_send_outcome(

@@ -1,5 +1,5 @@
 <!-- source: en/getting-started/what-you-need.md -->
-<!-- source-hash: e2cf94f5906d -->
+<!-- source-hash: 805451702518 -->
 
 # Què necessites per executar Memship
 
@@ -19,7 +19,7 @@ criteri i no una mesura, s'indica.
 |---|---|
 | **Un servidor** | 2 vCPU, 4 GB de RAM, 40 GB de SSD. Linux amb Docker. Un Memship per màquina |
 | **Un nom de domini** | Amb un registre A que apunti al servidor. L'HTTPS es resol sol |
-| **Una manera d'enviar correu** | Resend, Gmail o qualsevol servidor SMTP. Això no es pot saltar |
+| **Una manera d'enviar correu** | Resend, SendPulse, Gmail o qualsevol servidor SMTP. Això no es pot saltar |
 | **El que costa** | **De 8 a 12 € al mes**, IVA inclòs, per tot l'anterior |
 | **Qui l'instal·la** | Tu, l'informàtic que ja tinguis, o el mantenidor com a servei de pagament |
 
@@ -126,17 +126,20 @@ Memship necessita enviar correu transaccional, i això **no és opcional**: el r
 contrasenya, la verificació de l'adreça i els avisos de pagament passen tots per aquí, i un soci no
 pot entrar per primera vegada fins que funcioni.
 
-Tres opcions, configurables des de la pantalla de Configuració o des del `.env`:
+Quatre opcions, configurables des de la pantalla de Configuració, i les tres primeres també des del `.env`:
 
 - **Resend**, una API de correu. Pla gratuït: 3.000 missatges al mes i 3 dominis, però **100 al
   dia**. Aquest límit diari és el que molesta: enviar avisos a més de 100 socis d'una tirada el
   supera. El pla de pagament són 20 USD al mes.
 - **Gmail**, un compte de Google normal amb una contrasenya d'aplicació. Google aplica els seus
   propis límits diaris d'enviament.
+- **SendPulse**, una API de correu amb un pla gratuït més generós que el de Resend. Només des de la
+  pantalla, sense variables de `.env`. Convé més que l'SMTP quan el teu allotjament restringeix
+  l'SMTP de sortida, cosa que fan sovint els plans de VPS d'entrada.
 - **Qualsevol servidor SMTP**, inclòs el de l'allotjament de correu que ja tingui l'entitat, sempre
   que accepti STARTTLS al port 587, o SSL/TLS directe al port 465.
 
-[Enviament de correu](../self-hosting/email.md) cobreix les tres, inclosos els
+[Enviament de correu](../self-hosting/email.md) cobreix les quatre, inclosos els
 registres DNS que necessita Resend.
 
 ## Quant de temps porta

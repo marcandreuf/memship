@@ -1,5 +1,5 @@
 <!-- source: en/admin-guide/integrations.md -->
-<!-- source-hash: ea5f99d8c47e -->
+<!-- source-hash: bf21fddc90e9 -->
 
 # Integraciones: guía de configuración
 
@@ -308,9 +308,9 @@ Se admiten dos proveedores:
   si ya tienes alojamiento de correo.
 
 **Hay exactamente un proveedor activo a la vez.** La pantalla tiene un solo selector de
-*Proveedor activo* con tres posiciones, **Ninguno / Resend / Servidor SMTP**. No hay interruptores
-por proveedor, así que el estado "los dos activados" no puede darse. Puedes tener guardadas las
-credenciales de los dos y cambiar de uno a otro en cualquier momento.
+*Proveedor activo* con cuatro posiciones, **Ninguno / Resend / Servidor SMTP / SendPulse**. No hay
+interruptores por proveedor, así que el estado "varios activados" no puede darse. Puedes tener
+guardadas las credenciales de todos y cambiar de uno a otro en cualquier momento.
 
 Con el proveedor activo en **Ninguno**, memship no envía absolutamente nada. Los correos se omiten
 sin aviso (quedan registrados en el log, no en cola para más tarde). Los socios no recibirán
@@ -516,6 +516,7 @@ entorno, si lo hay.
 | Apple → ID de equipo | `APPLE_TEAM_ID` |
 | Apple → ID de clave | `APPLE_KEY_ID` |
 | Apple → Clave privada (.p8) | `APPLE_PRIVATE_KEY` |
+| SendPulse → todos los campos | _(ninguna: este proveedor se configura solo desde la pantalla)_ |
 | Resend → Clave de API | `RESEND_API_KEY` |
 | Resend → Correo del remitente | `RESEND_FROM_EMAIL`, después `SMTP_FROM` |
 | Servidor SMTP → Servidor | `SMTP_HOST` |

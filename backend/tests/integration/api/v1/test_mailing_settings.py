@@ -98,7 +98,7 @@ class TestResolver:
         org.mailing_config = {"resend": {"api_key": {"value": "db-key", "secret": False}}}
         db.flush()
 
-        resend = resolve_mailing_config(db).resend
+        resend = resolve_mailing_config(db).provider("resend")
         assert resend.get("api_key") == "db-key"
         assert resend.sources["api_key"] == "db"
 
@@ -109,7 +109,7 @@ class TestResolver:
         monkeypatch.setattr(settings, "RESEND_API_KEY", "env-key", raising=False)
         _org(db)
 
-        resend = resolve_mailing_config(db).resend
+        resend = resolve_mailing_config(db).provider("resend")
         assert resend.get("api_key") == "env-key"
         assert resend.sources["api_key"] == "env"
 
@@ -175,7 +175,7 @@ class TestResolver:
         org.mailing_config = {"resend": {"api_key": {"value": "k", "secret": False}}}
         db.flush()
 
-        resend = resolve_mailing_config(db).resend
+        resend = resolve_mailing_config(db).provider("resend")
         assert resend.ready is False
         assert resend.sources["from_email"] == "none"
 
@@ -188,13 +188,13 @@ class TestResolver:
         org.mailing_config = {"resend": {"api_key": {"value": "k", "secret": False}}}
         db.flush()
 
-        resend = resolve_mailing_config(db).resend
+        resend = resolve_mailing_config(db).provider("resend")
         assert resend.get("from_email") == "noreply@club.example"
         assert resend.sources["from_email"] == "env"
         assert resend.ready is True
 
         monkeypatch.setattr(settings, "RESEND_FROM_EMAIL", "club@resend.example", raising=False)
-        assert resolve_mailing_config(db).resend.get("from_email") == "club@resend.example"
+        assert resolve_mailing_config(db).provider("resend").get("from_email") == "club@resend.example"
 
     def test_stored_smtp_endpoint_wins_over_env(self, db, monkeypatch):
         from app.core.config import settings
@@ -317,16 +317,71 @@ class TestResolver:
         with pytest.raises(SmtpSecurityError):
             parse_security("tls")
 
+    def test_sendpulse_has_no_env_fallback(self, db, monkeypatch):
+        """**Screen-only, by decision, and this is what holds it (#576).**
+
+        Every other provider reads ``.env`` so that installs predating the
+        settings screen keep working. SendPulse postdates it, so no such install
+        can exist, and giving it variables would extend a compatibility rule to
+        a case that cannot happen. A reviewer adding ``SENDPULSE_API_KEY`` for
+        symmetry should fail here and read this.
+        """
+        from app.core.config import Settings
+        from app.domains.mailing.mailing_config import PROVIDER_FIELDS
+
+        # No field of this provider reads the environment, by either route...
+        assert all(spec.env is None for spec in PROVIDER_FIELDS["sendpulse"])
+        assert all(spec.fallback_env is None for spec in PROVIDER_FIELDS["sendpulse"])
+        # ...and there is no variable for one to read.
+        assert [n for n in Settings.model_fields if n.startswith("SENDPULSE")] == []
+
+        _clear_env(monkeypatch)
+        _org(db)
+
+        sp = resolve_mailing_config(db).provider("sendpulse")
+        assert sp.get("api_key") == ""
+        assert sp.ready is False
+        assert sp.sources["api_key"] == "none"
+
+    def test_sendpulse_is_never_the_env_only_fallback(self, db, monkeypatch):
+        """The legacy chain stays Resend then SMTP, whatever is configured."""
+        from app.core.config import settings
+
+        _clear_env(monkeypatch)
+        monkeypatch.setattr(settings, "SMTP_HOST", "mail.club.example", raising=False)
+        _org(db)
+
+        assert resolve_mailing_config(db).active == "smtp"
+
+    def test_sendpulse_needs_a_key_and_a_sender(self, db, monkeypatch):
+        """Like Resend: no account to send as, so the address is required."""
+        _clear_env(monkeypatch)
+        org = _org(db)
+        org.mailing_config = {
+            "sendpulse": {"api_key": {"value": "sp_key", "secret": False}}
+        }
+        db.flush()
+        assert resolve_mailing_config(db).provider("sendpulse").ready is False
+
+        org.mailing_config = {
+            "sendpulse": {
+                "api_key": {"value": "sp_key", "secret": False},
+                "from_email": {"value": "socios@club.example", "secret": False},
+            }
+        }
+        db.flush()
+        assert resolve_mailing_config(db).provider("sendpulse").ready is True
+
     def test_smtp_needs_a_host_and_a_sender(self, db, monkeypatch):
         _clear_env(monkeypatch)
         org = _org(db)
         org.mailing_config = {"smtp": {"user": {"value": "a@club.example", "secret": False}}}
         db.flush()
-        assert resolve_mailing_config(db).smtp.ready is False
+        assert resolve_mailing_config(db).provider("smtp").ready is False
 
         org.mailing_config = {"smtp": {"host": {"value": "mail.club.example", "secret": False}}}
         db.flush()
-        assert resolve_mailing_config(db).smtp.ready is False  # no sender address
+        assert resolve_mailing_config(db).provider("smtp").ready is False  # no sender address
 
         org.mailing_config = {
             "smtp": {
@@ -336,7 +391,7 @@ class TestResolver:
         }
         db.flush()
         # No user or password: a relay that trusts the server needs neither.
-        assert resolve_mailing_config(db).smtp.ready is True
+        assert resolve_mailing_config(db).provider("smtp").ready is True
 
     def test_secret_decrypts(self, db, monkeypatch):
         _clear_env(monkeypatch)
@@ -345,7 +400,7 @@ class TestResolver:
         org.mailing_config = {"resend": {"api_key": build_field_node("re_secret", True)}}
         db.flush()
 
-        assert resolve_mailing_config(db).resend.get("api_key") == "re_secret"
+        assert resolve_mailing_config(db).provider("resend").get("api_key") == "re_secret"
 
 
 class TestGetMailingEndpoint:
@@ -932,6 +987,56 @@ class TestSmtpProvider:
         assert "deprecated" not in view["security"]
         assert update["tls"]["deprecated"] is True
         assert "deprecated" not in update["security"]
+
+    def test_sendpulse_saves_and_activates_from_the_screen(
+        self, client, db, monkeypatch
+    ):
+        """The whole configuration path, since there is no .env one (#576)."""
+        _clear_env(monkeypatch)
+        _set_key(monkeypatch)
+        org = _org(db)
+        self._admin(client, db, "sendpulse-put")
+
+        resp = client.put(
+            "/api/v1/settings/mailing",
+            json={
+                "sendpulse": {
+                    "from_email": "socios@club.example",
+                    "from_name": "Club",
+                    "api_key": {"value": "sp_secret"},
+                }
+            },
+        )
+        assert resp.status_code == 200
+        sp = resp.json()["sendpulse"]
+        assert sp["from_email"] == "socios@club.example"
+        assert sp["from_name"] == "Club"
+        assert sp["api_key"] == {"configured": True, "last4": "cret"}
+        assert sp["ready"] is True
+        # Write-only, like every other secret on this screen.
+        assert "sp_secret" not in resp.text
+        assert secrets_crypto.decrypt(
+            org.mailing_config["sendpulse"]["api_key"]["value"]
+        ) == "sp_secret"
+
+    def test_saving_sendpulse_does_not_activate_it(self, client, db, monkeypatch):
+        """Credentials are not consent to switch the transport over."""
+        _clear_env(monkeypatch)
+        _set_key(monkeypatch)
+        _org(db)
+        self._admin(client, db, "sendpulse-inactive")
+
+        resp = client.put(
+            "/api/v1/settings/mailing",
+            json={
+                "sendpulse": {
+                    "from_email": "socios@club.example",
+                    "api_key": {"value": "sp_secret"},
+                }
+            },
+        )
+        assert resp.status_code == 200
+        assert resp.json()["active_provider"] is None
 
     def test_rejects_an_out_of_range_port(self, client, db, monkeypatch):
         _clear_env(monkeypatch)

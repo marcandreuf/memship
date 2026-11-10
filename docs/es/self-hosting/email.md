@@ -1,5 +1,5 @@
 <!-- source: en/self-hosting/email.md -->
-<!-- source-hash: a7f08bd46411 -->
+<!-- source-hash: 7a7fe506e5e0 -->
 
 # Envío de correo
 
@@ -16,8 +16,14 @@ instalación que ya está en marcha.
 
 | Dónde | Proveedores | Lo mejor para |
 |-------|-----------|----------|
-| **Configuración → Integraciones → Correo** | Resend, cualquier servidor SMTP (Gmail es una configuración predefinida) | Casi todo el mundo. Se aplica en la siguiente petición, sin reiniciar. |
+| **Configuración → Integraciones → Correo** | Resend, SendPulse, cualquier servidor SMTP (Gmail es una configuración predefinida) | Casi todo el mundo. Se aplica en la siguiente petición, sin reiniciar. |
 | **`.env`** | Resend, cualquier servidor SMTP | Dejar las credenciales puestas al desplegar, y las instalaciones anteriores a la pantalla de ajustes. |
+
+**SendPulse se configura solo desde la pantalla.** No tiene variables de `.env`, y es a propósito:
+esa vía existe para que las instalaciones anteriores a la pantalla de ajustes sigan comportándose
+igual, y ninguna de ellas puede tener SendPulse configurado. Un transporte por API conviene más que
+SMTP cuando el alojamiento restringe el SMTP de salida, cosa que hacen a menudo los planes de VPS
+de entrada.
 
 SMTP quiere decir un servidor que acepte **STARTTLS**, normalmente en el puerto 587, o uno que
 cifre desde el primer byte, normalmente en el puerto 465, o uno sin cifrado ninguno. Elige cuál con

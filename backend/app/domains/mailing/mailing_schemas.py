@@ -56,10 +56,21 @@ class MailSmtpView(BaseModel):
     health: MailHealthView
 
 
+class MailSendpulseView(BaseModel):
+    # Configured from this screen only: SendPulse postdates it, so there is no
+    # .env path to be compatible with (#576).
+    from_email: str
+    from_name: str
+    api_key: MailSecretStatus
+    ready: bool
+    health: MailHealthView
+
+
 class MailingConfigView(BaseModel):
-    active_provider: Literal["resend", "smtp"] | None
+    active_provider: Literal["resend", "smtp", "sendpulse"] | None
     resend: MailResendView
     smtp: MailSmtpView
+    sendpulse: MailSendpulseView
     secrets_encryption_available: bool
     # Per-field origin of the resolved value: "db" | "env" | "none", or
     # "default" for a typed setting nobody configured (SMTP port and security).
@@ -116,19 +127,26 @@ class MailSmtpUpdate(BaseModel):
         return self
 
 
+class MailSendpulseUpdate(BaseModel):
+    from_email: str | None = None
+    from_name: str | None = None
+    api_key: MailSecretUpdate | None = None
+
+
 class MailingConfigUpdate(BaseModel):
     # Presence is checked via model_fields_set so an explicit null (clear active
     # provider) is distinguishable from "not provided".
-    active_provider: Literal["resend", "smtp"] | None = None
+    active_provider: Literal["resend", "smtp", "sendpulse"] | None = None
     resend: MailResendUpdate | None = None
     smtp: MailSmtpUpdate | None = None
+    sendpulse: MailSendpulseUpdate | None = None
 
 
 # --- Test send ---
 
 
 class MailingTestRequest(BaseModel):
-    provider: Literal["resend", "smtp"]
+    provider: Literal["resend", "smtp", "sendpulse"]
     to: str | None = None
 
 

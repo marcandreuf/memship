@@ -1,5 +1,5 @@
 <!-- source: en/self-hosting/email.md -->
-<!-- source-hash: a7f08bd46411 -->
+<!-- source-hash: 7a7fe506e5e0 -->
 
 # Enviament de correu
 
@@ -15,8 +15,14 @@ una instal·lació que ja està en marxa.
 
 | On | Proveïdors | El millor per a |
 |-------|-----------|----------|
-| **Configuració → Integracions → Correu** | Resend, qualsevol servidor SMTP (Gmail és una configuració predefinida) | Gairebé tothom. S'aplica a la petició següent, sense reiniciar. |
+| **Configuració → Integracions → Correu** | Resend, SendPulse, qualsevol servidor SMTP (Gmail és una configuració predefinida) | Gairebé tothom. S'aplica a la petició següent, sense reiniciar. |
 | **`.env`** | Resend, qualsevol servidor SMTP | Deixar les credencials posades en el moment de desplegar, i les instal·lacions anteriors a la pantalla de configuració. |
+
+**SendPulse es configura només des de la pantalla.** No té variables de `.env`, i és a propòsit:
+aquesta via existeix perquè les instal·lacions anteriors a la pantalla de configuració continuïn
+comportant-se igual, i cap d'elles pot tenir SendPulse configurat. Un transport per API convé més
+que l'SMTP quan l'allotjament restringeix l'SMTP de sortida, cosa que fan sovint els plans de VPS
+d'entrada.
 
 SMTP vol dir un servidor que accepti **STARTTLS**, normalment al port 587, o un que xifri des del
 primer byte, normalment al port 465, o un sense cap xifratge. Tria quin amb l'ajust **Xifratge** de

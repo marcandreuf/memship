@@ -254,11 +254,13 @@
       "description": "Choose and configure the provider your emails are sent through. Only one can be active at a time.",
       "providers": {
         "resend": "Resend",
-        "smtp": "SMTP server"
+        "smtp": "SMTP server",
+        "sendpulse": "SendPulse"
       },
       "hints": {
         "resend": "Managed delivery through the Resend API.",
-        "smtp": "Any SMTP server: your organisation's mail hosting, a sending service, or a Gmail account."
+        "smtp": "Any SMTP server: your organisation's mail hosting, a sending service, or a Gmail account.",
+        "sendpulse": "Managed delivery through the SendPulse API. Configured here only, not through environment variables."
       },
       "activeProvider": "Active provider",
       "oneAtATime": "Only one provider can be active at a time.",
@@ -269,6 +271,7 @@
       "fields": {
         "api_key": "API key",
         "from_email": "From address",
+        "from_name": "Sender name",
         "host": "Server",
         "port": "Port",
         "security": "Encryption",

@@ -16,7 +16,7 @@ judgement rather than a measurement, it says so.
 |---|---|
 | **A server** | 2 vCPU, 4 GB RAM, 40 GB SSD. Linux with Docker. One Memship per host |
 | **A domain name** | With an A record pointing at the server. HTTPS is then automatic |
-| **A way to send email** | Resend, Gmail, or any SMTP server. This cannot be skipped |
+| **A way to send email** | Resend, SendPulse, Gmail, or any SMTP server. This cannot be skipped |
 | **What it costs** | **8–12 € a month**, VAT included, for everything above |
 | **Who installs it** | You, any sysadmin you already use, or the maintainer as a paid engagement |
 
@@ -115,17 +115,20 @@ Memship needs to send transactional email, and this is **not optional**: passwor
 verification and payment reminders all go through it, and a member cannot sign in for the first
 time until it works.
 
-Three options, configured from the Settings screen or from `.env`:
+Four options, configured from the Settings screen, and the first three also from `.env`:
 
 - **Resend**, an email API. Free tier: 3,000 messages a month, 3 domains, but **100 a day**. That
   daily cap is the one that bites: sending reminders to more than 100 members in a single run
   exceeds it. The paid tier is 20 USD a month.
 - **Gmail**, an ordinary Google account with an app password. Google applies its own daily sending
   limits.
+- **SendPulse**, an email API with a more generous free tier than Resend's. Screen-only, with no
+  `.env` variables. Worth preferring over SMTP when your host restricts outgoing SMTP, which
+  entry-level VPS plans often do.
 - **Any SMTP server**, including the one that comes with the association's existing mail hosting,
   as long as it accepts STARTTLS on port 587, or direct SSL/TLS on port 465.
 
-[Email delivery](../self-hosting/email.md) covers all three, including the DNS records Resend needs.
+[Email delivery](../self-hosting/email.md) covers all four, including the DNS records Resend needs.
 
 ## How long it takes
 

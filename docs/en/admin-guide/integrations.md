@@ -218,7 +218,7 @@ Two providers are supported:
 - **Resend**, a managed sending service, used through its API. Better deliverability, higher volume, needs a domain you control.
 - **SMTP server**, any mail server that accepts SMTP: the mail hosting your organisation already pays for, a sending service, or a Gmail account. Nothing to sign up for if you already have mail hosting.
 
-**Exactly one provider is active at a time.** The screen has a single *Active provider* selector with three positions, **None / Resend / SMTP server**. There are no per-provider on/off switches, so the "both enabled" state cannot happen. You can keep credentials for both on file and switch between them at any moment.
+**Exactly one provider is active at a time.** The screen has a single *Active provider* selector with four positions, **None / Resend / SMTP server / SendPulse**. There are no per-provider on/off switches, so the "more than one enabled" state cannot happen. You can keep credentials for all of them on file and switch between them at any moment.
 
 With the active provider set to **None**, memship sends nothing at all. Emails are silently skipped (they are logged, not queued for later). Members will not receive verification links, approval notices or receipts, so treat *None* as a temporary state.
 
@@ -343,6 +343,7 @@ Everything on the Integrations screen can also be supplied through the installat
 | Apple → Team ID | `APPLE_TEAM_ID` |
 | Apple → Key ID | `APPLE_KEY_ID` |
 | Apple → Private key (.p8) | `APPLE_PRIVATE_KEY` |
+| SendPulse → every field | _(none: this provider is configured from the screen only)_ |
 | Resend → API key | `RESEND_API_KEY` |
 | Resend → From address | `RESEND_FROM_EMAIL`, then `SMTP_FROM` |
 | SMTP server → Server | `SMTP_HOST` |

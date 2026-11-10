@@ -1,6 +1,6 @@
 import { apiClient } from "@/lib/client-api";
 
-export type MailProvider = "resend" | "smtp";
+export type MailProvider = "resend" | "smtp" | "sendpulse";
 
 export interface MailSecretStatus {
   configured: boolean;
@@ -42,6 +42,7 @@ export interface MailingConfigView {
   active_provider: MailProvider | null;
   resend: MailResendView;
   smtp: MailSmtpView;
+  sendpulse: MailSendpulseView;
   secrets_encryption_available: boolean;
   sources: Record<string, string>;
 }
@@ -54,6 +55,20 @@ export interface MailSecretUpdate {
 
 export interface MailResendUpdate {
   from_email?: string;
+  api_key?: MailSecretUpdate;
+}
+
+export interface MailSendpulseView {
+  from_email: string;
+  from_name: string;
+  api_key: MailSecretStatus;
+  ready: boolean;
+  health: MailHealth;
+}
+
+export interface MailSendpulseUpdate {
+  from_email?: string;
+  from_name?: string;
   api_key?: MailSecretUpdate;
 }
 
@@ -72,6 +87,7 @@ export interface MailingConfigUpdate {
   active_provider?: MailProvider | null;
   resend?: MailResendUpdate;
   smtp?: MailSmtpUpdate;
+  sendpulse?: MailSendpulseUpdate;
 }
 
 export interface MailingTestResult {

@@ -254,11 +254,13 @@
       "description": "Elige y configura el proveedor con el que se envían los correos. Solo puede haber uno activo a la vez.",
       "providers": {
         "resend": "Resend",
-        "smtp": "Servidor SMTP"
+        "smtp": "Servidor SMTP",
+        "sendpulse": "SendPulse"
       },
       "hints": {
         "resend": "Entrega gestionada mediante la API de Resend.",
-        "smtp": "Cualquier servidor SMTP: el alojamiento de correo de la entidad, un servicio de envío o una cuenta de Gmail."
+        "smtp": "Cualquier servidor SMTP: el alojamiento de correo de la entidad, un servicio de envío o una cuenta de Gmail.",
+        "sendpulse": "Entrega gestionada mediante la API de SendPulse. Solo se configura aquí, no por variables de entorno."
       },
       "activeProvider": "Proveedor activo",
       "oneAtATime": "Solo se puede activar un proveedor a la vez.",
@@ -269,6 +271,7 @@
       "fields": {
         "api_key": "Clave de API",
         "from_email": "Correo del remitente",
+        "from_name": "Nombre del remitente",
         "host": "Servidor",
         "port": "Puerto",
         "security": "Cifrado",
