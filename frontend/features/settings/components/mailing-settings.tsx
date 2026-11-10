@@ -61,6 +61,14 @@ const PROVIDER_SCHEMA = {
     required: ["api_key"],
     sender: ["from_email"],
   },
+  sendpulse: {
+    icon: "🚀",
+    // Screen-only: SendPulse has no .env path, unlike the other two (#576).
+    fields: ["from_email", "from_name"] as const,
+    secrets: ["api_key"] as const,
+    required: ["api_key"],
+    sender: ["from_email"],
+  },
   smtp: {
     icon: "✉️",
     fields: ["host", "port", "security", "user", "from_email"] as const,
@@ -71,7 +79,7 @@ const PROVIDER_SCHEMA = {
 } as const;
 
 type ProviderName = keyof typeof PROVIDER_SCHEMA;
-const PROVIDERS: ProviderName[] = ["resend", "smtp"];
+const PROVIDERS: ProviderName[] = ["resend", "smtp", "sendpulse"];
 
 // Gmail is a configuration of the SMTP provider, not a provider of its own.
 const GMAIL_PRESET = { host: "smtp.gmail.com", port: "587", security: "starttls" };
@@ -119,7 +127,10 @@ export function MailingSettings() {
       }
       return { fields, secrets };
     };
-    const next = { resend: build("resend"), smtp: build("smtp") };
+    // Built from PROVIDERS so a new provider needs no edit here.
+    const next = Object.fromEntries(
+      PROVIDERS.map((name) => [name, build(name)]),
+    ) as Record<ProviderName, ProviderForm>;
     setForms(next);
     setActive(data.active_provider);
     initialForms.current = JSON.parse(JSON.stringify(next));

@@ -48,6 +48,7 @@ from app.domains.mailing.mailing_schemas import (
     MailResendView,
     MailSecretStatus,
     MailSecretUpdate,
+    MailSendpulseView,
     MailSmtpView,
 )
 from app.domains.mailing.policy import (
@@ -312,7 +313,9 @@ def _health_view(health: ProviderHealth) -> MailHealthView:
 
 def _build_mailing_view(db: Session) -> MailingConfigView:
     resolved = resolve_mailing_config(db)
-    r, s = resolved.provider("resend"), resolved.provider("smtp")
+    r = resolved.provider("resend")
+    s = resolved.provider("smtp")
+    sp = resolved.provider("sendpulse")
     host, port, security = resolved.smtp_endpoint()
     health = provider_health(db, resolved)
     return MailingConfigView(
@@ -341,6 +344,16 @@ def _build_mailing_view(db: Session) -> MailingConfigView:
             ),
             ready=s.ready,
             health=_health_view(health["smtp"]),
+        ),
+        sendpulse=MailSendpulseView(
+            from_email=sp.get("from_email"),
+            from_name=sp.get("from_name"),
+            api_key=MailSecretStatus(
+                configured=sp.configured("api_key"),
+                last4=sp.last4("api_key"),
+            ),
+            ready=sp.ready,
+            health=_health_view(health["sendpulse"]),
         ),
         secrets_encryption_available=secrets_crypto.secrets_available(),
         sources=resolved.flat_sources(),
@@ -415,7 +428,11 @@ def update_mailing_config(
     config = copy.deepcopy(settings_obj.mailing_config or {})
     changed: list[str] = []
 
-    for pname, pupdate in (("resend", data.resend), ("smtp", data.smtp)):
+    for pname, pupdate in (
+        ("resend", data.resend),
+        ("smtp", data.smtp),
+        ("sendpulse", data.sendpulse),
+    ):
         if pupdate is None:
             continue
         node = config.setdefault(pname, {})

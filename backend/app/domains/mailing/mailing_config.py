@@ -41,7 +41,7 @@ from app.domains.organizations.models import OrganizationSettings
 
 logger = logging.getLogger(__name__)
 
-PROVIDERS = ("resend", "smtp")
+PROVIDERS = ("resend", "smtp", "sendpulse")
 
 DEFAULT_SMTP_PORT = 587
 
@@ -63,7 +63,10 @@ _LEGACY_TLS_OFF = ("false", "0", "no")
 @dataclass(frozen=True)
 class FieldSpec:
     name: str
-    env: str
+    # The environment variable this field falls back to, or None for a field
+    # that is configured from the settings screen only. See ``_resolve_active``
+    # on why a provider added after that screen existed gets no env fallback.
+    env: str | None
     secret_default: bool
     fallback_env: str | None = None
     # A field this one was renamed from, read from the stored node when the
@@ -95,6 +98,13 @@ PROVIDER_FIELDS: dict[str, list[FieldSpec]] = {
         FieldSpec("password", "SMTP_PASSWORD", True),
         FieldSpec("from_email", "SMTP_FROM", False),
     ],
+    # Screen-only, so every field has env None. SendPulse postdates the settings
+    # screen, so no install can have it configured through a file.
+    "sendpulse": [
+        FieldSpec("api_key", None, True),
+        FieldSpec("from_email", None, False),
+        FieldSpec("from_name", None, False),
+    ],
 }
 
 # The fields that must resolve non-empty for a provider to be usable. SMTP also
@@ -105,6 +115,9 @@ PROVIDER_FIELDS: dict[str, list[FieldSpec]] = {
 PROVIDER_REQUIRED = {
     "resend": ["api_key", "from_email"],
     "smtp": ["host"],
+    # Like Resend, SendPulse has no account to send as, so a From address is
+    # required rather than inferable.
+    "sendpulse": ["api_key", "from_email"],
 }
 
 
@@ -278,6 +291,9 @@ def _resolve_provider(name: str, node: object) -> ResolvedProvider:
         if db_value:
             values[spec.name] = db_value
             sources[spec.name] = "db"
+            continue
+        if spec.env is None:
+            sources[spec.name] = "none"
             continue
         env_value, source = _env_value(spec.env)
         if not env_value and spec.fallback_env:

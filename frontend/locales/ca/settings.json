@@ -254,11 +254,13 @@
       "description": "Tria i configura el proveïdor amb què s'envien els correus. Només n'hi pot haver un d'actiu alhora.",
       "providers": {
         "resend": "Resend",
-        "smtp": "Servidor SMTP"
+        "smtp": "Servidor SMTP",
+        "sendpulse": "SendPulse"
       },
       "hints": {
         "resend": "Lliurament gestionat mitjançant l'API de Resend.",
-        "smtp": "Qualsevol servidor SMTP: l'allotjament de correu de l'entitat, un servei d'enviament o un compte de Gmail."
+        "smtp": "Qualsevol servidor SMTP: l'allotjament de correu de l'entitat, un servei d'enviament o un compte de Gmail.",
+        "sendpulse": "Lliurament gestionat mitjançant l'API de SendPulse. Només es configura aquí, no per variables d'entorn."
       },
       "activeProvider": "Proveïdor actiu",
       "oneAtATime": "Només es pot activar un proveïdor alhora.",
@@ -269,6 +271,7 @@
       "fields": {
         "api_key": "Clau d'API",
         "from_email": "Correu del remitent",
+        "from_name": "Nom del remitent",
         "host": "Servidor",
         "port": "Port",
         "security": "Xifratge",

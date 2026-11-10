@@ -1,5 +1,6 @@
 """Unit tests for email service."""
 
+import base64
 import smtplib
 from unittest.mock import MagicMock, patch
 
@@ -15,6 +16,7 @@ from app.core.email import (
     classify_transport_error,
     render_template,
     send_email,
+    send_email_with_attachment,
     send_password_reset_email,
     send_payment_confirmation_email,
     send_registration_cancellation_email,
@@ -36,12 +38,15 @@ def _provider(name, values, sources=None):
     )
 
 
-def _resolved(active, resend_values=None, smtp_values=None, smtp_sources=None):
+def _resolved(
+    active, resend_values=None, smtp_values=None, smtp_sources=None, sendpulse_values=None
+):
     return ResolvedMailing(
         active=active,
         providers={
             "resend": _provider("resend", resend_values or {}),
             "smtp": _provider("smtp", smtp_values or {}, smtp_sources),
+            "sendpulse": _provider("sendpulse", sendpulse_values or {}),
         },
     )
 
@@ -130,6 +135,77 @@ class TestEmailTransport:
         mock_smtp_class.assert_called_once_with("mail.club.example", 25)
         mock_server.starttls.assert_not_called()
         mock_server.sendmail.assert_called_once()
+
+    @patch("app.core.email._resolve_transport")
+    @patch("app.core.email.httpx.post")
+    def test_sendpulse_posts_the_shape_their_api_documents(self, mock_post, mock_resolve):
+        """Three things differ from Resend and each is silent when wrong (#576).
+
+        The body nests under ``email``, the HTML is base64, and ``from``/``to``
+        are objects rather than plain addresses. A static API key goes straight
+        on the Authorization header; their OAuth flow is deliberately not used.
+        """
+        mock_resolve.return_value = _resolved(
+            active="sendpulse",
+            sendpulse_values={
+                "api_key": "sp_key",
+                "from_email": "socios@club.example",
+                "from_name": "Club",
+            },
+        )
+        mock_post.return_value = MagicMock(status_code=200)
+
+        assert send_email("member@example.com", "Asunto", "<p>Hola</p>") is True
+
+        url = mock_post.call_args.args[0]
+        body = mock_post.call_args.kwargs["json"]["email"]
+        headers = mock_post.call_args.kwargs["headers"]
+
+        assert url == "https://api.sendpulse.com/smtp/emails"
+        assert headers["Authorization"] == "Bearer sp_key"
+        assert body["from"] == {"name": "Club", "email": "socios@club.example"}
+        assert body["to"] == [{"email": "member@example.com"}]
+        assert base64.b64decode(body["html"]).decode("utf-8") == "<p>Hola</p>"
+        # The text alternative is derived for every provider, never base64.
+        assert "Hola" in body["text"]
+
+    @patch("app.core.email._resolve_transport")
+    @patch("app.core.email.httpx.post")
+    def test_sendpulse_falls_back_to_the_address_as_the_sender_name(
+        self, mock_post, mock_resolve
+    ):
+        """``from.name`` is required by their API, and the name field is not."""
+        mock_resolve.return_value = _resolved(
+            active="sendpulse",
+            sendpulse_values={"api_key": "sp_key", "from_email": "socios@club.example"},
+        )
+        mock_post.return_value = MagicMock(status_code=200)
+
+        assert send_email("member@example.com", "Asunto", "<p>Hola</p>") is True
+        assert mock_post.call_args.kwargs["json"]["email"]["from"] == {
+            "name": "socios@club.example",
+            "email": "socios@club.example",
+        }
+
+    @patch("app.core.email._resolve_transport")
+    @patch("app.core.email.httpx.post")
+    def test_sendpulse_attachment_uses_the_binary_key(self, mock_post, mock_resolve):
+        """``attachments`` takes text and would corrupt a PDF."""
+        mock_resolve.return_value = _resolved(
+            active="sendpulse",
+            sendpulse_values={"api_key": "sp_key", "from_email": "socios@club.example"},
+        )
+        mock_post.return_value = MagicMock(status_code=200)
+
+        send_email_with_attachment(
+            "member@example.com", "Recibo", "<p>Adjunto</p>",
+            attachment=b"%PDF-1.4 fake",
+            attachment_filename="recibo.pdf",
+        )
+
+        body = mock_post.call_args.kwargs["json"]["email"]
+        assert "attachments" not in body
+        assert base64.b64decode(body["attachments_binary"]["recibo.pdf"]) == b"%PDF-1.4 fake"
 
     @patch("app.core.email._resolve_transport")
     @patch("app.core.email.smtplib.SMTP")

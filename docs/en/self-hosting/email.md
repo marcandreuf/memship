@@ -13,8 +13,13 @@ anything, especially on an installation that is already running.
 
 | Where | Providers | Best for |
 |-------|-----------|----------|
-| **Settings → Integrations → Mailing** | Resend, any SMTP server (Gmail is a preset) | Almost everyone. Takes effect on the next request, no restart. |
+| **Settings → Integrations → Mailing** | Resend, SendPulse, any SMTP server (Gmail is a preset) | Almost everyone. Takes effect on the next request, no restart. |
 | **`.env`** | Resend, any SMTP server | Preseeding credentials at deploy time, and installations older than the settings screen. |
+
+**SendPulse is configured from the screen only.** It has no `.env` variables, on purpose: that
+path exists so installations predating the settings screen keep behaving as they did, and no such
+installation can have SendPulse configured. An API transport is worth preferring over SMTP where
+the host restricts outgoing SMTP, which entry-level VPS plans often do.
 
 SMTP means a server that accepts **STARTTLS**, usually on port 587, or one that is encrypted
 from the first byte, usually on port 465, or one with no encryption at all. Pick which with the

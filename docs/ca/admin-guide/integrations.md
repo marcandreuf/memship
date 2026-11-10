@@ -1,5 +1,5 @@
 <!-- source: en/admin-guide/integrations.md -->
-<!-- source-hash: ea5f99d8c47e -->
+<!-- source-hash: bf21fddc90e9 -->
 
 # Integracions: guia de configuració
 
@@ -305,9 +305,9 @@ S'admeten dos proveïdors:
   si ja tens allotjament de correu.
 
 **Hi ha exactament un proveïdor actiu alhora.** La pantalla té un sol selector de *Proveïdor
-actiu* amb tres posicions, **Cap / Resend / Servidor SMTP**. No hi ha interruptors per proveïdor,
-així que l'estat "tots dos activats" no es pot donar. Pots tenir desades les credencials de tots
-dos i canviar d'un a l'altre en qualsevol moment.
+actiu* amb quatre posicions, **Cap / Resend / Servidor SMTP / SendPulse**. No hi ha interruptors
+per proveïdor, així que l'estat "més d'un activat" no es pot donar. Pots tenir desades les
+credencials de tots i canviar d'un a l'altre en qualsevol moment.
 
 Amb el proveïdor actiu a **Cap**, memship no envia absolutament res. Els correus s'ometen sense
 avís (queden registrats al log, no en cua per a més tard). Els socis no rebran enllaços de
@@ -513,6 +513,7 @@ de l'entorn, si n'hi ha.
 | Apple → ID d'equip | `APPLE_TEAM_ID` |
 | Apple → ID de clau | `APPLE_KEY_ID` |
 | Apple → Clau privada (.p8) | `APPLE_PRIVATE_KEY` |
+| SendPulse → tots els camps | _(cap: aquest proveïdor es configura només des de la pantalla)_ |
 | Resend → Clau d'API | `RESEND_API_KEY` |
 | Resend → Correu del remitent | `RESEND_FROM_EMAIL`, després `SMTP_FROM` |
 | Servidor SMTP → Servidor | `SMTP_HOST` |
