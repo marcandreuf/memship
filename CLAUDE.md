@@ -356,6 +356,22 @@ rather than inventing chrome; Activities is the reference implementation.
 Modals belong inside tabs, not on the entity itself. Lists whose endpoint returns every
 row unpaginated (groups, spaces) filter client-side rather than growing a backend param.
 
+### Documentation
+
+`docs/` is translated per locale, and **each translated page declares the English revision it came
+from** in HTML comments at the top: `<!-- source: en/... -->` and `<!-- source-hash: ... -->`. CI's
+**Translation Drift** job runs `scripts/check-docs-translations.sh`, which fails when a page's
+English source has changed since the hash that page declares.
+
+**Editing an English page therefore marks its `es` and `ca` siblings stale, even when all three are
+translated in the same commit**, because only the source is hashed, so the check cannot see that the
+translation was updated too. The sequence is: edit the English page, translate the `es` and `ca`
+siblings, then run `./scripts/check-docs-translations.sh --fix` to restamp the hashes. Without
+`--fix` it reports what is stale and exits non-zero; a clean tree prints "all current".
+
+Restamping *instead of* translating is exactly what the hash exists to catch, so never run `--fix`
+to clear a red build you have not actually translated for.
+
 ### Code Style
 - Python: follow existing patterns, type hints on function signatures
 - TypeScript: strict mode, prefer named exports
