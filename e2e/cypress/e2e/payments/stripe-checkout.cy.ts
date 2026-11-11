@@ -1,5 +1,8 @@
 describe("Stripe Checkout — Happy Path @smoke", () => {
   const API_URL = Cypress.env("API_URL") || "http://localhost:8003/api/v1";
+  // The seeded member these specs raise a receipt against, matched exactly
+  // below rather than by position in a substring search (#520).
+  const MEMBER_EMAIL = "member@examplee6e3b1.com";
   let emittedReceiptId: number;
 
   before(() => {
@@ -55,11 +58,22 @@ describe("Stripe Checkout — Happy Path @smoke", () => {
     // Find member ID for member@examplee6e3b1.com
     cy.request({
       method: "GET",
-      url: `${API_URL}/members?search=member@examplee6e3b1.com`,
+      url: `${API_URL}/members?search=${MEMBER_EMAIL}`,
     }).then((membersResp) => {
       expect(membersResp.status).to.eq(200);
-      const member = membersResp.body.items[0];
-      expect(member).to.exist;
+      // Match the address, do not trust the position. `search` is a substring
+      // match over names, email and member number (`list_members`), so any
+      // account whose address merely *contains* this one comes back too, and
+      // `items[0]` then picked whichever the ordering happened to put first.
+      // That is how a seeded `card-member@` account silently handed these specs
+      // the wrong member, and the failures read as payments defects rather than
+      // as a lookup in a `before` hook resolving the wrong account (#520).
+      const member = membersResp.body.items.find(
+        (m) => m.person.email === MEMBER_EMAIL
+      );
+      // Named on purpose: a future miss should fail here, saying which account
+      // is absent, instead of three specs failing about buttons.
+      expect(member, `the seeded member test account ${MEMBER_EMAIL}`).to.exist;
 
       // Create a receipt for this member
       cy.request({
