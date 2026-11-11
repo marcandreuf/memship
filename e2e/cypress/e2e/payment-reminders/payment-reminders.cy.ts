@@ -61,9 +61,21 @@ describe("Payment Reminders — receipt detail (admin)", () => {
 
   it("sends a manual reminder and records it in the history", () => {
     cy.loginAsAdmin();
-    // Emitted receipts are remindable; the seed has several.
-    cy.visit("/en/receipts?status=emitted");
-    cy.get("table tbody tr").first().click();
+    // Ask for a receipt that is actually remindable rather than taking whatever
+    // sorts first. "Emitted" is not enough: `canRemind` is
+    // `!isCreditNote && status in (emitted, overdue)`
+    // (`receipts/[id]/page.tsx:201`), and a credit note is emitted like any
+    // other document. credit-note-lifecycle.cy.ts leaves one in the shared
+    // database, it sorted first here on 2026-11-11, and the spec failed on a
+    // page that correctly has no Send reminder button: you do not chase a
+    // refund. Nothing about the ordering was wrong, the assumption was.
+    cy.request({
+      url: `${API_URL}/receipts?status=emitted&document_type=invoice&per_page=1`,
+    }).then((resp) => {
+      const receipt = resp.body.items[0];
+      expect(receipt, "an emitted invoice to remind").to.exist;
+      cy.visit(`/en/receipts/${receipt.id}`);
+    });
     cy.url().should("match", /\/receipts\/\d+/);
 
     cy.contains("button", "Send reminder").click();

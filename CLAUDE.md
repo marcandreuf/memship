@@ -112,7 +112,23 @@ not a reshuffle.
 `id = 1` row — is mutating state every other worker can see. It needs to be
 confined to the pinned worker alongside every spec that reads what it touches,
 or it will surface as an unrelated spec failing intermittently somewhere else.
-Only the `custom_roles` flag has been audited this way.
+**Audited 2026-11-11, and `custom_roles` is the only one.** Every other spec that
+writes `organization_settings` is a *monotonic enabler*: `if aria-checked !== "true"`,
+click, Save, leave it on. Off-to-on cannot break a concurrent reader, because every
+spec that reads those features wants them on. `roles-feature-flag.cy.ts` is the sole
+spec that turns a flag **off**, which is what makes it the sole spec that needs
+pinning. The backend helps: `features` is a sparse merge, not a replace
+(`settings.py:116`), so two specs enabling different flags cannot clobber each other,
+and `communications.cy.ts` asserts exactly that.
+
+**Serialising more specs is therefore not the fix for most flakes here**, and the two
+found on 2026-11-11 prove it. Both were specs asserting something only true in
+isolation, not races: one clicked Save before a two-query form reset had applied, and
+one took "the first emitted receipt" and got a credit note another spec had left in
+the database, which correctly has no Send reminder button. Pinning fixes neither,
+because the contaminating data outlives the spec that wrote it whatever the schedule.
+A spec that selects the row it needs is correct under any scheduling; that is the fix
+direction, and #520 is the same defect in the payments specs.
 
 Measured 2026-09-16 at 219 tests, after the pinning: three consecutive runs, all
 **219/219 leaving no screenshots at all**, at 262.6s, 277.6s and 300.2s of spec

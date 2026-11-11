@@ -34,11 +34,22 @@ describe("Error Handling — Toast Notifications", () => {
       // The old guard here waited for `name` to be non-empty, which is true
       // after the FIRST reset. A click in the window between the two submits a
       // form whose address half is blank and gets a 422 instead of the success
-      // toast, then passes on retry with both queries cached. Waiting for one
-      // field cannot express "the form has finished resetting" when the reset
-      // has two inputs; waiting for both requests can.
+      // toast, then passes on retry with both queries cached.
+      //
+      // Waiting for both requests is still not enough, and this failed twice in
+      // a full run on 2026-11-11 with both waits satisfied: the screenshot shows
+      // `orgSettings` 200, `orgAddress` 200, then `PUT 422 /api/settings/address`.
+      // `cy.wait` resolves when the response arrives, and the reset is an effect
+      // that runs after that, so the window is now between the second response
+      // landing and React re-rendering the form.
+      //
+      // So assert on a field the SECOND reset owns. `address_line1` is blank
+      // until the address query has been applied to the form, and the PUT
+      // requires it (`OrganizationAddressUpdate.address_line1` is NonBlank), so
+      // it is exactly the condition whose absence produced the 422. `name`
+      // cannot express this: the first reset already filled it.
       cy.wait(["@orgSettings", "@orgAddress"]);
-      cy.get('input[name="name"]').should("not.have.value", "");
+      cy.get('input[name="address_line1"]').should("not.have.value", "");
       cy.contains("button", "Save").click();
       cy.get(TOAST).should("contain.text", "Saved successfully");
     });
