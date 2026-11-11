@@ -20,10 +20,18 @@ const MAILING_VIEW = {
   smtp: {
     host: "",
     port: 587,
+    security: "starttls",
     tls: true,
     user: "",
     from_email: "",
     password: { configured: false, last4: null },
+    ready: false,
+    health: UNVERIFIED,
+  },
+  sendpulse: {
+    from_email: "",
+    from_name: "",
+    api_key: { configured: false, last4: null },
     ready: false,
     health: UNVERIFIED,
   },
