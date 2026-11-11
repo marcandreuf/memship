@@ -19,6 +19,9 @@ const MAILING_VIEW = {
   smtp: {
     host: "",
     port: 587,
+    security: "starttls",
+    // Derived from security, and still returned for clients written against
+    // the boolean (#577). Present so the stub matches the real view.
     tls: true,
     user: "",
     from_email: "",
@@ -26,8 +29,15 @@ const MAILING_VIEW = {
     ready: false,
     health: UNVERIFIED,
   },
+  sendpulse: {
+    from_email: "",
+    from_name: "",
+    api_key: { configured: false, last4: null },
+    ready: false,
+    health: UNVERIFIED,
+  },
   secrets_encryption_available: true,
-  sources: { "smtp.port": "default", "smtp.tls": "default" },
+  sources: { "smtp.port": "default", "smtp.security": "default" },
 };
 
 const field = (label: string) => cy.contains("label", label).parent().find("input");
@@ -41,17 +51,31 @@ describe("SMTP mail provider", () => {
     cy.wait("@mailing");
   });
 
-  it("saves a server of the association's own, with typed port and TLS", () => {
+  it("saves a server of the association's own, with typed port and implicit TLS", () => {
     cy.intercept("PUT", "/api/settings/mailing", (req) => req.reply(MAILING_VIEW)).as("save");
     field("Server").type("mail.club.example");
     field("Port").clear().type("2525");
-    cy.get("#mailing-smtp-tls").click();
+    cy.get("#mailing-smtp-security").click();
+    cy.contains('[role="option"]', "Direct SSL/TLS (port 465)").click();
+    // Choosing an option leaves the Radix popup open under Cypress's synthetic
+    // events, and an open select holds `pointer-events: none` on <body>, so the
+    // typing and the Save click below would land on a dead element. Dismiss,
+    // then wait for the lock to lift rather than for an animation: the lock is
+    // what actually blocks.
+    cy.get("#mailing-smtp-security").should("contain.text", "Direct SSL/TLS (port 465)");
+    cy.get("body").type("{esc}");
+    cy.get("body").should("not.have.css", "pointer-events", "none");
     field("SMTP user").type("secretaria@club.example");
     cy.contains("button", "Save").click();
     cy.wait("@save")
       .its("request.body")
       .should("deep.equal", {
-        smtp: { host: "mail.club.example", port: 2525, tls: false, user: "secretaria@club.example" },
+        smtp: {
+          host: "mail.club.example",
+          port: 2525,
+          security: "ssl",
+          user: "secretaria@club.example",
+        },
       });
   });
 
@@ -59,7 +83,7 @@ describe("SMTP mail provider", () => {
     cy.contains("button", "Use Gmail's settings").click();
     field("Server").should("have.value", "smtp.gmail.com");
     field("Port").should("have.value", "587");
-    cy.get("#mailing-smtp-tls").should("have.attr", "aria-checked", "true");
+    cy.get("#mailing-smtp-security").should("contain.text", "STARTTLS (port 587)");
   });
 
   it("does not label defaults as coming from the environment", () => {
