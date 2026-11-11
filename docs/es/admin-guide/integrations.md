@@ -1,5 +1,5 @@
 <!-- source: en/admin-guide/integrations.md -->
-<!-- source-hash: 185402ab21e7 -->
+<!-- source-hash: 6f8c5659dfb7 -->
 
 # Integraciones: guía de configuración
 
@@ -604,4 +604,4 @@ configuración de Gmail** rellena el servidor, el puerto y STARTTLS para una cue
 
 memship incluye los proveedores de esta guía: Google y Apple para iniciar sesión, y Resend, SendPulse o cualquier servidor SMTP para el correo. SMTP cubre la mayoría de servicios que no tienen aquí una tarjeta propia, porque casi todos los proveedores de correo ofrecen un punto de acceso SMTP.
 
-**Cualquier otra cosa es una extensión a medida.** Si tu organización necesita un proveedor de identidad o un servicio de correo que memship no incluye, abre una incidencia con la etiqueta `question` describiendo lo que necesitas: <https://github.com/marcandreuf/memship/issues>. Las dos capas están pensadas para ampliarse, y quienes contribuyen pueden decirte lo que supondría un proveedor concreto antes de que te comprometas.
+**Cualquier otra cosa es una extensión a medida.** Si tu organización necesita un proveedor de identidad o un servicio de correo que memship no incluye, cuéntanos lo que necesitas: <https://github.com/marcandreuf/memship/issues/new/choose>, eligiendo **Feature request**. Las dos capas están pensadas para ampliarse, y quienes contribuyen pueden decirte lo que supondría un proveedor concreto antes de que te comprometas.

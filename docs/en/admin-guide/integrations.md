@@ -424,4 +424,4 @@ An SMTP server needs a sender: a user or a From address. **Use Gmail's settings*
 
 memship ships the providers in this guide: Google and Apple for sign-in, and Resend, SendPulse or any SMTP server for mail. SMTP covers most services that have no card of their own here, since almost every mail provider offers an SMTP endpoint.
 
-**Anything else is a custom extension.** If your organisation needs an identity provider or a mail service memship does not ship, open an issue with the `question` label describing what you need: <https://github.com/marcandreuf/memship/issues>. Both layers are built to be extended, and the contributors can tell you what a given provider would involve before you commit to it.
+**Anything else is a custom extension.** If your organisation needs an identity provider or a mail service memship does not ship, tell us what you need: <https://github.com/marcandreuf/memship/issues/new/choose>, choosing **Feature request**. Both layers are built to be extended, and the contributors can tell you what a given provider would involve before you commit to it.
