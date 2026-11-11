@@ -1,5 +1,5 @@
 <!-- source: en/getting-started/installation.md -->
-<!-- source-hash: 2e0d5d223a9e -->
+<!-- source-hash: 9bdf6c2e4668 -->
 
 # Instal·lació (Docker)
 
@@ -41,7 +41,7 @@ versió de la [pàgina de versions](https://github.com/marcandreuf/memship/relea
 a tot arreu:
 
 ```bash
-MEMSHIP_VERSION=3.2.0
+MEMSHIP_VERSION=3.3.0
 
 curl -fsSLO "https://raw.githubusercontent.com/marcandreuf/memship/v${MEMSHIP_VERSION}/scripts/vps-bootstrap.sh"
 chmod +x vps-bootstrap.sh
@@ -99,7 +99,7 @@ Ara passa a ser l'usuari de desplegament; res del que segueix necessita root. `i
 `.env` dins del directori d'instal·lació i n'ha de ser el propietari:
 
 ```bash
-MEMSHIP_VERSION=3.2.0
+MEMSHIP_VERSION=3.3.0
 
 curl -fsSL "https://github.com/marcandreuf/memship/archive/refs/tags/v${MEMSHIP_VERSION}.tar.gz" \
   | tar -xz -C /srv/openmemship/app --strip-components=1
@@ -244,7 +244,7 @@ Els hosts Debian i Ubuntu no es veuen afectats.
 Si prefereixes no fer servir `install.sh`, els passos manuals equivalents són:
 
 ```bash
-MEMSHIP_VERSION=3.2.0
+MEMSHIP_VERSION=3.3.0
 
 mkdir -p memship
 curl -fsSL "https://github.com/marcandreuf/memship/archive/refs/tags/v${MEMSHIP_VERSION}.tar.gz" \

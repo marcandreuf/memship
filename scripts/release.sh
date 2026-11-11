@@ -56,6 +56,32 @@ if ! grep -qF "| v$VERSION " README.md; then
   [[ "$ok" =~ ^[Yy]$ ]] || { echo "Aborted."; exit 1; }
 fi
 
+# Mirror the CI docs-version guard. This one fails *before* the images are promoted,
+# so a tag pushed without it is recoverable, but only by deleting the tag: release.sh
+# refuses to reuse a version, and the docs fix needs a new commit the tag cannot reach.
+# Checking here costs nothing and keeps the tag from being spent (#582).
+docs_failed=0
+for readme in docs/README.md docs/*/README.md; do
+  grep -qF "memship $VERSION" "$readme" && continue
+  stated="$(grep -oE 'memship [0-9]+\.[0-9]+\.[0-9]+' "$readme" | head -1 || true)"
+  echo -e "${RED}$readme does not say it describes $VERSION${stated:+ (it says \"$stated\")}.${NC}" >&2
+  docs_failed=1
+done
+
+# Worked examples a reader copies. A stale pin installs the previous release.
+STALE="$(grep -rnoE '(MEMSHIP_VERSION|IMAGE_TAG)=[0-9]+\.[0-9]+\.[0-9]+' docs | grep -vF "=$VERSION" || true)"
+if [[ -n "$STALE" ]]; then
+  echo -e "${RED}These docs pin a release other than $VERSION:${NC}" >&2
+  printf '%s\n' "$STALE" >&2
+  echo -e "${RED}Bump the worked examples, then re-run ./scripts/check-docs-translations.sh --fix.${NC}" >&2
+  docs_failed=1
+fi
+
+if [[ "$docs_failed" -ne 0 ]]; then
+  echo -e "${RED}The Release workflow enforces all of the above and will fail after the tag is pushed.${NC}" >&2
+  exit 1
+fi
+
 # Mirror the CI release-title parse too. The Release workflow derives the GitHub
 # release name from this row's lead phrase, and when it cannot it fails *after*
 # promoting the images: the version ships with no notes, and recovering means
