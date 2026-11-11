@@ -1,5 +1,5 @@
 <!-- source: en/admin-guide/payment-providers.md -->
-<!-- source-hash: f4b97193d484 -->
+<!-- source-hash: 4af8128ca6e4 -->
 
 # Proveïdors de pagament: guia de configuració
 
@@ -423,6 +423,16 @@ continuar quadrant amb el banc.
 | Entorn | sí | no | `test` o `production` | tria teva |
 | Codi de moneda | sí | no | exactament 3 dígits | ISO 4217, `978` per a l'euro |
 | Oferir Bizum | no | no | n/a | el teu banc, un cop et confirmi Bizum al terminal. Desactivat per defecte |
+
+---
+
+## Altres mètodes de pagament, i què vol dir aquí el cobrament automàtic
+
+Aquesta guia configura el que memship cobra en línia: targeta amb Stripe, i targeta o Bizum amb Redsys. La domiciliació és un mecanisme a part, basat en un fitxer per al banc, vegeu [Domiciliació SEPA](sepa.md).
+
+**La facturació recurrent genera els rebuts, no cobra els diners.** Cobrar una quota sense que el soci faci res funciona només per domiciliació SEPA, on el soci signa un mandat una vegada. Amb targeta el soci paga cada període des d'un enllaç de pagament. memship no desa deliberadament cap targeta per cobrar-la després, així que una quota amb targeta sempre és una cosa que el soci completa.
+
+**Qualsevol altre proveïdor, o qualsevol altra manera de cobrar, és una extensió a mida.** Si la teva organització necessita un mètode de pagament que memship no inclou, necessita domiciliació cobrada a través d'una passarel·la en lloc d'un fitxer bancari, o necessita aquests proveïdors connectats d'una altra manera, obre una incidència amb l'etiqueta `question` descrivint què necessites: <https://github.com/marcandreuf/memship/issues>. La capa de proveïdors està pensada per ampliar-se, i qui hi contribueix pot dir-te què suposaria un proveïdor concret abans que t'hi comprometis.
 
 ---
 

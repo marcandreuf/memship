@@ -1,5 +1,5 @@
 <!-- source: en/admin-guide/integrations.md -->
-<!-- source-hash: bf21fddc90e9 -->
+<!-- source-hash: 185402ab21e7 -->
 
 # Integracions: guia de configuració
 
@@ -594,3 +594,11 @@ configuració de Gmail** omple el servidor, el port i STARTTLS per a un compte d
 - [ ] Selector de proveïdor actiu posat en aquest proveïdor i desat, la insígnia diu **Actiu**
 - [ ] L'avís de xifratge és verd
 - [ ] El fitxer de clau i la base de dades tenen còpia de seguretat conjunta
+
+---
+
+## Altres integracions
+
+memship inclou els proveïdors d'aquesta guia: Google i Apple per iniciar la sessió, i Resend, SendPulse o qualsevol servidor SMTP per al correu. SMTP cobreix la majoria de serveis que no tenen aquí una targeta pròpia, perquè gairebé tots els proveïdors de correu ofereixen un punt d'accés SMTP.
+
+**Qualsevol altra cosa és una extensió a mida.** Si la teva organització necessita un proveïdor d'identitat o un servei de correu que memship no inclou, obre una incidència amb l'etiqueta `question` descrivint què necessites: <https://github.com/marcandreuf/memship/issues>. Les dues capes estan pensades per ampliar-se, i qui hi contribueix pot dir-te què suposaria un proveïdor concret abans que t'hi comprometis.
