@@ -42,20 +42,32 @@ def _notify_admin(db, runs) -> None:
 def scheduled_billing_run() -> dict:
     """Daily Beat entry point: run any due recurring billing, then notify admin.
 
+    Each receipt the run emits is mailed to its member before the admin summary
+    goes out, so a member billed by the scheduler hears about the fee when it is
+    issued rather than when it is overdue (#580).
+
     Returns a small summary dict for the Celery result backend / logs.
     """
     from app.db.session import SessionLocal
     from app.domains.billing.recurring_billing_service import run_scheduled_billing
+    from app.domains.billing.service import dispatch_receipt_deliveries
 
     db = SessionLocal()
     try:
-        runs = run_scheduled_billing(db)
+        emitted: list[int] = []
+        runs = run_scheduled_billing(db, emitted_receipt_ids=emitted)
         db.commit()
+        # After the commit, never before: a worker must not read a receipt whose
+        # row is not visible yet, and a run that rolled back must not leave mail
+        # sent. Before _notify_admin, because the member's receipt matters more
+        # than the summary and the admin mail is the slower of the two.
+        dispatch_receipt_deliveries(emitted)
         if runs:
             _notify_admin(db, runs)
         summary = {
             "runs": len(runs),
             "receipts_generated": sum(r.receipts_generated for r in runs),
+            "receipts_emailed": len(emitted),
         }
         logger.info(f"Scheduled billing run complete: {summary}")
         return summary
@@ -195,6 +207,26 @@ def payment_notifications_fanout(receipt_ids: list[int]) -> int:
     """
     for receipt_id in receipt_ids:
         send_payment_notification.delay(receipt_id)
+    return len(receipt_ids)
+
+
+@celery.task
+def receipt_deliveries_fanout(receipt_ids: list[int]) -> int:
+    """Queue one receipt email per receipt an unattended billing run emitted.
+
+    Enqueued once by ``dispatch_receipt_deliveries``, for the same reason as
+    ``payment_notifications_fanout``: a monthly run bills every active member, so
+    the caller must not pay a queue round-trip each. Each receipt then gets its own
+    task, which carries its own retry and cannot be stranded by another's failure.
+
+    ``send_receipt_email_task`` is the task the manual emit endpoint dispatches, so
+    the organisation's switch for the ``receipt_delivery`` template is honoured
+    here without this knowing about it: the check lives in ``_send_templated``.
+    """
+    from app.tasks.email_tasks import send_receipt_email_task
+
+    for receipt_id in receipt_ids:
+        send_receipt_email_task.delay(receipt_id)
     return len(receipt_ids)
 
 

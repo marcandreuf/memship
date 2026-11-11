@@ -125,6 +125,31 @@ class TestRunNow:
         assert data["runs"][0]["status"] == "success"
         assert _membership_receipt_count(db) == 2
 
+    def test_run_now_mails_the_receipts_it_emitted(self, client, db):
+        """The manual bulk run sends what the single-receipt emit endpoint sends.
+
+        Before #580 the outcome differed by who raised the receipt: an
+        administrator emitting one got the member a receipt with a payment
+        button, and this endpoint got them nothing.
+        """
+        user = _create_user(db, "admin", "rn-mail")
+        _ensure_org_settings(db)
+        _create_member(db, "monthly", "rn-mail1")
+        _create_member(db, "monthly", "rn-mail2")
+
+        with patch("app.tasks.billing_tasks.receipt_deliveries_fanout") as fanout:
+            resp = client.post(
+                "/api/v1/billing-runs/run-now",
+                json={"frequency": "monthly"},
+                cookies=_auth_cookie(user),
+            )
+        assert resp.status_code == 200
+        assert resp.json()["receipts_generated"] == 2
+        fanout.delay.assert_called_once()
+        queued = fanout.delay.call_args[0][0]
+        assert len(queued) == 2
+        assert all(isinstance(i, int) for i in queued)
+
     def test_run_now_forbidden_for_member(self, client, db):
         user = _create_user(db, "member", "rn-forbidden")
         _ensure_org_settings(db)
@@ -288,6 +313,43 @@ class TestScheduledBilling:
         assert runs[0].frequency == "monthly"
         assert runs[0].triggered_by == "scheduled"
         assert runs[0].receipts_generated == 1
+
+    def test_reports_the_receipts_it_emitted(self, db):
+        """The ids the caller mails after committing (#580)."""
+        _ensure_org_settings(
+            db, features={"recurring_billing_enabled": True, "recurring_billing_day": 1}
+        )
+        _create_member(db, "monthly", "sch-emitted")
+        emitted: list[int] = []
+        runs = run_scheduled_billing(
+            db, today=date(2026, 6, 1), emitted_receipt_ids=emitted
+        )
+        assert runs[0].receipts_generated == 1
+        # Real ids, not a count: they address the receipts the run created.
+        assert len(emitted) == 1
+        receipt = db.query(Receipt).filter(Receipt.id == emitted[0]).first()
+        assert receipt is not None
+        assert receipt.origin == "membership"
+        assert receipt.status == "emitted"
+
+    def test_a_rerun_of_the_same_period_emails_nobody(self, db):
+        """Idempotency has to hold for the mail, not just for the receipts.
+
+        The period is skipped per member, so a retried run creates nothing and
+        must therefore report nothing to send. Otherwise a run retried after a
+        partial failure would mail a receipt its member already has.
+        """
+        _ensure_org_settings(
+            db, features={"recurring_billing_enabled": True, "recurring_billing_day": 1}
+        )
+        _create_member(db, "monthly", "sch-rerun")
+        first: list[int] = []
+        run_scheduled_billing(db, today=date(2026, 6, 1), emitted_receipt_ids=first)
+        assert len(first) == 1
+
+        again: list[int] = []
+        run_scheduled_billing(db, today=date(2026, 6, 1), emitted_receipt_ids=again)
+        assert again == []
 
     def test_skips_when_day_mismatch(self, db):
         _ensure_org_settings(

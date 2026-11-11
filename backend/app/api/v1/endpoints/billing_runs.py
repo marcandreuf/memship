@@ -13,6 +13,7 @@ from app.domains.billing.recurring_billing_service import (
     run_billing,
 )
 from app.domains.billing.schemas import BillingRunResponse, RunNowRequest
+from app.domains.billing.service import dispatch_receipt_deliveries
 
 router = APIRouter(prefix="/billing-runs", tags=["billing-runs"])
 
@@ -27,16 +28,29 @@ def run_now(
 
     Omit ``frequency`` to run every billable frequency for its current period;
     pass a specific one to run only that. Idempotent per period — re-running the
-    same period generates no additional receipts.
+    same period generates no additional receipts, and so emails nobody twice.
+
+    Each receipt this emits is mailed to its member, which is the same thing the
+    single-receipt emit endpoint does (#580).
     """
     frequencies = (
         [data.frequency] if data.frequency else list(BILLABLE_FREQUENCIES)
     )
+    emitted: list[int] = []
     runs = [
-        run_billing(db, frequency, "manual", user_id=current_user.id)
+        run_billing(
+            db,
+            frequency,
+            "manual",
+            user_id=current_user.id,
+            emitted_receipt_ids=emitted,
+        )
         for frequency in frequencies
     ]
     db.commit()
+    # After the commit, never before: a worker must not read a receipt whose row
+    # is not visible yet, and a run that rolled back must not leave mail sent.
+    dispatch_receipt_deliveries(emitted)
     return {
         "runs": [BillingRunResponse.model_validate(r).model_dump() for r in runs],
         "receipts_generated": sum(r.receipts_generated for r in runs),
