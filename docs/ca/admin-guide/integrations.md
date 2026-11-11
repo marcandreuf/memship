@@ -1,5 +1,5 @@
 <!-- source: en/admin-guide/integrations.md -->
-<!-- source-hash: bf21fddc90e9 -->
+<!-- source-hash: 185402ab21e7 -->
 
 # Integracions: guia de configuració
 
