@@ -1,5 +1,8 @@
 describe("Receipts — Issue a credit note", () => {
   const API_URL = Cypress.env("API_URL") || "http://localhost:8003/api/v1";
+  // The seeded member these specs raise a receipt against, matched exactly
+  // below rather than by position in a substring search (#520).
+  const MEMBER_EMAIL = "member@examplee6e3b1.com";
   let receiptId: number;
   let receiptNumber: string;
 
@@ -11,10 +14,15 @@ describe("Receipts — Issue a credit note", () => {
 
     cy.request({
       method: "GET",
-      url: `${API_URL}/members?search=member@examplee6e3b1.com`,
+      url: `${API_URL}/members?search=${MEMBER_EMAIL}`,
     }).then((membersResp) => {
-      const member = membersResp.body.items[0];
-      expect(member).to.exist;
+      // Match the address, do not trust the position: `search` is a substring
+      // match, so any account whose address merely *contains* this one comes
+      // back too and `items[0]` picks whichever sorts first (#520).
+      const member = membersResp.body.items.find(
+        (m) => m.person.email === MEMBER_EMAIL
+      );
+      expect(member, `the seeded member test account ${MEMBER_EMAIL}`).to.exist;
 
       cy.request({
         method: "POST",

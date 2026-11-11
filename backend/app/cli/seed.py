@@ -745,11 +745,16 @@ TEST_ACCOUNTS = [
         # testable — `member@` proves the card is withheld, this one proves it
         # is issued.
         #
-        # The address must not contain `member@examplee6e3b1.com` as a
-        # substring. `payments/stripe-checkout.cy.ts` and `redsys-flow.cy.ts`
-        # resolve that account with `?search=member@examplee6e3b1.com` and take
-        # `items[0]`, so `card-member@` matched both and handed the payments
-        # specs the wrong member to raise a receipt against.
+        # This address used to carry a constraint: it must not contain
+        # `member@examplee6e3b1.com` as a substring, because five specs across
+        # payments and receipts resolved it with `?search=` and took `items[0]`,
+        # so the original `card-member@` matched both and handed them the wrong
+        # member. That rule was load-bearing, unenforced, and written down only
+        # here, where nobody adding an account had reason to look.
+        #
+        # It no longer applies: those specs match the address exactly and name
+        # the account in their assertion (#520). A new seeded address may be
+        # spelled however reads best.
         "first_name": "Card",
         "last_name": "Holder",
         "email": "cardholder@examplee6e3b1.com",

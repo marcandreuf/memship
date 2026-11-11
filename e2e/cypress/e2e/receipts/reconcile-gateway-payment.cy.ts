@@ -2,13 +2,22 @@
 // applied: the true method, plus the gateway's reference (#426).
 describe("Receipts — reconcile a gateway payment", () => {
   const API_URL = Cypress.env("API_URL") || "http://localhost:8003/api/v1";
+  // The seeded member these specs raise a receipt against, matched exactly
+  // below rather than by position in a substring search (#520).
+  const MEMBER_EMAIL = "member@examplee6e3b1.com";
   const reference = `E2E${Date.now().toString().slice(-6)}`;
   let receiptId: number;
 
   before(() => {
     cy.apiLogin("admin@examplee6e3b1.com", "TestAdmin1!");
-    cy.request(`${API_URL}/members?search=member@examplee6e3b1.com`).then((members) => {
-      const member = members.body.items[0];
+    cy.request(`${API_URL}/members?search=${MEMBER_EMAIL}`).then((members) => {
+      // Match the address, do not trust the position: `search` is a substring
+      // match, so any account whose address merely *contains* this one comes
+      // back too and `items[0]` picks whichever sorts first (#520).
+      const member = members.body.items.find(
+        (m) => m.person.email === MEMBER_EMAIL
+      );
+      expect(member, `the seeded member test account ${MEMBER_EMAIL}`).to.exist;
       cy.request("POST", `${API_URL}/receipts`, {
         party_id: member.party_id,
         description: "Reconcile E2E receipt",
