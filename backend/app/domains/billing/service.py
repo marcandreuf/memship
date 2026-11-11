@@ -613,6 +613,41 @@ def dispatch_payment_notifications(receipt_ids: list[int]) -> None:
         )
 
 
+def dispatch_receipt_deliveries(receipt_ids: list[int]) -> None:
+    """Queue the receipt email for receipts an unattended run has just emitted.
+
+    Call this **after** ``db.commit()``, for the same two reasons as
+    ``dispatch_payment_notifications``: a worker can read the database before an
+    uncommitted row is visible, and a run that rolls back must not leave mail
+    already sent.
+
+    This is what the manual emit endpoint already does for one receipt. The
+    scheduled run emitted a period's fees and dispatched nothing, so a member
+    billed by the scheduler first heard about the money through the overdue
+    reminder, which for a card payer was also their first chance to pay (#580).
+
+    One fan-out job is enqueued whatever the batch size: a monthly run emits a
+    receipt per member, and neither Beat's task nor the admin's request should
+    make hundreds of queue round-trips. The fan-out then gives every receipt its
+    own task, so a bad address or a template error cannot strand the rest.
+
+    Best-effort, and logged: a broker that is down must not fail a run whose
+    receipts are valid and already recorded.
+    """
+    if not receipt_ids:
+        return
+
+    try:
+        from app.tasks.billing_tasks import receipt_deliveries_fanout
+
+        receipt_deliveries_fanout.delay(receipt_ids)
+    except Exception as exc:  # noqa: BLE001 — dispatch is best-effort
+        logger.error(
+            f"Failed to dispatch receipt deliveries: "
+            f"receipt_ids={receipt_ids}, error={exc}"
+        )
+
+
 def return_receipt(
     db: Session, receipt: Receipt, data: ReceiptReturnRequest
 ) -> Receipt:

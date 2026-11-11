@@ -141,6 +141,7 @@ def run_billing(
     triggered_by: str,
     user_id: int | None = None,
     today: date | None = None,
+    emitted_receipt_ids: list[int] | None = None,
 ) -> BillingRun:
     """Generate membership fees for ``frequency``'s current period, logging a BillingRun.
 
@@ -155,6 +156,14 @@ def run_billing(
     receipts are generated. A previously failed run for the same period is retried
     in place (the underlying skip-if-exists logic avoids double-billing members who
     already got a receipt). Does not commit — the caller owns the transaction.
+
+    Pass ``emitted_receipt_ids`` to learn which receipts this call actually created,
+    so the caller can mail them with ``dispatch_receipt_deliveries`` **after** its
+    commit. It is an out-parameter rather than a second return value because the
+    return type is consumed by sixteen call sites that only ever want the run, and
+    because the ids are useless to a caller that does not commit. Only newly
+    created receipts land in it: a retried period skips members who already have
+    one, so nobody is emailed twice (#580).
     """
     today = today or org_today(db)
     period_start, period_end = compute_period(frequency, today)
@@ -193,6 +202,11 @@ def run_billing(
                 emit=True,
             )
             receipts_generated = len(receipts)
+            if emitted_receipt_ids is not None:
+                # Inside the SAVEPOINT, so a failure that rolls the receipts back
+                # cannot leave their ids queued for delivery. generate_membership_fees
+                # flushes, so the ids are populated.
+                emitted_receipt_ids.extend(r.id for r in receipts)
         status = "success"
     except Exception as exc:  # noqa: BLE001 — recorded on the run for the admin to retry
         receipts_generated = 0
@@ -216,11 +230,18 @@ def run_billing(
     return run
 
 
-def run_scheduled_billing(db: Session, today: date | None = None) -> list[BillingRun]:
+def run_scheduled_billing(
+    db: Session,
+    today: date | None = None,
+    emitted_receipt_ids: list[int] | None = None,
+) -> list[BillingRun]:
     """Celery Beat entry point: bill every frequency that is due today.
 
     No-op (returns ``[]``) when recurring billing is disabled in org settings or when
     no frequency is due on the configured day. Does not commit.
+
+    ``emitted_receipt_ids`` is passed straight through to ``run_billing`` and
+    accumulates across every frequency billed, so one fan-out covers the whole day.
     """
     today = today or org_today(db)
     org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
@@ -236,5 +257,13 @@ def run_scheduled_billing(db: Session, today: date | None = None) -> list[Billin
     runs: list[BillingRun] = []
     for frequency in BILLABLE_FREQUENCIES:
         if is_frequency_due(frequency, today, billing_day):
-            runs.append(run_billing(db, frequency, "scheduled", today=today))
+            runs.append(
+                run_billing(
+                    db,
+                    frequency,
+                    "scheduled",
+                    today=today,
+                    emitted_receipt_ids=emitted_receipt_ids,
+                )
+            )
     return runs
