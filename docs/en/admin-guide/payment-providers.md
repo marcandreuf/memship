@@ -287,7 +287,7 @@ This guide configures what memship collects online: card through Stripe, and car
 
 **Recurring billing generates the receipts; it does not take the money.** Collecting a fee without the member doing anything works through SEPA direct debit only, where the member signs a mandate once. With card the member pays each period from a payment link. memship deliberately does not keep a card on file to charge later, so a card fee is always something the member completes.
 
-**Any other provider, or any other way of collecting, is a custom extension.** If your organisation needs a payment method memship does not ship, needs direct debit collected through a gateway instead of a bank file, or needs these providers wired up differently, open an issue with the `question` label describing what you need: <https://github.com/marcandreuf/memship/issues>. The provider layer is built to be extended, and the contributors can tell you what a given provider would involve before you commit to it.
+**Any other provider, or any other way of collecting, is a custom extension.** If your organisation needs a payment method memship does not ship, needs direct debit collected through a gateway instead of a bank file, or needs these providers wired up differently, tell us what you need: <https://github.com/marcandreuf/memship/issues/new/choose>, choosing **Feature request**. The provider layer is built to be extended, and the contributors can tell you what a given provider would involve before you commit to it.
 
 ---
 
