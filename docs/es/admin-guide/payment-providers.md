@@ -417,6 +417,16 @@ cuadrando con el banco.
 
 ---
 
+## Otros métodos de pago, y qué significa aquí el cobro automático
+
+Esta guía configura lo que memship cobra en línea: tarjeta con Stripe, y tarjeta o Bizum con Redsys. La domiciliación es un mecanismo aparte, basado en un archivo para el banco, véase [Domiciliación SEPA](sepa.md).
+
+**La facturación recurrente genera los recibos, no cobra el dinero.** Cobrar una cuota sin que el socio haga nada funciona solo por domiciliación SEPA, donde el socio firma un mandato una vez. Con tarjeta el socio paga cada periodo desde un enlace de pago. memship no guarda deliberadamente ninguna tarjeta para cobrarla después, así que una cuota con tarjeta siempre es algo que el socio completa.
+
+**Cualquier otro proveedor, o cualquier otra forma de cobrar, es una extensión a medida.** Si tu organización necesita un método de pago que memship no incluye, necesita domiciliación cobrada a través de una pasarela en lugar de un archivo bancario, o necesita estos proveedores conectados de otra manera, abre una incidencia con la etiqueta `question` describiendo lo que necesitas: <https://github.com/marcandreuf/memship/issues>. La capa de proveedores está pensada para ampliarse, y quienes contribuyen pueden decirte lo que supondría un proveedor concreto antes de que te comprometas.
+
+---
+
 ## Relacionado
 
 - [Pagos](payments.md): el uso diario de los pagos

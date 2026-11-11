@@ -597,3 +597,11 @@ configuración de Gmail** rellena el servidor, el puerto y STARTTLS para una cue
 - [ ] Selector de proveedor activo puesto en ese proveedor y guardado, la insignia dice **Activo**
 - [ ] El aviso de cifrado está en verde
 - [ ] El archivo de clave y la base de datos tienen copia de seguridad conjunta
+
+---
+
+## Otras integraciones
+
+memship incluye los proveedores de esta guía: Google y Apple para iniciar sesión, y Resend, SendPulse o cualquier servidor SMTP para el correo. SMTP cubre la mayoría de servicios que no tienen aquí una tarjeta propia, porque casi todos los proveedores de correo ofrecen un punto de acceso SMTP.
+
+**Cualquier otra cosa es una extensión a medida.** Si tu organización necesita un proveedor de identidad o un servicio de correo que memship no incluye, abre una incidencia con la etiqueta `question` describiendo lo que necesitas: <https://github.com/marcandreuf/memship/issues>. Las dos capas están pensadas para ampliarse, y quienes contribuyen pueden decirte lo que supondría un proveedor concreto antes de que te comprometas.

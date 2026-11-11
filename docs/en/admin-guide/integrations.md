@@ -417,3 +417,11 @@ An SMTP server needs a sender: a user or a From address. **Use Gmail's settings*
 - [ ] Active provider selector set to that provider and saved, badge says **Active**
 - [ ] Encryption banner is green
 - [ ] Key file and database are backed up together
+
+---
+
+## Other integrations
+
+memship ships the providers in this guide: Google and Apple for sign-in, and Resend, SendPulse or any SMTP server for mail. SMTP covers most services that have no card of their own here, since almost every mail provider offers an SMTP endpoint.
+
+**Anything else is a custom extension.** If your organisation needs an identity provider or a mail service memship does not ship, open an issue with the `question` label describing what you need: <https://github.com/marcandreuf/memship/issues>. Both layers are built to be extended, and the contributors can tell you what a given provider would involve before you commit to it.
