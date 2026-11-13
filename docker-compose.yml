@@ -17,6 +17,17 @@
 # hand, Docker creates any missing directory as root — which works, but see
 # docs/en/self-hosting/ for the ownership notes.
 
+# Refuses to start when PORT is set, because PORT belongs to the quick start
+# and this file has never read it. Someone who clones the repository and runs
+# the quick start's `PORT=… docker compose up -d` lands here instead, where the
+# variable was silently discarded: the stack came up healthy on 80, the
+# documented address refused the connection, and nothing said why (#592). It
+# also starts the production stack, which publishes the API and the database.
+# Compose has no assertion, so this leans on `:?` over a name that is never
+# set: with PORT unset the whole expression collapses to nothing, and with it
+# set interpolation fails before any container is created.
+x-port-guard: "${PORT:+${MEMSHIP_PORT_BELONGS_TO_THE_QUICK_START:?PORT is not a setting of this file. You are starting the production stack, which serves on HTTP_PORT (default 80), not PORT. For the quick start use docker-compose.quickstart.yml in a directory of its own; to move this stack set HTTP_PORT.}}"
+
 # The API, the Celery worker and Celery beat run the same image with the same
 # settings — only the command differs. Kept in one anchor so a new setting cannot
 # be added to the API and silently forgotten on the worker.

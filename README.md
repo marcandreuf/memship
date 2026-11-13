@@ -33,7 +33,7 @@ Try memship with a single command, no cloning required:
 mkdir -p "$HOME/memship-quickstart" && cd "$HOME/memship-quickstart"
 curl -fsSL https://raw.githubusercontent.com/marcandreuf/memship/main/docker-compose.quickstart.yml -o docker-compose.yml
 docker compose pull        # fetch the latest published images
-PORT=8081 docker compose up -d
+PORT=8324 docker compose up -d
 ```
 
 Then run the setup, which walks you through three questions:
@@ -52,7 +52,7 @@ spread across the months, SEPA mandates and dashboard reminders. It also
 generates logins for a club admin and two members and **prints those passwords
 once**, so keep the output. Safe to re-run (idempotent).
 
-Open http://localhost:8081 and log in as your super admin. Change `PORT=8081` to
+Open http://localhost:8324 and log in as your super admin. Change `PORT=8324` to
 any port you prefer (default is 80).
 
 Once you are done evaluating, re-run the same command and answer *yes* to the
