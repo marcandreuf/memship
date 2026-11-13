@@ -33,7 +33,7 @@ Proveu Memship amb una sola comanda, sense necessitat de clonar el repositori:
 mkdir -p "$HOME/memship-quickstart" && cd "$HOME/memship-quickstart"
 curl -fsSL https://raw.githubusercontent.com/marcandreuf/memship/main/docker-compose.quickstart.yml -o docker-compose.yml
 docker compose pull        # descarrega les últimes imatges publicades
-PORT=8081 docker compose up -d
+PORT=8324 docker compose up -d
 ```
 
 A continuació, executeu la configuració, que us fa tres preguntes:
@@ -52,7 +52,7 @@ pels mesos, mandats SEPA i recordatoris del tauler. També genera accessos per a
 administrador de club i dos socis, i **mostra aquestes contrasenyes una sola vegada**, així
 que deseu la sortida. Es pot tornar a executar sense duplicar (idempotent).
 
-Obriu http://localhost:8081 i inicieu sessió com a superadministrador. Canvieu `PORT=8081`
+Obriu http://localhost:8324 i inicieu sessió com a superadministrador. Canvieu `PORT=8324`
 per qualsevol port que preferiu (per defecte és el 80).
 
 Quan acabeu d'avaluar-lo, torneu a executar la mateixa comanda i responeu *sí* a la

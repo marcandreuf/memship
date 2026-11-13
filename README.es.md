@@ -33,7 +33,7 @@ Prueba Memship con un solo comando, sin necesidad de clonar el repositorio:
 mkdir -p "$HOME/memship-quickstart" && cd "$HOME/memship-quickstart"
 curl -fsSL https://raw.githubusercontent.com/marcandreuf/memship/main/docker-compose.quickstart.yml -o docker-compose.yml
 docker compose pull        # descarga las últimas imágenes publicadas
-PORT=8081 docker compose up -d
+PORT=8324 docker compose up -d
 ```
 
 A continuación, ejecuta la configuración, que te hace tres preguntas:
@@ -52,7 +52,7 @@ repartidos por los meses, mandatos SEPA y recordatorios del panel. También gene
 para un administrador de club y dos socios, y **muestra esas contraseñas una sola vez**,
 así que guarda la salida. Se puede volver a ejecutar sin duplicar (idempotente).
 
-Abre http://localhost:8081 e inicia sesión como super admin. Cambia `PORT=8081` por el
+Abre http://localhost:8324 e inicia sesión como super admin. Cambia `PORT=8324` por el
 puerto que prefieras (por defecto es el 80).
 
 Cuando termines de evaluarlo, vuelve a ejecutar el mismo comando y responde *sí* a la

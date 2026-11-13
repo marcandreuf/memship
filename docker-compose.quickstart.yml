@@ -2,9 +2,9 @@
 #
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/marcandreuf/memship/main/docker-compose.quickstart.yml -o docker-compose.yml
-#   PORT=8081 docker compose up -d
+#   PORT=8324 docker compose up -d
 #   docker compose exec -it demo-memship-api python -m app.cli.seed
-#   Open http://localhost:8081 — and http://localhost:8025 for the mail it sends
+#   Open http://localhost:8324 — and http://localhost:8325 for the mail it sends
 #
 # EVALUATION ONLY. The database password below is fixed and the data lives in
 # throwaway Docker volumes. To run memship for a real organization use
@@ -182,7 +182,7 @@ services:
     restart: unless-stopped
 
   # Test inbox: accepts every message on 1025 and shows it at
-  # http://localhost:8025. The web UI is published on loopback only, so the
+  # http://localhost:8325. The web UI is published on loopback only, so the
   # inbox is not reachable from the network even when the app is.
   demo-memship-mailpit:
     image: axllent/mailpit:v1.29
@@ -190,7 +190,7 @@ services:
     expose:
       - "1025"
     ports:
-      - "127.0.0.1:${MAILPIT_PORT:-8025}:8025"
+      - "127.0.0.1:${MAILPIT_PORT:-8325}:8025"
     restart: unless-stopped
 
   demo-memship-redis:

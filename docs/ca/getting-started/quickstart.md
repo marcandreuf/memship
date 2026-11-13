@@ -1,5 +1,5 @@
 <!-- source: en/getting-started/quickstart.md -->
-<!-- source-hash: b970f3a12d67 -->
+<!-- source-hash: 6dafd44129e7 -->
 
 # Inici ràpid
 
@@ -40,10 +40,10 @@ dues.
 ```bash
 curl -fsSL https://raw.githubusercontent.com/marcandreuf/memship/main/docker-compose.quickstart.yml -o docker-compose.yml
 docker compose pull          # fetch the latest published images
-PORT=8081 docker compose up -d
+PORT=8324 docker compose up -d
 ```
 
-Canvia `PORT=8081` per qualsevol port que prefereixis (per defecte és `80`).
+Canvia `PORT=8324` per qualsevol port que prefereixis (per defecte és `80`).
 
 Això executa les darreres imatges publicades, i `/api/v1/health` informa de `"version":"latest"`.
 Per avaluar una versió concreta, defineix `IMAGE_TAG` a totes dues ordres. Aleshores health informa
@@ -51,7 +51,7 @@ d'aquesta versió:
 
 ```bash
 IMAGE_TAG=3.3.0 docker compose pull
-IMAGE_TAG=3.3.0 PORT=8081 docker compose up -d
+IMAGE_TAG=3.3.0 PORT=8324 docker compose up -d
 ```
 
 ## 3. Executa la posada en marxa
@@ -135,7 +135,7 @@ d'administrador, i és la meitat del producte que una sessió d'administrador no
 
 ## 4. Obre l'aplicació
 
-Ves a **http://localhost:8081** i inicia sessió com el superadministrador que has creat.
+Ves a **http://localhost:8324** i inicia sessió com el superadministrador que has creat.
 
 > **Continua sent una pila d'avaluació.** Abans de posar Memship en una xarxa, segueix
 > [Instal·lació](installation.md) i la
@@ -145,11 +145,11 @@ Ves a **http://localhost:8081** i inicia sessió com el superadministrador que h
 
 ## 5. Prova l'alta d'un soci
 
-La pila inclou una **safata de prova** a **http://localhost:8025**. Tots els correus que envia la
+La pila inclou una **safata de prova** a **http://localhost:8325**. Tots els correus que envia la
 instància (verificació d'adreça, aprovació d'alta, rebuts, recordatoris de pagament) hi arriben en
 lloc de lliurar-se, sigui quina sigui l'adreça de destinació. Aquest és el flux per provar primer:
 
-1. En una finestra privada, obre **http://localhost:8081/register** i registra't amb qualsevol
+1. En una finestra privada, obre **http://localhost:8324/register** i registra't amb qualsevol
    adreça, real o no.
 2. Obre la safata de prova, troba el correu de verificació i segueix-ne l'enllaç.
 3. De tornada a la sessió d'administrador, obre **Altes pendents** a la barra lateral. La nova
@@ -158,7 +158,7 @@ lloc de lliurar-se, sigui quina sigui l'adreça de destinació. Aquest és el fl
 4. El correu d'aprovació arriba a la safata de prova, i el soci ja pot iniciar sessió.
 
 La safata és local a la teva màquina: només es publica a `127.0.0.1` i no conté res real. Defineix
-`MAILPIT_PORT` al costat de `PORT` si el 8025 està ocupat.
+`MAILPIT_PORT` al costat de `PORT` si el 8325 està ocupat.
 
 Només continua en vigor **mentre no s'hagi desat mai Configuració → Correu**. Configura-hi un
 proveïdor real i, a partir d'aquell moment, envia aquest proveïdor, que és la precedència prevista

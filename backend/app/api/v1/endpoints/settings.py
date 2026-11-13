@@ -72,6 +72,24 @@ from app.domains.persons.models import Address
 router = APIRouter(prefix="/settings", tags=["settings"])
 
 
+def _require_org(db: Session) -> OrganizationSettings:
+    """The single settings row, or a 404 the screens can act on.
+
+    Every write on this router needs the row, and the setup command creates the
+    super admin and the organization as separate answers, so a logged-in admin
+    can reach these screens before the row exists. Four of them used to load it
+    with ``.first()`` and dereference the ``None``, answering 500 with an empty
+    body (#593). Loading it through here is what keeps the fifth from doing so.
+    """
+    org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
+    if org is None:
+        raise HTTPException(
+            status_code=404,
+            detail={"code": "organization_not_configured"},
+        )
+    return org
+
+
 @router.get("/branding", response_model=OrganizationBrandingResponse)
 def get_branding(db: Session = Depends(get_db)):
     """The portal shell's identity: name, logo, colour, contact block, feature
@@ -109,7 +127,7 @@ def update_settings(
     The cost is that a key cannot be deleted by omitting it. Nothing needs to:
     a flag is switched off by sending ``false``, which this writes.
     """
-    settings_obj = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
+    settings_obj = _require_org(db)
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         if key == "features" and value is not None:
@@ -146,9 +164,7 @@ def update_organization_address(
     current_user: User = Depends(require_permission("settings.write")),
 ):
     """Create or update the organization's address — the club party's address."""
-    org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
-    if org is None:
-        raise HTTPException(status_code=404, detail="Organization not configured")
+    org = _require_org(db)
     address = (
         db.query(Address)
         .filter(Address.party_id == org.party_id)
@@ -265,9 +281,7 @@ def update_sso_config(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("settings.integrations.write")),
 ):
-    settings_obj = (
-        db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
-    )
+    settings_obj = _require_org(db)
     config = copy.deepcopy(settings_obj.sso_config or {})
     changed: list[str] = []
 
@@ -422,9 +436,7 @@ def update_mailing_config(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("settings.integrations.write")),
 ):
-    settings_obj = (
-        db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
-    )
+    settings_obj = _require_org(db)
     config = copy.deepcopy(settings_obj.mailing_config or {})
     changed: list[str] = []
 
@@ -582,9 +594,7 @@ def update_communications_config(
             detail={"code": "template_mandatory", "keys": forbidden},
         )
 
-    settings_obj = (
-        db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
-    )
+    settings_obj = _require_org(db)
     config = copy.deepcopy(settings_obj.communications_config or {})
     templates = config.setdefault("templates", {})
     changed: list[str] = []

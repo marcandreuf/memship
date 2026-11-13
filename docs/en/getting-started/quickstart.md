@@ -37,10 +37,10 @@ the containers are named `demo-memship-*`, which works until you want two.
 ```bash
 curl -fsSL https://raw.githubusercontent.com/marcandreuf/memship/main/docker-compose.quickstart.yml -o docker-compose.yml
 docker compose pull          # fetch the latest published images
-PORT=8081 docker compose up -d
+PORT=8324 docker compose up -d
 ```
 
-Change `PORT=8081` to any port you prefer (default is `80`).
+Change `PORT=8324` to any port you prefer (default is `80`).
 
 This runs the latest published images, and `/api/v1/health` reports `"version":"latest"`. To
 evaluate a specific release instead, set `IMAGE_TAG` on both commands. Health then reports that
@@ -48,7 +48,7 @@ release:
 
 ```bash
 IMAGE_TAG=3.3.0 docker compose pull
-IMAGE_TAG=3.3.0 PORT=8081 docker compose up -d
+IMAGE_TAG=3.3.0 PORT=8324 docker compose up -d
 ```
 
 ## 3. Run the setup
@@ -133,7 +133,7 @@ this first:
 
 ## 4. Open the app
 
-Go to **http://localhost:8081** and log in as the super admin you created.
+Go to **http://localhost:8324** and log in as the super admin you created.
 
 > **Still an evaluation stack.** Before putting Memship on a network, follow
 > [Installation](installation.md) and the
@@ -143,12 +143,12 @@ Go to **http://localhost:8081** and log in as the super admin you created.
 
 ## 5. Try a member joining
 
-The stack ships with a **test inbox** at **http://localhost:8025**. Every email the instance
+The stack ships with a **test inbox** at **http://localhost:8325**. Every email the instance
 sends, address verification, registration approval, receipts, payment reminders, lands
 there instead of being delivered, whatever address it was sent to. This is the flow to try
 first:
 
-1. In a private window, open **http://localhost:8081/register** and sign up with any
+1. In a private window, open **http://localhost:8324/register** and sign up with any
    address, real or not.
 2. Open the test inbox, find the verification email and follow its link.
 3. Back in your admin session, open **Pending registrations** in the sidebar. The new sign-up
@@ -157,7 +157,7 @@ first:
 4. The approval email arrives in the test inbox, and the member can now log in.
 
 The inbox is local to your machine, it is published on `127.0.0.1` only, and holds nothing
-real. Set `MAILPIT_PORT` alongside `PORT` if 8025 is taken.
+real. Set `MAILPIT_PORT` alongside `PORT` if 8325 is taken.
 
 It stays in effect **only while Settings → Mailing has never been saved**. Configure a real
 provider there and that provider sends from then on, which is the intended precedence and not

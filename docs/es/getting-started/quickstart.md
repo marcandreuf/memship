@@ -1,5 +1,5 @@
 <!-- source: en/getting-started/quickstart.md -->
-<!-- source-hash: b970f3a12d67 -->
+<!-- source-hash: 6dafd44129e7 -->
 
 # Prueba rápida
 
@@ -42,10 +42,10 @@ dos.
 ```bash
 curl -fsSL https://raw.githubusercontent.com/marcandreuf/memship/main/docker-compose.quickstart.yml -o docker-compose.yml
 docker compose pull          # fetch the latest published images
-PORT=8081 docker compose up -d
+PORT=8324 docker compose up -d
 ```
 
-Cambia `PORT=8081` por el puerto que prefieras (por defecto es `80`).
+Cambia `PORT=8324` por el puerto que prefieras (por defecto es `80`).
 
 Esto ejecuta las últimas imágenes publicadas, y `/api/v1/health` informa `"version":"latest"`.
 Para evaluar una versión concreta, define `IMAGE_TAG` en las dos órdenes. Health informa entonces
@@ -53,7 +53,7 @@ de esa versión:
 
 ```bash
 IMAGE_TAG=3.3.0 docker compose pull
-IMAGE_TAG=3.3.0 PORT=8081 docker compose up -d
+IMAGE_TAG=3.3.0 PORT=8324 docker compose up -d
 ```
 
 ## 3. Ejecuta la configuración
@@ -138,7 +138,7 @@ y es la mitad del producto que una sesión de administrador nunca te enseña.
 
 ## 4. Abre la aplicación
 
-Ve a **http://localhost:8081** e inicia sesión con el superadministrador que has creado.
+Ve a **http://localhost:8324** e inicia sesión con el superadministrador que has creado.
 
 > **Sigue siendo una pila de evaluación.** Antes de poner Memship en una red, sigue la
 > [Instalación](installation.md) y la
@@ -148,12 +148,12 @@ Ve a **http://localhost:8081** e inicia sesión con el superadministrador que ha
 
 ## 5. Prueba el alta de un socio
 
-La pila incluye un **buzón de prueba** en **http://localhost:8025**. Todo correo que envía la
+La pila incluye un **buzón de prueba** en **http://localhost:8325**. Todo correo que envía la
 instancia (verificación de la dirección, aprobación del registro, recibos, avisos de pago) acaba
 allí en lugar de entregarse, sea cual sea la dirección a la que se envió. Este es el flujo que
 conviene probar primero:
 
-1. En una ventana privada, abre **http://localhost:8081/register** y regístrate con cualquier
+1. En una ventana privada, abre **http://localhost:8324/register** y regístrate con cualquier
    dirección, real o no.
 2. Abre el buzón de prueba, busca el correo de verificación y sigue su enlace.
 3. De vuelta en tu sesión de administrador, abre **Altas pendientes** en la barra lateral. El
@@ -162,7 +162,7 @@ conviene probar primero:
 4. El correo de aprobación llega al buzón de prueba, y el socio ya puede iniciar sesión.
 
 El buzón es local a tu máquina: se publica solo en `127.0.0.1` y no contiene nada real. Define
-`MAILPIT_PORT` junto a `PORT` si el 8025 está ocupado.
+`MAILPIT_PORT` junto a `PORT` si el 8325 está ocupado.
 
 Solo está en vigor **mientras Configuración → Correo no se haya guardado nunca**. Configura allí
 un proveedor real y a partir de entonces envía ese proveedor, que es la precedencia prevista y no

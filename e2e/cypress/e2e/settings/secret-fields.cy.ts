@@ -80,6 +80,38 @@ describe("Settings secret fields", () => {
     });
   });
 
+  // The save path used to name its providers by hand, so a SendPulse key was
+  // accepted by the form and silently left out of the request (#589).
+  it("sends an edited SendPulse credential in the payload", () => {
+    cy.intercept("PUT", "/api/settings/mailing", (req) => {
+      req.reply(MAILING_VIEW);
+    }).as("save");
+    cy.get("#mailing-sendpulse-from_email").type("club@example.org");
+    cy.get('input[name="mailing-sendpulse-credential"]').type("sp-key-9876");
+    cy.contains("button", "Save").click();
+    cy.wait("@save").its("request.body").should((body) => {
+      expect(body.sendpulse).to.deep.equal({
+        from_email: "club@example.org",
+        api_key: { value: "sp-key-9876", secret: true },
+      });
+    });
+  });
+
+  // The damaging case: with another provider edited the body is non-empty, so
+  // the save reported success while discarding the SendPulse key (#589).
+  it("keeps every edited provider when more than one changed", () => {
+    cy.intercept("PUT", "/api/settings/mailing", (req) => {
+      req.reply(MAILING_VIEW);
+    }).as("save");
+    cy.get("#mailing-sendpulse-from_email").type("club@example.org");
+    cy.contains("label", "SMTP user").parent().find("input").type("smtp-user");
+    cy.contains("button", "Save").click();
+    cy.wait("@save").its("request.body").should((body) => {
+      expect(body.sendpulse).to.deep.equal({ from_email: "club@example.org" });
+      expect(body.smtp).to.deep.equal({ user: "smtp-user" });
+    });
+  });
+
   it("marks an unstored secret input as a new password", () => {
     cy.get('input[name="mailing-smtp-credential"]').should(
       "have.attr",
