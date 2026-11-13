@@ -55,7 +55,7 @@ servidor de la mateixa manera, i no en torna cap còpia.
 > **Una còpia a nivell de fitxer de `data/postgres` mentre la base de dades s'executa no és
 > consistent davant d'una fallada.** Per a una còpia fiable de la base de dades fes servir
 > `db-backup.sh`, més avall, que executa `pg_dump` dins del contenidor. Fes servir la còpia amb
-> `tar` per als fitxers pujats, els certificats i la configuració, o atura primer la pila si vols
+> `tar` per als fitxers pujats, els certificats i la configuració, o atura primer l'entorn si vols
 > tot l'arbre en una sola presa consistent.
 
 ## Còpies de la base de dades
@@ -112,7 +112,7 @@ mig restaurada i et deixaria una instància que respon "healthy" i no conté res
 tenies amb el bolcat previ a la restauració que indica.
 
 Un cop carregat el bolcat, l'script estableix la contrasenya de la base de dades a `DB_PASSWORD`
-de `.env`, arrenca la pila i espera que l'API respongui abans de mostrar `Restore complete`.
+de `.env`, arrenca l'entorn i espera que l'API respongui abans de mostrar `Restore complete`.
 Establir la contrasenya és important en un servidor nou: la seva base de dades es va crear amb la
 contrasenya que va generar la nova instal·lació, mentre que el `.env` que restaures porta l'antiga,
 i un `pg_dump` no conté contrasenyes. Si l'API no respon, l'script diu `RESTORE INCOMPLETE`, mostra
@@ -126,7 +126,7 @@ restaurades es queden on són.
 ## Restaurar en un servidor nou
 
 1. Executa [`vps-bootstrap.sh` i `install.sh`](../getting-started/installation.md) com sempre.
-2. Atura la pila: `docker compose down`.
+2. Atura l'entorn: `docker compose down`.
 3. Restaura `.env` des de la teva còpia, **l'antic, no el que s'acaba de generar.** Una
    `MEMSHIP_SECRET_KEY` nova no pot desxifrar les credencials d'SSO i dels proveïdors de pagament
    desades a la base de dades antiga.

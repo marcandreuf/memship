@@ -11,7 +11,7 @@ ràpida, fes servir l'[Inici ràpid](quickstart.md).
 ## Requisits previs
 
 - Un servidor amb Docker Engine i el connector de Compose
-- Un usuari normal (no root) del grup `docker`: la pila no s'instal·la com a root
+- Un usuari normal (no root) del grup `docker`: l'entorn no s'instal·la com a root
 - `curl` i `tar`, per descarregar una versió. `tar` hi és a tots els servidors Debian/Ubuntu; a les
   imatges mínimes de vegades hi falta `curl`: `sudo apt-get update && sudo apt-get install -y curl`
 - **No cal `git`.** Una versió es descarrega com a tarball i el servidor no conté cap còpia del
@@ -111,7 +111,7 @@ cd /srv/openmemship/app
 L'script de bootstrap del teu directori personal ja ha fet la seva feina i el pots esborrar.
 
 Això omple l'arrel de dades, genera secrets reals a `.env` (mode 600), descarrega les imatges
-publicades i arrenca la pila.
+publicades i arrenca l'entorn.
 
 **Copia `.env` fora del servidor ara, abans d'hi posar dades reals.** `SECRET_KEY` i
 `MEMSHIP_SECRET_KEY` s'acaben de generar aquí, no es tornen a generar mai i no existeixen enlloc
@@ -184,7 +184,7 @@ Omet `--domain`. Aleshores Caddy serveix HTTP pla pel port 80, que és el que vo
 instal·lació local o interna.
 
 Aquesta és també la manera d'assajar una instal·lació en un servidor real sense gastar certificats:
-instal·la sense `--domain`, confirma que la pila funciona i després torna-ho a executar amb
+instal·la sense `--domain`, confirma que l'entorn funciona i després torna-ho a executar amb
 `--domain` per afegir HTTPS. Tornar-ho a executar actualitza `SITE_ADDRESS` i els URL públics
 alhora, així que res no queda apuntant a l'adreça antiga.
 
@@ -268,7 +268,7 @@ Després defineix, com a mínim:
 - **`SITE_ADDRESS`**: el teu nom de host per a HTTPS automàtic, o deixa-ho buit per a HTTP pla
 - **`IMAGE_TAG`**: fixa una versió publicada; consulta [Actualitzar](../self-hosting/upgrading.md)
 
-Crea l'arbre de directoris i després arrenca la pila. `.env` el llegeix Compose, no el teu shell,
+Crea l'arbre de directoris i després arrenca l'entorn. `.env` el llegeix Compose, no el teu shell,
 així que exporta-hi també el camí aquí, o escriu-lo sencer:
 
 ```bash
@@ -287,7 +287,7 @@ paràmetres disponibles.
 
 ## Serveis
 
-La pila de Compose per defecte s'executa darrere d'un proxy invers Caddy. Aquests URL són **tal com
+L'entorn de Compose per defecte s'executa darrere d'un proxy invers Caddy. Aquests URL són **tal com
 es veuen des del mateix servidor**: l'API i la base de dades estan lligades a `127.0.0.1`, així que
 `localhost` és l'única manera d'arribar-hi. Des de qualsevol altre lloc, fes servir el teu domini o
 l'adreça del servidor, que només arriba a les dues primeres files:
@@ -300,7 +300,7 @@ l'adreça del servidor, que només arriba a les dues primeres files:
 
 > **`ufw` no limita Docker.** Docker insereix les seves pròpies regles d'iptables per davant de les
 > del tallafoc, de manera que un port publicat a totes les interfícies continua accessible des
-> d'internet encara que `ufw` el denegui. Per això la pila que es distribueix publica l'API (8003) i
+> d'internet encara que `ufw` el denegui. Per això l'entorn que es distribueix publica l'API (8003) i
 > Postgres (5433) **només a `127.0.0.1`**, i per això s'hi pot arribar des del mateix servidor i des
 > d'enlloc més. Posar `API_BIND` o `DB_BIND` a `0.0.0.0`, o afegir la teva pròpia entrada `ports:`,
 > deixa aquell servei a internet públic sigui quina sigui la configuració del tallafoc. Verifica-ho
