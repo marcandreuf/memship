@@ -118,8 +118,8 @@ pagar.
 No cambia nada. `upgrade.sh`, `db-backup.sh` y `db-restore.sh` ejecutan `docker compose` desde el
 directorio de instalación, así que leen `COMPOSE_FILE` y mantienen el overlay; `push-backup.sh`
 saca su volcado mediante `db-backup.sh`.
-`install.sh` recarga el Caddy incluido tras una actualización solo cuando Caddy forma parte de la
-pila, así que una actualización nunca lo arranca junto a tu proxy.
+`install.sh` recarga el Caddy incluido tras una actualización solo cuando Caddy forma parte
+del entorno, así que una actualización nunca lo arranca junto a tu proxy.
 
 La API sigue publicada en `127.0.0.1:8003`, solo en loopback, como en la configuración
 predeterminada. `verify-deployment.sh` comprueba ahí la salud de la API tras una actualización;

@@ -116,7 +116,7 @@ No canvia res. `upgrade.sh`, `db-backup.sh` i `db-restore.sh` executen `docker c
 directori d'instal·lació, de manera que llegeixen `COMPOSE_FILE` i mantenen l'overlay;
 `push-backup.sh` fa el seu bolcat a través de `db-backup.sh`.
 `install.sh` recarrega el Caddy inclòs després d'una actualització només quan Caddy forma part de
-la pila, així que una actualització mai no l'arrenca al costat del teu proxy.
+l'entorn, així que una actualització mai no l'arrenca al costat del teu proxy.
 
 L'API continua publicada a `127.0.0.1:8003`, només en loopback, com a la configuració per defecte.
 `verify-deployment.sh` hi comprova la salut de l'API després d'una actualització; res de fora del

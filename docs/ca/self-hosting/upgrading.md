@@ -78,7 +78,7 @@ la versió que tenies continua servint, i cada refús indica l'estat que ha trob
 
    Només un d'ells atura l'actualització: **un `.env` sense cap línia `IMAGE_TAG`.** Aplicar una
    versió reescriu aquesta línia on és, i no hi ha res per reescriure, així que l'etiqueta
-   s'acceptaria, es perdria, i la pila arrencaria amb el que apunti `latest`. Afegeix la línia i
+   s'acceptaria, es perdria, i l'entorn arrencaria amb el que apunti `latest`. Afegeix la línia i
    torna-ho a executar.
 
 3. **Comprova que hi ha espai al disc** per a les imatges que està a punt de descarregar i per a
@@ -88,7 +88,7 @@ la versió que tenies continua servint, i cada refús indica l'estat que ha trob
 
    Les xifres estan mesurades, no endevinades. Per a les imatges es reserva 1 GB en una
    actualització i 1,8 GB en una primera instal·lació: una primera instal·lació descarrega tota
-   la pila (1,55 GB mesurats), una actualització només el que ha canviat (771 MB mesurats entre
+   l'entorn (1,55 GB mesurats), una actualització només el que ha canviat (771 MB mesurats entre
    dues versions consecutives, perquè la capa de dependències del backend es reconstrueix a cada
    versió). No es demana res per imatges que ja són locals, així que tornar a executar-ho contra
    la versió ja instal·lada mai no es rebutja per falta d'espai per descarregar-la. La instantània
@@ -136,7 +136,7 @@ la versió que tenies continua servint, i cada refús indica l'estat que ha trob
    per altres motius.
 
 8. **Aplica la versió** mitjançant `scripts/install.sh --tag "$MEMSHIP_VERSION"`, que escriu
-   `IMAGE_TAG`, descarrega i recrea la pila. Mai no sobreescriu un `.env` existent. També força la
+   `IMAGE_TAG`, descarrega i recrea l'entorn. Mai no sobreescriu un `.env` existent. També força la
    recreació de Caddy, cosa important: el `Caddyfile` és un bind mount, així que canviar-ne el
    contingut no dona a `docker compose up -d` cap motiu per recrear el contenidor, i altrament
    continuaria servint la configuració antiga.
@@ -190,7 +190,7 @@ Dos canvis relacionats a la mateixa versió:
 ## Migracions de la base de dades
 
 Les migracions s'executen automàticament en arrencar el backend quan `RUN_MIGRATIONS=1` (el valor
-per defecte a la pila de Compose). En una actualització estàndard no cal cap pas manual de
+per defecte a l'entorn de Compose). En una actualització estàndard no cal cap pas manual de
 migració, i gairebé sempre no hi ha res a pensar aquí.
 
 **Una migració té permès negar-se.** Algunes porten una protecció: inspeccionen les dades abans
@@ -215,7 +215,7 @@ Tres coses que val la pena saber quan passa:
   descarregar ni tornar a fixar res.
 
 > Les actualitzacions anteriors a això executaven la comprovació en arrencar l'API, *després* de
-> substituir la pila, així que un refús volia dir que l'API entrava en un bucle de fallades i els
+> substituir l'entorn, així que un refús volia dir que l'API entrava en un bucle de fallades i els
 > socis rebien errors fins que algú resolia les dades
 > ([issue #194](https://github.com/marcandreuf/memship/issues/194)). Si arribes a un refús
 > d'aquesta manera, perquè has executat `install.sh` directament o has actualitzat des d'una
