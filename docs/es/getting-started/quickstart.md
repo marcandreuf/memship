@@ -17,7 +17,7 @@ construidas y está pensado para **evaluar**, no para producción. Para un despl
 ## 1. Crea una carpeta para ella
 
 Todo lo que sigue se ejecuta desde un único directorio, que acaba conteniendo el único fichero que
-esto necesita. Compose toma el **nombre del proyecto** del nombre de ese directorio, y la pila de
+esto necesita. Compose toma el **nombre del proyecto** del nombre de ese directorio, y el entorno de
 prueba rápida guarda sus datos en volúmenes de Docker con el nombre de ese proyecto, así que
 ejecuta todas las órdenes `docker compose` de esta guía desde dentro de esta carpeta. Desde
 cualquier otro sitio, Compose busca un proyecto distinto y no encontrará ni tus contenedores ni
@@ -29,7 +29,7 @@ cd "$HOME/memship-quickstart"
 echo "STACK_PREFIX=$(date +%Y%m%d-%H%M%S)" > .env
 ```
 
-Esa última línea da a los contenedores de esta pila el nombre del momento en que la pusiste en
+Esa última línea da a los contenedores de este entorno el nombre del momento en que la pusiste en
 marcha, así que `docker ps` te dice qué evaluación es cuál y cuándo la empezaste:
 `20261105-043107-memship-api`. Compose lee el `.env` de esta carpeta en cada orden, así que lo
 defines una sola vez. También significa que una segunda evaluación en una segunda carpeta tiene
@@ -140,7 +140,7 @@ y es la mitad del producto que una sesión de administrador nunca te enseña.
 
 Ve a **http://localhost:8324** e inicia sesión con el superadministrador que has creado.
 
-> **Sigue siendo una pila de evaluación.** Antes de poner Memship en una red, sigue la
+> **Sigue siendo un entorno de evaluación.** Antes de poner Memship en una red, sigue la
 > [Instalación](installation.md) y la
 > [Referencia de configuración](../self-hosting/configuration.md). Consulta la
 > [pregunta 3 de arriba](#qué-camino-elegir-en-la-pregunta-3) para saber por qué los datos reales
@@ -148,7 +148,7 @@ Ve a **http://localhost:8324** e inicia sesión con el superadministrador que ha
 
 ## 5. Prueba el alta de un socio
 
-La pila incluye un **buzón de prueba** en **http://localhost:8325**. Todo correo que envía la
+El entorno incluye un **buzón de prueba** en **http://localhost:8325**. Todo correo que envía la
 instancia (verificación de la dirección, aprobación del registro, recibos, avisos de pago) acaba
 allí en lugar de entregarse, sea cual sea la dirección a la que se envió. Este es el flujo que
 conviene probar primero:
@@ -170,7 +170,7 @@ un fallo: ver [Cuál está en vigor](../self-hosting/email.md#cuál-está-en-vig
 
 ## Pasar de la evaluación al uso real
 
-No lleves la pila de prueba rápida a producción: instálalo como es debido con la
+No lleves el entorno de prueba rápida a producción: instálalo como es debido con la
 [Instalación](installation.md), que genera secretos de verdad y pone tus datos en algún sitio del
 que puedas hacer copia de seguridad.
 
@@ -186,7 +186,7 @@ hayas configurado: ver [Configuración inicial](first-setup.md).
 
 ## Pararlo todo
 
-Ejecuta estas órdenes desde la carpeta que creaste en el paso 1: Compose identifica la pila por el
+Ejecuta estas órdenes desde la carpeta que creaste en el paso 1: Compose identifica el entorno por el
 directorio desde el que se ejecuta.
 
 ```bash
@@ -204,7 +204,7 @@ posterior trae de vuelta el mismo club. **`down -v` es la que no deja nada**: el
 demostración, el superadministrador que creaste y todos los recibos se van con ella, y no se
 puede deshacer.
 
-Para recuperar también el espacio en disco, elimina las imágenes cuando la pila esté parada:
+Para recuperar también el espacio en disco, elimina las imágenes cuando el entorno esté parado:
 
 ```bash
 docker image rm ghcr.io/marcandreuf/memship-backend:latest \
