@@ -16,7 +16,7 @@ real, mira [Instal·lació](installation.md).
 ## 1. Crea'n una carpeta
 
 Tot el que segueix s'executa des d'un sol directori, que acaba contenint l'únic fitxer que cal.
-Compose pren el **nom del projecte** del nom d'aquest directori, i la pila d'inici ràpid desa les
+Compose pren el **nom del projecte** del nom d'aquest directori, i l'entorn d'inici ràpid desa les
 dades en volums de Docker amb el nom d'aquest projecte, així que executa totes les ordres
 `docker compose` d'aquesta guia des de dins d'aquesta carpeta. Des de qualsevol altre lloc,
 Compose busca un projecte diferent i no trobarà ni els teus contenidors ni les teves dades.
@@ -27,7 +27,7 @@ cd "$HOME/memship-quickstart"
 echo "STACK_PREFIX=$(date +%Y%m%d-%H%M%S)" > .env
 ```
 
-L'última línia posa als contenidors d'aquesta pila el nom del moment en què la vas engegar, de
+L'última línia posa als contenidors d'aquest entorn el nom del moment en què la vas engegar, de
 manera que `docker ps` et diu quina avaluació és quina i quan la vas començar:
 `20261105-043107-memship-api`. Compose llegeix el `.env` d'aquesta carpeta a cada ordre, així que
 ho configures una sola vegada. També vol dir que una segona avaluació en una segona carpeta té els
@@ -137,7 +137,7 @@ d'administrador, i és la meitat del producte que una sessió d'administrador no
 
 Ves a **http://localhost:8324** i inicia sessió com el superadministrador que has creat.
 
-> **Continua sent una pila d'avaluació.** Abans de posar Memship en una xarxa, segueix
+> **Continua sent un entorn d'avaluació.** Abans de posar Memship en una xarxa, segueix
 > [Instal·lació](installation.md) i la
 > [referència de configuració](../self-hosting/configuration.md). Mira
 > [la pregunta 3 de més amunt](#quin-camí-triar-a-la-pregunta-3) per saber per què les dades
@@ -145,7 +145,7 @@ Ves a **http://localhost:8324** i inicia sessió com el superadministrador que h
 
 ## 5. Prova l'alta d'un soci
 
-La pila inclou una **safata de prova** a **http://localhost:8325**. Tots els correus que envia la
+L'entorn inclou una **safata de prova** a **http://localhost:8325**. Tots els correus que envia la
 instància (verificació d'adreça, aprovació d'alta, rebuts, recordatoris de pagament) hi arriben en
 lloc de lliurar-se, sigui quina sigui l'adreça de destinació. Aquest és el flux per provar primer:
 
@@ -166,7 +166,7 @@ i no una errada, mira [Quin està en vigor](../self-hosting/email.md#quin-està-
 
 ## Passar de l'avaluació a l'ús real
 
-No portis la pila d'inici ràpid a producció: instal·la-la com cal amb
+No portis l'entorn d'inici ràpid a producció: instal·la-la com cal amb
 [Instal·lació](installation.md), que genera secrets reals i posa les dades en un lloc del qual
 pots fer còpies de seguretat.
 
@@ -182,7 +182,7 @@ que hagis configurat, mira [Configuració inicial](first-setup.md).
 
 ## Atura-ho tot
 
-Executa aquestes ordres des de la carpeta que vas crear al pas 1: Compose identifica la pila pel
+Executa aquestes ordres des de la carpeta que vas crear al pas 1: Compose identifica l'entorn pel
 directori des del qual s'executa.
 
 ```bash
@@ -199,7 +199,7 @@ docker compose down -v       # ... and delete the data volumes with them
 recupera el mateix club. **`down -v` és la que no deixa res**: el club de demostració, el
 superadministrador que vas crear i tots els rebuts se'n van amb ella, i no es pot desfer.
 
-Per recuperar també l'espai de disc, elimina les imatges un cop la pila estigui aturada:
+Per recuperar també l'espai de disc, elimina les imatges un cop l'entorn estigui aturat:
 
 ```bash
 docker image rm ghcr.io/marcandreuf/memship-backend:latest \
