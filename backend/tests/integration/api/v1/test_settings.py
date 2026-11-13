@@ -564,3 +564,54 @@ class TestOrganizationSepaIdentifiers:
         db.refresh(org)
         assert org.bank_iban is None
         assert org.creditor_id is None
+
+
+class TestWritesBeforeTheOrganizationExists:
+    """Every write on this router needs the single settings row.
+
+    The setup command asks for the super admin and the club as separate
+    answers, so an administrator can log in and reach these screens before the
+    row exists. Four of these endpoints loaded it with ``.first()`` and
+    dereferenced the ``None``, answering 500 with an empty body; the screens
+    had nothing to show and nothing to act on (#593).
+    """
+
+    WRITES = [
+        ("/api/v1/settings/", {"name": "Probe"}),
+        ("/api/v1/settings/sso", {"google": {"client_id": "x"}}),
+        ("/api/v1/settings/mailing", {"sendpulse": {"from_email": "a@b.example"}}),
+        ("/api/v1/settings/communications", {"templates": {}}),
+        (
+            "/api/v1/settings/address",
+            {
+                "address_line1": "Carrer Major 1",
+                "city": "Barcelona",
+                "postal_code": "08001",
+                "country": "ES",
+            },
+        ),
+    ]
+
+    @pytest.mark.parametrize("url,payload", WRITES)
+    def test_write_404s_with_a_typed_code(self, client, db, url, payload):
+        db.query(OrganizationSettings).delete()
+        db.flush()
+        user = _create_user(db, "super_admin", f"no-org-{url.strip('/').replace('/', '-')}")
+        client.cookies.update(_auth_cookie(user))
+
+        response = client.put(url, json=payload)
+
+        assert response.status_code == 404, response.text
+        assert response.json()["detail"]["code"] == "organization_not_configured"
+
+    def test_the_same_write_succeeds_once_the_row_exists(self, client, db):
+        """The row's absence is the whole cause, not the payload."""
+        db.query(OrganizationSettings).delete()
+        db.flush()
+        user = _create_user(db, "super_admin", "no-org-then-org")
+        client.cookies.update(_auth_cookie(user))
+        assert client.put("/api/v1/settings/", json={"name": "Probe"}).status_code == 404
+
+        _ensure_org_settings(db)
+
+        assert client.put("/api/v1/settings/", json={"name": "Probe"}).status_code == 200
