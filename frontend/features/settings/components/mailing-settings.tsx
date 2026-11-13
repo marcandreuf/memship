@@ -222,11 +222,16 @@ export function MailingSettings() {
       return;
     }
 
+    // Built from PROVIDERS, like everything else here. Listing the providers by
+    // hand is what left SendPulse out of every save: the form accepted a key,
+    // the request never carried it, and the save reported success (#589).
     const body: MailingConfigUpdate = {};
-    const r = buildProviderUpdate("resend");
-    const smtp = buildProviderUpdate("smtp");
-    if (Object.keys(r).length) body.resend = r;
-    if (Object.keys(smtp).length) body.smtp = smtp;
+    for (const name of PROVIDERS) {
+      const update = buildProviderUpdate(name);
+      if (Object.keys(update).length) {
+        (body as Record<string, unknown>)[name] = update;
+      }
+    }
     if (active !== initialActive.current) body.active_provider = active;
 
     if (!Object.keys(body).length) {
