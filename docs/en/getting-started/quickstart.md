@@ -47,8 +47,8 @@ evaluate a specific release instead, set `IMAGE_TAG` on both commands. Health th
 release:
 
 ```bash
-IMAGE_TAG=3.3.0 docker compose pull
-IMAGE_TAG=3.3.0 PORT=8324 docker compose up -d
+IMAGE_TAG=3.3.1 docker compose pull
+IMAGE_TAG=3.3.1 PORT=8324 docker compose up -d
 ```
 
 ## 3. Run the setup
