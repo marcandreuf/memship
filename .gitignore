@@ -76,10 +76,17 @@ e2e/runner-results/
 # weights and regenerates itself on the first run.
 e2e/cypress/parallel-weights.json
 
-# Claude Code local state — journals, settings, worktrees. None of it belongs in
-# a public repo, and a personal global ignore only protects the machine that has
-# one: settings.local.json was committable on any other clone.
-.claude/
+# Claude Code local state: journals, machine-local settings, worktrees. None of
+# it belongs in a public repo, and a personal global ignore only protects the
+# machine that has one: settings.local.json was committable on any other clone.
+#
+# Listed file by file rather than ignoring .claude/ wholesale, because
+# .claude/agents/ is the opposite case. An agent role definition is reviewable
+# config that governs how this repo is worked on, so it has to be in the repo it
+# governs, and tracked: a role file nobody can see in a diff is not in force.
+.claude/settings.local.json
+.claude/journals/
+.claude/worktrees/
 
 # Per-repo config for personal agent skills. The canonical copies live in the
 # private context repo; this stays as a guard in case tooling recreates the path.
