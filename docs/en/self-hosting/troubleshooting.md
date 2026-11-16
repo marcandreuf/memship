@@ -21,6 +21,36 @@ instance that is already up, precisely so that check is not skipped.
 
 ## The stack will not start
 
+### `no matching manifest for linux/arm64/v8 in the manifest list entries`
+
+The host is arm64, an Apple Silicon Mac or an arm64 server, and memship's images are published
+for `linux/amd64` only. Nothing was downloaded.
+
+The message is easy to pin on the wrong service. `docker compose pull` fetches every image at
+once and abandons the whole batch as soon as one of them fails, so the rest report
+`Interrupted` and the failure looks like it belongs to whichever service is named beside it.
+The images that fail are always `memship-backend` and `memship-frontend`; every third-party
+image in the stack already publishes arm64.
+
+To evaluate memship on that machine anyway, take the x86 images and run them under emulation.
+From the quick start's own folder:
+
+```bash
+echo "DOCKER_DEFAULT_PLATFORM=linux/amd64" >> .env
+```
+
+For a real deployment, use an x86_64 host. Publishing arm64 images is tracked in
+[issue #599](https://github.com/marcandreuf/memship/issues/599).
+
+### `failed to read .env: line 1: unexpected character`
+
+The `.env` file is saved as UTF-16. Windows PowerShell 5.1 writes that encoding by default, so
+`echo "STACK_PREFIX=..." > .env` leaves a file Compose cannot parse, and every `docker compose`
+command in that folder refuses to run.
+
+Save it again as UTF-8, or do the whole quick start inside a WSL2 shell, where the documented
+commands are correct as written. A UTF-8 byte-order mark is harmless; Compose skips it.
+
 ### `Conflict. The container name "/memship-db" is already in use`
 
 Another memship instance is already running on this host. The Compose file names its containers

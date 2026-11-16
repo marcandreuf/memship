@@ -1,5 +1,5 @@
 <!-- source: en/self-hosting/troubleshooting.md -->
-<!-- source-hash: beba2acfbaab -->
+<!-- source-hash: 1549f5fe26b3 -->
 
 # Resolución de problemas
 
@@ -23,6 +23,37 @@ comprueba la versión contra tus datos antes de reemplazar nada. `install.sh` se
 sobre una instancia que ya está levantada, precisamente para que esa comprobación no se salte.
 
 ## La plataforma no arranca
+
+### `no matching manifest for linux/arm64/v8 in the manifest list entries`
+
+El anfitrión es arm64, un Mac con Apple Silicon o un servidor arm64, y las imágenes de memship
+se publican solo para `linux/amd64`. No se ha descargado nada.
+
+El mensaje es fácil de atribuir al servicio equivocado. `docker compose pull` se trae todas las
+imágenes a la vez y abandona el lote entero en cuanto una de ellas falla, así que las demás
+informan de `Interrupted` y el fallo parece del servicio que quede escrito al lado. Las que
+fallan son siempre `memship-backend` y `memship-frontend`; el resto de imágenes de terceros del
+entorno ya publican arm64.
+
+Para evaluar memship en esa máquina de todos modos, coge las imágenes x86 y ejecútalas
+emuladas. Desde la carpeta de la propia prueba rápida:
+
+```bash
+echo "DOCKER_DEFAULT_PLATFORM=linux/amd64" >> .env
+```
+
+Para un despliegue real, usa un anfitrión x86_64. Publicar imágenes arm64 está anotado en la
+[incidencia #599](https://github.com/marcandreuf/memship/issues/599).
+
+### `failed to read .env: line 1: unexpected character`
+
+El fichero `.env` está guardado en UTF-16. Windows PowerShell 5.1 usa esa codificación por
+defecto, así que `echo "STACK_PREFIX=..." > .env` deja un fichero que Compose no sabe leer, y
+todas las órdenes `docker compose` de esa carpeta se niegan a funcionar.
+
+Vuelve a guardarlo en UTF-8, o haz toda la prueba rápida dentro de una consola de WSL2, donde
+las órdenes documentadas son correctas tal cual. Una marca de orden de bytes UTF-8 no estorba:
+Compose se la salta.
 
 ### `Conflict. The container name "/memship-db" is already in use`
 
