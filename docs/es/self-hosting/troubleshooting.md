@@ -1,5 +1,5 @@
 <!-- source: en/self-hosting/troubleshooting.md -->
-<!-- source-hash: 389ef5c55242 -->
+<!-- source-hash: 1549f5fe26b3 -->
 
 # Resolución de problemas
 
@@ -44,6 +44,16 @@ echo "DOCKER_DEFAULT_PLATFORM=linux/amd64" >> .env
 
 Para un despliegue real, usa un anfitrión x86_64. Publicar imágenes arm64 está anotado en la
 [incidencia #599](https://github.com/marcandreuf/memship/issues/599).
+
+### `failed to read .env: line 1: unexpected character`
+
+El fichero `.env` está guardado en UTF-16. Windows PowerShell 5.1 usa esa codificación por
+defecto, así que `echo "STACK_PREFIX=..." > .env` deja un fichero que Compose no sabe leer, y
+todas las órdenes `docker compose` de esa carpeta se niegan a funcionar.
+
+Vuelve a guardarlo en UTF-8, o haz toda la prueba rápida dentro de una consola de WSL2, donde
+las órdenes documentadas son correctas tal cual. Una marca de orden de bytes UTF-8 no estorba:
+Compose se la salta.
 
 ### `Conflict. The container name "/memship-db" is already in use`
 

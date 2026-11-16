@@ -36,9 +36,9 @@ docker compose pull        # fetch the latest published images
 PORT=8324 docker compose up -d
 ```
 
-On an Apple Silicon Mac, run `export DOCKER_DEFAULT_PLATFORM=linux/amd64` first.
-memship's images are published for x86 only ([#599](https://github.com/marcandreuf/memship/issues/599)), and running them emulated is
-fine for a trial.
+On an Apple Silicon Mac, run `export DOCKER_DEFAULT_PLATFORM=linux/amd64` first, because
+memship's images are published for x86 only ([#599](https://github.com/marcandreuf/memship/issues/599)). On Windows, run
+these in a WSL2 shell. The [quick start](docs/en/getting-started/quickstart.md) covers both.
 
 Then run the setup, which walks you through three questions:
 

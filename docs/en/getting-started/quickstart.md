@@ -11,6 +11,49 @@ images and is meant for **evaluation**, not production. For a real deployment, s
 
 - Docker and Docker Compose
 
+## Before you start, by platform
+
+The guide itself is the same on all three. Read the part that applies to you first.
+
+### Linux
+
+Nothing extra. Follow the steps as written.
+
+### macOS
+
+Intel Macs need nothing extra. On Apple Silicon, memship's own images are published for
+`linux/amd64` only, so step 2 fails and downloads nothing:
+
+```
+no matching manifest for linux/arm64/v8 in the manifest list entries
+```
+
+Step 1 writes a `.env` file. After that step and before step 2, add a second line to it, so that
+Docker takes the x86 images and runs them under emulation:
+
+```bash
+echo "DOCKER_DEFAULT_PLATFORM=linux/amd64" >> .env
+```
+
+Compose reads `.env` on every command, so that one line covers the rest of this guide. Emulated
+containers are slower, which is fine for an evaluation and is why this is here and not in
+[Installation](installation.md): a real deployment needs an x86_64 host. Publishing arm64 images
+is tracked in [issue #599](https://github.com/marcandreuf/memship/issues/599).
+
+### Windows
+
+Run the whole guide inside a WSL2 shell, with Docker Desktop's WSL integration enabled for that
+distribution. WSL2 is Docker Desktop's own backend on Windows, and inside it every command below
+is correct as written.
+
+In Windows PowerShell or `cmd` they are not. Step 1 alone uses `mkdir -p` and a shell
+substitution that neither understands, and `echo "X=y" > .env` in Windows PowerShell 5.1 saves
+the file as UTF-16, which Compose refuses to read:
+
+```
+failed to read .env: line 1: unexpected character
+```
+
 ## 1. Make a folder for it
 
 Everything below runs from one directory, which ends up holding the single file this
@@ -31,27 +74,6 @@ That last line names this stack's containers after the moment you started it, so
 you set it once. It also means a second evaluation in a second folder gets its own names
 and can run alongside this one, on its own `PORT` and `MAILPIT_PORT`. Skip the line and
 the containers are named `demo-memship-*`, which works until you want two.
-
-### On an Apple Silicon Mac
-
-Memship's own images are published for `linux/amd64` only, so the next step fails and
-downloads nothing:
-
-```
-no matching manifest for linux/arm64/v8 in the manifest list entries
-```
-
-Add the platform to the same `.env` and Docker fetches the x86 images instead, running them
-under emulation:
-
-```bash
-echo "DOCKER_DEFAULT_PLATFORM=linux/amd64" >> .env
-```
-
-Compose reads `.env` on every command, so that one line covers the rest of this guide.
-Emulated containers are slower, which is fine for an evaluation and is why this is here and
-not in [Installation](installation.md): a real deployment needs an x86_64 host. Publishing
-arm64 images is tracked in [issue #599](https://github.com/marcandreuf/memship/issues/599).
 
 ## 2. Download the quick-start compose file and start
 

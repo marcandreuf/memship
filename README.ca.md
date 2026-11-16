@@ -36,9 +36,10 @@ docker compose pull        # descarrega les últimes imatges publicades
 PORT=8324 docker compose up -d
 ```
 
-En un Mac amb Apple Silicon, executeu abans `export DOCKER_DEFAULT_PLATFORM=linux/amd64`.
-Les imatges de memship es publiquen només per a x86 ([#599](https://github.com/marcandreuf/memship/issues/599)), i executar-les
-emulades serveix per a una prova.
+En un Mac amb Apple Silicon, executeu abans `export DOCKER_DEFAULT_PLATFORM=linux/amd64`,
+perquè les imatges de memship es publiquen només per a x86 ([#599](https://github.com/marcandreuf/memship/issues/599)). A
+Windows, executeu això dins d'una consola de WSL2.
+L'[inici ràpid](docs/ca/getting-started/quickstart.md) explica els dos casos.
 
 A continuació, executeu la configuració, que us fa tres preguntes:
 

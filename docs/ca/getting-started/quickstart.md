@@ -1,5 +1,5 @@
 <!-- source: en/getting-started/quickstart.md -->
-<!-- source-hash: 4d2a2d7b75c1 -->
+<!-- source-hash: a2753be15088 -->
 
 # Inici ràpid
 
@@ -12,6 +12,49 @@ real, mira [Instal·lació](installation.md).
 ## Requisits previs
 
 - Docker i Docker Compose
+
+## Abans de començar, segons el teu sistema
+
+La guia és la mateixa en els tres. Llegeix primer l'apartat que et toqui.
+
+### Linux
+
+Res més. Segueix els passos tal com són.
+
+### macOS
+
+Els Mac amb Intel no necessiten res. En Apple Silicon, les imatges pròpies de Memship es
+publiquen només per a `linux/amd64`, així que el pas 2 falla i no descarrega res:
+
+```
+no matching manifest for linux/arm64/v8 in the manifest list entries
+```
+
+El pas 1 escriu un fitxer `.env`. Després d'aquest pas i abans del 2, afegeix-hi una segona
+línia, perquè Docker agafi les imatges x86 i les executi emulades:
+
+```bash
+echo "DOCKER_DEFAULT_PLATFORM=linux/amd64" >> .env
+```
+
+Compose llegeix el `.env` a cada ordre, així que aquesta línia cobreix la resta d'aquesta guia.
+Els contenidors emulats van més lents, cosa que serveix per a una avaluació i és el motiu que
+això sigui aquí i no a la [Instal·lació](installation.md): un desplegament real necessita un
+amfitrió x86_64. Publicar imatges arm64 està anotat a la [incidència #599](https://github.com/marcandreuf/memship/issues/599).
+
+### Windows
+
+Executa tota la guia dins d'una consola de WSL2, amb la integració de WSL de Docker Desktop
+activada per a aquella distribució. WSL2 és el motor mateix de Docker Desktop a Windows, i a
+dins totes les ordres de sota són correctes tal com són.
+
+A Windows PowerShell o a `cmd` no ho són. Només el pas 1 ja fa servir `mkdir -p` i una
+substitució de shell que cap dels dos entén, i `echo "X=y" > .env` a Windows PowerShell 5.1
+guarda el fitxer en UTF-16, que Compose es nega a llegir:
+
+```
+failed to read .env: line 1: unexpected character
+```
 
 ## 1. Crea'n una carpeta
 
@@ -34,28 +77,6 @@ ho configures una sola vegada. També vol dir que una segona avaluació en una s
 seus propis noms i pot funcionar al costat d'aquesta, amb el seu propi `PORT` i `MAILPIT_PORT`. Si
 et saltes la línia, els contenidors es diuen `demo-memship-*`, cosa que funciona fins que en vols
 dues.
-
-### En un Mac amb Apple Silicon
-
-Les imatges pròpies de Memship es publiquen només per a `linux/amd64`, així que el pas següent
-falla i no descarrega res:
-
-```
-no matching manifest for linux/arm64/v8 in the manifest list entries
-```
-
-Afegeix la plataforma a aquest mateix `.env` i Docker es baixa les imatges x86 i les executa
-emulades:
-
-```bash
-echo "DOCKER_DEFAULT_PLATFORM=linux/amd64" >> .env
-```
-
-Compose llegeix el `.env` a cada ordre, així que aquesta línia cobreix la resta d'aquesta guia.
-Els contenidors emulats van més lents, cosa que serveix per a una avaluació i és el motiu que
-això sigui aquí i no a la [Instal·lació](installation.md): un desplegament real necessita un
-amfitrió x86_64. Publicar imatges arm64 està anotat a la
-[incidència #599](https://github.com/marcandreuf/memship/issues/599).
 
 ## 2. Descarrega el fitxer compose d'inici ràpid i engega
 

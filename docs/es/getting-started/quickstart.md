@@ -1,5 +1,5 @@
 <!-- source: en/getting-started/quickstart.md -->
-<!-- source-hash: 4d2a2d7b75c1 -->
+<!-- source-hash: a2753be15088 -->
 
 # Prueba rápida
 
@@ -13,6 +13,49 @@ construidas y está pensado para **evaluar**, no para producción. Para un despl
 ## Requisitos previos
 
 - Docker y Docker Compose
+
+## Antes de empezar, según tu sistema
+
+La guía es la misma en los tres. Lee primero el apartado que te toque.
+
+### Linux
+
+Nada más. Sigue los pasos tal cual.
+
+### macOS
+
+Los Mac con Intel no necesitan nada. En Apple Silicon, las imágenes propias de Memship se
+publican solo para `linux/amd64`, así que el paso 2 falla y no descarga nada:
+
+```
+no matching manifest for linux/arm64/v8 in the manifest list entries
+```
+
+El paso 1 escribe un fichero `.env`. Después de ese paso y antes del 2, añádele una segunda
+línea, para que Docker coja las imágenes x86 y las ejecute emuladas:
+
+```bash
+echo "DOCKER_DEFAULT_PLATFORM=linux/amd64" >> .env
+```
+
+Compose lee el `.env` en cada orden, así que esa línea cubre el resto de esta guía. Los
+contenedores emulados van más lentos, lo que sirve para una evaluación y es el motivo de que
+esto esté aquí y no en la [Instalación](installation.md): un despliegue real necesita un
+anfitrión x86_64. Publicar imágenes arm64 está anotado en la [incidencia #599](https://github.com/marcandreuf/memship/issues/599).
+
+### Windows
+
+Ejecuta toda la guía dentro de una consola de WSL2, con la integración de WSL de Docker Desktop
+activada para esa distribución. WSL2 es el propio motor de Docker Desktop en Windows, y dentro
+de él todas las órdenes de abajo son correctas tal cual.
+
+En Windows PowerShell o en `cmd` no lo son. Solo el paso 1 ya usa `mkdir -p` y una sustitución
+de shell que ninguno de los dos entiende, y `echo "X=y" > .env` en Windows PowerShell 5.1 guarda
+el fichero en UTF-16, que Compose se niega a leer:
+
+```
+failed to read .env: line 1: unexpected character
+```
 
 ## 1. Crea una carpeta para ella
 
@@ -36,28 +79,6 @@ defines una sola vez. También significa que una segunda evaluación en una segu
 sus propios nombres y puede funcionar junto a esta, con su propio `PORT` y `MAILPIT_PORT`. Si te
 saltas la línea, los contenedores se llaman `demo-memship-*`, lo que funciona hasta que quieras
 dos.
-
-### En un Mac con Apple Silicon
-
-Las imágenes propias de Memship se publican solo para `linux/amd64`, así que el paso siguiente
-falla y no descarga nada:
-
-```
-no matching manifest for linux/arm64/v8 in the manifest list entries
-```
-
-Añade la plataforma a ese mismo `.env` y Docker se trae las imágenes x86 y las ejecuta
-emuladas:
-
-```bash
-echo "DOCKER_DEFAULT_PLATFORM=linux/amd64" >> .env
-```
-
-Compose lee el `.env` en cada orden, así que esa línea cubre el resto de esta guía. Los
-contenedores emulados van más lentos, lo que sirve para una evaluación y es el motivo de que
-esto esté aquí y no en la [Instalación](installation.md): un despliegue real necesita un
-anfitrión x86_64. Publicar imágenes arm64 está anotado en la
-[incidencia #599](https://github.com/marcandreuf/memship/issues/599).
 
 ## 2. Descarga el fichero compose de la prueba rápida y arranca
 
