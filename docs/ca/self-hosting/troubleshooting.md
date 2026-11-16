@@ -1,5 +1,5 @@
 <!-- source: en/self-hosting/troubleshooting.md -->
-<!-- source-hash: beba2acfbaab -->
+<!-- source-hash: 389ef5c55242 -->
 
 # Resolució de problemes
 
@@ -23,6 +23,27 @@ executar-se contra una instància que ja està en marxa, precisament perquè aqu
 se salti.
 
 ## La plataforma no arrenca
+
+### `no matching manifest for linux/arm64/v8 in the manifest list entries`
+
+L'amfitrió és arm64, un Mac amb Apple Silicon o un servidor arm64, i les imatges de memship es
+publiquen només per a `linux/amd64`. No s'ha descarregat res.
+
+El missatge és fàcil d'atribuir al servei equivocat. `docker compose pull` es baixa totes les
+imatges alhora i abandona el lot sencer tan bon punt una d'elles falla, així que les altres
+informen d'`Interrupted` i la fallada sembla del servei que quedi escrit al costat. Les que
+fallen són sempre `memship-backend` i `memship-frontend`; la resta d'imatges de tercers de
+l'entorn ja publiquen arm64.
+
+Per avaluar memship en aquella màquina igualment, agafa les imatges x86 i executa-les
+emulades. Des de la carpeta de l'inici ràpid mateix:
+
+```bash
+echo "DOCKER_DEFAULT_PLATFORM=linux/amd64" >> .env
+```
+
+Per a un desplegament real, fes servir un amfitrió x86_64. Publicar imatges arm64 està anotat a
+la [incidència #599](https://github.com/marcandreuf/memship/issues/599).
 
 ### `Conflict. The container name "/memship-db" is already in use`
 

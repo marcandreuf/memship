@@ -1,5 +1,5 @@
 <!-- source: en/getting-started/quickstart.md -->
-<!-- source-hash: 20e6185de57d -->
+<!-- source-hash: 4d2a2d7b75c1 -->
 
 # Inici ràpid
 
@@ -34,6 +34,28 @@ ho configures una sola vegada. També vol dir que una segona avaluació en una s
 seus propis noms i pot funcionar al costat d'aquesta, amb el seu propi `PORT` i `MAILPIT_PORT`. Si
 et saltes la línia, els contenidors es diuen `demo-memship-*`, cosa que funciona fins que en vols
 dues.
+
+### En un Mac amb Apple Silicon
+
+Les imatges pròpies de Memship es publiquen només per a `linux/amd64`, així que el pas següent
+falla i no descarrega res:
+
+```
+no matching manifest for linux/arm64/v8 in the manifest list entries
+```
+
+Afegeix la plataforma a aquest mateix `.env` i Docker es baixa les imatges x86 i les executa
+emulades:
+
+```bash
+echo "DOCKER_DEFAULT_PLATFORM=linux/amd64" >> .env
+```
+
+Compose llegeix el `.env` a cada ordre, així que aquesta línia cobreix la resta d'aquesta guia.
+Els contenidors emulats van més lents, cosa que serveix per a una avaluació i és el motiu que
+això sigui aquí i no a la [Instal·lació](installation.md): un desplegament real necessita un
+amfitrió x86_64. Publicar imatges arm64 està anotat a la
+[incidència #599](https://github.com/marcandreuf/memship/issues/599).
 
 ## 2. Descarrega el fitxer compose d'inici ràpid i engega
 

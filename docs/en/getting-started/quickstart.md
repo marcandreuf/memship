@@ -32,6 +32,27 @@ you set it once. It also means a second evaluation in a second folder gets its o
 and can run alongside this one, on its own `PORT` and `MAILPIT_PORT`. Skip the line and
 the containers are named `demo-memship-*`, which works until you want two.
 
+### On an Apple Silicon Mac
+
+Memship's own images are published for `linux/amd64` only, so the next step fails and
+downloads nothing:
+
+```
+no matching manifest for linux/arm64/v8 in the manifest list entries
+```
+
+Add the platform to the same `.env` and Docker fetches the x86 images instead, running them
+under emulation:
+
+```bash
+echo "DOCKER_DEFAULT_PLATFORM=linux/amd64" >> .env
+```
+
+Compose reads `.env` on every command, so that one line covers the rest of this guide.
+Emulated containers are slower, which is fine for an evaluation and is why this is here and
+not in [Installation](installation.md): a real deployment needs an x86_64 host. Publishing
+arm64 images is tracked in [issue #599](https://github.com/marcandreuf/memship/issues/599).
+
 ## 2. Download the quick-start compose file and start
 
 ```bash

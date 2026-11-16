@@ -1,5 +1,5 @@
 <!-- source: en/self-hosting/troubleshooting.md -->
-<!-- source-hash: beba2acfbaab -->
+<!-- source-hash: 389ef5c55242 -->
 
 # Resolución de problemas
 
@@ -23,6 +23,27 @@ comprueba la versión contra tus datos antes de reemplazar nada. `install.sh` se
 sobre una instancia que ya está levantada, precisamente para que esa comprobación no se salte.
 
 ## La plataforma no arranca
+
+### `no matching manifest for linux/arm64/v8 in the manifest list entries`
+
+El anfitrión es arm64, un Mac con Apple Silicon o un servidor arm64, y las imágenes de memship
+se publican solo para `linux/amd64`. No se ha descargado nada.
+
+El mensaje es fácil de atribuir al servicio equivocado. `docker compose pull` se trae todas las
+imágenes a la vez y abandona el lote entero en cuanto una de ellas falla, así que las demás
+informan de `Interrupted` y el fallo parece del servicio que quede escrito al lado. Las que
+fallan son siempre `memship-backend` y `memship-frontend`; el resto de imágenes de terceros del
+entorno ya publican arm64.
+
+Para evaluar memship en esa máquina de todos modos, coge las imágenes x86 y ejecútalas
+emuladas. Desde la carpeta de la propia prueba rápida:
+
+```bash
+echo "DOCKER_DEFAULT_PLATFORM=linux/amd64" >> .env
+```
+
+Para un despliegue real, usa un anfitrión x86_64. Publicar imágenes arm64 está anotado en la
+[incidencia #599](https://github.com/marcandreuf/memship/issues/599).
 
 ### `Conflict. The container name "/memship-db" is already in use`
 

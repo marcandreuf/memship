@@ -1,5 +1,5 @@
 <!-- source: en/getting-started/quickstart.md -->
-<!-- source-hash: 20e6185de57d -->
+<!-- source-hash: 4d2a2d7b75c1 -->
 
 # Prueba rápida
 
@@ -36,6 +36,28 @@ defines una sola vez. También significa que una segunda evaluación en una segu
 sus propios nombres y puede funcionar junto a esta, con su propio `PORT` y `MAILPIT_PORT`. Si te
 saltas la línea, los contenedores se llaman `demo-memship-*`, lo que funciona hasta que quieras
 dos.
+
+### En un Mac con Apple Silicon
+
+Las imágenes propias de Memship se publican solo para `linux/amd64`, así que el paso siguiente
+falla y no descarga nada:
+
+```
+no matching manifest for linux/arm64/v8 in the manifest list entries
+```
+
+Añade la plataforma a ese mismo `.env` y Docker se trae las imágenes x86 y las ejecuta
+emuladas:
+
+```bash
+echo "DOCKER_DEFAULT_PLATFORM=linux/amd64" >> .env
+```
+
+Compose lee el `.env` en cada orden, así que esa línea cubre el resto de esta guía. Los
+contenedores emulados van más lentos, lo que sirve para una evaluación y es el motivo de que
+esto esté aquí y no en la [Instalación](installation.md): un despliegue real necesita un
+anfitrión x86_64. Publicar imágenes arm64 está anotado en la
+[incidencia #599](https://github.com/marcandreuf/memship/issues/599).
 
 ## 2. Descarga el fichero compose de la prueba rápida y arranca
 
