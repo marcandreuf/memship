@@ -288,7 +288,9 @@ class Receipt(Base):
         return member.id if member else None
 
     concept = relationship("Concept", back_populates="receipts")
-    registration = relationship("Registration", backref="receipts")
+    registration = relationship(
+        "Registration", foreign_keys=[registration_id], backref="receipts"
+    )
     booking = relationship("Booking", backref="receipts")
     purchased_membership_type = relationship("MembershipType")
     remittance = relationship("Remittance", back_populates="receipts")

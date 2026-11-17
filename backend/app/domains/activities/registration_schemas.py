@@ -1,6 +1,6 @@
 """Registration schemas."""
 
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -26,11 +26,39 @@ class RegisterRequest(BaseModel):
 
 class CancelRegistrationRequest(BaseModel):
     reason: str | None = Field(default=None, max_length=2000)
+    # The organiser keeps what was paid instead of owing it back. Ignored when a
+    # member cancels their own seat.
+    keep_payment: bool = False
 
 
 class AdminStatusChangeRequest(BaseModel):
     status: RegistrationStatus
     admin_notes: str | None = Field(default=None, max_length=2000)
+    keep_payment: bool = False
+
+
+class RefundReturnedRequest(BaseModel):
+    credit_note_id: int | None = None
+
+
+class RefundResponse(BaseModel):
+    """A cancelled seat whose payment is owed back, and what finds the money."""
+
+    registration_id: int
+    activity_id: int
+    activity_name: str
+    member_name: str | None = None
+    member_number: str | None = None
+    cancelled_at: datetime | None = None
+    refund_status: str
+    receipt_id: int
+    receipt_number: str
+    amount: float
+    payment_method: str | None = None
+    payment_date: date | None = None
+    gateway_reference: str | None = None
+    refund_returned_at: datetime | None = None
+    refund_credit_note_id: int | None = None
 
 
 class EligibilityReason(BaseModel):
@@ -93,6 +121,11 @@ class RegistrationResponse(BaseModel):
     cancelled_at: datetime | None = None
     cancelled_reason: str | None = None
     cancelled_by_name: str | None = None
+    payment_due_at: datetime | None = None
+    refund_status: str = "none"
+    receipt_id: int | None = None
+    receipt_status: str | None = None
+    receipt_due_date: date | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}

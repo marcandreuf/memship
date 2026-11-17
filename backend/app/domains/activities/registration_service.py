@@ -4,7 +4,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
-from sqlalchemy.orm import Query, Session, joinedload
+from sqlalchemy.orm import Query, Session, joinedload, selectinload
 
 from app.db.after_commit import run_after_commit
 
@@ -85,6 +85,7 @@ def _registrations_base_query(db: Session) -> Query:
         joinedload(Registration.member).joinedload(Member.person),
         joinedload(Registration.activity),
         joinedload(Registration.modality),
+        selectinload(Registration.receipts),
     )
 
 
@@ -353,6 +354,7 @@ def cancel_registration(
     registration: Registration,
     cancelled_by_id: int | None = None,
     reason: str | None = None,
+    keep_payment: bool = False,
 ) -> Registration:
     """Cancel a registration and promote from waitlist if applicable."""
     if registration.status == "cancelled":
@@ -362,7 +364,7 @@ def cancel_registration(
 
     registration.cancelled_by = cancelled_by_id
     registration.cancelled_reason = reason
-    _apply_status_change(db, registration, "cancelled")
+    _apply_status_change(db, registration, "cancelled", keep_payment=keep_payment)
 
     _dispatch_cancellation_email(db, registration, registration.activity)
 
@@ -400,7 +402,10 @@ def _void_unpaid_receipts(db: Session, registration: Registration) -> None:
 
 
 def _apply_status_change(
-    db: Session, registration: Registration, new_status: str
+    db: Session,
+    registration: Registration,
+    new_status: str,
+    keep_payment: bool = False,
 ) -> str:
     """The one path every status change takes, and the receipt side of each.
 
@@ -412,7 +417,9 @@ def _apply_status_change(
     - to ``pending``: the seat gets its deadline and its receipt;
     - to ``confirmed``: the receipt is raised if it is not already there;
     - to ``waitlist`` or ``cancelled``: an unpaid receipt is cancelled, since
-      a seat given back owes nothing. A paid one stays.
+      a seat given back owes nothing. A paid one stays, and a cancelled seat
+      that was paid for is owed back (``refund_status = due``) unless the
+      organiser keeps the payment.
 
     Returns the status it changed from.
     """
@@ -440,6 +447,8 @@ def _apply_status_change(
 
     if new_status in ("waitlist", "cancelled"):
         _void_unpaid_receipts(db, registration)
+        if new_status == "cancelled" and _has_paid_receipt(db, registration):
+            registration.refund_status = "none" if keep_payment else "due"
     elif occupies_seat(new_status):
         ensure_registration_receipt(db, registration, activity)
 
@@ -489,6 +498,7 @@ def admin_change_status(
     registration: Registration,
     new_status: str,
     admin_notes: str | None = None,
+    keep_payment: bool = False,
 ) -> Registration:
     """The organiser changes a registration's status.
 
@@ -508,7 +518,7 @@ def admin_change_status(
     if new_status == "pending" and not owes:
         raise RegistrationError("Only a seat that needs payment can be pending")
 
-    _apply_status_change(db, registration, new_status)
+    _apply_status_change(db, registration, new_status, keep_payment=keep_payment)
     if admin_notes:
         registration.admin_notes = admin_notes
 

@@ -284,6 +284,10 @@ class Registration(Base):
             "status IN ('confirmed', 'waitlist', 'cancelled', 'pending')",
             name="valid_registration_status",
         ),
+        CheckConstraint(
+            "refund_status IN ('none', 'due', 'returned')",
+            name="valid_registration_refund_status",
+        ),
         Index(
             "uq_registration_active_party",
             "activity_id",
@@ -332,6 +336,24 @@ class Registration(Base):
     cancelled_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
     cancelled_reason = Column(Text)
     payment_due_at = Column(DateTime(timezone=True))
+    # Whether the club owes back what was paid for a seat it no longer holds.
+    # A decision recorded on the seat, not read off the receipt, so a payment
+    # the club keeps is not listed as owed.
+    refund_status = Column(
+        String(20), nullable=False, default="none", server_default="none"
+    )
+    refund_returned_at = Column(DateTime(timezone=True))
+    refund_returned_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+    # receipts already points here, so this side is added after both tables.
+    refund_credit_note_id = Column(
+        Integer,
+        ForeignKey(
+            "receipts.id",
+            ondelete="SET NULL",
+            use_alter=True,
+            name="fk_registrations_refund_credit_note_id",
+        ),
+    )
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
@@ -364,6 +386,27 @@ class Registration(Base):
     consents = relationship("RegistrationConsent", back_populates="registration")
     attachments = relationship("RegistrationAttachment", back_populates="registration")
     cancelled_by_user = relationship("User", foreign_keys=[cancelled_by], lazy="joined")
+
+    @property
+    def current_receipt(self):
+        """The receipt that stands for this seat: the newest live one, else the
+        newest of any, so a cancelled seat still shows what became of it."""
+        active = [r for r in self.receipts if r.is_active]
+        live = [r for r in active if r.status != "cancelled"]
+        pool = live or active
+        return max(pool, key=lambda r: r.id) if pool else None
+
+    @property
+    def receipt_id(self):
+        return self.current_receipt.id if self.current_receipt else None
+
+    @property
+    def receipt_status(self):
+        return self.current_receipt.status if self.current_receipt else None
+
+    @property
+    def receipt_due_date(self):
+        return self.current_receipt.due_date if self.current_receipt else None
 
     @property
     def cancelled_by_name(self) -> str | None:
