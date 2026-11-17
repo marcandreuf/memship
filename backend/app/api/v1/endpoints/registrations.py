@@ -31,6 +31,7 @@ from app.domains.activities.registration_service import (
     build_member_registrations_query,
     cancel_registration,
     check_self_cancellation_allowed,
+    confirm_without_payment,
     register_member,
 )
 from app.domains.activities.service import get_visible_activity_or_404
@@ -331,6 +332,35 @@ def change_registration_status(
 
     try:
         admin_change_status(db, registration, data.status, data.admin_notes)
+        db.commit()
+        db.refresh(registration)
+        return _billed(db, registration)
+    except RegistrationError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post(
+    "/registrations/{registration_id}/confirm-without-payment",
+    response_model=RegistrationResponse,
+)
+def confirm_registration_without_payment(
+    registration_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("billing.write")),
+):
+    """Confirm a pending registration and waive its payment.
+
+    Takes the key that marking a receipt paid takes, since it settles the same
+    debt by giving it up.
+    """
+    registration = (
+        db.query(Registration).filter(Registration.id == registration_id).first()
+    )
+    if not registration:
+        raise HTTPException(status_code=404, detail="Registration not found")
+
+    try:
+        confirm_without_payment(db, registration, current_user.id)
         db.commit()
         db.refresh(registration)
         return _billed(db, registration)

@@ -180,7 +180,7 @@ class TestAdminConfirmationBills:
             receipt.status = "cancelled"
         db.flush()
 
-        admin_change_status(db, registration, "pending")
+        admin_change_status(db, registration, "cancelled")
 
         assert all(r.status == "cancelled" for r in _receipts_for(db, registration))
 

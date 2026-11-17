@@ -41,6 +41,8 @@ from app.domains.organizations.service import org_locale
 # be paid, so every counter and every capacity decision reads this one rule.
 OCCUPYING_STATUSES = ("confirmed", "pending")
 
+UNPAID_RECEIPT_STATUSES = ("new", "pending", "emitted", "overdue")
+
 
 class RegistrationError(Exception):
     """Raised when a registration operation fails."""
@@ -358,55 +360,109 @@ def cancel_registration(
     if registration.status not in ("confirmed", "waitlist", "pending"):
         raise RegistrationError(f"Cannot cancel registration with status '{registration.status}'")
 
-    old_status = registration.status
-    registration.status = "cancelled"
-    registration.cancelled_at = datetime.now(timezone.utc)
     registration.cancelled_by = cancelled_by_id
     registration.cancelled_reason = reason
+    _apply_status_change(db, registration, "cancelled")
 
-    activity = registration.activity
-    _move_counters(
-        activity, registration.modality, registration.price, old_status, "cancelled"
-    )
+    _dispatch_cancellation_email(db, registration, registration.activity)
 
-    # The use this registration took goes back to the code.
-    if registration.discount_code_id:
-        release_usage(db, registration.discount_code_id)
+    return registration
 
-    # Promote from waitlist if a seat freed up
-    if occupies_seat(old_status):
-        _promote_from_waitlist(db, activity, registration.modality_id)
 
-    # Cancel unpaid receipts linked to this registration
+def _void_unpaid_receipts(db: Session, registration: Registration) -> None:
+    """Cancel every receipt of this registration that still asks for money."""
     try:
         from app.domains.billing.models import Receipt
+
         unpaid_receipts = (
             db.query(Receipt)
             .filter(
                 Receipt.registration_id == registration.id,
                 Receipt.is_active.is_(True),
-                Receipt.status.in_(["new", "pending", "emitted", "overdue"]),
+                Receipt.status.in_(UNPAID_RECEIPT_STATUSES),
             )
             .all()
         )
         for receipt in unpaid_receipts:
             receipt.status = "cancelled"
     except Exception:
-        # The seat is already released, so failing the cancellation here would be
+        # The seat is already released, so failing the change here would be
         # worse than an invoice left open — but it must not be invisible. A
-        # receipt still standing against a cancelled registration is money the
-        # member is asked for and does not owe, and nothing else reconciles the
-        # two. Same reasoning as ensure_registration_receipt, which logs for the
-        # mirror case.
+        # receipt still standing against a seat that no longer owes it is money
+        # the member is asked for and does not owe, and nothing else reconciles
+        # the two. Same reasoning as ensure_registration_receipt, which logs for
+        # the mirror case.
         logger.exception(
             "Failed to cancel receipts for registration %s; a receipt may still "
-            "stand against a cancelled registration",
+            "stand against a registration that does not owe it",
             registration.id,
         )
 
-    _dispatch_cancellation_email(db, registration, activity)
 
-    return registration
+def _apply_status_change(
+    db: Session, registration: Registration, new_status: str
+) -> str:
+    """The one path every status change takes, and the receipt side of each.
+
+    Counters, the discount use, the receipt and the waiting list move together
+    here, so the member cancelling and the organiser changing the status cannot
+    disagree about any of them. Paying a receipt is the only other way a seat
+    changes (``confirm_pending_registration``), and it moves no counter.
+
+    - to ``pending``: the seat gets its deadline and its receipt;
+    - to ``confirmed``: the receipt is raised if it is not already there;
+    - to ``waitlist`` or ``cancelled``: an unpaid receipt is cancelled, since
+      a seat given back owes nothing. A paid one stays.
+
+    Returns the status it changed from.
+    """
+    old_status = registration.status
+    activity = registration.activity
+    _move_counters(
+        activity, registration.modality, registration.price, old_status, new_status
+    )
+
+    # The discount use follows the registration in and out of 'cancelled'.
+    if registration.discount_code_id:
+        if new_status == "cancelled":
+            release_usage(db, registration.discount_code_id)
+        elif old_status == "cancelled":
+            retake_usage(db, registration.discount_code_id)
+
+    registration.status = new_status
+    if new_status == "cancelled":
+        registration.cancelled_at = datetime.now(timezone.utc)
+    registration.payment_due_at = (
+        payment_due_at(db, activity, datetime.now(timezone.utc))
+        if new_status == "pending"
+        else None
+    )
+
+    if new_status in ("waitlist", "cancelled"):
+        _void_unpaid_receipts(db, registration)
+    elif occupies_seat(new_status):
+        ensure_registration_receipt(db, registration, activity)
+
+    if occupies_seat(old_status) and not occupies_seat(new_status):
+        _promote_from_waitlist(db, activity, registration.modality_id)
+
+    return old_status
+
+
+def _has_paid_receipt(db: Session, registration: Registration) -> bool:
+    from app.domains.billing.models import Receipt
+
+    db.flush()
+    return (
+        db.query(Receipt.id)
+        .filter(
+            Receipt.registration_id == registration.id,
+            Receipt.is_active.is_(True),
+            Receipt.status == "paid",
+        )
+        .first()
+        is not None
+    )
 
 
 def check_self_cancellation_allowed(
@@ -434,36 +490,63 @@ def admin_change_status(
     new_status: str,
     admin_notes: str | None = None,
 ) -> Registration:
-    """Admin changes registration status."""
-    old_status = registration.status
-    if old_status == new_status:
+    """The organiser changes a registration's status.
+
+    A seat that needs payment is confirmed by paying its receipt or, explicitly,
+    by ``confirm_without_payment``; a status flip must not leave a confirmed
+    attendee with a live receipt the dunning run would chase. For the same
+    reason only such a seat can be put back to ``pending``.
+    """
+    if registration.status == new_status:
         raise RegistrationError(f"Registration is already '{new_status}'")
 
-    activity = registration.activity
-    _move_counters(
-        activity, registration.modality, registration.price, old_status, new_status
-    )
+    owes = needs_payment(registration.activity, registration.discounted_amount)
+    if new_status == "confirmed" and owes and not _has_paid_receipt(db, registration):
+        raise RegistrationError(
+            "This seat needs payment: mark its receipt paid or confirm it without payment"
+        )
+    if new_status == "pending" and not owes:
+        raise RegistrationError("Only a seat that needs payment can be pending")
 
-    if new_status == "cancelled":
-        registration.cancelled_at = datetime.now(timezone.utc)
-
-    # The discount use follows the registration in and out of 'cancelled'.
-    if registration.discount_code_id:
-        if new_status == "cancelled":
-            release_usage(db, registration.discount_code_id)
-        elif old_status == "cancelled":
-            retake_usage(db, registration.discount_code_id)
-
-    registration.status = new_status
-    if new_status == "confirmed" and old_status != "confirmed":
-        ensure_registration_receipt(db, registration, activity)
+    _apply_status_change(db, registration, new_status)
     if admin_notes:
         registration.admin_notes = admin_notes
 
-    # If we freed a seat, promote from waitlist
-    if occupies_seat(old_status) and not occupies_seat(new_status):
-        _promote_from_waitlist(db, activity, registration.modality_id)
+    return registration
 
+
+def confirm_without_payment(
+    db: Session, registration: Registration, user_id: int
+) -> Registration:
+    """Confirm a pending seat and waive its payment, on the organiser's word.
+
+    The receipt is cancelled rather than left standing, so a confirmed attendee
+    never carries a live receipt the dunning run would chase. Recorded in the
+    audit log, since it gives up money the club was owed.
+    """
+    if registration.status != "pending":
+        raise RegistrationError("Only a pending registration can be confirmed without payment")
+
+    from app.domains.audit.models import AuditLog
+
+    _void_unpaid_receipts(db, registration)
+    registration.status = "confirmed"
+    registration.payment_due_at = None
+    db.add(
+        AuditLog(
+            table_name="registrations",
+            record_id=registration.id,
+            action="update",
+            user_id=user_id,
+            old_values={"status": "pending"},
+            new_values={"status": "confirmed", "reason": "payment_waived"},
+            changed_fields=["status"],
+        )
+    )
+    db.flush()
+    _dispatch_registration_email(
+        db, registration, registration.activity, registration.member
+    )
     return registration
 
 

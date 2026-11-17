@@ -219,7 +219,7 @@ class TestCountersMatchRows:
         admin_change_status(db, b, "cancelled")
         _assert_counters_match_rows(db, activity)
 
-        admin_change_status(db, b, "pending")
+        admin_change_status(db, b, "confirmed")
         _assert_counters_match_rows(db, activity)
 
         register_member(db, activity, members[5], price.id)
