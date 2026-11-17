@@ -27,6 +27,7 @@ import { ActivityDetailSection } from "@/features/activities/components/activity
 import { ActivityCoverImage } from "@/features/activities/components/activity-cover-image";
 import { ActivityEditForm } from "@/features/activities/components/activity-edit-form";
 import { LegacyFlowBadge } from "@/features/activities/components/legacy-flow-badge";
+import { PendingPaymentNotice } from "@/features/activities/components/pending-payment-notice";
 import { ModalitiesTab } from "@/features/activities/components/modalities-tab";
 import { PricesTab } from "@/features/activities/components/prices-tab";
 import { DiscountCodesTab } from "@/features/activities/components/discount-codes-tab";
@@ -227,7 +228,10 @@ export default function ActivityDetailPage({
           }
         />
       ) : (
-        <MemberActivitySummary activity={activity} />
+        <>
+          <MemberActivitySummary activity={activity} />
+          {myRegistration && <PendingPaymentNotice registration={myRegistration} />}
+        </>
       )}
 
       <EntityTabs

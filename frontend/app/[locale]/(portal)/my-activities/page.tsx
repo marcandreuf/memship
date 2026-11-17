@@ -14,6 +14,7 @@ import {
   useCancelRegistration,
 } from "@/features/activities/hooks/use-registrations";
 import { useActivity } from "@/features/activities/hooks/use-activities";
+import { PendingPaymentNotice } from "@/features/activities/components/pending-payment-notice";
 import { useLocaleDate } from "@/hooks/use-locale-date";
 import type { RegistrationData } from "@/features/activities/services/registrations-api";
 import { REGISTRATION_STATUS_VARIANTS } from "@/lib/status-variants";
@@ -25,7 +26,7 @@ function RegistrationCard({ registration }: { registration: RegistrationData }) 
   const cancelMutation = useCancelRegistration();
   const [confirmDialog, confirmAction] = useConfirmDialog();
 
-  const isActiveStatus = registration.status === "confirmed" || registration.status === "waitlist";
+  const isActiveStatus = ["confirmed", "pending", "waitlist"].includes(registration.status);
 
   const isCancellationAllowed = (() => {
     if (!activity) return false;
@@ -94,6 +95,9 @@ function RegistrationCard({ registration }: { registration: RegistrationData }) 
                 {t("common.cancel")}
               </Button>
           )}
+        </div>
+        <div className="mt-2">
+          <PendingPaymentNotice registration={registration} />
         </div>
       </div>
       {imageUrl && (

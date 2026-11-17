@@ -220,7 +220,10 @@
       "confirmWithoutPaymentDescription": "The registration is confirmed and its receipt cancelled: the member will not have to pay it. Who did it is recorded.",
       "keepPaymentTitle": "This registration is paid",
       "keepPaymentDescription": "Cancelling it puts the amount on the list of refunds due. If the club keeps the payment, tick this.",
-      "keepPayment": "Keep the payment (do not refund)"
+      "keepPayment": "Keep the payment (do not refund)",
+      "pendingNotice": "Your seat is held. The registration is confirmed once the payment is recorded.",
+      "expiredNotice": "This registration was cancelled because it was not paid in time.",
+      "pendingCreated": "Seat held: pay the receipt to confirm it"
     },
     "legacy": {
       "badge": "legacy",

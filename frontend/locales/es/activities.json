@@ -220,7 +220,10 @@
       "confirmWithoutPaymentDescription": "La inscripción se confirma y su recibo se anula: el socio no tendrá que pagarlo. Queda registrado quién lo ha hecho.",
       "keepPaymentTitle": "Esta inscripción está pagada",
       "keepPaymentDescription": "Al cancelarla, el importe pasa a la lista de devoluciones pendientes. Si el club se queda el pago, márcalo.",
-      "keepPayment": "Quedarse el pago (no devolverlo)"
+      "keepPayment": "Quedarse el pago (no devolverlo)",
+      "pendingNotice": "Tu plaza está reservada. La inscripción se confirma cuando se registra el pago.",
+      "expiredNotice": "Esta inscripción se canceló porque no se pagó a tiempo.",
+      "pendingCreated": "Plaza reservada: paga el recibo para confirmarla"
     },
     "legacy": {
       "badge": "legacy",

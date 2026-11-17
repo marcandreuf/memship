@@ -86,7 +86,7 @@ export default function RegisterPage({
       accepted: !!acceptedConsents[c.id],
     }));
     try {
-      await registerMutation.mutateAsync({
+      const registration = await registerMutation.mutateAsync({
         activityId,
         price_id: selectedPriceId,
         modality_id: selectedModalityId || undefined,
@@ -94,7 +94,12 @@ export default function RegisterPage({
         consents: consentsPayload.length > 0 ? consentsPayload : undefined,
         member_notes: notes || undefined,
       });
-      toast.success(t("toast.success.created"));
+      // The activity page then shows the held seat with its "Pay now".
+      toast.success(
+        registration.status === "pending"
+          ? t("activities.registration.pendingCreated")
+          : t("toast.success.created"),
+      );
       router.push(`/activities/${activityId}`);
     } catch { /* global handler shows error toast */ }
   }

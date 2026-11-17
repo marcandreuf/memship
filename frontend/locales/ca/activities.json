@@ -220,7 +220,10 @@
       "confirmWithoutPaymentDescription": "La inscripció es confirma i el seu rebut s'anul·la: el soci no l'haurà de pagar. Queda registrat qui ho ha fet.",
       "keepPaymentTitle": "Aquesta inscripció està pagada",
       "keepPaymentDescription": "En cancel·lar-la, l'import passa a la llista de devolucions pendents. Si el club es queda el pagament, marca-ho.",
-      "keepPayment": "Quedar-se el pagament (no retornar-lo)"
+      "keepPayment": "Quedar-se el pagament (no retornar-lo)",
+      "pendingNotice": "La teva plaça està reservada. La inscripció es confirma quan es registra el pagament.",
+      "expiredNotice": "Aquesta inscripció es va cancel·lar perquè no es va pagar a temps.",
+      "pendingCreated": "Plaça reservada: paga el rebut per confirmar-la"
     },
     "legacy": {
       "badge": "legacy",
