@@ -440,6 +440,8 @@ CANONICAL = {
     "member_donations_enabled": True,
     "donation_min_amount": 5,
     "donation_max_amount": 1000,
+    "activity_auto_cancel_enabled": True,
+    "activity_auto_cancel_hours": 72,
     "billing_notification_email": "tesoreria@club.example",
 }
 

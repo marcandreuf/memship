@@ -20,6 +20,11 @@ from sqlalchemy.orm import relationship
 
 from app.db.base import Base
 
+PAYMENT_FLOW_LEGACY = "legacy"
+PAYMENT_FLOW_PAY_TO_CONFIRM = "pay_to_confirm"
+PAYMENT_FLOWS = (PAYMENT_FLOW_LEGACY, PAYMENT_FLOW_PAY_TO_CONFIRM)
+PAYMENT_METHODS = ("card", "bizum", "transfer", "cash")
+
 
 class Activity(Base):
     __tablename__ = "activities"
@@ -29,6 +34,14 @@ class Activity(Base):
             name="valid_status",
         ),
         CheckConstraint("slug ~ '^[a-z0-9-]+$'", name="activity_slug_format"),
+        CheckConstraint(
+            "payment_flow IN ('legacy', 'pay_to_confirm')",
+            name="valid_activity_payment_flow",
+        ),
+        CheckConstraint(
+            "payment_methods <@ ARRAY['card', 'bizum', 'transfer', 'cash']::varchar[]",
+            name="valid_activity_payment_methods",
+        ),
         Index("idx_activities_slug", "slug"),
         Index("idx_activities_status", "status"),
         Index("idx_activities_starts_at", "starts_at"),
@@ -68,6 +81,20 @@ class Activity(Base):
     self_cancellation_deadline_hours = Column(Integer)
     is_active = Column(Boolean, default=True)
     is_featured = Column(Boolean, default=False)
+    # Fixed when the activity is created and never edited: ``legacy`` is the
+    # behaviour of activities that predate the pay-to-confirm flow.
+    payment_flow = Column(
+        String(20),
+        nullable=False,
+        default=PAYMENT_FLOW_PAY_TO_CONFIRM,
+        server_default=PAYMENT_FLOW_PAY_TO_CONFIRM,
+    )
+    payment_methods = Column(
+        ARRAY(String), nullable=False, default=list, server_default="{}"
+    )
+    # Override of the club's auto-cancel default; NULL inherits it.
+    auto_cancel_enabled = Column(Boolean)
+    auto_cancel_hours = Column(Integer)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
@@ -304,6 +331,7 @@ class Registration(Base):
     cancelled_at = Column(DateTime(timezone=True))
     cancelled_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
     cancelled_reason = Column(Text)
+    payment_due_at = Column(DateTime(timezone=True))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()

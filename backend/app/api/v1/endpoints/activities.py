@@ -78,6 +78,10 @@ def _to_response(
         self_cancellation_deadline_hours=activity.self_cancellation_deadline_hours,
         is_active=activity.is_active,
         is_featured=activity.is_featured or False,
+        payment_flow=activity.payment_flow,
+        payment_methods=activity.payment_methods or [],
+        auto_cancel_enabled=activity.auto_cancel_enabled,
+        auto_cancel_hours=activity.auto_cancel_hours,
         created_by=activity.created_by,
         created_at=activity.created_at,
         updated_at=activity.updated_at,
@@ -114,6 +118,7 @@ def _to_list_response(activity: Activity) -> ActivityListResponse:
         status=activity.status,
         image_url=activity.image_url,
         is_featured=activity.is_featured or False,
+        payment_flow=activity.payment_flow,
         created_at=activity.created_at,
     )
 

@@ -63,6 +63,10 @@ INT_RULES: IntRules = {
     # what stops a typo at the keyboard is the per-donation check against
     # whatever this is set to.
     "donation_max_amount": (1_000, 1, 100_000),
+    # The club's default for how long an unpaid activity registration holds its
+    # seat before it is cancelled, in hours. An activity may override it. The
+    # year bound matches the activity's own field.
+    "activity_auto_cancel_hours": (72, 1, 8760),
 }
 
 
@@ -103,6 +107,9 @@ BOOL_KEYS = frozenset(
         # is declared here rather than in ``MODULE_GATE_KEYS`` because this
         # domain has a ``rules.py`` and owns the two values beside it.
         "member_donations_enabled",
+        # The club's default for cancelling an unpaid activity registration once
+        # its payment deadline passes. Absent means off.
+        "activity_auto_cancel_enabled",
     }
 )
 
