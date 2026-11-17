@@ -18,6 +18,7 @@ from app.domains.activities.registration_schemas import (
     AdminStatusChangeRequest,
     CancelRegistrationRequest,
     EligibilityResponse,
+    LatePaymentResponse,
     RefundResponse,
     RefundReturnedRequest,
     RegisterRequest,
@@ -57,6 +58,8 @@ def _payment_fields(registration: Registration) -> dict:
     return {
         "payment_due_at": registration.payment_due_at,
         "cancelled_cause": registration.cancelled_cause,
+        "late_payment_at": registration.late_payment_at,
+        "late_payment_seen_at": registration.late_payment_seen_at,
         "refund_status": registration.refund_status,
         "receipt_id": registration.receipt_id,
         "receipt_status": registration.receipt_status,
@@ -201,6 +204,69 @@ def mark_registration_refund_returned(
     db.commit()
     db.refresh(registration)
     return _refund_response(registration)
+
+
+@router.get("/registrations/late-payments")
+def list_unseen_late_payments(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("billing.read")),
+):
+    """Payments that arrived after their seat was released, not yet looked at.
+
+    What the dashboard banner shows until an organiser acknowledges each one.
+    """
+    rows = (
+        db.query(Registration)
+        .options(
+            joinedload(Registration.member).joinedload(Member.person),
+            joinedload(Registration.activity),
+        )
+        .filter(
+            Registration.late_payment_at.isnot(None),
+            Registration.late_payment_seen_at.is_(None),
+        )
+        .order_by(Registration.late_payment_at.desc())
+        .all()
+    )
+    items = []
+    for r in rows:
+        person = r.member.person if r.member else None
+        items.append(
+            LatePaymentResponse(
+                registration_id=r.id,
+                activity_id=r.activity_id,
+                activity_name=r.activity.name,
+                member_name=f"{person.first_name} {person.last_name}" if person else None,
+                status=r.status,
+                refund_status=r.refund_status,
+                late_payment_at=r.late_payment_at,
+            )
+        )
+    return {"items": items}
+
+
+@router.post(
+    "/registrations/{registration_id}/late-payment-seen",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def acknowledge_late_payment(
+    registration_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("billing.write")),
+):
+    """Take a late payment off the banner once an organiser has looked at it."""
+    registration = (
+        db.query(Registration)
+        .filter(
+            Registration.id == registration_id,
+            Registration.late_payment_at.isnot(None),
+        )
+        .first()
+    )
+    if not registration:
+        raise HTTPException(status_code=404, detail="No late payment on this registration")
+    registration.late_payment_seen_at = datetime.now(timezone.utc)
+    db.commit()
 
 
 # --- Activity-scoped endpoints ---

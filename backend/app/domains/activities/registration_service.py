@@ -470,6 +470,42 @@ def _has_paid_receipt(db: Session, registration: Registration) -> bool:
     )
 
 
+def settle_late_payment(db: Session, registration_id: int):
+    """Give a seat back to a payment that arrived after it was released.
+
+    Confirmed if a seat is free, under the same capacity lock a registration
+    takes; otherwise it stays cancelled and the money is owed back. Flagged for
+    the organiser either way.
+    """
+    from app.domains.billing.seats import LateSeat
+
+    registration = (
+        db.query(Registration).filter(Registration.id == registration_id).one()
+    )
+    activity = registration.activity
+    registration.late_payment_at = datetime.now(timezone.utc)
+    registration.late_payment_seen_at = None
+
+    confirmed = occupies_seat(registration.status)
+    if not confirmed:
+        _lock_capacity_rows(db, activity, registration.modality)
+        if _has_capacity(activity, registration.modality):
+            _apply_status_change(db, registration, "confirmed")
+            registration.refund_status = "none"
+            _dispatch_registration_email(db, registration, activity, registration.member)
+            confirmed = True
+        else:
+            registration.refund_status = "due"
+    db.flush()
+
+    person = registration.member.person if registration.member else None
+    return LateSeat(
+        confirmed=confirmed,
+        name=activity.name,
+        member_name=f"{person.first_name} {person.last_name}" if person else None,
+    )
+
+
 def expired_pending_registrations(db: Session, now: datetime) -> list[Registration]:
     """Pending seats whose payment deadline has passed.
 

@@ -39,6 +39,53 @@ def _pending(db, membership_type, suffix, **activity_kwargs):
     return activity, registration, receipt
 
 
+def _stripe_provider(db):
+    from app.core.encryption import encrypt_config
+
+    db.add(
+        PaymentProvider(
+            provider_type="stripe",
+            display_name="Stripe",
+            status="active",
+            config=encrypt_config(
+                {
+                    "secret_key": "sk_test_p2c",
+                    "publishable_key": "pk_test_p2c",
+                    "webhook_secret": "whsec_p2c",
+                },
+                ["secret_key", "webhook_secret"],
+            ),
+            is_default=False,
+        )
+    )
+    db.flush()
+
+
+def _post_stripe_paid(client, receipt, suffix):
+    from app.domains.billing.providers.stripe_provider import StripeAdapter
+
+    payload = {
+        "id": f"evt_{suffix}",
+        "type": "checkout.session.completed",
+        "data": {
+            "object": {
+                "id": f"cs_{suffix}",
+                "metadata": {"receipt_id": str(receipt.id)},
+                "payment_intent": f"pi_{suffix}",
+            }
+        },
+    }
+    with patch.object(StripeAdapter, "verify_signature", return_value=payload):
+        return client.post(
+            "/api/v1/webhooks/stripe",
+            content=json.dumps(payload).encode(),
+            headers={
+                "content-type": "application/json",
+                "stripe-signature": "t=1,v1=fake",
+            },
+        )
+
+
 def _reloaded(db, registration):
     db.expire_all()
     return db.query(Registration).filter(Registration.id == registration.id).one()
@@ -113,48 +160,10 @@ class TestEveryPaymentPathConfirms:
         assert _reloaded(db, registration).status == "confirmed"
 
     def test_the_stripe_webhook(self, client, db, org, membership_type):
-        from app.core.encryption import encrypt_config
-        from app.domains.billing.providers.stripe_provider import StripeAdapter
-
         _, registration, receipt = _pending(db, membership_type, "stripe")
-        db.add(
-            PaymentProvider(
-                provider_type="stripe",
-                display_name="Stripe",
-                status="active",
-                config=encrypt_config(
-                    {
-                        "secret_key": "sk_test_p2c",
-                        "publishable_key": "pk_test_p2c",
-                        "webhook_secret": "whsec_p2c",
-                    },
-                    ["secret_key", "webhook_secret"],
-                ),
-                is_default=False,
-            )
-        )
-        db.flush()
-        payload = {
-            "id": "evt_p2c_001",
-            "type": "checkout.session.completed",
-            "data": {
-                "object": {
-                    "id": "cs_p2c",
-                    "metadata": {"receipt_id": str(receipt.id)},
-                    "payment_intent": "pi_p2c",
-                }
-            },
-        }
+        _stripe_provider(db)
 
-        with patch.object(StripeAdapter, "verify_signature", return_value=payload):
-            resp = client.post(
-                "/api/v1/webhooks/stripe",
-                content=json.dumps(payload).encode(),
-                headers={
-                    "content-type": "application/json",
-                    "stripe-signature": "t=1,v1=fake",
-                },
-            )
+        resp = _post_stripe_paid(client, receipt, "p2c")
 
         assert resp.status_code == 200, resp.text
         assert _reloaded(db, registration).status == "confirmed"

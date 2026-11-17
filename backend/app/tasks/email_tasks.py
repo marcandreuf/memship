@@ -16,6 +16,7 @@ from app.core.email import (
     send_registration_approved_email,
     send_registration_confirmation_email,
     send_registration_cancellation_email,
+    send_late_payment_alert_email,
     send_payment_deadline_reminder_email,
     send_registration_cancelled_unpaid_email,
     send_registration_pending_payment_email,
@@ -188,6 +189,30 @@ def send_deadline_reminder_email_task(
         )
     except Exception as exc:
         logger.error(f"Deadline reminder email task failed: to={to}, error={exc}")
+        raise self.retry(exc=exc)
+
+
+@celery.task(bind=True, max_retries=3, default_retry_delay=60)
+def send_late_payment_alert_email_task(
+    self,
+    to: str,
+    member_name: str | None,
+    seat_name: str,
+    amount: str,
+    currency: str,
+    receipt_number: str,
+    gateway: str | None,
+    seat_confirmed: bool,
+    locale: str = "es",
+) -> bool:
+    """Alert the club to a payment for a seat that had already been released."""
+    try:
+        return send_late_payment_alert_email(
+            to, member_name, seat_name, amount, currency, receipt_number,
+            gateway, seat_confirmed, locale,
+        )
+    except Exception as exc:
+        logger.error(f"Late payment alert task failed: to={to}, error={exc}")
         raise self.retry(exc=exc)
 
 

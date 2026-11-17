@@ -391,6 +391,11 @@
           "description": "Recorda al soci, abans que venci el termini, que la seva plaça es cancel·larà si no la paga.",
           "warning": "Sense aquest avís, la cancel·lació automàtica arribarà al soci per sorpresa."
         },
+        "late_payment_alert": {
+          "name": "Pagament rebut per a una plaça cancel·lada",
+          "description": "Avisa el club, amb urgència, quan la passarel·la cobra una plaça que ja s'havia alliberat.",
+          "warning": "Sense aquest avís, el club no sabrà que té diners cobrats que potser ha de retornar."
+        },
         "registration_cancelled_unpaid": {
           "name": "Inscripció cancel·lada per manca de pagament",
           "description": "Avisa el soci que la seva plaça s'ha alliberat perquè no es va pagar a temps.",

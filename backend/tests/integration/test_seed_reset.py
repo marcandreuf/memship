@@ -341,6 +341,7 @@ class TestOrganizationDetails:
             "registration_pending_payment": {"enabled": True},
             "payment_deadline_reminder": {"enabled": True},
             "registration_cancelled_unpaid": {"enabled": True},
+            "late_payment_alert": {"enabled": True},
             "webhook_digest": {"enabled": True},
         }
 

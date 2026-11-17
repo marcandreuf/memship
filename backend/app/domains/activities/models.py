@@ -349,6 +349,11 @@ class Registration(Base):
     # Why a seat was cancelled when the system did it rather than a person, so
     # the organiser can tell it apart in the list. NULL for every other cancel.
     cancelled_cause = Column(String(30))
+    # A gateway payment that arrived after the seat's receipt was cancelled, and
+    # when an organiser acknowledged it. Unacknowledged ones are flagged to the
+    # club until someone has looked.
+    late_payment_at = Column(DateTime(timezone=True))
+    late_payment_seen_at = Column(DateTime(timezone=True))
     # Whether the club owes back what was paid for a seat it no longer holds.
     # A decision recorded on the seat, not read off the receipt, so a payment
     # the club keeps is not listed as owed.

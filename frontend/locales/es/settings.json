@@ -391,6 +391,11 @@
           "description": "Recuerda al socio, antes de que venza el plazo, que su plaza se cancelará si no la paga.",
           "warning": "Sin este aviso, la cancelación automática le llegará al socio por sorpresa."
         },
+        "late_payment_alert": {
+          "name": "Pago recibido para una plaza cancelada",
+          "description": "Avisa al club, con urgencia, cuando la pasarela cobra una plaza que ya se había liberado.",
+          "warning": "Sin este aviso, el club no sabrá que tiene dinero cobrado que quizá deba devolver."
+        },
         "registration_cancelled_unpaid": {
           "name": "Inscripción cancelada por falta de pago",
           "description": "Avisa al socio de que su plaza se ha liberado porque no se pagó a tiempo.",

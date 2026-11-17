@@ -37,6 +37,18 @@ class AdminStatusChangeRequest(BaseModel):
     keep_payment: bool = False
 
 
+class LatePaymentResponse(BaseModel):
+    """A payment that arrived after its seat was released, not yet looked at."""
+
+    registration_id: int
+    activity_id: int
+    activity_name: str
+    member_name: str | None = None
+    status: str
+    refund_status: str
+    late_payment_at: datetime
+
+
 class RefundReturnedRequest(BaseModel):
     credit_note_id: int | None = None
 
@@ -123,6 +135,8 @@ class RegistrationResponse(BaseModel):
     cancelled_by_name: str | None = None
     payment_due_at: datetime | None = None
     cancelled_cause: str | None = None
+    late_payment_at: datetime | None = None
+    late_payment_seen_at: datetime | None = None
     refund_status: str = "none"
     receipt_id: int | None = None
     receipt_status: str | None = None

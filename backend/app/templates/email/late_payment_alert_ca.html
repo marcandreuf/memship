@@ -1,0 +1,23 @@
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+{% set gateways = {"stripe_checkout": "Stripe", "redsys": "Redsys", "bizum": "Bizum (Redsys)"} %}
+
+{% block preheader %}Ha arribat un pagament per a una plaça que ja s'havia cancel·lat.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Pagament rebut per a una plaça cancel·lada</h1>
+<p style="{{ s.p }}">La passarel·la ha cobrat un rebut que estava cancel·lat perquè la seva plaça s'havia alliberat. El pagament ha quedat registrat.</p>
+{% call c.panel() %}
+{% if member_name %}{{ c.data_row("Soci", member_name) }}{% endif %}
+{{ c.data_row("Activitat", seat_name) }}
+{{ c.data_row("Import", amount ~ " " ~ currency) }}
+{{ c.data_row("Rebut", receipt_number) }}
+{% if gateway %}{{ c.data_row("Passarel·la", gateways.get(gateway, gateway)) }}{% endif %}
+{% endcall %}
+{%- if seat_confirmed %}
+<p style="{{ s.p_last }}">Quedava plaça lliure, així que la inscripció s'ha confirmat. Revisa-la per si no és el que volíeu.</p>
+{%- else %}
+<p style="{{ s.p }}">No quedava plaça lliure, així que la inscripció continua cancel·lada i l'import figura a la llista de devolucions pendents.</p>
+<p style="{{ s.p_last }}">Retorna'l des del tauler de la passarel·la i marca'l com a retornat.</p>
+{%- endif %}
+{% endblock %}

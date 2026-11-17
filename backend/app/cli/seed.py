@@ -279,6 +279,7 @@ def create_org_settings(db, details: dict, address: dict | None = None) -> None:
                 "registration_pending_payment": {"enabled": True},
                 "payment_deadline_reminder": {"enabled": True},
                 "registration_cancelled_unpaid": {"enabled": True},
+                "late_payment_alert": {"enabled": True},
                 "webhook_digest": {"enabled": True},
             },
         },

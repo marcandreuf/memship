@@ -1,0 +1,23 @@
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+{% set gateways = {"stripe_checkout": "Stripe", "redsys": "Redsys", "bizum": "Bizum (Redsys)"} %}
+
+{% block preheader %}Ha llegado un pago para una plaza que ya se había cancelado.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Pago recibido para una plaza cancelada</h1>
+<p style="{{ s.p }}">La pasarela ha cobrado un recibo que estaba cancelado porque su plaza se había liberado. El pago ha quedado registrado.</p>
+{% call c.panel() %}
+{% if member_name %}{{ c.data_row("Socio", member_name) }}{% endif %}
+{{ c.data_row("Actividad", seat_name) }}
+{{ c.data_row("Importe", amount ~ " " ~ currency) }}
+{{ c.data_row("Recibo", receipt_number) }}
+{% if gateway %}{{ c.data_row("Pasarela", gateways.get(gateway, gateway)) }}{% endif %}
+{% endcall %}
+{%- if seat_confirmed %}
+<p style="{{ s.p_last }}">Quedaba plaza libre, así que la inscripción se ha confirmado. Revísala por si no es lo que queríais.</p>
+{%- else %}
+<p style="{{ s.p }}">No quedaba plaza libre, así que la inscripción sigue cancelada y el importe figura en la lista de devoluciones pendientes.</p>
+<p style="{{ s.p_last }}">Devuélvelo desde el panel de la pasarela y márcalo como devuelto.</p>
+{%- endif %}
+{% endblock %}

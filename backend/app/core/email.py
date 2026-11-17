@@ -171,6 +171,11 @@ _SUBJECTS = {
         "ca": "Inscripció cancel·lada per manca de pagament: {activity}",
         "en": "Registration cancelled, not paid: {activity}",
     },
+    "late_payment_alert": {
+        "es": "Urgente: pago recibido para una plaza cancelada ({seat})",
+        "ca": "Urgent: pagament rebut per a una plaça cancel·lada ({seat})",
+        "en": "Urgent: payment received for a cancelled seat ({seat})",
+    },
     "waitlist_promoted": {
         "es": "¡Plaza confirmada! {activity}",
         "ca": "Plaça confirmada! {activity}",
@@ -1189,6 +1194,35 @@ def send_registration_cancelled_unpaid_email(
         locale,
         {"member_name": member_name, "activity_name": activity_name},
         subject_args={"activity": activity_name},
+    )
+
+
+def send_late_payment_alert_email(
+    to: str,
+    member_name: str | None,
+    seat_name: str,
+    amount: str,
+    currency: str,
+    receipt_number: str,
+    gateway: str | None,
+    seat_confirmed: bool,
+    locale: str = "es",
+) -> bool:
+    """Tell the club a gateway paid for a seat that had already been released."""
+    return _send_templated(
+        "late_payment_alert",
+        to,
+        locale,
+        {
+            "member_name": member_name,
+            "seat_name": seat_name,
+            "amount": amount,
+            "currency": currency,
+            "receipt_number": receipt_number,
+            "gateway": gateway,
+            "seat_confirmed": seat_confirmed,
+        },
+        subject_args={"seat": seat_name},
     )
 
 

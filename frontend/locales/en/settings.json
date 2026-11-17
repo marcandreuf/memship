@@ -391,6 +391,11 @@
           "description": "Reminds the member, before the deadline, that their seat will be cancelled unless paid.",
           "warning": "Without this notice, the automatic cancellation will come as a surprise to the member."
         },
+        "late_payment_alert": {
+          "name": "Payment received for a cancelled seat",
+          "description": "Alerts the club, urgently, when the gateway collects for a seat that had already been released.",
+          "warning": "Without this alert, the club will not know it holds money it may have to return."
+        },
         "registration_cancelled_unpaid": {
           "name": "Registration cancelled for non-payment",
           "description": "Tells the member their seat was released because it was not paid in time.",
