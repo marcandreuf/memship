@@ -656,7 +656,18 @@ def seed_activities(db, user_id: int) -> None:
         modalities_data = act_data.pop("modalities")
         prices_data = act_data.pop("prices")
 
-        activity = Activity(**act_data, created_by=user_id)
+        # The seeded catalogue stands for a club that was running before
+        # pay-to-confirm (#591): its activities are legacy, as the upgrade stamps
+        # them, and the registrations seeded into them were confirmed under that
+        # flow. The drafts and the wine tasting, which has no registrations, show
+        # the new flow instead.
+        new_flow = act_data["status"] == "draft" or act_data["slug"] == "private-wine-tasting"
+        activity = Activity(
+            **act_data,
+            created_by=user_id,
+            payment_flow="pay_to_confirm" if new_flow else "legacy",
+            payment_methods=["cash"] if new_flow else [],
+        )
         db.add(activity)
         db.flush()
 

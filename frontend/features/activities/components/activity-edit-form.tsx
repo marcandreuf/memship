@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useZodResolver } from "@/hooks/use-zod-resolver";
 import { z } from "zod";
@@ -20,6 +21,11 @@ import {
 import { FormErrorSummary } from "@/components/ui/form-error-summary";
 import { useMembershipTypes } from "@/features/members/hooks/use-members";
 import type { ActivityData } from "../services/activities-api";
+import {
+  ActivityPaymentFields,
+  paymentSettingsFrom,
+  paymentSettingsPayload,
+} from "./activity-payment-fields";
 
 const editActivitySchema = z.object({
   name: z.string().trim().min(1).max(255),
@@ -110,9 +116,11 @@ export function ActivityEditForm({
   });
 
   const allowSelfCancellation = form.watch("allow_self_cancellation");
+  const [payment, setPayment] = useState(() => paymentSettingsFrom(activity));
 
   async function handleSubmit(data: EditActivityFormValues) {
     const payload: Record<string, unknown> = {
+      ...(activity.payment_flow === "legacy" ? {} : paymentSettingsPayload(payment)),
       name: data.name,
       starts_at: new Date(data.starts_at).toISOString(),
       ends_at: new Date(data.ends_at).toISOString(),
@@ -227,6 +235,7 @@ export function ActivityEditForm({
             <FormItem><FormLabel>{t("activities.selfCancellationHours")}</FormLabel><FormControl><Input type="number" min={0} {...field} /></FormControl></FormItem>
           )} />
         )}
+        <ActivityPaymentFields flow={activity.payment_flow} value={payment} onChange={setPayment} />
         <FormErrorSummary errors={form.formState.errors} />
         <div className="flex gap-3">
           <Button type="submit" disabled={isPending}>

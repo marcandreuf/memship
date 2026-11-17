@@ -27,9 +27,21 @@ export interface RegistrationData {
   cancelled_at: string | null;
   cancelled_reason: string | null;
   cancelled_by_name: string | null;
+  /** `payment_expired` when the seat was released unpaid by the deadline sweep. */
+  cancelled_cause: string | null;
+  /** When an unpaid pending seat is released; null without auto-cancel. */
+  payment_due_at: string | null;
+  late_payment_at: string | null;
+  late_payment_seen_at: string | null;
+  refund_status: RefundStatus;
+  receipt_id: number | null;
+  receipt_status: string | null;
+  receipt_due_date: string | null;
   created_at: string;
   member?: RegistrationMemberInfo;
 }
+
+export type RefundStatus = "none" | "due" | "returned";
 
 export interface RegistrationPageMeta {
   page: number;
@@ -95,12 +107,73 @@ export async function cancelRegistration(registrationId: number, reason?: string
 export async function changeRegistrationStatus(
   registrationId: number,
   status: string,
-  admin_notes?: string
+  admin_notes?: string,
+  keep_payment?: boolean,
 ): Promise<RegistrationData> {
   return apiClient(`/registrations/${registrationId}/status`, {
     method: "PUT",
-    body: JSON.stringify({ status, admin_notes }),
+    body: JSON.stringify({ status, admin_notes, keep_payment }),
   });
+}
+
+export async function confirmWithoutPayment(registrationId: number): Promise<RegistrationData> {
+  return apiClient(`/registrations/${registrationId}/confirm-without-payment`, {
+    method: "POST",
+  });
+}
+
+export interface RefundData {
+  registration_id: number;
+  activity_id: number;
+  activity_name: string;
+  member_name: string | null;
+  member_number: string | null;
+  cancelled_at: string | null;
+  refund_status: RefundStatus;
+  receipt_id: number;
+  receipt_number: string;
+  amount: number;
+  payment_method: string | null;
+  payment_date: string | null;
+  /** What finds the payment in the gateway's dashboard. */
+  gateway_reference: string | null;
+  refund_returned_at: string | null;
+  refund_credit_note_id: number | null;
+}
+
+export async function listRefunds(params: {
+  page?: number;
+  per_page?: number;
+  refund_status?: "due" | "returned";
+}): Promise<{ items: RefundData[]; meta: RegistrationPageMeta }> {
+  const sp = new URLSearchParams();
+  if (params.page) sp.set("page", String(params.page));
+  if (params.per_page) sp.set("per_page", String(params.per_page));
+  if (params.refund_status) sp.set("refund_status", params.refund_status);
+  const qs = sp.toString();
+  return apiClient(`/registrations/refunds${qs ? `?${qs}` : ""}`);
+}
+
+export async function markRefundReturned(registrationId: number): Promise<RefundData> {
+  return apiClient(`/registrations/${registrationId}/refund-returned`, { method: "POST" });
+}
+
+export interface LatePaymentData {
+  registration_id: number;
+  activity_id: number;
+  activity_name: string;
+  member_name: string | null;
+  status: string;
+  refund_status: RefundStatus;
+  late_payment_at: string;
+}
+
+export async function listUnseenLatePayments(): Promise<{ items: LatePaymentData[] }> {
+  return apiClient("/registrations/late-payments");
+}
+
+export async function acknowledgeLatePayment(registrationId: number): Promise<void> {
+  await apiClient(`/registrations/${registrationId}/late-payment-seen`, { method: "POST" });
 }
 
 export interface ListRegistrationsParams {

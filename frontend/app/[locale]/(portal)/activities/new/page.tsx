@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/lib/i18n/routing";
 import { useForm } from "react-hook-form";
@@ -29,6 +30,11 @@ import { toast } from "sonner";
 import { mapApiErrorsToForm } from "@/lib/errors";
 import { useCreateActivity } from "@/features/activities/hooks/use-activities";
 import { useMembershipTypes } from "@/features/members/hooks/use-members";
+import {
+  ActivityPaymentFields,
+  paymentSettingsFrom,
+  paymentSettingsPayload,
+} from "@/features/activities/components/activity-payment-fields";
 
 const activitySchema = z.object({
   name: z.string().trim().min(1).max(255),
@@ -103,9 +109,11 @@ export default function NewActivityPage() {
   });
 
   const allowSelfCancellation = form.watch("allow_self_cancellation");
+  const [payment, setPayment] = useState(() => paymentSettingsFrom());
 
   async function onSubmit(data: ActivityFormValues) {
     const payload: Record<string, unknown> = {
+      ...paymentSettingsPayload(payment),
       name: data.name,
       starts_at: new Date(data.starts_at).toISOString(),
       ends_at: new Date(data.ends_at).toISOString(),
@@ -426,6 +434,15 @@ export default function NewActivityPage() {
                   )}
                 />
               )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("activities.payment.title")}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ActivityPaymentFields flow="pay_to_confirm" value={payment} onChange={setPayment} />
             </CardContent>
           </Card>
 

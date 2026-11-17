@@ -30,6 +30,14 @@
     "upcomingEvents": "Próximas actividades",
     "nextDays": "Próximos {days} días",
     "occupancy": "Ocupación",
-    "spacesAndSlots": "{spaces, plural, one {# espacio} other {# espacios}} · {slots, plural, one {# franja} other {# franjas}}"
+    "spacesAndSlots": "{spaces, plural, one {# espacio} other {# espacios}} · {slots, plural, one {# franja} other {# franjas}}",
+    "latePayments": {
+      "title": "Pagos recibidos para plazas canceladas",
+      "description": "La pasarela ha cobrado plazas que ya se habían liberado. Revisa cada una.",
+      "confirmed": "Plaza confirmada",
+      "refundDue": "Pendiente de devolver",
+      "seen": "Visto",
+      "viewRefunds": "Ver devoluciones"
+    }
   }
 }

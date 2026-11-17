@@ -9,9 +9,17 @@ import {
   listDiscountCodes, createDiscountCode, updateDiscountCode, deleteDiscountCode,
   listConsents, createConsent, updateConsent, deleteConsent,
   listAttachmentTypes, createAttachmentType, updateAttachmentType, deleteAttachmentType,
-  uploadCoverImage, deleteCoverImage,
+  uploadCoverImage, deleteCoverImage, getPaymentOptions,
   type ListActivitiesParams,
 } from "../services/activities-api";
+
+export function usePaymentOptions(enabled = true) {
+  return useQuery({
+    queryKey: ["activity-payment-options"],
+    queryFn: getPaymentOptions,
+    enabled,
+  });
+}
 
 export function useActivities(params: ListActivitiesParams = {}, enabled = true) {
   return useQuery({

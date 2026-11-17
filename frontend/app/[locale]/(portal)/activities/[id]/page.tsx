@@ -26,6 +26,7 @@ import { useEligibility, useMyRegistrations } from "@/features/activities/hooks/
 import { ActivityDetailSection } from "@/features/activities/components/activity-detail-section";
 import { ActivityCoverImage } from "@/features/activities/components/activity-cover-image";
 import { ActivityEditForm } from "@/features/activities/components/activity-edit-form";
+import { LegacyFlowBadge } from "@/features/activities/components/legacy-flow-badge";
 import { ModalitiesTab } from "@/features/activities/components/modalities-tab";
 import { PricesTab } from "@/features/activities/components/prices-tab";
 import { DiscountCodesTab } from "@/features/activities/components/discount-codes-tab";
@@ -98,6 +99,7 @@ export default function ActivityDetailPage({
           label: t(`activities.status.${activity.status}`),
           variant: ACTIVITY_STATUS_VARIANTS[activity.status] || "outline",
         }}
+        badgeExtra={isAdmin ? <LegacyFlowBadge flow={activity.payment_flow} /> : undefined}
         actions={
           canPublishActivities || canWriteActivities ? (
             <>
@@ -265,7 +267,9 @@ export default function ActivityDetailPage({
                 {
                   id: "registrations",
                   label: t("activities.registrations"),
-                  content: <RegistrationsTab activityId={activityId} />,
+                  content: (
+                    <RegistrationsTab activityId={activityId} paymentFlow={activity.payment_flow} />
+                  ),
                 },
               ]
             : []),

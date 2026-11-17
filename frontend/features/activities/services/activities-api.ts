@@ -70,11 +70,34 @@ export interface ActivityData {
   self_cancellation_deadline_hours: number | null;
   is_active: boolean;
   is_featured: boolean;
+  payment_flow: PaymentFlow;
+  payment_methods: PaymentMethod[];
+  /** Override of the club default; null inherits it. */
+  auto_cancel_enabled: boolean | null;
+  auto_cancel_hours: number | null;
   created_by: number | null;
   created_at: string;
   updated_at: string;
   modalities: ActivityModalityData[];
   prices: ActivityPriceData[];
+}
+
+/** Fixed when the activity is created. `legacy` confirms at registration. */
+export type PaymentFlow = "legacy" | "pay_to_confirm";
+
+export const PAYMENT_METHODS = ["card", "bizum", "transfer", "cash"] as const;
+export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+
+export interface PaymentOptions {
+  usable_methods: PaymentMethod[];
+  auto_cancel_enabled: boolean;
+  auto_cancel_hours: number;
+  /** Mails that warn a member about an unpaid seat, switched off in settings. */
+  switched_off_templates: string[];
+}
+
+export async function getPaymentOptions(): Promise<PaymentOptions> {
+  return apiClient("/activities/payment-options");
 }
 
 export interface ActivityListData {
@@ -94,6 +117,7 @@ export interface ActivityListData {
   status: string;
   image_url: string | null;
   is_featured: boolean;
+  payment_flow: PaymentFlow;
   created_at: string;
 }
 

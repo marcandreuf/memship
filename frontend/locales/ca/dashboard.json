@@ -30,6 +30,14 @@
     "upcomingEvents": "Properes activitats",
     "nextDays": "Propers {days} dies",
     "occupancy": "Ocupació",
-    "spacesAndSlots": "{spaces, plural, one {# espai} other {# espais}} · {slots, plural, one {# franja} other {# franges}}"
+    "spacesAndSlots": "{spaces, plural, one {# espai} other {# espais}} · {slots, plural, one {# franja} other {# franges}}",
+    "latePayments": {
+      "title": "Pagaments rebuts per a places cancel·lades",
+      "description": "La passarel·la ha cobrat places que ja s'havien alliberat. Revisa-les una per una.",
+      "confirmed": "Plaça confirmada",
+      "refundDue": "Pendent de retornar",
+      "seen": "Vist",
+      "viewRefunds": "Veure devolucions"
+    }
   }
 }

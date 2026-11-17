@@ -202,12 +202,69 @@
         "confirmed": "Confirmed",
         "waitlist": "Waitlisted",
         "cancelled": "Cancelled",
-        "pending": "Pending"
+        "pending": "Payment pending"
       },
       "member": "Member",
       "date": "Date",
       "changeStatus": "Change Status",
-      "noMyActivities": "You haven't registered for any activities yet"
+      "noMyActivities": "You haven't registered for any activities yet",
+      "payment": "Payment",
+      "payBy": "Pay by {date}",
+      "expired": "Cancelled: not paid in time",
+      "latePayment": "Late payment",
+      "refundDue": "Refund due",
+      "refundReturned": "Returned",
+      "openReceipt": "View receipt",
+      "confirmWithoutPayment": "Confirm without payment",
+      "confirmWithoutPaymentTitle": "Confirm without collecting?",
+      "confirmWithoutPaymentDescription": "The registration is confirmed and its receipt cancelled: the member will not have to pay it. Who did it is recorded.",
+      "keepPaymentTitle": "This registration is paid",
+      "keepPaymentDescription": "Cancelling it puts the amount on the list of refunds due. If the club keeps the payment, tick this.",
+      "keepPayment": "Keep the payment (do not refund)"
+    },
+    "legacy": {
+      "badge": "legacy",
+      "tooltip": "This activity uses the previous flow: registrations are confirmed at once and the receipt is collected afterwards. New activities hold the seat as pending until it is paid. This cannot be changed; activities you create from now on use the new flow."
+    },
+    "payment": {
+      "title": "Payment",
+      "legacyNotice": "This activity confirms registrations at once and the receipt is collected afterwards. It cannot be changed.",
+      "methods": "Accepted payment methods",
+      "methodsHint": "The member pays the receipt from \"My receipts\", and their seat is pending until then. A paid activity needs at least one to be published.",
+      "method": {
+        "card": "Card",
+        "bizum": "Bizum",
+        "transfer": "Bank transfer",
+        "cash": "Cash"
+      },
+      "unavailable": "Not available: no active payment provider or no club IBAN",
+      "autoCancel": "Cancel automatically if not paid",
+      "autoCancelInherit": "As the club ({setting})",
+      "clubOn": "on, {hours} h",
+      "clubOff": "off",
+      "autoCancelOn": "On for this activity",
+      "autoCancelOff": "Off for this activity",
+      "autoCancelHours": "Time to pay (hours)",
+      "pendingEmailOff": "The \"Registration pending payment\" email is switched off: members will not know they have to pay. Switch it on in Settings › Communications.",
+      "autoCancelNeedsEmails": "To switch on automatic cancellation, first switch on in Settings › Communications: {templates}.",
+      "autoCancelClub": "As the club"
+    },
+    "refunds": {
+      "title": "Refunds",
+      "info": "Cancelled registrations whose payment has to be returned. The refund is made from the gateway's dashboard (Stripe, Redsys) or by hand; here it is only marked as done.",
+      "due": "Due",
+      "returned": "Returned",
+      "member": "Member",
+      "activity": "Activity",
+      "amount": "Amount",
+      "method": "Payment method",
+      "reference": "Reference",
+      "cancelledAt": "Cancelled",
+      "returnedAt": "Returned",
+      "markReturned": "Mark returned",
+      "confirmMarkReturned": "Mark as returned?",
+      "confirmMarkReturnedDescription": "Do it once the money has been returned. Who and when is recorded.",
+      "empty": "No refunds."
     }
   }
 }

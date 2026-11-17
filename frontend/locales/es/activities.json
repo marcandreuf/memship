@@ -202,12 +202,69 @@
         "confirmed": "Confirmado",
         "waitlist": "En espera",
         "cancelled": "Cancelado",
-        "pending": "Pendiente"
+        "pending": "Pendiente de pago"
       },
       "member": "Socio",
       "date": "Fecha",
       "changeStatus": "Cambiar estado",
-      "noMyActivities": "Aún no te has inscrito en ninguna actividad"
+      "noMyActivities": "Aún no te has inscrito en ninguna actividad",
+      "payment": "Pago",
+      "payBy": "Pagar antes de {date}",
+      "expired": "Cancelada por no pagar a tiempo",
+      "latePayment": "Pago tardío",
+      "refundDue": "Devolución pendiente",
+      "refundReturned": "Devuelto",
+      "openReceipt": "Ver recibo",
+      "confirmWithoutPayment": "Confirmar sin pago",
+      "confirmWithoutPaymentTitle": "¿Confirmar sin cobrar?",
+      "confirmWithoutPaymentDescription": "La inscripción se confirma y su recibo se anula: el socio no tendrá que pagarlo. Queda registrado quién lo ha hecho.",
+      "keepPaymentTitle": "Esta inscripción está pagada",
+      "keepPaymentDescription": "Al cancelarla, el importe pasa a la lista de devoluciones pendientes. Si el club se queda el pago, márcalo.",
+      "keepPayment": "Quedarse el pago (no devolverlo)"
+    },
+    "legacy": {
+      "badge": "legacy",
+      "tooltip": "Esta actividad usa el flujo anterior: las inscripciones se confirman al momento y el recibo se cobra después. Las actividades nuevas dejan la plaza pendiente hasta que se paga. Esta configuración no se puede cambiar; las actividades que crees a partir de ahora usan el flujo nuevo."
+    },
+    "payment": {
+      "title": "Pago",
+      "legacyNotice": "Esta actividad confirma las inscripciones al momento y el recibo se cobra después. No se puede cambiar.",
+      "methods": "Formas de pago aceptadas",
+      "methodsHint": "El socio paga el recibo desde «Mis recibos» y su plaza queda pendiente hasta entonces. Una actividad de pago necesita al menos una para publicarse.",
+      "method": {
+        "card": "Tarjeta",
+        "bizum": "Bizum",
+        "transfer": "Transferencia",
+        "cash": "Efectivo"
+      },
+      "unavailable": "No disponible: falta un proveedor de pago activo o el IBAN del club",
+      "autoCancel": "Cancelación automática si no se paga",
+      "autoCancelInherit": "Como el club ({setting})",
+      "clubOn": "activada, {hours} h",
+      "clubOff": "desactivada",
+      "autoCancelOn": "Activada en esta actividad",
+      "autoCancelOff": "Desactivada en esta actividad",
+      "autoCancelHours": "Plazo para pagar (horas)",
+      "pendingEmailOff": "El correo «Inscripción pendiente de pago» está desactivado: los socios no sabrán que tienen que pagar. Actívalo en Ajustes › Comunicaciones.",
+      "autoCancelNeedsEmails": "Para activar la cancelación automática, activa antes en Ajustes › Comunicaciones: {templates}.",
+      "autoCancelClub": "Como el club"
+    },
+    "refunds": {
+      "title": "Devoluciones",
+      "info": "Inscripciones canceladas cuyo pago hay que devolver. La devolución se hace desde el panel de la pasarela (Stripe, Redsys) o a mano; aquí solo se marca como hecha.",
+      "due": "Pendientes",
+      "returned": "Devueltas",
+      "member": "Socio",
+      "activity": "Actividad",
+      "amount": "Importe",
+      "method": "Forma de pago",
+      "reference": "Referencia",
+      "cancelledAt": "Cancelada",
+      "returnedAt": "Devuelta",
+      "markReturned": "Marcar devuelto",
+      "confirmMarkReturned": "¿Marcar como devuelto?",
+      "confirmMarkReturnedDescription": "Hazlo cuando el dinero ya se haya devuelto. Queda registrado quién y cuándo.",
+      "empty": "No hay devoluciones."
     }
   }
 }

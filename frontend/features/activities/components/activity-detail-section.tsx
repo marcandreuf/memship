@@ -42,6 +42,29 @@ export function ActivityDetailSection({ activity }: ActivityDetailSectionProps) 
       inline: true,
     },
     { label: t("activities.allowSelfCancellation"), value: activity.allow_self_cancellation ? t("common.yes") : t("common.no"), inline: true },
+    ...(activity.payment_flow === "legacy"
+      ? []
+      : [
+          {
+            label: t("activities.payment.methods"),
+            value: activity.payment_methods
+              .map((m) => t(`activities.payment.method.${m}`))
+              .join(", "),
+            inline: true,
+          },
+          {
+            label: t("activities.payment.autoCancel"),
+            value:
+              activity.auto_cancel_enabled == null
+                ? t("activities.payment.autoCancelClub")
+                : activity.auto_cancel_enabled
+                  ? [t("activities.payment.autoCancelOn"), activity.auto_cancel_hours && `${activity.auto_cancel_hours} h`]
+                      .filter(Boolean)
+                      .join(" · ")
+                  : t("activities.payment.autoCancelOff"),
+            inline: true,
+          },
+        ]),
   ];
 
   return (

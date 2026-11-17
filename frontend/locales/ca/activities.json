@@ -202,12 +202,69 @@
         "confirmed": "Confirmat",
         "waitlist": "En espera",
         "cancelled": "Cancel·lat",
-        "pending": "Pendent"
+        "pending": "Pendent de pagament"
       },
       "member": "Soci",
       "date": "Data",
       "changeStatus": "Canviar estat",
-      "noMyActivities": "Encara no t'has inscrit en cap activitat"
+      "noMyActivities": "Encara no t'has inscrit en cap activitat",
+      "payment": "Pagament",
+      "payBy": "Pagar abans de {date}",
+      "expired": "Cancel·lada per no pagar a temps",
+      "latePayment": "Pagament tardà",
+      "refundDue": "Devolució pendent",
+      "refundReturned": "Retornat",
+      "openReceipt": "Veure rebut",
+      "confirmWithoutPayment": "Confirmar sense pagament",
+      "confirmWithoutPaymentTitle": "Confirmar sense cobrar?",
+      "confirmWithoutPaymentDescription": "La inscripció es confirma i el seu rebut s'anul·la: el soci no l'haurà de pagar. Queda registrat qui ho ha fet.",
+      "keepPaymentTitle": "Aquesta inscripció està pagada",
+      "keepPaymentDescription": "En cancel·lar-la, l'import passa a la llista de devolucions pendents. Si el club es queda el pagament, marca-ho.",
+      "keepPayment": "Quedar-se el pagament (no retornar-lo)"
+    },
+    "legacy": {
+      "badge": "legacy",
+      "tooltip": "Aquesta activitat fa servir el flux anterior: les inscripcions es confirmen al moment i el rebut es cobra després. Les activitats noves deixen la plaça pendent fins que es paga. Aquesta configuració no es pot canviar; les activitats que creïs a partir d'ara fan servir el flux nou."
+    },
+    "payment": {
+      "title": "Pagament",
+      "legacyNotice": "Aquesta activitat confirma les inscripcions al moment i el rebut es cobra després. No es pot canviar.",
+      "methods": "Formes de pagament acceptades",
+      "methodsHint": "El soci paga el rebut des de «Els meus rebuts» i la seva plaça queda pendent fins aleshores. Una activitat de pagament en necessita almenys una per publicar-se.",
+      "method": {
+        "card": "Targeta",
+        "bizum": "Bizum",
+        "transfer": "Transferència",
+        "cash": "Efectiu"
+      },
+      "unavailable": "No disponible: falta un proveïdor de pagament actiu o l'IBAN del club",
+      "autoCancel": "Cancel·lació automàtica si no es paga",
+      "autoCancelInherit": "Com el club ({setting})",
+      "clubOn": "activada, {hours} h",
+      "clubOff": "desactivada",
+      "autoCancelOn": "Activada en aquesta activitat",
+      "autoCancelOff": "Desactivada en aquesta activitat",
+      "autoCancelHours": "Termini per pagar (hores)",
+      "pendingEmailOff": "El correu «Inscripció pendent de pagament» està desactivat: els socis no sabran que han de pagar. Activa'l a Configuració › Comunicacions.",
+      "autoCancelNeedsEmails": "Per activar la cancel·lació automàtica, activa abans a Configuració › Comunicacions: {templates}.",
+      "autoCancelClub": "Com el club"
+    },
+    "refunds": {
+      "title": "Devolucions",
+      "info": "Inscripcions cancel·lades el pagament de les quals cal retornar. La devolució es fa des del tauler de la passarel·la (Stripe, Redsys) o a mà; aquí només es marca com a feta.",
+      "due": "Pendents",
+      "returned": "Retornades",
+      "member": "Soci",
+      "activity": "Activitat",
+      "amount": "Import",
+      "method": "Forma de pagament",
+      "reference": "Referència",
+      "cancelledAt": "Cancel·lada",
+      "returnedAt": "Retornada",
+      "markReturned": "Marcar retornat",
+      "confirmMarkReturned": "Marcar com a retornat?",
+      "confirmMarkReturnedDescription": "Fes-ho quan els diners ja s'hagin retornat. Queda registrat qui i quan.",
+      "empty": "No hi ha devolucions."
     }
   }
 }
