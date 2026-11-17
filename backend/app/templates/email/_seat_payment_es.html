@@ -1,0 +1,22 @@
+{% import "_components.html" as c with context %}
+{% call c.panel() %}
+{{ c.data_row("Importe", amount ~ " " ~ currency) }}
+{% if deadline %}{{ c.data_row("Paga antes de", deadline) }}{% endif %}
+{% endcall %}
+{%- if deadline %}
+<p style="{{ s.p }}">Si no se ha pagado en ese plazo, la inscripción se cancelará y la plaza quedará libre.</p>
+{%- endif %}
+{%- if pay_now_url %}
+{{ c.button(pay_now_url, "Pagar ahora") }}
+{%- endif %}
+{%- if bank_details %}
+<p style="{{ s.p }}">Puedes pagar mediante transferencia bancaria:</p>
+{% call c.panel() %}
+<tr><td colspan="2" class="ms-text" style="padding:3px 0; font-family:Helvetica,Arial,sans-serif; font-size:15px; line-height:22px; mso-line-height-rule:exactly; color:#1f2328;">
+{%- for line in bank_details.split("\n") %}{{ line }}<br>{% endfor -%}
+</td></tr>
+{% endcall %}
+{%- endif %}
+{%- if cash %}
+<p style="{{ s.p_last }}">También puedes pagar en efectivo en el club.</p>
+{%- endif %}

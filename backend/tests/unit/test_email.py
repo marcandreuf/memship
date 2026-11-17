@@ -509,6 +509,24 @@ class TestHighLevelEmails:
         subject = mock_send.call_args[0][1]
         assert "Chess Club" in subject
 
+    @patch("app.core.email.send_email", return_value=True)
+    def test_a_promotion_that_must_be_paid_does_not_say_confirmed(self, mock_send):
+        send_waitlist_promotion_email(
+            "user@example.com", "Bob", "Chess Club", locale="en",
+            payment={
+                "amount": "27.50",
+                "currency": "EUR",
+                "deadline": "20/11/2026 18:00",
+                "pay_now_url": None,
+                "bank_details": None,
+                "cash": True,
+            },
+        )
+        subject, html = mock_send.call_args[0][1], mock_send.call_args[0][2]
+        assert "payment pending" in subject.lower()
+        assert "has been <strong>confirmed" not in html
+        assert "27.50" in html and "20/11/2026 18:00" in html
+
 
 PAYMENT_CONFIRMATION = {
     "member_name": "María Puig",

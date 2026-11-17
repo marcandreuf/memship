@@ -1,5 +1,4 @@
 {% extends "_base.html" %}
-{% import "_components.html" as c with context %}
 
 {% block preheader %}La teva plaça a {{ activity_name }} està reservada fins que paguis.{% endblock %}
 
@@ -7,25 +6,5 @@
 <h1 style="{{ s.h1 }}">Plaça reservada, pendent de pagament</h1>
 <p style="{{ s.p }}">Hola {{ member_name }},</p>
 <p style="{{ s.p }}">T'hem reservat una plaça a <strong>{{ activity_name }}</strong>. La inscripció es confirmarà quan es registri el pagament.</p>
-{% call c.panel() %}
-{{ c.data_row("Import", amount ~ " " ~ currency) }}
-{% if deadline %}{{ c.data_row("Paga abans de", deadline) }}{% endif %}
-{% endcall %}
-{%- if deadline %}
-<p style="{{ s.p }}">Si no s'ha pagat dins d'aquest termini, la inscripció es cancel·larà i la plaça quedarà lliure.</p>
-{%- endif %}
-{%- if pay_now_url %}
-{{ c.button(pay_now_url, "Pagar ara") }}
-{%- endif %}
-{%- if bank_details %}
-<p style="{{ s.p }}">Pots pagar mitjançant transferència bancària:</p>
-{% call c.panel() %}
-<tr><td colspan="2" class="ms-text" style="padding:3px 0; font-family:Helvetica,Arial,sans-serif; font-size:15px; line-height:22px; mso-line-height-rule:exactly; color:#1f2328;">
-{%- for line in bank_details.split("\n") %}{{ line }}<br>{% endfor -%}
-</td></tr>
-{% endcall %}
-{%- endif %}
-{%- if cash %}
-<p style="{{ s.p_last }}">També pots pagar en efectiu al club.</p>
-{%- endif %}
+{% include "_seat_payment_ca.html" %}
 {% endblock %}

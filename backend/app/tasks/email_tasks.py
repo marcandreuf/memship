@@ -184,11 +184,13 @@ def send_promotion_email_task(
     activity_date: str | None = None,
     location: str | None = None,
     locale: str = "es",
+    payment: dict | None = None,
 ) -> bool:
     """Send waitlist promotion email."""
     try:
         return send_waitlist_promotion_email(
             to, member_name, activity_name, activity_date, location, locale,
+            payment=payment,
         )
     except Exception as exc:
         logger.error(f"Promotion email task failed: to={to}, error={exc}")

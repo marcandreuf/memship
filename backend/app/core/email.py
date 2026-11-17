@@ -1147,7 +1147,15 @@ def send_waitlist_promotion_email(
     activity_date: str | None = None,
     location: str | None = None,
     locale: str = "es",
+    payment: dict | None = None,
 ) -> bool:
+    """``payment`` (amount, currency, deadline and the ways to pay) means the seat
+    is held until paid rather than confirmed, and the mail and its subject say so."""
+    subject = (
+        _get_subject("registration_pending_payment", locale, activity=activity_name)
+        if payment
+        else None
+    )
     return _send_templated(
         "waitlist_promoted",
         to,
@@ -1157,8 +1165,10 @@ def send_waitlist_promotion_email(
             "activity_name": activity_name,
             "activity_date": activity_date,
             "location": location,
+            **(payment or {}),
         },
         subject_args={"activity": activity_name},
+        subject=subject,
     )
 
 

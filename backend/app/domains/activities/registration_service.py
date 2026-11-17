@@ -666,7 +666,12 @@ def _determine_registration_status(
 def _promote_from_waitlist(
     db: Session, activity: Activity, modality_id: int | None = None
 ) -> Registration | None:
-    """Promote the oldest waitlisted registration to confirmed.
+    """Give the freed seat to the oldest waitlisted registration.
+
+    It is ``pending`` when the seat needs payment, with its deadline and its
+    receipt, and ``confirmed`` otherwise. Goes through the one status-change
+    path, so if that pending seat later expires unpaid, cancelling it promotes
+    the next in line in turn.
 
     Only ever fills the seat that was actually freed. ``modality_id`` is the
     modality of the cancelled registration, and a promotion must match it: with
@@ -701,14 +706,15 @@ def _promote_from_waitlist(
     if not _has_capacity(activity, next_in_line.modality):
         return None
 
-    next_in_line.status = "confirmed"
-    _move_counters(
-        activity, next_in_line.modality, next_in_line.price, "waitlist", "confirmed"
+    new_status = (
+        "pending"
+        if needs_payment(activity, next_in_line.discounted_amount)
+        else "confirmed"
     )
+    _apply_status_change(db, next_in_line, new_status)
+    receipt = ensure_registration_receipt(db, next_in_line, activity)
 
-    ensure_registration_receipt(db, next_in_line, activity)
-
-    _dispatch_promotion_email(db, next_in_line, activity)
+    _dispatch_promotion_email(db, next_in_line, activity, receipt)
 
     return next_in_line
 
@@ -771,36 +777,46 @@ def _dispatch_pending_payment_email(
 ) -> None:
     """Queue the "your seat is held until you pay" email for after commit."""
     try:
-        from app.core.clock import org_timezone
-        from app.domains.organizations.models import OrganizationSettings
         from app.tasks.email_tasks import send_pending_payment_email_task
 
         email = _get_member_email(registration) or (member.person.email if member.person else None)
         if not email or receipt is None:
             return
         locale = org_locale(db)
-        org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
-        instructions = seat_payment_instructions(db, activity, locale)
-        deadline = (
-            registration.payment_due_at.astimezone(org_timezone(db)).strftime("%d/%m/%Y %H:%M")
-            if registration.payment_due_at
-            else None
-        )
         payload = dict(
             to=email,
             member_name=_get_member_name(registration) or (member.person.first_name if member.person else ""),
             activity_name=activity.name,
-            amount=f"{receipt.total_amount:.2f}",
-            currency=(org.currency if org else None) or "EUR",
-            deadline=deadline,
-            pay_now_url=instructions.pay_now_url,
-            bank_details=instructions.bank_details,
-            cash=instructions.cash,
             locale=locale,
+            **_seat_payment(db, registration, activity, receipt, locale),
         )
         run_after_commit(db, lambda: send_pending_payment_email_task.delay(**payload))
     except Exception as e:
         logger.error(f"Failed to dispatch pending-payment email: {e}")
+
+
+def _seat_payment(
+    db: Session, registration: Registration, activity: Activity, receipt, locale: str
+) -> dict:
+    """What a mail about a seat held until paid tells the member: the amount,
+    the deadline and the ways this activity accepts."""
+    from app.core.clock import org_timezone
+    from app.domains.organizations.models import OrganizationSettings
+
+    org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
+    instructions = seat_payment_instructions(db, activity, locale)
+    return dict(
+        amount=f"{receipt.total_amount:.2f}",
+        currency=(org.currency if org else None) or "EUR",
+        deadline=(
+            registration.payment_due_at.astimezone(org_timezone(db)).strftime("%d/%m/%Y %H:%M")
+            if registration.payment_due_at
+            else None
+        ),
+        pay_now_url=instructions.pay_now_url,
+        bank_details=instructions.bank_details,
+        cash=instructions.cash,
+    )
 
 
 def _dispatch_receipt_email(db: Session, receipt_id: int) -> None:
@@ -834,21 +850,30 @@ def _dispatch_cancellation_email(
 
 
 def _dispatch_promotion_email(
-    db: Session, registration: Registration, activity: Activity
+    db: Session, registration: Registration, activity: Activity, receipt=None
 ) -> None:
-    """Queue the waitlist promotion email for after commit."""
+    """Queue the waitlist promotion email for after commit.
+
+    A promotee who has to pay is told the seat is held until then, and how.
+    """
     try:
         from app.tasks.email_tasks import send_promotion_email_task
         email = _get_member_email(registration)
         if not email:
             return
+        locale = org_locale(db)
         payload = dict(
             to=email,
             member_name=_get_member_name(registration),
             activity_name=activity.name,
             activity_date=activity.starts_at.strftime("%d/%m/%Y") if activity.starts_at else None,
             location=activity.location,
-            locale=org_locale(db),
+            locale=locale,
+            payment=(
+                _seat_payment(db, registration, activity, receipt, locale)
+                if registration.status == "pending" and receipt is not None
+                else None
+            ),
         )
         run_after_commit(db, lambda: send_promotion_email_task.delay(**payload))
     except Exception as e:
