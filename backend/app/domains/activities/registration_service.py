@@ -320,6 +320,32 @@ def ensure_registration_receipt(
     return receipt
 
 
+def confirm_pending_registration(db: Session, registration_id: int) -> None:
+    """Confirm a registration whose receipt has just been paid.
+
+    Only a ``pending`` one: a ``legacy`` activity never has any, and a seat
+    already confirmed, waitlisted or cancelled is not this function's to change.
+    """
+    registration = (
+        db.query(Registration).filter(Registration.id == registration_id).first()
+    )
+    if registration is None or registration.status != "pending":
+        return
+    registration.status = "confirmed"
+    registration.payment_due_at = None
+    _move_counters(
+        registration.activity,
+        registration.modality,
+        registration.price,
+        "pending",
+        "confirmed",
+    )
+    db.flush()
+    _dispatch_registration_email(
+        db, registration, registration.activity, registration.member
+    )
+
+
 def cancel_registration(
     db: Session,
     registration: Registration,

@@ -556,6 +556,11 @@ def mark_receipt_paid(
 
     restore_reverted_membership(db, receipt)
 
+    # Paying is what confirms a seat held as pending, whatever method paid it.
+    from app.domains.billing.seats import confirm_paid_seat
+
+    confirm_paid_seat(db, receipt)
+
     return [receipt.id]
 
 
