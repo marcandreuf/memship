@@ -76,6 +76,7 @@ def _create_published_activity(db, admin_id=None, **overrides):
         "status": "published",
         "is_active": True,
         "features": {},
+        "payment_flow": "legacy",
     }
     defaults.update(overrides)
     if admin_id:

@@ -338,6 +338,7 @@ class TestOrganizationDetails:
         assert is_enabled(db, "registration_approved") is True
         assert org.communications_config["templates"] == {
             "registration_approved": {"enabled": True},
+            "registration_pending_payment": {"enabled": True},
             "webhook_digest": {"enabled": True},
         }
 

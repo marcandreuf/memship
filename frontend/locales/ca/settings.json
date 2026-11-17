@@ -381,6 +381,11 @@
           "name": "Inscripció cancel·lada",
           "description": "Confirma la cancel·lació d'una inscripció."
         },
+        "registration_pending_payment": {
+          "name": "Inscripció pendent de pagament",
+          "description": "Avisa el soci que la seva plaça està reservada fins que pagui, amb l'import, el termini i com pagar.",
+          "warning": "És l'únic avís que ha de pagar. Sense ell, el soci no sabrà que la seva plaça depèn del pagament."
+        },
         "waitlist_promoted": {
           "name": "Plaça alliberada en activitat",
           "description": "Avisa el soci que ha entrat des de la llista d'espera.",

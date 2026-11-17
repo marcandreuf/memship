@@ -19,6 +19,12 @@ from app.domains.activities.discount_service import (
     validate_discount_code,
 )
 from app.domains.activities.eligibility import check_eligibility
+from app.domains.activities.payment import (
+    needs_payment,
+    payment_due_at,
+    receipt_due_date,
+    seat_payment_instructions,
+)
 from app.domains.activities.models import (
     Activity,
     ActivityConsent,
@@ -31,10 +37,42 @@ from app.domains.activities.pricing import member_can_hold_price
 from app.domains.members.models import Member
 from app.domains.organizations.service import org_locale
 
+# Statuses that hold a seat. A pending registration holds one while it waits to
+# be paid, so every counter and every capacity decision reads this one rule.
+OCCUPYING_STATUSES = ("confirmed", "pending")
+
 
 class RegistrationError(Exception):
     """Raised when a registration operation fails."""
     pass
+
+
+def occupies_seat(status: str | None) -> bool:
+    return status in OCCUPYING_STATUSES
+
+
+def _move_counters(
+    activity: Activity,
+    modality: "ActivityModality | None",
+    price: "ActivityPrice | None",
+    old_status: str | None,
+    new_status: str,
+) -> None:
+    """Keep the cached counters in step with one status change.
+
+    Every path that changes a registration's status calls this, so the counters
+    cannot drift from the rows by one path applying a different rule.
+    """
+    seat = occupies_seat(new_status) - occupies_seat(old_status)
+    if seat:
+        activity.current_participants = max(0, (activity.current_participants or 0) + seat)
+        if modality:
+            modality.current_participants = max(0, (modality.current_participants or 0) + seat)
+        if price:
+            price.current_registrations = max(0, (price.current_registrations or 0) + seat)
+    waiting = (new_status == "waitlist") - (old_status == "waitlist")
+    if waiting:
+        activity.waitlist_count = max(0, (activity.waitlist_count or 0) + waiting)
 
 
 # --- Query builders ---
@@ -146,7 +184,9 @@ def register_member(
     #    step 10 cannot interleave with another registration.
     _lock_capacity_rows(db, activity, modality)
     waiting_list_enabled = activity.features.get("waiting_list", False) if activity.features else False
-    status = _determine_registration_status(activity, modality, waiting_list_enabled)
+    status = _determine_registration_status(
+        activity, modality, waiting_list_enabled, discounted_amount
+    )
 
     # 7. Create registration
     registration = Registration(
@@ -160,6 +200,11 @@ def register_member(
         discounted_amount=discounted_amount,
         registration_data=registration_data or {},
         member_notes=member_notes,
+        payment_due_at=(
+            payment_due_at(db, activity, datetime.now(timezone.utc))
+            if status == "pending"
+            else None
+        ),
     )
     db.add(registration)
     db.flush()
@@ -178,33 +223,40 @@ def register_member(
         increment_usage(db, discount)
 
     # 10. Update cached counters
-    if status == "confirmed":
-        activity.current_participants = (activity.current_participants or 0) + 1
-        if modality:
-            modality.current_participants = (modality.current_participants or 0) + 1
-        price.current_registrations = (price.current_registrations or 0) + 1
-    elif status == "waitlist":
-        activity.waitlist_count = (activity.waitlist_count or 0) + 1
+    _move_counters(activity, modality, price, None, status)
+    # Written now: the next registration's capacity lock reloads the row with
+    # populate_existing(), which would discard an unflushed increment.
+    db.flush()
 
-    # 11. Auto-generate activity receipt for confirmed registrations with amount
-    if status == "confirmed":
-        ensure_registration_receipt(db, registration, activity)
+    # 11. Bill the seat: a confirmed one with an amount, or a pending one so the
+    #     member can pay it.
+    receipt = None
+    if occupies_seat(status):
+        receipt = ensure_registration_receipt(db, registration, activity)
 
     # Queued for after the endpoint commits — see _dispatch_registration_email.
-    _dispatch_registration_email(db, registration, activity, member)
+    if status == "pending":
+        _dispatch_pending_payment_email(db, registration, activity, member, receipt)
+    else:
+        _dispatch_registration_email(db, registration, activity, member)
 
     return registration
 
 
 def ensure_registration_receipt(
     db: Session, registration: Registration, activity: Activity
-) -> None:
-    """Bill a confirmed registration, once.
+):
+    """Bill a seat, once, and return its live receipt (None for a free one).
 
-    Every path that confirms a registration goes through here — registering into
-    a free seat, a waitlist promotion, and an admin flipping the status — because
-    a confirmed place in a paid activity has to be invoiced whichever of them
+    Every path that gives a registration a seat goes through here — registering
+    into a free seat, a waitlist promotion, and an admin flipping the status —
+    because a place in a paid activity has to be invoiced whichever of them
     produced it.
+
+    A seat that needs payment (pay-to-confirm) gets a due date and a receipt no
+    remittance collects, and the receipt is emailed once the caller commits,
+    since paying it is what confirms the seat. A ``legacy`` activity's receipt is
+    raised exactly as it always was.
 
     Idempotent: a registration that already has a live receipt keeps it, so a
     re-confirmation does not bill twice. Cancellation cancels the receipt
@@ -217,7 +269,7 @@ def ensure_registration_receipt(
     """
     amount = registration.discounted_amount
     if amount is None or Decimal(str(amount)) <= 0:
-        return
+        return None
 
     from app.domains.billing.models import Receipt
 
@@ -234,26 +286,38 @@ def ensure_registration_receipt(
         .first()
     )
     if existing:
-        return
+        return existing
 
+    pay_to_confirm = needs_payment(activity, amount)
     try:
         from app.domains.billing.service import generate_activity_receipt
 
         # Receipt generation is best-effort: keep it in a SAVEPOINT so a failure
         # rolls back only the receipt, leaving the registration's transaction usable.
         with db.begin_nested():
-            generate_activity_receipt(
+            receipt = generate_activity_receipt(
                 db=db,
                 registration_id=registration.id,
                 party_id=registration.party_id,
                 activity_name=activity.name,
                 amount=Decimal(str(amount)),
                 tax_rate=activity.tax_rate,
+                due_date=(
+                    receipt_due_date(db, registration.payment_due_at)
+                    if pay_to_confirm
+                    else None
+                ),
+                is_batchable=not pay_to_confirm,
             )
     except Exception as e:
         logger.error(
             "Failed to generate receipt for registration %s: %s", registration.id, e
         )
+        return None
+
+    if pay_to_confirm:
+        _dispatch_receipt_email(db, receipt.id)
+    return receipt
 
 
 def cancel_registration(
@@ -268,35 +332,23 @@ def cancel_registration(
     if registration.status not in ("confirmed", "waitlist", "pending"):
         raise RegistrationError(f"Cannot cancel registration with status '{registration.status}'")
 
-    was_confirmed = registration.status == "confirmed"
-    was_waitlisted = registration.status == "waitlist"
-
+    old_status = registration.status
     registration.status = "cancelled"
     registration.cancelled_at = datetime.now(timezone.utc)
     registration.cancelled_by = cancelled_by_id
     registration.cancelled_reason = reason
 
-    # Update counters
     activity = registration.activity
-    if was_confirmed:
-        activity.current_participants = max(0, (activity.current_participants or 0) - 1)
-        if registration.modality:
-            registration.modality.current_participants = max(
-                0, (registration.modality.current_participants or 0) - 1
-            )
-        if registration.price:
-            registration.price.current_registrations = max(
-                0, (registration.price.current_registrations or 0) - 1
-            )
-    elif was_waitlisted:
-        activity.waitlist_count = max(0, (activity.waitlist_count or 0) - 1)
+    _move_counters(
+        activity, registration.modality, registration.price, old_status, "cancelled"
+    )
 
     # The use this registration took goes back to the code.
     if registration.discount_code_id:
         release_usage(db, registration.discount_code_id)
 
-    # Promote from waitlist if a confirmed spot freed up
-    if was_confirmed:
+    # Promote from waitlist if a seat freed up
+    if occupies_seat(old_status):
         _promote_from_waitlist(db, activity, registration.modality_id)
 
     # Cancel unpaid receipts linked to this registration
@@ -362,29 +414,9 @@ def admin_change_status(
         raise RegistrationError(f"Registration is already '{new_status}'")
 
     activity = registration.activity
-
-    # Handle counter changes
-    if old_status == "confirmed" and new_status != "confirmed":
-        activity.current_participants = max(0, (activity.current_participants or 0) - 1)
-        if registration.modality:
-            registration.modality.current_participants = max(
-                0, (registration.modality.current_participants or 0) - 1
-            )
-        if registration.price:
-            registration.price.current_registrations = max(
-                0, (registration.price.current_registrations or 0) - 1
-            )
-    if old_status == "waitlist" and new_status != "waitlist":
-        activity.waitlist_count = max(0, (activity.waitlist_count or 0) - 1)
-
-    if new_status == "confirmed" and old_status != "confirmed":
-        activity.current_participants = (activity.current_participants or 0) + 1
-        if registration.modality:
-            registration.modality.current_participants = (registration.modality.current_participants or 0) + 1
-        if registration.price:
-            registration.price.current_registrations = (registration.price.current_registrations or 0) + 1
-    if new_status == "waitlist" and old_status != "waitlist":
-        activity.waitlist_count = (activity.waitlist_count or 0) + 1
+    _move_counters(
+        activity, registration.modality, registration.price, old_status, new_status
+    )
 
     if new_status == "cancelled":
         registration.cancelled_at = datetime.now(timezone.utc)
@@ -402,8 +434,8 @@ def admin_change_status(
     if admin_notes:
         registration.admin_notes = admin_notes
 
-    # If we freed a confirmed spot, promote from waitlist
-    if old_status == "confirmed" and new_status != "confirmed":
+    # If we freed a seat, promote from waitlist
+    if occupies_seat(old_status) and not occupies_seat(new_status):
         _promote_from_waitlist(db, activity, registration.modality_id)
 
     return registration
@@ -469,7 +501,7 @@ def _lock_capacity_rows(
 
 
 def _full_level(activity: Activity, modality: "ActivityModality | None") -> str | None:
-    """Which capacity level is full, or None if a confirmed seat fits.
+    """Which capacity level is full, or None if one more seat fits.
 
     The single place the capacity rule lives. Both the new-registration path and
     waitlist promotion ask this, so the two cannot drift apart — promotion used
@@ -486,7 +518,7 @@ def _full_level(activity: Activity, modality: "ActivityModality | None") -> str 
 
 
 def _has_capacity(activity: Activity, modality: "ActivityModality | None") -> bool:
-    """Whether one more confirmed seat fits, at both levels."""
+    """Whether one more seat fits, at both levels."""
     return _full_level(activity, modality) is None
 
 
@@ -494,11 +526,17 @@ def _determine_registration_status(
     activity: Activity,
     modality: ActivityModality | None,
     waiting_list_enabled: bool,
+    amount: Decimal | None,
 ) -> str:
-    """Determine whether a new registration should be confirmed or waitlisted."""
+    """Decide a new registration's status: a seat, or the waiting list.
+
+    A seat that needs payment is ``pending`` until its receipt is paid; any
+    other seat is confirmed at once. ``needs_payment`` is false for a ``legacy``
+    activity, which is what keeps that flow exactly as it was.
+    """
     full = _full_level(activity, modality)
     if full is None:
-        return "confirmed"
+        return "pending" if needs_payment(activity, amount) else "confirmed"
     if waiting_list_enabled:
         return "waitlist"
     raise RegistrationError(
@@ -545,17 +583,9 @@ def _promote_from_waitlist(
         return None
 
     next_in_line.status = "confirmed"
-    activity.current_participants = (activity.current_participants or 0) + 1
-    activity.waitlist_count = max(0, (activity.waitlist_count or 0) - 1)
-
-    if next_in_line.modality:
-        next_in_line.modality.current_participants = (
-            next_in_line.modality.current_participants or 0
-        ) + 1
-    if next_in_line.price:
-        next_in_line.price.current_registrations = (
-            next_in_line.price.current_registrations or 0
-        ) + 1
+    _move_counters(
+        activity, next_in_line.modality, next_in_line.price, "waitlist", "confirmed"
+    )
 
     ensure_registration_receipt(db, next_in_line, activity)
 
@@ -611,6 +641,57 @@ def _dispatch_registration_email(
         run_after_commit(db, lambda: send_registration_email_task.delay(**payload))
     except Exception as e:
         logger.error(f"Failed to dispatch registration email: {e}")
+
+
+def _dispatch_pending_payment_email(
+    db: Session,
+    registration: Registration,
+    activity: Activity,
+    member: "Member",
+    receipt,
+) -> None:
+    """Queue the "your seat is held until you pay" email for after commit."""
+    try:
+        from app.core.clock import org_timezone
+        from app.domains.organizations.models import OrganizationSettings
+        from app.tasks.email_tasks import send_pending_payment_email_task
+
+        email = _get_member_email(registration) or (member.person.email if member.person else None)
+        if not email or receipt is None:
+            return
+        locale = org_locale(db)
+        org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
+        instructions = seat_payment_instructions(db, activity, locale)
+        deadline = (
+            registration.payment_due_at.astimezone(org_timezone(db)).strftime("%d/%m/%Y %H:%M")
+            if registration.payment_due_at
+            else None
+        )
+        payload = dict(
+            to=email,
+            member_name=_get_member_name(registration) or (member.person.first_name if member.person else ""),
+            activity_name=activity.name,
+            amount=f"{receipt.total_amount:.2f}",
+            currency=(org.currency if org else None) or "EUR",
+            deadline=deadline,
+            pay_now_url=instructions.pay_now_url,
+            bank_details=instructions.bank_details,
+            cash=instructions.cash,
+            locale=locale,
+        )
+        run_after_commit(db, lambda: send_pending_payment_email_task.delay(**payload))
+    except Exception as e:
+        logger.error(f"Failed to dispatch pending-payment email: {e}")
+
+
+def _dispatch_receipt_email(db: Session, receipt_id: int) -> None:
+    """Queue the receipt itself (PDF and how to pay) for after commit."""
+    try:
+        from app.tasks.email_tasks import send_receipt_email_task
+
+        run_after_commit(db, lambda: send_receipt_email_task.delay(receipt_id))
+    except Exception as e:
+        logger.error(f"Failed to dispatch receipt email: {e}")
 
 
 def _dispatch_cancellation_email(

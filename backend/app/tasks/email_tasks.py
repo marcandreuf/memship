@@ -16,6 +16,7 @@ from app.core.email import (
     send_registration_approved_email,
     send_registration_confirmation_email,
     send_registration_cancellation_email,
+    send_registration_pending_payment_email,
     send_registration_rejected_email,
     send_waitlist_promotion_email,
 )
@@ -119,6 +120,39 @@ def send_registration_email_task(
         )
     except Exception as exc:
         logger.error(f"Registration email task failed: to={to}, error={exc}")
+        raise self.retry(exc=exc)
+
+
+@celery.task(bind=True, max_retries=3, default_retry_delay=60)
+def send_pending_payment_email_task(
+    self,
+    to: str,
+    member_name: str,
+    activity_name: str,
+    amount: str,
+    currency: str,
+    deadline: str | None = None,
+    pay_now_url: str | None = None,
+    bank_details: str | None = None,
+    cash: bool = False,
+    locale: str = "es",
+) -> bool:
+    """Tell the member their seat is held until they pay, and how to pay."""
+    try:
+        return send_registration_pending_payment_email(
+            to,
+            member_name,
+            activity_name,
+            amount,
+            currency,
+            deadline=deadline,
+            pay_now_url=pay_now_url,
+            bank_details=bank_details,
+            cash=cash,
+            locale=locale,
+        )
+    except Exception as exc:
+        logger.error(f"Pending-payment email task failed: to={to}, error={exc}")
         raise self.retry(exc=exc)
 
 

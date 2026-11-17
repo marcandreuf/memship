@@ -381,6 +381,11 @@
           "name": "Inscripción cancelada",
           "description": "Confirma la cancelación de una inscripción."
         },
+        "registration_pending_payment": {
+          "name": "Inscripción pendiente de pago",
+          "description": "Avisa al socio de que su plaza está reservada hasta que pague, con el importe, el plazo y cómo pagar.",
+          "warning": "Es el único aviso de que tiene que pagar. Sin él, el socio no sabrá que su plaza depende del pago."
+        },
         "waitlist_promoted": {
           "name": "Plaza liberada en actividad",
           "description": "Avisa al socio de que ha entrado desde la lista de espera.",

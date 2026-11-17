@@ -271,9 +271,12 @@ def create_org_settings(db, details: dict, address: dict | None = None) -> None:
         # secret — which a club that never finds the switch would never hear
         # of (#514). It stays optional, so a club can turn it off, and sends
         # nothing until a billing notification address is set.
+        # The pending-payment mail is the member's only word that a seat is held
+        # until paid (#591).
         communications_config={
             "templates": {
                 "registration_approved": {"enabled": True},
+                "registration_pending_payment": {"enabled": True},
                 "webhook_digest": {"enabled": True},
             },
         },

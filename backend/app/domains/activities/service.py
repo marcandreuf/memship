@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.core.authorization import user_has
 from app.domains.activities.models import Activity
+from app.domains.activities.payment import needs_payment, unusable_methods
 from app.domains.activities.schemas import ActivityCreate, ActivityUpdate
 
 
@@ -129,6 +130,20 @@ def publish_activity(db: Session, activity: Activity) -> Activity:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Activity must have at least one price to be published",
         )
+
+    # A seat that needs payment must have a way to be paid.
+    if any(needs_payment(activity, p.amount) for p in activity.prices if p.is_active is not False):
+        if not activity.payment_methods:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="A paid activity must accept at least one payment method to be published",
+            )
+        unusable = unusable_methods(db, activity.payment_methods)
+        if unusable:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Payment methods not available at this club: {', '.join(unusable)}",
+            )
 
     # Must have required fields
     required = ["name", "starts_at", "ends_at", "registration_starts_at", "registration_ends_at", "max_participants"]

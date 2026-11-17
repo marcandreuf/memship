@@ -62,7 +62,7 @@ def _member(db, membership_type, suffix):
     return member
 
 
-def _activity(db, *, max_participants=1):
+def _activity(db, *, max_participants=1, payment_flow="legacy"):
     now = datetime.now(timezone.utc)
     activity = Activity(
         name="Email Activity",
@@ -75,6 +75,7 @@ def _activity(db, *, max_participants=1):
         status="published",
         is_active=True,
         features={"waiting_list": True},
+        payment_flow=payment_flow,
     )
     db.add(activity)
     db.flush()

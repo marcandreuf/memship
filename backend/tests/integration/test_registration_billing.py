@@ -64,7 +64,9 @@ def _member(db, membership_type, suffix):
 _slugs = count(1)
 
 
-def _activity(db, *, max_participants=1, amount=PRICE, waiting_list=True):
+def _activity(
+    db, *, max_participants=1, amount=PRICE, waiting_list=True, payment_flow="legacy"
+):
     now = datetime.now(timezone.utc)
     activity = Activity(
         name="Paid Activity",
@@ -77,6 +79,7 @@ def _activity(db, *, max_participants=1, amount=PRICE, waiting_list=True):
         status="published",
         is_active=True,
         features={"waiting_list": waiting_list},
+        payment_flow=payment_flow,
     )
     db.add(activity)
     db.flush()

@@ -381,6 +381,11 @@
           "name": "Registration cancelled",
           "description": "Confirms a registration was cancelled."
         },
+        "registration_pending_payment": {
+          "name": "Registration pending payment",
+          "description": "Tells the member their seat is held until they pay, with the amount, the deadline and how to pay.",
+          "warning": "It is the only notice that they have to pay. Without it, the member will not know their seat depends on payment."
+        },
         "waitlist_promoted": {
           "name": "Activity place freed up",
           "description": "Tells the member they moved off the activity waitlist.",

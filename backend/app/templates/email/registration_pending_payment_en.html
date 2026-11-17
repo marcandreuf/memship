@@ -1,0 +1,31 @@
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}Your seat at {{ activity_name }} is held until you pay.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Seat held, payment pending</h1>
+<p style="{{ s.p }}">Hi {{ member_name }},</p>
+<p style="{{ s.p }}">We are holding a seat for you at <strong>{{ activity_name }}</strong>. Your registration is confirmed once the payment is recorded.</p>
+{% call c.panel() %}
+{{ c.data_row("Amount", amount ~ " " ~ currency) }}
+{% if deadline %}{{ c.data_row("Pay before", deadline) }}{% endif %}
+{% endcall %}
+{%- if deadline %}
+<p style="{{ s.p }}">If it has not been paid by then, the registration is cancelled and the seat is released.</p>
+{%- endif %}
+{%- if pay_now_url %}
+{{ c.button(pay_now_url, "Pay now") }}
+{%- endif %}
+{%- if bank_details %}
+<p style="{{ s.p }}">You can pay by bank transfer:</p>
+{% call c.panel() %}
+<tr><td colspan="2" class="ms-text" style="padding:3px 0; font-family:Helvetica,Arial,sans-serif; font-size:15px; line-height:22px; mso-line-height-rule:exactly; color:#1f2328;">
+{%- for line in bank_details.split("\n") %}{{ line }}<br>{% endfor -%}
+</td></tr>
+{% endcall %}
+{%- endif %}
+{%- if cash %}
+<p style="{{ s.p_last }}">You can also pay in cash at the club.</p>
+{%- endif %}
+{% endblock %}

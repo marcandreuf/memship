@@ -156,6 +156,11 @@ _SUBJECTS = {
         "ca": "Inscripció cancel·lada: {activity}",
         "en": "Registration cancelled: {activity}",
     },
+    "registration_pending_payment": {
+        "es": "Plaza reservada, pendiente de pago: {activity}",
+        "ca": "Plaça reservada, pendent de pagament: {activity}",
+        "en": "Seat held, payment pending: {activity}",
+    },
     "waitlist_promoted": {
         "es": "¡Plaza confirmada! {activity}",
         "ca": "Plaça confirmada! {activity}",
@@ -1100,6 +1105,36 @@ def send_registration_cancellation_email(
             "member_name": member_name,
             "activity_name": activity_name,
             "cancelled_by": cancelled_by,
+        },
+        subject_args={"activity": activity_name},
+    )
+
+
+def send_registration_pending_payment_email(
+    to: str,
+    member_name: str,
+    activity_name: str,
+    amount: str,
+    currency: str,
+    deadline: str | None = None,
+    pay_now_url: str | None = None,
+    bank_details: str | None = None,
+    cash: bool = False,
+    locale: str = "es",
+) -> bool:
+    return _send_templated(
+        "registration_pending_payment",
+        to,
+        locale,
+        {
+            "member_name": member_name,
+            "activity_name": activity_name,
+            "amount": amount,
+            "currency": currency,
+            "deadline": deadline,
+            "pay_now_url": pay_now_url,
+            "bank_details": bank_details,
+            "cash": cash,
         },
         subject_args={"activity": activity_name},
     )

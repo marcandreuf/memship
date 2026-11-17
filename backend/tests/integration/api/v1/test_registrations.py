@@ -80,6 +80,7 @@ def _create_published_activity(db, admin_id=None, max_participants=50, features=
         "status": "published",
         "is_active": True,
         "features": features or {},
+        "payment_flow": "legacy",
     }
     defaults.update(overrides)
     if admin_id:
