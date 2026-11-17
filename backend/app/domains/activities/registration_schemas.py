@@ -122,6 +122,7 @@ class RegistrationResponse(BaseModel):
     cancelled_reason: str | None = None
     cancelled_by_name: str | None = None
     payment_due_at: datetime | None = None
+    cancelled_cause: str | None = None
     refund_status: str = "none"
     receipt_id: int | None = None
     receipt_status: str | None = None

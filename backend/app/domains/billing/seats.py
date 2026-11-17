@@ -13,6 +13,9 @@ from sqlalchemy.orm import Session
 
 from app.domains.billing.models import Receipt
 
+# Receipt statuses that still ask for money.
+UNPAID_RECEIPT_STATUSES = ("new", "pending", "emitted", "overdue")
+
 
 class SeatError(Exception):
     """Raised when a seat cannot take the change asked of it."""
@@ -56,3 +59,45 @@ def confirm_paid_seat(db: Session, receipt: Receipt) -> None:
         )
 
         confirm_pending_registration(db, receipt.registration_id)
+
+
+def void_unpaid_receipts(db: Session, link_column, seat_id: int) -> None:
+    """Cancel every receipt of a seat that still asks for money.
+
+    ``link_column`` is the receipt's link to the seat (``Receipt.registration_id``
+    today). A paid receipt is left alone: what to do with money already received
+    is ``refund_status``'s business, not this function's.
+    """
+    for receipt in (
+        db.query(Receipt)
+        .filter(
+            link_column == seat_id,
+            Receipt.is_active.is_(True),
+            Receipt.status.in_(UNPAID_RECEIPT_STATUSES),
+        )
+        .all()
+    ):
+        receipt.status = "cancelled"
+
+
+def expire_unpaid_seats(db: Session, now: datetime | None = None) -> int:
+    """Cancel every pending seat whose payment deadline has passed.
+
+    Hourly, because a deadline can be measured in hours, and also at the start of
+    the daily dunning pass, so an expiring seat's receipt is voided rather than
+    ever reaching ``mark_overdue``. Each domain says which of its seats are past
+    their deadline and how to cancel one, which voids its receipt and gives the
+    seat to the next in line.
+
+    Returns how many seats were cancelled. Does not commit.
+    """
+    from app.domains.activities.registration_service import (
+        expire_unpaid_registration,
+        expired_pending_registrations,
+    )
+
+    now = now or datetime.now(timezone.utc)
+    expired = expired_pending_registrations(db, now)
+    for registration in expired:
+        expire_unpaid_registration(db, registration)
+    return len(expired)

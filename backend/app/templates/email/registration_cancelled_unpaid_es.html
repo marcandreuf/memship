@@ -1,0 +1,11 @@
+{% extends "_base.html" %}
+
+{% block preheader %}Tu inscripción en {{ activity_name }} se ha cancelado por falta de pago.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Inscripción cancelada por falta de pago</h1>
+<p style="{{ s.p }}">Hola {{ member_name }},</p>
+<p style="{{ s.p }}">No hemos recibido el pago de tu plaza en <strong>{{ activity_name }}</strong> dentro del plazo, así que la inscripción se ha cancelado y la plaza ha quedado libre.</p>
+<p style="{{ s.p }}">Si todavía quieres participar, puedes volver a inscribirte mientras queden plazas.</p>
+<p style="{{ s.note_last }}">Si acabas de pagar, el club verá el pago y se pondrá en contacto contigo.</p>
+{% endblock %}

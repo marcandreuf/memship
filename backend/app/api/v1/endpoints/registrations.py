@@ -56,6 +56,7 @@ def _payment_fields(registration: Registration) -> dict:
     """Where the seat stands on payment, for the views that build by hand."""
     return {
         "payment_due_at": registration.payment_due_at,
+        "cancelled_cause": registration.cancelled_cause,
         "refund_status": registration.refund_status,
         "receipt_id": registration.receipt_id,
         "receipt_status": registration.receipt_status,

@@ -161,6 +161,16 @@ _SUBJECTS = {
         "ca": "Plaça reservada, pendent de pagament: {activity}",
         "en": "Seat held, payment pending: {activity}",
     },
+    "payment_deadline_reminder": {
+        "es": "Tu plaza caduca pronto si no pagas: {activity}",
+        "ca": "La teva plaça caduca aviat si no pagues: {activity}",
+        "en": "Your seat expires soon unless paid: {activity}",
+    },
+    "registration_cancelled_unpaid": {
+        "es": "Inscripción cancelada por falta de pago: {activity}",
+        "ca": "Inscripció cancel·lada per manca de pagament: {activity}",
+        "en": "Registration cancelled, not paid: {activity}",
+    },
     "waitlist_promoted": {
         "es": "¡Plaza confirmada! {activity}",
         "ca": "Plaça confirmada! {activity}",
@@ -1136,6 +1146,48 @@ def send_registration_pending_payment_email(
             "bank_details": bank_details,
             "cash": cash,
         },
+        subject_args={"activity": activity_name},
+    )
+
+
+def send_payment_deadline_reminder_email(
+    to: str,
+    member_name: str,
+    activity_name: str,
+    amount: str,
+    currency: str,
+    deadline: str | None = None,
+    pay_now_url: str | None = None,
+    bank_details: str | None = None,
+    cash: bool = False,
+    locale: str = "es",
+) -> bool:
+    return _send_templated(
+        "payment_deadline_reminder",
+        to,
+        locale,
+        {
+            "member_name": member_name,
+            "activity_name": activity_name,
+            "amount": amount,
+            "currency": currency,
+            "deadline": deadline,
+            "pay_now_url": pay_now_url,
+            "bank_details": bank_details,
+            "cash": cash,
+        },
+        subject_args={"activity": activity_name},
+    )
+
+
+def send_registration_cancelled_unpaid_email(
+    to: str, member_name: str, activity_name: str, locale: str = "es"
+) -> bool:
+    return _send_templated(
+        "registration_cancelled_unpaid",
+        to,
+        locale,
+        {"member_name": member_name, "activity_name": activity_name},
         subject_args={"activity": activity_name},
     )
 

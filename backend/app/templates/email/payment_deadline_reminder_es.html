@@ -1,0 +1,10 @@
+{% extends "_base.html" %}
+
+{% block preheader %}Tu plaza en {{ activity_name }} caduca pronto si no la pagas.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Tu plaza caduca pronto</h1>
+<p style="{{ s.p }}">Hola {{ member_name }},</p>
+<p style="{{ s.p }}">Todavía no hemos recibido el pago de tu plaza en <strong>{{ activity_name }}</strong>. Si no se paga antes del plazo, la inscripción se cancelará.</p>
+{% include "_seat_payment_es.html" %}
+{% endblock %}

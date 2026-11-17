@@ -41,7 +41,9 @@ from app.domains.organizations.service import org_locale
 # be paid, so every counter and every capacity decision reads this one rule.
 OCCUPYING_STATUSES = ("confirmed", "pending")
 
-UNPAID_RECEIPT_STATUSES = ("new", "pending", "emitted", "overdue")
+# How long before its deadline a pending seat's holder is warned, at most. A
+# shorter window is warned halfway through it instead.
+DEADLINE_REMINDER_LEAD = timedelta(hours=24)
 
 
 class RegistrationError(Exception):
@@ -375,18 +377,9 @@ def _void_unpaid_receipts(db: Session, registration: Registration) -> None:
     """Cancel every receipt of this registration that still asks for money."""
     try:
         from app.domains.billing.models import Receipt
+        from app.domains.billing.seats import void_unpaid_receipts
 
-        unpaid_receipts = (
-            db.query(Receipt)
-            .filter(
-                Receipt.registration_id == registration.id,
-                Receipt.is_active.is_(True),
-                Receipt.status.in_(UNPAID_RECEIPT_STATUSES),
-            )
-            .all()
-        )
-        for receipt in unpaid_receipts:
-            receipt.status = "cancelled"
+        void_unpaid_receipts(db, Receipt.registration_id, registration.id)
     except Exception:
         # The seat is already released, so failing the change here would be
         # worse than an invoice left open — but it must not be invisible. A
@@ -439,6 +432,9 @@ def _apply_status_change(
     registration.status = new_status
     if new_status == "cancelled":
         registration.cancelled_at = datetime.now(timezone.utc)
+    else:
+        registration.cancelled_cause = None
+    registration.payment_reminder_sent_at = None
     registration.payment_due_at = (
         payment_due_at(db, activity, datetime.now(timezone.utc))
         if new_status == "pending"
@@ -472,6 +468,70 @@ def _has_paid_receipt(db: Session, registration: Registration) -> bool:
         .first()
         is not None
     )
+
+
+def expired_pending_registrations(db: Session, now: datetime) -> list[Registration]:
+    """Pending seats whose payment deadline has passed.
+
+    Locked, skipping rows another transaction holds: a payment confirming the
+    seat at this moment wins, and the next sweep sees it confirmed.
+    """
+    return (
+        db.query(Registration)
+        .filter(
+            Registration.status == "pending",
+            Registration.payment_due_at.isnot(None),
+            Registration.payment_due_at < now,
+        )
+        .order_by(Registration.payment_due_at, Registration.id)
+        .with_for_update(skip_locked=True, of=Registration)
+        .all()
+    )
+
+
+def expire_unpaid_registration(db: Session, registration: Registration) -> None:
+    """Cancel a seat left unpaid past its deadline, and tell the member.
+
+    The one status path voids the receipt, releases the discount use and gives
+    the seat to the next in line, who may in turn be pending.
+    """
+    registration.cancelled_cause = "payment_expired"
+    _apply_status_change(db, registration, "cancelled")
+    _dispatch_unpaid_cancellation_email(db, registration, registration.activity)
+
+
+def remind_pending_deadlines(db: Session, now: datetime | None = None) -> int:
+    """Warn, once, each member whose pending seat is about to expire.
+
+    Warned ``DEADLINE_REMINDER_LEAD`` before the deadline, or halfway through a
+    window shorter than twice that, so the cancellation is never a surprise.
+    Returns how many were warned. Does not commit.
+    """
+    now = now or datetime.now(timezone.utc)
+    pending = (
+        db.query(Registration)
+        .filter(
+            Registration.status == "pending",
+            Registration.payment_due_at.isnot(None),
+            Registration.payment_due_at > now,
+            Registration.payment_reminder_sent_at.is_(None),
+        )
+        .all()
+    )
+    warned = 0
+    for registration in pending:
+        window = registration.payment_due_at - registration.created_at
+        lead = min(DEADLINE_REMINDER_LEAD, window / 2)
+        if now < registration.payment_due_at - lead:
+            continue
+        receipt = registration.current_receipt
+        if receipt is None:
+            continue
+        registration.payment_reminder_sent_at = now
+        _dispatch_deadline_reminder_email(db, registration, registration.activity, receipt)
+        warned += 1
+    db.flush()
+    return warned
 
 
 def check_self_cancellation_allowed(
@@ -817,6 +877,52 @@ def _seat_payment(
         bank_details=instructions.bank_details,
         cash=instructions.cash,
     )
+
+
+def _dispatch_deadline_reminder_email(
+    db: Session, registration: Registration, activity: Activity, receipt
+) -> None:
+    """Queue the "your seat expires soon" email for after commit."""
+    try:
+        from app.tasks.email_tasks import send_deadline_reminder_email_task
+
+        email = _get_member_email(registration)
+        if not email:
+            return
+        locale = org_locale(db)
+        payload = dict(
+            to=email,
+            member_name=_get_member_name(registration),
+            activity_name=activity.name,
+            locale=locale,
+            **_seat_payment(db, registration, activity, receipt, locale),
+        )
+        run_after_commit(db, lambda: send_deadline_reminder_email_task.delay(**payload))
+    except Exception as e:
+        logger.error(f"Failed to dispatch deadline reminder email: {e}")
+
+
+def _dispatch_unpaid_cancellation_email(
+    db: Session, registration: Registration, activity: Activity
+) -> None:
+    """Queue the "cancelled for non-payment" email for after commit."""
+    try:
+        from app.tasks.email_tasks import send_unpaid_cancellation_email_task
+
+        email = _get_member_email(registration)
+        if not email:
+            return
+        payload = dict(
+            to=email,
+            member_name=_get_member_name(registration),
+            activity_name=activity.name,
+            locale=org_locale(db),
+        )
+        run_after_commit(
+            db, lambda: send_unpaid_cancellation_email_task.delay(**payload)
+        )
+    except Exception as e:
+        logger.error(f"Failed to dispatch unpaid-cancellation email: {e}")
 
 
 def _dispatch_receipt_email(db: Session, receipt_id: int) -> None:

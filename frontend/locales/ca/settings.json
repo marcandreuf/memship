@@ -386,6 +386,16 @@
           "description": "Avisa el soci que la seva plaça està reservada fins que pagui, amb l'import, el termini i com pagar.",
           "warning": "És l'únic avís que ha de pagar. Sense ell, el soci no sabrà que la seva plaça depèn del pagament."
         },
+        "payment_deadline_reminder": {
+          "name": "Plaça a punt de caducar",
+          "description": "Recorda al soci, abans que venci el termini, que la seva plaça es cancel·larà si no la paga.",
+          "warning": "Sense aquest avís, la cancel·lació automàtica arribarà al soci per sorpresa."
+        },
+        "registration_cancelled_unpaid": {
+          "name": "Inscripció cancel·lada per manca de pagament",
+          "description": "Avisa el soci que la seva plaça s'ha alliberat perquè no es va pagar a temps.",
+          "warning": "Sense aquest avís, el soci no sabrà que ha perdut la plaça."
+        },
         "waitlist_promoted": {
           "name": "Plaça alliberada en activitat",
           "description": "Avisa el soci que ha entrat des de la llista d'espera.",

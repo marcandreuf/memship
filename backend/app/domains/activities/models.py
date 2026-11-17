@@ -288,6 +288,15 @@ class Registration(Base):
             "refund_status IN ('none', 'due', 'returned')",
             name="valid_registration_refund_status",
         ),
+        CheckConstraint(
+            "cancelled_cause IN ('payment_expired')",
+            name="valid_registration_cancelled_cause",
+        ),
+        Index(
+            "idx_registrations_pending_due",
+            "payment_due_at",
+            postgresql_where=Column("status") == "pending",
+        ),
         Index(
             "uq_registration_active_party",
             "activity_id",
@@ -336,6 +345,10 @@ class Registration(Base):
     cancelled_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
     cancelled_reason = Column(Text)
     payment_due_at = Column(DateTime(timezone=True))
+    payment_reminder_sent_at = Column(DateTime(timezone=True))
+    # Why a seat was cancelled when the system did it rather than a person, so
+    # the organiser can tell it apart in the list. NULL for every other cancel.
+    cancelled_cause = Column(String(30))
     # Whether the club owes back what was paid for a seat it no longer holds.
     # A decision recorded on the seat, not read off the receipt, so a payment
     # the club keeps is not listed as owed.

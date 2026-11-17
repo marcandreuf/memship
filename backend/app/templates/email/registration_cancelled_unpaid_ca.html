@@ -1,0 +1,11 @@
+{% extends "_base.html" %}
+
+{% block preheader %}La teva inscripció a {{ activity_name }} s'ha cancel·lat per manca de pagament.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Inscripció cancel·lada per manca de pagament</h1>
+<p style="{{ s.p }}">Hola {{ member_name }},</p>
+<p style="{{ s.p }}">No hem rebut el pagament de la teva plaça a <strong>{{ activity_name }}</strong> dins del termini, així que la inscripció s'ha cancel·lat i la plaça ha quedat lliure.</p>
+<p style="{{ s.p }}">Si encara vols participar, et pots tornar a inscriure mentre quedin places.</p>
+<p style="{{ s.note_last }}">Si acabes de pagar, el club veurà el pagament i es posarà en contacte amb tu.</p>
+{% endblock %}

@@ -339,6 +339,8 @@ class TestOrganizationDetails:
         assert org.communications_config["templates"] == {
             "registration_approved": {"enabled": True},
             "registration_pending_payment": {"enabled": True},
+            "payment_deadline_reminder": {"enabled": True},
+            "registration_cancelled_unpaid": {"enabled": True},
             "webhook_digest": {"enabled": True},
         }
 

@@ -16,6 +16,8 @@ from app.core.email import (
     send_registration_approved_email,
     send_registration_confirmation_email,
     send_registration_cancellation_email,
+    send_payment_deadline_reminder_email,
+    send_registration_cancelled_unpaid_email,
     send_registration_pending_payment_email,
     send_registration_rejected_email,
     send_waitlist_promotion_email,
@@ -153,6 +155,53 @@ def send_pending_payment_email_task(
         )
     except Exception as exc:
         logger.error(f"Pending-payment email task failed: to={to}, error={exc}")
+        raise self.retry(exc=exc)
+
+
+@celery.task(bind=True, max_retries=3, default_retry_delay=60)
+def send_deadline_reminder_email_task(
+    self,
+    to: str,
+    member_name: str,
+    activity_name: str,
+    amount: str,
+    currency: str,
+    deadline: str | None = None,
+    pay_now_url: str | None = None,
+    bank_details: str | None = None,
+    cash: bool = False,
+    locale: str = "es",
+) -> bool:
+    """Warn the member their unpaid seat is about to be released."""
+    try:
+        return send_payment_deadline_reminder_email(
+            to,
+            member_name,
+            activity_name,
+            amount,
+            currency,
+            deadline=deadline,
+            pay_now_url=pay_now_url,
+            bank_details=bank_details,
+            cash=cash,
+            locale=locale,
+        )
+    except Exception as exc:
+        logger.error(f"Deadline reminder email task failed: to={to}, error={exc}")
+        raise self.retry(exc=exc)
+
+
+@celery.task(bind=True, max_retries=3, default_retry_delay=60)
+def send_unpaid_cancellation_email_task(
+    self, to: str, member_name: str, activity_name: str, locale: str = "es"
+) -> bool:
+    """Tell the member their seat was released because it was not paid."""
+    try:
+        return send_registration_cancelled_unpaid_email(
+            to, member_name, activity_name, locale
+        )
+    except Exception as exc:
+        logger.error(f"Unpaid-cancellation email task failed: to={to}, error={exc}")
         raise self.retry(exc=exc)
 
 

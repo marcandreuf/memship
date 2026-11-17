@@ -18,6 +18,7 @@ from app.tasks.billing_tasks import (
     scheduled_billing_run,
     scheduled_membership_lapse,
     scheduled_payment_reminders,
+    scheduled_seat_deadlines,
     scheduled_webhook_digest,
     send_payment_notification,
     send_queued_reminder,
@@ -187,6 +188,7 @@ def test_reminders_void_what_was_abandoned_before_chasing_anyone(db):
     order = MagicMock()
     order.expire.return_value = 2
     order.expire_donations.return_value = 1
+    order.expire_seats.return_value = 5
     order.remind.return_value = {"marked_overdue": 4, "reminders_sent": 3}
     with patch(
         "app.domains.billing.membership_purchase_service.expire_unpaid_purchases",
@@ -194,19 +196,23 @@ def test_reminders_void_what_was_abandoned_before_chasing_anyone(db):
     ), patch(
         "app.domains.billing.donation_service.expire_unpaid_donations",
         order.expire_donations,
+    ), patch(
+        "app.domains.billing.seats.expire_unpaid_seats", order.expire_seats
     ), patch("app.domains.billing.reminder_service.run_scheduled_reminders", order.remind):
         summary = scheduled_payment_reminders.apply().get()
-    # Neither an abandoned purchase nor an abandoned donation is a debt: both
-    # must be voided before the pass that marks receipts overdue could see
-    # them.
-    assert order.mock_calls[:3] == [
+    # Neither an abandoned purchase, an abandoned donation nor a seat released
+    # unpaid is a debt: all three must be voided before the pass that marks
+    # receipts overdue could see them.
+    assert order.mock_calls[:4] == [
         call.expire(db),
         call.expire_donations(db),
+        call.expire_seats(db),
         call.remind(db),
     ]
     assert summary == {
         "purchases_expired": 2,
         "donations_expired": 1,
+        "seats_expired": 5,
         "marked_overdue": 4,
         "reminders_sent": 3,
     }
@@ -226,6 +232,37 @@ def test_a_failed_reminder_pass_rolls_back_the_voided_purchases_too(db):
         side_effect=RuntimeError("mail transport misconfigured"),
     ):
         result = scheduled_payment_reminders.apply()
+    assert result.failed()
+    db.commit.assert_not_called()
+    db.rollback.assert_called_once()
+    db.close.assert_called_once()
+
+
+# ---------------------------------------------------------------- seat deadlines
+
+
+def test_seat_deadlines_release_before_they_warn(db):
+    order = MagicMock()
+    order.expire.return_value = 2
+    order.remind.return_value = 1
+    with patch("app.domains.billing.seats.expire_unpaid_seats", order.expire), patch(
+        "app.domains.activities.registration_service.remind_pending_deadlines",
+        order.remind,
+    ):
+        summary = scheduled_seat_deadlines.apply().get()
+    # A seat released this hour must not also be warned that it is about to be.
+    assert order.mock_calls == [call.expire(db), call.remind(db)]
+    assert summary == {"seats_expired": 2, "seats_reminded": 1}
+    db.commit.assert_called_once()
+    db.close.assert_called_once()
+
+
+def test_a_failed_seat_pass_rolls_back(db):
+    with patch(
+        "app.domains.billing.seats.expire_unpaid_seats",
+        side_effect=RuntimeError("deadlock"),
+    ):
+        result = scheduled_seat_deadlines.apply()
     assert result.failed()
     db.commit.assert_not_called()
     db.rollback.assert_called_once()

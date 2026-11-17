@@ -1,0 +1,10 @@
+{% extends "_base.html" %}
+
+{% block preheader %}Your seat at {{ activity_name }} expires soon unless you pay.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Your seat expires soon</h1>
+<p style="{{ s.p }}">Hi {{ member_name }},</p>
+<p style="{{ s.p }}">We have not yet received the payment for your seat at <strong>{{ activity_name }}</strong>. If it is not paid before the deadline, the registration is cancelled.</p>
+{% include "_seat_payment_en.html" %}
+{% endblock %}
