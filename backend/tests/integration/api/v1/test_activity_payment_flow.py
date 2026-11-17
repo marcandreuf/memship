@@ -64,13 +64,13 @@ class TestPaymentFlow:
             "/api/v1/activities/",
             json=_activity_payload(
                 payment_methods=["card", "transfer", "card"],
-                auto_cancel_enabled=True,
+                auto_cancel_enabled=False,
                 auto_cancel_hours=48,
             ),
         ).json()
 
         assert data["payment_methods"] == ["card", "transfer"]
-        assert data["auto_cancel_enabled"] is True
+        assert data["auto_cancel_enabled"] is False
         assert data["auto_cancel_hours"] == 48
 
     @pytest.mark.parametrize(

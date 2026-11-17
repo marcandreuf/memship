@@ -48,6 +48,7 @@ from app.domains.billing.rules import (
     billing_int_rule,
 )
 from app.domains.billing.rules import FEATURE_KEYS as BILLING_FEATURE_KEYS
+from app.domains.billing.seats import SEAT_PAYMENT_TEMPLATES
 from app.domains.bookings.rules import FEATURE_KEYS as BOOKING_FEATURE_KEYS
 from app.cli.demo_data import DEMO_FEATURES
 from app.domains.members.models import Member, MembershipType
@@ -99,6 +100,11 @@ def _org(db, features=None) -> OrganizationSettings:
         db.flush()
     if features is not None:
         org.features = features
+    # Auto-cancel may only be switched on with its warning mails on. That guard
+    # is test_pay_to_confirm_guard's; here the key is saved like any other.
+    org.communications_config = {
+        "templates": {key: {"enabled": True} for key in SEAT_PAYMENT_TEMPLATES}
+    }
     db.flush()
     return org
 

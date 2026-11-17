@@ -577,8 +577,8 @@ def check_self_cancellation_allowed(
     if not activity.allow_self_cancellation:
         return "Self-cancellation is not allowed for this activity"
 
-    if registration.status not in ("confirmed", "waitlist"):
-        return "Only confirmed or waitlisted registrations can be cancelled"
+    if registration.status not in ("confirmed", "waitlist", "pending"):
+        return "Only confirmed, pending or waitlisted registrations can be cancelled"
 
     if activity.self_cancellation_deadline_hours is not None:
         now = datetime.now(timezone.utc)

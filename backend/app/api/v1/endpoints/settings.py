@@ -12,6 +12,7 @@ from app.core.security.oauth import provider_redirect_uri
 from app.db.session import get_db
 from app.domains.audit.models import AuditLog
 from app.domains.auth.models import User
+from app.domains.billing.seats import SeatError, refuse_auto_cancel_without_notices
 from app.domains.auth.sso_config import (
     PROVIDER_FIELDS,
     build_field_node,
@@ -129,6 +130,15 @@ def update_settings(
     """
     settings_obj = _require_org(db)
     update_data = data.model_dump(exclude_unset=True)
+    switching_on_auto_cancel = (
+        (update_data.get("features") or {}).get("activity_auto_cancel_enabled") is True
+        and (settings_obj.features or {}).get("activity_auto_cancel_enabled") is not True
+    )
+    if switching_on_auto_cancel:
+        try:
+            refuse_auto_cancel_without_notices(db)
+        except SeatError as e:
+            raise HTTPException(status_code=400, detail=str(e))
     for key, value in update_data.items():
         if key == "features" and value is not None:
             value = {**(settings_obj.features or {}), **value}

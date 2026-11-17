@@ -10,6 +10,7 @@ from app.core.authorization import user_has
 from app.domains.activities.models import Activity
 from app.domains.activities.payment import needs_payment, unusable_methods
 from app.domains.activities.schemas import ActivityCreate, ActivityUpdate
+from app.domains.billing.seats import SeatError, refuse_auto_cancel_without_notices
 
 
 def generate_slug(db: Session, name: str) -> str:
@@ -51,6 +52,13 @@ def get_visible_activity_or_404(db: Session, activity_id: int, user) -> Activity
     return activity
 
 
+def _refuse_auto_cancel_without_notices(db: Session) -> None:
+    try:
+        refuse_auto_cancel_without_notices(db)
+    except SeatError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
 def create_activity(db: Session, data: ActivityCreate, created_by_id: int) -> Activity:
     """Create a new activity."""
     # Validate dates
@@ -76,6 +84,9 @@ def create_activity(db: Session, data: ActivityCreate, created_by_id: int) -> Ac
             detail="max_participants must be >= min_participants",
         )
 
+    if data.auto_cancel_enabled is True:
+        _refuse_auto_cancel_without_notices(db)
+
     slug = generate_slug(db, data.name)
 
     activity = Activity(
@@ -91,6 +102,9 @@ def create_activity(db: Session, data: ActivityCreate, created_by_id: int) -> Ac
 def update_activity(db: Session, activity: Activity, data: ActivityUpdate) -> Activity:
     """Update an existing activity."""
     update_data = data.model_dump(exclude_unset=True)
+
+    if update_data.get("auto_cancel_enabled") is True and activity.auto_cancel_enabled is not True:
+        _refuse_auto_cancel_without_notices(db)
 
     for key, value in update_data.items():
         setattr(activity, key, value)

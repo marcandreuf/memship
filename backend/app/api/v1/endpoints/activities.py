@@ -9,7 +9,8 @@ from app.core.authorization import require_any_permission, require_permission, u
 from app.core.db_utils import get_or_404
 from app.core.pagination import paginate
 from app.db.session import get_db
-from app.domains.activities.models import Activity
+from app.domains.activities.models import PAYMENT_METHODS, Activity
+from app.domains.activities.payment import unusable_methods
 from app.domains.activities.pricing import priced, prices_for_viewer
 from app.domains.activities.schemas import (
     ActivityCreate,
@@ -26,6 +27,9 @@ from app.domains.activities.service import (
     update_activity,
 )
 from app.domains.auth.models import User
+from app.domains.billing.rules import billing_int_rule
+from app.domains.billing.seats import switched_off_seat_templates
+from app.domains.organizations.models import OrganizationSettings
 
 router = APIRouter(prefix="/activities", tags=["activities"])
 
@@ -150,6 +154,26 @@ def list_activities(
     return {
         "meta": meta.model_dump(),
         "items": [_to_list_response(a) for a in items],
+    }
+
+
+@router.get("/payment-options")
+def get_payment_options(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("activities.write")),
+):
+    """What the activity form may offer: the payment methods this club can take
+    today, its auto-cancel default, and which of the mails that warn a member
+    about an unpaid seat are switched off."""
+    org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
+    features = (org.features if org else None) or {}
+    return {
+        "usable_methods": [
+            m for m in PAYMENT_METHODS if m not in unusable_methods(db, list(PAYMENT_METHODS))
+        ],
+        "auto_cancel_enabled": features.get("activity_auto_cancel_enabled") is True,
+        "auto_cancel_hours": billing_int_rule(features, "activity_auto_cancel_hours"),
+        "switched_off_templates": switched_off_seat_templates(db),
     }
 
 

@@ -27,6 +27,32 @@ class SeatError(Exception):
     """Raised when a seat cannot take the change asked of it."""
 
 
+#: The mails that tell a member their seat is held until paid, about to be
+#: released, and released. Operational, and off unless the club switched them on.
+SEAT_PAYMENT_TEMPLATES = (
+    "registration_pending_payment",
+    "payment_deadline_reminder",
+    "registration_cancelled_unpaid",
+)
+
+
+def switched_off_seat_templates(db: Session) -> list[str]:
+    """Which of the seat-payment mails the club has switched off."""
+    from app.domains.mailing.policy import is_enabled
+
+    return [key for key in SEAT_PAYMENT_TEMPLATES if not is_enabled(db, key)]
+
+
+def refuse_auto_cancel_without_notices(db: Session) -> None:
+    """Auto-cancel releases a seat its holder may not know is at risk. It may
+    only be switched on while every mail that warns them is on."""
+    off = switched_off_seat_templates(db)
+    if off:
+        raise SeatError(
+            "Auto-cancel needs these emails switched on first: " + ", ".join(off)
+        )
+
+
 @dataclass(frozen=True)
 class LateSeat:
     """What a domain reports back after settling a late payment on its seat."""
