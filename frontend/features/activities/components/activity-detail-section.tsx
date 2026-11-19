@@ -19,7 +19,7 @@ export function ActivityDetailSection({ activity }: ActivityDetailSectionProps) 
   const { has } = usePermissions();
   const newFlow = activity.payment_flow !== "legacy";
   // The club's default, so "As the club" says what that means today.
-  const { data: options } = usePaymentOptions(newFlow && has("activities.write"));
+  const { data: options } = usePaymentOptions(has("activities.write"));
   const clubSetting = options
     ? options.auto_cancel_enabled
       ? t("activities.payment.clubOn", { hours: options.auto_cancel_hours })
@@ -61,7 +61,14 @@ export function ActivityDetailSection({ activity }: ActivityDetailSectionProps) 
     { label: t("activities.capacity"), value: `${activity.current_participants}/${activity.max_participants}`, inline: true },
     { label: t("activities.minAge"), value: activity.min_age, inline: true },
     { label: t("activities.maxAge"), value: activity.max_age, inline: true },
-    { label: t("activities.taxRate"), value: `${activity.tax_rate}%`, inline: true },
+    { label: t("activities.taxRate"), value:
+        activity.tax_rate != null
+          ? `${activity.tax_rate}%`
+          : options
+            ? t("activities.taxRateInheritRate", { rate: options.default_vat_rate })
+            : t("activities.taxRateInherit"),
+      inline: true,
+    },
     {
       label: t("activities.allowedTypes"),
       value: allowedTypes.length ? allowedTypeNames : t("activities.allowedTypesOpen"),

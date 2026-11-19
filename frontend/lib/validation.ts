@@ -35,8 +35,11 @@ export const optionalEmailSchema = emailSchema.optional().or(z.literal(""));
  * sending zero. Pass the same `min`/`max` the field had: a bound that excludes
  * zero is no longer what keeps the field honest, but it is still the bound.
  */
-export function optionalNumber(opts: { min?: number; max?: number } = {}) {
-  let num = z.coerce.number<number>().int();
+export function optionalNumber(
+  opts: { min?: number; max?: number; integer?: boolean } = {},
+) {
+  let num = z.coerce.number<number>();
+  if (opts.integer !== false) num = num.int();
   if (opts.min !== undefined) num = num.min(opts.min);
   if (opts.max !== undefined) num = num.max(opts.max);
   return z.union([z.literal("").transform(() => undefined), num]).optional();

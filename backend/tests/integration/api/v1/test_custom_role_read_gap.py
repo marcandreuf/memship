@@ -68,6 +68,19 @@ def _user_with(db, keys, *, slug):
 class TestActivitiesManagerRole:
     KEYS = {"activities.read", "activities.write", "activities.publish"}
 
+    @pytest.mark.parametrize("rate", [21, 0])
+    def test_learns_the_clubs_vat_rate_without_reading_settings(self, client, db, rate):
+        """The activity form shows the rate an activity without its own will
+        bill at, so the role that fills it in has to see it (#605)."""
+        _org(db).default_vat_rate = rate
+        db.flush()
+        user = _user_with(db, self.KEYS, slug=f"activities-manager-vat-{rate}")
+
+        assert client.get("/api/v1/settings/", cookies=_auth_cookie(user)).status_code == 403
+        r = client.get("/api/v1/activities/payment-options", cookies=_auth_cookie(user))
+        assert r.status_code == 200, r.text
+        assert r.json()["default_vat_rate"] == rate
+
     def test_can_write_activities(self, client, db):
         _org(db)
         user = _user_with(db, self.KEYS, slug="activities-manager-w")

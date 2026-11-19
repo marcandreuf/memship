@@ -69,7 +69,8 @@ class Activity(Base):
     max_age = Column(Integer)
     allowed_membership_types = Column(ARRAY(Integer))
     status = Column(String(20), default="draft")
-    tax_rate = Column(Numeric(5, 2), default=0)
+    # NULL bills the club's default rate; 0 is VAT-exempt (#605).
+    tax_rate = Column(Numeric(5, 2))
     image_url = Column(String(500))
     thumbnail_url = Column(String(500))
     features = Column(JSONB, default=dict)

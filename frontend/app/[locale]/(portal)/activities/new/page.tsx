@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/form";
 import { toast } from "sonner";
 import { mapApiErrorsToForm } from "@/lib/errors";
-import { useCreateActivity } from "@/features/activities/hooks/use-activities";
+import { useCreateActivity, usePaymentOptions } from "@/features/activities/hooks/use-activities";
 import { useMembershipTypes } from "@/features/members/hooks/use-members";
 import {
   ActivityPaymentFields,
@@ -52,7 +52,7 @@ const activitySchema = z.object({
   max_participants: z.coerce.number<number>().int().min(1),
   min_age: optionalNumber({ min: 0 }),
   max_age: optionalNumber({ min: 0 }),
-  tax_rate: z.coerce.number<number>().min(0).max(100),
+  tax_rate: optionalNumber({ min: 0, max: 100, integer: false }),
   allowed_membership_types: z.array(z.number()),
   allow_self_cancellation: z.boolean(),
   self_cancellation_deadline_hours: optionalNumber({ min: 0 }),
@@ -83,6 +83,7 @@ export default function NewActivityPage() {
   const t = useTranslations();
   const router = useRouter();
   const { mutateAsync: create, isPending } = useCreateActivity();
+  const { data: options } = usePaymentOptions();
   const { data: membershipTypes, isLoading: typesLoading } = useMembershipTypes();
   const activeTypes = (membershipTypes ?? []).filter((mt) => mt.is_active);
 
@@ -103,7 +104,7 @@ export default function NewActivityPage() {
       max_participants: 1,
       min_age: "",
       max_age: "",
-      tax_rate: 0,
+      tax_rate: "",
       allowed_membership_types: [],
       allow_self_cancellation: false,
       self_cancellation_deadline_hours: "",
@@ -124,7 +125,7 @@ export default function NewActivityPage() {
       registration_ends_at: new Date(data.registration_ends_at).toISOString(),
       min_participants: data.min_participants,
       max_participants: data.max_participants,
-      tax_rate: data.tax_rate,
+      tax_rate: data.tax_rate ?? null,
       allowed_membership_types: data.allowed_membership_types,
       allow_self_cancellation: data.allow_self_cancellation,
       features: { waiting_list: data.waiting_list },
@@ -356,7 +357,8 @@ export default function NewActivityPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>{t("activities.taxRate")}</FormLabel>
-                    <FormControl><DecimalInput {...field} /></FormControl>
+                    <FormControl><DecimalInput placeholder={options ? t("activities.taxRateInheritRate", { rate: options.default_vat_rate }) : t("activities.taxRateInherit")} {...field} /></FormControl>
+                    <FormDescription className="text-xs">{t("activities.taxRateHint")}</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

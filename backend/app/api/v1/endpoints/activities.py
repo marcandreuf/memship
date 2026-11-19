@@ -29,6 +29,7 @@ from app.domains.activities.service import (
 from app.domains.auth.models import User
 from app.domains.billing.rules import billing_int_rule
 from app.domains.billing.seats import switched_off_seat_templates
+from app.domains.billing.service import org_default_vat_rate
 from app.domains.organizations.models import OrganizationSettings
 
 router = APIRouter(prefix="/activities", tags=["activities"])
@@ -70,7 +71,7 @@ def _to_response(
         max_age=activity.max_age,
         allowed_membership_types=activity.allowed_membership_types,
         status=activity.status,
-        tax_rate=float(activity.tax_rate) if activity.tax_rate is not None else 0,
+        tax_rate=float(activity.tax_rate) if activity.tax_rate is not None else None,
         image_url=activity.image_url,
         thumbnail_url=activity.thumbnail_url,
         features=activity.features or {},
@@ -163,8 +164,12 @@ def get_payment_options(
     current_user: User = Depends(require_permission("activities.write")),
 ):
     """What the activity form may offer: the payment methods this club can take
-    today, its auto-cancel default, and which of the mails that warn a member
-    about an unpaid seat are switched off."""
+    today, its auto-cancel default, which of the mails that warn a member
+    about an unpaid seat are switched off, and the VAT rate an activity without
+    its own rate bills at.
+
+    The rate is here rather than read from ``/settings`` because that needs
+    ``settings.read``, which a custom activities role need not hold (#605)."""
     org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
     features = (org.features if org else None) or {}
     return {
@@ -174,6 +179,7 @@ def get_payment_options(
         "auto_cancel_enabled": features.get("activity_auto_cancel_enabled") is True,
         "auto_cancel_hours": billing_int_rule(features, "activity_auto_cancel_hours"),
         "switched_off_templates": switched_off_seat_templates(db),
+        "default_vat_rate": float(org_default_vat_rate(org)),
     }
 
 

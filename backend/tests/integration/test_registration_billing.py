@@ -283,16 +283,47 @@ class TestTheQuotedPriceIsWhatIsInvoiced:
         assert activity_vat_rate(db, activity.tax_rate) == Decimal("10.00")
         assert _receipts_for(db, registration)[0].total_amount == Decimal("110.00")
 
-    def test_a_zero_activity_rate_falls_back_to_the_org_default(self, db, org, membership_type):
-        """`generate_activity_receipt` treated 0 as unset, and the quote has to
-        agree with that rather than quote a tax-free total."""
+    def test_an_activity_without_a_rate_bills_the_org_default(self, db, org, membership_type):
         from app.domains.billing.service import activity_vat_rate
 
-        activity, _ = _activity(db, amount=Decimal("100.00"))
-        activity.tax_rate = Decimal("0")
+        activity, price = _activity(db, amount=Decimal("100.00"))
+        activity.tax_rate = None
+        db.flush()
+
+        member = _member(db, membership_type, "quote-inherit")
+        registration = register_member(db, activity=activity, member=member, price_id=price.id)
         db.flush()
 
         assert activity_vat_rate(db, activity.tax_rate) == Decimal("21")
+        assert _receipts_for(db, registration)[0].total_amount == Decimal("121.00")
+
+    def test_a_zero_activity_rate_is_exempt(self, db, org, membership_type):
+        """0 used to mean "inherit", so an activity could not be exempt (#605)."""
+        from app.domains.billing.service import activity_vat_rate
+
+        activity, price = _activity(db, amount=Decimal("100.00"))
+        activity.tax_rate = Decimal("0")
+        db.flush()
+
+        member = _member(db, membership_type, "quote-exempt")
+        registration = register_member(db, activity=activity, member=member, price_id=price.id)
+        db.flush()
+
+        receipt = _receipts_for(db, registration)[0]
+        assert activity_vat_rate(db, activity.tax_rate) == Decimal("0")
+        assert receipt.vat_rate == Decimal("0")
+        assert receipt.total_amount == Decimal("100.00")
+
+    def test_an_exempt_club_bills_inheriting_activities_at_zero(self, db, org, membership_type):
+        """`default_vat_rate or 21` turned a club-wide 0 % into 21 % (#605)."""
+        from app.domains.billing.service import activity_vat_rate
+
+        org.default_vat_rate = Decimal("0")
+        activity, _ = _activity(db, amount=Decimal("100.00"))
+        activity.tax_rate = None
+        db.flush()
+
+        assert activity_vat_rate(db, activity.tax_rate) == Decimal("0")
 
     def test_the_registration_reports_what_it_is_billed_at(self, db, org, membership_type):
         activity, price = _activity(db, amount=Decimal("95.00"))

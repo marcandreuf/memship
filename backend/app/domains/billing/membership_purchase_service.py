@@ -44,6 +44,7 @@ from app.domains.billing.service import (
     cancel_receipt,
     generate_receipt_number,
     membership_concept,
+    org_default_vat_rate,
 )
 from app.domains.members.models import Member, MembershipType
 from app.domains.organizations.models import OrganizationSettings
@@ -169,7 +170,7 @@ def _quote(
 
 def _default_vat_rate(db: Session) -> Decimal:
     org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
-    return Decimal(str((org.default_vat_rate if org else None) or 21))
+    return org_default_vat_rate(org)
 
 
 def quote_membership_purchase(

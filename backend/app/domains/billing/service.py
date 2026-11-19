@@ -117,17 +117,27 @@ def calculate_vat(base_amount: Decimal, vat_rate: Decimal) -> tuple[Decimal, Dec
     return vat_amount, total_amount
 
 
+def org_default_vat_rate(org: OrganizationSettings | None) -> Decimal:
+    """The club's default VAT rate. 0 is a real rate — an exempt club — so only
+    a missing value falls back to 21 (#605)."""
+    if org is None or org.default_vat_rate is None:
+        return Decimal("21")
+    return Decimal(str(org.default_vat_rate))
+
+
 def activity_vat_rate(db: Session, tax_rate: Decimal | float | None) -> Decimal:
     """The rate an activity's receipt will carry: its own, or the org default.
 
     The single place that decides it. A member is quoted the tax-inclusive total
     before registering (#220), and a quote computed from a differently-resolved
     rate than the receipt uses is worse than no quote at all.
+
+    NULL inherits the org default; 0 is exempt and stays 0 (#605).
     """
-    if tax_rate is not None and Decimal(str(tax_rate)) > 0:
+    if tax_rate is not None:
         return Decimal(str(tax_rate))
     org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
-    return Decimal(str((org.default_vat_rate if org else None) or 21))
+    return org_default_vat_rate(org)
 
 
 def resolve_discount(
@@ -910,7 +920,7 @@ def generate_membership_fees(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Organization settings not found",
         )
-    default_vat = Decimal(str(org.default_vat_rate or 21))
+    default_vat = org_default_vat_rate(org)
 
     # Get all active members with their membership type
     query = (
@@ -1078,7 +1088,7 @@ def generate_booking_receipt(
         return None
 
     org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
-    vat_rate = Decimal(str((org.default_vat_rate if org else None) or 21))
+    vat_rate = org_default_vat_rate(org)
 
     concept = (
         db.query(Concept)
