@@ -89,9 +89,9 @@
     <tbody>
       <tr>
         <td>{{ receipt.description }}</td>
-        <td class="amount">{{ receipt.base_amount }} {{ org.currency }}</td>
-        <td class="amount">{{ receipt.vat_amount }} {{ org.currency }}</td>
-        <td class="amount">{{ receipt.total_amount }} {{ org.currency }}</td>
+        <td class="amount">{{ receipt.base_amount | money(org.currency) }}</td>
+        <td class="amount">{{ receipt.vat_amount | money(org.currency) }}</td>
+        <td class="amount">{{ receipt.total_amount | money(org.currency) }}</td>
       </tr>
     </tbody>
   </table>
@@ -99,12 +99,12 @@
   <div class="totals">
     <table>
       {% if receipt.discount_amount %}
-      <tr><td class="label">Base</td><td class="value">{{ receipt.base_amount }} {{ org.currency }}</td></tr>
-      <tr><td class="label">Discount{% if receipt.discount_percentage %} ({{ receipt.discount_percentage }}%){% endif %}</td><td class="value">-{{ receipt.discount_amount }} {{ org.currency }}</td></tr>
+      <tr><td class="label">Base</td><td class="value">{{ receipt.base_amount | money(org.currency) }}</td></tr>
+      <tr><td class="label">Discount{% if receipt.discount_percentage %} ({{ receipt.discount_percentage }}%){% endif %}</td><td class="value">-{{ receipt.discount_amount | money(org.currency) }}</td></tr>
       {% endif %}
-      <tr><td class="label">Subtotal</td><td class="value">{{ receipt.net_amount }} {{ org.currency }}</td></tr>
-      <tr><td class="label">VAT ({{ receipt.vat_rate }}%)</td><td class="value">{{ receipt.vat_amount }} {{ org.currency }}</td></tr>
-      <tr class="total-row"><td>TOTAL</td><td class="value">{{ receipt.total_amount }} {{ org.currency }}</td></tr>
+      <tr><td class="label">Subtotal</td><td class="value">{{ receipt.net_amount | money(org.currency) }}</td></tr>
+      <tr><td class="label">VAT ({{ receipt.vat_rate }}%)</td><td class="value">{{ receipt.vat_amount | money(org.currency) }}</td></tr>
+      <tr class="total-row"><td>TOTAL</td><td class="value">{{ receipt.total_amount | money(org.currency) }}</td></tr>
     </table>
   </div>
 

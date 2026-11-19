@@ -8,7 +8,7 @@
 <p style="{{ s.p }}">Hello {{ member_name }},</p>
 <p style="{{ s.p }}">We have received your payment for <strong>{{ activity_name }}</strong>, but it arrived after your seat had been released and none is free. <strong>You are not registered</strong> for the activity.</p>
 {% call c.panel() %}
-{{ c.data_row("Amount", amount ~ " " ~ currency) }}
+{{ c.data_row("Amount", amount | money(currency)) }}
 {{ c.data_row("Receipt", receipt_number) }}
 {% endcall %}
 <p style="{{ s.p }}">The club will return the amount by the same means you paid. You do not need to do anything.</p>

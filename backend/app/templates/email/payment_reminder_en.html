@@ -9,7 +9,7 @@
 <p style="{{ s.p }}">{{ "This is a reminder that the following receipt falls due today and is still outstanding." if days_overdue == 0 else "This is a reminder that the following receipt is past due and still outstanding." }}</p>
 {% call c.panel() %}
 {{ c.data_row("Receipt", receipt_number) }}
-{{ c.data_row("Amount", amount ~ " " ~ currency) }}
+{{ c.data_row("Amount", amount | money(currency)) }}
 {{ c.data_row("Due date", due_date) }}
 {%- if days_overdue > 0 %}
 {{ c.data_row("Overdue", days_overdue ~ (" day" if days_overdue == 1 else " days")) }}

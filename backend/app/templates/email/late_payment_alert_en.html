@@ -10,7 +10,7 @@
 {% call c.panel() %}
 {% if member_name %}{{ c.data_row("Member", member_name) }}{% endif %}
 {{ c.data_row("Activity", seat_name) }}
-{{ c.data_row("Amount", amount ~ " " ~ currency) }}
+{{ c.data_row("Amount", amount | money(currency)) }}
 {{ c.data_row("Receipt", receipt_number) }}
 {% if gateway %}{{ c.data_row("Gateway", gateways.get(gateway, gateway)) }}{% endif %}
 {% endcall %}

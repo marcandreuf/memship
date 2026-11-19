@@ -8,7 +8,7 @@
 <p style="{{ s.p }}">Hola {{ member_name }},</p>
 <p style="{{ s.p }}">Hemos recibido tu pago para <strong>{{ activity_name }}</strong>, pero ha llegado cuando tu plaza ya se había liberado y no queda ninguna libre. <strong>No estás inscrito</strong> en la actividad.</p>
 {% call c.panel() %}
-{{ c.data_row("Importe", amount ~ " " ~ currency) }}
+{{ c.data_row("Importe", amount | money(currency)) }}
 {{ c.data_row("Recibo", receipt_number) }}
 {% endcall %}
 <p style="{{ s.p }}">El club te devolverá el importe por el mismo medio con el que pagaste. No tienes que hacer nada.</p>

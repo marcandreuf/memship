@@ -10,7 +10,7 @@
 {% call c.panel() %}
 {{ c.data_row("Rebut", receipt_number) }}
 {{ c.data_row("Concepte", description) }}
-{{ c.data_row("Import", amount ~ " " ~ currency) }}
+{{ c.data_row("Import", amount | money(currency)) }}
 {{ c.data_row("Data de pagament", payment_date) }}
 {%- if payment_method_label %}
 {{ c.data_row("Forma de pagament", payment_method_label) }}

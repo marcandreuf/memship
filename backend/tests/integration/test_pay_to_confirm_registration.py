@@ -273,7 +273,8 @@ class TestEmails:
             },
         )
 
-        for fragment in ("Yoga", "27.50", "20/11/2026 18:00", "my-receipts", "ES00 0000"):
+        amount = {"es": "27,50 €", "ca": "27,50 €", "en": "€27.50"}[locale]
+        for fragment in ("Yoga", amount, "20/11/2026 18:00", "my-receipts", "ES00 0000"):
             assert fragment in html
 
 

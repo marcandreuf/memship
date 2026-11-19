@@ -9,7 +9,7 @@
 <p style="{{ s.p }}">Please find the corresponding receipt attached.</p>
 {% call c.panel() %}
 {{ c.data_row("Receipt", receipt_number) }}
-{{ c.data_row("Amount", amount ~ " " ~ currency) }}
+{{ c.data_row("Amount", amount | money(currency)) }}
 {% endcall %}
 {%- if direct_debit %}
 <p style="{{ s.p }}">This receipt will be charged to your account by direct debit.</p>

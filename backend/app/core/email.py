@@ -22,6 +22,7 @@ from sqlalchemy import text
 
 from app.core.email_branding import EmailBranding, get_email_branding
 from app.core.email_text import html_to_text
+from app.core.money import money_filter
 from app.db import session as db_session
 from app.domains.mailing.mailing_config import (
     ResolvedMailing,
@@ -133,6 +134,7 @@ _jinja_env = Environment(
     loader=FileSystemLoader(str(_template_dir)),
     autoescape=select_autoescape(["html"]),
 )
+_jinja_env.filters["money"] = money_filter
 
 # Email subject translations
 _SUBJECTS = {

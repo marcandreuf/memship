@@ -34,6 +34,8 @@ dependencies = [
     # is a runtime dependency of the SSO flow — not just a test-client dep.
     "httpx>=0.27",
     "itsdangerous>=2.2",
+    # Locale-aware money in emails and receipt PDFs: 36,30 € in es/ca, €36.30 in en.
+    "babel>=2.14",
 ]
 
 license = "AGPL-3.0-only"

@@ -310,7 +310,7 @@ class TestThePaymentConfirmation:
         assert to == "conf-body@pay-test.example"
         assert receipt.receipt_number in subject
         assert "Membership fee" in html
-        assert "121.00 EUR" in html
+        assert "121,00 €" in html
         assert "2026-04-15" in html
 
     def test_a_direct_debit_says_so(self, db):

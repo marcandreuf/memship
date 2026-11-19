@@ -6,6 +6,7 @@ from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
 from sqlalchemy.orm import Session
 
+from app.core.money import money_filter
 from app.domains.billing.models import Receipt
 from app.domains.billing.service import resolve_discount
 from app.domains.members.models import Member
@@ -18,6 +19,7 @@ _env = Environment(
     loader=FileSystemLoader(str(TEMPLATE_DIR)),
     autoescape=True,
 )
+_env.filters["money"] = money_filter
 
 STATUS_LABELS = {
     "es": {
