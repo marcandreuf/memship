@@ -330,7 +330,9 @@ export function MailingSettings() {
             <div>
               <CardTitle className="text-base flex items-center gap-2">
                 {t(`settings.mailing.providers.${name}`)}
-                {active === name ? (
+                {/* What is live, not what is picked: a choice only takes
+                    effect on Save. */}
+                {data!.active_provider === name ? (
                   <Badge variant="default">{t("settings.mailing.active")}</Badge>
                 ) : view.ready ? (
                   <Badge variant="outline">{t("settings.mailing.ready")}</Badge>

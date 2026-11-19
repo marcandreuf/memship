@@ -30,6 +30,15 @@
     "upcomingEvents": "Upcoming activities",
     "nextDays": "Next {days} days",
     "occupancy": "Occupancy",
-    "spacesAndSlots": "{spaces, plural, one {# space} other {# spaces}} · {slots, plural, one {# slot} other {# slots}}"
+    "spacesAndSlots": "{spaces, plural, one {# space} other {# spaces}} · {slots, plural, one {# slot} other {# slots}}",
+    "latePayments": {
+      "title": "Payments received for cancelled seats",
+      "description": "The gateway collected for seats that had already been released. Review each one.",
+      "confirmed": "Seat confirmed",
+      "refundDue": "To be refunded",
+      "seen": "Seen",
+      "viewRefunds": "View refunds",
+      "loadError": "Could not check for payments received for cancelled seats."
+    }
   }
 }

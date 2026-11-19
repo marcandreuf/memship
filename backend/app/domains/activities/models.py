@@ -20,6 +20,11 @@ from sqlalchemy.orm import relationship
 
 from app.db.base import Base
 
+PAYMENT_FLOW_LEGACY = "legacy"
+PAYMENT_FLOW_PAY_TO_CONFIRM = "pay_to_confirm"
+PAYMENT_FLOWS = (PAYMENT_FLOW_LEGACY, PAYMENT_FLOW_PAY_TO_CONFIRM)
+PAYMENT_METHODS = ("card", "bizum", "transfer", "cash")
+
 
 class Activity(Base):
     __tablename__ = "activities"
@@ -29,6 +34,14 @@ class Activity(Base):
             name="valid_status",
         ),
         CheckConstraint("slug ~ '^[a-z0-9-]+$'", name="activity_slug_format"),
+        CheckConstraint(
+            "payment_flow IN ('legacy', 'pay_to_confirm')",
+            name="valid_activity_payment_flow",
+        ),
+        CheckConstraint(
+            "payment_methods <@ ARRAY['card', 'bizum', 'transfer', 'cash']::varchar[]",
+            name="valid_activity_payment_methods",
+        ),
         Index("idx_activities_slug", "slug"),
         Index("idx_activities_status", "status"),
         Index("idx_activities_starts_at", "starts_at"),
@@ -68,6 +81,20 @@ class Activity(Base):
     self_cancellation_deadline_hours = Column(Integer)
     is_active = Column(Boolean, default=True)
     is_featured = Column(Boolean, default=False)
+    # Fixed when the activity is created and never edited: ``legacy`` is the
+    # behaviour of activities that predate the pay-to-confirm flow.
+    payment_flow = Column(
+        String(20),
+        nullable=False,
+        default=PAYMENT_FLOW_PAY_TO_CONFIRM,
+        server_default=PAYMENT_FLOW_PAY_TO_CONFIRM,
+    )
+    payment_methods = Column(
+        ARRAY(String), nullable=False, default=list, server_default="{}"
+    )
+    # Override of the club's auto-cancel default; NULL inherits it.
+    auto_cancel_enabled = Column(Boolean)
+    auto_cancel_hours = Column(Integer)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
@@ -257,6 +284,19 @@ class Registration(Base):
             "status IN ('confirmed', 'waitlist', 'cancelled', 'pending')",
             name="valid_registration_status",
         ),
+        CheckConstraint(
+            "refund_status IN ('none', 'due', 'returned')",
+            name="valid_registration_refund_status",
+        ),
+        CheckConstraint(
+            "cancelled_cause IN ('payment_expired')",
+            name="valid_registration_cancelled_cause",
+        ),
+        Index(
+            "idx_registrations_pending_due",
+            "payment_due_at",
+            postgresql_where=Column("status") == "pending",
+        ),
         Index(
             "uq_registration_active_party",
             "activity_id",
@@ -304,6 +344,34 @@ class Registration(Base):
     cancelled_at = Column(DateTime(timezone=True))
     cancelled_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
     cancelled_reason = Column(Text)
+    payment_due_at = Column(DateTime(timezone=True))
+    payment_reminder_sent_at = Column(DateTime(timezone=True))
+    # Why a seat was cancelled when the system did it rather than a person, so
+    # the organiser can tell it apart in the list. NULL for every other cancel.
+    cancelled_cause = Column(String(30))
+    # A gateway payment that arrived after the seat's receipt was cancelled, and
+    # when an organiser acknowledged it. Unacknowledged ones are flagged to the
+    # club until someone has looked.
+    late_payment_at = Column(DateTime(timezone=True))
+    late_payment_seen_at = Column(DateTime(timezone=True))
+    # Whether the club owes back what was paid for a seat it no longer holds.
+    # A decision recorded on the seat, not read off the receipt, so a payment
+    # the club keeps is not listed as owed.
+    refund_status = Column(
+        String(20), nullable=False, default="none", server_default="none"
+    )
+    refund_returned_at = Column(DateTime(timezone=True))
+    refund_returned_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+    # receipts already points here, so this side is added after both tables.
+    refund_credit_note_id = Column(
+        Integer,
+        ForeignKey(
+            "receipts.id",
+            ondelete="SET NULL",
+            use_alter=True,
+            name="fk_registrations_refund_credit_note_id",
+        ),
+    )
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
@@ -336,6 +404,27 @@ class Registration(Base):
     consents = relationship("RegistrationConsent", back_populates="registration")
     attachments = relationship("RegistrationAttachment", back_populates="registration")
     cancelled_by_user = relationship("User", foreign_keys=[cancelled_by], lazy="joined")
+
+    @property
+    def current_receipt(self):
+        """The receipt that stands for this seat: the newest live one, else the
+        newest of any, so a cancelled seat still shows what became of it."""
+        active = [r for r in self.receipts if r.is_active]
+        live = [r for r in active if r.status != "cancelled"]
+        pool = live or active
+        return max(pool, key=lambda r: r.id) if pool else None
+
+    @property
+    def receipt_id(self):
+        return self.current_receipt.id if self.current_receipt else None
+
+    @property
+    def receipt_status(self):
+        return self.current_receipt.status if self.current_receipt else None
+
+    @property
+    def receipt_due_date(self):
+        return self.current_receipt.due_date if self.current_receipt else None
 
     @property
     def cancelled_by_name(self) -> str | None:

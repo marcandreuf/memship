@@ -6,22 +6,29 @@
 {% block content %}
 <h1 style="{{ s.h1 }}">Recordatorio de pago</h1>
 <p style="{{ s.p }}">Hola {{ member_name }},</p>
-<p style="{{ s.p }}">Te recordamos que el siguiente recibo venció y consta como pendiente de pago.</p>
+<p style="{{ s.p }}">{{ "Te recordamos que el siguiente recibo vence hoy y consta como pendiente de pago." if days_overdue == 0 else "Te recordamos que el siguiente recibo venció y consta como pendiente de pago." }}</p>
 {% call c.panel() %}
 {{ c.data_row("Recibo", receipt_number) }}
 {{ c.data_row("Importe", amount ~ " " ~ currency) }}
 {{ c.data_row("Vencimiento", due_date) }}
+{%- if days_overdue > 0 %}
 {{ c.data_row("Retraso", days_overdue ~ (" día" if days_overdue == 1 else " días")) }}
+{%- endif %}
 {% endcall %}
 {%- if pay_now_url %}
 {{ c.button(pay_now_url, "Pagar ahora") }}
-{%- elif bank_details %}
+{%- endif %}
+{%- if bank_details %}
 <p style="{{ s.p }}">Puedes realizar el pago mediante transferencia bancaria:</p>
 {% call c.panel() %}
 <tr><td colspan="2" class="ms-text" style="padding:3px 0; font-family:Helvetica,Arial,sans-serif; font-size:15px; line-height:22px; mso-line-height-rule:exactly; color:#1f2328;">
 {%- for line in bank_details.split("\n") %}{{ line }}<br>{% endfor -%}
+{%- if reference %}Concepto: {{ reference }}{% endif -%}
 </td></tr>
 {% endcall %}
+{%- endif %}
+{%- if cash %}
+<p style="{{ s.p }}">{{ "También puedes pagar en efectivo en el club." if pay_now_url or bank_details else "Puedes pagar en efectivo en el club." }}</p>
 {%- endif %}
 <p style="{{ s.note_last }}">Si ya has realizado el pago, puedes ignorar este mensaje.</p>
 {% endblock %}

@@ -5,7 +5,7 @@ from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.core.authorization import require_any_permission, require_permission, user_has
 from app.core.csv_export import stream_csv
@@ -18,6 +18,9 @@ from app.domains.activities.registration_schemas import (
     AdminStatusChangeRequest,
     CancelRegistrationRequest,
     EligibilityResponse,
+    LatePaymentResponse,
+    RefundResponse,
+    RefundReturnedRequest,
     RegisterRequest,
     RegistrationActivityInfo,
     RegistrationDetailResponse,
@@ -31,10 +34,12 @@ from app.domains.activities.registration_service import (
     build_member_registrations_query,
     cancel_registration,
     check_self_cancellation_allowed,
+    confirm_without_payment,
     register_member,
 )
 from app.domains.activities.service import get_visible_activity_or_404
 from app.domains.auth.models import User
+from app.domains.billing.seats import SeatError, mark_refund_returned
 from app.domains.billing.service import activity_vat_rate, calculate_vat
 from app.domains.members.models import Member
 
@@ -48,7 +53,29 @@ def _get_activity_or_404(db: Session, activity_id: int) -> Activity:
     return activity
 
 
-def _to_detail_response(registration: Registration) -> RegistrationDetailResponse:
+def _payment_fields(registration: Registration) -> dict:
+    """Where the seat stands on payment, for the views that build by hand."""
+    return {
+        "payment_due_at": registration.payment_due_at,
+        "cancelled_cause": registration.cancelled_cause,
+        "late_payment_at": registration.late_payment_at,
+        "late_payment_seen_at": registration.late_payment_seen_at,
+        "refund_status": registration.refund_status,
+        "receipt_id": registration.receipt_id,
+        "receipt_status": registration.receipt_status,
+        "receipt_due_date": registration.receipt_due_date,
+    }
+
+
+def _to_detail_response(
+    db: Session, registration: Registration, activity: Activity
+) -> RegistrationDetailResponse:
+    """A row of an activity's registration list.
+
+    Carries the amounts as the member's own response does: without them the
+    organiser's screen could not tell a seat that owes money from a free one,
+    and offered "Confirmed" on a pending seat only payment may confirm (#591).
+    """
     member_info = None
     if registration.member and registration.member.person:
         member_info = RegistrationMemberInfo(
@@ -66,6 +93,8 @@ def _to_detail_response(registration: Registration) -> RegistrationDetailRespons
         modality_id=registration.modality_id,
         price_id=registration.price_id,
         status=registration.status,
+        original_amount=_as_float(registration.original_amount),
+        discounted_amount=_as_float(registration.discounted_amount),
         registration_data=registration.registration_data or {},
         member_notes=registration.member_notes,
         admin_notes=registration.admin_notes,
@@ -73,7 +102,13 @@ def _to_detail_response(registration: Registration) -> RegistrationDetailRespons
         cancelled_reason=registration.cancelled_reason,
         created_at=registration.created_at,
         member=member_info,
+        **_vat_fields(db, registration, activity),
+        **_payment_fields(registration),
     )
+
+
+def _as_float(value) -> float | None:
+    return float(value) if value is not None else None
 
 
 # --- Stats endpoint ---
@@ -100,6 +135,155 @@ def registration_stats(
     }
 
 
+# --- Refunds ---
+
+
+def _refund_response(registration: Registration) -> RefundResponse:
+    receipt = next(
+        r for r in sorted(registration.receipts, key=lambda r: -r.id)
+        if r.is_active and r.status == "paid"
+    )
+    person = registration.member.person if registration.member else None
+    return RefundResponse(
+        registration_id=registration.id,
+        activity_id=registration.activity_id,
+        activity_name=registration.activity.name,
+        member_name=f"{person.first_name} {person.last_name}" if person else None,
+        member_number=registration.member.member_number if registration.member else None,
+        cancelled_at=registration.cancelled_at,
+        refund_status=registration.refund_status,
+        receipt_id=receipt.id,
+        receipt_number=receipt.receipt_number,
+        amount=float(receipt.total_amount),
+        payment_method=receipt.payment_method,
+        payment_date=receipt.payment_date,
+        gateway_reference=(
+            receipt.stripe_payment_intent_id
+            or receipt.redsys_auth_code
+            or receipt.transaction_id
+        ),
+        refund_returned_at=registration.refund_returned_at,
+        refund_credit_note_id=registration.refund_credit_note_id,
+    )
+
+
+@router.get("/registrations/refunds")
+def list_refunds(
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
+    refund_status: str = Query("due", pattern="^(due|returned)$"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("billing.read")),
+):
+    """Cancelled seats whose payment is owed back, or was returned.
+
+    Carries what finds the money in the gateway: the method, the date and the
+    reference the provider gave the payment.
+    """
+    query = (
+        db.query(Registration)
+        .options(
+            joinedload(Registration.member).joinedload(Member.person),
+            joinedload(Registration.activity),
+            selectinload(Registration.receipts),
+        )
+        .filter(Registration.refund_status == refund_status)
+        .order_by(Registration.cancelled_at.desc(), Registration.id.desc())
+    )
+    items, meta = paginate(query, page, per_page)
+    return {"meta": meta.model_dump(), "items": [_refund_response(r) for r in items]}
+
+
+@router.post(
+    "/registrations/{registration_id}/refund-returned",
+    response_model=RefundResponse,
+)
+def mark_registration_refund_returned(
+    registration_id: int,
+    data: RefundReturnedRequest | None = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("billing.write")),
+):
+    """Record that the money owed back on a cancelled seat has been returned."""
+    registration = (
+        db.query(Registration).filter(Registration.id == registration_id).first()
+    )
+    if not registration:
+        raise HTTPException(status_code=404, detail="Registration not found")
+    try:
+        mark_refund_returned(
+            db, registration, current_user.id, data.credit_note_id if data else None
+        )
+    except SeatError as e:
+        raise HTTPException(status_code=400, detail=e.detail)
+    db.commit()
+    db.refresh(registration)
+    return _refund_response(registration)
+
+
+@router.get("/registrations/late-payments")
+def list_unseen_late_payments(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("billing.read")),
+):
+    """Payments that arrived after their seat was released, not yet looked at.
+
+    What the dashboard banner shows until an organiser acknowledges each one.
+    """
+    rows = (
+        db.query(Registration)
+        .options(
+            joinedload(Registration.member).joinedload(Member.person),
+            joinedload(Registration.activity),
+        )
+        .filter(
+            Registration.late_payment_at.isnot(None),
+            Registration.late_payment_seen_at.is_(None),
+        )
+        .order_by(Registration.late_payment_at.desc())
+        .all()
+    )
+    items = []
+    for r in rows:
+        person = r.member.person if r.member else None
+        items.append(
+            LatePaymentResponse(
+                registration_id=r.id,
+                activity_id=r.activity_id,
+                activity_name=r.activity.name,
+                member_name=f"{person.first_name} {person.last_name}" if person else None,
+                status=r.status,
+                refund_status=r.refund_status,
+                late_payment_at=r.late_payment_at,
+            )
+        )
+    return {"items": items}
+
+
+@router.post(
+    "/registrations/{registration_id}/late-payment-seen",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def acknowledge_late_payment(
+    registration_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("billing.write")),
+):
+    """Take a late payment off the banner once an organiser has looked at it."""
+    registration = (
+        db.query(Registration)
+        .filter(
+            Registration.id == registration_id,
+            Registration.late_payment_at.isnot(None),
+        )
+        .first()
+    )
+    if not registration:
+        raise HTTPException(status_code=404, detail="No late payment on this registration")
+    registration.late_payment_seen_at = datetime.now(timezone.utc)
+    db.commit()
+
+
 # --- Activity-scoped endpoints ---
 
 
@@ -113,14 +297,14 @@ def list_activity_registrations(
     current_user: User = Depends(require_permission("registrations.read")),
 ):
     """List registrations for an activity (admin only)."""
-    _get_activity_or_404(db, activity_id)
+    activity = _get_activity_or_404(db, activity_id)
 
     query = build_activity_registrations_query(db, activity_id, status=status_filter)
     items, meta = paginate(query, page, per_page)
 
     return {
         "meta": meta.model_dump(),
-        "items": [_to_detail_response(r) for r in items],
+        "items": [_to_detail_response(db, r, activity) for r in items],
     }
 
 
@@ -134,6 +318,10 @@ _REGISTRATIONS_CSV_HEADERS = [
     "discounted_amount",
     "created_at",
     "cancelled_at",
+    "receipt_status",
+    "payment_due_at",
+    "refund_status",
+    "late_payment_at",
 ]
 
 
@@ -154,6 +342,10 @@ def _registration_csv_row(registration: Registration) -> list:
         registration.discounted_amount,
         registration.created_at,
         registration.cancelled_at,
+        registration.receipt_status,
+        registration.payment_due_at,
+        registration.refund_status,
+        registration.late_payment_at,
     ]
 
 
@@ -226,7 +418,7 @@ def register_for_activity(
         db.refresh(registration)
         return _billed(db, registration, activity)
     except RegistrationError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=e.detail)
 
 
 @router.get(
@@ -299,10 +491,11 @@ def cancel_own_registration(
             registration,
             cancelled_by_id=current_user.id,
             reason=data.reason if data else None,
+            keep_payment=bool(is_admin and data and data.keep_payment),
         )
         db.commit()
     except RegistrationError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=e.detail)
 
 
 @router.put(
@@ -330,12 +523,43 @@ def change_registration_status(
         raise HTTPException(status_code=404, detail="Registration not found")
 
     try:
-        admin_change_status(db, registration, data.status, data.admin_notes)
+        admin_change_status(
+            db, registration, data.status, data.admin_notes, keep_payment=data.keep_payment
+        )
         db.commit()
         db.refresh(registration)
         return _billed(db, registration)
     except RegistrationError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=e.detail)
+
+
+@router.post(
+    "/registrations/{registration_id}/confirm-without-payment",
+    response_model=RegistrationResponse,
+)
+def confirm_registration_without_payment(
+    registration_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("billing.write")),
+):
+    """Confirm a pending registration and waive its payment.
+
+    Takes the key that marking a receipt paid takes, since it settles the same
+    debt by giving it up.
+    """
+    registration = (
+        db.query(Registration).filter(Registration.id == registration_id).first()
+    )
+    if not registration:
+        raise HTTPException(status_code=404, detail="Registration not found")
+
+    try:
+        confirm_without_payment(db, registration, current_user.id)
+        db.commit()
+        db.refresh(registration)
+        return _billed(db, registration)
+    except RegistrationError as e:
+        raise HTTPException(status_code=400, detail=e.detail)
 
 
 # --- Member self-service (must be before /members/{member_id} to avoid path conflict) ---
@@ -352,9 +576,11 @@ def list_my_registrations(
     """List current user's registrations, newest sign-up first.
 
     ``upcoming`` narrows it to the activities still ahead of the member — held
-    (confirmed or waitlisted) and not yet over — soonest first, which is what
-    the dashboard's "Tus próximas actividades" card shows (#290). An activity
-    already running still counts: the member is still attending it.
+    (confirmed, waitlisted, or pending payment) and not yet over — soonest
+    first, which is what the dashboard's "Tus próximas actividades" card shows
+    (#290). An activity already running still counts: the member is still
+    attending it. A seat held until paid is the one the member most needs to
+    see there (#591).
     """
     member = current_member_or_403(db, current_user)
 
@@ -367,7 +593,7 @@ def list_my_registrations(
         query = (
             query.join(Activity, Registration.activity_id == Activity.id)
             .filter(
-                Registration.status.in_(("confirmed", "waitlist")),
+                Registration.status.in_(("confirmed", "waitlist", "pending")),
                 Activity.ends_at >= datetime.now(timezone.utc),
             )
             .order_by(Activity.starts_at.asc(), Registration.id.asc())
@@ -421,6 +647,7 @@ def _to_registration_with_activity(
         created_at=registration.created_at,
         activity=activity_info,
         **_vat_fields(db, registration, registration.activity),
+        **_payment_fields(registration),
     )
 
 

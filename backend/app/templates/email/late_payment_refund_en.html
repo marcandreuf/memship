@@ -1,0 +1,16 @@
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}Your payment for {{ activity_name }} arrived after the seat was no longer available.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Payment received, but the seat is no longer available</h1>
+<p style="{{ s.p }}">Hello {{ member_name }},</p>
+<p style="{{ s.p }}">We have received your payment for <strong>{{ activity_name }}</strong>, but it arrived after your seat had been released and none is free. <strong>You are not registered</strong> for the activity.</p>
+{% call c.panel() %}
+{{ c.data_row("Amount", amount ~ " " ~ currency) }}
+{{ c.data_row("Receipt", receipt_number) }}
+{% endcall %}
+<p style="{{ s.p }}">The club will return the amount by the same means you paid. You do not need to do anything.</p>
+<p style="{{ s.note_last }}">If you still want to take part, you can register again if a place becomes free.</p>
+{% endblock %}

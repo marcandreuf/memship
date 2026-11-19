@@ -556,6 +556,11 @@ def mark_receipt_paid(
 
     restore_reverted_membership(db, receipt)
 
+    # Paying is what confirms a seat held as pending, whatever method paid it.
+    from app.domains.billing.seats import confirm_paid_seat
+
+    confirm_paid_seat(db, receipt)
+
     return [receipt.id]
 
 
@@ -987,10 +992,15 @@ def generate_activity_receipt(
     amount: Decimal,
     tax_rate: Decimal | None,
     created_by_id: int | None = None,
+    due_date: date | None = None,
+    is_batchable: bool = True,
 ) -> Receipt:
     """Create a receipt for an activity registration.
 
-    Called automatically when a registration is confirmed.
+    A ``legacy`` activity raises it on confirmation, with no due date and
+    batchable. A pay-to-confirm seat raises it on registration with a due date,
+    and never batchable: a remittance must not collect what the member is also
+    asked to pay by card.
     """
     vat_rate = activity_vat_rate(db, tax_rate)
 
@@ -1033,7 +1043,8 @@ def generate_activity_receipt(
         total_amount=total_amount,
         status="emitted",
         emission_date=today,
-        is_batchable=True,
+        due_date=due_date,
+        is_batchable=is_batchable,
         created_by=created_by_id,
     )
     db.add(receipt)

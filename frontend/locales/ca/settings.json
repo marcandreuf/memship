@@ -150,7 +150,7 @@
       "day": "Dia del mes",
       "dayDesc": "Dia (1–31) en què s'executa la facturació; els mesos més curts es facturen l'últim dia. Les quotes trimestrals i anuals només es facturen el primer mes del seu període.",
       "notificationEmail": "Correu de notificació",
-      "notificationEmailDesc": "Correu opcional que rep un resum després de cada execució automàtica"
+      "notificationEmailDesc": "Correu opcional que rep el resum de cada facturació automàtica i els avisos urgents de pagaments rebuts per a places cancel·lades. Si es deixa buit, no s'envia el resum i els avisos urgents van al correu del club."
     },
     "paymentReminders": {
       "tab": "Recordatoris de pagament",
@@ -381,6 +381,31 @@
           "name": "Inscripció cancel·lada",
           "description": "Confirma la cancel·lació d'una inscripció."
         },
+        "registration_pending_payment": {
+          "name": "Inscripció pendent de pagament",
+          "description": "Avisa el soci que la seva plaça està reservada fins que pagui, amb l'import, el termini i com pagar.",
+          "warning": "És l'únic avís que li indica que ha de pagar. Sense ell, el soci no sabrà que la seva plaça depèn del pagament."
+        },
+        "payment_deadline_reminder": {
+          "name": "Plaça a punt de caducar",
+          "description": "Recorda al soci, abans que venci el termini, que la seva plaça es cancel·larà si no la paga.",
+          "warning": "Sense aquest avís, la cancel·lació automàtica arribarà al soci per sorpresa."
+        },
+        "late_payment_alert": {
+          "name": "Pagament rebut per a una plaça cancel·lada",
+          "description": "Avisa el club, amb urgència, quan la passarel·la cobra una plaça que ja s'havia alliberat.",
+          "warning": "Sense aquest avís, el club no sabrà que té diners cobrats que potser ha de retornar."
+        },
+        "registration_cancelled_unpaid": {
+          "name": "Inscripció cancel·lada per manca de pagament",
+          "description": "Avisa el soci que la seva plaça s'ha alliberat perquè no es va pagar a temps.",
+          "warning": "Sense aquest avís, el soci no sabrà que ha perdut la plaça."
+        },
+        "late_payment_refund": {
+          "name": "Pagament tardà sense plaça",
+          "description": "Avisa el soci quan el seu pagament arriba amb la plaça ja alliberada i sense places lliures: no està inscrit i se li retornarà l'import.",
+          "warning": "Sense aquest avís, el soci no sabrà que s'ha quedat sense plaça ni que se li retornaran els diners."
+        },
         "waitlist_promoted": {
           "name": "Plaça alliberada en activitat",
           "description": "Avisa el soci que ha entrat des de la llista d'espera.",
@@ -448,6 +473,13 @@
       "defaultTierDesc": "Només un tipus d'afiliació gratuït pot ser el predeterminat, així que registrar-se mai no inicia una quota per si sol",
       "noDefaultTier": "Cap seleccionat",
       "noFreeTiers": "Encara no hi ha cap tipus d'afiliació gratuït. Crea'n un a Tipus d'afiliació i podrà ser el predeterminat."
+    },
+    "activityPayments": {
+      "title": "Activitats de pagament",
+      "autoCancel": "Cancel·lar automàticament les inscripcions no pagades",
+      "autoCancelDesc": "Si el soci no paga dins del termini, la inscripció es cancel·la i la plaça queda lliure. Cada activitat ho pot canviar; en activar-ho, les inscripcions ja pendents reben el termini des d'ara i s'avisa els seus socis.",
+      "hours": "Termini per pagar (hores)",
+      "hoursDesc": "Des que es reserva la plaça. Entre 1 i 8760."
     }
   }
 }

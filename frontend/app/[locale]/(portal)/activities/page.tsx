@@ -28,6 +28,7 @@ import { usePermissions } from "@/features/auth/hooks/use-permissions";
 import { TableSkeleton, CardGridSkeleton } from "@/components/ui/skeletons";
 import { useSearchParam, usePageParam, useStatusParam } from "@/hooks/use-url-state";
 import { useActivities } from "@/features/activities/hooks/use-activities";
+import { LegacyFlowBadge } from "@/features/activities/components/legacy-flow-badge";
 import { useMyRegistrations } from "@/features/activities/hooks/use-registrations";
 import type { ActivityListData } from "@/features/activities/services/activities-api";
 import { useLocaleDate } from "@/hooks/use-locale-date";
@@ -63,6 +64,7 @@ export default function ActivitiesPage() {
   const { has } = usePermissions();
   const isAdmin = has("activities.read");
   const canCreate = has("activities.write");
+  const canSeeRefunds = isAdmin && has("billing.read");
 
   const [page, setPage] = usePageParam();
   const [search, setSearch] = useSearchParam();
@@ -86,11 +88,18 @@ export default function ActivitiesPage() {
           <h1 className="text-2xl font-bold">{t("activities.title")}</h1>
           <PageInfo text={t("activities.info")} />
         </div>
-        {canCreate && (
-          <Link href="/activities/new">
-            <Button size="sm">{t("activities.createActivity")}</Button>
-          </Link>
-        )}
+        <div className="flex gap-2">
+          {canSeeRefunds && (
+            <Link href="/activities/refunds">
+              <Button size="sm" variant="outline">{t("activities.refunds.title")}</Button>
+            </Link>
+          )}
+          {canCreate && (
+            <Link href="/activities/new">
+              <Button size="sm">{t("activities.createActivity")}</Button>
+            </Link>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row">
@@ -160,9 +169,12 @@ export default function ActivitiesPage() {
                       {activity.current_participants}/{activity.max_participants}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={ACTIVITY_STATUS_VARIANTS[activity.status] || "outline"}>
-                        {t(`activities.status.${activity.status}`)}
-                      </Badge>
+                      <div className="flex items-center gap-1">
+                        <Badge variant={ACTIVITY_STATUS_VARIANTS[activity.status] || "outline"}>
+                          {t(`activities.status.${activity.status}`)}
+                        </Badge>
+                        <LegacyFlowBadge flow={activity.payment_flow} />
+                      </div>
                     </TableCell>
                     <TableCell>
                       {(() => {
@@ -191,9 +203,12 @@ export default function ActivitiesPage() {
                       {formatDate(activity.starts_at)}
                     </p>
                   </div>
-                  <Badge variant={ACTIVITY_STATUS_VARIANTS[activity.status] || "outline"}>
-                    {t(`activities.status.${activity.status}`)}
-                  </Badge>
+                  <div className="flex items-center gap-1">
+                    <Badge variant={ACTIVITY_STATUS_VARIANTS[activity.status] || "outline"}>
+                      {t(`activities.status.${activity.status}`)}
+                    </Badge>
+                    <LegacyFlowBadge flow={activity.payment_flow} />
+                  </div>
                 </div>
                 {activity.location && (
                   <p className="mt-1 text-sm text-muted-foreground">

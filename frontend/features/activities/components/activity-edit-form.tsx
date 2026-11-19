@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useZodResolver } from "@/hooks/use-zod-resolver";
 import { z } from "zod";
@@ -13,6 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -20,6 +22,11 @@ import {
 import { FormErrorSummary } from "@/components/ui/form-error-summary";
 import { useMembershipTypes } from "@/features/members/hooks/use-members";
 import type { ActivityData } from "../services/activities-api";
+import {
+  ActivityPaymentFields,
+  paymentSettingsFrom,
+  paymentSettingsPayload,
+} from "./activity-payment-fields";
 
 const editActivitySchema = z.object({
   name: z.string().trim().min(1).max(255),
@@ -40,6 +47,7 @@ const editActivitySchema = z.object({
   allowed_membership_types: z.array(z.number()),
   allow_self_cancellation: z.boolean(),
   self_cancellation_deadline_hours: optionalNumber({ min: 0 }),
+  waiting_list: z.boolean(),
 }).refine((data) => new Date(data.ends_at) > new Date(data.starts_at), {
   message: "validation.endBeforeStart",
   path: ["ends_at"],
@@ -82,7 +90,7 @@ export function ActivityEditForm({
   onCancel,
 }: ActivityEditFormProps) {
   const t = useTranslations();
-  const { data: membershipTypes } = useMembershipTypes();
+  const { data: membershipTypes, isLoading: typesLoading } = useMembershipTypes();
   const activeTypes = (membershipTypes ?? []).filter((mt) => mt.is_active);
 
   const form = useForm<EditActivityFormValuesInput, unknown, EditActivityFormValues>({
@@ -106,13 +114,16 @@ export function ActivityEditForm({
       allowed_membership_types: activity.allowed_membership_types ?? [],
       allow_self_cancellation: activity.allow_self_cancellation,
       self_cancellation_deadline_hours: activity.self_cancellation_deadline_hours ?? "",
+      waiting_list: activity.features?.waiting_list === true,
     },
   });
 
   const allowSelfCancellation = form.watch("allow_self_cancellation");
+  const [payment, setPayment] = useState(() => paymentSettingsFrom(activity));
 
   async function handleSubmit(data: EditActivityFormValues) {
     const payload: Record<string, unknown> = {
+      ...(activity.payment_flow === "legacy" ? {} : paymentSettingsPayload(payment)),
       name: data.name,
       starts_at: new Date(data.starts_at).toISOString(),
       ends_at: new Date(data.ends_at).toISOString(),
@@ -131,6 +142,8 @@ export function ActivityEditForm({
       min_age: data.min_age ?? null,
       max_age: data.max_age ?? null,
       self_cancellation_deadline_hours: data.allow_self_cancellation ? data.self_cancellation_deadline_hours ?? null : null,
+      // `features` is replaced whole on update: keep the activity's other keys.
+      features: { ...(activity.features ?? {}), waiting_list: data.waiting_list },
     };
     await onSubmit(payload);
   }
@@ -193,7 +206,7 @@ export function ActivityEditForm({
           <FormItem>
             <FormLabel>{t("activities.allowedTypes")}</FormLabel>
             <p className="text-sm text-muted-foreground">{t("activities.allowedTypesHint")}</p>
-            {activeTypes.length === 0 ? (
+            {typesLoading ? null : activeTypes.length === 0 ? (
               <p className="text-sm text-muted-foreground">{t("activities.allowedTypesNone")}</p>
             ) : (
               <div className="grid gap-2 sm:grid-cols-2">
@@ -216,6 +229,15 @@ export function ActivityEditForm({
             )}
           </FormItem>
         )} />
+        <FormField control={form.control} name="waiting_list" render={({ field }) => (
+          <FormItem className="flex items-start gap-2">
+            <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+            <div>
+              <FormLabel className="!mt-0">{t("activities.waitingList")}</FormLabel>
+              <FormDescription className="text-xs">{t("activities.waitingListHint")}</FormDescription>
+            </div>
+          </FormItem>
+        )} />
         <FormField control={form.control} name="allow_self_cancellation" render={({ field }) => (
           <FormItem className="flex items-center gap-2">
             <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
@@ -227,6 +249,7 @@ export function ActivityEditForm({
             <FormItem><FormLabel>{t("activities.selfCancellationHours")}</FormLabel><FormControl><Input type="number" min={0} {...field} /></FormControl></FormItem>
           )} />
         )}
+        <ActivityPaymentFields flow={activity.payment_flow} value={payment} onChange={setPayment} />
         <FormErrorSummary errors={form.formState.errors} />
         <div className="flex gap-3">
           <Button type="submit" disabled={isPending}>

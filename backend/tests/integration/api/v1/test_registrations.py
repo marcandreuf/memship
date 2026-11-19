@@ -80,6 +80,7 @@ def _create_published_activity(db, admin_id=None, max_participants=50, features=
         "status": "published",
         "is_active": True,
         "features": features or {},
+        "payment_flow": "legacy",
     }
     defaults.update(overrides)
     if admin_id:
@@ -270,7 +271,7 @@ class TestRegistration:
         client.cookies.update(_auth_cookie(user2))
         r2 = client.post(f"/api/v1/activities/{activity.id}/register", json={"price_id": price.id})
         assert r2.status_code == 400
-        assert "full" in r2.json()["detail"].lower()
+        assert r2.json()["detail"]["code"] == "activity_full"
 
     def test_register_full_with_waitlist(self, client, db):
         admin = _create_user(db, "admin", suffix="-regwl")
@@ -534,15 +535,16 @@ class TestMyUpcomingRegistrations:
         running = self._sign_up(db, admin, member, "upc-running", starts_in=-3, ends_in=3)
         self._sign_up(db, admin, member, "upc-over", starts_in=-10, ends_in=-9)
         self._sign_up(db, admin, member, "upc-cancelled", starts_in=5, ends_in=6, status="cancelled")
-        self._sign_up(db, admin, member, "upc-pending", starts_in=6, ends_in=7, status="pending")
+        # A seat held until paid is what the member most needs to see (#591).
+        pending = self._sign_up(db, admin, member, "upc-pending", starts_in=6, ends_in=7, status="pending")
 
         client.cookies.update(_auth_cookie(user))
         data = client.get("/api/v1/members/me/registrations?upcoming=true&per_page=5").json()
 
         assert [r["activity_id"] for r in data["items"]] == [
-            running.id, soon.id, waitlisted.id, later.id,
+            running.id, soon.id, pending.id, waitlisted.id, later.id,
         ]
-        assert data["meta"]["total"] == 4
+        assert data["meta"]["total"] == 5
 
     def test_without_upcoming_every_sign_up_is_listed_newest_first(self, client, db):
         admin = _create_user(db, "admin", suffix="-upc-all")
@@ -948,7 +950,7 @@ class TestWaitlistAndCapacity:
             json={"price_id": price.id, "modality_id": modality.id},
         )
         assert r2.status_code == 400
-        assert "full" in r2.json()["detail"].lower()
+        assert r2.json()["detail"]["code"] == "modality_full"
 
     def test_modality_counter_updates_on_registration(self, client, db):
         """Modality current_participants increments on confirmed registration."""

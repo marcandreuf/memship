@@ -1,0 +1,10 @@
+{% extends "_base.html" %}
+
+{% block preheader %}La teva plaça a {{ activity_name }} està reservada fins que paguis.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">{% if deadline_added %}Ara tens un termini per pagar la teva plaça{% else %}Plaça reservada, pendent de pagament{% endif %}</h1>
+<p style="{{ s.p }}">Hola {{ member_name }},</p>
+<p style="{{ s.p }}">{% if deadline_added %}La teva plaça a <strong>{{ activity_name }}</strong> continua reservada, però el club ha activat un termini per pagar-la: si no pagues abans de la data límit, la inscripció es cancel·larà i la plaça quedarà lliure.{% else %}T'hem reservat una plaça a <strong>{{ activity_name }}</strong>. La inscripció es confirmarà quan es registri el pagament.{% endif %}</p>
+{% include "_seat_payment_ca.html" %}
+{% endblock %}

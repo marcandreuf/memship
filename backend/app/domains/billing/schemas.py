@@ -234,6 +234,18 @@ class ReceiptResponse(BaseModel):
     updated_at: datetime | None = None
 
 
+class MyReceiptResponse(ReceiptResponse):
+    """A member's own receipt, with the methods it may be paid by.
+
+    ``allowed_methods`` is None when any method the club offers will do, and
+    the accepted list for a pay-to-confirm seat (#591). ``bank_details`` is
+    set when that list includes a transfer, so the portal can say where to.
+    """
+
+    allowed_methods: list[str] | None = None
+    bank_details: str | None = None
+
+
 class ReceiptDetailResponse(ReceiptResponse):
     """Extended response with the recipient and concept names for detail views.
 

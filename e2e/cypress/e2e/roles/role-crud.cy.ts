@@ -53,7 +53,7 @@ describe("Roles — authoring", { tags: ["@roles"] }, () => {
       .contains("button", "Delete")
       .click();
     cy.get('[role="alertdialog"]').contains("button", "Delete").click();
-    cy.contains(/Cannot delete: \d+ accounts still hold it/).should("be.visible");
+    cy.contains(/Cannot delete: \d+ accounts? still holds? it/).should("be.visible");
     cy.get('[data-testid="role-row-treasurer"]').should("exist");
   });
 

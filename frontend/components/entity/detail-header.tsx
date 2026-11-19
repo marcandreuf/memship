@@ -18,6 +18,8 @@ interface DetailHeaderProps {
     label: string;
     variant?: VariantProps<typeof badgeVariants>["variant"];
   };
+  /** Shown after the status badge, for a second marker on the record. */
+  badgeExtra?: ReactNode;
   actions?: ReactNode;
 }
 
@@ -25,6 +27,7 @@ export function DetailHeader({
   breadcrumbs,
   title,
   badge,
+  badgeExtra,
   actions,
 }: DetailHeaderProps) {
   // A record has several parents, so the first crumb each page hardcodes names
@@ -53,6 +56,7 @@ export function DetailHeader({
           {badge && (
             <Badge variant={badge.variant || "default"}>{badge.label}</Badge>
           )}
+          {badgeExtra}
         </div>
         {actions && (
           <div className="flex flex-wrap gap-2 shrink-0">{actions}</div>

@@ -16,6 +16,11 @@ from app.core.email import (
     send_registration_approved_email,
     send_registration_confirmation_email,
     send_registration_cancellation_email,
+    send_late_payment_alert_email,
+    send_late_payment_refund_email,
+    send_payment_deadline_reminder_email,
+    send_registration_cancelled_unpaid_email,
+    send_registration_pending_payment_email,
     send_registration_rejected_email,
     send_waitlist_promotion_email,
 )
@@ -123,6 +128,141 @@ def send_registration_email_task(
 
 
 @celery.task(bind=True, max_retries=3, default_retry_delay=60)
+def send_pending_payment_email_task(
+    self,
+    to: str,
+    member_name: str,
+    activity_name: str,
+    amount: str,
+    currency: str,
+    deadline: str | None = None,
+    pay_now_url: str | None = None,
+    bank_details: str | None = None,
+    cash: bool = False,
+    due_date: str | None = None,
+    reference: str | None = None,
+    locale: str = "es",
+    deadline_added: bool = False,
+) -> bool:
+    """Tell the member their seat is held until they pay, and how to pay."""
+    try:
+        return send_registration_pending_payment_email(
+            to,
+            member_name,
+            activity_name,
+            amount,
+            currency,
+            deadline=deadline,
+            pay_now_url=pay_now_url,
+            bank_details=bank_details,
+            cash=cash,
+            due_date=due_date,
+            reference=reference,
+            locale=locale,
+            deadline_added=deadline_added,
+        )
+    except Exception as exc:
+        logger.error(f"Pending-payment email task failed: to={to}, error={exc}")
+        raise self.retry(exc=exc)
+
+
+@celery.task(bind=True, max_retries=3, default_retry_delay=60)
+def send_deadline_reminder_email_task(
+    self,
+    to: str,
+    member_name: str,
+    activity_name: str,
+    amount: str,
+    currency: str,
+    deadline: str | None = None,
+    pay_now_url: str | None = None,
+    bank_details: str | None = None,
+    cash: bool = False,
+    due_date: str | None = None,
+    reference: str | None = None,
+    locale: str = "es",
+) -> bool:
+    """Warn the member their unpaid seat is about to be released."""
+    try:
+        return send_payment_deadline_reminder_email(
+            to,
+            member_name,
+            activity_name,
+            amount,
+            currency,
+            deadline=deadline,
+            pay_now_url=pay_now_url,
+            bank_details=bank_details,
+            cash=cash,
+            due_date=due_date,
+            reference=reference,
+            locale=locale,
+        )
+    except Exception as exc:
+        logger.error(f"Deadline reminder email task failed: to={to}, error={exc}")
+        raise self.retry(exc=exc)
+
+
+@celery.task(bind=True, max_retries=3, default_retry_delay=60)
+def send_late_payment_alert_email_task(
+    self,
+    to: str,
+    member_name: str | None,
+    seat_name: str,
+    amount: str,
+    currency: str,
+    receipt_number: str,
+    gateway: str | None,
+    seat_confirmed: bool,
+    locale: str = "es",
+) -> bool:
+    """Alert the club to a payment for a seat that had already been released."""
+    try:
+        return send_late_payment_alert_email(
+            to, member_name, seat_name, amount, currency, receipt_number,
+            gateway, seat_confirmed, locale,
+        )
+    except Exception as exc:
+        logger.error(f"Late payment alert task failed: to={to}, error={exc}")
+        raise self.retry(exc=exc)
+
+
+@celery.task(bind=True, max_retries=3, default_retry_delay=60)
+def send_late_payment_refund_email_task(
+    self,
+    to: str,
+    member_name: str,
+    activity_name: str,
+    amount: str,
+    currency: str,
+    receipt_number: str,
+    locale: str = "es",
+) -> bool:
+    """Tell the member a late payment found no seat and is owed back."""
+    try:
+        return send_late_payment_refund_email(
+            to, member_name, activity_name, amount, currency, receipt_number, locale
+        )
+    except Exception as exc:
+        logger.error(f"Late payment refund email task failed: to={to}, error={exc}")
+        raise self.retry(exc=exc)
+
+
+@celery.task(bind=True, max_retries=3, default_retry_delay=60)
+def send_unpaid_cancellation_email_task(
+    self, to: str, member_name: str, activity_name: str, locale: str = "es"
+) -> bool:
+    """Tell the member their seat was released because it was not paid."""
+    try:
+        return send_registration_cancelled_unpaid_email(
+            to, member_name, activity_name, locale
+        )
+    except Exception as exc:
+        logger.error(f"Unpaid-cancellation email task failed: to={to}, error={exc}")
+        raise self.retry(exc=exc)
+
+
+@celery.task(bind=True, max_retries=3, default_retry_delay=60)
 def send_cancellation_email_task(
     self,
     to: str,
@@ -130,11 +270,12 @@ def send_cancellation_email_task(
     activity_name: str,
     cancelled_by: str | None = None,
     locale: str = "es",
+    refund_due: bool = False,
 ) -> bool:
     """Send registration cancellation email."""
     try:
         return send_registration_cancellation_email(
-            to, member_name, activity_name, cancelled_by, locale,
+            to, member_name, activity_name, cancelled_by, locale, refund_due,
         )
     except Exception as exc:
         logger.error(f"Cancellation email task failed: to={to}, error={exc}")
@@ -150,11 +291,13 @@ def send_promotion_email_task(
     activity_date: str | None = None,
     location: str | None = None,
     locale: str = "es",
+    payment: dict | None = None,
 ) -> bool:
     """Send waitlist promotion email."""
     try:
         return send_waitlist_promotion_email(
             to, member_name, activity_name, activity_date, location, locale,
+            payment=payment,
         )
     except Exception as exc:
         logger.error(f"Promotion email task failed: to={to}, error={exc}")
@@ -251,7 +394,9 @@ def send_receipt_email_task(self, receipt_id: int) -> bool:
                 locale=locale,
                 pay_now_url=instructions.pay_now_url,
                 bank_details=instructions.bank_details,
+                cash=instructions.cash,
                 direct_debit=instructions.direct_debit,
+                reference=instructions.reference,
             )
         finally:
             db.close()

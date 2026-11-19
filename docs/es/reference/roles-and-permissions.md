@@ -43,4 +43,8 @@ desactiva los permisos: cada cuenta sigue limitada a los de sus roles.
   los administradores **siempre pueden ver** un campo y el superadministrador **siempre puede
   editarlo**; para el socio, cada campo puede ser oculto, de solo lectura o editable. Ver
   [Campos de perfil](../admin-guide/custom-fields.md).
+- **Qué correos envía el club** (Configuración → Socios → Comunicaciones) tiene su propio
+  permiso, *Editar correos a los socios*. No es reservado: el Administrador lo tiene y se
+  puede dar a un rol personalizado. Las credenciales del correo saliente siguen siendo del
+  super admin.
 - Memship es de **un solo inquilino** (single-tenant): una base de datos por organización.

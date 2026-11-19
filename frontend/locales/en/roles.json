@@ -11,10 +11,10 @@
     "roleDescription": "Description",
     "permissions": "Permissions",
     "system": "System",
-    "assignedUsers": "{count} accounts",
+    "assignedUsers": "{count, plural, one {# account} other {# accounts}}",
     "confirmDelete": "Delete this role? It must be unassigned first.",
     "confirmDeleteDescription": "This cannot be undone.",
-    "inUse": "Cannot delete: {count} accounts still hold it.",
+    "inUse": "Cannot delete: {count, plural, one {# account still holds it} other {# accounts still hold it}}.",
     "slugExists": "A role with that name already exists ({name}).",
     "locked": "This is a system role: it cannot be renamed or deleted.",
     "reserved": "Reserved to the super admin",
@@ -178,6 +178,12 @@
         "write": {
           "label": "Edit profile fields",
           "description": "Define which custom fields exist on member records."
+        }
+      },
+      "communications": {
+        "write": {
+          "label": "Edit member emails",
+          "description": "Choose which emails the club sends to members, in Settings › Members › Communications."
         }
       },
       "integrations": {

@@ -150,7 +150,7 @@
       "day": "Día del mes",
       "dayDesc": "Día (1–31) en que se ejecuta la facturación; en los meses más cortos se factura el último día. Las cuotas trimestrales y anuales solo se facturan en el primer mes de su periodo.",
       "notificationEmail": "Correo de notificación",
-      "notificationEmailDesc": "Correo opcional que recibe un resumen tras cada ejecución automática"
+      "notificationEmailDesc": "Correo opcional que recibe el resumen de cada facturación automática y los avisos urgentes de pagos recibidos para plazas canceladas. Si se deja vacío, no se envía el resumen y los avisos urgentes van al correo del club."
     },
     "paymentReminders": {
       "tab": "Recordatorios de pago",
@@ -381,6 +381,31 @@
           "name": "Inscripción cancelada",
           "description": "Confirma la cancelación de una inscripción."
         },
+        "registration_pending_payment": {
+          "name": "Inscripción pendiente de pago",
+          "description": "Avisa al socio de que su plaza está reservada hasta que pague, con el importe, el plazo y cómo pagar.",
+          "warning": "Es el único aviso de que tiene que pagar. Sin él, el socio no sabrá que su plaza depende del pago."
+        },
+        "payment_deadline_reminder": {
+          "name": "Plaza a punto de caducar",
+          "description": "Recuerda al socio, antes de que venza el plazo, que su plaza se cancelará si no la paga.",
+          "warning": "Sin este aviso, la cancelación automática le llegará al socio por sorpresa."
+        },
+        "late_payment_alert": {
+          "name": "Pago recibido para una plaza cancelada",
+          "description": "Avisa al club, con urgencia, cuando la pasarela cobra una plaza que ya se había liberado.",
+          "warning": "Sin este aviso, el club no sabrá que tiene dinero cobrado que quizá deba devolver."
+        },
+        "registration_cancelled_unpaid": {
+          "name": "Inscripción cancelada por falta de pago",
+          "description": "Avisa al socio de que su plaza se ha liberado porque no se pagó a tiempo.",
+          "warning": "Sin este aviso, el socio no sabrá que ha perdido la plaza."
+        },
+        "late_payment_refund": {
+          "name": "Pago tardío sin plaza",
+          "description": "Avisa al socio cuando su pago llega con la plaza ya liberada y sin plazas libres: no está inscrito y se le devolverá el importe.",
+          "warning": "Sin este aviso, el socio no sabrá que se quedó sin plaza ni que se le devolverá el dinero."
+        },
         "waitlist_promoted": {
           "name": "Plaza liberada en actividad",
           "description": "Avisa al socio de que ha entrado desde la lista de espera.",
@@ -448,6 +473,13 @@
       "defaultTierDesc": "Solo un tipo de membresía gratuito puede ser el predeterminado, así que registrarse nunca inicia una cuota por sí solo",
       "noDefaultTier": "Ninguno seleccionado",
       "noFreeTiers": "Todavía no hay ningún tipo de membresía gratuito. Crea uno en Tipos de membresía y podrá ser el predeterminado."
+    },
+    "activityPayments": {
+      "title": "Actividades de pago",
+      "autoCancel": "Cancelar automáticamente las inscripciones no pagadas",
+      "autoCancelDesc": "Si el socio no paga dentro del plazo, su inscripción se cancela y la plaza queda libre. Cada actividad puede cambiarlo; al activarlo, las inscripciones ya pendientes reciben el plazo desde ahora y se avisa a sus socios.",
+      "hours": "Plazo para pagar (horas)",
+      "hoursDesc": "Desde que se reserva la plaza. Entre 1 y 8760."
     }
   }
 }

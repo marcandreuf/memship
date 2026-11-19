@@ -42,6 +42,7 @@ import {
   useUpdateAddress,
 } from "@/features/settings/hooks/use-settings";
 import { MembershipTypesSettings } from "@/features/settings/components/membership-types-settings";
+import { ActivityPaymentsSettings } from "@/features/settings/components/activity-payments-settings";
 import { PaymentsSettings } from "@/features/settings/components/payments-settings";
 import { LogoUpload } from "@/features/settings/components/logo-upload";
 import { GenderOptionsSettings } from "@/features/settings/components/gender-options-settings";
@@ -106,6 +107,7 @@ export default function SettingsPage() {
     "roles.read",
     "users.read",
     "settings.custom_fields.write",
+    "settings.communications.write",
   );
 
   const { data: branding, isLoading } = useSettings();
@@ -161,6 +163,9 @@ export default function SettingsPage() {
   const customRolesEnabled = Boolean(branding?.features?.custom_roles);
   const showRolesTab = has("roles.read");
   const showUsersTab = customRolesEnabled && has("users.read");
+  // The permission the communications endpoints require, not the role: the
+  // tab follows what the API will actually let this user do.
+  const canEditCommunications = has("settings.communications.write");
 
   // Ten triggers never fit a narrow content column, so `TabsNav` swaps the bar
   // for a dropdown — which needs the tabs as data rather than as markup.
@@ -189,7 +194,7 @@ export default function SettingsPage() {
   const [integrationsTab, setIntegrationsTab] = useState("sso");
   const [selectedMembersTab, setSelectedMembersTab] = useState<string>();
   const membersTab =
-    selectedMembersTab ?? (isSuperAdmin ? "communications" : "membership-types");
+    selectedMembersTab ?? (canEditCommunications ? "communications" : "membership-types");
 
   const paymentsSubtabs = [
     { value: "payments-general", label: t("settings.paymentsGeneral") },
@@ -201,7 +206,7 @@ export default function SettingsPage() {
   ];
 
   const membersSubtabs = [
-    isSuperAdmin && { value: "communications", label: t("settings.communications.tab") },
+    canEditCommunications && { value: "communications", label: t("settings.communications.tab") },
     isSuperAdmin && { value: "member-card", label: t("settings.memberCard.tab") },
     isSuperAdmin && { value: "profile-fields", label: t("profileFields.tab") },
     { value: "membership-types", label: t("nav.membershipTypes") },
@@ -483,8 +488,9 @@ export default function SettingsPage() {
               onValueChange={setPaymentsTab}
             />
 
-            <TabsContent value="payments-general">
+            <TabsContent value="payments-general" className="space-y-6">
               <PaymentsSettings />
+              <ActivityPaymentsSettings />
             </TabsContent>
             <TabsContent value="payment-providers">
               <PaymentProvidersSettings />
@@ -538,8 +544,8 @@ export default function SettingsPage() {
               onValueChange={setSelectedMembersTab}
             />
 
-            {isSuperAdmin && <TabsContent value="communications" className="space-y-3">
-              <CommunicationsSettings />
+            {canEditCommunications && <TabsContent value="communications" className="space-y-3">
+              {has("settings.write") && <CommunicationsSettings />}
               <EmailTemplatesSettings />
             </TabsContent>}
             {isSuperAdmin && <TabsContent value="member-card">

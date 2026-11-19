@@ -1,10 +1,20 @@
 """Activity, modality, and price schemas."""
 
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.core.schema_types import NonBlank, refuse_null
+
+PaymentMethod = Literal["card", "bizum", "transfer", "cash"]
+
+# A year, the same ceiling the club-wide default has.
+AUTO_CANCEL_MAX_HOURS = 8760
+
+
+def unique_methods(methods: list[str] | None) -> list[str] | None:
+    return None if methods is None else list(dict.fromkeys(methods))
 
 
 # --- ActivityModality ---
@@ -159,6 +169,11 @@ class ActivityCreate(BaseModel):
     cancellation_policy: str | None = Field(default=None, max_length=5000)
     allow_self_cancellation: bool = False
     self_cancellation_deadline_hours: int | None = Field(default=None, ge=0)
+    payment_methods: list[PaymentMethod] = []
+    auto_cancel_enabled: bool | None = None
+    auto_cancel_hours: int | None = Field(default=None, ge=1, le=AUTO_CANCEL_MAX_HOURS)
+
+    _unique_methods = field_validator("payment_methods")(unique_methods)
 
     @model_validator(mode="after")
     def validate_dates_and_ranges(self):
@@ -200,6 +215,11 @@ class ActivityUpdate(BaseModel):
     allow_self_cancellation: bool | None = None
     self_cancellation_deadline_hours: int | None = Field(default=None, ge=0)
     is_featured: bool | None = None
+    payment_methods: list[PaymentMethod] | None = None
+    auto_cancel_enabled: bool | None = None
+    auto_cancel_hours: int | None = Field(default=None, ge=1, le=AUTO_CANCEL_MAX_HOURS)
+
+    _unique_methods = field_validator("payment_methods")(unique_methods)
 
     @model_validator(mode="after")
     def validate_dates_and_ranges(self):
@@ -213,7 +233,9 @@ class ActivityUpdate(BaseModel):
             raise ValueError("max_participants must be greater than or equal to min_participants")
         return self
 
-    _not_null = field_validator("name", "allow_self_cancellation", "is_featured")(refuse_null)
+    _not_null = field_validator(
+        "name", "allow_self_cancellation", "is_featured", "payment_methods"
+    )(refuse_null)
 
 
 class ActivityResponse(BaseModel):
@@ -251,6 +273,10 @@ class ActivityResponse(BaseModel):
     self_cancellation_deadline_hours: int | None = None
     is_active: bool
     is_featured: bool
+    payment_flow: str
+    payment_methods: list[str] = []
+    auto_cancel_enabled: bool | None = None
+    auto_cancel_hours: int | None = None
     created_by: int | None = None
     created_at: datetime
     updated_at: datetime
@@ -277,6 +303,7 @@ class ActivityListResponse(BaseModel):
     status: str
     image_url: str | None = None
     is_featured: bool
+    payment_flow: str
     created_at: datetime
 
     model_config = {"from_attributes": True}

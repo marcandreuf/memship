@@ -4,9 +4,16 @@
 {% block preheader %}A spot has opened up in {{ activity_name }}.{% endblock %}
 
 {% block content %}
+{%- if amount %}
+<h1 style="{{ s.h1 }}">A seat is yours</h1>
+<p style="{{ s.p }}">Hi {{ member_name }},</p>
+<p style="{{ s.p }}">A spot has opened up in <strong>{{ activity_name }}</strong> and we are holding it for you. Your registration is confirmed once the payment is recorded.</p>
+{% include "_seat_payment_en.html" %}
+{%- else %}
 <h1 style="{{ s.h1 }}">You're in!</h1>
 <p style="{{ s.p }}">Hi {{ member_name }},</p>
 <p style="{{ s.p }}">A spot has opened up in <strong>{{ activity_name }}</strong> and your registration has been <strong>confirmed</strong>.</p>
+{%- endif %}
 {%- if activity_date or location %}
 {% call c.panel() %}
 {% if activity_date %}{{ c.data_row("Date", activity_date) }}{% endif %}

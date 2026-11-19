@@ -8,7 +8,10 @@ from sqlalchemy.orm import Session
 
 from app.core.authorization import user_has
 from app.domains.activities.models import Activity
+from app.domains.activities.payment import auto_cancel_hours, needs_payment, unusable_methods
+from app.domains.activities.registration_service import start_pending_deadlines
 from app.domains.activities.schemas import ActivityCreate, ActivityUpdate
+from app.domains.billing.seats import SeatError, refuse_auto_cancel_without_notices
 
 
 def generate_slug(db: Session, name: str) -> str:
@@ -50,6 +53,13 @@ def get_visible_activity_or_404(db: Session, activity_id: int, user) -> Activity
     return activity
 
 
+def _refuse_auto_cancel_without_notices(db: Session) -> None:
+    try:
+        refuse_auto_cancel_without_notices(db)
+    except SeatError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=e.detail)
+
+
 def create_activity(db: Session, data: ActivityCreate, created_by_id: int) -> Activity:
     """Create a new activity."""
     # Validate dates
@@ -75,6 +85,9 @@ def create_activity(db: Session, data: ActivityCreate, created_by_id: int) -> Ac
             detail="max_participants must be >= min_participants",
         )
 
+    if data.auto_cancel_enabled is True:
+        _refuse_auto_cancel_without_notices(db)
+
     slug = generate_slug(db, data.name)
 
     activity = Activity(
@@ -91,8 +104,14 @@ def update_activity(db: Session, activity: Activity, data: ActivityUpdate) -> Ac
     """Update an existing activity."""
     update_data = data.model_dump(exclude_unset=True)
 
+    if update_data.get("auto_cancel_enabled") is True and activity.auto_cancel_enabled is not True:
+        _refuse_auto_cancel_without_notices(db)
+
+    auto_cancel_was_on = auto_cancel_hours(db, activity) is not None
     for key, value in update_data.items():
         setattr(activity, key, value)
+    if not auto_cancel_was_on:
+        start_pending_deadlines(db, activity)
 
     # Validate dates after update
     if activity.ends_at <= activity.starts_at:
@@ -129,6 +148,27 @@ def publish_activity(db: Session, activity: Activity) -> Activity:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Activity must have at least one price to be published",
         )
+
+    # A seat that needs payment must have a way to be paid.
+    if any(needs_payment(activity, p.amount) for p in activity.prices if p.is_active is not False):
+        if not activity.payment_methods:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "code": "payment_methods_required",
+                    "message": "A paid activity must accept at least one payment method to be published",
+                },
+            )
+        unusable = unusable_methods(db, activity.payment_methods)
+        if unusable:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "code": "payment_methods_unavailable",
+                    "methods": unusable,
+                    "message": f"Payment methods not available at this club: {', '.join(unusable)}",
+                },
+            )
 
     # Must have required fields
     required = ["name", "starts_at", "ends_at", "registration_starts_at", "registration_ends_at", "max_participants"]

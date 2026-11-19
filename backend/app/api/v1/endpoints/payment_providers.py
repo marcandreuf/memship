@@ -18,6 +18,7 @@ from app.domains.billing.models import (
     WebhookEvent,
 )
 from app.domains.billing import webhook_rejections
+from app.domains.billing.payment_instructions import MEMBER_FACING_STATUSES
 from app.domains.billing.provider_config import (
     AVAILABLE_PROVIDER_TYPES,
     PROVIDER_CONFIG_SCHEMAS,
@@ -35,10 +36,6 @@ from app.domains.billing.schemas import (
 )
 
 router = APIRouter(prefix="/payment-providers", tags=["payment-providers"])
-
-# The statuses that put a provider in front of members: `/active-methods`
-# selects on these, and the member's pay buttons are built from that list alone.
-MEMBER_FACING_STATUSES = ("active", "test")
 
 
 def _refuse_save(errors: list[dict]) -> None:

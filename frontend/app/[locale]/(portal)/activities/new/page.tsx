@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/lib/i18n/routing";
 import { useForm } from "react-hook-form";
@@ -20,6 +21,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -29,6 +31,11 @@ import { toast } from "sonner";
 import { mapApiErrorsToForm } from "@/lib/errors";
 import { useCreateActivity } from "@/features/activities/hooks/use-activities";
 import { useMembershipTypes } from "@/features/members/hooks/use-members";
+import {
+  ActivityPaymentFields,
+  paymentSettingsFrom,
+  paymentSettingsPayload,
+} from "@/features/activities/components/activity-payment-fields";
 
 const activitySchema = z.object({
   name: z.string().trim().min(1).max(255),
@@ -49,6 +56,7 @@ const activitySchema = z.object({
   allowed_membership_types: z.array(z.number()),
   allow_self_cancellation: z.boolean(),
   self_cancellation_deadline_hours: optionalNumber({ min: 0 }),
+  waiting_list: z.boolean(),
 }).refine((data) => new Date(data.ends_at) > new Date(data.starts_at), {
   message: "validation.endBeforeStart",
   path: ["ends_at"],
@@ -75,7 +83,7 @@ export default function NewActivityPage() {
   const t = useTranslations();
   const router = useRouter();
   const { mutateAsync: create, isPending } = useCreateActivity();
-  const { data: membershipTypes } = useMembershipTypes();
+  const { data: membershipTypes, isLoading: typesLoading } = useMembershipTypes();
   const activeTypes = (membershipTypes ?? []).filter((mt) => mt.is_active);
 
   const form = useForm<ActivityFormValuesInput, unknown, ActivityFormValues>({
@@ -99,13 +107,16 @@ export default function NewActivityPage() {
       allowed_membership_types: [],
       allow_self_cancellation: false,
       self_cancellation_deadline_hours: "",
+      waiting_list: false,
     },
   });
 
   const allowSelfCancellation = form.watch("allow_self_cancellation");
+  const [payment, setPayment] = useState(() => paymentSettingsFrom());
 
   async function onSubmit(data: ActivityFormValues) {
     const payload: Record<string, unknown> = {
+      ...paymentSettingsPayload(payment),
       name: data.name,
       starts_at: new Date(data.starts_at).toISOString(),
       ends_at: new Date(data.ends_at).toISOString(),
@@ -116,6 +127,7 @@ export default function NewActivityPage() {
       tax_rate: data.tax_rate,
       allowed_membership_types: data.allowed_membership_types,
       allow_self_cancellation: data.allow_self_cancellation,
+      features: { waiting_list: data.waiting_list },
     };
     if (data.short_description) payload.short_description = data.short_description;
     if (data.description) payload.description = data.description;
@@ -358,7 +370,7 @@ export default function NewActivityPage() {
                     <p className="text-sm text-muted-foreground">
                       {t("activities.allowedTypesHint")}
                     </p>
-                    {activeTypes.length === 0 ? (
+                    {typesLoading ? null : activeTypes.length === 0 ? (
                       <p className="text-sm text-muted-foreground">
                         {t("activities.allowedTypesNone")}
                       </p>
@@ -399,6 +411,21 @@ export default function NewActivityPage() {
             <CardContent className="space-y-4">
               <FormField
                 control={form.control}
+                name="waiting_list"
+                render={({ field }) => (
+                  <FormItem className="flex items-start gap-2">
+                    <FormControl>
+                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                    </FormControl>
+                    <div>
+                      <FormLabel className="!mt-0">{t("activities.waitingList")}</FormLabel>
+                      <FormDescription className="text-xs">{t("activities.waitingListHint")}</FormDescription>
+                    </div>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
                 name="allow_self_cancellation"
                 render={({ field }) => (
                   <FormItem className="flex items-center gap-2">
@@ -426,6 +453,15 @@ export default function NewActivityPage() {
                   )}
                 />
               )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("activities.payment.title")}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ActivityPaymentFields flow="pay_to_confirm" value={payment} onChange={setPayment} />
             </CardContent>
           </Card>
 

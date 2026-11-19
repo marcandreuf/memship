@@ -43,6 +43,7 @@ def _create_activity(db, created_by_id=None, **overrides):
         "max_participants": 50,
         "status": "draft",
         "is_active": True,
+        "payment_flow": "legacy",
     }
     defaults.update(overrides)
     if created_by_id:

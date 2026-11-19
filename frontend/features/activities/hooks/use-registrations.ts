@@ -1,11 +1,16 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import {
   registerForActivity,
   checkEligibility,
   cancelRegistration,
   changeRegistrationStatus,
+  confirmWithoutPayment,
+  listRefunds,
+  markRefundReturned,
+  listUnseenLatePayments,
+  acknowledgeLatePayment,
   listActivityRegistrations,
   listMyRegistrations,
   listRegistrationAttachments,
@@ -61,16 +66,62 @@ export function useChangeRegistrationStatus() {
       id,
       status,
       admin_notes,
+      keep_payment,
     }: {
       id: number;
       status: string;
       admin_notes?: string;
-    }) => changeRegistrationStatus(id, status, admin_notes),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["activities"] });
-      qc.invalidateQueries({ queryKey: ["activity-registrations"] });
-      qc.invalidateQueries({ queryKey: ["my-registrations"] });
-    },
+      keep_payment?: boolean;
+    }) => changeRegistrationStatus(id, status, admin_notes, keep_payment),
+    onSuccess: () => invalidateSeat(qc),
+  });
+}
+
+function invalidateSeat(qc: QueryClient) {
+  qc.invalidateQueries({ queryKey: ["activities"] });
+  qc.invalidateQueries({ queryKey: ["activity-registrations"] });
+  qc.invalidateQueries({ queryKey: ["my-registrations"] });
+  qc.invalidateQueries({ queryKey: ["receipts"] });
+  qc.invalidateQueries({ queryKey: ["refunds"] });
+  qc.invalidateQueries({ queryKey: ["late-payments"] });
+}
+
+export function useConfirmWithoutPayment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => confirmWithoutPayment(id),
+    onSuccess: () => invalidateSeat(qc),
+  });
+}
+
+export function useRefunds(params: { page?: number; refund_status?: "due" | "returned" }) {
+  return useQuery({
+    queryKey: ["refunds", params],
+    queryFn: () => listRefunds({ ...params, per_page: 20 }),
+  });
+}
+
+export function useMarkRefundReturned() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => markRefundReturned(id),
+    onSuccess: () => invalidateSeat(qc),
+  });
+}
+
+export function useUnseenLatePayments(enabled = true) {
+  return useQuery({
+    queryKey: ["late-payments"],
+    queryFn: listUnseenLatePayments,
+    enabled,
+  });
+}
+
+export function useAcknowledgeLatePayment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => acknowledgeLatePayment(id),
+    onSuccess: () => invalidateSeat(qc),
   });
 }
 

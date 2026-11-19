@@ -11,10 +11,10 @@
     "roleDescription": "Descripció",
     "permissions": "Permisos",
     "system": "Del sistema",
-    "assignedUsers": "{count} comptes",
+    "assignedUsers": "{count, plural, one {# compte} other {# comptes}}",
     "confirmDelete": "Vols eliminar aquest rol? Ha d'estar sense assignar.",
     "confirmDeleteDescription": "Aquesta acció no es pot desfer.",
-    "inUse": "No es pot eliminar: {count} comptes encara el tenen.",
+    "inUse": "No es pot eliminar: {count, plural, one {# compte encara el té} other {# comptes encara el tenen}}.",
     "slugExists": "Ja existeix un rol amb aquest nom ({name}).",
     "locked": "Aquest rol és del sistema: no es pot reanomenar ni eliminar.",
     "reserved": "Reservat al superadministrador",
@@ -178,6 +178,12 @@
         "write": {
           "label": "Editar camps de perfil",
           "description": "Definir quins camps personalitzats existeixen a les fitxes de soci."
+        }
+      },
+      "communications": {
+        "write": {
+          "label": "Editar correus als socis",
+          "description": "Triar quins correus envia el club als socis, a Configuració › Socis › Comunicacions."
         }
       },
       "integrations": {

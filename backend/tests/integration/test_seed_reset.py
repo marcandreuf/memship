@@ -32,6 +32,7 @@ from app.cli.seed import (
     seed_membership_types,
     seed_narrow_role,
     seed_registrations,
+    seed_sepa_data,
     set_password,
     super_admin_users,
     sync_invoice_sequence,
@@ -145,6 +146,18 @@ class TestResetKeeps:
 
         provider = db.query(PaymentProvider).one()
         assert provider.config["secret_key"] == "sk_live_kept"
+
+    def test_reseeding_does_not_duplicate_the_providers(self, db):
+        # The providers survive a reset; the mandates the seed keyed them on do
+        # not, so every reseed used to add three more rows.
+        _base_install(db)
+        seed_sepa_data(db)
+        reset_club_data(db)
+        _base_install(db)
+        seed_sepa_data(db)
+
+        types = [t for (t,) in db.query(PaymentProvider.provider_type)]
+        assert sorted(types) == ["redsys", "sepa_direct_debit", "stripe"]
 
     def test_system_roles_survive_and_custom_roles_do_not(self, db):
         membership_type = _base_install(db)
@@ -338,6 +351,11 @@ class TestOrganizationDetails:
         assert is_enabled(db, "registration_approved") is True
         assert org.communications_config["templates"] == {
             "registration_approved": {"enabled": True},
+            "registration_pending_payment": {"enabled": True},
+            "payment_deadline_reminder": {"enabled": True},
+            "registration_cancelled_unpaid": {"enabled": True},
+            "late_payment_alert": {"enabled": True},
+            "late_payment_refund": {"enabled": True},
             "webhook_digest": {"enabled": True},
         }
 

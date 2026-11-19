@@ -1,0 +1,10 @@
+{% extends "_base.html" %}
+
+{% block preheader %}La teva plaça a {{ activity_name }} caduca aviat si no la pagues.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">La teva plaça caduca aviat</h1>
+<p style="{{ s.p }}">Hola {{ member_name }},</p>
+<p style="{{ s.p }}">Encara no hem rebut el pagament de la teva plaça a <strong>{{ activity_name }}</strong>.</p>
+{% include "_seat_payment_ca.html" %}
+{% endblock %}

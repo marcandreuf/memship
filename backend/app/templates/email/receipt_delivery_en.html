@@ -15,13 +15,18 @@
 <p style="{{ s.p }}">This receipt will be charged to your account by direct debit.</p>
 {%- elif pay_now_url %}
 {{ c.button(pay_now_url, "Pay now") }}
-{%- elif bank_details %}
+{%- endif %}
+{%- if bank_details and not direct_debit %}
 <p style="{{ s.p }}">You can pay by bank transfer:</p>
 {% call c.panel() %}
 <tr><td colspan="2" class="ms-text" style="padding:3px 0; font-family:Helvetica,Arial,sans-serif; font-size:15px; line-height:22px; mso-line-height-rule:exactly; color:#1f2328;">
 {%- for line in bank_details.split("\n") %}{{ line }}<br>{% endfor -%}
+{%- if reference %}Reference: {{ reference }}{% endif -%}
 </td></tr>
 {% endcall %}
+{%- endif %}
+{%- if cash and not direct_debit %}
+<p style="{{ s.p }}">{{ "You can also pay in cash at the club." if pay_now_url or bank_details else "You can pay in cash at the club." }}</p>
 {%- endif %}
 <p style="{{ s.note_last }}">The receipt is attached to this email as a PDF.</p>
 {% endblock %}

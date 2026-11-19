@@ -25,9 +25,11 @@ import { useActivities } from "@/features/activities/hooks/use-activities";
 import { useMyRegistrations, useRegistrationStats } from "@/features/activities/hooks/use-registrations";
 import { useActivity } from "@/features/activities/hooks/use-activities";
 import { useReceiptStats, useMyReceipts } from "@/features/receipts/hooks/use-receipts";
+import { memberReceiptStatusLabel } from "@/features/receipts/lib/member-status";
 import { useSpaceStats } from "@/features/bookings/hooks/use-bookings";
 import { useAnnualSummary } from "@/features/reports/hooks/use-annual-summary";
 import { ReminderList } from "@/features/reminders/components/reminder-list";
+import { LatePaymentsBanner } from "@/features/activities/components/late-payments-banner";
 import { useFormatters } from "@/hooks/use-formatters";
 import type { RegistrationData } from "@/features/activities/services/registrations-api";
 import { REGISTRATION_STATUS_VARIANTS } from "@/lib/status-variants";
@@ -505,6 +507,8 @@ export default function DashboardPage() {
         {t("dashboard.welcome", { name: user?.first_name ?? "", gender: user?.gender ?? "other" })}
       </h1>
 
+      {isAdmin && canReadBilling && <LatePaymentsBanner />}
+
       {isAdmin && (
         <div className="space-y-3">
           {/* Status counters on top: up to four as 1×4 (md+), 2×2 (sm), 1×1
@@ -637,7 +641,7 @@ export default function DashboardPage() {
                         r.status === "paid" ? "default" :
                         r.status === "overdue" || r.status === "returned" ? "destructive" : "secondary"
                       }>
-                        {t(`receipts.status${r.status.charAt(0).toUpperCase() + r.status.slice(1)}`)}
+                        {memberReceiptStatusLabel(t, r.status)}
                       </Badge>
                     </div>
                   ))}

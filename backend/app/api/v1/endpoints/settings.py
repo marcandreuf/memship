@@ -12,6 +12,12 @@ from app.core.security.oauth import provider_redirect_uri
 from app.db.session import get_db
 from app.domains.audit.models import AuditLog
 from app.domains.auth.models import User
+from app.domains.billing.seats import (
+    SEAT_PAYMENT_TEMPLATES,
+    SeatError,
+    auto_cancel_in_use,
+    refuse_auto_cancel_without_notices,
+)
 from app.domains.auth.sso_config import (
     PROVIDER_FIELDS,
     build_field_node,
@@ -107,6 +113,25 @@ def get_settings(
     return db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
 
 
+def _start_inherited_deadlines(db: Session) -> None:
+    """The club's auto-cancel has just come on: every pay-to-confirm activity
+    that follows the club gives its pending seats a deadline from now (#591)."""
+    from app.domains.activities.models import PAYMENT_FLOW_PAY_TO_CONFIRM, Activity
+    from app.domains.activities.registration_service import start_pending_deadlines
+
+    db.flush()
+    activities = (
+        db.query(Activity)
+        .filter(
+            Activity.payment_flow == PAYMENT_FLOW_PAY_TO_CONFIRM,
+            Activity.auto_cancel_enabled.is_(None),
+        )
+        .all()
+    )
+    for activity in activities:
+        start_pending_deadlines(db, activity)
+
+
 @router.put("/", response_model=OrganizationSettingsResponse)
 def update_settings(
     data: OrganizationSettingsUpdate,
@@ -129,10 +154,21 @@ def update_settings(
     """
     settings_obj = _require_org(db)
     update_data = data.model_dump(exclude_unset=True)
+    switching_on_auto_cancel = (
+        (update_data.get("features") or {}).get("activity_auto_cancel_enabled") is True
+        and (settings_obj.features or {}).get("activity_auto_cancel_enabled") is not True
+    )
+    if switching_on_auto_cancel:
+        try:
+            refuse_auto_cancel_without_notices(db)
+        except SeatError as e:
+            raise HTTPException(status_code=400, detail=e.detail)
     for key, value in update_data.items():
         if key == "features" and value is not None:
             value = {**(settings_obj.features or {}), **value}
         setattr(settings_obj, key, value)
+    if switching_on_auto_cancel:
+        _start_inherited_deadlines(db)
     db.commit()
     db.refresh(settings_obj)
     return settings_obj
@@ -558,7 +594,7 @@ def _build_communications_view(db: Session) -> CommunicationsConfigView:
 @router.get("/communications", response_model=CommunicationsConfigView)
 def get_communications_config(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("settings.integrations.write")),
+    current_user: User = Depends(require_permission("settings.communications.write")),
 ):
     """Every configurable email template with its group, tier and current state."""
     return _build_communications_view(db)
@@ -568,7 +604,7 @@ def get_communications_config(
 def update_communications_config(
     data: CommunicationsConfigUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("settings.integrations.write")),
+    current_user: User = Depends(require_permission("settings.communications.write")),
 ):
     """Switch email templates on or off.
 
@@ -592,6 +628,18 @@ def update_communications_config(
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail={"code": "template_mandatory", "keys": forbidden},
+        )
+
+    # The reverse of the guard on switching auto-cancel on: while a seat can be
+    # released for non-payment, the mails that warn its holder stay on (#591).
+    needed = sorted(
+        key for key, enabled in data.templates.items()
+        if key in SEAT_PAYMENT_TEMPLATES and not enabled
+    )
+    if needed and auto_cancel_in_use(db):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"code": "templates_needed_by_auto_cancel", "templates": needed},
         )
 
     settings_obj = _require_org(db)

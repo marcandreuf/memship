@@ -160,6 +160,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
                 "roles.read",
                 "users.read",
                 "settings.custom_fields.write",
+                "settings.communications.write",
               ),
             },
           ],

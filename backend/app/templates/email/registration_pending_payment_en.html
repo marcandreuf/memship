@@ -1,0 +1,10 @@
+{% extends "_base.html" %}
+
+{% block preheader %}Your seat at {{ activity_name }} is held until you pay.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">{% if deadline_added %}You now have a deadline to pay for your seat{% else %}Seat held, payment pending{% endif %}</h1>
+<p style="{{ s.p }}">Hi {{ member_name }},</p>
+<p style="{{ s.p }}">{% if deadline_added %}Your seat at <strong>{{ activity_name }}</strong> is still held, but the club has set a deadline to pay for it: if you do not pay before it, the registration is cancelled and the seat is released.{% else %}We are holding a seat for you at <strong>{{ activity_name }}</strong>. Your registration is confirmed once the payment is recorded.{% endif %}</p>
+{% include "_seat_payment_en.html" %}
+{% endblock %}

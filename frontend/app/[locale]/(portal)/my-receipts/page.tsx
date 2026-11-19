@@ -15,6 +15,8 @@ import { Pagination } from "@/components/entity/pagination";
 import { TableSkeleton } from "@/components/ui/skeletons";
 import { useFormatters } from "@/hooks/use-formatters";
 import { useMyReceipts, useStripeCheckout } from "@/features/receipts/hooks/use-receipts";
+import type { ReceiptData } from "@/features/receipts/services/receipts-api";
+import { memberReceiptStatusLabel } from "@/features/receipts/lib/member-status";
 import { RedsysPayButton } from "@/features/receipts/components/redsys-pay-button";
 import { useActivePaymentMethods } from "@/features/settings/hooks/use-payment-providers";
 import { usePageParam } from "@/hooks/use-url-state";
@@ -44,6 +46,9 @@ export default function MyReceiptsPage() {
   const bizumActive = (activeMethods || []).some(
     (m) => m.provider_type === "redsys" && m.methods?.includes("bizum")
   );
+  // A pay-to-confirm seat is paid only by what its activity accepts (#591).
+  const accepts = (r: ReceiptData, method: string) =>
+    !r.allowed_methods || r.allowed_methods.includes(method);
 
   async function handlePayNow(receiptId: number) {
     try {
@@ -72,13 +77,15 @@ export default function MyReceiptsPage() {
               <TableHead className="text-right">{t("receipts.total")}</TableHead>
               <TableHead>{t("receipts.status")}</TableHead>
               <TableHead>{t("receipts.emissionDate")}</TableHead>
+              <TableHead>{t("receipts.dueDate")}</TableHead>
               <TableHead>{t("receipts.paymentDate")}</TableHead>
               <TableHead></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {items.map((r) => {
-              const statusLabel = t(`receipts.status${r.status.charAt(0).toUpperCase() + r.status.slice(1)}`);
+              const statusLabel = memberReceiptStatusLabel(t, r.status);
+              const payable = ["emitted", "overdue"].includes(r.status);
               return (
                 <TableRow key={r.id}>
                   <TableCell className="font-mono text-sm">{r.receipt_number}</TableCell>
@@ -88,12 +95,13 @@ export default function MyReceiptsPage() {
                     <Badge variant={RECEIPT_STATUS_VARIANTS[r.status] || "outline"}>{statusLabel}</Badge>
                   </TableCell>
                   <TableCell className="text-sm">{formatDate(r.emission_date)}</TableCell>
+                  <TableCell className="text-sm">{payable && r.due_date ? formatDate(r.due_date) : "—"}</TableCell>
                   <TableCell className="text-sm">{formatDate(r.payment_date)}</TableCell>
                   <TableCell>
                     <div className="flex gap-2 flex-wrap">
-                      {["emitted", "overdue"].includes(r.status) && (
+                      {payable && (
                         <>
-                          {stripeActive && (
+                          {stripeActive && accepts(r, "card") && (
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
@@ -108,10 +116,10 @@ export default function MyReceiptsPage() {
                               <TooltipContent>{t("receipts.payNow")}</TooltipContent>
                             </Tooltip>
                           )}
-                          {redsysActive && (
+                          {redsysActive && accepts(r, "card") && (
                             <RedsysPayButton receiptId={r.id} method="card" />
                           )}
-                          {bizumActive && (
+                          {bizumActive && accepts(r, "bizum") && (
                             <RedsysPayButton receiptId={r.id} method="bizum" variant="outline" />
                           )}
                         </>
@@ -132,6 +140,14 @@ export default function MyReceiptsPage() {
                         <TooltipContent>{t("receipts.downloadPdf")}</TooltipContent>
                       </Tooltip>
                     </div>
+                    {payable && r.bank_details && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {t("receipts.payByTransfer", { bank: r.bank_details })}
+                      </p>
+                    )}
+                    {payable && r.allowed_methods?.includes("cash") && (
+                      <p className="mt-1 text-xs text-muted-foreground">{t("receipts.payInCash")}</p>
+                    )}
                   </TableCell>
                 </TableRow>
               );

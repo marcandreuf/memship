@@ -1,0 +1,11 @@
+{% extends "_base.html" %}
+
+{% block preheader %}Your registration for {{ activity_name }} was cancelled because it was not paid.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Registration cancelled, not paid</h1>
+<p style="{{ s.p }}">Hi {{ member_name }},</p>
+<p style="{{ s.p }}">We did not receive the payment for your seat at <strong>{{ activity_name }}</strong> before the deadline, so the registration has been cancelled and the seat released.</p>
+<p style="{{ s.p }}">If you still want to take part, you can register again while seats remain.</p>
+<p style="{{ s.note_last }}">If you have just paid, the club will see the payment and get in touch.</p>
+{% endblock %}

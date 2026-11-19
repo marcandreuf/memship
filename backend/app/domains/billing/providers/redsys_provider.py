@@ -281,6 +281,7 @@ class RedsysAdapter(PaymentProviderAdapter):
     def handle_webhook(self, db: Session, event_data: dict) -> dict:
         """Apply a verified Redsys notification to the matching receipt."""
         from app.domains.billing.models import Receipt
+        from app.domains.billing.seats import record_late_payment
         from app.domains.billing.service import (
             mark_receipt_paid,
             validate_status_transition,
@@ -339,11 +340,35 @@ class RedsysAdapter(PaymentProviderAdapter):
                 "outcome": "denied",
             }
 
-        if receipt.status in ("paid", "cancelled"):
+        if receipt.status == "paid":
             return {
                 "ignored": True,
-                "reason": f"Receipt already {receipt.status}",
+                "reason": "Receipt already paid",
                 "receipt_id": receipt.id,
+            }
+
+        payment = dict(
+            payment_method="redsys",
+            transaction_id=ds_auth_code or None,
+            redsys_auth_code=ds_auth_code[:8],
+        )
+
+        if receipt.status == "cancelled":
+            # Money has moved for a receipt we cancelled. A seat's is recorded and
+            # the club alerted; any other stays ignored. Answered 200 either way,
+            # since a retry from Redsys would change nothing.
+            late = record_late_payment(db, receipt, **payment)
+            if late is None:
+                return {
+                    "ignored": True,
+                    "reason": "Receipt already cancelled",
+                    "receipt_id": receipt.id,
+                }
+            return {
+                "receipt_id": receipt.id,
+                "outcome": "paid",
+                "late_payment": True,
+                "payment_notifications": late,
             }
 
         try:
@@ -355,13 +380,7 @@ class RedsysAdapter(PaymentProviderAdapter):
                 "receipt_id": receipt.id,
             }
 
-        pending = mark_receipt_paid(
-            db,
-            receipt,
-            payment_method="redsys",
-            transaction_id=ds_auth_code or None,
-            redsys_auth_code=ds_auth_code[:8],
-        )
+        pending = mark_receipt_paid(db, receipt, **payment)
 
         return {
             "receipt_id": receipt.id,

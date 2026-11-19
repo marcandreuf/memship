@@ -1,0 +1,16 @@
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}Tu pago para {{ activity_name }} ha llegado cuando la plaza ya no estaba disponible.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Pago recibido, pero la plaza ya no está disponible</h1>
+<p style="{{ s.p }}">Hola {{ member_name }},</p>
+<p style="{{ s.p }}">Hemos recibido tu pago para <strong>{{ activity_name }}</strong>, pero ha llegado cuando tu plaza ya se había liberado y no queda ninguna libre. <strong>No estás inscrito</strong> en la actividad.</p>
+{% call c.panel() %}
+{{ c.data_row("Importe", amount ~ " " ~ currency) }}
+{{ c.data_row("Recibo", receipt_number) }}
+{% endcall %}
+<p style="{{ s.p }}">El club te devolverá el importe por el mismo medio con el que pagaste. No tienes que hacer nada.</p>
+<p style="{{ s.note_last }}">Si todavía quieres participar, puedes volver a inscribirte si se libera alguna plaza.</p>
+{% endblock %}

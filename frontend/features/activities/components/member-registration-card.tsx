@@ -13,6 +13,7 @@ import { useRegistrationAttachments, useUploadAttachment } from "../hooks/use-re
 import type { RegistrationData } from "../services/registrations-api";
 import type { ActivityData } from "../services/activities-api";
 import { useFormatters } from "@/hooks/use-formatters";
+import { PendingPaymentNotice } from "./pending-payment-notice";
 
 interface MemberRegistrationCardProps {
   registration: RegistrationData;
@@ -39,6 +40,11 @@ export function MemberRegistrationCard({ registration, activity }: MemberRegistr
             </span>
           )}
         </div>
+
+        <PendingPaymentNotice registration={registration} />
+        {registration.cancelled_cause === "payment_expired" && (
+          <p className="text-sm text-muted-foreground">{t("activities.registration.expiredNotice")}</p>
+        )}
 
         {/* Registration details grid */}
         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">

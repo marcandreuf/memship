@@ -174,6 +174,7 @@ class StripeAdapter(PaymentProviderAdapter):
     def _handle_checkout_completed(self, db: Session, session_obj: dict) -> dict:
         """Handle successful Checkout payment."""
         from app.domains.billing.models import Receipt
+        from app.domains.billing.seats import record_late_payment
         from app.domains.billing.service import (
             mark_receipt_paid,
             validate_status_transition,
@@ -188,10 +189,10 @@ class StripeAdapter(PaymentProviderAdapter):
             return {"ignored": True, "reason": f"Receipt {receipt_id} not found"}
 
         # Status-guarded transition
-        if receipt.status in ("paid", "cancelled"):
+        if receipt.status == "paid":
             return {
                 "ignored": True,
-                "reason": f"Receipt already {receipt.status}",
+                "reason": "Receipt already paid",
                 "receipt_id": receipt.id,
             }
 
@@ -226,6 +227,29 @@ class StripeAdapter(PaymentProviderAdapter):
                 "receipt_id": receipt.id,
             }
 
+        payment = dict(
+            payment_method="stripe_checkout",
+            transaction_id=session_obj.get("payment_intent"),
+            stripe_payment_intent_id=session_obj.get("payment_intent"),
+        )
+
+        if receipt.status == "cancelled":
+            # Money has moved for a receipt we cancelled. A seat's is recorded and
+            # the club alerted; any other stays ignored. Answered 200 either way,
+            # since a retry from Stripe would change nothing.
+            late = record_late_payment(db, receipt, **payment)
+            if late is None:
+                return {
+                    "ignored": True,
+                    "reason": "Receipt already cancelled",
+                    "receipt_id": receipt.id,
+                }
+            return {
+                "receipt_id": receipt.id,
+                "late_payment": True,
+                "payment_notifications": late,
+            }
+
         try:
             validate_status_transition(receipt.status, "paid")
         except Exception:
@@ -235,13 +259,7 @@ class StripeAdapter(PaymentProviderAdapter):
                 "receipt_id": receipt.id,
             }
 
-        pending = mark_receipt_paid(
-            db,
-            receipt,
-            payment_method="stripe_checkout",
-            transaction_id=session_obj.get("payment_intent"),
-            stripe_payment_intent_id=session_obj.get("payment_intent"),
-        )
+        pending = mark_receipt_paid(db, receipt, **payment)
 
         return {"receipt_id": receipt.id, "payment_notifications": pending}
 

@@ -509,6 +509,24 @@ class TestHighLevelEmails:
         subject = mock_send.call_args[0][1]
         assert "Chess Club" in subject
 
+    @patch("app.core.email.send_email", return_value=True)
+    def test_a_promotion_that_must_be_paid_does_not_say_confirmed(self, mock_send):
+        send_waitlist_promotion_email(
+            "user@example.com", "Bob", "Chess Club", locale="en",
+            payment={
+                "amount": "27.50",
+                "currency": "EUR",
+                "deadline": "20/11/2026 18:00",
+                "pay_now_url": None,
+                "bank_details": None,
+                "cash": True,
+            },
+        )
+        subject, html = mock_send.call_args[0][1], mock_send.call_args[0][2]
+        assert "payment pending" in subject.lower()
+        assert "has been <strong>confirmed" not in html
+        assert "27.50" in html and "20/11/2026 18:00" in html
+
 
 PAYMENT_CONFIRMATION = {
     "member_name": "María Puig",
@@ -718,9 +736,90 @@ class TestReceiptDeliveryTemplate:
         assert PAY_URL not in html
         assert "ES9121000418450200051332" not in html
 
+    @pytest.mark.parametrize(
+        "locale, only, also",
+        [
+            ("es", "Puedes pagar en efectivo", "También puedes pagar en efectivo"),
+            ("ca", "Pots pagar en efectiu", "També pots pagar en efectiu"),
+            ("en", "You can pay in cash", "You can also pay in cash"),
+        ],
+    )
+    @pytest.mark.parametrize("template", ["receipt_delivery", "payment_reminder"])
+    def test_a_cash_seat_says_cash_and_also_only_beside_another_way(
+        self, template, locale, only, also
+    ):
+        # A pay-to-confirm seat's receipt lists what its activity accepts (#591).
+        context = dict(RECEIPT_DELIVERY, due_date="2026-12-01", days_overdue=3, cash=True)
+        html = render_template(template, locale, context)
+        assert only in html and also not in html
+
+        html = render_template(template, locale, dict(context, bank_details=IBAN))
+        assert also in html
+        assert "ES9121000418450200051332" in html
+
+    @pytest.mark.parametrize("locale", ["es", "ca", "en"])
+    def test_a_seat_with_card_and_transfer_shows_both(self, locale):
+        html = render_template(
+            "receipt_delivery", locale, dict(RECEIPT_DELIVERY, pay_now_url=PAY_URL, bank_details=IBAN)
+        )
+        assert PAY_URL in html
+        assert "ES9121000418450200051332" in html
+
     @pytest.mark.parametrize("locale", ["es", "ca", "en"])
     def test_nothing_to_pay_renders_no_payment_block(self, locale):
         html = render_template("receipt_delivery", locale, dict(RECEIPT_DELIVERY))
         assert "FAC-2026-0117" in html
         assert "my-receipts" not in html
         assert "ES9121000418450200051332" not in html
+
+
+class TestRevalidationWording:
+    """Wording found in the #591 revalidation."""
+
+    @pytest.mark.parametrize("template", ["receipt_delivery", "payment_reminder"])
+    @pytest.mark.parametrize("locale,label", [("es", "Concepto"), ("ca", "Concepte"), ("en", "Reference")])
+    def test_a_transfer_carries_its_reference(self, template, locale, label):
+        context = dict(
+            RECEIPT_DELIVERY, due_date="01/12/2026", days_overdue=3, bank_details=IBAN,
+            reference="FAC-2026-0117 – María Puig",
+        )
+        html = render_template(template, locale, context)
+        assert f"{label}: FAC-2026-0117 – María Puig" in html
+
+    @pytest.mark.parametrize("locale,today", [("es", "vence hoy"), ("ca", "venç avui"), ("en", "falls due today")])
+    def test_a_reminder_on_the_due_date_says_today_and_no_delay(self, locale, today):
+        context = dict(RECEIPT_DELIVERY, due_date="01/12/2026", days_overdue=0)
+        html = render_template("payment_reminder", locale, context)
+        assert today in html
+        assert "0 d" not in html
+
+    @pytest.mark.parametrize("locale,text", [("es", "te devolverá"), ("ca", "et retornarà"), ("en", "will return")])
+    def test_a_cancelled_paid_seat_mentions_the_refund(self, locale, text):
+        context = {"member_name": "Ana", "activity_name": "Yoga"}
+        assert text not in render_template("registration_cancelled", locale, context)
+        assert text in render_template("registration_cancelled", locale, dict(context, refund_due=True))
+
+    @pytest.mark.parametrize("locale,title", [
+        ("es", "Ahora tienes un plazo"), ("ca", "Ara tens un termini"), ("en", "You now have a deadline"),
+    ])
+    def test_the_resent_pending_mail_says_a_deadline_now_applies(self, locale, title):
+        context = {
+            "member_name": "Ana", "activity_name": "Yoga", "amount": "30.00",
+            "currency": "EUR", "deadline": "02/12/2026 10:00",
+        }
+        assert title not in render_template("registration_pending_payment", locale, context)
+        assert title in render_template(
+            "registration_pending_payment", locale, dict(context, deadline_added=True)
+        )
+
+    @pytest.mark.parametrize("locale,text", [
+        ("es", "No estás inscrito"), ("ca", "No estàs inscrit"), ("en", "You are not registered"),
+    ])
+    def test_a_late_payment_without_a_seat_says_so_and_promises_the_refund(self, locale, text):
+        html = render_template("late_payment_refund", locale, {
+            "member_name": "Ana", "activity_name": "Yoga", "amount": "30.00",
+            "currency": "EUR", "receipt_number": "FAC-2026-0039",
+        })
+        assert text in html
+        assert "FAC-2026-0039" in html
+        assert "No tienes que hacer nada más" not in html

@@ -55,6 +55,7 @@ ADMINISTRATIVE: tuple[Permission, ...] = (
     _p("settings.read"),
     _p("settings.write"),
     _p("settings.custom_fields.write"),
+    _p("settings.communications.write"),
     _p("settings.integrations.write", reserved=True),
     _p("users.read"),
     _p("users.write"),

@@ -1,5 +1,5 @@
 <!-- source: es/reference/roles-and-permissions.md -->
-<!-- source-hash: ba3f1f3a29f7 -->
+<!-- source-hash: 04225cb0bc8c -->
 
 # Roles and permissions
 
@@ -45,4 +45,7 @@ every account stays limited to those of its roles.
   administrators **can always see** a field and the super admin **can always
   edit it**; for the member, each field can be hidden, read-only or editable. See
   [Profile fields](../admin-guide/custom-fields.md).
+- **Which emails the club sends** (Settings → Members → Communications) has a permission of
+  its own, *Edit member emails*. It is not reserved: the Administrator holds it and it can be
+  given to a custom role. The outgoing mail credentials stay with the super admin.
 - Memship is **single-tenant**: one database per organisation.

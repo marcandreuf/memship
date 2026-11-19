@@ -271,9 +271,16 @@ def create_org_settings(db, details: dict, address: dict | None = None) -> None:
         # secret — which a club that never finds the switch would never hear
         # of (#514). It stays optional, so a club can turn it off, and sends
         # nothing until a billing notification address is set.
+        # The three pay-to-confirm mails are the member's only word that a seat
+        # is held until paid, about to expire, or gone for non-payment (#591).
         communications_config={
             "templates": {
                 "registration_approved": {"enabled": True},
+                "registration_pending_payment": {"enabled": True},
+                "payment_deadline_reminder": {"enabled": True},
+                "registration_cancelled_unpaid": {"enabled": True},
+                "late_payment_alert": {"enabled": True},
+                "late_payment_refund": {"enabled": True},
                 "webhook_digest": {"enabled": True},
             },
         },
@@ -650,7 +657,18 @@ def seed_activities(db, user_id: int) -> None:
         modalities_data = act_data.pop("modalities")
         prices_data = act_data.pop("prices")
 
-        activity = Activity(**act_data, created_by=user_id)
+        # The seeded catalogue stands for a club that was running before
+        # pay-to-confirm (#591): its activities are legacy, as the upgrade stamps
+        # them, and the registrations seeded into them were confirmed under that
+        # flow. The drafts and the wine tasting, which has no registrations, show
+        # the new flow instead.
+        new_flow = act_data["status"] == "draft" or act_data["slug"] == "private-wine-tasting"
+        activity = Activity(
+            **act_data,
+            created_by=user_id,
+            payment_flow="pay_to_confirm" if new_flow else "legacy",
+            payment_methods=["cash"] if new_flow else [],
+        )
         db.add(activity)
         db.flush()
 
@@ -1541,20 +1559,19 @@ def seed_sepa_data(db) -> None:
         db.flush()
         print("  Org creditor_id: set to ES12000B12345678")
 
-    # --- Payment provider ---
-    provider = PaymentProvider(
-        provider_type="sepa_direct_debit",
-        display_name="SEPA Direct Debit",
-        status="active",
-        config={"format": "pain.008.001.02"},
-        is_default=True,
-    )
-    db.add(provider)
-    db.flush()
-    print("  Payment provider: created SEPA Direct Debit")
-
-    # --- Disabled provider templates for other types ---
+    # --- Payment providers ---
+    # One row per type, created only when missing. The mandates above are club
+    # data and a `--reset-club-data` deletes them, while `payment_providers` is
+    # instance configuration and survives — so keying this on the mandates
+    # added three more provider rows on every reseed (48 after sixteen).
     provider_templates = [
+        PaymentProvider(
+            provider_type="sepa_direct_debit",
+            display_name="SEPA Direct Debit",
+            status="active",
+            config={"format": "pain.008.001.02"},
+            is_default=True,
+        ),
         PaymentProvider(
             provider_type="stripe",
             display_name="Stripe",
@@ -1574,10 +1591,13 @@ def seed_sepa_data(db) -> None:
         # open, fill in, test and activate while no member would ever be offered
         # them — see AVAILABLE_PROVIDER_TYPES and #340.
     ]
-    for tmpl in provider_templates:
-        db.add(tmpl)
+    existing_types = {t for (t,) in db.query(PaymentProvider.provider_type).distinct()}
+    created = [p for p in provider_templates if p.provider_type not in existing_types]
+    for provider in created:
+        db.add(provider)
     db.flush()
-    print("  Payment providers: created Stripe, Redsys, GoCardless, PayPal (disabled)")
+    if created:
+        print(f"  Payment providers: created {', '.join(p.display_name for p in created)}")
 
     # --- Add bank IBANs to more members (for mandate variety) ---
     extra_iban_data = [

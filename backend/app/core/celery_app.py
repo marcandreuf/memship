@@ -35,6 +35,11 @@ celery.conf.beat_schedule = {
         "task": "app.tasks.billing_tasks.scheduled_billing_run",
         "schedule": crontab(hour=2, minute=0),
     },
+    # Hourly, because a seat's payment deadline can be measured in hours.
+    "scheduled-seat-deadlines": {
+        "task": "app.tasks.billing_tasks.scheduled_seat_deadlines",
+        "schedule": crontab(minute=5),
+    },
     "scheduled-payment-reminders": {
         "task": "app.tasks.billing_tasks.scheduled_payment_reminders",
         "schedule": crontab(hour=3, minute=0),

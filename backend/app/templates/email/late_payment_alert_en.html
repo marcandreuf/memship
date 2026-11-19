@@ -1,0 +1,23 @@
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+{% set gateways = {"stripe_checkout": "Stripe", "redsys": "Redsys", "bizum": "Bizum (Redsys)"} %}
+
+{% block preheader %}A payment arrived for a seat that had already been cancelled.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Payment received for a cancelled seat</h1>
+<p style="{{ s.p }}">The gateway collected a receipt that had been cancelled because its seat was released. The payment has been recorded.</p>
+{% call c.panel() %}
+{% if member_name %}{{ c.data_row("Member", member_name) }}{% endif %}
+{{ c.data_row("Activity", seat_name) }}
+{{ c.data_row("Amount", amount ~ " " ~ currency) }}
+{{ c.data_row("Receipt", receipt_number) }}
+{% if gateway %}{{ c.data_row("Gateway", gateways.get(gateway, gateway)) }}{% endif %}
+{% endcall %}
+{%- if seat_confirmed %}
+<p style="{{ s.p_last }}">A seat was free, so the registration has been confirmed. Check it in case that is not what you want.</p>
+{%- else %}
+<p style="{{ s.p }}">No seat was free, so the registration stays cancelled and the amount is on the list of refunds due.</p>
+<p style="{{ s.p_last }}">Return it from the gateway's dashboard and mark it returned.</p>
+{%- endif %}
+{% endblock %}

@@ -14,9 +14,12 @@
  */
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
+import { join, relative, sep } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const ROOT = new URL("..", import.meta.url).pathname.replace(/\/$/, "");
+// fileURLToPath, not `.pathname`: on Windows the latter is `/C:/...`, which
+// readdirSync cannot open, and the check passed having read nothing at all.
+const ROOT = fileURLToPath(new URL("..", import.meta.url)).replace(/[\\/]$/, "");
 const API_DIR = join(ROOT, "app", "api");
 const SEARCH_DIRS = ["features", "lib", "hooks", "components", "app"];
 const CALL_RE = /apiClient(?:<[^>]*>)?\(\s*(["'`])/g;
@@ -92,17 +95,21 @@ function walk(dir, out = []) {
   return out;
 }
 
-/** Existing route handlers, as segment lists. */
+const METHOD_RE = /export async function (GET|POST|PUT|PATCH|DELETE)\b/g;
+
+/** Existing route handlers, as segment lists plus the methods each exports. */
 const routes = walk(API_DIR)
   .filter((f) => f.endsWith("route.ts"))
-  .map((f) =>
-    relative(API_DIR, f)
-      .split("/")
-      .slice(0, -1)
-      .filter(Boolean)
-  );
+  .map((f) => ({
+    segs: relative(API_DIR, f).split(sep).slice(0, -1).filter(Boolean),
+    methods: new Set([...readFileSync(f, "utf8").matchAll(METHOD_RE)].map((m) => m[1])),
+  }));
+
+const isParam = (seg) => seg.startsWith("[") && seg.endsWith("]");
 
 /**
+ * The route handler Next.js will serve a call from, or undefined.
+ *
  * A `[param]` route segment matches any call segment. A literal route segment
  * matches only the identical literal.
  *
@@ -110,15 +117,49 @@ const routes = walk(API_DIR)
  * `${id}` resolves to an id at runtime and will never equal `by-stripe-session`.
  * Allowing it let that route falsely cover `/receipts/${id}/credit-note`, which
  * hid the very defect this check exists to catch.
+ *
+ * Among several matches Next prefers a literal segment over a `[param]` one,
+ * leftmost first, and that choice is final: it does not fall back to another
+ * route when the one it picked lacks the method. So `/registrations/refunds`
+ * with no `refunds/route.ts` lands on `registrations/[id]/route.ts`, which
+ * exports only DELETE, and answers 405 (#591). Matching on the path alone
+ * called that covered.
  */
-function isCovered(callSegs) {
-  return routes.some(
-    (routeSegs) =>
-      routeSegs.length === callSegs.length &&
-      routeSegs.every((r, i) =>
-        r.startsWith("[") && r.endsWith("]") ? true : callSegs[i] === r
-      )
+function resolveRoute(callSegs) {
+  const matches = routes.filter(
+    ({ segs }) =>
+      segs.length === callSegs.length &&
+      segs.every((r, i) => isParam(r) || callSegs[i] === r)
   );
+  const rank = ({ segs }) => segs.map((r) => (isParam(r) ? "1" : "0")).join("");
+  return matches.sort((a, b) => rank(a).localeCompare(rank(b)))[0];
+}
+
+/** Skip past the string literal opening at `i`; returns the index of its close. */
+function skipString(text, i) {
+  const quote = text[i];
+  for (i++; i < text.length && text[i] !== quote; i++) {
+    if (text[i] === "\\") i++;
+  }
+  return i;
+}
+
+/**
+ * The HTTP method of the `apiClient(` call whose `(` is at `open`: the
+ * `method:` of its options, or GET when it passes none.
+ */
+function callMethod(text, open) {
+  let depth = 0;
+  for (let i = open; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === '"' || ch === "'" || ch === "`") i = skipString(text, i);
+    else if (ch === "(") depth++;
+    else if (ch === ")" && --depth === 0) {
+      const m = text.slice(open, i).match(/method:\s*["'`](\w+)["'`]/);
+      return m ? m[1].toUpperCase() : "GET";
+    }
+  }
+  return "GET";
 }
 
 const calls = new Map();
@@ -127,30 +168,41 @@ for (const dir of SEARCH_DIRS) {
     if (!/\.tsx?$/.test(file)) continue;
     const text = readFileSync(file, "utf8");
     for (const m of text.matchAll(CALL_RE)) {
-      const raw = readLiteral(text, m.index + m[0].length - 1);
+      const literalStart = m.index + m[0].length - 1;
+      const raw = readLiteral(text, literalStart);
       if (raw === null) continue;
       const segs = toSegments(raw);
       if (!segs.length) continue;
-      const key = segs.join("/");
-      if (!calls.has(key)) calls.set(key, { segs, files: new Set() });
-      calls.get(key).files.add(relative(ROOT, file));
+      const method = callMethod(text, text.lastIndexOf("(", literalStart));
+      const key = `${method} ${segs.join("/")}`;
+      if (!calls.has(key)) calls.set(key, { segs, method, files: new Set() });
+      calls.get(key).files.add(relative(ROOT, file).split(sep).join("/"));
     }
   }
 }
 
-const missing = [...calls.values()].filter((c) => !isCovered(c.segs));
+const missing = [];
+for (const call of calls.values()) {
+  const route = resolveRoute(call.segs);
+  if (!route) missing.push({ ...call, problem: "no route handler" });
+  else if (!route.methods.has(call.method))
+    missing.push({
+      ...call,
+      problem: `served by app/api/${route.segs.join("/")}/route.ts, which does not export ${call.method}`,
+    });
+}
 
 if (missing.length) {
   console.error(
-    `\ncheck-proxy-routes: ${missing.length} client call(s) have no route handler.\n`
+    `\ncheck-proxy-routes: ${missing.length} client call(s) cannot reach the API.\n`
   );
-  for (const { segs, files } of missing) {
-    console.error(`  /${segs.join("/")}`);
-    console.error(`      expected: app/api/${segs.map((s) => (s === "*" ? "[id]" : s)).join("/")}/route.ts`);
+  for (const { segs, method, files, problem } of missing) {
+    console.error(`  ${method} /${segs.join("/")} — ${problem}`);
+    console.error(`      expected: app/api/${segs.map((s) => (s === "*" ? "[id]" : s)).join("/")}/route.ts exporting ${method}`);
     for (const f of [...files].sort()) console.error(`      called by: ${f}`);
   }
   console.error(
-    "\nAdd the route handler, or remove the call if it is no longer used.\n"
+    "\nAdd the route handler or the method, or remove the call if it is no longer used.\n"
   );
   process.exit(1);
 }
