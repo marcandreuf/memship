@@ -1,6 +1,6 @@
 {% import "_components.html" as c with context %}
 {% call c.panel() %}
-{{ c.data_row("Import", amount ~ " " ~ currency) }}
+{{ c.data_row("Import", amount | money(currency)) }}
 {% if deadline %}{{ c.data_row("Paga abans de", deadline) }}{% elif due_date %}{{ c.data_row("Venciment del rebut", due_date) }}{% endif %}
 {% endcall %}
 {%- if deadline %}

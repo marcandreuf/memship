@@ -14,7 +14,7 @@ from decimal import ROUND_HALF_EVEN, Decimal
 
 import pytest
 
-from app.core.money import round_money
+from app.core.money import format_money, round_money
 
 
 class TestRoundMoney:
@@ -104,3 +104,27 @@ class TestCallSitesShareTheRule:
 def test_every_exact_half_rounds_up(amount, expected):
     """Half-even would alternate down/up across this sequence."""
     assert round_money(Decimal(amount)) == Decimal(expected)
+
+
+class TestFormatMoney:
+    """#607: one place turns an amount into text, in the reader's locale."""
+
+    @pytest.mark.parametrize(
+        "locale,expected",
+        [("es", "1.234,50 €"), ("ca", "1.234,50 €"), ("en", "€1,234.50")],
+    )
+    def test_each_supported_locale(self, locale, expected):
+        assert format_money(Decimal("1234.5"), "EUR", locale) == expected
+
+    def test_accepts_the_string_the_senders_pass(self):
+        assert format_money("36.30", "EUR", "es") == "36,30 €"
+
+    def test_an_unknown_locale_reads_as_spanish(self):
+        assert format_money("36.30", "EUR", "fr") == "36,30 €"
+
+    def test_the_clubs_currency_is_honoured(self):
+        assert format_money("36.30", "USD", "en") == "$36.30"
+
+    def test_a_currency_without_decimals_still_shows_the_stored_cents(self):
+        """Babel would drop the yen's decimals and print 1.234 for 1234.50."""
+        assert format_money("1234.50", "JPY", "es") == "1.234,50 JPY"

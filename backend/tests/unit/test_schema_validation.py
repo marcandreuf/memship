@@ -94,7 +94,7 @@ class TestActivityCreate:
         a = ActivityCreate(**_valid_activity_data())
         assert a.name == "Test Activity"
         assert a.min_participants == 0
-        assert a.tax_rate == 0
+        assert a.tax_rate is None
 
     def test_ends_before_starts(self):
         with pytest.raises(ValueError, match="ends_at must be after starts_at"):

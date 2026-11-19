@@ -161,7 +161,7 @@ class ActivityCreate(BaseModel):
     min_age: int | None = Field(default=None, ge=0, le=120)
     max_age: int | None = Field(default=None, ge=0, le=120)
     allowed_membership_types: list[int] | None = None
-    tax_rate: float = Field(default=0, ge=0, le=100)
+    tax_rate: float | None = Field(default=None, ge=0, le=100)
     features: dict = {}
     registration_fields_schema: list = []
     requirements: str | None = Field(default=None, max_length=5000)
@@ -261,7 +261,7 @@ class ActivityResponse(BaseModel):
     max_age: int | None = None
     allowed_membership_types: list[int] | None = None
     status: str
-    tax_rate: float
+    tax_rate: float | None = None
     image_url: str | None = None
     thumbnail_url: str | None = None
     features: dict = {}

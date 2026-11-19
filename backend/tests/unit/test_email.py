@@ -562,7 +562,7 @@ class TestPaymentConfirmationTemplate:
 
         assert "FAC-2026-0117" in html
         assert "Cuota anual 2026" in html
-        assert "121.00 EUR" in html
+        assert {"es": "121,00 €", "ca": "121,00 €", "en": "€121.00"}[locale] in html
         assert "2026-04-15" in html
 
     def test_a_labelled_payment_method_is_shown(self):
@@ -576,7 +576,7 @@ class TestPaymentConfirmationTemplate:
         html = render_template("payment_confirmation", "es", context)
 
         assert "Forma de pago" not in html
-        assert "121.00 EUR" in html
+        assert "121,00 €" in html
 
 
 class TestPaymentConfirmationSend:
@@ -609,7 +609,7 @@ class TestPaymentConfirmationSend:
         to, _, html = mock_send.call_args[0]
         assert to == "m@example.com"
         assert "María Puig" in html
-        assert "121.00 EUR" in html
+        assert "121,00 €" in html
 
     def test_it_is_off_until_the_club_switches_it_on(self):
         """Catalogued and default-off: adding it mails nobody by itself."""
@@ -823,3 +823,39 @@ class TestRevalidationWording:
         assert text in html
         assert "FAC-2026-0039" in html
         assert "No tienes que hacer nada más" not in html
+
+
+MONEY_TEMPLATES = [
+    "receipt_delivery",
+    "payment_reminder",
+    "payment_confirmation",
+    "registration_pending_payment",
+    "payment_deadline_reminder",
+    "late_payment_alert",
+    "late_payment_refund",
+]
+
+
+class TestAmountsInTheRecipientsLocale:
+    """#607: amounts used to read ``36.30 EUR`` whatever the member's language."""
+
+    @pytest.mark.parametrize("template", MONEY_TEMPLATES)
+    @pytest.mark.parametrize(
+        "locale,expected", [("es", "36,30 €"), ("ca", "36,30 €"), ("en", "€36.30")]
+    )
+    def test_every_amount_bearing_template(self, template, locale, expected):
+        html = render_template(
+            template, locale, {"member_name": "Ana", "amount": "36.30", "currency": "EUR", "days_overdue": 3}
+        )
+
+        assert expected in html
+        assert "36.30 EUR" not in html
+
+    def test_a_promoted_seat_awaiting_payment_too(self):
+        html = render_template(
+            "waitlist_promoted",
+            "ca",
+            {"member_name": "Ana", "activity_name": "Ioga", "amount": "36.30", "currency": "EUR"},
+        )
+
+        assert "36,30 €" in html

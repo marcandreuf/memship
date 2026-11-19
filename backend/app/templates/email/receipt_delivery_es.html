@@ -9,7 +9,7 @@
 <p style="{{ s.p }}">Adjuntamos el recibo correspondiente.</p>
 {% call c.panel() %}
 {{ c.data_row("Recibo", receipt_number) }}
-{{ c.data_row("Importe", amount ~ " " ~ currency) }}
+{{ c.data_row("Importe", amount | money(currency)) }}
 {% endcall %}
 {%- if direct_debit %}
 <p style="{{ s.p }}">Este recibo se cargará en tu cuenta por domiciliación bancaria.</p>

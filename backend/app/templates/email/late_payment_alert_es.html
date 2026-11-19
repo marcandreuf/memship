@@ -10,7 +10,7 @@
 {% call c.panel() %}
 {% if member_name %}{{ c.data_row("Socio", member_name) }}{% endif %}
 {{ c.data_row("Actividad", seat_name) }}
-{{ c.data_row("Importe", amount ~ " " ~ currency) }}
+{{ c.data_row("Importe", amount | money(currency)) }}
 {{ c.data_row("Recibo", receipt_number) }}
 {% if gateway %}{{ c.data_row("Pasarela", gateways.get(gateway, gateway)) }}{% endif %}
 {% endcall %}

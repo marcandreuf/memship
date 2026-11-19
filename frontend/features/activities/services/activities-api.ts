@@ -61,7 +61,7 @@ export interface ActivityData {
   allowed_membership_types: number[] | null;
   image_url: string | null;
   status: string;
-  tax_rate: number;
+  tax_rate: number | null;
   features: Record<string, unknown>;
   requirements: string | null;
   what_to_bring: string | null;
@@ -94,6 +94,8 @@ export interface PaymentOptions {
   auto_cancel_hours: number;
   /** Mails that warn a member about an unpaid seat, switched off in settings. */
   switched_off_templates: string[];
+  /** What an activity with no tax rate of its own bills at. */
+  default_vat_rate: number;
 }
 
 export async function getPaymentOptions(): Promise<PaymentOptions> {

@@ -232,7 +232,7 @@ def generate_billing(db, created_by: int | None) -> None:
             emission = date(year, month, _rng.randint(1, 28))
             base = Decimal(str(membership_concept.default_amount or 300)) / Decimal("12")
             base = base.quantize(Decimal("0.01"))
-            vat_rate = Decimal(str(membership_concept.vat_rate or 21))
+            vat_rate = Decimal(str(membership_concept.vat_rate if membership_concept.vat_rate is not None else 21))
             vat = (base * vat_rate / Decimal("100")).quantize(Decimal("0.01"))
             total = base + vat
 

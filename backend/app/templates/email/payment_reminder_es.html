@@ -9,7 +9,7 @@
 <p style="{{ s.p }}">{{ "Te recordamos que el siguiente recibo vence hoy y consta como pendiente de pago." if days_overdue == 0 else "Te recordamos que el siguiente recibo venció y consta como pendiente de pago." }}</p>
 {% call c.panel() %}
 {{ c.data_row("Recibo", receipt_number) }}
-{{ c.data_row("Importe", amount ~ " " ~ currency) }}
+{{ c.data_row("Importe", amount | money(currency)) }}
 {{ c.data_row("Vencimiento", due_date) }}
 {%- if days_overdue > 0 %}
 {{ c.data_row("Retraso", days_overdue ~ (" día" if days_overdue == 1 else " días")) }}
