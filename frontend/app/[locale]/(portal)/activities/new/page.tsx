@@ -21,6 +21,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -55,6 +56,7 @@ const activitySchema = z.object({
   allowed_membership_types: z.array(z.number()),
   allow_self_cancellation: z.boolean(),
   self_cancellation_deadline_hours: optionalNumber({ min: 0 }),
+  waiting_list: z.boolean(),
 }).refine((data) => new Date(data.ends_at) > new Date(data.starts_at), {
   message: "validation.endBeforeStart",
   path: ["ends_at"],
@@ -105,6 +107,7 @@ export default function NewActivityPage() {
       allowed_membership_types: [],
       allow_self_cancellation: false,
       self_cancellation_deadline_hours: "",
+      waiting_list: false,
     },
   });
 
@@ -124,6 +127,7 @@ export default function NewActivityPage() {
       tax_rate: data.tax_rate,
       allowed_membership_types: data.allowed_membership_types,
       allow_self_cancellation: data.allow_self_cancellation,
+      features: { waiting_list: data.waiting_list },
     };
     if (data.short_description) payload.short_description = data.short_description;
     if (data.description) payload.description = data.description;
@@ -405,6 +409,21 @@ export default function NewActivityPage() {
               <CardTitle>{t("activities.options")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <FormField
+                control={form.control}
+                name="waiting_list"
+                render={({ field }) => (
+                  <FormItem className="flex items-start gap-2">
+                    <FormControl>
+                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                    </FormControl>
+                    <div>
+                      <FormLabel className="!mt-0">{t("activities.waitingList")}</FormLabel>
+                      <FormDescription className="text-xs">{t("activities.waitingListHint")}</FormDescription>
+                    </div>
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name="allow_self_cancellation"

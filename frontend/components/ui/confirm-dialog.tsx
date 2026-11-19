@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,6 +34,7 @@ export function ConfirmDialog({
   variant = "destructive",
   onConfirm,
 }: ConfirmDialogProps) {
+  const t = useTranslations();
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -43,7 +45,9 @@ export function ConfirmDialog({
           )}
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>{cancelLabel}</AlertDialogCancel>
+          {/* A caller that names no label still gets a way back: without one
+              the button rendered empty and only the X closed the dialog. */}
+          <AlertDialogCancel>{cancelLabel ?? t("common.back")}</AlertDialogCancel>
           <AlertDialogAction variant={variant} onClick={onConfirm}>
             {confirmLabel}
           </AlertDialogAction>

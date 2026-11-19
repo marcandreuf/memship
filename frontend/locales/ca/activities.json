@@ -32,7 +32,7 @@
     "maxParticipants": "Màxim de participants",
     "capacity": "Capacitat",
     "spots": "{current}/{max} places",
-    "availableSpots": "{count} places disponibles",
+    "availableSpots": "{count, plural, one {# plaça disponible} other {# places disponibles}}",
     "full": "Complet",
     "minAge": "Edat mínima",
     "maxAge": "Edat màxima",
@@ -49,7 +49,7 @@
     "registrationOpen": "Oberta",
     "registrationClosed": "Tancada",
     "registrationNotYetOpen": "Encara no oberta",
-    "spotsAvailable": "{count} places disponibles",
+    "spotsAvailable": "{count, plural, one {# plaça disponible} other {# places disponibles}}",
     "ageRange": "Rang d'edat",
     "ages": "{min} - {max} anys",
     "schedule": "Horari",
@@ -180,6 +180,7 @@
     "registrations": "Inscripcions",
     "registration": {
       "register": "Inscriure's",
+      "fullNoWaitlist": "L'activitat és completa i no té llista d'espera.",
       "cancelRegistration": "Cancel·lar inscripció",
       "confirmCancel": "Cancel·lar aquesta inscripció?",
       "confirmCancelDescription": "El soci deixa d'estar inscrit i la seva plaça queda lliure.",
@@ -223,7 +224,11 @@
       "keepPayment": "Quedar-se el pagament (no retornar-lo)",
       "pendingNotice": "La teva plaça està reservada. La inscripció es confirma quan es registra el pagament.",
       "expiredNotice": "Aquesta inscripció es va cancel·lar perquè no es va pagar a temps.",
-      "pendingCreated": "Plaça reservada: paga el rebut per confirmar-la"
+      "pendingCreated": "Plaça reservada: paga el rebut per confirmar-la",
+      "heldUntilPaid": "La teva plaça quedarà reservada fins que paguis el rebut.",
+      "heldUntilPaidWithin": "La teva plaça quedarà reservada fins que paguis el rebut. Tindràs {hours} h per pagar-lo; si no, s'alliberarà.",
+      "confirmedCreated": "Inscripció confirmada",
+      "waitlistCreated": "Ets a la llista d'espera"
     },
     "legacy": {
       "badge": "legacy",
@@ -240,7 +245,6 @@
         "transfer": "Transferència",
         "cash": "Efectiu"
       },
-      "unavailable": "No disponible: falta un proveïdor de pagament actiu o l'IBAN del club",
       "autoCancel": "Cancel·lació automàtica si no es paga",
       "autoCancelInherit": "Com el club ({setting})",
       "clubOn": "activada, {hours} h",
@@ -248,9 +252,14 @@
       "autoCancelOn": "Activada en aquesta activitat",
       "autoCancelOff": "Desactivada en aquesta activitat",
       "autoCancelHours": "Termini per pagar (hores)",
-      "pendingEmailOff": "El correu «Inscripció pendent de pagament» està desactivat: els socis no sabran que han de pagar. Activa'l a Configuració › Comunicacions.",
-      "autoCancelNeedsEmails": "Per activar la cancel·lació automàtica, activa abans a Configuració › Comunicacions: {templates}.",
-      "autoCancelClub": "Com el club"
+      "pendingEmailOff": "El correu «Inscripció pendent de pagament» està desactivat: els socis no sabran que han de pagar.",
+      "autoCancelNeedsEmails": "Per activar la cancel·lació automàtica, abans cal activar aquests correus: {templates}.",
+      "autoCancelClub": "Com el club",
+      "fixInSettings": "Activa-ho a Configuració › Socis › Comunicacions.",
+      "fixAskAdmin": "Demana-ho a un administrador del club.",
+      "unavailableOnline": "Necessita un proveïdor de pagament en línia actiu",
+      "unavailableTransfer": "Necessita l'IBAN del club a Configuració › Pagaments",
+      "hoursFromClub": "{hours} h (del club)"
     },
     "refunds": {
       "title": "Devolucions",
@@ -267,7 +276,10 @@
       "markReturned": "Marcar retornat",
       "confirmMarkReturned": "Marcar com a retornat?",
       "confirmMarkReturnedDescription": "Fes-ho quan els diners ja s'hagin retornat. Queda registrat qui i quan.",
-      "empty": "No hi ha devolucions."
-    }
+      "empty": "No hi ha devolucions.",
+      "loadError": "No s'han pogut carregar les devolucions. Torna-ho a provar més tard."
+    },
+    "waitingList": "Llista d'espera",
+    "waitingListHint": "Quan no queden places, els socis següents esperen torn i ocupen la plaça que s'alliberi, per ordre."
   }
 }

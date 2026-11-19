@@ -180,6 +180,12 @@
           "description": "Define which custom fields exist on member records."
         }
       },
+      "communications": {
+        "write": {
+          "label": "Edit member emails",
+          "description": "Choose which emails the club sends to members, in Settings › Members › Communications."
+        }
+      },
       "integrations": {
         "write": {
           "label": "Edit integrations",

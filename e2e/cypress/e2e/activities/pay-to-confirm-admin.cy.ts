@@ -5,6 +5,9 @@
 function openActivity(search: string, name: string) {
   cy.visit("/en/activities");
   cy.get('input[placeholder*="Search"]').type(search);
+  // Wait for the search to land in the URL: its debounced replace would
+  // otherwise undo the navigation the click starts.
+  cy.location("search").should("include", `q=${search}`);
   cy.contains(name).click();
   cy.url().should("match", /\/activities\/\d+/);
 }

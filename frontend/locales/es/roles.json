@@ -180,6 +180,12 @@
           "description": "Definir qué campos personalizados existen en las fichas de socio."
         }
       },
+      "communications": {
+        "write": {
+          "label": "Editar correos a los socios",
+          "description": "Elegir qué correos envía el club a los socios, en Configuración › Socios › Comunicaciones."
+        }
+      },
       "integrations": {
         "write": {
           "label": "Editar integraciones",

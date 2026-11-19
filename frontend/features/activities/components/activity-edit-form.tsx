@@ -14,6 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -46,6 +47,7 @@ const editActivitySchema = z.object({
   allowed_membership_types: z.array(z.number()),
   allow_self_cancellation: z.boolean(),
   self_cancellation_deadline_hours: optionalNumber({ min: 0 }),
+  waiting_list: z.boolean(),
 }).refine((data) => new Date(data.ends_at) > new Date(data.starts_at), {
   message: "validation.endBeforeStart",
   path: ["ends_at"],
@@ -112,6 +114,7 @@ export function ActivityEditForm({
       allowed_membership_types: activity.allowed_membership_types ?? [],
       allow_self_cancellation: activity.allow_self_cancellation,
       self_cancellation_deadline_hours: activity.self_cancellation_deadline_hours ?? "",
+      waiting_list: activity.features?.waiting_list === true,
     },
   });
 
@@ -139,6 +142,8 @@ export function ActivityEditForm({
       min_age: data.min_age ?? null,
       max_age: data.max_age ?? null,
       self_cancellation_deadline_hours: data.allow_self_cancellation ? data.self_cancellation_deadline_hours ?? null : null,
+      // `features` is replaced whole on update: keep the activity's other keys.
+      features: { ...(activity.features ?? {}), waiting_list: data.waiting_list },
     };
     await onSubmit(payload);
   }
@@ -222,6 +227,15 @@ export function ActivityEditForm({
                 ))}
               </div>
             )}
+          </FormItem>
+        )} />
+        <FormField control={form.control} name="waiting_list" render={({ field }) => (
+          <FormItem className="flex items-start gap-2">
+            <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+            <div>
+              <FormLabel className="!mt-0">{t("activities.waitingList")}</FormLabel>
+              <FormDescription className="text-xs">{t("activities.waitingListHint")}</FormDescription>
+            </div>
           </FormItem>
         )} />
         <FormField control={form.control} name="allow_self_cancellation" render={({ field }) => (

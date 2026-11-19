@@ -1,5 +1,5 @@
 <!-- source: es/reference/roles-and-permissions.md -->
-<!-- source-hash: ba3f1f3a29f7 -->
+<!-- source-hash: 04225cb0bc8c -->
 
 # Rols i permisos
 
@@ -44,4 +44,7 @@ permisos: cada compte continua limitat als dels seus rols.
   administradors **sempre poden veure** un camp i el superadministrador **sempre pot editar-lo**;
   per al soci, cada camp pot ser ocult, de només lectura o editable. Mira
   [Camps de perfil](../admin-guide/custom-fields.md).
+- **Quins correus envia el club** (Configuració → Socis → Comunicacions) té un permís propi,
+  *Editar correus als socis*. No és reservat: l'Administrador el té i es pot donar a un rol
+  personalitzat. Les credencials del correu sortint continuen sent del super admin.
 - Memship és d'**un sol inquilí** (single-tenant): una base de dades per organització.

@@ -1558,20 +1558,19 @@ def seed_sepa_data(db) -> None:
         db.flush()
         print("  Org creditor_id: set to ES12000B12345678")
 
-    # --- Payment provider ---
-    provider = PaymentProvider(
-        provider_type="sepa_direct_debit",
-        display_name="SEPA Direct Debit",
-        status="active",
-        config={"format": "pain.008.001.02"},
-        is_default=True,
-    )
-    db.add(provider)
-    db.flush()
-    print("  Payment provider: created SEPA Direct Debit")
-
-    # --- Disabled provider templates for other types ---
+    # --- Payment providers ---
+    # One row per type, created only when missing. The mandates above are club
+    # data and a `--reset-club-data` deletes them, while `payment_providers` is
+    # instance configuration and survives — so keying this on the mandates
+    # added three more provider rows on every reseed (48 after sixteen).
     provider_templates = [
+        PaymentProvider(
+            provider_type="sepa_direct_debit",
+            display_name="SEPA Direct Debit",
+            status="active",
+            config={"format": "pain.008.001.02"},
+            is_default=True,
+        ),
         PaymentProvider(
             provider_type="stripe",
             display_name="Stripe",
@@ -1591,10 +1590,13 @@ def seed_sepa_data(db) -> None:
         # open, fill in, test and activate while no member would ever be offered
         # them — see AVAILABLE_PROVIDER_TYPES and #340.
     ]
-    for tmpl in provider_templates:
-        db.add(tmpl)
+    existing_types = {t for (t,) in db.query(PaymentProvider.provider_type).distinct()}
+    created = [p for p in provider_templates if p.provider_type not in existing_types]
+    for provider in created:
+        db.add(provider)
     db.flush()
-    print("  Payment providers: created Stripe, Redsys, GoCardless, PayPal (disabled)")
+    if created:
+        print(f"  Payment providers: created {', '.join(p.display_name for p in created)}")
 
     # --- Add bank IBANs to more members (for mandate variety) ---
     extra_iban_data = [

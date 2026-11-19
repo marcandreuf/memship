@@ -145,8 +145,14 @@ function RegistrationRow({
     : `Party #${registration.party_id}`;
 
   const status = registration.status;
-  const owesPayment = paymentFlow === "pay_to_confirm" && (registration.total_amount ?? 0) > 0;
   const paid = registration.receipt_status === "paid";
+  // Read from the seat itself, not only its amount: a pending seat owes payment
+  // by definition, and so does one whose receipt is still open (#591).
+  const owesPayment =
+    paymentFlow === "pay_to_confirm" &&
+    (status === "pending" ||
+      (registration.total_amount ?? 0) > 0 ||
+      (registration.receipt_status != null && registration.receipt_status !== "cancelled"));
   // A seat that needs payment is confirmed by paying or by waiving it, never by
   // a status flip; and only such a seat can be put back to pending.
   const targets = [
@@ -322,10 +328,10 @@ function CancelPaidSeatDialog({
         </label>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            {t("common.cancel")}
+            {t("common.back")}
           </Button>
           <Button variant="destructive" onClick={() => onConfirm(keepPayment)}>
-            {t("activities.registration.status.cancelled")}
+            {t("activities.registration.cancelRegistration")}
           </Button>
         </DialogFooter>
       </DialogContent>

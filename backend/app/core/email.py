@@ -1135,6 +1135,8 @@ def send_registration_pending_payment_email(
     pay_now_url: str | None = None,
     bank_details: str | None = None,
     cash: bool = False,
+    due_date: str | None = None,
+    reference: str | None = None,
     locale: str = "es",
 ) -> bool:
     return _send_templated(
@@ -1150,6 +1152,8 @@ def send_registration_pending_payment_email(
             "pay_now_url": pay_now_url,
             "bank_details": bank_details,
             "cash": cash,
+            "due_date": due_date,
+            "reference": reference,
         },
         subject_args={"activity": activity_name},
     )
@@ -1165,6 +1169,8 @@ def send_payment_deadline_reminder_email(
     pay_now_url: str | None = None,
     bank_details: str | None = None,
     cash: bool = False,
+    due_date: str | None = None,
+    reference: str | None = None,
     locale: str = "es",
 ) -> bool:
     return _send_templated(
@@ -1180,6 +1186,8 @@ def send_payment_deadline_reminder_email(
             "pay_now_url": pay_now_url,
             "bank_details": bank_details,
             "cash": cash,
+            "due_date": due_date,
+            "reference": reference,
         },
         subject_args={"activity": activity_name},
     )
@@ -1269,6 +1277,7 @@ def send_payment_reminder_email(
     org_name: str,
     pay_now_url: str | None = None,
     bank_details: str | None = None,
+    cash: bool = False,
     locale: str = "es",
 ) -> EmailOutcome:
     """Send a payment reminder for an overdue receipt.
@@ -1291,6 +1300,7 @@ def send_payment_reminder_email(
             "org_name": org_name,
             "pay_now_url": pay_now_url,
             "bank_details": bank_details,
+            "cash": cash,
         },
         subject_args={"receipt_number": receipt_number},
     )
@@ -1470,6 +1480,7 @@ def send_receipt_delivery_email(
     locale: str = "es",
     pay_now_url: str | None = None,
     bank_details: str | None = None,
+    cash: bool = False,
     direct_debit: bool = False,
 ) -> bool:
     """Deliver a generated receipt PDF to the member it belongs to."""
@@ -1485,6 +1496,7 @@ def send_receipt_delivery_email(
             "org_name": org_name,
             "pay_now_url": pay_now_url,
             "bank_details": bank_details,
+            "cash": cash,
             "direct_debit": direct_debit,
         },
         subject_args={"receipt_number": receipt_number, "org_name": org_name},

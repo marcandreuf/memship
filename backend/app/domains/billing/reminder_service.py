@@ -25,7 +25,7 @@ from app.core.clock import org_today
 from app.core.email import EmailOutcome, send_payment_reminder_email
 from app.db.after_commit import run_after_commit
 from app.domains.billing.models import NON_DEBT_ORIGINS, Receipt, ReceiptReminder
-from app.domains.billing.payment_instructions import how_to_pay
+from app.domains.billing.payment_instructions import receipt_instructions
 from app.domains.mailing.policy import is_enabled as template_enabled
 from app.domains.members.models import Member
 from app.domains.organizations.models import OrganizationSettings
@@ -159,7 +159,7 @@ def _prepare_reminder(
     member_name = " ".join(filter(None, [person.first_name, person.last_name])) or person.email
     days_overdue = max(0, (today - receipt.due_date).days) if receipt.due_date else 0
 
-    instructions = how_to_pay(db, org, locale)
+    instructions = receipt_instructions(db, receipt, org, locale)
 
     payload = dict(
         to=person.email,
@@ -172,6 +172,7 @@ def _prepare_reminder(
         org_name=org_name,
         pay_now_url=instructions.pay_now_url,
         bank_details=instructions.bank_details,
+        cash=instructions.cash,
         locale=locale,
     )
     return person, payload

@@ -15,13 +15,17 @@
 <p style="{{ s.p }}">Este recibo se cargará en tu cuenta por domiciliación bancaria.</p>
 {%- elif pay_now_url %}
 {{ c.button(pay_now_url, "Pagar ahora") }}
-{%- elif bank_details %}
+{%- endif %}
+{%- if bank_details and not direct_debit %}
 <p style="{{ s.p }}">Puedes realizar el pago mediante transferencia bancaria:</p>
 {% call c.panel() %}
 <tr><td colspan="2" class="ms-text" style="padding:3px 0; font-family:Helvetica,Arial,sans-serif; font-size:15px; line-height:22px; mso-line-height-rule:exactly; color:#1f2328;">
 {%- for line in bank_details.split("\n") %}{{ line }}<br>{% endfor -%}
 </td></tr>
 {% endcall %}
+{%- endif %}
+{%- if cash and not direct_debit %}
+<p style="{{ s.p }}">{{ "También puedes pagar en efectivo en el club." if pay_now_url or bank_details else "Puedes pagar en efectivo en el club." }}</p>
 {%- endif %}
 <p style="{{ s.note_last }}">El recibo va adjunto a este correo en formato PDF.</p>
 {% endblock %}

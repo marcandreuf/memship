@@ -20,6 +20,7 @@ from app.domains.activities.discount_service import (
 )
 from app.domains.activities.eligibility import check_eligibility
 from app.domains.activities.payment import (
+    auto_cancel_hours,
     needs_payment,
     payment_due_at,
     receipt_due_date,
@@ -47,8 +48,15 @@ DEADLINE_REMINDER_LEAD = timedelta(hours=24)
 
 
 class RegistrationError(Exception):
-    """Raised when a registration operation fails."""
-    pass
+    """Raised when a registration operation fails.
+
+    ``detail`` is what the API answers: the English message, or with a
+    ``code`` the ``{"code", ..., "message"}`` shape the UI translates.
+    """
+
+    def __init__(self, message: str, code: str | None = None, **fields):
+        super().__init__(message)
+        self.detail = {"code": code, **fields, "message": message} if code else message
 
 
 def occupies_seat(status: str | None) -> bool:
@@ -433,6 +441,12 @@ def _apply_status_change(
     if new_status == "cancelled":
         registration.cancelled_at = datetime.now(timezone.utc)
     else:
+        # A seat that is live again is not cancelled: a late payment that gives
+        # it back used to leave its cancellation date in the CSV (#591). What
+        # happened stays in ``late_payment_at`` and the audit trail.
+        registration.cancelled_at = None
+        registration.cancelled_by = None
+        registration.cancelled_reason = None
         registration.cancelled_cause = None
     registration.payment_reminder_sent_at = None
     registration.payment_due_at = (
@@ -536,6 +550,60 @@ def expire_unpaid_registration(db: Session, registration: Registration) -> None:
     _dispatch_unpaid_cancellation_email(db, registration, registration.activity)
 
 
+def start_pending_deadlines(
+    db: Session, activity: Activity, now: datetime | None = None
+) -> int:
+    """Give the activity's pending seats a deadline when auto-cancel comes on.
+
+    A seat taken while auto-cancel was off has no deadline, so switching it on
+    later never touched it: it stayed pending for good (#591). Each such seat
+    gets the full window from now, its receipt falls due by then, and its
+    member is sent the pending mail again, now with the deadline — a seat must
+    not be released before its holder has been told it can be. Returns how
+    many seats were given a deadline. Does not commit.
+    """
+    hours = auto_cancel_hours(db, activity)
+    if hours is None:
+        return 0
+    now = now or datetime.now(timezone.utc)
+    due_at = now + timedelta(hours=hours)
+    seats = (
+        db.query(Registration)
+        .filter(
+            Registration.activity_id == activity.id,
+            Registration.status == "pending",
+            Registration.payment_due_at.is_(None),
+        )
+        .all()
+    )
+    for registration in seats:
+        registration.payment_due_at = due_at
+        registration.payment_reminder_sent_at = None
+        receipt = registration.current_receipt
+        if receipt is not None and receipt.status in ("emitted", "overdue"):
+            due_date = receipt_due_date(db, due_at)
+            if receipt.due_date is None or due_date < receipt.due_date:
+                receipt.due_date = due_date
+        _dispatch_pending_payment_email(db, registration, activity, registration.member, receipt)
+    db.flush()
+    return len(seats)
+
+
+def _payment_window(db: Session, registration: Registration) -> timedelta:
+    """How long the member was given to pay.
+
+    The deadline is always set as "now + the activity's hours" — at
+    registration, at a promotion from the waiting list, or when auto-cancel is
+    switched on later — so the hours are the window. Measuring from
+    ``created_at`` instead counted a promoted member's days on the waiting
+    list, and warned them on the first hourly run after the promotion (#591).
+    """
+    hours = auto_cancel_hours(db, registration.activity)
+    if hours is not None:
+        return timedelta(hours=hours)
+    return registration.payment_due_at - registration.created_at
+
+
 def remind_pending_deadlines(db: Session, now: datetime | None = None) -> int:
     """Warn, once, each member whose pending seat is about to expire.
 
@@ -556,7 +624,7 @@ def remind_pending_deadlines(db: Session, now: datetime | None = None) -> int:
     )
     warned = 0
     for registration in pending:
-        window = registration.payment_due_at - registration.created_at
+        window = _payment_window(db, registration)
         lead = min(DEADLINE_REMINDER_LEAD, window / 2)
         if now < registration.payment_due_at - lead:
             continue
@@ -609,7 +677,8 @@ def admin_change_status(
     owes = needs_payment(registration.activity, registration.discounted_amount)
     if new_status == "confirmed" and owes and not _has_paid_receipt(db, registration):
         raise RegistrationError(
-            "This seat needs payment: mark its receipt paid or confirm it without payment"
+            "This seat needs payment: mark its receipt paid or confirm it without payment",
+            code="seat_needs_payment",
         )
     if new_status == "pending" and not owes:
         raise RegistrationError("Only a seat that needs payment can be pending")
@@ -617,6 +686,11 @@ def admin_change_status(
     _apply_status_change(db, registration, new_status, keep_payment=keep_payment)
     if admin_notes:
         registration.admin_notes = admin_notes
+    # The member hears about it as when they cancel themselves: the panel is
+    # where the organiser now cancels, and a seat lost in silence is a surprise
+    # at the door (#591).
+    if new_status == "cancelled":
+        _dispatch_cancellation_email(db, registration, registration.activity)
 
     return registration
 
@@ -754,9 +828,9 @@ def _determine_registration_status(
         return "pending" if needs_payment(activity, amount) else "confirmed"
     if waiting_list_enabled:
         return "waitlist"
-    raise RegistrationError(
-        "This modality is full" if full == "modality" else "Activity is full"
-    )
+    if full == "modality":
+        raise RegistrationError("This modality is full", code="modality_full")
+    raise RegistrationError("Activity is full", code="activity_full")
 
 
 def _promote_from_waitlist(
@@ -912,6 +986,18 @@ def _seat_payment(
         pay_now_url=instructions.pay_now_url,
         bank_details=instructions.bank_details,
         cash=instructions.cash,
+        # Without a deadline the receipt's own due date is what the member has.
+        due_date=(
+            receipt.due_date.strftime("%d/%m/%Y")
+            if receipt.due_date and not registration.payment_due_at
+            else None
+        ),
+        # What to write on a transfer so the club can match it.
+        reference=(
+            " – ".join(filter(None, [receipt.receipt_number, _get_member_name(registration)]))
+            if instructions.bank_details
+            else None
+        ),
     )
 
 

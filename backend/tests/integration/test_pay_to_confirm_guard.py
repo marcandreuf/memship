@@ -43,7 +43,8 @@ class TestTheClubDefault:
         )
 
         assert resp.status_code == 400
-        assert SEAT_PAYMENT_TEMPLATES[2] in resp.json()["detail"]
+        assert resp.json()["detail"]["code"] == "auto_cancel_needs_emails"
+        assert SEAT_PAYMENT_TEMPLATES[2] in resp.json()["detail"]["templates"]
 
     def test_is_accepted_once_all_three_are_on(self, client, db, org):
         _switch(org, SEAT_PAYMENT_TEMPLATES)

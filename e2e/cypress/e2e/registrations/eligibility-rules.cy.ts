@@ -143,7 +143,9 @@ describe("8. Eligibility Rules — Duplicate Registration", () => {
     cy.visit("/en/my-activities");
     cy.get("a[href*='/activities/']").should("have.length.greaterThan", 0);
 
-    cy.get("a[href*='/activities/']").first().click();
+    // A confirmed seat, not the newest: another spec may be holding a pending
+    // one for this member at the same moment, and that shows "Payment pending".
+    cy.contains("a[href*='/activities/']", /confirmed/i).first().click();
     cy.url().should("match", /\/activities\/\d+/);
 
     cy.contains(/confirmed|waitlisted|registered/i).should("be.visible");

@@ -183,11 +183,26 @@ class TestSendGate:
 
 
 class TestEndpoints:
-    def test_requires_superadmin(self, client, db):
+    def test_a_member_is_refused(self, client, db):
         member = _create_user(db, role="member", suffix="comms-rbac")
         db.commit()
         client.cookies.update(_auth_cookie(member))
         assert client.get("/api/v1/settings/communications").status_code == 403
+
+    def test_the_club_admin_can_switch_templates(self, client, db):
+        # Not behind the reserved integrations key: auto-cancel needs these
+        # mails on, and the club admin is who switches auto-cancel on (#591).
+        _org(db)
+        admin = _create_user(db, role="admin", suffix="comms-admin")
+        db.commit()
+        client.cookies.update(_auth_cookie(admin))
+
+        resp = client.put(
+            "/api/v1/settings/communications",
+            json={"templates": {"receipt_delivery": True}},
+        )
+
+        assert resp.status_code == 200, resp.text
 
     def test_get_lists_every_template_with_tier(self, client, db):
         _org(db)

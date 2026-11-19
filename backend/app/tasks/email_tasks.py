@@ -138,6 +138,8 @@ def send_pending_payment_email_task(
     pay_now_url: str | None = None,
     bank_details: str | None = None,
     cash: bool = False,
+    due_date: str | None = None,
+    reference: str | None = None,
     locale: str = "es",
 ) -> bool:
     """Tell the member their seat is held until they pay, and how to pay."""
@@ -152,6 +154,8 @@ def send_pending_payment_email_task(
             pay_now_url=pay_now_url,
             bank_details=bank_details,
             cash=cash,
+            due_date=due_date,
+            reference=reference,
             locale=locale,
         )
     except Exception as exc:
@@ -171,6 +175,8 @@ def send_deadline_reminder_email_task(
     pay_now_url: str | None = None,
     bank_details: str | None = None,
     cash: bool = False,
+    due_date: str | None = None,
+    reference: str | None = None,
     locale: str = "es",
 ) -> bool:
     """Warn the member their unpaid seat is about to be released."""
@@ -185,6 +191,8 @@ def send_deadline_reminder_email_task(
             pay_now_url=pay_now_url,
             bank_details=bank_details,
             cash=cash,
+            due_date=due_date,
+            reference=reference,
             locale=locale,
         )
     except Exception as exc:
@@ -361,6 +369,7 @@ def send_receipt_email_task(self, receipt_id: int) -> bool:
                 locale=locale,
                 pay_now_url=instructions.pay_now_url,
                 bank_details=instructions.bank_details,
+                cash=instructions.cash,
                 direct_debit=instructions.direct_debit,
             )
         finally:

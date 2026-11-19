@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { usePermissions } from "@/features/auth/hooks/use-permissions";
 import { usePaymentOptions } from "../hooks/use-activities";
 import {
   PAYMENT_METHODS,
@@ -57,7 +58,13 @@ interface ActivityPaymentFieldsProps {
 /** How a pay-to-confirm activity is paid, and whether unpaid seats expire. */
 export function ActivityPaymentFields({ flow, value, onChange }: ActivityPaymentFieldsProps) {
   const t = useTranslations();
+  const { has } = usePermissions();
   const { data: options } = usePaymentOptions(flow !== "legacy");
+  // Communications is reserved to whoever holds the permission its API needs;
+  // anyone else is told who can fix it rather than sent to a tab they lack.
+  const fixIt = has("settings.communications.write")
+    ? t("activities.payment.fixInSettings")
+    : t("activities.payment.fixAskAdmin");
 
   if (flow === "legacy") {
     return (
@@ -107,7 +114,11 @@ export function ActivityPaymentFields({ flow, value, onChange }: ActivityPayment
                 </span>
                 {!available && options && (
                   <span className="text-xs text-muted-foreground">
-                    ({t("activities.payment.unavailable")})
+                    ({t(
+                      method === "transfer"
+                        ? "activities.payment.unavailableTransfer"
+                        : "activities.payment.unavailableOnline"
+                    )})
                   </span>
                 )}
               </label>
@@ -115,7 +126,9 @@ export function ActivityPaymentFields({ flow, value, onChange }: ActivityPayment
           })}
         </div>
         {switchedOff.includes("registration_pending_payment") && (
-          <PaymentWarning>{t("activities.payment.pendingEmailOff")}</PaymentWarning>
+          <PaymentWarning>
+            {t("activities.payment.pendingEmailOff")} {fixIt}
+          </PaymentWarning>
         )}
       </div>
 
@@ -155,7 +168,7 @@ export function ActivityPaymentFields({ flow, value, onChange }: ActivityPayment
       </div>
       {value.auto_cancel === "on" && switchedOff.length > 0 && (
         <PaymentWarning>
-          {t("activities.payment.autoCancelNeedsEmails", { templates: templateNames })}
+          {t("activities.payment.autoCancelNeedsEmails", { templates: templateNames })} {fixIt}
         </PaymentWarning>
       )}
     </div>

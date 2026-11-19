@@ -150,7 +150,7 @@
       "day": "Día del mes",
       "dayDesc": "Día (1–31) en que se ejecuta la facturación; en los meses más cortos se factura el último día. Las cuotas trimestrales y anuales solo se facturan en el primer mes de su periodo.",
       "notificationEmail": "Correo de notificación",
-      "notificationEmailDesc": "Correo opcional que recibe un resumen tras cada ejecución automática"
+      "notificationEmailDesc": "Correo opcional que recibe el resumen de cada facturación automática y los avisos urgentes de pagos recibidos para plazas canceladas. Si se deja vacío, no se envía el resumen y los avisos urgentes van al correo del club."
     },
     "paymentReminders": {
       "tab": "Recordatorios de pago",
@@ -468,6 +468,13 @@
       "defaultTierDesc": "Solo un tipo de membresía gratuito puede ser el predeterminado, así que registrarse nunca inicia una cuota por sí solo",
       "noDefaultTier": "Ninguno seleccionado",
       "noFreeTiers": "Todavía no hay ningún tipo de membresía gratuito. Crea uno en Tipos de membresía y podrá ser el predeterminado."
+    },
+    "activityPayments": {
+      "title": "Actividades de pago",
+      "autoCancel": "Cancelar automáticamente las inscripciones no pagadas",
+      "autoCancelDesc": "Si el socio no paga dentro del plazo, su inscripción se cancela y la plaza queda libre. Cada actividad puede cambiarlo; al activarlo, las inscripciones ya pendientes reciben el plazo desde ahora y se avisa a sus socios.",
+      "hours": "Plazo para pagar (horas)",
+      "hoursDesc": "Desde que se reserva la plaza. Entre 1 y 8760."
     }
   }
 }

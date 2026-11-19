@@ -35,6 +35,7 @@ from tests.integration.test_registration_billing import (
 )
 
 ALERT = "app.tasks.email_tasks.send_late_payment_alert_email_task.delay"
+NOTIFY = "app.api.v1.endpoints.webhooks.dispatch_payment_notifications"
 LATER = datetime.now(timezone.utc) + timedelta(days=30)
 
 
@@ -66,16 +67,21 @@ class TestWithASeatFree:
         activity, registration, receipt = _released(db, org, membership_type, "free")
         _stripe_provider(db)
 
-        with patch(ALERT) as alert:
+        with patch(ALERT) as alert, patch(NOTIFY) as notify:
             resp = _post_stripe_paid(client, receipt, "late-free")
 
         assert resp.status_code == 200, resp.text
+        # The member is told the payment arrived, as for any payment.
+        notify.assert_called_once_with([receipt.id])
         db.expire_all()
         assert db.get(Receipt, receipt.id).status == "paid"
         registration = _reload(db, registration)
         assert registration.status == "confirmed"
         assert registration.refund_status == "none"
         assert registration.late_payment_at is not None
+        # Live again, so no longer carries its cancellation.
+        assert registration.cancelled_at is None
+        assert registration.cancelled_cause is None
         assert alert.call_args.kwargs["seat_confirmed"] is True
         assert alert.call_args.kwargs["to"] == "treasurer@club.example"
         _assert_counters_match_rows(db, activity)

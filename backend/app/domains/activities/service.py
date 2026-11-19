@@ -8,7 +8,8 @@ from sqlalchemy.orm import Session
 
 from app.core.authorization import user_has
 from app.domains.activities.models import Activity
-from app.domains.activities.payment import needs_payment, unusable_methods
+from app.domains.activities.payment import auto_cancel_hours, needs_payment, unusable_methods
+from app.domains.activities.registration_service import start_pending_deadlines
 from app.domains.activities.schemas import ActivityCreate, ActivityUpdate
 from app.domains.billing.seats import SeatError, refuse_auto_cancel_without_notices
 
@@ -56,7 +57,7 @@ def _refuse_auto_cancel_without_notices(db: Session) -> None:
     try:
         refuse_auto_cancel_without_notices(db)
     except SeatError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=e.detail)
 
 
 def create_activity(db: Session, data: ActivityCreate, created_by_id: int) -> Activity:
@@ -106,8 +107,11 @@ def update_activity(db: Session, activity: Activity, data: ActivityUpdate) -> Ac
     if update_data.get("auto_cancel_enabled") is True and activity.auto_cancel_enabled is not True:
         _refuse_auto_cancel_without_notices(db)
 
+    auto_cancel_was_on = auto_cancel_hours(db, activity) is not None
     for key, value in update_data.items():
         setattr(activity, key, value)
+    if not auto_cancel_was_on:
+        start_pending_deadlines(db, activity)
 
     # Validate dates after update
     if activity.ends_at <= activity.starts_at:
@@ -150,13 +154,20 @@ def publish_activity(db: Session, activity: Activity) -> Activity:
         if not activity.payment_methods:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="A paid activity must accept at least one payment method to be published",
+                detail={
+                    "code": "payment_methods_required",
+                    "message": "A paid activity must accept at least one payment method to be published",
+                },
             )
         unusable = unusable_methods(db, activity.payment_methods)
         if unusable:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Payment methods not available at this club: {', '.join(unusable)}",
+                detail={
+                    "code": "payment_methods_unavailable",
+                    "methods": unusable,
+                    "message": f"Payment methods not available at this club: {', '.join(unusable)}",
+                },
             )
 
     # Must have required fields

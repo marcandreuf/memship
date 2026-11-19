@@ -82,8 +82,10 @@ class TestTheListShowsWhoHasPaid:
             cookies=_auth_cookie(admin),
         ).text.lstrip("﻿").splitlines()[:2]
 
-        assert header.split(",")[-3:] == ["receipt_status", "payment_due_at", "refund_status"]
-        assert row.split(",")[-3] == "paid"
+        assert header.split(",")[-4:] == [
+            "receipt_status", "payment_due_at", "refund_status", "late_payment_at"
+        ]
+        assert row.split(",")[-4] == "paid"
 
 
 class TestCancellingAPaidSeat:

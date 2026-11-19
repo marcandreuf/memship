@@ -66,6 +66,8 @@ export default function RegisterPage({
 
   const mandatoryConsents = activityConsents.filter((c: ActivityConsentData) => c.is_mandatory);
   const allMandatoryAccepted = mandatoryConsents.every((c: ActivityConsentData) => acceptedConsents[c.id]);
+  // Only the activity-wide cap is known here; a full modality is still refused by the API.
+  const fullWithoutWaitlist = activity.available_spots <= 0 && !activity.features?.waiting_list;
 
   async function handleValidateDiscount() {
     if (!discountCode.trim()) return;
@@ -98,7 +100,9 @@ export default function RegisterPage({
       toast.success(
         registration.status === "pending"
           ? t("activities.registration.pendingCreated")
-          : t("toast.success.created"),
+          : registration.status === "waitlist"
+            ? t("activities.registration.waitlistCreated")
+            : t("activities.registration.confirmedCreated"),
       );
       router.push(`/activities/${activityId}`);
     } catch { /* global handler shows error toast */ }
@@ -228,6 +232,15 @@ export default function RegisterPage({
                   })}
                 </p>
               )}
+              {activity.payment_flow === "pay_to_confirm" && selectedPrice && selectedPrice.amount > 0 && (
+                // Said before signing up, not discovered after: the seat is
+                // only held until the receipt is paid (#591).
+                <p className="text-sm mt-2 rounded-md border border-amber-300 bg-amber-50 p-2 text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+                  {activity.auto_cancel_enabled && activity.auto_cancel_hours
+                    ? t("activities.registration.heldUntilPaidWithin", { hours: activity.auto_cancel_hours })
+                    : t("activities.registration.heldUntilPaid")}
+                </p>
+              )}
             </div>
 
             {/* Discount code */}
@@ -296,10 +309,20 @@ export default function RegisterPage({
             </div>
 
             {/* Submit */}
+            {fullWithoutWaitlist && (
+              <p className="text-sm text-muted-foreground">
+                {t("activities.registration.fullNoWaitlist")}
+              </p>
+            )}
             <div className="flex gap-3">
               <Button
                 onClick={handleRegister}
-                disabled={!selectedPriceId || !allMandatoryAccepted || registerMutation.isPending}
+                disabled={
+                  !selectedPriceId ||
+                  !allMandatoryAccepted ||
+                  fullWithoutWaitlist ||
+                  registerMutation.isPending
+                }
               >
                 {registerMutation.isPending
                   ? t("common.loading")

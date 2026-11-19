@@ -25,6 +25,7 @@ import { Pagination } from "@/components/entity/pagination";
 import { TableSkeleton } from "@/components/ui/skeletons";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useLocaleDate } from "@/hooks/use-locale-date";
+import { useFormatters } from "@/hooks/use-formatters";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
 import { useMarkRefundReturned, useRefunds } from "@/features/activities/hooks/use-registrations";
 import type { RefundData } from "@/features/activities/services/registrations-api";
@@ -38,7 +39,8 @@ export default function RefundsPage() {
   const { shortDate } = useLocaleDate();
   const [filter, setFilter] = useState<RefundFilter>("due");
   const [page, setPage] = useState(1);
-  const { data, isLoading } = useRefunds({ page, refund_status: filter });
+  const { formatCurrency } = useFormatters();
+  const { data, isLoading, isError } = useRefunds({ page, refund_status: filter });
   const markReturned = useMarkRefundReturned();
   const [confirmDialog, confirm] = useConfirmDialog();
   const canMark = filter === "due" && has("billing.write");
@@ -92,6 +94,12 @@ export default function RefundsPage() {
 
       {isLoading ? (
         <TableSkeleton rows={4} columns={6} />
+      ) : isError ? (
+        /* Not the empty state: a failed request read as "no refunds" and hid
+           a missing proxy route for the whole of #591's validation. */
+        <div role="alert" className="py-8 text-center text-destructive">
+          {t("activities.refunds.loadError")}
+        </div>
       ) : !data?.items.length ? (
         <div className="py-8 text-center text-muted-foreground">{t("activities.refunds.empty")}</div>
       ) : (
@@ -120,7 +128,7 @@ export default function RefundsPage() {
                   >
                     <TableCell className="font-medium">{r.member_name ?? "—"}</TableCell>
                     <TableCell>{r.activity_name}</TableCell>
-                    <TableCell>{r.amount.toFixed(2)}</TableCell>
+                    <TableCell>{formatCurrency(r.amount)}</TableCell>
                     <TableCell>{method(r)}</TableCell>
                     <TableCell className="font-mono text-xs">{r.gateway_reference ?? r.receipt_number}</TableCell>
                     <TableCell>{when(r)}</TableCell>
@@ -144,7 +152,7 @@ export default function RefundsPage() {
                   <p className="font-medium">{r.member_name ?? "—"}</p>
                   <p className="text-sm text-muted-foreground">{r.activity_name}</p>
                   <p className="text-sm">
-                    {r.amount.toFixed(2)} · {method(r)} · {when(r)}
+                    {formatCurrency(r.amount)} · {method(r)} · {when(r)}
                   </p>
                   <p className="font-mono text-xs text-muted-foreground">
                     {r.gateway_reference ?? r.receipt_number}

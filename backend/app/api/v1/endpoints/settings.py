@@ -108,6 +108,25 @@ def get_settings(
     return db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
 
 
+def _start_inherited_deadlines(db: Session) -> None:
+    """The club's auto-cancel has just come on: every pay-to-confirm activity
+    that follows the club gives its pending seats a deadline from now (#591)."""
+    from app.domains.activities.models import PAYMENT_FLOW_PAY_TO_CONFIRM, Activity
+    from app.domains.activities.registration_service import start_pending_deadlines
+
+    db.flush()
+    activities = (
+        db.query(Activity)
+        .filter(
+            Activity.payment_flow == PAYMENT_FLOW_PAY_TO_CONFIRM,
+            Activity.auto_cancel_enabled.is_(None),
+        )
+        .all()
+    )
+    for activity in activities:
+        start_pending_deadlines(db, activity)
+
+
 @router.put("/", response_model=OrganizationSettingsResponse)
 def update_settings(
     data: OrganizationSettingsUpdate,
@@ -138,11 +157,13 @@ def update_settings(
         try:
             refuse_auto_cancel_without_notices(db)
         except SeatError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=e.detail)
     for key, value in update_data.items():
         if key == "features" and value is not None:
             value = {**(settings_obj.features or {}), **value}
         setattr(settings_obj, key, value)
+    if switching_on_auto_cancel:
+        _start_inherited_deadlines(db)
     db.commit()
     db.refresh(settings_obj)
     return settings_obj
@@ -568,7 +589,7 @@ def _build_communications_view(db: Session) -> CommunicationsConfigView:
 @router.get("/communications", response_model=CommunicationsConfigView)
 def get_communications_config(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("settings.integrations.write")),
+    current_user: User = Depends(require_permission("settings.communications.write")),
 ):
     """Every configurable email template with its group, tier and current state."""
     return _build_communications_view(db)
@@ -578,7 +599,7 @@ def get_communications_config(
 def update_communications_config(
     data: CommunicationsConfigUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("settings.integrations.write")),
+    current_user: User = Depends(require_permission("settings.communications.write")),
 ):
     """Switch email templates on or off.
 

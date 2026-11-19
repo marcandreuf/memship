@@ -13,13 +13,16 @@ from app.core.csv_export import stream_csv
 from app.core.db_utils import current_member_or_403
 from app.core.pagination import paginate
 from app.db.session import get_db
+from app.domains.activities.models import Registration
 from app.domains.auth.models import User
 from app.domains.billing.models import Receipt, ReceiptReminder
+from app.domains.billing.payment_instructions import bank_details_of, receipt_allowed_methods
 from app.domains.billing.reminder_service import COUNTED_STATUSES, queue_reminder
 from app.domains.mailing.policy import is_enabled as template_enabled
 from app.domains.billing.schemas import (
     CreditNoteCreate,
     GenerateMembershipFeesRequest,
+    MyReceiptResponse,
     ReceiptCreate,
     ReceiptDetailResponse,
     ReceiptPayRequest,
@@ -670,15 +673,43 @@ def list_my_receipts(
     query = (
         db.query(Receipt)
         .filter(Receipt.party_id == member.party_id, Receipt.is_active.is_(True))
-        .options(joinedload(Receipt.concept))
+        .options(
+            joinedload(Receipt.concept),
+            joinedload(Receipt.registration).joinedload(Registration.activity),
+        )
         .order_by(Receipt.emission_date.desc(), Receipt.id.desc())
     )
 
     items, meta = paginate(query, page, per_page)
+    org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
+
+    def _mine(receipt: Receipt) -> MyReceiptResponse:
+        allowed = receipt_allowed_methods(receipt)
+        return MyReceiptResponse.model_validate(receipt).model_copy(
+            update={
+                "allowed_methods": allowed,
+                "bank_details": bank_details_of(org) if allowed and "transfer" in allowed else None,
+            }
+        )
+
     return {
-        "items": [ReceiptResponse.model_validate(r) for r in items],
+        "items": [_mine(r) for r in items],
         "meta": meta.model_dump(),
     }
+
+
+def _require_method_accepted(receipt: Receipt, method: str) -> None:
+    """Refuse a method the receipt's activity does not accept.
+
+    The member portal hides such buttons, but the method is the caller's choice:
+    a cash-only activity must not be paid by card through a crafted request (#591).
+    """
+    allowed = receipt_allowed_methods(receipt)
+    if allowed is not None and method not in allowed:
+        raise HTTPException(
+            status_code=400,
+            detail={"code": "payment_method_not_accepted", "method": method},
+        )
 
 
 @router.post("/{receipt_id}/stripe/checkout")
@@ -714,6 +745,7 @@ def create_stripe_checkout(
             status_code=400,
             detail=f"Receipt status '{receipt.status}' is not payable",
         )
+    _require_method_accepted(receipt, "card")
 
     # Find active Stripe provider
     provider = (
@@ -815,6 +847,7 @@ def initiate_redsys_payment(
             status_code=400,
             detail=f"Receipt status '{receipt.status}' is not payable",
         )
+    _require_method_accepted(receipt, method)
 
     provider = (
         db.query(PaymentProvider)

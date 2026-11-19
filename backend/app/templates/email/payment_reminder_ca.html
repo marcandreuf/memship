@@ -15,13 +15,17 @@
 {% endcall %}
 {%- if pay_now_url %}
 {{ c.button(pay_now_url, "Pagar ara") }}
-{%- elif bank_details %}
+{%- endif %}
+{%- if bank_details %}
 <p style="{{ s.p }}">Pots fer el pagament mitjançant transferència bancària:</p>
 {% call c.panel() %}
 <tr><td colspan="2" class="ms-text" style="padding:3px 0; font-family:Helvetica,Arial,sans-serif; font-size:15px; line-height:22px; mso-line-height-rule:exactly; color:#1f2328;">
 {%- for line in bank_details.split("\n") %}{{ line }}<br>{% endfor -%}
 </td></tr>
 {% endcall %}
+{%- endif %}
+{%- if cash %}
+<p style="{{ s.p }}">{{ "També pots pagar en efectiu al club." if pay_now_url or bank_details else "Pots pagar en efectiu al club." }}</p>
 {%- endif %}
 <p style="{{ s.note_last }}">Si ja has fet el pagament, pots ignorar aquest missatge.</p>
 {% endblock %}

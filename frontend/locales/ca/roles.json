@@ -180,6 +180,12 @@
           "description": "Definir quins camps personalitzats existeixen a les fitxes de soci."
         }
       },
+      "communications": {
+        "write": {
+          "label": "Editar correus als socis",
+          "description": "Triar quins correus envia el club als socis, a Configuració › Socis › Comunicacions."
+        }
+      },
       "integrations": {
         "write": {
           "label": "Editar integracions",

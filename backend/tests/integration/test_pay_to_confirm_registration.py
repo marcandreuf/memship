@@ -333,13 +333,15 @@ class TestPublishingAPaidActivity:
         with pytest.raises(HTTPException) as exc:
             publish_activity(db, self._draft(db, []))
         assert exc.value.status_code == 400
+        assert exc.value.detail["code"] == "payment_methods_required"
 
     @pytest.mark.parametrize("method", ["card", "bizum", "transfer"])
     def test_refuses_a_method_the_club_cannot_take(self, db, org, method):
         org.bank_iban = None
         with pytest.raises(HTTPException) as exc:
             publish_activity(db, self._draft(db, [method]))
-        assert method in exc.value.detail
+        assert exc.value.detail["code"] == "payment_methods_unavailable"
+        assert exc.value.detail["methods"] == [method]
 
     def test_accepts_a_transfer_when_the_club_has_an_iban(self, db, org):
         org.bank_iban = "ES9121000418450200051332"

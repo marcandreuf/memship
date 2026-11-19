@@ -29,7 +29,11 @@ export function useUpdateSettings() {
     mutationFn: updateSettings,
     // Both views read the same row: a feature toggle written from the org form
     // has to reach the shell, and vice versa.
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["settings"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["settings"] });
+      // The activity form shows the club's auto-cancel default from here.
+      queryClient.invalidateQueries({ queryKey: ["activity-payment-options"] });
+    },
   });
 }
 

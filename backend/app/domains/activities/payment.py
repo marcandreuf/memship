@@ -4,21 +4,22 @@ A ``legacy`` activity never reaches anything here: ``needs_payment`` is false fo
 it, and every other function is only called for a seat that needs payment.
 """
 
-from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
 from app.core.clock import org_timezone, org_today
-from app.core.config import settings
 from app.domains.activities.models import PAYMENT_FLOW_PAY_TO_CONFIRM, Activity
-from app.domains.billing.payment_instructions import has_active_online_provider
+from app.domains.billing.payment_instructions import (
+    ONLINE_METHODS,
+    PaymentInstructions,
+    how_to_pay,
+    online_methods_available,
+)
 from app.domains.billing.recurring_billing_service import membership_fee_due_days
 from app.domains.billing.rules import billing_int_rule
 from app.domains.organizations.models import OrganizationSettings
-
-ONLINE_METHODS = frozenset({"card", "bizum"})
 
 
 def needs_payment(activity: Activity, amount: Decimal | None) -> bool:
@@ -68,38 +69,23 @@ def receipt_due_date(db: Session, due_at: datetime | None) -> date:
 
 
 def unusable_methods(db: Session, methods: list[str]) -> list[str]:
-    """The methods the club cannot take today: online needs a live provider,
-    a transfer needs an IBAN to send it to."""
+    """The methods the club cannot take today: each online method needs a live
+    provider offering it — SEPA direct debit is not one (#591) — and a transfer
+    needs an IBAN to send it to."""
     org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
-    online = has_active_online_provider(db)
+    online = online_methods_available(db)
     unusable = []
     for method in methods:
-        if method in ONLINE_METHODS and not online:
+        if method in ONLINE_METHODS and method not in online:
             unusable.append(method)
         elif method == "transfer" and not (org and org.bank_iban):
             unusable.append(method)
     return unusable
 
 
-@dataclass(frozen=True)
-class SeatPaymentInstructions:
-    pay_now_url: str | None = None
-    bank_details: str | None = None
-    cash: bool = False
-
-
 def seat_payment_instructions(
     db: Session, activity: Activity, locale: str
-) -> SeatPaymentInstructions:
+) -> PaymentInstructions:
     """How the member may pay, from the methods the activity accepts."""
-    methods = set(activity.payment_methods or [])
     org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
-    pay_now_url = None
-    if methods & ONLINE_METHODS and has_active_online_provider(db):
-        pay_now_url = f"{settings.FRONTEND_URL}/{locale}/my-receipts"
-    bank_details = None
-    if "transfer" in methods and org and org.bank_iban:
-        bank_details = " — ".join(filter(None, [org.bank_name, org.bank_iban]))
-    return SeatPaymentInstructions(
-        pay_now_url=pay_now_url, bank_details=bank_details, cash="cash" in methods
-    )
+    return how_to_pay(db, org, locale, activity.payment_methods or [])

@@ -37,7 +37,8 @@
       "confirmed": "Plaza confirmada",
       "refundDue": "Pendiente de devolver",
       "seen": "Visto",
-      "viewRefunds": "Ver devoluciones"
+      "viewRefunds": "Ver devoluciones",
+      "loadError": "No se ha podido comprobar si hay pagos recibidos para plazas canceladas."
     }
   }
 }

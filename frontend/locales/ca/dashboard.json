@@ -37,7 +37,8 @@
       "confirmed": "Plaça confirmada",
       "refundDue": "Pendent de retornar",
       "seen": "Vist",
-      "viewRefunds": "Veure devolucions"
+      "viewRefunds": "Veure devolucions",
+      "loadError": "No s'ha pogut comprovar si hi ha pagaments rebuts per a places cancel·lades."
     }
   }
 }

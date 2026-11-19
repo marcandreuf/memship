@@ -150,7 +150,7 @@
       "day": "Day of month",
       "dayDesc": "Day (1–31) the billing runs; a shorter month is billed on its last day. Quarterly and annual fees are only billed in the first month of their period.",
       "notificationEmail": "Notification email",
-      "notificationEmailDesc": "Optional address that receives a summary after each automatic run"
+      "notificationEmailDesc": "Optional address that receives the summary of each automatic run and urgent alerts about payments received for cancelled seats. If empty, no summary is sent and urgent alerts go to the club's email."
     },
     "paymentReminders": {
       "tab": "Payment reminders",
@@ -468,6 +468,13 @@
       "defaultTierDesc": "Only a free membership type can be the default, so signing up never starts a fee on its own",
       "noDefaultTier": "None selected",
       "noFreeTiers": "There is no free membership type yet. Create one under Membership Types and it can become the default."
+    },
+    "activityPayments": {
+      "title": "Paid activities",
+      "autoCancel": "Cancel unpaid registrations automatically",
+      "autoCancelDesc": "If the member does not pay in time, the registration is cancelled and the seat is released. Each activity can change this; switching it on gives seats already pending the deadline from now, and their members are told.",
+      "hours": "Time to pay (hours)",
+      "hoursDesc": "From when the seat is held. Between 1 and 8760."
     }
   }
 }

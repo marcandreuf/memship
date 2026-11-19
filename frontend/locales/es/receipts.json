@@ -107,6 +107,17 @@
     "gatewayReference": "Referencia de la pasarela",
     "gatewayReferenceHint": "El código de autorización (Redsys, Bizum) o el identificador del pago (Stripe), tal como aparece en la liquidación del banco o de la pasarela.",
     "paymentUnconfirmedTitle": "Pago pendiente de confirmación",
-    "paymentUnconfirmedMessage": "Todavía no hemos recibido la confirmación de la pasarela. Si el cargo aparece en tu banco, no vuelvas a pagar: contacta con la organización para que lo revise."
+    "paymentUnconfirmedMessage": "Todavía no hemos recibido la confirmación de la pasarela. Si el cargo aparece en tu banco, no vuelvas a pagar: contacta con la organización para que lo revise.",
+    "memberStatus": {
+      "new": "Pendiente de pago",
+      "pending": "Pendiente de pago",
+      "emitted": "Pendiente de pago",
+      "paid": "Pagado",
+      "overdue": "Vencido",
+      "returned": "Cargo devuelto",
+      "cancelled": "Anulado"
+    },
+    "payInCash": "Puedes pagarlo en efectivo en el club.",
+    "payByTransfer": "Transferencia: {bank}"
   }
 }

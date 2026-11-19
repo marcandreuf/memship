@@ -380,7 +380,7 @@ class TestRegistrationsExport:
         assert headers == [
             "activity_name", "member_number", "member_name", "modality", "status",
             "original_amount", "discounted_amount", "created_at", "cancelled_at",
-            "receipt_status", "payment_due_at", "refund_status",
+            "receipt_status", "payment_due_at", "refund_status", "late_payment_at",
         ]
         assert len(rows) == 1
         row = rows[0]

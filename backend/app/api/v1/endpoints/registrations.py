@@ -67,7 +67,15 @@ def _payment_fields(registration: Registration) -> dict:
     }
 
 
-def _to_detail_response(registration: Registration) -> RegistrationDetailResponse:
+def _to_detail_response(
+    db: Session, registration: Registration, activity: Activity
+) -> RegistrationDetailResponse:
+    """A row of an activity's registration list.
+
+    Carries the amounts as the member's own response does: without them the
+    organiser's screen could not tell a seat that owes money from a free one,
+    and offered "Confirmed" on a pending seat only payment may confirm (#591).
+    """
     member_info = None
     if registration.member and registration.member.person:
         member_info = RegistrationMemberInfo(
@@ -85,6 +93,8 @@ def _to_detail_response(registration: Registration) -> RegistrationDetailRespons
         modality_id=registration.modality_id,
         price_id=registration.price_id,
         status=registration.status,
+        original_amount=_as_float(registration.original_amount),
+        discounted_amount=_as_float(registration.discounted_amount),
         registration_data=registration.registration_data or {},
         member_notes=registration.member_notes,
         admin_notes=registration.admin_notes,
@@ -92,8 +102,13 @@ def _to_detail_response(registration: Registration) -> RegistrationDetailRespons
         cancelled_reason=registration.cancelled_reason,
         created_at=registration.created_at,
         member=member_info,
+        **_vat_fields(db, registration, activity),
         **_payment_fields(registration),
     )
+
+
+def _as_float(value) -> float | None:
+    return float(value) if value is not None else None
 
 
 # --- Stats endpoint ---
@@ -200,7 +215,7 @@ def mark_registration_refund_returned(
             db, registration, current_user.id, data.credit_note_id if data else None
         )
     except SeatError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=e.detail)
     db.commit()
     db.refresh(registration)
     return _refund_response(registration)
@@ -282,14 +297,14 @@ def list_activity_registrations(
     current_user: User = Depends(require_permission("registrations.read")),
 ):
     """List registrations for an activity (admin only)."""
-    _get_activity_or_404(db, activity_id)
+    activity = _get_activity_or_404(db, activity_id)
 
     query = build_activity_registrations_query(db, activity_id, status=status_filter)
     items, meta = paginate(query, page, per_page)
 
     return {
         "meta": meta.model_dump(),
-        "items": [_to_detail_response(r) for r in items],
+        "items": [_to_detail_response(db, r, activity) for r in items],
     }
 
 
@@ -306,6 +321,7 @@ _REGISTRATIONS_CSV_HEADERS = [
     "receipt_status",
     "payment_due_at",
     "refund_status",
+    "late_payment_at",
 ]
 
 
@@ -329,6 +345,7 @@ def _registration_csv_row(registration: Registration) -> list:
         registration.receipt_status,
         registration.payment_due_at,
         registration.refund_status,
+        registration.late_payment_at,
     ]
 
 
@@ -401,7 +418,7 @@ def register_for_activity(
         db.refresh(registration)
         return _billed(db, registration, activity)
     except RegistrationError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=e.detail)
 
 
 @router.get(
@@ -478,7 +495,7 @@ def cancel_own_registration(
         )
         db.commit()
     except RegistrationError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=e.detail)
 
 
 @router.put(
@@ -513,7 +530,7 @@ def change_registration_status(
         db.refresh(registration)
         return _billed(db, registration)
     except RegistrationError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=e.detail)
 
 
 @router.post(
@@ -542,7 +559,7 @@ def confirm_registration_without_payment(
         db.refresh(registration)
         return _billed(db, registration)
     except RegistrationError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=e.detail)
 
 
 # --- Member self-service (must be before /members/{member_id} to avoid path conflict) ---
@@ -559,9 +576,11 @@ def list_my_registrations(
     """List current user's registrations, newest sign-up first.
 
     ``upcoming`` narrows it to the activities still ahead of the member — held
-    (confirmed or waitlisted) and not yet over — soonest first, which is what
-    the dashboard's "Tus próximas actividades" card shows (#290). An activity
-    already running still counts: the member is still attending it.
+    (confirmed, waitlisted, or pending payment) and not yet over — soonest
+    first, which is what the dashboard's "Tus próximas actividades" card shows
+    (#290). An activity already running still counts: the member is still
+    attending it. A seat held until paid is the one the member most needs to
+    see there (#591).
     """
     member = current_member_or_403(db, current_user)
 
@@ -574,7 +593,7 @@ def list_my_registrations(
         query = (
             query.join(Activity, Registration.activity_id == Activity.id)
             .filter(
-                Registration.status.in_(("confirmed", "waitlist")),
+                Registration.status.in_(("confirmed", "waitlist", "pending")),
                 Activity.ends_at >= datetime.now(timezone.utc),
             )
             .order_by(Activity.starts_at.asc(), Registration.id.asc())

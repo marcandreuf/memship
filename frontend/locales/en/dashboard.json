@@ -37,7 +37,8 @@
       "confirmed": "Seat confirmed",
       "refundDue": "To be refunded",
       "seen": "Seen",
-      "viewRefunds": "View refunds"
+      "viewRefunds": "View refunds",
+      "loadError": "Could not check for payments received for cancelled seats."
     }
   }
 }

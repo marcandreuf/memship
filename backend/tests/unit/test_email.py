@@ -736,6 +736,35 @@ class TestReceiptDeliveryTemplate:
         assert PAY_URL not in html
         assert "ES9121000418450200051332" not in html
 
+    @pytest.mark.parametrize(
+        "locale, only, also",
+        [
+            ("es", "Puedes pagar en efectivo", "También puedes pagar en efectivo"),
+            ("ca", "Pots pagar en efectiu", "També pots pagar en efectiu"),
+            ("en", "You can pay in cash", "You can also pay in cash"),
+        ],
+    )
+    @pytest.mark.parametrize("template", ["receipt_delivery", "payment_reminder"])
+    def test_a_cash_seat_says_cash_and_also_only_beside_another_way(
+        self, template, locale, only, also
+    ):
+        # A pay-to-confirm seat's receipt lists what its activity accepts (#591).
+        context = dict(RECEIPT_DELIVERY, due_date="2026-12-01", days_overdue=3, cash=True)
+        html = render_template(template, locale, context)
+        assert only in html and also not in html
+
+        html = render_template(template, locale, dict(context, bank_details=IBAN))
+        assert also in html
+        assert "ES9121000418450200051332" in html
+
+    @pytest.mark.parametrize("locale", ["es", "ca", "en"])
+    def test_a_seat_with_card_and_transfer_shows_both(self, locale):
+        html = render_template(
+            "receipt_delivery", locale, dict(RECEIPT_DELIVERY, pay_now_url=PAY_URL, bank_details=IBAN)
+        )
+        assert PAY_URL in html
+        assert "ES9121000418450200051332" in html
+
     @pytest.mark.parametrize("locale", ["es", "ca", "en"])
     def test_nothing_to_pay_renders_no_payment_block(self, locale):
         html = render_template("receipt_delivery", locale, dict(RECEIPT_DELIVERY))

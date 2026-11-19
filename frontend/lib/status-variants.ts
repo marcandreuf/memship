@@ -1,4 +1,4 @@
-export type StatusVariant = "default" | "secondary" | "destructive" | "outline";
+export type StatusVariant = "default" | "secondary" | "destructive" | "outline" | "warning";
 
 export const MEMBER_STATUS_VARIANTS: Record<string, StatusVariant> = {
   active: "default",
@@ -11,7 +11,8 @@ export const MEMBER_STATUS_VARIANTS: Record<string, StatusVariant> = {
 export const REGISTRATION_STATUS_VARIANTS: Record<string, StatusVariant> = {
   confirmed: "default",
   waitlist: "secondary",
-  pending: "outline",
+  // Distinct from the outline "Cancel" button beside it in My activities (#591).
+  pending: "warning",
   cancelled: "destructive",
 };
 

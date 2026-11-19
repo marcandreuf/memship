@@ -24,7 +24,15 @@ UNPAID_RECEIPT_STATUSES = ("new", "pending", "emitted", "overdue")
 
 
 class SeatError(Exception):
-    """Raised when a seat cannot take the change asked of it."""
+    """Raised when a seat cannot take the change asked of it.
+
+    ``detail`` is what the API answers: the English message, or with a
+    ``code`` the ``{"code", ..., "message"}`` shape the UI translates.
+    """
+
+    def __init__(self, message: str, code: str | None = None, **fields):
+        super().__init__(message)
+        self.detail = {"code": code, **fields, "message": message} if code else message
 
 
 #: The mails that tell a member their seat is held until paid, about to be
@@ -49,7 +57,9 @@ def refuse_auto_cancel_without_notices(db: Session) -> None:
     off = switched_off_seat_templates(db)
     if off:
         raise SeatError(
-            "Auto-cancel needs these emails switched on first: " + ", ".join(off)
+            "Auto-cancel needs these emails switched on first: " + ", ".join(off),
+            code="auto_cancel_needs_emails",
+            templates=off,
         )
 
 

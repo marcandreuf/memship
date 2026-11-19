@@ -25,6 +25,7 @@ import { useActivities } from "@/features/activities/hooks/use-activities";
 import { useMyRegistrations, useRegistrationStats } from "@/features/activities/hooks/use-registrations";
 import { useActivity } from "@/features/activities/hooks/use-activities";
 import { useReceiptStats, useMyReceipts } from "@/features/receipts/hooks/use-receipts";
+import { memberReceiptStatusLabel } from "@/features/receipts/lib/member-status";
 import { useSpaceStats } from "@/features/bookings/hooks/use-bookings";
 import { useAnnualSummary } from "@/features/reports/hooks/use-annual-summary";
 import { ReminderList } from "@/features/reminders/components/reminder-list";
@@ -640,7 +641,7 @@ export default function DashboardPage() {
                         r.status === "paid" ? "default" :
                         r.status === "overdue" || r.status === "returned" ? "destructive" : "secondary"
                       }>
-                        {t(`receipts.status${r.status.charAt(0).toUpperCase() + r.status.slice(1)}`)}
+                        {memberReceiptStatusLabel(t, r.status)}
                       </Badge>
                     </div>
                   ))}

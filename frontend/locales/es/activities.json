@@ -32,7 +32,7 @@
     "maxParticipants": "Máximo de participantes",
     "capacity": "Capacidad",
     "spots": "{current}/{max} plazas",
-    "availableSpots": "{count} plazas disponibles",
+    "availableSpots": "{count, plural, one {# plaza disponible} other {# plazas disponibles}}",
     "full": "Completo",
     "minAge": "Edad mínima",
     "maxAge": "Edad máxima",
@@ -49,7 +49,7 @@
     "registrationOpen": "Abierta",
     "registrationClosed": "Cerrada",
     "registrationNotYetOpen": "Aún no abierta",
-    "spotsAvailable": "{count} plazas disponibles",
+    "spotsAvailable": "{count, plural, one {# plaza disponible} other {# plazas disponibles}}",
     "ageRange": "Rango de edad",
     "ages": "{min} - {max} años",
     "schedule": "Horario",
@@ -180,6 +180,7 @@
     "registrations": "Inscripciones",
     "registration": {
       "register": "Inscribirse",
+      "fullNoWaitlist": "La actividad está completa y no tiene lista de espera.",
       "cancelRegistration": "Cancelar inscripción",
       "confirmCancel": "¿Cancelar esta inscripción?",
       "confirmCancelDescription": "El socio deja de estar inscrito y su plaza queda libre.",
@@ -223,7 +224,11 @@
       "keepPayment": "Quedarse el pago (no devolverlo)",
       "pendingNotice": "Tu plaza está reservada. La inscripción se confirma cuando se registra el pago.",
       "expiredNotice": "Esta inscripción se canceló porque no se pagó a tiempo.",
-      "pendingCreated": "Plaza reservada: paga el recibo para confirmarla"
+      "pendingCreated": "Plaza reservada: paga el recibo para confirmarla",
+      "heldUntilPaid": "Tu plaza quedará reservada hasta que pagues el recibo.",
+      "heldUntilPaidWithin": "Tu plaza quedará reservada hasta que pagues el recibo. Tendrás {hours} h para pagarlo; si no, se liberará.",
+      "confirmedCreated": "Inscripción confirmada",
+      "waitlistCreated": "Estás en la lista de espera"
     },
     "legacy": {
       "badge": "legacy",
@@ -240,7 +245,6 @@
         "transfer": "Transferencia",
         "cash": "Efectivo"
       },
-      "unavailable": "No disponible: falta un proveedor de pago activo o el IBAN del club",
       "autoCancel": "Cancelación automática si no se paga",
       "autoCancelInherit": "Como el club ({setting})",
       "clubOn": "activada, {hours} h",
@@ -248,9 +252,14 @@
       "autoCancelOn": "Activada en esta actividad",
       "autoCancelOff": "Desactivada en esta actividad",
       "autoCancelHours": "Plazo para pagar (horas)",
-      "pendingEmailOff": "El correo «Inscripción pendiente de pago» está desactivado: los socios no sabrán que tienen que pagar. Actívalo en Ajustes › Comunicaciones.",
-      "autoCancelNeedsEmails": "Para activar la cancelación automática, activa antes en Ajustes › Comunicaciones: {templates}.",
-      "autoCancelClub": "Como el club"
+      "pendingEmailOff": "El correo «Inscripción pendiente de pago» está desactivado: los socios no sabrán que tienen que pagar.",
+      "autoCancelNeedsEmails": "Para activar la cancelación automática, antes hay que activar estos correos: {templates}.",
+      "autoCancelClub": "Como el club",
+      "fixInSettings": "Actívalo en Configuración › Socios › Comunicaciones.",
+      "fixAskAdmin": "Pídeselo a un administrador del club.",
+      "unavailableOnline": "Necesita un proveedor de pago online activo",
+      "unavailableTransfer": "Necesita el IBAN del club en Configuración › Pagos",
+      "hoursFromClub": "{hours} h (del club)"
     },
     "refunds": {
       "title": "Devoluciones",
@@ -267,7 +276,10 @@
       "markReturned": "Marcar devuelto",
       "confirmMarkReturned": "¿Marcar como devuelto?",
       "confirmMarkReturnedDescription": "Hazlo cuando el dinero ya se haya devuelto. Queda registrado quién y cuándo.",
-      "empty": "No hay devoluciones."
-    }
+      "empty": "No hay devoluciones.",
+      "loadError": "No se han podido cargar las devoluciones. Vuelve a intentarlo más tarde."
+    },
+    "waitingList": "Lista de espera",
+    "waitingListHint": "Cuando no quedan plazas, los siguientes socios esperan turno y ocupan la plaza que se libere, por orden."
   }
 }

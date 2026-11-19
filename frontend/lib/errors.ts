@@ -41,14 +41,32 @@ function describeFieldError(
 }
 
 /**
+ * Where a list field's items have names of their own. A code like
+ * `payment_methods_unavailable` carries `["card", "bizum"]`; joined raw it would
+ * show the member identifiers, not "Tarjeta, Bizum" (#591).
+ */
+const LIST_ITEM_KEYS: Record<string, (item: string) => string> = {
+  methods: (m) => `activities.payment.method.${m}`,
+  templates: (k) => `settings.emailTemplates.templates.${k}.name`,
+};
+
+/**
  * A coded error's fields as ICU values. A list becomes a joined string plus a
  * `<key>_count`, so a translation can say "(on 3 May, 10 May)" or nothing.
  */
-function translationValues(detail: CodedErrorDetail): Record<string, string | number> {
+function translationValues(
+  detail: CodedErrorDetail,
+  t?: ErrorTranslator
+): Record<string, string | number> {
   const values: Record<string, string | number> = {};
   for (const [key, value] of Object.entries(detail)) {
     if (Array.isArray(value)) {
-      values[key] = value.join(", ");
+      const itemKey = LIST_ITEM_KEYS[key];
+      const items = value.map((item) => {
+        const k = itemKey?.(String(item));
+        return k && t?.has(k) ? t(k) : String(item);
+      });
+      values[key] = items.join(", ");
       values[`${key}_count`] = value.length;
     } else if (typeof value === "string" || typeof value === "number") {
       values[key] = value;
@@ -86,7 +104,7 @@ function describeError(error: unknown, t?: ErrorTranslator): string {
     if (isCoded(error.detail)) {
       const key = `apiErrors.${error.detail.code}`;
       if (t?.has(key)) {
-        return t(key, translationValues(error.detail));
+        return t(key, translationValues(error.detail, t));
       }
       // A code with neither a translation nor a message is a developer
       // identifier, not something to show a member.

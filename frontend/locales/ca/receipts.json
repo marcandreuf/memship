@@ -107,6 +107,17 @@
     "gatewayReference": "Referència de la passarel·la",
     "gatewayReferenceHint": "El codi d'autorització (Redsys, Bizum) o l'identificador del pagament (Stripe), tal com apareix a la liquidació del banc o de la passarel·la.",
     "paymentUnconfirmedTitle": "Pagament pendent de confirmació",
-    "paymentUnconfirmedMessage": "Encara no hem rebut la confirmació de la passarel·la. Si el càrrec apareix al teu banc, no tornis a pagar: contacta amb l'organització perquè ho revisi."
+    "paymentUnconfirmedMessage": "Encara no hem rebut la confirmació de la passarel·la. Si el càrrec apareix al teu banc, no tornis a pagar: contacta amb l'organització perquè ho revisi.",
+    "memberStatus": {
+      "new": "Pendent de pagament",
+      "pending": "Pendent de pagament",
+      "emitted": "Pendent de pagament",
+      "paid": "Pagat",
+      "overdue": "Vençut",
+      "returned": "Càrrec retornat",
+      "cancelled": "Anul·lat"
+    },
+    "payInCash": "Pots pagar-lo en efectiu al club.",
+    "payByTransfer": "Transferència: {bank}"
   }
 }

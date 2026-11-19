@@ -41,6 +41,7 @@ export const ROUTE_PERMISSIONS: ReadonlyArray<readonly [string, readonly string[
       "roles.read",
       "users.read",
       "settings.custom_fields.write",
+      "settings.communications.write",
     ],
   ],
   // Member-facing routes, gated on the `self.*` keys the member role grants.

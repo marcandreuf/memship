@@ -15,9 +15,19 @@ import { useAcknowledgeLatePayment, useUnseenLatePayments } from "../hooks/use-r
 export function LatePaymentsBanner() {
   const t = useTranslations();
   const { has } = usePermissions();
-  const { data } = useUnseenLatePayments();
+  const { data, isError } = useUnseenLatePayments();
   const acknowledge = useAcknowledgeLatePayment();
   const items = data?.items ?? [];
+  // A failed check must not look like "nothing to report": these are payments
+  // only the club can return.
+  if (isError) {
+    return (
+      <div role="alert" className="flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/5 p-3 text-sm">
+        <AlertTriangle className="h-4 w-4 shrink-0 text-destructive" aria-hidden />
+        {t("dashboard.latePayments.loadError")}
+      </div>
+    );
+  }
   if (!items.length) return null;
 
   return (

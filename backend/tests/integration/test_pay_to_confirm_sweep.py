@@ -29,7 +29,8 @@ UNPAID = "app.tasks.email_tasks.send_unpaid_cancellation_email_task.delay"
 
 
 def _pending(db, org, membership_type, suffix, *, due_in, window=timedelta(hours=72), **kw):
-    _auto_cancel(org, hours=72)
+    # The window is the activity's hours: a deadline is always "then + hours".
+    _auto_cancel(org, hours=int(window.total_seconds() // 3600))
     activity, price = _activity(db, payment_flow=PAY, **kw)
     registration = register_member(
         db, activity, _member(db, membership_type, suffix), price.id
@@ -143,6 +144,21 @@ class TestTheDeadlineReminder:
         admin_change_status(db, registration, "pending")
 
         assert registration.payment_reminder_sent_at is None
+
+
+    def test_a_promoted_member_is_measured_from_the_promotion(
+        self, db, org, membership_type
+    ):
+        # Days on the waiting list are not part of the time to pay: the seat
+        # was registered long ago, but the 72-hour window started now (#591).
+        _, _, registration = _pending(
+            db, org, membership_type, "promoted", due_in=timedelta(hours=71)
+        )
+        registration.created_at = NOW - timedelta(days=20)
+        db.flush()
+
+        assert remind_pending_deadlines(db, NOW) == 0
+        assert remind_pending_deadlines(db, NOW + timedelta(hours=48)) == 1
 
 
 class TestTheSchedule:

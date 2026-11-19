@@ -176,7 +176,8 @@ describe("Stripe Checkout — Failure / Cancel Path", () => {
       cy.contains("Stripe cancel E2E test receipt")
         .closest("tr")
         .within(() => {
-          cy.contains(/returned/i).should("be.visible");
+          // The member's word for it: the bank bounced the charge (#591).
+          cy.contains(/payment bounced/i).should("be.visible");
           // Pay Now button should not be visible for returned receipts
           cy.get('button[aria-label="Pay Now"]').should("not.exist");
         });

@@ -46,6 +46,10 @@ export interface ReceiptData {
   rectifies_receipt_number?: string | null;
   credit_note_ids?: number[];
   credited_amount?: number;
+  // Member fields (/members/me/receipts): a pay-to-confirm seat's receipt is
+  // paid only by what its activity accepts; null means any method (#591).
+  allowed_methods?: string[] | null;
+  bank_details?: string | null;
 }
 
 export interface ConceptData {
