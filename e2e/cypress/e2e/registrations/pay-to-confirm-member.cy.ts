@@ -1,3 +1,6 @@
+import { TEST_ACCOUNTS } from "../../support/commands";
+import { cancelActivity, createPaidActivity, registerAs } from "../../support/pay-to-confirm";
+
 // Private Wine Tasting is seeded pay-to-confirm with cash (#591). The member's
 // registration is made and removed through the API, so a rerun starts clean and
 // no other spec sees a seat taken.
@@ -52,11 +55,66 @@ describe("Pay to confirm — member", () => {
     cy.url().should("include", "/my-receipts");
   });
 
+  it("offers only what a cash-only seat accepts in My receipts", () => {
+    // The receipt of a cash-only seat used to show the card and Bizum buttons.
+    cy.request(`${API}/members/me/registrations?per_page=100`).then((regs) => {
+      const seat = regs.body.items.find(
+        (reg: { activity_id: number; status: string }) => reg.activity_id === activityId && reg.status === "pending"
+      );
+      cy.request(`${API}/members/me/receipts?per_page=100`).then((receipts) => {
+        const receipt = receipts.body.items.find(
+          (r: { registration_id: number | null }) => r.registration_id === seat.id
+        );
+        cy.visit("/en/my-receipts");
+        cy.contains("th", "Due Date").should("be.visible");
+        cy.contains("tr", receipt.receipt_number).within(() => {
+          cy.contains("Awaiting payment").should("be.visible");
+          cy.contains("You can pay it in cash at the club.").should("be.visible");
+          cy.get("button").should("not.exist");
+        });
+      });
+    });
+  });
+
   it("shows it in My activities too", () => {
     cy.visit("/en/my-activities");
     cy.contains("a", "Payment pending").within(() => {
       cy.contains("Private Wine Tasting").should("be.visible");
       cy.contains("button", /pay now/i).should("be.visible");
+    });
+  });
+});
+
+describe("Pay to confirm — member cancels a held seat", () => {
+  let activityId: number | undefined;
+
+  afterEach(() => {
+    cancelActivity(activityId);
+    activityId = undefined;
+  });
+
+  it("asks in the member's own words, with a way back", () => {
+    const name = `E2E Member Cancel ${Date.now()}`;
+    createPaidActivity(name, { allowSelfCancellation: true }).then((id) => {
+      activityId = id;
+      registerAs(TEST_ACCOUNTS.member, id).its("status").should("eq", "pending");
+
+      cy.loginAsMember();
+      cy.visit("/en/my-activities");
+      cy.contains("a", name).within(() => {
+        cy.contains("button", "Cancel").click();
+      });
+      cy.get('[role="alertdialog"]').within(() => {
+        cy.contains("You will no longer be registered").should("be.visible");
+        cy.contains("button", "Back").click();
+      });
+      cy.contains("a", name).contains("Payment pending").should("be.visible");
+
+      cy.contains("a", name).within(() => {
+        cy.contains("button", "Cancel").click();
+      });
+      cy.get('[role="alertdialog"]').contains("button", "Cancel Registration").click();
+      cy.contains("Updated").should("be.visible");
     });
   });
 });
