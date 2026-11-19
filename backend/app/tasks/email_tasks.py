@@ -17,6 +17,7 @@ from app.core.email import (
     send_registration_confirmation_email,
     send_registration_cancellation_email,
     send_late_payment_alert_email,
+    send_late_payment_refund_email,
     send_payment_deadline_reminder_email,
     send_registration_cancelled_unpaid_email,
     send_registration_pending_payment_email,
@@ -141,6 +142,7 @@ def send_pending_payment_email_task(
     due_date: str | None = None,
     reference: str | None = None,
     locale: str = "es",
+    deadline_added: bool = False,
 ) -> bool:
     """Tell the member their seat is held until they pay, and how to pay."""
     try:
@@ -157,6 +159,7 @@ def send_pending_payment_email_task(
             due_date=due_date,
             reference=reference,
             locale=locale,
+            deadline_added=deadline_added,
         )
     except Exception as exc:
         logger.error(f"Pending-payment email task failed: to={to}, error={exc}")
@@ -225,6 +228,27 @@ def send_late_payment_alert_email_task(
 
 
 @celery.task(bind=True, max_retries=3, default_retry_delay=60)
+def send_late_payment_refund_email_task(
+    self,
+    to: str,
+    member_name: str,
+    activity_name: str,
+    amount: str,
+    currency: str,
+    receipt_number: str,
+    locale: str = "es",
+) -> bool:
+    """Tell the member a late payment found no seat and is owed back."""
+    try:
+        return send_late_payment_refund_email(
+            to, member_name, activity_name, amount, currency, receipt_number, locale
+        )
+    except Exception as exc:
+        logger.error(f"Late payment refund email task failed: to={to}, error={exc}")
+        raise self.retry(exc=exc)
+
+
+@celery.task(bind=True, max_retries=3, default_retry_delay=60)
 def send_unpaid_cancellation_email_task(
     self, to: str, member_name: str, activity_name: str, locale: str = "es"
 ) -> bool:
@@ -246,11 +270,12 @@ def send_cancellation_email_task(
     activity_name: str,
     cancelled_by: str | None = None,
     locale: str = "es",
+    refund_due: bool = False,
 ) -> bool:
     """Send registration cancellation email."""
     try:
         return send_registration_cancellation_email(
-            to, member_name, activity_name, cancelled_by, locale,
+            to, member_name, activity_name, cancelled_by, locale, refund_due,
         )
     except Exception as exc:
         logger.error(f"Cancellation email task failed: to={to}, error={exc}")
@@ -371,6 +396,7 @@ def send_receipt_email_task(self, receipt_id: int) -> bool:
                 bank_details=instructions.bank_details,
                 cash=instructions.cash,
                 direct_debit=instructions.direct_debit,
+                reference=instructions.reference,
             )
         finally:
             db.close()

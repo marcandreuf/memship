@@ -183,7 +183,7 @@
       "fullNoWaitlist": "This activity is full and has no waiting list.",
       "cancelRegistration": "Cancel Registration",
       "confirmCancel": "Cancel this registration?",
-      "confirmCancelDescription": "The member is no longer registered and their place is freed.",
+      "confirmCancelDescription": "You will no longer be registered and your place will be freed. Any unpaid receipt for it is cancelled.",
       "registered": "Registered",
       "myActivities": "My Activities",
       "noRegistrations": "No registrations yet",
@@ -228,7 +228,9 @@
       "heldUntilPaid": "Your seat will be held until you pay the receipt.",
       "heldUntilPaidWithin": "Your seat will be held until you pay the receipt. You will have {hours} h to pay it; otherwise it is released.",
       "confirmedCreated": "Registration confirmed",
-      "waitlistCreated": "You are on the waiting list"
+      "waitlistCreated": "You are on the waiting list",
+      "eligibleWaitlist": "You can join the waiting list",
+      "heldAfterWaitlist": "This activity is full: you will join the waiting list. If a place comes up, it is held until you pay the receipt."
     },
     "legacy": {
       "badge": "legacy",
@@ -255,11 +257,18 @@
       "pendingEmailOff": "The \"Registration pending payment\" email is switched off: members will not know they have to pay.",
       "autoCancelNeedsEmails": "To switch on automatic cancellation, these emails must be switched on first: {templates}.",
       "autoCancelClub": "As the club",
-      "fixInSettings": "Switch it on in Settings › Members › Communications.",
+      "fixInSettings": "Switch {count, plural, one {it} other {them}} on in Settings › Members › Communications.",
       "fixAskAdmin": "Ask a club administrator to do it.",
-      "unavailableOnline": "Needs an active online payment provider",
-      "unavailableTransfer": "Needs the club IBAN in Settings › Payments",
-      "hoursFromClub": "{hours} h (club default)"
+      "hoursFromClub": "{hours} h (club default)",
+      "unavailable": {
+        "card": "Needs Stripe or Redsys active",
+        "bizum": "Needs Redsys with Bizum enabled",
+        "transfer": "Needs the club's IBAN",
+        "cash": "Not available"
+      },
+      "unavailableWhere": "in Settings › Payments",
+      "unavailableAsk": "· ask an administrator",
+      "autoCancelStartsNow": "Pending seats that have no deadline yet get the full time from when you save, and their member is sent the email again with the deadline."
     },
     "refunds": {
       "title": "Refunds",

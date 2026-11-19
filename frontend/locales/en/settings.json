@@ -401,6 +401,11 @@
           "description": "Tells the member their seat was released because it was not paid in time.",
           "warning": "Without this notice, the member will not know they lost the seat."
         },
+        "late_payment_refund": {
+          "name": "Late payment without a seat",
+          "description": "Tells the member when their payment arrives after the seat was released and none is free: they are not registered and will be refunded.",
+          "warning": "Without it, the member will not know they lost the seat or that the money will be returned."
+        },
         "waitlist_promoted": {
           "name": "Activity place freed up",
           "description": "Tells the member they moved off the activity waitlist.",

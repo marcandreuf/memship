@@ -171,6 +171,11 @@ _SUBJECTS = {
         "ca": "Inscripció cancel·lada per manca de pagament: {activity}",
         "en": "Registration cancelled, not paid: {activity}",
     },
+    "late_payment_refund": {
+        "es": "Pago recibido, pero la plaza ya no está disponible: {activity}",
+        "ca": "Pagament rebut, però la plaça ja no està disponible: {activity}",
+        "en": "Payment received, but the seat is no longer available: {activity}",
+    },
     "late_payment_alert": {
         "es": "Urgente: pago recibido para una plaza cancelada ({seat})",
         "ca": "Urgent: pagament rebut per a una plaça cancel·lada ({seat})",
@@ -1111,6 +1116,7 @@ def send_registration_cancellation_email(
     activity_name: str,
     cancelled_by: str | None = None,
     locale: str = "es",
+    refund_due: bool = False,
 ) -> bool:
     return _send_templated(
         "registration_cancelled",
@@ -1120,6 +1126,7 @@ def send_registration_cancellation_email(
             "member_name": member_name,
             "activity_name": activity_name,
             "cancelled_by": cancelled_by,
+            "refund_due": refund_due,
         },
         subject_args={"activity": activity_name},
     )
@@ -1138,6 +1145,7 @@ def send_registration_pending_payment_email(
     due_date: str | None = None,
     reference: str | None = None,
     locale: str = "es",
+    deadline_added: bool = False,
 ) -> bool:
     return _send_templated(
         "registration_pending_payment",
@@ -1154,6 +1162,7 @@ def send_registration_pending_payment_email(
             "cash": cash,
             "due_date": due_date,
             "reference": reference,
+            "deadline_added": deadline_added,
         },
         subject_args={"activity": activity_name},
     )
@@ -1234,6 +1243,31 @@ def send_late_payment_alert_email(
     )
 
 
+def send_late_payment_refund_email(
+    to: str,
+    member_name: str,
+    activity_name: str,
+    amount: str,
+    currency: str,
+    receipt_number: str,
+    locale: str = "es",
+) -> bool:
+    """Tell a member their late payment found no seat and will be returned."""
+    return _send_templated(
+        "late_payment_refund",
+        to,
+        locale,
+        {
+            "member_name": member_name,
+            "activity_name": activity_name,
+            "amount": amount,
+            "currency": currency,
+            "receipt_number": receipt_number,
+        },
+        subject_args={"activity": activity_name},
+    )
+
+
 def send_waitlist_promotion_email(
     to: str,
     member_name: str,
@@ -1279,6 +1313,7 @@ def send_payment_reminder_email(
     bank_details: str | None = None,
     cash: bool = False,
     locale: str = "es",
+    reference: str | None = None,
 ) -> EmailOutcome:
     """Send a payment reminder for an overdue receipt.
 
@@ -1301,6 +1336,7 @@ def send_payment_reminder_email(
             "pay_now_url": pay_now_url,
             "bank_details": bank_details,
             "cash": cash,
+            "reference": reference,
         },
         subject_args={"receipt_number": receipt_number},
     )
@@ -1482,6 +1518,7 @@ def send_receipt_delivery_email(
     bank_details: str | None = None,
     cash: bool = False,
     direct_debit: bool = False,
+    reference: str | None = None,
 ) -> bool:
     """Deliver a generated receipt PDF to the member it belongs to."""
     return _send_templated(
@@ -1498,6 +1535,7 @@ def send_receipt_delivery_email(
             "bank_details": bank_details,
             "cash": cash,
             "direct_debit": direct_debit,
+            "reference": reference,
         },
         subject_args={"receipt_number": receipt_number, "org_name": org_name},
         attachment=pdf_bytes,

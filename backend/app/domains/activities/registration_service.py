@@ -35,6 +35,7 @@ from app.domains.activities.models import (
     RegistrationConsent,
 )
 from app.domains.activities.pricing import member_can_hold_price
+from app.domains.billing.payment_instructions import transfer_reference
 from app.domains.members.models import Member
 from app.domains.organizations.service import org_locale
 
@@ -484,7 +485,7 @@ def _has_paid_receipt(db: Session, registration: Registration) -> bool:
     )
 
 
-def settle_late_payment(db: Session, registration_id: int):
+def settle_late_payment(db: Session, receipt):
     """Give a seat back to a payment that arrived after it was released.
 
     Confirmed if a seat is free, under the same capacity lock a registration
@@ -494,7 +495,7 @@ def settle_late_payment(db: Session, registration_id: int):
     from app.domains.billing.seats import LateSeat
 
     registration = (
-        db.query(Registration).filter(Registration.id == registration_id).one()
+        db.query(Registration).filter(Registration.id == receipt.registration_id).one()
     )
     activity = registration.activity
     registration.late_payment_at = datetime.now(timezone.utc)
@@ -510,6 +511,7 @@ def settle_late_payment(db: Session, registration_id: int):
             confirmed = True
         else:
             registration.refund_status = "due"
+            _dispatch_late_payment_refund_email(db, registration, activity, receipt)
     db.flush()
 
     person = registration.member.person if registration.member else None
@@ -584,7 +586,9 @@ def start_pending_deadlines(
             due_date = receipt_due_date(db, due_at)
             if receipt.due_date is None or due_date < receipt.due_date:
                 receipt.due_date = due_date
-        _dispatch_pending_payment_email(db, registration, activity, registration.member, receipt)
+        _dispatch_pending_payment_email(
+            db, registration, activity, registration.member, receipt, deadline_added=True
+        )
     db.flush()
     return len(seats)
 
@@ -938,14 +942,47 @@ def _dispatch_registration_email(
         logger.error(f"Failed to dispatch registration email: {e}")
 
 
+def _dispatch_late_payment_refund_email(
+    db: Session, registration: Registration, activity: Activity, receipt
+) -> None:
+    """Queue the "paid too late, no seat, money goes back" email for after commit."""
+    try:
+        from app.domains.organizations.models import OrganizationSettings
+        from app.tasks.email_tasks import send_late_payment_refund_email_task
+
+        member = registration.member
+        person = member.person if member else None
+        email = _get_member_email(registration) or (person.email if person else None)
+        if not email:
+            return
+        org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
+        payload = dict(
+            to=email,
+            member_name=_get_member_name(registration) or (person.first_name if person else ""),
+            activity_name=activity.name,
+            amount=f"{receipt.total_amount:.2f}",
+            currency=(org.currency if org else None) or "EUR",
+            receipt_number=receipt.receipt_number,
+            locale=org_locale(db),
+        )
+        run_after_commit(db, lambda: send_late_payment_refund_email_task.delay(**payload))
+    except Exception as e:
+        logger.error(f"Failed to dispatch late payment refund email: {e}")
+
+
 def _dispatch_pending_payment_email(
     db: Session,
     registration: Registration,
     activity: Activity,
     member: "Member",
     receipt,
+    deadline_added: bool = False,
 ) -> None:
-    """Queue the "your seat is held until you pay" email for after commit."""
+    """Queue the "your seat is held until you pay" email for after commit.
+
+    ``deadline_added`` is the resend when auto-cancel starts on a seat that was
+    already held: the member already had this mail, and is told what changed.
+    """
     try:
         from app.tasks.email_tasks import send_pending_payment_email_task
 
@@ -958,6 +995,7 @@ def _dispatch_pending_payment_email(
             member_name=_get_member_name(registration) or (member.person.first_name if member.person else ""),
             activity_name=activity.name,
             locale=locale,
+            deadline_added=deadline_added,
             **_seat_payment(db, registration, activity, receipt, locale),
         )
         run_after_commit(db, lambda: send_pending_payment_email_task.delay(**payload))
@@ -993,11 +1031,7 @@ def _seat_payment(
             else None
         ),
         # What to write on a transfer so the club can match it.
-        reference=(
-            " – ".join(filter(None, [receipt.receipt_number, _get_member_name(registration)]))
-            if instructions.bank_details
-            else None
-        ),
+        reference=transfer_reference(receipt) if instructions.bank_details else None,
     )
 
 
@@ -1071,6 +1105,8 @@ def _dispatch_cancellation_email(
             member_name=_get_member_name(registration),
             activity_name=activity.name,
             locale=org_locale(db),
+            # A paid seat cancelled without keeping the payment owes it back.
+            refund_due=registration.refund_status == "due",
         )
         run_after_commit(db, lambda: send_cancellation_email_task.delay(**payload))
     except Exception as e:

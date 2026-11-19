@@ -401,6 +401,11 @@
           "description": "Avisa el soci que la seva plaça s'ha alliberat perquè no es va pagar a temps.",
           "warning": "Sense aquest avís, el soci no sabrà que ha perdut la plaça."
         },
+        "late_payment_refund": {
+          "name": "Pagament tardà sense plaça",
+          "description": "Avisa el soci quan el seu pagament arriba amb la plaça ja alliberada i sense places lliures: no està inscrit i se li retornarà l'import.",
+          "warning": "Sense aquest avís, el soci no sabrà que s'ha quedat sense plaça ni que se li retornaran els diners."
+        },
         "waitlist_promoted": {
           "name": "Plaça alliberada en activitat",
           "description": "Avisa el soci que ha entrat des de la llista d'espera.",

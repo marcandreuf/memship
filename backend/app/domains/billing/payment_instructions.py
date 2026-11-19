@@ -11,7 +11,7 @@ the organiser never agreed to take.
 """
 
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from sqlalchemy.orm import Session
 
@@ -39,6 +39,8 @@ class PaymentInstructions:
     bank_details: str | None = None
     cash: bool = False
     direct_debit: bool = False
+    # What to write on a transfer so the club can match it to the receipt.
+    reference: str | None = None
 
 
 def online_methods_available(db: Session) -> set[str]:
@@ -145,7 +147,16 @@ def receipt_instructions(
     db: Session, receipt: Receipt, org: OrganizationSettings | None, locale: str
 ) -> PaymentInstructions:
     """How to pay this receipt, honouring its activity's accepted methods."""
-    return how_to_pay(db, org, locale, receipt_allowed_methods(receipt))
+    instructions = how_to_pay(db, org, locale, receipt_allowed_methods(receipt))
+    if instructions.bank_details:
+        return replace(instructions, reference=transfer_reference(receipt))
+    return instructions
+
+
+def transfer_reference(receipt: Receipt) -> str:
+    """Receipt number and full name: enough to match a transfer to its receipt."""
+    name = receipt.party.display_name if receipt.party else None
+    return " – ".join(filter(None, [receipt.receipt_number, name]))
 
 
 def delivery_instructions(

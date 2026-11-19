@@ -62,6 +62,7 @@ CATALOG: tuple[TemplateSpec, ...] = (
     TemplateSpec("registration_pending_payment", "activities", "operational"),
     TemplateSpec("payment_deadline_reminder", "activities", "operational"),
     TemplateSpec("registration_cancelled_unpaid", "activities", "operational"),
+    TemplateSpec("late_payment_refund", "activities", "operational"),
     TemplateSpec("waitlist_promoted", "activities", "operational"),
     TemplateSpec("booking_confirmation", "bookings", "optional"),
     TemplateSpec("booking_waitlisted", "bookings", "optional"),

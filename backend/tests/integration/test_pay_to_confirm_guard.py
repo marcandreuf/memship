@@ -73,6 +73,54 @@ class TestTheClubDefault:
         assert resp.status_code == 200, resp.text
 
 
+class TestSwitchingAWarningMailOffLater:
+    def test_is_refused_while_the_club_cancels_unpaid_seats(self, client, db, org):
+        _switch(org, SEAT_PAYMENT_TEMPLATES)
+        org.features = {"activity_auto_cancel_enabled": True}
+        db.flush()
+        admin = _create_admin(db, "guard-off-club")
+
+        resp = client.put(
+            "/api/v1/settings/communications",
+            json={"templates": {"registration_pending_payment": False}},
+            cookies=_auth_cookie(admin),
+        )
+
+        assert resp.status_code == 422
+        assert resp.json()["detail"]["code"] == "templates_needed_by_auto_cancel"
+        assert resp.json()["detail"]["templates"] == ["registration_pending_payment"]
+
+    def test_is_refused_while_an_activity_cancels_unpaid_seats(
+        self, client, db, org, membership_type
+    ):
+        _switch(org, SEAT_PAYMENT_TEMPLATES)
+        activity, _ = _activity(db, payment_flow="pay_to_confirm")
+        activity.auto_cancel_enabled = True
+        db.flush()
+        admin = _create_admin(db, "guard-off-act")
+
+        resp = client.put(
+            "/api/v1/settings/communications",
+            json={"templates": {"payment_deadline_reminder": False}},
+            cookies=_auth_cookie(admin),
+        )
+
+        assert resp.status_code == 422
+
+    def test_is_allowed_while_nothing_cancels_unpaid_seats(self, client, db, org):
+        _switch(org, SEAT_PAYMENT_TEMPLATES)
+        db.flush()
+        admin = _create_admin(db, "guard-off-none")
+
+        resp = client.put(
+            "/api/v1/settings/communications",
+            json={"templates": {"registration_pending_payment": False}},
+            cookies=_auth_cookie(admin),
+        )
+
+        assert resp.status_code == 200, resp.text
+
+
 class TestTheActivityOverride:
     def test_is_refused_at_creation_while_a_warning_mail_is_off(self, client, db, org):
         admin = _create_admin(db, "guard-act-create")

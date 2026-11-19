@@ -12,4 +12,7 @@
 {{ c.data_row("Cancel·lada per", cancelled_by) }}
 {% endcall %}
 {%- endif %}
+{%- if refund_due %}
+<p style="{{ s.p_last }}">Ja havies pagat aquesta inscripció, així que el club et retornarà l'import.</p>
+{%- endif %}
 {% endblock %}

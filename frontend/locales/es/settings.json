@@ -401,6 +401,11 @@
           "description": "Avisa al socio de que su plaza se ha liberado porque no se pagó a tiempo.",
           "warning": "Sin este aviso, el socio no sabrá que ha perdido la plaza."
         },
+        "late_payment_refund": {
+          "name": "Pago tardío sin plaza",
+          "description": "Avisa al socio cuando su pago llega con la plaza ya liberada y sin plazas libres: no está inscrito y se le devolverá el importe.",
+          "warning": "Sin este aviso, el socio no sabrá que se quedó sin plaza ni que se le devolverá el dinero."
+        },
         "waitlist_promoted": {
           "name": "Plaza liberada en actividad",
           "description": "Avisa al socio de que ha entrado desde la lista de espera.",

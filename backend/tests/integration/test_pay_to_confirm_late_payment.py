@@ -36,6 +36,7 @@ from tests.integration.test_registration_billing import (
 
 ALERT = "app.tasks.email_tasks.send_late_payment_alert_email_task.delay"
 NOTIFY = "app.api.v1.endpoints.webhooks.dispatch_payment_notifications"
+REFUND_MAIL = "app.tasks.email_tasks.send_late_payment_refund_email_task.delay"
 LATER = datetime.now(timezone.utc) + timedelta(days=30)
 
 
@@ -67,12 +68,13 @@ class TestWithASeatFree:
         activity, registration, receipt = _released(db, org, membership_type, "free")
         _stripe_provider(db)
 
-        with patch(ALERT) as alert, patch(NOTIFY) as notify:
+        with patch(ALERT) as alert, patch(NOTIFY) as notify, patch(REFUND_MAIL) as refund:
             resp = _post_stripe_paid(client, receipt, "late-free")
 
         assert resp.status_code == 200, resp.text
         # The member is told the payment arrived, as for any payment.
         notify.assert_called_once_with([receipt.id])
+        refund.assert_not_called()
         db.expire_all()
         assert db.get(Receipt, receipt.id).status == "paid"
         registration = _reload(db, registration)
@@ -96,7 +98,7 @@ class TestWithNoSeatFree:
         _create_redsys_provider(db)
         db.flush()
 
-        with patch(ALERT) as alert:
+        with patch(ALERT) as alert, patch(NOTIFY) as notify, patch(REFUND_MAIL) as refund:
             resp = _post_webhook(
                 client,
                 _sign_notification(
@@ -106,6 +108,11 @@ class TestWithNoSeatFree:
             )
 
         assert resp.status_code == 200, resp.text
+        # Not "payment received, nothing more to do": the member has no seat,
+        # and is told the money will be returned instead.
+        assert not notify.call_args.args[0]
+        refund.assert_called_once()
+        assert refund.call_args.kwargs["receipt_number"] == receipt.receipt_number
         db.expire_all()
         assert db.get(Receipt, receipt.id).status == "paid"
         registration = _reload(db, registration)

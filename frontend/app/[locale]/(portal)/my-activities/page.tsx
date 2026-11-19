@@ -80,8 +80,8 @@ function RegistrationCard({ registration }: { registration: RegistrationData }) 
                 confirmAction({
                     title: t("activities.registration.confirmCancel"),
                     description: t("activities.registration.confirmCancelDescription"),
-                    cancelLabel: t("common.cancel"),
-                    confirmLabel: t("common.confirm"),
+                    cancelLabel: t("common.back"),
+                    confirmLabel: t("activities.registration.cancelRegistration"),
                     onConfirm: async () => {
                       try {
                         await cancelMutation.mutateAsync({ id: registration.id });

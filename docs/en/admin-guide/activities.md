@@ -1,5 +1,5 @@
 <!-- source: es/admin-guide/activities.md -->
-<!-- source-hash: d90c836309b3 -->
+<!-- source-hash: c7247c2fcf3e -->
 
 # Activities
 
@@ -80,7 +80,8 @@ confirms at once.
   Cancelling from the panel tells the member by email.
 - **Late payment.** If the gateway collects a seat already released, the seat comes back if
   there is room; otherwise the amount goes to refunds. Either way the club is alerted by email and
-  on the dashboard.
+  on the dashboard. The member is sent *Payment received* if the seat comes back; otherwise an
+  email saying they are not registered and the amount will be returned.
 
 Activities created before this way of working carry the **legacy** mark: they confirm the
 registration at once and the receipt is collected afterwards, as before. This cannot be changed.
@@ -94,7 +95,9 @@ change the time.
 
 It can only be switched on while the *Registration pending payment*, *Seat about to expire* and
 *Registration cancelled for non-payment* emails are on in **Settings › Members ›
-Communications**: without them the member would lose the seat without warning.
+Communications**: without them the member would lose the seat without warning. For the same
+reason, while automatic cancellation is on for the club or any activity, those emails cannot be
+switched off.
 
 > **Switching it on for an activity that already has pending seats**, or for the club with
 > activities that follow its default, gives those seats the full time **from that moment**, their

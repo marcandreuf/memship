@@ -63,6 +63,26 @@ def refuse_auto_cancel_without_notices(db: Session) -> None:
         )
 
 
+def auto_cancel_in_use(db: Session) -> bool:
+    """Whether some seat can be released for non-payment: the club default is
+    on, or a live pay-to-confirm activity switched it on for itself."""
+    from app.domains.activities.models import Activity
+
+    org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
+    if ((org.features if org else None) or {}).get("activity_auto_cancel_enabled") is True:
+        return True
+    return (
+        db.query(Activity.id)
+        .filter(
+            Activity.payment_flow == "pay_to_confirm",
+            Activity.auto_cancel_enabled.is_(True),
+            Activity.status.in_(("draft", "published")),
+        )
+        .first()
+        is not None
+    )
+
+
 @dataclass(frozen=True)
 class LateSeat:
     """What a domain reports back after settling a late payment on its seat."""
@@ -134,9 +154,11 @@ def record_late_payment(db: Session, receipt: Receipt, **payment) -> list[int] |
 
     receipt.status = "emitted"
     notify = mark_receipt_paid(db, receipt, **payment)
-    seat = settle_late_payment(db, receipt.registration_id)
+    seat = settle_late_payment(db, receipt)
     _dispatch_late_payment_alert(db, receipt, seat)
-    return notify
+    # "Payment received, nothing more to do" would tell a member without a seat
+    # they have one; the seat's domain has told them the money goes back instead.
+    return notify if seat.confirmed else []
 
 
 def _dispatch_late_payment_alert(db: Session, receipt: Receipt, seat) -> None:

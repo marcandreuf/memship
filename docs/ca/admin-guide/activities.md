@@ -1,5 +1,5 @@
 <!-- source: es/admin-guide/activities.md -->
-<!-- source-hash: d90c836309b3 -->
+<!-- source-hash: c7247c2fcf3e -->
 
 # Activitats
 
@@ -79,7 +79,8 @@ preu 0, confirma al moment.
   marca com a retornada. Cancel·lar des del tauler avisa el soci per correu.
 - **Pagament tardà.** Si la passarel·la cobra una plaça ja alliberada, la plaça es recupera si
   queda aforament; si no, l'import passa a devolucions. En tots dos casos s'avisa el club per
-  correu i al tauler.
+  correu i al tauler. El soci rep «Pagament rebut» si recupera la plaça; si no, un correu que li
+  diu que no està inscrit i que se li retornarà l'import.
 
 Les activitats creades abans d'aquesta manera de treballar porten la marca **legacy**: confirmen
 la inscripció al moment i el rebut es cobra després, com sempre. No es poden canviar.
@@ -93,7 +94,9 @@ desactivar o canviar-ne el termini.
 
 Només es pot activar amb els correus *Inscripció pendent de pagament*, *Plaça a punt de caducar*
 i *Inscripció cancel·lada per manca de pagament* activats a **Configuració › Socis ›
-Comunicacions**: sense ells, el soci perdria la plaça sense avís.
+Comunicacions**: sense ells, el soci perdria la plaça sense avís. Pel mateix motiu, mentre la
+cancel·lació automàtica estigui activa al club o en alguna activitat, aquests correus no es poden
+desactivar.
 
 > **En activar-la en una activitat que ja té places pendents**, o al club amb activitats que
 > segueixen el seu valor, aquestes places reben el termini complet **a partir d'aquell moment**,

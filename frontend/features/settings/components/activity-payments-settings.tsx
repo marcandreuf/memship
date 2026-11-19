@@ -69,7 +69,7 @@ export function ActivityPaymentsSettings() {
     .map((key) => t(`settings.emailTemplates.templates.${key}.name`))
     .join(", ");
   const fixIt = has("settings.communications.write")
-    ? t("activities.payment.fixInSettings")
+    ? t("activities.payment.fixInSettings", { count: switchedOff.length })
     : t("activities.payment.fixAskAdmin");
 
   async function onSubmit(data: Values) {

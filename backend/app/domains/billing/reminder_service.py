@@ -167,12 +167,13 @@ def _prepare_reminder(
         receipt_number=receipt.receipt_number,
         amount=f"{receipt.total_amount:.2f}",
         currency=currency,
-        due_date=receipt.due_date.isoformat() if receipt.due_date else "",
+        due_date=receipt.due_date.strftime("%d/%m/%Y") if receipt.due_date else "",
         days_overdue=days_overdue,
         org_name=org_name,
         pay_now_url=instructions.pay_now_url,
         bank_details=instructions.bank_details,
         cash=instructions.cash,
+        reference=instructions.reference,
         locale=locale,
     )
     return person, payload

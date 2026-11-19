@@ -58,13 +58,16 @@ interface ActivityPaymentFieldsProps {
 /** How a pay-to-confirm activity is paid, and whether unpaid seats expire. */
 export function ActivityPaymentFields({ flow, value, onChange }: ActivityPaymentFieldsProps) {
   const t = useTranslations();
-  const { has } = usePermissions();
+  const { has, hasRole } = usePermissions();
   const { data: options } = usePaymentOptions(flow !== "legacy");
-  // Communications is reserved to whoever holds the permission its API needs;
-  // anyone else is told who can fix it rather than sent to a tab they lack.
-  const fixIt = has("settings.communications.write")
-    ? t("activities.payment.fixInSettings")
-    : t("activities.payment.fixAskAdmin");
+  // Each fix points at the screen only for someone who can open it; anyone
+  // else is told who can do it rather than sent to a tab they lack.
+  const fixIt = (count: number) =>
+    has("settings.communications.write")
+      ? t("activities.payment.fixInSettings", { count })
+      : t("activities.payment.fixAskAdmin");
+  // Settings › Payments is the super admin's: providers and IBAN are credentials.
+  const paymentsReachable = hasRole("super_admin");
 
   if (flow === "legacy") {
     return (
@@ -114,11 +117,13 @@ export function ActivityPaymentFields({ flow, value, onChange }: ActivityPayment
                 </span>
                 {!available && options && (
                   <span className="text-xs text-muted-foreground">
-                    ({t(
-                      method === "transfer"
-                        ? "activities.payment.unavailableTransfer"
-                        : "activities.payment.unavailableOnline"
-                    )})
+                    ({t(`activities.payment.unavailable.${method}`)}
+                    {method !== "cash" &&
+                      ` ${t(
+                        paymentsReachable
+                          ? "activities.payment.unavailableWhere"
+                          : "activities.payment.unavailableAsk"
+                      )}`})
                   </span>
                 )}
               </label>
@@ -127,7 +132,7 @@ export function ActivityPaymentFields({ flow, value, onChange }: ActivityPayment
         </div>
         {switchedOff.includes("registration_pending_payment") && (
           <PaymentWarning>
-            {t("activities.payment.pendingEmailOff")} {fixIt}
+            {t("activities.payment.pendingEmailOff")} {fixIt(1)}
           </PaymentWarning>
         )}
       </div>
@@ -168,8 +173,12 @@ export function ActivityPaymentFields({ flow, value, onChange }: ActivityPayment
       </div>
       {value.auto_cancel === "on" && switchedOff.length > 0 && (
         <PaymentWarning>
-          {t("activities.payment.autoCancelNeedsEmails", { templates: templateNames })} {fixIt}
+          {t("activities.payment.autoCancelNeedsEmails", { templates: templateNames })}{" "}
+          {fixIt(switchedOff.length)}
         </PaymentWarning>
+      )}
+      {value.auto_cancel === "on" && (
+        <p className="text-sm text-muted-foreground">{t("activities.payment.autoCancelStartsNow")}</p>
       )}
     </div>
   );

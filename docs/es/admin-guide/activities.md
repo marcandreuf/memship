@@ -81,7 +81,8 @@ confirma al momento.
   como devuelta. Cancelar desde el panel avisa al socio por correo.
 - **Pago tardío.** Si la pasarela cobra una plaza ya liberada, la plaza se recupera si queda
   aforo; si no, el importe pasa a devoluciones. En ambos casos se avisa al club por correo y en el
-  panel.
+  panel. El socio recibe «Pago recibido» si recupera la plaza; si no, un correo que le dice que no
+  está inscrito y que se le devolverá el importe.
 
 Las actividades creadas antes de esta forma de trabajar llevan la marca **legacy**: confirman la
 inscripción al momento y el recibo se cobra después, como siempre. No se pueden cambiar.
@@ -95,7 +96,9 @@ cambiar el plazo.
 
 Solo se puede activar con los correos *Inscripción pendiente de pago*, *Plaza a punto de
 caducar* e *Inscripción cancelada por falta de pago* encendidos en **Configuración › Socios ›
-Comunicaciones**: sin ellos, el socio perdería la plaza sin aviso.
+Comunicaciones**: sin ellos, el socio perdería la plaza sin aviso. Por lo mismo, mientras la
+cancelación automática esté activa en el club o en alguna actividad, esos correos no se pueden
+desactivar.
 
 > **Al activarla en una actividad que ya tiene plazas pendientes**, o en el club con actividades
 > que siguen su valor, esas plazas reciben el plazo completo **a partir de ese momento**, su

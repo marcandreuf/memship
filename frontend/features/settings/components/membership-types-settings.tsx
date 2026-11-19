@@ -355,7 +355,7 @@ export function MembershipTypesSettings() {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <div className="flex gap-2">
+                  {canWrite && <div className="flex gap-2">
                     <Button variant="outline" size="sm" onClick={() => openEdit(type)}>
                       {t("common.edit")}
                     </Button>
@@ -367,7 +367,7 @@ export function MembershipTypesSettings() {
                     >
                       {t("common.delete")}
                     </Button>
-                  </div>
+                  </div>}
                 </TableCell>
               </TableRow>
             ))}

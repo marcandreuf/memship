@@ -12,7 +12,12 @@ from app.core.security.oauth import provider_redirect_uri
 from app.db.session import get_db
 from app.domains.audit.models import AuditLog
 from app.domains.auth.models import User
-from app.domains.billing.seats import SeatError, refuse_auto_cancel_without_notices
+from app.domains.billing.seats import (
+    SEAT_PAYMENT_TEMPLATES,
+    SeatError,
+    auto_cancel_in_use,
+    refuse_auto_cancel_without_notices,
+)
 from app.domains.auth.sso_config import (
     PROVIDER_FIELDS,
     build_field_node,
@@ -623,6 +628,18 @@ def update_communications_config(
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail={"code": "template_mandatory", "keys": forbidden},
+        )
+
+    # The reverse of the guard on switching auto-cancel on: while a seat can be
+    # released for non-payment, the mails that warn its holder stay on (#591).
+    needed = sorted(
+        key for key, enabled in data.templates.items()
+        if key in SEAT_PAYMENT_TEMPLATES and not enabled
+    )
+    if needed and auto_cancel_in_use(db):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"code": "templates_needed_by_auto_cancel", "templates": needed},
         )
 
     settings_obj = _require_org(db)

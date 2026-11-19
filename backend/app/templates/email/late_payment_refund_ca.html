@@ -1,0 +1,16 @@
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}El teu pagament per a {{ activity_name }} ha arribat quan la plaça ja no estava disponible.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Pagament rebut, però la plaça ja no està disponible</h1>
+<p style="{{ s.p }}">Hola {{ member_name }},</p>
+<p style="{{ s.p }}">Hem rebut el teu pagament per a <strong>{{ activity_name }}</strong>, però ha arribat quan la teva plaça ja s'havia alliberat i no en queda cap de lliure. <strong>No estàs inscrit</strong> a l'activitat.</p>
+{% call c.panel() %}
+{{ c.data_row("Import", amount ~ " " ~ currency) }}
+{{ c.data_row("Rebut", receipt_number) }}
+{% endcall %}
+<p style="{{ s.p }}">El club et retornarà l'import pel mateix mitjà amb què vas pagar. No has de fer res.</p>
+<p style="{{ s.note_last }}">Si encara vols participar, pots tornar a inscriure't si s'allibera alguna plaça.</p>
+{% endblock %}

@@ -90,7 +90,7 @@ export function ActivityEditForm({
   onCancel,
 }: ActivityEditFormProps) {
   const t = useTranslations();
-  const { data: membershipTypes } = useMembershipTypes();
+  const { data: membershipTypes, isLoading: typesLoading } = useMembershipTypes();
   const activeTypes = (membershipTypes ?? []).filter((mt) => mt.is_active);
 
   const form = useForm<EditActivityFormValuesInput, unknown, EditActivityFormValues>({
@@ -206,7 +206,7 @@ export function ActivityEditForm({
           <FormItem>
             <FormLabel>{t("activities.allowedTypes")}</FormLabel>
             <p className="text-sm text-muted-foreground">{t("activities.allowedTypesHint")}</p>
-            {activeTypes.length === 0 ? (
+            {typesLoading ? null : activeTypes.length === 0 ? (
               <p className="text-sm text-muted-foreground">{t("activities.allowedTypesNone")}</p>
             ) : (
               <div className="grid gap-2 sm:grid-cols-2">

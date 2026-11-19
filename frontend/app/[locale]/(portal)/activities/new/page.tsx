@@ -83,7 +83,7 @@ export default function NewActivityPage() {
   const t = useTranslations();
   const router = useRouter();
   const { mutateAsync: create, isPending } = useCreateActivity();
-  const { data: membershipTypes } = useMembershipTypes();
+  const { data: membershipTypes, isLoading: typesLoading } = useMembershipTypes();
   const activeTypes = (membershipTypes ?? []).filter((mt) => mt.is_active);
 
   const form = useForm<ActivityFormValuesInput, unknown, ActivityFormValues>({
@@ -370,7 +370,7 @@ export default function NewActivityPage() {
                     <p className="text-sm text-muted-foreground">
                       {t("activities.allowedTypesHint")}
                     </p>
-                    {activeTypes.length === 0 ? (
+                    {typesLoading ? null : activeTypes.length === 0 ? (
                       <p className="text-sm text-muted-foreground">
                         {t("activities.allowedTypesNone")}
                       </p>

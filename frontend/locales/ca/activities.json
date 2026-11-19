@@ -183,7 +183,7 @@
       "fullNoWaitlist": "L'activitat és completa i no té llista d'espera.",
       "cancelRegistration": "Cancel·lar inscripció",
       "confirmCancel": "Cancel·lar aquesta inscripció?",
-      "confirmCancelDescription": "El soci deixa d'estar inscrit i la seva plaça queda lliure.",
+      "confirmCancelDescription": "Deixaràs d'estar inscrit i la teva plaça quedarà lliure. Si tenies un rebut pendent, s'anul·la.",
       "registered": "Inscrit",
       "myActivities": "Les meves activitats",
       "noRegistrations": "Encara no hi ha inscripcions",
@@ -228,7 +228,9 @@
       "heldUntilPaid": "La teva plaça quedarà reservada fins que paguis el rebut.",
       "heldUntilPaidWithin": "La teva plaça quedarà reservada fins que paguis el rebut. Tindràs {hours} h per pagar-lo; si no, s'alliberarà.",
       "confirmedCreated": "Inscripció confirmada",
-      "waitlistCreated": "Ets a la llista d'espera"
+      "waitlistCreated": "Ets a la llista d'espera",
+      "eligibleWaitlist": "Pots apuntar-te a la llista d'espera",
+      "heldAfterWaitlist": "L'activitat és completa: aniràs a la llista d'espera. Si et toca una plaça, quedarà reservada fins que paguis el rebut."
     },
     "legacy": {
       "badge": "legacy",
@@ -255,11 +257,18 @@
       "pendingEmailOff": "El correu «Inscripció pendent de pagament» està desactivat: els socis no sabran que han de pagar.",
       "autoCancelNeedsEmails": "Per activar la cancel·lació automàtica, abans cal activar aquests correus: {templates}.",
       "autoCancelClub": "Com el club",
-      "fixInSettings": "Activa-ho a Configuració › Socis › Comunicacions.",
+      "fixInSettings": "{count, plural, one {Activa'l} other {Activa'ls}} a Configuració › Socis › Comunicacions.",
       "fixAskAdmin": "Demana-ho a un administrador del club.",
-      "unavailableOnline": "Necessita un proveïdor de pagament en línia actiu",
-      "unavailableTransfer": "Necessita l'IBAN del club a Configuració › Pagaments",
-      "hoursFromClub": "{hours} h (del club)"
+      "hoursFromClub": "{hours} h (del club)",
+      "unavailable": {
+        "card": "Necessita Stripe o Redsys actiu",
+        "bizum": "Necessita Redsys amb Bizum activat",
+        "transfer": "Necessita l'IBAN del club",
+        "cash": "No disponible"
+      },
+      "unavailableWhere": "a Configuració › Pagaments",
+      "unavailableAsk": "· demana-ho a un administrador",
+      "autoCancelStartsNow": "Les places pendents que encara no tenen termini el reben complet des que desis, i el seu soci rep de nou el correu amb la data límit."
     },
     "refunds": {
       "title": "Devolucions",

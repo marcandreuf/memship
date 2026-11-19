@@ -183,7 +183,7 @@
       "fullNoWaitlist": "La actividad está completa y no tiene lista de espera.",
       "cancelRegistration": "Cancelar inscripción",
       "confirmCancel": "¿Cancelar esta inscripción?",
-      "confirmCancelDescription": "El socio deja de estar inscrito y su plaza queda libre.",
+      "confirmCancelDescription": "Dejarás de estar inscrito y tu plaza quedará libre. Si tenías un recibo pendiente, se anula.",
       "registered": "Inscrito",
       "myActivities": "Mis actividades",
       "noRegistrations": "No hay inscripciones todavía",
@@ -228,7 +228,9 @@
       "heldUntilPaid": "Tu plaza quedará reservada hasta que pagues el recibo.",
       "heldUntilPaidWithin": "Tu plaza quedará reservada hasta que pagues el recibo. Tendrás {hours} h para pagarlo; si no, se liberará.",
       "confirmedCreated": "Inscripción confirmada",
-      "waitlistCreated": "Estás en la lista de espera"
+      "waitlistCreated": "Estás en la lista de espera",
+      "eligibleWaitlist": "Puedes apuntarte a la lista de espera",
+      "heldAfterWaitlist": "La actividad está completa: irás a la lista de espera. Si te llega una plaza, quedará reservada hasta que pagues el recibo."
     },
     "legacy": {
       "badge": "legacy",
@@ -255,11 +257,18 @@
       "pendingEmailOff": "El correo «Inscripción pendiente de pago» está desactivado: los socios no sabrán que tienen que pagar.",
       "autoCancelNeedsEmails": "Para activar la cancelación automática, antes hay que activar estos correos: {templates}.",
       "autoCancelClub": "Como el club",
-      "fixInSettings": "Actívalo en Configuración › Socios › Comunicaciones.",
+      "fixInSettings": "{count, plural, one {Actívalo} other {Actívalos}} en Configuración › Socios › Comunicaciones.",
       "fixAskAdmin": "Pídeselo a un administrador del club.",
-      "unavailableOnline": "Necesita un proveedor de pago online activo",
-      "unavailableTransfer": "Necesita el IBAN del club en Configuración › Pagos",
-      "hoursFromClub": "{hours} h (del club)"
+      "hoursFromClub": "{hours} h (del club)",
+      "unavailable": {
+        "card": "Necesita Stripe o Redsys activo",
+        "bizum": "Necesita Redsys con Bizum activado",
+        "transfer": "Necesita el IBAN del club",
+        "cash": "No disponible"
+      },
+      "unavailableWhere": "en Configuración › Pagos",
+      "unavailableAsk": "· pídeselo a un administrador",
+      "autoCancelStartsNow": "Las plazas pendientes que aún no tienen plazo lo reciben completo desde que guardes, y su socio recibe de nuevo el correo con la fecha límite."
     },
     "refunds": {
       "title": "Devoluciones",

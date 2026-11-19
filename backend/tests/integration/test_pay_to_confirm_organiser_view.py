@@ -95,6 +95,8 @@ class TestSwitchingAutoCancelOnLater:
         assert receipt.due_date <= registration.payment_due_at.date()
         delay.assert_called_once()
         assert delay.call_args.kwargs["deadline"]
+        # Not the first mail again: it says a deadline now applies.
+        assert delay.call_args.kwargs["deadline_added"] is True
 
     def test_the_club_default_reaches_activities_that_follow_it(
         self, client, db, org, membership_type

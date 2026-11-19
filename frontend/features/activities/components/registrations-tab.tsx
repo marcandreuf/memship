@@ -158,7 +158,8 @@ function RegistrationRow({
   const targets = [
     ...(status !== "confirmed" && (!owesPayment || paid) ? ["confirmed"] : []),
     ...(status !== "pending" && owesPayment && !paid ? ["pending"] : []),
-    ...(status !== "waitlist" ? ["waitlist"] : []),
+    // A paid seat is not sent to wait for a place it already paid for.
+    ...(status !== "waitlist" && !paid ? ["waitlist"] : []),
     "cancelled",
   ];
 

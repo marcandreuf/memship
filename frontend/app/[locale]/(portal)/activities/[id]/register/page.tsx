@@ -67,7 +67,8 @@ export default function RegisterPage({
   const mandatoryConsents = activityConsents.filter((c: ActivityConsentData) => c.is_mandatory);
   const allMandatoryAccepted = mandatoryConsents.every((c: ActivityConsentData) => acceptedConsents[c.id]);
   // Only the activity-wide cap is known here; a full modality is still refused by the API.
-  const fullWithoutWaitlist = activity.available_spots <= 0 && !activity.features?.waiting_list;
+  const isFull = activity.available_spots <= 0;
+  const fullWithoutWaitlist = isFull && !activity.features?.waiting_list;
 
   async function handleValidateDiscount() {
     if (!discountCode.trim()) return;
@@ -124,12 +125,22 @@ export default function RegisterPage({
         <CardContent className="py-3 px-4">
           {eligibility?.eligible ? (
             <div className="flex items-center gap-2">
-              <Badge variant="default">{t("activities.registration.eligible")}</Badge>
-              <span className="text-sm text-muted-foreground">
-                {activity.available_spots > 0
-                  ? t("activities.availableSpots", { count: activity.available_spots })
-                  : t("activities.full")}
-              </span>
+              <Badge variant={isFull ? "outline" : "default"}>
+                {t(
+                  fullWithoutWaitlist
+                    ? "activities.full"
+                    : isFull
+                      ? "activities.registration.eligibleWaitlist"
+                      : "activities.registration.eligible"
+                )}
+              </Badge>
+              {!fullWithoutWaitlist && (
+                <span className="text-sm text-muted-foreground">
+                  {isFull
+                    ? t("activities.full")
+                    : t("activities.availableSpots", { count: activity.available_spots })}
+                </span>
+              )}
             </div>
           ) : isAlreadyRegistered ? (
             <div className="flex items-center gap-3">
@@ -232,13 +243,15 @@ export default function RegisterPage({
                   })}
                 </p>
               )}
-              {activity.payment_flow === "pay_to_confirm" && selectedPrice && selectedPrice.amount > 0 && (
+              {activity.payment_flow === "pay_to_confirm" && selectedPrice && selectedPrice.amount > 0 && !fullWithoutWaitlist && (
                 // Said before signing up, not discovered after: the seat is
                 // only held until the receipt is paid (#591).
                 <p className="text-sm mt-2 rounded-md border border-amber-300 bg-amber-50 p-2 text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
-                  {activity.auto_cancel_enabled && activity.auto_cancel_hours
-                    ? t("activities.registration.heldUntilPaidWithin", { hours: activity.auto_cancel_hours })
-                    : t("activities.registration.heldUntilPaid")}
+                  {isFull
+                    ? t("activities.registration.heldAfterWaitlist")
+                    : activity.auto_cancel_enabled && activity.auto_cancel_hours
+                      ? t("activities.registration.heldUntilPaidWithin", { hours: activity.auto_cancel_hours })
+                      : t("activities.registration.heldUntilPaid")}
                 </p>
               )}
             </div>
