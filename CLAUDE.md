@@ -112,7 +112,11 @@ not a reshuffle.
 `id = 1` row — is mutating state every other worker can see. It needs to be
 confined to the pinned worker alongside every spec that reads what it touches,
 or it will surface as an unrelated spec failing intermittently somewhere else.
-**Audited 2026-11-11, and `custom_roles` is the only one.** Every other spec that
+**Audited 2026-11-11, re-verified 2026-11-20, and `custom_roles` is the only one.**
+`settings/seat-mails-guard.cy.ts`, added by #591, reads like a second: it clicks a
+communications toggle that is on. It is not. It enables the three seat mails in
+`before`, and the switch-off it attempts is *refused by the product*, so the flag is
+still on afterwards; the spec says so in its own header. Every other spec that
 writes `organization_settings` is a *monotonic enabler*: `if aria-checked !== "true"`,
 click, Save, leave it on. Off-to-on cannot break a concurrent reader, because every
 spec that reads those features wants them on. `roles-feature-flag.cy.ts` is the sole
@@ -121,21 +125,45 @@ pinning. The backend helps: `features` is a sparse merge, not a replace
 (`settings.py:116`), so two specs enabling different flags cannot clobber each other,
 and `communications.cy.ts` asserts exactly that.
 
-**Serialising more specs is therefore not the fix for most flakes here**, and the two
-found on 2026-11-11 prove it. Both were specs asserting something only true in
-isolation, not races: one clicked Save before a two-query form reset had applied, and
-one took "the first emitted receipt" and got a credit note another spec had left in
-the database, which correctly has no Send reminder button. Pinning fixes neither,
-because the contaminating data outlives the spec that wrote it whatever the schedule.
-A spec that selects the row it needs is correct under any scheduling; that is the fix
-direction, and #520 is the same defect in the payments specs.
+**Serialising more specs is therefore not the fix for most flakes here**, and the
+three found so far prove it. All were specs asserting something only true when the
+timing or the data cooperated, not races between workers. Two on 2026-11-11: one
+clicked Save before a two-query form reset had applied, and one took "the first
+emitted receipt" and got a credit note another spec had left in the database, which
+correctly has no Send reminder button. Pinning fixes neither, because the
+contaminating data outlives the spec that wrote it whatever the schedule.
 
-Measured 2026-09-16 at 219 tests, after the pinning: three consecutive runs, all
-**219/219 leaving no screenshots at all**, at 262.6s, 277.6s and 300.2s of spec
-wall clock plus the build. The pinned worker took 2:41–2:55 of that, well inside
-the pool's ~4.5 minutes, so it is not near becoming the critical path. Worker
-count is not worth tuning off these numbers: the spread between identical runs
-is ~38s, wide enough to swallow any difference a thread more or less would make.
+The third, on 2026-11-20, makes the point sharper because **it was on the pinned
+worker the whole time**. `roles-feature-flag.cy.ts` toggled `custom_roles` off and
+immediately on again, then asserted both tabs had returned. The switch disables
+itself while the write is in flight (`roles-settings.tsx:94`,
+`updateSettings.isPending`), so the second click landed on a disabled control and was
+swallowed: one `PUT /api/settings` instead of two, the flag left off, and the
+assertion failing on a state never reached. Pinning had protected that spec from
+every other worker and did nothing about a race it ran against itself.
+
+A spec that selects the row it needs, and that waits for the write it just made to
+land, is correct under any scheduling; that is the fix direction, and #520 is the
+same defect in the payments specs.
+
+**Current size, measured 2026-11-20: 56 spec files, 333 tests**, after #591 added
+seven pay-to-confirm specs. Two full `test:parallel:prod` runs that day: 6:24, 6:50
+and 6:50 on the pool workers with 3:10 on the pinned one, then 6:25, 6:36 and 6:44
+with 2:50 pinned. So the suite is around seven minutes plus the build, and the
+pinned worker is still comfortably inside the pool, nowhere near becoming the
+critical path, which is the number that decides whether the pinning is still free.
+
+The second of those was clean, 333/333 with no screenshots at all. The first left
+one, and the explanation is the third flake above. Worth stating together: the suite
+is green on this code, and it took a fix to get there, not a re-run.
+
+Historical, and kept because the reasoning still holds: measured 2026-09-16 at 219
+tests, three consecutive runs all **219/219 leaving no screenshots at all**, at
+262.6s, 277.6s and 300.2s of spec wall clock plus the build, the pinned worker
+taking 2:41–2:55 against the pool's ~4.5 minutes. Worker count was not worth tuning
+off those numbers: the spread between identical runs was ~38s, wide enough to
+swallow any difference a thread more or less would make. Nothing since suggests
+otherwise, and the suite has grown by half in the meantime.
 
 An earlier three-run measurement on the same day, before the pinning, also
 reported no retries — and a later run on that same code left one. Three clean
