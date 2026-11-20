@@ -147,11 +147,15 @@ land, is correct under any scheduling; that is the fix direction, and #520 is th
 same defect in the payments specs.
 
 **Current size, measured 2026-11-20: 56 spec files, 333 tests**, after #591 added
-seven pay-to-confirm specs. A full `test:parallel:prod` run that day took 6:24,
-6:50 and 6:50 on the three pool workers (76, 105 and 113 tests) and 3:10 on the
-pinned worker (39 tests), so the suite is around seven minutes plus the build. The
-pinned worker is still comfortably inside the pool and nowhere near becoming the
+seven pay-to-confirm specs. Two full `test:parallel:prod` runs that day: 6:24, 6:50
+and 6:50 on the pool workers with 3:10 on the pinned one, then 6:25, 6:36 and 6:44
+with 2:50 pinned. So the suite is around seven minutes plus the build, and the
+pinned worker is still comfortably inside the pool, nowhere near becoming the
 critical path, which is the number that decides whether the pinning is still free.
+
+The second of those was clean, 333/333 with no screenshots at all. The first left
+one, and the explanation is the third flake above. Worth stating together: the suite
+is green on this code, and it took a fix to get there, not a re-run.
 
 Historical, and kept because the reasoning still holds: measured 2026-09-16 at 219
 tests, three consecutive runs all **219/219 leaving no screenshots at all**, at
