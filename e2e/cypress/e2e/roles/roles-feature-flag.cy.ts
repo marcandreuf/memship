@@ -39,7 +39,18 @@ describe("Roles — feature flag", { tags: ["@roles"] }, () => {
 
   it("brings both tabs back when on", () => {
     cy.get('[data-testid="custom-roles-toggle"]').click();
-    cy.get('[data-testid="custom-roles-toggle"]').click();
+
+    // Wait for the first save to land before switching it back. The switch
+    // disables itself while the write is in flight
+    // (`roles-settings.tsx:94`, `updateSettings.isPending`), so a second click
+    // fired straight after the first is swallowed by that guard: only one
+    // PUT /api/settings is sent, the flag stays off, and the assertions below
+    // fail on an on-state that never arrived (#58).
+    cy.get('[data-testid="role-row-admin"]').should("not.exist");
+    cy.get('[data-testid="custom-roles-toggle"]')
+      .should("have.attr", "aria-checked", "false")
+      .and("not.be.disabled")
+      .click();
 
     cy.get('[data-testid="role-row-admin"]').should("exist");
     cy.contains("button", "Accounts").should("be.visible");
