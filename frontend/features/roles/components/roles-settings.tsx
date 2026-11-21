@@ -154,7 +154,7 @@ export function RolesSettings() {
           if (!o) setEditing(null);
         }}
       >
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
+        <DialogContent className="sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>
               {editing ? t("roles.edit") : t("roles.create")}

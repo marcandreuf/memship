@@ -113,7 +113,7 @@ export function UsersSettings() {
           if (!o) setAssigning(null);
         }}
       >
-        <DialogContent className="max-h-[85vh] overflow-y-auto">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>{t("roles.tab")}</DialogTitle>
           </DialogHeader>
