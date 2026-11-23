@@ -434,6 +434,11 @@
           "description": "Tells the member their booking is held until they pay, with the amount, the time limit and how to pay.",
           "warning": "It is the only notice that they have to pay. Without it, the member will not know their booking depends on payment."
         },
+        "booking_seat_available": {
+          "name": "Place freed at the last minute",
+          "description": "Tells those on the waiting list that a place freed too close to the start to be handed out by itself: whoever books and pays first takes it.",
+          "warning": "Without it, a place freed at the last minute stays empty: nobody on the waiting list will know they can book it."
+        },
         "receipt_delivery": {
           "name": "Receipt delivery",
           "description": "Sends the receipt PDF to the member when it is issued.",

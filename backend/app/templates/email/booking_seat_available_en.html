@@ -1,0 +1,18 @@
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}A place is free at {{ space_name }} for whoever books it first.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">A place has freed up</h1>
+<p style="{{ s.p }}">Hi {{ member_name }},</p>
+<p style="{{ s.p }}">A place has freed up at <strong>{{ space_name }}</strong>, where you are on the waiting list. It starts soon, so it is not handed out automatically: if you still want it, book it and pay before the time limit. Whoever books it first takes it.</p>
+{% call c.panel() %}
+{{ c.data_row("Date", booking_date) }}
+{{ c.data_row("Time", booking_time) }}
+{{ c.data_row("Amount", amount | money(currency)) }}
+{{ c.data_row("Book and pay before", deadline) }}
+{% endcall %}
+{{ c.button(book_url, "Book") }}
+<p style="{{ s.p_last }}">If you do not book it, you stay on the waiting list.</p>
+{% endblock %}

@@ -1,9 +1,19 @@
 {% extends "_base.html" %}
 {% import "_components.html" as c with context %}
 
-{% block preheader %}A spot opened up in {{ space_name }}.{% endblock %}
+{% block preheader %}A place has freed up at {{ space_name }}.{% endblock %}
 
 {% block content %}
+{%- if amount %}
+<h1 style="{{ s.h1 }}">There is a place for you</h1>
+<p style="{{ s.p }}">Hi {{ member_name }},</p>
+<p style="{{ s.p }}">A place has freed up at <strong>{{ space_name }}</strong> and we are holding it for you. The booking is confirmed once the payment is recorded.</p>
+{% call c.panel() %}
+{{ c.data_row("Date", booking_date) }}
+{{ c.data_row("Time", booking_time) }}
+{% endcall %}
+{% include "_booking_payment_en.html" %}
+{%- else %}
 <h1 style="{{ s.h1 }}">You're in!</h1>
 <p style="{{ s.p }}">Hi {{ member_name }},</p>
 <p style="{{ s.p }}">A spot opened up and your booking of <strong>{{ space_name }}</strong> is now confirmed.</p>
@@ -12,4 +22,5 @@
 {{ c.data_row("Time", booking_time) }}
 {% endcall %}
 <p style="{{ s.p_last }}">See you soon!</p>
+{%- endif %}
 {% endblock %}

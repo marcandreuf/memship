@@ -11,6 +11,7 @@ from app.core.email import (
     send_booking_confirmation_email,
     send_booking_pending_payment_email,
     send_booking_promoted_email,
+    send_booking_seat_available_email,
     send_booking_waitlisted_email,
     send_email,
     send_receipt_delivery_email,
@@ -337,6 +338,11 @@ def send_booking_email_task(
         if kind == "promoted":
             return send_booking_promoted_email(
                 to, member_name, space_name, date_str, time_str, locale,
+                payment=payment,
+            )
+        if kind == "seat_available":
+            return send_booking_seat_available_email(
+                to, member_name, space_name, date_str, time_str, locale, **payment,
             )
         if kind == "pending_payment":
             return send_booking_pending_payment_email(

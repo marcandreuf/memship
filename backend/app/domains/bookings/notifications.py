@@ -46,6 +46,8 @@ class BookingNotifier(Protocol):
 
     def send_promoted(self, note: BookingNotification) -> None: ...
 
+    def send_seat_available(self, note: BookingNotification) -> None: ...
+
     def send_admin_cancellation(self, note: BookingNotification) -> None: ...
 
 
@@ -71,6 +73,9 @@ class EmailBookingNotifier:
 
     def send_promoted(self, note: BookingNotification) -> None:
         self._dispatch("promoted", note)
+
+    def send_seat_available(self, note: BookingNotification) -> None:
+        self._dispatch("seat_available", note)
 
     def send_admin_cancellation(self, note: BookingNotification) -> None:
         # One template covers all admin-initiated cases: single cancel, slot
@@ -115,5 +120,7 @@ class NullBookingNotifier:
     def send_waitlisted(self, note: BookingNotification) -> None: ...
 
     def send_promoted(self, note: BookingNotification) -> None: ...
+
+    def send_seat_available(self, note: BookingNotification) -> None: ...
 
     def send_admin_cancellation(self, note: BookingNotification) -> None: ...

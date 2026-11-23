@@ -213,6 +213,11 @@ _SUBJECTS = {
         "ca": "Reserva pendent de pagament: {space}",
         "en": "Booking awaiting payment: {space}",
     },
+    "booking_seat_available": {
+        "es": "Se ha liberado una plaza: {space}",
+        "ca": "S'ha alliberat una plaça: {space}",
+        "en": "A place has freed up: {space}",
+    },
     "password_reset": {
         "es": "Restablecer contraseña",
         "ca": "Restablir contrasenya",
@@ -1447,8 +1452,11 @@ def send_booking_promoted_email(
     booking_date: str,
     booking_time: str,
     locale: str = "es",
+    payment: dict | None = None,
 ) -> bool:
-    """Tell a member a spot opened and they are now booked."""
+    """Tell a member a spot opened and is theirs. ``payment`` (amount, deadline
+    and ways to pay) means it is held until paid rather than booked, and the
+    mail and its subject say so (#603)."""
     return _send_templated(
         "booking_promoted",
         to,
@@ -1458,6 +1466,45 @@ def send_booking_promoted_email(
             "space_name": space_name,
             "booking_date": booking_date,
             "booking_time": booking_time,
+            **(payment or {}),
+        },
+        subject_args={"space": space_name},
+        subject=(
+            _get_subject("booking_pending_payment", locale, space=space_name)
+            if payment
+            else None
+        ),
+    )
+
+
+def send_booking_seat_available_email(
+    to: str,
+    member_name: str,
+    space_name: str,
+    booking_date: str,
+    booking_time: str,
+    locale: str = "es",
+    *,
+    amount: str,
+    currency: str,
+    deadline: str,
+    book_url: str,
+) -> bool:
+    """Tell a waitlister a seat has freed too close to the slot to be handed
+    out automatically: whoever books and pays it first takes it (#603)."""
+    return _send_templated(
+        "booking_seat_available",
+        to,
+        locale,
+        {
+            "member_name": member_name,
+            "space_name": space_name,
+            "booking_date": booking_date,
+            "booking_time": booking_time,
+            "amount": amount,
+            "currency": currency,
+            "deadline": deadline,
+            "book_url": book_url,
         },
         subject_args={"space": space_name},
     )

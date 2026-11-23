@@ -434,6 +434,11 @@
           "description": "Avisa el soci que la seva reserva queda guardada fins que pagui, amb l'import, l'hora límit i com pagar.",
           "warning": "És l'únic avís que li indica que ha de pagar. Sense ell, el soci no sabrà que la seva reserva depèn del pagament."
         },
+        "booking_seat_available": {
+          "name": "Plaça alliberada a última hora",
+          "description": "Avisa els qui esperen a la llista que s'ha alliberat una plaça massa a prop de l'inici per assignar-la sola: se la queda qui la reservi i pagui primer.",
+          "warning": "Sense aquest avís, una plaça alliberada a última hora es queda buida: ningú de la llista d'espera sabrà que la pot reservar."
+        },
         "receipt_delivery": {
           "name": "Enviament de rebut",
           "description": "Envia el PDF del rebut al soci en emetre'l.",

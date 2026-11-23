@@ -434,6 +434,11 @@
           "description": "Avisa al socio de que su reserva queda guardada hasta que pague, con el importe, la hora límite y cómo pagar.",
           "warning": "Es el único aviso que le indica que debe pagar. Sin él, el socio no sabrá que su reserva depende del pago."
         },
+        "booking_seat_available": {
+          "name": "Plaza liberada a última hora",
+          "description": "Avisa a quienes esperan en la lista de que se ha liberado una plaza demasiado cerca del inicio para asignarla sola: se la queda quien la reserve y pague primero.",
+          "warning": "Sin este aviso, una plaza liberada a última hora se queda vacía: nadie de la lista de espera sabrá que puede reservarla."
+        },
         "receipt_delivery": {
           "name": "Envío de recibo",
           "description": "Envía el PDF del recibo al socio al emitirlo.",

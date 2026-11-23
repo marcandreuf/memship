@@ -27,11 +27,13 @@ from app.domains.bookings.billing import (
     void_booking_receipts,
 )
 from app.domains.bookings.payment import (
+    auto_promotion_min,
     booking_payment_details,
     cutoff_minutes,
     min_hold,
     needs_payment,
     payment_deadline,
+    seat_offer_details,
 )
 from app.domains.bookings.eligibility import check_space_eligibility
 from app.domains.bookings.models import Booking, Space, SpaceSlot
@@ -776,7 +778,11 @@ def create_booking(
     *,
     notifier: BookingNotifier | None = None,
 ) -> Booking:
-    """Book a slot, or waitlist it when full. Returns the new booking."""
+    """Book a slot, or waitlist it when full. Returns the booking.
+
+    A member already on the slot's waiting list who books a seat that has
+    freed takes it with that same row.
+    """
     notifier = notifier or NullBookingNotifier()
 
     # Lock the slot row: serializes the capacity count + any concurrent booking.
@@ -804,7 +810,11 @@ def create_booking(
     if slot.slot_date > now_local.date() + timedelta(days=_window_days(db)):
         raise BookingWindowExceeded("Beyond the booking window")
 
-    if _member_active_booking(db, slot.id, member.party_id) is not None:
+    # A waitlister booking a seat that has freed takes it with their own row:
+    # one active row per member and slot, and their place in the queue is moot
+    # once they hold the seat (#603). Anyone else already on the slot holds it.
+    waiting = _member_active_booking(db, slot.id, member.party_id)
+    if waiting is not None and waiting.status != BookingStatus.WAITLISTED:
         raise DuplicateBooking("Member already holds this slot")
 
     now = datetime.now(timezone.utc)
@@ -817,20 +827,19 @@ def create_booking(
             if payment_due_at - now < min_hold(db):
                 raise BookingHoldTooShort(payment_due_at, cutoff_minutes(db))
             status = BookingStatus.PENDING
+    elif waiting is not None:
+        raise DuplicateBooking("Member is already on the waitlist for this slot")
     elif _waitlist_enabled(db):
         status = BookingStatus.WAITLISTED
         waitlisted_at = now_local
     else:
         raise SlotFull("Slot is full and the waitlist is disabled")
 
-    booking = Booking(
-        space_slot_id=slot.id,
-        party_id=member.party_id,
-        status=status,
-        waitlisted_at=waitlisted_at,
-        payment_due_at=payment_due_at,
-        pending_since=now if payment_due_at else None,
-    )
+    booking = waiting or Booking(space_slot_id=slot.id, party_id=member.party_id)
+    booking.status = status
+    booking.waitlisted_at = waitlisted_at
+    booking.payment_due_at = payment_due_at
+    booking.pending_since = now if payment_due_at else None
     db.add(booking)
     db.flush()
 
@@ -991,7 +1000,7 @@ def cancel_booking(
             )
 
     if held and _occupied(db, slot.id) < slot.capacity:
-        _promote_next(db, slot, notifier)
+        _on_seat_freed(db, slot, notifier)
     return booking
 
 
@@ -1064,20 +1073,46 @@ def _book_pending(db: Session, booking: Booking, notifier: BookingNotifier) -> N
         )
 
 
-def _promote_next(
-    db: Session, slot: SpaceSlot, notifier: BookingNotifier
-) -> Booking | None:
-    """Promote the earliest waitlisted member who may still hold the slot.
+def _on_seat_freed(db: Session, slot: SpaceSlot, notifier: BookingNotifier) -> None:
+    """A seat of ``slot`` has just freed: offer it to the waiting list.
 
-    Promotion is a confirmation path, so it re-checks eligibility rather than
-    trusting the check that ran when the member joined the waitlist: a tier can
-    be changed or cleared while a member waits, and promoting them would hand
-    them a seat in a space they are no longer allowed to use. An ineligible
-    member is skipped and keeps their place on the waitlist — the seat goes to
-    the next eligible one, and nobody is silently cancelled for an
-    administrative change they did not make.
+    A seat that costs nothing upfront goes to the next waitlister, as always. A
+    paid one in a pay-to-confirm space depends on the hold a booking would get
+    now (#603):
+
+    - at least the club's auto-promotion threshold: the next waitlister is
+      promoted to ``pending``, with its deadline;
+    - at least the shortest hold, but under that threshold: nobody is promoted,
+      since a member promoted unawares could sit on the seat until it was too
+      late for anyone. Every waitlister is told instead, and the first to book
+      it takes it;
+    - under the shortest hold: the seat is given up. A booking would be refused.
     """
     space = get_space(db, slot.space_id)
+    if space is None:
+        return
+    if not needs_payment(space, booking_price(space, slot)):
+        _promote_next(db, slot, space, notifier)
+        return
+    now = datetime.now(timezone.utc)
+    due = payment_deadline(db, space, slot, now)
+    if due - now >= auto_promotion_min(db):
+        _promote_next(db, slot, space, notifier, payment_due_at=due, now=now)
+    elif due - now >= min_hold(db):
+        _offer_freed_seat(db, slot, space, due, notifier)
+
+
+def _eligible_waitlisters(
+    db: Session, slot: SpaceSlot, space: Space
+) -> list[tuple[Booking, Member]]:
+    """The slot's waitlisters, first come first, who may still hold it.
+
+    Re-checked rather than trusted from when they joined: a tier can be changed
+    or cleared while a member waits, and handing them a seat in a space they are
+    no longer allowed to use would be wrong. An ineligible member keeps their
+    place on the waitlist, and nobody is silently cancelled for an
+    administrative change they did not make.
+    """
     candidates = (
         db.query(Booking)
         .filter(
@@ -1087,30 +1122,66 @@ def _promote_next(
         .order_by(Booking.waitlisted_at.asc(), Booking.id.asc())
         .all()
     )
+    eligible = []
     for candidate in candidates:
-        member = (
-            db.query(Member)
-            .options(joinedload(Member.person))
-            .filter(Member.party_id == candidate.party_id)
-            .order_by(Member.is_active.desc(), Member.id.desc())
-            .first()
-        )
-        if member is None:
-            continue
-        if space is not None and not check_space_eligibility(space, member).eligible:
-            continue
-        candidate.status = BookingStatus.BOOKED
-        candidate.waitlisted_at = None
+        member = _member_of(db, candidate)
+        if member is not None and check_space_eligibility(space, member).eligible:
+            eligible.append((candidate, member))
+    return eligible
+
+
+def _promote_next(
+    db: Session,
+    slot: SpaceSlot,
+    space: Space,
+    notifier: BookingNotifier,
+    *,
+    payment_due_at: datetime | None = None,
+    now: datetime | None = None,
+) -> Booking | None:
+    """Give the freed seat to the earliest eligible waitlister.
+
+    With a ``payment_due_at`` the seat is held until paid, so the promotee is
+    ``pending`` and told how and by when to pay; without one they are booked.
+    Either way promotion bills like any other path that gives a seat — the one
+    that is easiest to forget.
+    """
+    eligible = _eligible_waitlisters(db, slot, space)
+    if not eligible:
+        return None
+    candidate, member = eligible[0]
+    candidate.waitlisted_at = None
+    payment = None
+    if payment_due_at is not None:
+        candidate.status = BookingStatus.PENDING
+        candidate.payment_due_at = payment_due_at
+        candidate.pending_since = now
+        candidate.payment_reminder_sent_at = None
         db.flush()
-        if space is not None:
-            # Promotion confirms a seat, so it bills like any other confirmation
-            # path — the one that is easiest to forget.
-            ensure_booking_receipt(db, candidate, slot, space)
-            notifier.send_promoted(
-                _notification(db, candidate, slot, space, member)
-            )
-        return candidate
-    return None
+        receipt = _bill_pending(db, candidate, slot, space)
+        payment = booking_payment_details(db, candidate, space, receipt, _locale(db))
+    else:
+        candidate.status = BookingStatus.BOOKED
+        db.flush()
+        ensure_booking_receipt(db, candidate, slot, space)
+    notifier.send_promoted(
+        _notification(db, candidate, slot, space, member, payment=payment)
+    )
+    return candidate
+
+
+def _offer_freed_seat(
+    db: Session, slot: SpaceSlot, space: Space, pay_by: datetime, notifier: BookingNotifier
+) -> None:
+    """Tell every eligible waitlister a seat is free to book and pay by ``pay_by``.
+
+    They all stay on the waiting list; the first to book takes it.
+    """
+    offer = seat_offer_details(db, space, slot, pay_by, _locale(db))
+    for candidate, member in _eligible_waitlisters(db, slot, space):
+        notifier.send_seat_available(
+            _notification(db, candidate, slot, space, member, payment=offer)
+        )
 
 
 # --- Reads ----------------------------------------------------------------

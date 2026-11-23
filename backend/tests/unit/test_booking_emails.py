@@ -59,3 +59,28 @@ def test_cash_alone_is_not_offered_as_an_alternative():
     )
     assert "Puedes pagar en efectivo en el club." in html
     assert "También" not in html
+
+
+@pytest.mark.parametrize("locale", ["es", "ca", "en"])
+def test_a_promotion_held_until_paid_says_how_to_pay(locale):
+    html = render_template("booking_promoted", locale, {**CONTEXT, **PAYMENT})
+    assert "24/07/2026 09:00" in html
+    assert "my-receipts" in html
+
+
+@pytest.mark.parametrize("locale", ["es", "ca", "en"])
+def test_a_seat_freed_late_is_offered_with_its_price_deadline_and_link(locale):
+    html = render_template(
+        "booking_seat_available",
+        locale,
+        {
+            **CONTEXT,
+            "amount": "12.10",
+            "currency": "EUR",
+            "deadline": "24/07/2026 09:00",
+            "book_url": "https://club.example/es/book?space=3&date=2026-07-24",
+        },
+    )
+    assert "Court 1" in html
+    assert "24/07/2026 09:00" in html
+    assert "book?space=3" in html

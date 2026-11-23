@@ -83,6 +83,15 @@ def min_hold(db: Session) -> timedelta:
     return timedelta(minutes=int_rule(_features(db), "booking_min_hold_minutes"))
 
 
+def auto_promotion_min(db: Session) -> timedelta:
+    """The shortest hold for which a freed seat goes to the next waitlister by
+    itself. A member promoted unawares may not see it in time; one who books by
+    hand is in front of the screen and can pay at once."""
+    return timedelta(
+        minutes=int_rule(_features(db), "booking_auto_promotion_min_minutes")
+    )
+
+
 def cutoff_minutes(db: Session) -> int:
     return int_rule(_features(db), "booking_payment_cutoff_minutes")
 
@@ -104,4 +113,26 @@ def booking_payment_details(
         bank_details=instructions.bank_details,
         cash=instructions.cash,
         reference=transfer_reference(receipt) if instructions.bank_details else None,
+    )
+
+
+def seat_offer_details(
+    db: Session, space: Space, slot: SpaceSlot, pay_by: datetime, locale: str
+) -> dict:
+    """What the mail offering a freed seat to the waiting list says: what it
+    costs, by when a booking made now must be paid, and where to book it."""
+    from app.core.config import settings
+    from app.domains.billing.service import calculate_vat, org_default_vat_rate
+    from app.domains.bookings.billing import booking_price
+
+    org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
+    _, total = calculate_vat(booking_price(space, slot), org_default_vat_rate(org))
+    return dict(
+        amount=f"{total:.2f}",
+        currency=(org.currency if org else None) or "EUR",
+        deadline=pay_by.astimezone(org_timezone(db)).strftime("%d/%m/%Y %H:%M"),
+        book_url=(
+            f"{settings.FRONTEND_URL}/{locale}/book"
+            f"?space={space.id}&date={slot.slot_date.isoformat()}"
+        ),
     )
