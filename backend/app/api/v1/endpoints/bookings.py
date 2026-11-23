@@ -99,7 +99,10 @@ def create_space(
     current_user: User = Depends(require_permission("bookings.write")),
 ):
     _require_bookings_enabled(db)
-    space = service.create_space(db, data)
+    try:
+        space = service.create_space(db, data)
+    except service.BookingError as exc:
+        raise _booking_error(exc, status.HTTP_422_UNPROCESSABLE_ENTITY)
     db.commit()
     db.refresh(space)
     return space

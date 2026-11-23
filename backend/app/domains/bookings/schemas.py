@@ -1,12 +1,18 @@
 """Simple Bookings schemas."""
 
 from datetime import date, datetime, time
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.core.pagination import PageMeta
 from app.core.schema_types import NonBlank, refuse_null
+from app.domains.activities.schemas import (
+    AUTO_CANCEL_MAX_HOURS,
+    PaymentMethod,
+    unique_methods,
+)
 
 
 # --- Spaces ---------------------------------------------------------------
@@ -24,6 +30,14 @@ class SpaceCreate(BaseModel):
     # Empty or omitted means the space is open to every member.
     allowed_membership_types: list[int] | None = None
     is_active: bool = True
+    # How a paid booking may be paid (#603). A new space is pay-to-confirm: a
+    # paid booking is held until its receipt is paid.
+    payment_methods: list[PaymentMethod] = []
+    # Override of the club's booking auto-cancel default; None inherits it.
+    auto_cancel_enabled: bool | None = None
+    auto_cancel_hours: int | None = Field(default=None, ge=1, le=AUTO_CANCEL_MAX_HOURS)
+
+    _unique_methods = field_validator("payment_methods")(unique_methods)
 
     @model_validator(mode="after")
     def _hours(self):
@@ -41,8 +55,15 @@ class SpaceUpdate(BaseModel):
     close_time: time | None = None
     allowed_membership_types: list[int] | None = None
     is_active: bool | None = None
+    # One way only: a legacy space may move to pay-to-confirm, never back, and
+    # only bookings made afterwards follow it (#603).
+    payment_flow: Literal["pay_to_confirm"] | None = None
+    payment_methods: list[PaymentMethod] | None = None
+    auto_cancel_enabled: bool | None = None
+    auto_cancel_hours: int | None = Field(default=None, ge=1, le=AUTO_CANCEL_MAX_HOURS)
 
     _name_not_null = field_validator("name")(refuse_null)
+    _unique_methods = field_validator("payment_methods")(unique_methods)
 
 
 class SpaceRead(BaseModel):
@@ -57,6 +78,10 @@ class SpaceRead(BaseModel):
     close_time: time
     allowed_membership_types: list[int] | None
     is_active: bool
+    payment_flow: str
+    payment_methods: list[str]
+    auto_cancel_enabled: bool | None
+    auto_cancel_hours: int | None
     created_at: datetime | None
     updated_at: datetime | None
 

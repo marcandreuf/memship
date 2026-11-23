@@ -14,12 +14,16 @@ occurrence up front (bounded by the rule's count) and stamps them with a shared
 
 import logging
 from datetime import date, datetime, timedelta, timezone
+from decimal import Decimal
 from uuid import uuid4
 
 from sqlalchemy import func
 from sqlalchemy.orm import Query, Session, joinedload
 
 from app.core.clock import org_timezone
+from app.domains.activities.models import PAYMENT_FLOW_PAY_TO_CONFIRM
+from app.domains.billing.payment_instructions import unusable_methods
+from app.domains.billing.seats import SeatError, refuse_paid_space_without_notices
 from app.domains.bookings.billing import (
     booking_description,
     booking_price,
@@ -232,6 +236,70 @@ def _waitlist_enabled(db: Session) -> bool:
     return bool(_features(db).get("booking_waitlist_enabled", True))
 
 
+# --- Paid spaces (#603) ----------------------------------------------------
+
+#: The fields whose change can make a space start charging, or charge in ways
+#: it cannot take.
+_PAYMENT_FIELDS = frozenset({"price", "payment_flow", "payment_methods", "is_active"})
+
+
+class SpacePaymentMethodsRequired(BookingError):
+    """A space that charges must accept at least one way to pay."""
+
+
+class PaymentMethodsUnavailable(BookingError):
+    """The space accepts methods the club cannot take today."""
+
+    def __init__(self, methods: list[str]):
+        super().__init__("Payment methods not available at this club: " + ", ".join(methods))
+        self.fields = {"methods": methods}
+
+
+class SpacePaymentNeedsEmails(BookingError):
+    """A space that charges releases unpaid bookings; its holders must be told."""
+
+    def __init__(self, templates: list[str]):
+        super().__init__("A paid space needs these emails switched on first: " + ", ".join(templates))
+        self.fields = {"templates": templates}
+
+
+def _charges(db: Session, space: Space) -> bool:
+    """Whether a booking of the space can be held until paid: it is
+    pay-to-confirm and charges, by its own price or a slot's."""
+    if not needs_payment(space, Decimal("1")):
+        return False
+    if space.price is not None and space.price > 0:
+        return True
+    if space.id is None:
+        return False
+    db.flush()
+    return (
+        db.query(SpaceSlot.id)
+        .filter(SpaceSlot.space_id == space.id, SpaceSlot.price > 0)
+        .first()
+        is not None
+    )
+
+
+def _refuse_unpayable_space(db: Session, space: Space) -> None:
+    """A space that charges must be payable, exactly as a paid activity must be
+    to publish (#591): at least one method, each one the club can take, and the
+    mails that tell a member their booking is held, about to go, and gone."""
+    if not _charges(db, space):
+        return
+    if not space.payment_methods:
+        raise SpacePaymentMethodsRequired(
+            "A paid space must accept at least one payment method"
+        )
+    unusable = unusable_methods(db, list(space.payment_methods))
+    if unusable:
+        raise PaymentMethodsUnavailable(unusable)
+    try:
+        refuse_paid_space_without_notices(db)
+    except SeatError as exc:
+        raise SpacePaymentNeedsEmails(exc.detail["templates"]) from exc
+
+
 # --- Spaces ---------------------------------------------------------------
 
 
@@ -256,8 +324,13 @@ def create_space(db: Session, data: SpaceCreate) -> Space:
         close_time=data.close_time,
         allowed_membership_types=data.allowed_membership_types or None,
         is_active=data.is_active,
+        payment_flow=PAYMENT_FLOW_PAY_TO_CONFIRM,
+        payment_methods=list(data.payment_methods),
+        auto_cancel_enabled=data.auto_cancel_enabled,
+        auto_cancel_hours=data.auto_cancel_hours,
     )
     db.add(space)
+    _refuse_unpayable_space(db, space)
     return space
 
 
@@ -286,6 +359,8 @@ def update_space(
         setattr(space, key, value)
     if space.close_time <= space.open_time:
         raise InvalidTimeRange("close_time must be after open_time")
+    if payload.keys() & _PAYMENT_FIELDS:
+        _refuse_unpayable_space(db, space)
     if not auto_cancel_was_on and auto_cancel_hours(db, space) is not None:
         # Its pending bookings had only the cut-off; they now have less time.
         shorten_pending_deadlines(db, [space], notifier=notifier)
@@ -565,6 +640,8 @@ def create_slot(db: Session, space: Space, data: SpaceSlotCreate) -> list[SpaceS
         for d in dates
     ]
     db.add_all(slots)
+    if data.price:
+        _refuse_unpayable_space(db, space)
     return slots
 
 
@@ -626,6 +703,8 @@ def update_slot(
             if key == "slot_date" and target.id != slot.id:
                 continue
             setattr(target, key, value)
+    if payload.get("price"):
+        _refuse_unpayable_space(db, space)
     return slot
 
 

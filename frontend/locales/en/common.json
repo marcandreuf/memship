@@ -181,7 +181,7 @@
     "modality_full": "This option is full and the activity has no waiting list. Try another option.",
     "not_cancellable": "This booking is already cancelled",
     "not_eligible": "{reason, select, no_membership_type {You have no membership type assigned} other {Your membership type does not include this space}}",
-    "payment_method_not_accepted": "This activity does not accept this payment method.",
+    "payment_method_not_accepted": "This receipt cannot be paid with this payment method.",
     "payment_methods_required": "A paid activity must accept at least one payment method to be published.",
     "payment_methods_unavailable": "The club cannot take these right now: {methods}. Remove them or set up what they need first.",
     "pending_approval": "Your registration is still awaiting approval",
@@ -204,7 +204,10 @@
     "slot_in_past": "The slot's date and time are in the past{dates_count, plural, =0 {} other { ({dates})}}",
     "slot_outside_opening_hours": "The slot falls outside the space's opening hours{dates_count, plural, =0 {} other { ({dates})}}",
     "slot_overlap": "The slot overlaps an existing slot{dates_count, plural, =0 {} other { ({dates})}}",
+    "space_payment_methods_required": "A paid space must accept at least one payment method.",
+    "space_payment_needs_emails": "A paid space cancels bookings not paid in time, so these emails must be on first: {templates}.",
     "templates_needed_by_auto_cancel": "Automatic cancellation is on, so these emails cannot be switched off: {templates}. Without them, members would lose their seat without warning. Switch automatic cancellation off for the club and its activities first.",
+    "templates_needed_by_paid_spaces": "There are paid spaces, which cancel bookings not paid in time, so these emails cannot be switched off: {templates}. Without them, members would lose their booking without warning.",
     "unknown_permissions": "The role refers to permissions that do not exist: {keys}"
   },
   "groups": {

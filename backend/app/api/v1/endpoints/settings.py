@@ -656,15 +656,17 @@ def update_communications_config(
             detail={"code": "template_mandatory", "keys": forbidden},
         )
 
-    # The reverse of the guard on switching auto-cancel on: while a seat can be
-    # released for non-payment, the mails that warn its holder stay on (#591).
+    # The reverse of the guards on switching auto-cancel on and on charging for
+    # a pay-to-confirm space: while a seat can be released for non-payment, the
+    # mails that warn its holder stay on (#591, #603).
     switching_off = {key for key, enabled in data.templates.items() if not enabled}
-    needed = sorted(switching_off & required_seat_templates(db)) if switching_off else []
-    if needed:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail={"code": "templates_needed_by_auto_cancel", "templates": needed},
-        )
+    for code, templates in required_seat_templates(db).items():
+        needed = sorted(switching_off & templates)
+        if needed:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail={"code": code, "templates": needed},
+            )
 
     settings_obj = _require_org(db)
     config = copy.deepcopy(settings_obj.communications_config or {})

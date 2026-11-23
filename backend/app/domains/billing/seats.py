@@ -46,6 +46,15 @@ SEAT_PAYMENT_TEMPLATES = (
 )
 
 
+#: The booking counterparts (#603): a pay-to-confirm space always releases an
+#: unpaid booking at its deadline, so these are needed while one charges.
+BOOKING_SEAT_TEMPLATES = (
+    "booking_pending_payment",
+    "booking_deadline_reminder",
+    "booking_cancelled_unpaid",
+)
+
+
 def switched_off_seat_templates(
     db: Session, templates: tuple[str, ...] = SEAT_PAYMENT_TEMPLATES
 ) -> list[str]:
@@ -69,13 +78,51 @@ def refuse_auto_cancel_without_notices(
         )
 
 
-def required_seat_templates(db: Session) -> set[str]:
-    """The seat-payment mails the club may not switch off right now: those of
-    every domain that can release a seat for non-payment."""
-    required: set[str] = set()
+def required_seat_templates(db: Session) -> dict[str, set[str]]:
+    """The seat-payment mails the club may not switch off right now, keyed by
+    why: activities with auto-cancel, or pay-to-confirm spaces that charge,
+    which release every unpaid booking at its deadline."""
+    required: dict[str, set[str]] = {}
     if auto_cancel_in_use(db):
-        required.update(SEAT_PAYMENT_TEMPLATES)
+        required["templates_needed_by_auto_cancel"] = set(SEAT_PAYMENT_TEMPLATES)
+    if paid_pay_to_confirm_spaces_exist(db):
+        required["templates_needed_by_paid_spaces"] = set(BOOKING_SEAT_TEMPLATES)
     return required
+
+
+def refuse_paid_space_without_notices(db: Session) -> None:
+    """A pay-to-confirm space that charges releases every booking left unpaid
+    at its deadline, auto-cancel or not. It may only charge while every mail
+    that tells its holder so is on (#603)."""
+    off = switched_off_seat_templates(db, BOOKING_SEAT_TEMPLATES)
+    if off:
+        raise SeatError(
+            "A paid space needs these emails switched on first: " + ", ".join(off),
+            code="space_payment_needs_emails",
+            templates=off,
+        )
+
+
+def paid_pay_to_confirm_spaces_exist(db: Session) -> bool:
+    """Whether some pay-to-confirm space charges for a booking, by its own
+    price or a slot's."""
+    from app.domains.activities.models import PAYMENT_FLOW_PAY_TO_CONFIRM
+    from app.domains.bookings.models import Space, SpaceSlot
+
+    charged = (
+        db.query(SpaceSlot.id)
+        .filter(SpaceSlot.space_id == Space.id, SpaceSlot.price > 0)
+        .exists()
+    )
+    return (
+        db.query(Space.id)
+        .filter(
+            Space.payment_flow == PAYMENT_FLOW_PAY_TO_CONFIRM,
+            (Space.price > 0) | charged,
+        )
+        .first()
+        is not None
+    )
 
 
 def receipt_due_date(db: Session, due_at: datetime | None) -> date:

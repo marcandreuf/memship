@@ -181,7 +181,7 @@
     "modality_full": "Aquesta modalitat és completa i l'activitat no té llista d'espera. Prova amb una altra modalitat.",
     "not_cancellable": "Aquesta reserva ja està cancel·lada",
     "not_eligible": "{reason, select, no_membership_type {No tens cap tipus de soci assignat} other {El teu tipus de soci no inclou aquest espai}}",
-    "payment_method_not_accepted": "Aquesta activitat no accepta aquesta forma de pagament.",
+    "payment_method_not_accepted": "Aquest rebut no es pot pagar amb aquesta forma de pagament.",
     "payment_methods_required": "Una activitat de pagament ha d'acceptar almenys una forma de pagament per publicar-se.",
     "payment_methods_unavailable": "El club no pot cobrar ara amb: {methods}. Treu-les o configura abans el que necessiten.",
     "pending_approval": "La teva alta encara està pendent d'aprovació",
@@ -204,7 +204,10 @@
     "slot_in_past": "La data i hora de la franja ja han passat{dates_count, plural, =0 {} other { ({dates})}}",
     "slot_outside_opening_hours": "La franja queda fora de l'horari d'obertura de l'espai{dates_count, plural, =0 {} other { ({dates})}}",
     "slot_overlap": "La franja se solapa amb una altra d'existent{dates_count, plural, =0 {} other { ({dates})}}",
+    "space_payment_methods_required": "Un espai de pagament ha d'acceptar almenys una forma de pagament.",
+    "space_payment_needs_emails": "Un espai de pagament cancel·la les reserves que no es paguen a temps, així que abans han d'estar activats aquests correus: {templates}.",
     "templates_needed_by_auto_cancel": "La cancel·lació automàtica està activa, així que aquests correus no es poden desactivar: {templates}. Sense ells, el soci perdria la plaça sense avís. Desactiva abans la cancel·lació automàtica al club i a les activitats.",
+    "templates_needed_by_paid_spaces": "Hi ha espais de pagament, que cancel·len les reserves no pagades a temps, així que aquests correus no es poden desactivar: {templates}. Sense ells, el soci perdria la reserva sense avís.",
     "unknown_permissions": "El rol fa referència a permisos que no existeixen: {keys}"
   },
   "groups": {
