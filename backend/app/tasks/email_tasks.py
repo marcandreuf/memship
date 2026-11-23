@@ -147,6 +147,7 @@ def send_pending_payment_email_task(
     reference: str | None = None,
     locale: str = "es",
     deadline_added: bool = False,
+    promoted: bool = False,
 ) -> bool:
     """Tell the member their seat is held until they pay, and how to pay."""
     try:
@@ -164,6 +165,7 @@ def send_pending_payment_email_task(
             reference=reference,
             locale=locale,
             deadline_added=deadline_added,
+            promoted=promoted,
         )
     except Exception as exc:
         logger.error(f"Pending-payment email task failed: to={to}, error={exc}")
@@ -295,13 +297,11 @@ def send_promotion_email_task(
     activity_date: str | None = None,
     location: str | None = None,
     locale: str = "es",
-    payment: dict | None = None,
 ) -> bool:
     """Send waitlist promotion email."""
     try:
         return send_waitlist_promotion_email(
-            to, member_name, activity_name, activity_date, location, locale,
-            payment=payment,
+            to, member_name, activity_name, activity_date, location, locale
         )
     except Exception as exc:
         logger.error(f"Promotion email task failed: to={to}, error={exc}")

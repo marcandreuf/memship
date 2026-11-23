@@ -383,7 +383,7 @@
         },
         "registration_pending_payment": {
           "name": "Inscripción pendiente de pago",
-          "description": "Avisa al socio de que su plaza está reservada hasta que pague, con el importe, el plazo y cómo pagar.",
+          "description": "Avisa al socio de que su plaza está reservada hasta que pague, al inscribirse o al conseguir plaza desde la lista de espera, con el importe, el plazo y cómo pagar.",
           "warning": "Es el único aviso de que tiene que pagar. Sin él, el socio no sabrá que su plaza depende del pago."
         },
         "payment_deadline_reminder": {
@@ -408,7 +408,7 @@
         },
         "waitlist_promoted": {
           "name": "Plaza liberada en actividad",
-          "description": "Avisa al socio de que ha entrado desde la lista de espera.",
+          "description": "Avisa al socio de que ha entrado desde la lista de espera y su inscripción ya está confirmada.",
           "warning": "El socio ha ganado una plaza y tiene que actuar. Sin aviso, no se presentará."
         },
         "booking_confirmation": {

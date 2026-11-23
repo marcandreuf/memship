@@ -4,16 +4,9 @@
 {% block preheader %}S'ha alliberat una plaça a {{ activity_name }}.{% endblock %}
 
 {% block content %}
-{%- if amount %}
-<h1 style="{{ s.h1 }}">Hi ha una plaça per a tu</h1>
-<p style="{{ s.p }}">Hola {{ member_name }},</p>
-<p style="{{ s.p }}">S'ha alliberat una plaça a <strong>{{ activity_name }}</strong> i te l'hem reservada. La inscripció es confirmarà quan es registri el pagament.</p>
-{% include "_seat_payment_ca.html" %}
-{%- else %}
 <h1 style="{{ s.h1 }}">Plaça confirmada!</h1>
 <p style="{{ s.p }}">Hola {{ member_name }},</p>
 <p style="{{ s.p }}">S'ha alliberat una plaça a <strong>{{ activity_name }}</strong> i la teva inscripció ha estat <strong>confirmada</strong>.</p>
-{%- endif %}
 {%- if activity_date or location %}
 {% call c.panel() %}
 {% if activity_date %}{{ c.data_row("Data", activity_date) }}{% endif %}

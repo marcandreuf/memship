@@ -383,7 +383,7 @@
         },
         "registration_pending_payment": {
           "name": "Inscripció pendent de pagament",
-          "description": "Avisa el soci que la seva plaça està reservada fins que pagui, amb l'import, el termini i com pagar.",
+          "description": "Avisa el soci que la seva plaça està reservada fins que pagui, en inscriure's o en aconseguir plaça des de la llista d'espera, amb l'import, el termini i com pagar.",
           "warning": "És l'únic avís que li indica que ha de pagar. Sense ell, el soci no sabrà que la seva plaça depèn del pagament."
         },
         "payment_deadline_reminder": {
@@ -408,7 +408,7 @@
         },
         "waitlist_promoted": {
           "name": "Plaça alliberada en activitat",
-          "description": "Avisa el soci que ha entrat des de la llista d'espera.",
+          "description": "Avisa el soci que ha entrat des de la llista d'espera i la seva inscripció ja està confirmada.",
           "warning": "El soci ha guanyat una plaça i ha d'actuar. Sense avís, no s'hi presentarà."
         },
         "booking_confirmation": {

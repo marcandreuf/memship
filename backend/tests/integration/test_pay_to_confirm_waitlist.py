@@ -10,6 +10,8 @@ from app.domains.activities.registration_service import (
     cancel_registration,
     register_member,
 )
+from app.domains.billing.seats import SEAT_PAYMENT_TEMPLATES
+from app.tasks.email_tasks import send_pending_payment_email_task
 from tests.integration.test_pay_to_confirm_registration import (
     _assert_counters_match_rows,
     _auto_cancel,
@@ -24,6 +26,7 @@ from tests.integration.test_registration_billing import (
 
 PAY = "pay_to_confirm"
 PROMOTION = "app.tasks.email_tasks.send_promotion_email_task.delay"
+PENDING = "app.tasks.email_tasks.send_pending_payment_email_task.delay"
 
 
 def _full(db, membership_type, suffix, **kwargs):
@@ -32,6 +35,14 @@ def _full(db, membership_type, suffix, **kwargs):
         db, activity, _member(db, membership_type, f"{suffix}-h"), price.id
     )
     return activity, price, holder
+
+
+def _sent_to(delay, registration):
+    """The mails a patched ``.delay`` queued for this registration's member;
+    the holder's own pending-payment mail is queued too, and lands at the same
+    commit."""
+    email = registration.member.person.email
+    return [c.kwargs for c in delay.call_args_list if c.kwargs["to"] == email]
 
 
 class TestAPayerIsPromotedToPending:
@@ -58,14 +69,16 @@ class TestAPayerIsPromotedToPending:
             db, activity, _member(db, membership_type, "mail-w"), price.id
         )
 
-        with patch(PROMOTION) as delay:
+        with patch(PROMOTION) as promoted, patch(PENDING) as pending:
             cancel_registration(db, holder)
             db.commit()
 
-        payment = delay.call_args.kwargs["payment"]
+        promoted.assert_not_called()
+        [mail] = _sent_to(pending, waiting)
         [receipt] = _receipts_for(db, waiting)
-        assert payment["amount"] == f"{receipt.total_amount:.2f}"
-        assert payment["cash"] is True
+        assert mail["promoted"] is True
+        assert mail["amount"] == f"{receipt.total_amount:.2f}"
+        assert mail["cash"] is True
 
 
 class TestAnExemptPromoteeIsConfirmed:
@@ -80,13 +93,14 @@ class TestAnExemptPromoteeIsConfirmed:
             db, activity, _member(db, membership_type, "free-w"), free.id
         )
 
-        with patch(PROMOTION) as delay:
+        with patch(PROMOTION) as promoted, patch(PENDING) as pending:
             cancel_registration(db, holder)
             db.commit()
 
         assert waiting.status == "confirmed"
         assert _receipts_for(db, waiting) == []
-        assert delay.call_args.kwargs["payment"] is None
+        assert len(_sent_to(promoted, waiting)) == 1
+        assert _sent_to(pending, waiting) == []
 
 
 class TestTheCascade:
@@ -121,7 +135,7 @@ class TestLegacyPromotionIsUnchanged:
             db, activity, _member(db, membership_type, "leg-w"), price.id
         )
 
-        with patch(PROMOTION) as delay:
+        with patch(PROMOTION) as promoted, patch(PENDING) as pending:
             cancel_registration(db, holder)
             db.commit()
 
@@ -129,15 +143,53 @@ class TestLegacyPromotionIsUnchanged:
         assert waiting.payment_due_at is None
         [receipt] = _receipts_for(db, waiting)
         assert (receipt.is_batchable, receipt.due_date) == (True, None)
-        assert delay.call_args.kwargs["payment"] is None
+        assert len(_sent_to(promoted, waiting)) == 1
+        assert _sent_to(pending, waiting) == []
 
 
-@pytest.mark.parametrize("locale", ["es", "ca", "en"])
-def test_the_promotion_mail_renders_with_payment(locale):
+class TestThePromotedMemberIsAlwaysTold:
+    """The mail that tells a promotee they must pay is one a pay-to-confirm
+    activity cannot run without: seeded on, and refused to be switched off
+    while a seat can be released unpaid. waitlist_promoted is neither, and was
+    what this used to send, so with the default configuration a promotee was
+    told nothing until the cancellation for non-payment (#619). Held end to
+    end: the dispatcher, the task, the template."""
+
+    def test_through_a_template_auto_cancel_keeps_on(self, db, org, membership_type):
+        _auto_cancel(org, hours=24)
+        activity, price, holder = _full(db, membership_type, "told")
+        waiting = register_member(
+            db, activity, _member(db, membership_type, "told-w"), price.id
+        )
+        queued = []
+
+        with (
+            patch(PROMOTION, side_effect=lambda **kw: queued.append(kw)),
+            patch(PENDING, side_effect=lambda **kw: queued.append(kw)),
+        ):
+            cancel_registration(db, holder)
+            db.commit()
+        [promotion] = [
+            kw for kw in queued if kw["to"] == waiting.member.person.email
+        ]
+
+        with patch("app.core.email._send_templated", return_value=True) as send:
+            send_pending_payment_email_task.run(**promotion)
+
+        assert send.call_args.args[0] in SEAT_PAYMENT_TEMPLATES
+        assert send.call_args.args[3]["promoted"] is True
+
+
+@pytest.mark.parametrize(
+    "locale,heading",
+    [("es", "Hay una plaza para ti"), ("ca", "Hi ha una plaça per a tu"), ("en", "A seat is yours")],
+)
+def test_the_promotion_mail_renders_with_payment(locale, heading):
     html = render_template(
-        "waitlist_promoted",
+        "registration_pending_payment",
         locale,
         {
+            "promoted": True,
             "member_name": "Ana",
             "activity_name": "Yoga",
             "amount": "27.50",
@@ -150,5 +202,5 @@ def test_the_promotion_mail_renders_with_payment(locale):
     )
 
     amount = {"es": "27,50 €", "ca": "27,50 €", "en": "€27.50"}[locale]
-    for fragment in ("Yoga", amount, "20/11/2026 18:00", "my-receipts", "ES00 0000"):
+    for fragment in (heading, "Yoga", amount, "20/11/2026 18:00", "my-receipts", "ES00 0000"):
         assert fragment in html
