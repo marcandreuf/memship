@@ -192,7 +192,7 @@
     "receipt_collection_in_flight": "This receipt is in remittance {remittance_number}, already sent to the bank: the collection is in progress. Wait for the bank to return it, or close the remittance, before changing it.",
     "receipts_without_amount": "Remittance {remittance_number} holds receipts for 0.00: {receipts}. A direct debit for zero collects nothing and the bank file cannot express it. Cancel the remittance and create it again without those receipts.",
     "remittance_file_already_generated": "Remittance {remittance_number} already has its file, and it is not overwritten: it is the record of what went to the bank. If you need a different one, cancel the remittance and create it again.",
-    "remittance_file_withdrawn": "Remittance {remittance_number} is '{status}' and its file is no longer valid. If you cancelled it, its receipts are available for another batch again.",
+    "remittance_file_withdrawn": "Remittance {remittance_number} is “{status}” and its file is no longer valid. If you cancelled it, its receipts are available for another batch again.",
     "remittance_out_of_step": "Remittance {remittance_number} no longer matches the receipts it holds ({live_count} instead of {stored_count}). The file is not generated, so the bank is never asked to collect a different amount from the one the remittance states.",
     "return_against_paid_receipt": "The bank is returning receipts Memship records as paid: {receipts}. Someone must have collected them another way while the direct debit was in flight, so nothing was imported. Check each receipt and decide which collection is the real one before importing the file again without those lines.",
     "role_locked": "Built-in roles cannot be edited or deleted",
