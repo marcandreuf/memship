@@ -208,6 +208,11 @@ _SUBJECTS = {
         "ca": "Reserva cancel·lada: {space}",
         "en": "Booking cancelled: {space}",
     },
+    "booking_pending_payment": {
+        "es": "Reserva pendiente de pago: {space}",
+        "ca": "Reserva pendent de pagament: {space}",
+        "en": "Booking awaiting payment: {space}",
+    },
     "password_reset": {
         "es": "Restablecer contraseña",
         "ca": "Restablir contrasenya",
@@ -1477,6 +1482,44 @@ def send_booking_cancelled_email(
             "space_name": space_name,
             "booking_date": booking_date,
             "booking_time": booking_time,
+        },
+        subject_args={"space": space_name},
+    )
+
+
+def send_booking_pending_payment_email(
+    to: str,
+    member_name: str,
+    space_name: str,
+    booking_date: str,
+    booking_time: str,
+    locale: str = "es",
+    *,
+    amount: str,
+    currency: str,
+    deadline: str,
+    pay_now_url: str | None = None,
+    bank_details: str | None = None,
+    cash: bool = False,
+    reference: str | None = None,
+) -> bool:
+    """Tell a member their booking is held until they pay it, and by when (#603)."""
+    return _send_templated(
+        "booking_pending_payment",
+        to,
+        locale,
+        {
+            "member_name": member_name,
+            "space_name": space_name,
+            "booking_date": booking_date,
+            "booking_time": booking_time,
+            "amount": amount,
+            "currency": currency,
+            "deadline": deadline,
+            "pay_now_url": pay_now_url,
+            "bank_details": bank_details,
+            "cash": cash,
+            "reference": reference,
         },
         subject_args={"space": space_name},
     )

@@ -57,9 +57,12 @@ def _member(db, i=0):
     return member
 
 
-def _space(db, price=None):
+def _space(db, price=None, payment_flow="legacy"):
+    # Legacy unless a test says otherwise: these are the rules a space billed
+    # after booking has always followed. Pay-to-confirm has its own tests.
     space = Space(
         name="Court 1",
+        payment_flow=payment_flow,
         open_time=time(8, 0),
         close_time=time(22, 0),
         is_active=True,

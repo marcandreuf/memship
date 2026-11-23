@@ -717,6 +717,7 @@ class TestSpaceStats:
         self._book(db, in_today, members[0])
         self._book(db, in_today, members[1])
         self._book(db, in_today, members[2], "cancelled")
+        self._book(db, in_today, members[3], "pending")
         self._book(db, in_last, members[0])
         self._book(db, in_last, members[3], "waitlisted")
         for excluded in (past, day_30, inactive):
@@ -727,13 +728,15 @@ class TestSpaceStats:
         assert r.json() == {
             "window_days": 30,
             "booked": 3,
+            # A booking waiting for payment holds its seat (#603).
+            "pending": 1,
             "waitlisted": 1,
             "cancelled": 1,
-            "total": 5,
+            "total": 6,
             "active_spaces": 1,
             "slots": 2,
             "capacity": 6,
-            "occupancy_pct": 50.0,
+            "occupancy_pct": 66.7,
         }
 
     def test_occupancy_is_rounded_to_one_decimal(self, client, db):

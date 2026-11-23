@@ -1,0 +1,15 @@
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}La teva reserva de {{ space_name }} queda guardada fins que paguis.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Reserva pendent de pagament</h1>
+<p style="{{ s.p }}">Hola {{ member_name }},</p>
+<p style="{{ s.p }}">T'hem guardat una plaça a <strong>{{ space_name }}</strong>. La reserva es confirmarà quan es registri el pagament.</p>
+{% call c.panel() %}
+{{ c.data_row("Data", booking_date) }}
+{{ c.data_row("Horari", booking_time) }}
+{% endcall %}
+{% include "_booking_payment_ca.html" %}
+{% endblock %}

@@ -190,11 +190,16 @@ class AvailabilityCell(BaseModel):
     # What this slot costs the member: the slot's own price, or the space's,
     # or 0 when neither is set. Shown before the booking is confirmed.
     price: float
+    # When a paid booking taken now would have to be paid by, in a
+    # pay-to-confirm space (#603). None when booking it costs nothing upfront.
+    pay_by: datetime | None = None
+    # Seats held, paid or pending payment.
     booked_count: int
     waitlist_count: int
-    # none | booked | waitlisted
+    # none | booked | pending | waitlisted
     my_status: str
-    # open | full | past | out_of_window
+    # open | full | past | out_of_window | too_late (too close to the start to
+    # be held until paid)
     cell_state: str
 
 
@@ -216,6 +221,7 @@ class WeekAvailability(BaseModel):
 class SpaceStats(BaseModel):
     window_days: int
     booked: int
+    pending: int
     waitlisted: int
     cancelled: int
     total: int

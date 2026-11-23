@@ -76,6 +76,17 @@ def _pay_to_confirm_owner(receipt: Receipt):
     activity = registration.activity if registration else None
     if activity is not None and activity.payment_flow == PAYMENT_FLOW_PAY_TO_CONFIRM:
         return activity
+    booking = receipt.booking
+    space = booking.slot.space if booking is not None and booking.slot else None
+    # A space may switch to pay-to-confirm after billing bookings the old way,
+    # and those receipts keep the terms they were raised under. A held booking's
+    # receipt is the one no remittance collects (#603).
+    if (
+        space is not None
+        and space.payment_flow == PAYMENT_FLOW_PAY_TO_CONFIRM
+        and not receipt.is_batchable
+    ):
+        return space
     return None
 
 

@@ -429,6 +429,11 @@
           "description": "Avisa el soci que el club ha cancel·lat la seva reserva.",
           "warning": "El soci es presentarà a una reserva que ja no existeix."
         },
+        "booking_pending_payment": {
+          "name": "Reserva pendent de pagament",
+          "description": "Avisa el soci que la seva reserva queda guardada fins que pagui, amb l'import, l'hora límit i com pagar.",
+          "warning": "És l'únic avís que li indica que ha de pagar. Sense ell, el soci no sabrà que la seva reserva depèn del pagament."
+        },
         "receipt_delivery": {
           "name": "Enviament de rebut",
           "description": "Envia el PDF del rebut al soci en emetre'l.",

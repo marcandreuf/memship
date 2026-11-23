@@ -76,6 +76,7 @@ def _booking_error(exc: service.BookingError, status_code: int) -> HTTPException
         detail["reason"] = exc.reason
     if exc.dates:
         detail["dates"] = [d.isoformat() for d in exc.dates]
+    detail.update(exc.fields)
     return HTTPException(status_code=status_code, detail=detail)
 
 
@@ -383,8 +384,11 @@ def create_booking(
     except (
         service.BookingInPast,
         service.BookingWindowExceeded,
+        service.BookingHoldTooShort,
     ) as exc:
         raise _booking_error(exc, status.HTTP_422_UNPROCESSABLE_ENTITY)
+    except service.SeatReceiptFailed as exc:
+        raise _booking_error(exc, status.HTTP_503_SERVICE_UNAVAILABLE)
     db.commit()
     db.refresh(booking)
     return booking

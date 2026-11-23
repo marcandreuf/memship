@@ -164,6 +164,7 @@
     "activity_full": "La actividad está completa y no tiene lista de espera.",
     "auto_cancel_needs_emails": "Para activar la cancelación automática, antes deben estar activados estos correos: {templates}.",
     "booking_in_past": "Esta franja ya ha empezado",
+    "booking_hold_too_short": "Ya no da tiempo a reservar esta franja: una reserva de pago debe pagarse {cutoff_minutes, plural, =0 {antes de que empiece} one {# minuto antes de que empiece} other {# minutos antes de que empiece}}, y quedaría menos tiempo del mínimo para pagarla.",
     "booking_window_exceeded": "Esta fecha está fuera del plazo de reserva",
     "cancellation_too_late": "El plazo de cancelación ha pasado",
     "collection_date_in_past": "La fecha de cobro ({due_date}) ya ha pasado. El banco rechaza un fichero cuya fecha de cobro es anterior a hoy ({today}). Elige una fecha futura.",

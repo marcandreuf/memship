@@ -1,0 +1,15 @@
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}Your booking of {{ space_name }} is held until you pay.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Booking awaiting payment</h1>
+<p style="{{ s.p }}">Hi {{ member_name }},</p>
+<p style="{{ s.p }}">We are holding a place for you at <strong>{{ space_name }}</strong>. The booking is confirmed once the payment is recorded.</p>
+{% call c.panel() %}
+{{ c.data_row("Date", booking_date) }}
+{{ c.data_row("Time", booking_time) }}
+{% endcall %}
+{% include "_booking_payment_en.html" %}
+{% endblock %}

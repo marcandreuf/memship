@@ -164,6 +164,7 @@
     "activity_full": "L'activitat és completa i no té llista d'espera.",
     "auto_cancel_needs_emails": "Per activar la cancel·lació automàtica, abans han d'estar activats aquests correus: {templates}.",
     "booking_in_past": "Aquesta franja ja ha començat",
+    "booking_hold_too_short": "Ja no hi ha temps de reservar aquesta franja: una reserva de pagament s'ha de pagar {cutoff_minutes, plural, =0 {abans que comenci} one {# minut abans que comenci} other {# minuts abans que comenci}}, i quedaria menys temps del mínim per pagar-la.",
     "booking_window_exceeded": "Aquesta data és fora del termini de reserva",
     "cancellation_too_late": "El termini de cancel·lació ha passat",
     "collection_date_in_past": "La data de cobrament ({due_date}) ja ha passat. El banc rebutja un fitxer amb una data de cobrament anterior a avui ({today}). Tria una data futura.",

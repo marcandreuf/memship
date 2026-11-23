@@ -13,7 +13,7 @@ occurrence up front (bounded by the rule's count) and stamps them with a shared
 """
 
 import logging
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from uuid import uuid4
 
 from sqlalchemy import func
@@ -24,6 +24,13 @@ from app.domains.bookings.billing import (
     booking_price,
     ensure_booking_receipt,
     void_booking_receipts,
+)
+from app.domains.bookings.payment import (
+    booking_payment_details,
+    cutoff_minutes,
+    min_hold,
+    needs_payment,
+    payment_deadline,
 )
 from app.domains.bookings.eligibility import check_space_eligibility
 from app.domains.bookings.models import Booking, Space, SpaceSlot
@@ -45,7 +52,15 @@ from app.domains.shared.enums import BookingStatus
 
 logger = logging.getLogger(__name__)
 
-ACTIVE_STATUSES = (BookingStatus.BOOKED, BookingStatus.WAITLISTED)
+ACTIVE_STATUSES = (BookingStatus.BOOKED, BookingStatus.PENDING, BookingStatus.WAITLISTED)
+
+# Statuses that hold a seat. A pending booking holds one while it waits to be
+# paid, so every capacity count reads this one rule (#603).
+OCCUPYING_STATUSES = (BookingStatus.BOOKED, BookingStatus.PENDING)
+
+
+def occupies_seat(status: str | None) -> bool:
+    return status in OCCUPYING_STATUSES
 
 
 # --- Errors ---------------------------------------------------------------
@@ -59,6 +74,8 @@ class BookingError(Exception):
     """
 
     dates: list[date] = []
+    #: Further fields the API adds to the error beside its code.
+    fields: dict = {}
 
 
 class SpaceNotFound(BookingError):
@@ -99,6 +116,23 @@ class BookingWindowExceeded(BookingError):
 
 class DuplicateBooking(BookingError):
     pass
+
+
+class BookingHoldTooShort(BookingError):
+    """A paid booking would have less time to pay than the club's shortest hold.
+
+    Refused rather than created already doomed. Carries the deadline it would
+    have had and the club's cut-off, so the member is told why.
+    """
+
+    def __init__(self, pay_by: datetime, cutoff: int):
+        super().__init__("Too close to the slot to hold it until paid")
+        self.fields = {"pay_by": pay_by.isoformat(), "cutoff_minutes": cutoff}
+
+
+class SeatReceiptFailed(BookingError):
+    """The receipt of a booking held until paid could not be raised, so the
+    booking cannot be held: nobody could pay it."""
 
 
 class NotEligible(BookingError):
@@ -554,6 +588,19 @@ def delete_slot(
 # --- Counts ---------------------------------------------------------------
 
 
+def _occupied(db: Session, slot_id: int) -> int:
+    """How many seats of the slot are held, paid or waiting to be."""
+    return (
+        db.query(func.count(Booking.id))
+        .filter(
+            Booking.space_slot_id == slot_id,
+            Booking.status.in_(OCCUPYING_STATUSES),
+        )
+        .scalar()
+        or 0
+    )
+
+
 def _count(db: Session, slot_id: int, status: str) -> int:
     return (
         db.query(func.count(Booking.id))
@@ -581,7 +628,7 @@ def _member_active_booking(
 
 
 def _counts_by_slot(db: Session, slot_ids: list[int]) -> dict[tuple[int, str], int]:
-    """Booked / waitlisted counts for many slots in one query, keyed by
+    """Booked / pending / waitlisted counts for many slots in one query, keyed by
     ``(slot_id, status)``. The week view is the member-facing calendar that
     everyone opens at once when booking opens; a query per slot per count made
     it two round trips per cell."""
@@ -643,6 +690,7 @@ def space_week_availability(
     )
     slot_ids = [slot.id for slot in slots]
     counts = _counts_by_slot(db, slot_ids)
+    hold = min_hold(db)
     my_statuses = (
         _member_statuses_by_slot(db, slot_ids, party_id) if party_id is not None else {}
     )
@@ -650,17 +698,29 @@ def space_week_availability(
     cells: list[dict] = []
     for slot in slots:
         on = slot.slot_date
-        booked = counts.get((slot.id, BookingStatus.BOOKED), 0)
+        booked = sum(counts.get((slot.id, s), 0) for s in OCCUPYING_STATUSES)
         waitlisted = counts.get((slot.id, BookingStatus.WAITLISTED), 0)
         my_status = my_statuses.get(slot.id, "none")
 
+        price = booking_price(space, slot)
         slot_start = datetime.combine(on, slot.start_time, tzinfo=tz)
+        # When a paid booking taken now would have to be paid by. Shown before
+        # booking, so the member knows the hold is real and how long it lasts.
+        pay_by = (
+            payment_deadline(db, space, slot, now_local)
+            if slot_start > now_local and needs_payment(space, price)
+            else None
+        )
         if slot_start <= now_local:
             cell_state = "past"
         elif on > window_end:
             cell_state = "out_of_window"
         elif booked >= slot.capacity:
             cell_state = "full"
+        elif pay_by is not None and pay_by - now_local < hold:
+            # Too close to the start to be held until paid: a booking would be
+            # refused, so the calendar does not offer it.
+            cell_state = "too_late"
         else:
             cell_state = "open"
 
@@ -672,7 +732,8 @@ def space_week_availability(
                 "start_time": slot.start_time,
                 "end_time": slot.end_time,
                 "capacity": slot.capacity,
-                "price": booking_price(space, slot),
+                "price": price,
+                "pay_by": pay_by,
                 "booked_count": booked,
                 "waitlist_count": waitlisted,
                 "my_status": my_status,
@@ -741,10 +802,16 @@ def create_booking(
     if _member_active_booking(db, slot.id, member.party_id) is not None:
         raise DuplicateBooking("Member already holds this slot")
 
-    booked = _count(db, slot.id, BookingStatus.BOOKED)
-    if booked < slot.capacity:
+    now = datetime.now(timezone.utc)
+    payment_due_at = None
+    if _occupied(db, slot.id) < slot.capacity:
         status = BookingStatus.BOOKED
         waitlisted_at = None
+        if needs_payment(space, booking_price(space, slot)):
+            payment_due_at = payment_deadline(db, space, slot, now)
+            if payment_due_at - now < min_hold(db):
+                raise BookingHoldTooShort(payment_due_at, cutoff_minutes(db))
+            status = BookingStatus.PENDING
     elif _waitlist_enabled(db):
         status = BookingStatus.WAITLISTED
         waitlisted_at = now_local
@@ -756,11 +823,27 @@ def create_booking(
         party_id=member.party_id,
         status=status,
         waitlisted_at=waitlisted_at,
+        payment_due_at=payment_due_at,
+        pending_since=now if payment_due_at else None,
     )
     db.add(booking)
     db.flush()
 
-    if status == BookingStatus.BOOKED:
+    if status == BookingStatus.PENDING:
+        receipt = _bill_pending(db, booking, slot, space)
+        notifier.send_pending_payment(
+            _notification(
+                db,
+                booking,
+                slot,
+                space,
+                member,
+                payment=booking_payment_details(
+                    db, booking, space, receipt, _locale(db)
+                ),
+            )
+        )
+    elif status == BookingStatus.BOOKED:
         ensure_booking_receipt(db, booking, slot, space)
         notifier.send_confirmation(
             _notification(
@@ -778,6 +861,16 @@ def create_booking(
             _notification(db, booking, slot, space, member, position=position)
         )
     return booking
+
+
+def _bill_pending(db: Session, booking: Booking, slot: SpaceSlot, space: Space):
+    """The receipt of a booking held until paid, which it cannot be held without."""
+    try:
+        return ensure_booking_receipt(db, booking, slot, space)
+    except Exception as exc:
+        raise SeatReceiptFailed(
+            "The receipt for this booking could not be raised, so it cannot be held"
+        ) from exc
 
 
 def cancel_booking(
@@ -833,8 +926,7 @@ def cancel_booking(
             )
 
     if was_booked:
-        booked = _count(db, slot.id, BookingStatus.BOOKED)
-        if booked < slot.capacity:
+        if _occupied(db, slot.id) < slot.capacity:
             _promote_next(db, slot, notifier)
     return booking
 
@@ -944,7 +1036,7 @@ def my_bookings(db: Session, party_id: int, *, scope: str) -> list[dict]:
                 "end_time": slot.end_time,
                 "status": b.status,
                 "capacity": slot.capacity,
-                "booked_count": _count(db, slot.id, BookingStatus.BOOKED),
+                "booked_count": _occupied(db, slot.id),
                 "waitlist_position": position,
                 # The same rule `cancel_booking` enforces, so the list only
                 # offers a cancellation the server will accept.
@@ -1019,14 +1111,17 @@ def space_stats(db: Session) -> dict:
     active_spaces = db.query(func.count(Space.id)).filter(Space.is_active.is_(True)).scalar()
 
     booked = counts.get(BookingStatus.BOOKED, 0)
+    pending = counts.get(BookingStatus.PENDING, 0)
+    held = booked + pending
     return {
         "window_days": STATS_WINDOW_DAYS,
         "booked": booked,
+        "pending": pending,
         "waitlisted": counts.get(BookingStatus.WAITLISTED, 0),
         "cancelled": counts.get(BookingStatus.CANCELLED, 0),
         "total": sum(counts.values()),
         "active_spaces": active_spaces,
         "slots": slots,
         "capacity": int(capacity),
-        "occupancy_pct": round(booked / capacity * 100, 1) if capacity else 0,
+        "occupancy_pct": round(held / capacity * 100, 1) if capacity else 0,
     }

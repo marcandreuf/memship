@@ -22,7 +22,9 @@ from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
+from app.db.after_commit import run_after_commit
 from app.domains.bookings.models import Booking, Space, SpaceSlot
+from app.domains.shared.enums import BookingStatus
 
 logger = logging.getLogger(__name__)
 
@@ -50,8 +52,9 @@ def booking_description(space: Space, slot: SpaceSlot) -> str:
 
 def ensure_booking_receipt(
     db: Session, booking: Booking, slot: SpaceSlot, space: Space
-) -> None:
-    """Bill a confirmed booking, once.
+):
+    """Bill a booking that holds a seat, once, and return its live receipt
+    (None for a free one).
 
     Idempotent: a booking that already has a live receipt keeps it, so a member
     promoted after re-joining a waitlist is not billed twice. A receipt voided by
@@ -61,13 +64,20 @@ def ensure_booking_receipt(
     Free stays free with no special-casing: a space with no price, or a slot
     overriding it to zero, produces no receipt at all.
 
-    Receipt generation never fails the booking. The seat has already been given,
-    and rolling it back here would be worse than an invoice an admin has to raise
-    by hand — so the error is logged and the booking stands.
+    A ``pending`` booking's receipt falls due on its deadline and no remittance
+    collects it, and it is emailed once the caller commits, since paying it is
+    what confirms the booking. It must exist: a pending booking with no receipt
+    holds a seat nobody can pay for, so a failure raises and the caller's
+    transaction rolls back (#603).
+
+    A confirmed booking's receipt is raised as it always was, and its failure
+    never fails the booking. The seat has already been given, and rolling it
+    back here would be worse than an invoice an admin has to raise by hand — so
+    the error is logged and the booking stands.
     """
     amount = booking_price(space, slot)
     if amount <= 0:
-        return
+        return None
 
     from app.domains.billing.models import Receipt
 
@@ -84,25 +94,50 @@ def ensure_booking_receipt(
         .first()
     )
     if existing:
-        return
+        return existing
 
+    from app.domains.billing.seats import receipt_due_date
+    from app.domains.billing.service import generate_booking_receipt
+
+    pending = booking.status == BookingStatus.PENDING
     try:
-        from app.domains.billing.service import generate_booking_receipt
-
-        # Best-effort, inside a SAVEPOINT so a failure rolls back only the
-        # receipt and leaves the booking's transaction usable.
+        # Inside a SAVEPOINT so a failure rolls back only the receipt and leaves
+        # the booking's transaction usable.
         with db.begin_nested():
-            generate_booking_receipt(
+            receipt = generate_booking_receipt(
                 db=db,
                 booking_id=booking.id,
                 party_id=booking.party_id,
                 description=booking_description(space, slot),
                 amount=amount,
+                due_date=receipt_due_date(db, booking.payment_due_at) if pending else None,
+                is_batchable=not pending,
             )
     except Exception as exc:
+        if pending:
+            logger.exception(
+                "Failed to generate the receipt of pending booking %s", booking.id
+            )
+            raise
         logger.error(
             "Failed to generate receipt for booking %s: %s", booking.id, exc
         )
+        return None
+
+    if pending:
+        _dispatch_receipt_email(db, receipt.id)
+    return receipt
+
+
+def _dispatch_receipt_email(db: Session, receipt_id: int) -> None:
+    """Queue the receipt itself (PDF and how to pay) for after commit: the task
+    reads the row, so it must not run before the booking is committed."""
+    try:
+        from app.tasks.email_tasks import send_receipt_email_task
+
+        run_after_commit(db, lambda: send_receipt_email_task.delay(receipt_id))
+    except Exception as exc:
+        logger.error("Failed to dispatch receipt email: %s", exc)
 
 
 def void_booking_receipts(db: Session, booking: Booking) -> None:

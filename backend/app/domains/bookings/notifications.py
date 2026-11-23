@@ -27,10 +27,14 @@ class BookingNotification:
     locale: str = "es"
     position: int | None = None
     cancellation_deadline_hours: int | None = None
+    # The amount, deadline and ways to pay of a booking held until paid.
+    payment: dict | None = None
 
 
 class BookingNotifier(Protocol):
     def send_confirmation(self, note: BookingNotification) -> None: ...
+
+    def send_pending_payment(self, note: BookingNotification) -> None: ...
 
     def send_waitlisted(self, note: BookingNotification) -> None: ...
 
@@ -44,6 +48,9 @@ class EmailBookingNotifier:
 
     def send_confirmation(self, note: BookingNotification) -> None:
         self._dispatch("confirmation", note)
+
+    def send_pending_payment(self, note: BookingNotification) -> None:
+        self._dispatch("pending_payment", note)
 
     def send_waitlisted(self, note: BookingNotification) -> None:
         self._dispatch("waitlisted", note)
@@ -72,6 +79,7 @@ class EmailBookingNotifier:
                 locale=note.locale,
                 position=note.position,
                 cancellation_deadline_hours=note.cancellation_deadline_hours,
+                payment=note.payment,
             )
         except Exception as exc:  # dispatch must never break the booking
             logger.error(f"Failed to dispatch booking {kind} email: {exc}")
@@ -81,6 +89,8 @@ class NullBookingNotifier:
     """No-op notifier (tests, or environments with notifications off)."""
 
     def send_confirmation(self, note: BookingNotification) -> None: ...
+
+    def send_pending_payment(self, note: BookingNotification) -> None: ...
 
     def send_waitlisted(self, note: BookingNotification) -> None: ...
 
