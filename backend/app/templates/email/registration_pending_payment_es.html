@@ -3,8 +3,8 @@
 {% block preheader %}Tu plaza en {{ activity_name }} está reservada hasta que pagues.{% endblock %}
 
 {% block content %}
-<h1 style="{{ s.h1 }}">{% if deadline_added %}Ahora tienes un plazo para pagar tu plaza{% else %}Plaza reservada, pendiente de pago{% endif %}</h1>
+<h1 style="{{ s.h1 }}">{% if deadline_added %}Ahora tienes un plazo para pagar tu plaza{% elif promoted %}Hay una plaza para ti{% else %}Plaza reservada, pendiente de pago{% endif %}</h1>
 <p style="{{ s.p }}">Hola {{ member_name }},</p>
-<p style="{{ s.p }}">{% if deadline_added %}Tu plaza en <strong>{{ activity_name }}</strong> sigue reservada, pero el club ha activado un plazo para pagarla: si no pagas antes de la fecha límite, la inscripción se cancelará y la plaza quedará libre.{% else %}Te hemos reservado una plaza en <strong>{{ activity_name }}</strong>. La inscripción se confirmará cuando se registre el pago.{% endif %}</p>
+<p style="{{ s.p }}">{% if deadline_added %}Tu plaza en <strong>{{ activity_name }}</strong> sigue reservada, pero el club ha activado un plazo para pagarla: si no pagas antes de la fecha límite, la inscripción se cancelará y la plaza quedará libre.{% elif promoted %}Se ha liberado una plaza en <strong>{{ activity_name }}</strong>, donde estabas en lista de espera, y te la hemos reservado. La inscripción se confirmará cuando se registre el pago.{% else %}Te hemos reservado una plaza en <strong>{{ activity_name }}</strong>. La inscripción se confirmará cuando se registre el pago.{% endif %}</p>
 {% include "_seat_payment_es.html" %}
 {% endblock %}

@@ -1168,7 +1168,14 @@ def send_registration_pending_payment_email(
     reference: str | None = None,
     locale: str = "es",
     deadline_added: bool = False,
+    promoted: bool = False,
 ) -> bool:
+    """Tell a member their seat is held until they pay, and how.
+
+    ``deadline_added`` is the resend when auto-cancel starts on a seat already
+    held. ``promoted`` is a waitlister handed a freed seat: this mail, not
+    ``waitlist_promoted``, because it is the one a pay-to-confirm activity
+    cannot run without (#619)."""
     return _send_templated(
         "registration_pending_payment",
         to,
@@ -1185,6 +1192,7 @@ def send_registration_pending_payment_email(
             "due_date": due_date,
             "reference": reference,
             "deadline_added": deadline_added,
+            "promoted": promoted,
         },
         subject_args={"activity": activity_name},
     )
@@ -1297,15 +1305,10 @@ def send_waitlist_promotion_email(
     activity_date: str | None = None,
     location: str | None = None,
     locale: str = "es",
-    payment: dict | None = None,
 ) -> bool:
-    """``payment`` (amount, currency, deadline and the ways to pay) means the seat
-    is held until paid rather than confirmed, and the mail and its subject say so."""
-    subject = (
-        _get_subject("registration_pending_payment", locale, activity=activity_name)
-        if payment
-        else None
-    )
+    """Tell a member a seat opened and their registration is confirmed. A
+    promotion to a seat held until paid is told by ``registration_pending_payment``
+    instead (#619)."""
     return _send_templated(
         "waitlist_promoted",
         to,
@@ -1315,10 +1318,8 @@ def send_waitlist_promotion_email(
             "activity_name": activity_name,
             "activity_date": activity_date,
             "location": location,
-            **(payment or {}),
         },
         subject_args={"activity": activity_name},
-        subject=subject,
     )
 
 

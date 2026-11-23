@@ -4,16 +4,9 @@
 {% block preheader %}Se ha liberado una plaza en {{ activity_name }}.{% endblock %}
 
 {% block content %}
-{%- if amount %}
-<h1 style="{{ s.h1 }}">Hay una plaza para ti</h1>
-<p style="{{ s.p }}">Hola {{ member_name }},</p>
-<p style="{{ s.p }}">Se ha liberado una plaza en <strong>{{ activity_name }}</strong> y te la hemos reservado. La inscripción se confirmará cuando se registre el pago.</p>
-{% include "_seat_payment_es.html" %}
-{%- else %}
 <h1 style="{{ s.h1 }}">¡Plaza confirmada!</h1>
 <p style="{{ s.p }}">Hola {{ member_name }},</p>
 <p style="{{ s.p }}">Se ha liberado una plaza en <strong>{{ activity_name }}</strong> y tu inscripción ha sido <strong>confirmada</strong>.</p>
-{%- endif %}
 {%- if activity_date or location %}
 {% call c.panel() %}
 {% if activity_date %}{{ c.data_row("Fecha", activity_date) }}{% endif %}

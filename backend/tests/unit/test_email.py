@@ -22,6 +22,7 @@ from app.core.email import (
     send_registration_cancellation_email,
     send_registration_approved_email,
     send_registration_confirmation_email,
+    send_registration_pending_payment_email,
     send_waitlist_promotion_email,
 )
 from app.domains.mailing.mailing_config import ResolvedMailing, ResolvedProvider
@@ -511,21 +512,15 @@ class TestHighLevelEmails:
 
     @patch("app.core.email.send_email", return_value=True)
     def test_a_promotion_that_must_be_paid_does_not_say_confirmed(self, mock_send):
-        send_waitlist_promotion_email(
-            "user@example.com", "Bob", "Chess Club", locale="en",
-            payment={
-                "amount": "27.50",
-                "currency": "EUR",
-                "deadline": "20/11/2026 18:00",
-                "pay_now_url": None,
-                "bank_details": None,
-                "cash": True,
-            },
+        send_registration_pending_payment_email(
+            "user@example.com", "Bob", "Chess Club", "27.50", "EUR",
+            deadline="20/11/2026 18:00", cash=True, locale="en", promoted=True,
         )
         subject, html = mock_send.call_args[0][1], mock_send.call_args[0][2]
         assert "payment pending" in subject.lower()
+        assert "A seat is yours" in html
         assert "has been <strong>confirmed" not in html
-        assert "27.50" in html and "20/11/2026 18:00" in html
+        assert "€27.50" in html and "20/11/2026 18:00" in html
 
 
 PAYMENT_CONFIRMATION = {
@@ -853,9 +848,9 @@ class TestAmountsInTheRecipientsLocale:
 
     def test_a_promoted_seat_awaiting_payment_too(self):
         html = render_template(
-            "waitlist_promoted",
+            "registration_pending_payment",
             "ca",
-            {"member_name": "Ana", "activity_name": "Ioga", "amount": "36.30", "currency": "EUR"},
+            {"member_name": "Ana", "activity_name": "Ioga", "amount": "36.30", "currency": "EUR", "promoted": True},
         )
 
         assert "36,30 €" in html
