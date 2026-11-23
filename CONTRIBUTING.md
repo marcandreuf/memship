@@ -8,21 +8,25 @@ Memship is in active development. The foundation (infrastructure, CI/CD, and cor
 
 ## How You Can Help
 
+Everything below starts at the [template picker](https://github.com/marcandreuf/memship/issues/new/choose). Each template presets its own label, so there is nothing for you to label by hand, and labelling needs triage permission you will not have on your first issue.
+
+**Write in whatever language you are comfortable in.** The tracker is kept in English so that anyone reading it can follow a thread they had no part in, and we will translate yours if it arrives in Spanish or Catalan. We answer in the language you wrote in.
+
 ### Feature Requests & Ideas
 
-Open an [issue](https://github.com/marcandreuf/memship/issues) to suggest features, improvements, or share how you'd use Memship. Label your issue with `feature-request` or `idea`.
+Pick **Feature request** to suggest a feature or an improvement, or to say how your organisation would use Memship. It asks what you are trying to do and how you handle it today, which is worth more to us than a guess at the solution.
 
 ### Bug Reports
 
-If you find a bug, open an [issue](https://github.com/marcandreuf/memship/issues) with:
-- A clear description of the problem
-- Steps to reproduce it
-- Expected vs actual behavior
-- Your environment (OS, Docker version, browser)
+Pick **Bug report**. It asks what you expected and what happened instead, and everything after that is optional.
+
+### Accessibility Barriers
+
+Pick **Accessibility barrier** for anything you cannot use, or can only use with difficulty, by keyboard, with a screen reader, at high zoom or on touch. [ACCESSIBILITY.md](ACCESSIBILITY.md) covers what happens after you post and what is already known to be broken.
 
 ### Questions & Discussion
 
-Have a question or want to discuss the project direction? Open an [issue](https://github.com/marcandreuf/memship/issues) with the `question` label.
+Questions, and conversations about where the project is going, belong in [Discussions](https://github.com/marcandreuf/memship/discussions) rather than the issue tracker. Someone may have asked yours already.
 
 ## Code Contributions
 
