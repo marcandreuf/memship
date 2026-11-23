@@ -195,6 +195,7 @@
     "return_against_paid_receipt": "The bank is returning receipts Memship records as paid: {receipts}. Someone must have collected them another way while the direct debit was in flight, so nothing was imported. Check each receipt and decide which collection is the real one before importing the file again without those lines.",
     "role_locked": "Built-in roles cannot be edited or deleted",
     "seat_needs_payment": "This seat needs payment: mark its receipt paid or use “Confirm without payment”.",
+    "seat_receipt_failed": "The receipt for this seat could not be raised, so it cannot be held. Try again, and tell the club if it happens again.",
     "sepa_file_build_failed": "The file for remittance {remittance_number} could not be generated. The error has been logged; quote the remittance number when reporting it.",
     "sepa_mandate_cancelled": "Cannot generate the SEPA file: these members no longer have an active mandate: {members}. It was most likely cancelled after the remittance was created. Create a new mandate for each one, then cancel this remittance and create it again.",
     "slot_full": "The slot is full and the waitlist is off",

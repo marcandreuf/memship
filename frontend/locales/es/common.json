@@ -195,6 +195,7 @@
     "return_against_paid_receipt": "El banco devuelve recibos que en Memship constan como pagados: {receipts}. Alguien tuvo que cobrarlos por otra vía mientras el adeudo estaba en curso, así que la importación no se ha hecho. Revisa cada recibo y decide qué cobro es el real antes de volver a importar el fichero sin esas líneas.",
     "role_locked": "Los roles del sistema no se pueden editar ni eliminar",
     "seat_needs_payment": "Esta plaza necesita pago: marca su recibo como pagado o usa «Confirmar sin pago».",
+    "seat_receipt_failed": "No se ha podido emitir el recibo de esta plaza, así que no se puede reservar. Inténtalo de nuevo y, si se repite, avisa al club.",
     "sepa_file_build_failed": "No se ha podido generar el fichero de la remesa {remittance_number}. El error ha quedado registrado; indica el número de remesa al comunicarlo.",
     "sepa_mandate_cancelled": "No se puede generar el archivo SEPA: estos socios ya no tienen un mandato activo: {members}. Lo más probable es que se cancelara después de crear la remesa. Crea un mandato nuevo para cada uno, después cancela esta remesa y vuelve a crearla.",
     "slot_full": "La franja está completa y la lista de espera está desactivada",
