@@ -4,6 +4,7 @@ switching auto-cancel on does to bookings already held (#603)."""
 from datetime import datetime, timedelta, timezone
 
 from app.core.celery_app import celery
+from app.core.clock import org_timezone
 from app.domains.billing.seats import expire_unpaid_seats
 from app.domains.bookings import service
 from tests.integration.test_bookings_service import _member, _org
@@ -135,7 +136,9 @@ class TestSwitchingAutoCancelOn:
 
         assert booking.payment_due_at < before
         assert booking.payment_due_at <= datetime.now(timezone.utc) + timedelta(hours=6)
-        assert receipt.due_date == booking.payment_due_at.date()
+        # The club's date, not UTC's: six hours from early evening is already
+        # tomorrow in Madrid while still today in UTC.
+        assert receipt.due_date == booking.payment_due_at.astimezone(org_timezone(db)).date()
         [(kind, note)] = notifier.calls
         assert kind == "send_pending_payment"
         assert note.payment["deadline_changed"] is True
