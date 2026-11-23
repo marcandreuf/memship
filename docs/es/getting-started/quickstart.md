@@ -1,5 +1,5 @@
 <!-- source: en/getting-started/quickstart.md -->
-<!-- source-hash: 647cdd0b9686 -->
+<!-- source-hash: 0bf6baf88732 -->
 
 # Prueba rápida
 
@@ -95,8 +95,8 @@ Para evaluar una versión concreta, define `IMAGE_TAG` en las dos órdenes. Heal
 de esa versión:
 
 ```bash
-IMAGE_TAG=3.4.0 docker compose pull
-IMAGE_TAG=3.4.0 PORT=8324 docker compose up -d
+IMAGE_TAG=3.5.0 docker compose pull
+IMAGE_TAG=3.5.0 PORT=8324 docker compose up -d
 ```
 
 ## 3. Ejecuta la configuración
