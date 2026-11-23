@@ -1,0 +1,8 @@
+# Blank issues stay available: maintainers file most issues as prose rather than
+# through a template, and turning them off would apply to everyone.
+blank_issues_enabled: true
+
+contact_links:
+  - name: Questions and discussion
+    url: https://github.com/marcandreuf/memship/discussions
+    about: Ask how something works, or talk about where the project is going. Questions are easier to find again here than in a closed issue.
