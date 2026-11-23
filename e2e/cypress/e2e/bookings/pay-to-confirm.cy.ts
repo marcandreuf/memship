@@ -12,74 +12,34 @@
 
 import { TEST_ACCOUNTS } from "../../support/commands";
 
-const API = Cypress.env("API_URL") || "http://localhost:8003/api/v1";
+import {
+  API,
+  SLOT_DATE,
+  bookAs,
+  createPaidSpace,
+  enablePaidSpaces,
+  receiptOf,
+  removeSpace,
+  type Booking,
+} from "../../support/space-pay-to-confirm";
+
 const SPACE = `E2E Paid court ${Date.now()}`;
-const BOOKING_MAILS = [
-  "booking_pending_payment",
-  "booking_deadline_reminder",
-  "booking_cancelled_unpaid",
-];
-
-// Three days ahead is always in the future and inside the default window, and
-// leaves the hold far above the club's shortest one.
-const day = new Date();
-day.setDate(day.getDate() + 3);
-const SLOT_DATE = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, "0")}-${String(
-  day.getDate()
-).padStart(2, "0")}`;
-
-type Booking = { id: number; status: string };
-
-function bookAsMember(slotId: number) {
-  cy.apiLogin(TEST_ACCOUNTS.member.email, TEST_ACCOUNTS.member.password);
-  return cy
-    .request("POST", `${API}/bookings`, { space_slot_id: slotId })
-    .then((r) => cy.wrap(r.body as Booking));
-}
+const bookAsMember = (slotId: number) => bookAs(TEST_ACCOUNTS.member, slotId);
 
 function cancelAsAdmin(bookingId: number) {
   cy.apiLogin(TEST_ACCOUNTS.admin.email, TEST_ACCOUNTS.admin.password);
   cy.request({ method: "DELETE", url: `${API}/bookings/${bookingId}`, failOnStatusCode: false });
 }
 
-function receiptOf(spaceId: number, bookingId: number) {
-  cy.apiLogin(TEST_ACCOUNTS.admin.email, TEST_ACCOUNTS.admin.password);
-  return cy
-    .request(`${API}/spaces/${spaceId}/bookings`)
-    .then((r) => cy.wrap(r.body.items.find((b: { id: number }) => b.id === bookingId).receipt_id as number));
-}
-
 describe("Pay-to-confirm space bookings", () => {
   let spaceId: number;
   let slotId: number;
-  const bookings: number[] = [];
 
   before(() => {
-    cy.apiLogin(TEST_ACCOUNTS.superAdmin.email, TEST_ACCOUNTS.superAdmin.password);
-    cy.request("PUT", `${API}/settings/`, { features: { bookings: true } });
-    cy.request("PUT", `${API}/settings/communications`, {
-      templates: Object.fromEntries(BOOKING_MAILS.map((k) => [k, true])),
-    });
-    cy.apiLogin(TEST_ACCOUNTS.admin.email, TEST_ACCOUNTS.admin.password);
-    cy.request("POST", `${API}/spaces`, {
-      name: SPACE,
-      space_type: "court",
-      description: null,
-      open_time: "08:00:00",
-      close_time: "22:00:00",
-      price: 10,
-      payment_methods: ["cash"],
-    }).then((r) => {
-      expect(r.body.payment_flow).to.eq("pay_to_confirm");
-      spaceId = r.body.id;
-      cy.request("POST", `${API}/spaces/${spaceId}/slots`, {
-        slot_date: SLOT_DATE,
-        start_time: "10:00:00",
-        end_time: "11:00:00",
-        capacity: 1,
-      }).then((s) => {
-        slotId = s.body[0].id;
-      });
+    enablePaidSpaces();
+    createPaidSpace(SPACE).then((created) => {
+      spaceId = created.spaceId;
+      slotId = created.slotId;
     });
   });
 
@@ -95,20 +55,7 @@ describe("Pay-to-confirm space bookings", () => {
     });
   });
 
-  after(() => {
-    if (!spaceId) return;
-    // A refund owed blocks the delete, so settle it first, then remove the space.
-    cy.apiLogin(TEST_ACCOUNTS.admin.email, TEST_ACCOUNTS.admin.password);
-    bookings.forEach((id) => {
-      cy.request({ method: "DELETE", url: `${API}/bookings/${id}`, failOnStatusCode: false });
-      cy.request({
-        method: "POST",
-        url: `${API}/seats/booking/${id}/refund-returned`,
-        failOnStatusCode: false,
-      });
-    });
-    cy.request({ method: "DELETE", url: `${API}/spaces/${spaceId}?force=true`, failOnStatusCode: false });
-  });
+  after(() => removeSpace(spaceId));
 
   it("tells the member the booking is held until paid, and until when", () => {
     cy.loginAsMember();
@@ -134,14 +81,12 @@ describe("Pay-to-confirm space bookings", () => {
     cy.request(`${API}/me/bookings?scope=upcoming`).then((r) => {
       const mine = r.body.find((b: { space_id: number }) => b.space_id === spaceId);
       expect(mine.status).to.eq("pending");
-      bookings.push(mine.id);
       cancelAsAdmin(mine.id);
     });
   });
 
   it("lets the club confirm a pending booking without payment", () => {
     bookAsMember(slotId).then((booking) => {
-      bookings.push(booking.id);
       expect(booking.status).to.eq("pending");
 
       cy.loginAsAdmin();
@@ -161,7 +106,6 @@ describe("Pay-to-confirm space bookings", () => {
 
   it("sends a paid booking the club cancels to Refunds", () => {
     bookAsMember(slotId).then((booking) => {
-      bookings.push(booking.id);
       receiptOf(spaceId, booking.id).then((receiptId) => {
         cy.request("POST", `${API}/receipts/${receiptId}/pay`, { payment_method: "cash" });
       });
