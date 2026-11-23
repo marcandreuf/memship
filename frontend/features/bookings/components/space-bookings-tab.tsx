@@ -235,6 +235,8 @@ function BookingRow({
         <CancelPaidSeatDialog
           open={cancellingPaid}
           onOpenChange={setCancellingPaid}
+          title={t("bookings.adminBookings.paidTitle")}
+          description={t("activities.registration.keepPaymentDescription")}
           confirmLabel={t("bookings.adminBookings.cancel")}
           onConfirm={(keepPayment) => {
             setCancellingPaid(false);

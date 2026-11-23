@@ -114,6 +114,7 @@
       "cancel": "Cancel·la",
       "confirmCancel": "Vols cancel·lar aquesta reserva? Es promocionarà un soci de la llista d'espera.",
       "confirmCancelDescription": "El soci deixa de tenir la plaça.",
+      "paidTitle": "Aquesta reserva està pagada",
       "allStatuses": "Tots els estats",
       "payment": "Pagament",
       "expired": "Cancel·lada per no pagar a temps",

@@ -310,11 +310,15 @@ export function CancelPaidSeatDialog({
   open,
   onOpenChange,
   onConfirm,
+  title,
+  description,
   confirmLabel,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: (keepPayment: boolean) => void;
+  title?: string;
+  description?: string;
   confirmLabel?: string;
 }) {
   const t = useTranslations();
@@ -323,8 +327,10 @@ export function CancelPaidSeatDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{t("activities.registration.keepPaymentTitle")}</DialogTitle>
-          <DialogDescription>{t("activities.registration.keepPaymentDescription")}</DialogDescription>
+          <DialogTitle>{title ?? t("activities.registration.keepPaymentTitle")}</DialogTitle>
+          <DialogDescription>
+            {description ?? t("activities.registration.keepPaymentDescription")}
+          </DialogDescription>
         </DialogHeader>
         <label className="flex items-center gap-2 text-sm">
           <Checkbox checked={keepPayment} onCheckedChange={(c) => setKeepPayment(c === true)} />

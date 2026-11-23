@@ -114,6 +114,7 @@
       "cancel": "Cancelar",
       "confirmCancel": "¿Cancelar esta reserva? Se promocionará a un socio en lista de espera.",
       "confirmCancelDescription": "El socio deja de tener la plaza.",
+      "paidTitle": "Esta reserva está pagada",
       "allStatuses": "Todos los estados",
       "payment": "Pago",
       "expired": "Cancelada por no pagar a tiempo",
