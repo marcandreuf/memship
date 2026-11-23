@@ -1470,9 +1470,10 @@ def send_booking_cancelled_email(
     booking_date: str,
     booking_time: str,
     locale: str = "es",
+    refund_due: bool = False,
 ) -> bool:
     """Tell a member the club cancelled their booking (admin cancel, or the
-    slot/space was removed)."""
+    slot/space was removed), and that a payment is coming back if it is."""
     return _send_templated(
         "booking_cancelled",
         to,
@@ -1482,6 +1483,7 @@ def send_booking_cancelled_email(
             "space_name": space_name,
             "booking_date": booking_date,
             "booking_time": booking_time,
+            "refund_due": refund_due,
         },
         subject_args={"space": space_name},
     )

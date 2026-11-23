@@ -411,6 +411,7 @@ def get_my_bookings(
 )
 def cancel_booking(
     booking_id: int,
+    keep_payment: bool = False,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_any_permission("bookings.write", "self.bookings.write")),
 ):
@@ -432,9 +433,33 @@ def cancel_booking(
             cancelled_by_user_id=current_user.id,
             is_admin=is_admin,
             notifier=_notifier,
+            keep_payment=keep_payment,
         )
     except service.CancellationTooLate as exc:
         raise _booking_error(exc, status.HTTP_422_UNPROCESSABLE_ENTITY)
     except service.NotCancellable as exc:
+        raise _booking_error(exc, status.HTTP_409_CONFLICT)
+    db.commit()
+
+
+@member_router.post(
+    "/bookings/{booking_id}/confirm-without-payment", status_code=status.HTTP_204_NO_CONTENT
+)
+def confirm_booking_without_payment(
+    booking_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("billing.write")),
+):
+    """Book a pending booking and waive its payment. The same permission as
+    marking its receipt paid, and recorded in the audit log."""
+    _require_bookings_enabled(db)
+    booking = service.get_booking(db, booking_id)
+    if booking is None:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    try:
+        service.confirm_booking_without_payment(
+            db, booking, current_user.id, notifier=EmailBookingNotifier(db)
+        )
+    except service.NotPending as exc:
         raise _booking_error(exc, status.HTTP_409_CONFLICT)
     db.commit()

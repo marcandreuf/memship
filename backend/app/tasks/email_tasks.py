@@ -318,6 +318,7 @@ def send_booking_email_task(
     position: int | None = None,
     cancellation_deadline_hours: int | None = None,
     payment: dict | None = None,
+    refund_due: bool = False,
 ) -> bool:
     """Send a booking email of the given ``kind``.
 
@@ -344,6 +345,7 @@ def send_booking_email_task(
         if kind == "cancelled":
             return send_booking_cancelled_email(
                 to, member_name, space_name, date_str, time_str, locale,
+                refund_due=refund_due,
             )
         logger.error(f"Unknown booking email kind: {kind}")
         return False

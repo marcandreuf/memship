@@ -12,6 +12,10 @@ import logging
 from dataclasses import dataclass
 from typing import Protocol
 
+from sqlalchemy.orm import Session
+
+from app.db.after_commit import run_after_commit
+
 logger = logging.getLogger(__name__)
 
 
@@ -29,6 +33,8 @@ class BookingNotification:
     cancellation_deadline_hours: int | None = None
     # The amount, deadline and ways to pay of a booking held until paid.
     payment: dict | None = None
+    # A paid booking cancelled without keeping the payment owes it back.
+    refund_due: bool = False
 
 
 class BookingNotifier(Protocol):
@@ -44,7 +50,15 @@ class BookingNotifier(Protocol):
 
 
 class EmailBookingNotifier:
-    """Dispatches booking emails asynchronously via Celery. Never raises."""
+    """Dispatches booking emails asynchronously via Celery. Never raises.
+
+    Given a session, each mail is queued for after that session commits, so a
+    change that rolls back tells nobody. A path that runs outside a booking
+    request, like a payment confirming a booking, passes one.
+    """
+
+    def __init__(self, db: Session | None = None):
+        self._db = db
 
     def send_confirmation(self, note: BookingNotification) -> None:
         self._dispatch("confirmation", note)
@@ -69,7 +83,7 @@ class EmailBookingNotifier:
         try:
             from app.tasks.email_tasks import send_booking_email_task
 
-            send_booking_email_task.delay(
+            payload = dict(
                 kind=kind,
                 to=note.to,
                 member_name=note.member_name,
@@ -80,7 +94,13 @@ class EmailBookingNotifier:
                 position=note.position,
                 cancellation_deadline_hours=note.cancellation_deadline_hours,
                 payment=note.payment,
+                refund_due=note.refund_due,
             )
+            send = lambda: send_booking_email_task.delay(**payload)  # noqa: E731
+            if self._db is not None:
+                run_after_commit(self._db, send)
+            else:
+                send()
         except Exception as exc:  # dispatch must never break the booking
             logger.error(f"Failed to dispatch booking {kind} email: {exc}")
 

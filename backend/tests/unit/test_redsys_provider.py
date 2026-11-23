@@ -98,6 +98,7 @@ def fake_receipt(receipt_id: int = 42, amount: str = "50.00", description: str =
         purchased_membership_type_id=None,
         origin="manual",
         registration_id=None,
+        booking_id=None,
     )
 
 

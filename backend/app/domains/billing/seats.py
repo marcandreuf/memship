@@ -11,6 +11,7 @@ import logging
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.db.after_commit import run_after_commit
@@ -147,7 +148,7 @@ def confirm_paid_seat(db: Session, receipt: Receipt) -> None:
     """Confirm the pending seat this receipt pays for, if it has one.
 
     A no-op for every receipt that is not linked to a seat, and for a seat that
-    is not pending, which is every seat of a ``legacy`` activity.
+    is not pending, which is every seat of a ``legacy`` activity or space.
     """
     if receipt.registration_id is not None:
         from app.domains.activities.registration_service import (
@@ -155,6 +156,13 @@ def confirm_paid_seat(db: Session, receipt: Receipt) -> None:
         )
 
         confirm_pending_registration(db, receipt.registration_id)
+    elif receipt.booking_id is not None:
+        from app.domains.bookings.notifications import EmailBookingNotifier
+        from app.domains.bookings.service import confirm_pending_booking
+
+        confirm_pending_booking(
+            db, receipt.booking_id, notifier=EmailBookingNotifier(db)
+        )
 
 
 def record_late_payment(db: Session, receipt: Receipt, **payment) -> list[int] | None:
@@ -220,19 +228,34 @@ def void_unpaid_receipts(db: Session, link_column, seat_id: int) -> None:
     """Cancel every receipt of a seat that still asks for money.
 
     ``link_column`` is the receipt's link to the seat (``Receipt.registration_id``
-    today). A paid receipt is left alone: what to do with money already received
-    is ``refund_status``'s business, not this function's.
+    or ``Receipt.booking_id``). A paid receipt is left alone: what to do with
+    money already received is ``refund_status``'s business, not this function's.
+
+    Invoices only: a credit note carries its invoice's link too, and is as final
+    as the invoice it rectifies. Each goes through ``cancel_receipt``, so one
+    sitting in a remittance still being assembled leaves it rather than being
+    collected anyway (#383). One the bank is already collecting cannot be
+    cancelled; it is logged and the rest are still voided.
     """
+    from app.domains.billing.service import cancel_receipt
+
     for receipt in (
         db.query(Receipt)
         .filter(
             link_column == seat_id,
             Receipt.is_active.is_(True),
+            Receipt.document_type == "invoice",
             Receipt.status.in_(UNPAID_RECEIPT_STATUSES),
         )
         .all()
     ):
-        receipt.status = "cancelled"
+        try:
+            cancel_receipt(db, receipt)
+        except HTTPException:
+            logger.error(
+                "Receipt %s of a released seat is being collected and stays live",
+                receipt.id,
+            )
 
 
 def expire_unpaid_seats(db: Session, now: datetime | None = None) -> int:

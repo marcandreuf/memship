@@ -11,10 +11,12 @@ reaches for the override when prime time costs more. A slot's own ``0`` is an
 explicit free slot in a paid space, which is why the override is read by
 ``is not None`` and not by truthiness.
 
-Nothing here is a refund path. There is none: a member who cancels a paid
-booking keeps the invoice unless it was still unpaid, and one whose slot an
-admin deletes is in exactly the same position. Cancelling voids what has not
-been paid and leaves a paid receipt standing, to be settled offline.
+Cancelling voids what has not been paid and leaves a paid receipt standing.
+Whether the club owes that money back is recorded on the booking
+(``refund_status``), as it is on a registration; this module moves no money.
+
+In a pay-to-confirm space (#603) the receipt comes first: a paid booking is
+``pending`` until its receipt is paid, and paying it is what books it.
 """
 
 import logging
@@ -27,10 +29,6 @@ from app.domains.bookings.models import Booking, Space, SpaceSlot
 from app.domains.shared.enums import BookingStatus
 
 logger = logging.getLogger(__name__)
-
-#: Receipt statuses a cancellation may void — everything short of paid.
-VOIDABLE_STATUSES = ("new", "pending", "emitted", "overdue")
-
 
 def booking_price(space: Space, slot: SpaceSlot) -> Decimal:
     """What this slot costs: its own price, or the space's, or nothing."""
@@ -141,27 +139,18 @@ def _dispatch_receipt_email(db: Session, receipt_id: int) -> None:
 
 
 def void_booking_receipts(db: Session, booking: Booking) -> None:
-    """Void the unpaid receipts of a cancelled booking; leave a paid one alone.
+    """Void the unpaid receipts of a booking that no longer holds a seat.
 
-    A paid receipt stays paid because the system has no way to represent a
-    refund — there are no credit notes and no refund API — so the club settles
-    it offline. Voiding it here would silently erase money that changed hands.
+    A paid receipt is left standing: money that changed hands is not erased by
+    a cancellation. Whether the club owes it back is recorded on the booking
+    (``refund_status``); returning it is done from the gateway or by hand, and
+    the club may issue a credit note for it.
     """
     from app.domains.billing.models import Receipt
-    from app.domains.billing.service import cancel_receipt
+    from app.domains.billing.seats import void_unpaid_receipts
 
     try:
-        receipts = (
-            db.query(Receipt)
-            .filter(
-                Receipt.booking_id == booking.id,
-                Receipt.is_active.is_(True),
-                Receipt.status.in_(VOIDABLE_STATUSES),
-            )
-            .all()
-        )
-        for receipt in receipts:
-            cancel_receipt(db, receipt)
+        void_unpaid_receipts(db, Receipt.booking_id, booking.id)
     except Exception:
         # The seat is already released, so failing the cancellation here would
         # be worse than an invoice left open — but it must not be invisible. A
@@ -172,3 +161,20 @@ def void_booking_receipts(db: Session, booking: Booking) -> None:
             "against a cancelled booking",
             booking.id,
         )
+
+
+def has_paid_receipt(db: Session, booking: Booking) -> bool:
+    from app.domains.billing.models import Receipt
+
+    db.flush()
+    return (
+        db.query(Receipt.id)
+        .filter(
+            Receipt.booking_id == booking.id,
+            Receipt.is_active.is_(True),
+            Receipt.document_type == "invoice",
+            Receipt.status == "paid",
+        )
+        .first()
+        is not None
+    )

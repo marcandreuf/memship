@@ -2,12 +2,15 @@
 
 from datetime import datetime, timedelta, timezone
 
+import pytest
+
 from app.core.security.jwt import create_access_token
 from app.core.security.password import hash_password
 from app.domains.activities.models import Activity, ActivityConsent, ActivityPrice, Registration
 from app.domains.auth.models import User
 from app.domains.members.models import Member, MembershipType
 from app.domains.persons.models import Person
+from tests.integration.test_registration_billing import org  # noqa: F401 — fixture
 
 
 def _create_user(db, role="admin", suffix=""):
@@ -166,6 +169,9 @@ class TestActivityConsentCRUD:
         assert response.status_code == 403
 
 
+# A paid registration is held until paid, which needs a receipt, which needs
+# the club it is issued by.
+@pytest.mark.usefixtures("org")
 class TestRegistrationWithConsents:
     def test_register_with_mandatory_consent(self, client, db):
         admin = _create_user(db, "admin", suffix="-rc1")

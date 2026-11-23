@@ -23,6 +23,7 @@ from app.core.clock import org_timezone
 from app.domains.bookings.billing import (
     booking_price,
     ensure_booking_receipt,
+    has_paid_receipt,
     void_booking_receipts,
 )
 from app.domains.bookings.payment import (
@@ -149,6 +150,10 @@ class NotEligible(BookingError):
 
 class CancellationTooLate(BookingError):
     pass
+
+
+class NotPending(BookingError):
+    """The action is only for a booking waiting for its payment."""
 
 
 class NotCancellable(BookingError):
@@ -873,6 +878,62 @@ def _bill_pending(db: Session, booking: Booking, slot: SpaceSlot, space: Space):
         ) from exc
 
 
+def _self_cancel_refusal(db: Session, booking: Booking, slot: SpaceSlot) -> str | None:
+    """Why the member may not cancel this booking themselves, or None.
+
+    A pending booking may be released until its payment deadline, whatever the
+    club's cancellation notice: nothing has been paid, and a seat given back
+    early is one the club can still fill (#603).
+    """
+    tz = org_timezone(db)
+    now_local = datetime.now(tz)
+    if booking.status == BookingStatus.PENDING:
+        if booking.payment_due_at is not None and now_local >= booking.payment_due_at:
+            return "Past the payment deadline"
+        return None
+    if now_local >= _self_cancel_deadline(slot, tz, _deadline_hours(db)):
+        return "Past the cancellation deadline"
+    return None
+
+
+def _member_of(db: Session, booking: Booking) -> Member | None:
+    return (
+        db.query(Member)
+        .options(joinedload(Member.person))
+        .filter(Member.party_id == booking.party_id)
+        .order_by(Member.is_active.desc(), Member.id.desc())
+        .first()
+    )
+
+
+def release_booking(
+    db: Session,
+    booking: Booking,
+    *,
+    cancelled_by_user_id: int | None = None,
+    keep_payment: bool = False,
+) -> bool:
+    """The one way a booking stops holding a seat, and the receipt side of it.
+
+    Whatever is still unpaid is voided. A paid receipt stays, and a booking that
+    was paid for is owed back (``refund_status = due``) unless the club keeps
+    the payment. Returns whether the booking held a seat, so the caller knows
+    one has freed.
+    """
+    held = occupies_seat(booking.status)
+    booking.status = BookingStatus.CANCELLED
+    booking.cancelled_at = datetime.now(timezone.utc)
+    booking.cancelled_by_user_id = cancelled_by_user_id
+    booking.payment_due_at = None
+    booking.payment_reminder_sent_at = None
+    db.flush()
+
+    void_booking_receipts(db, booking)
+    if has_paid_receipt(db, booking):
+        booking.refund_status = "none" if keep_payment else "due"
+    return held
+
+
 def cancel_booking(
     db: Session,
     booking: Booking,
@@ -880,8 +941,13 @@ def cancel_booking(
     cancelled_by_user_id: int,
     is_admin: bool,
     notifier: BookingNotifier | None = None,
+    keep_payment: bool = False,
 ) -> Booking:
-    """Cancel a booking; promote the earliest waitlisted member if a seat frees."""
+    """Cancel a booking; promote the earliest waitlisted member if a seat frees.
+
+    ``keep_payment`` is the club's choice, on cancelling a paid booking, not to
+    return the money.
+    """
     notifier = notifier or NullBookingNotifier()
 
     if booking.status == BookingStatus.CANCELLED:
@@ -894,41 +960,108 @@ def cancel_booking(
         .with_for_update()
         .first()
     )
-    tz = org_timezone(db)
-    now_local = datetime.now(tz)
 
-    if not is_admin and now_local >= _self_cancel_deadline(slot, tz, _deadline_hours(db)):
-        raise CancellationTooLate("Past the cancellation deadline")
+    if not is_admin:
+        refusal = _self_cancel_refusal(db, booking, slot)
+        if refusal:
+            raise CancellationTooLate(refusal)
 
-    was_booked = booking.status == BookingStatus.BOOKED
-    booking.status = BookingStatus.CANCELLED
-    booking.cancelled_at = now_local
-    booking.cancelled_by_user_id = cancelled_by_user_id
-    db.flush()
-
-    # Money follows the seat: whatever is still unpaid is voided here, and a
-    # paid receipt is left standing — the club settles that one offline.
-    void_booking_receipts(db, booking)
+    held = release_booking(
+        db,
+        booking,
+        cancelled_by_user_id=cancelled_by_user_id,
+        keep_payment=keep_payment and is_admin,
+    )
 
     if is_admin:
-        # The member didn't cancel this themselves — tell them.
+        # The member didn't cancel this themselves — tell them, and whether
+        # what they paid is coming back.
         space = get_space(db, slot.space_id)
-        member = (
-            db.query(Member)
-            .options(joinedload(Member.person))
-            .filter(Member.party_id == booking.party_id)
-            .order_by(Member.is_active.desc(), Member.id.desc())
-            .first()
-        )
+        member = _member_of(db, booking)
         if member is not None and space is not None:
             notifier.send_admin_cancellation(
-                _notification(db, booking, slot, space, member)
+                _notification(
+                    db,
+                    booking,
+                    slot,
+                    space,
+                    member,
+                    refund_due=booking.refund_status == "due",
+                )
             )
 
-    if was_booked:
-        if _occupied(db, slot.id) < slot.capacity:
-            _promote_next(db, slot, notifier)
+    if held and _occupied(db, slot.id) < slot.capacity:
+        _promote_next(db, slot, notifier)
     return booking
+
+
+def confirm_pending_booking(
+    db: Session, booking_id: int, *, notifier: BookingNotifier | None = None
+) -> None:
+    """Book a pending booking whose receipt has just been paid.
+
+    Only a ``pending`` one: a ``legacy`` space never has any, and a booking
+    already booked, waitlisted or cancelled is not this function's to change.
+    """
+    notifier = notifier or NullBookingNotifier()
+    booking = get_booking(db, booking_id)
+    if booking is None or booking.status != BookingStatus.PENDING:
+        return
+    _book_pending(db, booking, notifier)
+
+
+def confirm_booking_without_payment(
+    db: Session,
+    booking: Booking,
+    user_id: int,
+    *,
+    notifier: BookingNotifier | None = None,
+) -> Booking:
+    """Book a pending booking and waive its payment, on the club's word.
+
+    The receipt is cancelled rather than left standing, so a booked member never
+    carries a live receipt the dunning run would chase. Recorded in the audit
+    log, since it gives up money the club was owed.
+    """
+    if booking.status != BookingStatus.PENDING:
+        raise NotPending("Only a pending booking can be confirmed without payment")
+
+    from app.domains.audit.models import AuditLog
+
+    void_booking_receipts(db, booking)
+    db.add(
+        AuditLog(
+            table_name="bookings",
+            record_id=booking.id,
+            action="update",
+            user_id=user_id,
+            old_values={"status": "pending"},
+            new_values={"status": "booked", "reason": "payment_waived"},
+            changed_fields=["status"],
+        )
+    )
+    _book_pending(db, booking, notifier or NullBookingNotifier())
+    return booking
+
+
+def _book_pending(db: Session, booking: Booking, notifier: BookingNotifier) -> None:
+    booking.status = BookingStatus.BOOKED
+    booking.payment_due_at = None
+    booking.payment_reminder_sent_at = None
+    db.flush()
+    slot = booking.slot
+    member = _member_of(db, booking)
+    if member is not None:
+        notifier.send_confirmation(
+            _notification(
+                db,
+                booking,
+                slot,
+                slot.space,
+                member,
+                cancellation_deadline_hours=_deadline_hours(db),
+            )
+        )
 
 
 def _promote_next(
@@ -1040,7 +1173,11 @@ def my_bookings(db: Session, party_id: int, *, scope: str) -> list[dict]:
                 "waitlist_position": position,
                 # The same rule `cancel_booking` enforces, so the list only
                 # offers a cancellation the server will accept.
-                "can_cancel": now_local < _self_cancel_deadline(slot, tz, deadline_hours),
+                "can_cancel": (
+                    now_local < b.payment_due_at
+                    if b.status == BookingStatus.PENDING and b.payment_due_at
+                    else now_local < _self_cancel_deadline(slot, tz, deadline_hours)
+                ),
             }
         )
     return out

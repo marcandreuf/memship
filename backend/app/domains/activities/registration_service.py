@@ -476,7 +476,11 @@ def _apply_status_change(
         ensure_registration_receipt(db, registration, activity)
 
     if occupies_seat(old_status) and not occupies_seat(new_status):
-        _promote_from_waitlist(db, activity, registration.modality_id)
+        # A seat moved to the waiting list is not the one to promote into the
+        # seat it just gave up.
+        _promote_from_waitlist(
+            db, activity, registration.modality_id, exclude_id=registration.id
+        )
 
     return old_status
 
@@ -850,7 +854,10 @@ def _determine_registration_status(
 
 
 def _promote_from_waitlist(
-    db: Session, activity: Activity, modality_id: int | None = None
+    db: Session,
+    activity: Activity,
+    modality_id: int | None = None,
+    exclude_id: int | None = None,
 ) -> Registration | None:
     """Give the freed seat to the oldest waitlisted registration.
 
@@ -884,6 +891,8 @@ def _promote_from_waitlist(
         )
         .order_by(Registration.created_at.asc(), Registration.id.asc())
     )
+    if exclude_id is not None:
+        query = query.filter(Registration.id != exclude_id)
 
     next_in_line = query.first()
     if not next_in_line:
