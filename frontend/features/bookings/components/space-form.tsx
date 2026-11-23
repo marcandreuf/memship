@@ -168,7 +168,9 @@ export function SpaceForm({
         });
         return;
       }
-      if (!mapApiErrorsToForm(error, form)) {
+      // Creating goes through the mutation, whose global handler already shows
+      // the error; editing is the raw call above, which nothing else reports.
+      if (!mapApiErrorsToForm(error, form) && space) {
         toast.error(getErrorMessage(error, t));
       }
     }
