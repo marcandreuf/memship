@@ -179,15 +179,22 @@ def record_late_payment(db: Session, receipt: Receipt, **payment) -> list[int] |
     ``payment`` is what ``mark_receipt_paid`` takes. Returns the receipts to
     notify, or None when the receipt is not a seat's and stays ignored.
     """
-    if receipt.status != "cancelled" or receipt.registration_id is None:
+    if receipt.status != "cancelled":
+        return None
+    if receipt.registration_id is not None:
+        from app.domains.activities.registration_service import (
+            settle_late_payment as settle,
+        )
+    elif receipt.booking_id is not None:
+        from app.domains.bookings.service import settle_late_booking_payment as settle
+    else:
         return None
 
-    from app.domains.activities.registration_service import settle_late_payment
     from app.domains.billing.service import mark_receipt_paid
 
     receipt.status = "emitted"
     notify = mark_receipt_paid(db, receipt, **payment)
-    seat = settle_late_payment(db, receipt)
+    seat = settle(db, receipt)
     _dispatch_late_payment_alert(db, receipt, seat)
     # "Payment received, nothing more to do" would tell a member without a seat
     # they have one; the seat's domain has told them the money goes back instead.

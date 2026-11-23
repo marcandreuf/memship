@@ -21,6 +21,7 @@ from sqlalchemy.orm import Query, Session, joinedload
 
 from app.core.clock import org_timezone
 from app.domains.bookings.billing import (
+    booking_description,
     booking_price,
     ensure_booking_receipt,
     has_paid_receipt,
@@ -41,6 +42,7 @@ from app.domains.bookings.models import Booking, Space, SpaceSlot
 from app.domains.bookings.notifications import (
     BookingNotification,
     BookingNotifier,
+    EmailBookingNotifier,
     NullBookingNotifier,
 )
 from app.domains.bookings.rules import int_rule
@@ -1520,3 +1522,66 @@ def shorten_pending_deadlines(
             shortened += 1
     db.flush()
     return shortened
+
+
+def settle_late_booking_payment(db: Session, receipt):
+    """Give a booking back to a payment that arrived after it was released.
+
+    Booked if the slot has not started and a seat is free, under the slot's
+    lock; otherwise it stays cancelled and the money is owed back. A payment
+    after the start cannot buy a slot that is already under way. Flagged for
+    the club either way. Nothing is mailed to the member when no seat is given:
+    "payment received, nothing more to do" would tell them they hold one.
+    """
+    from app.domains.billing.seats import LateSeat
+
+    booking = get_booking(db, receipt.booking_id)
+    slot = (
+        db.query(SpaceSlot)
+        .filter(SpaceSlot.id == booking.space_slot_id)
+        .with_for_update()
+        .first()
+    )
+    space = slot.space
+    now = datetime.now(timezone.utc)
+    booking.late_payment_at = now
+    booking.late_payment_seen_at = None
+
+    confirmed = occupies_seat(booking.status)
+    if not confirmed:
+        if (
+            datetime.combine(slot.slot_date, slot.start_time, tzinfo=org_timezone(db)) > now
+            and _occupied(db, slot.id) < slot.capacity
+            and _member_active_booking(db, slot.id, booking.party_id) is None
+        ):
+            booking.status = BookingStatus.BOOKED
+            booking.cancelled_at = None
+            booking.cancelled_by_user_id = None
+            booking.cancelled_cause = None
+            booking.refund_status = "none"
+            db.flush()
+            member = _member_of(db, booking)
+            if member is not None:
+                notifier = EmailBookingNotifier(db)
+                notifier.send_confirmation(
+                    _notification(
+                        db,
+                        booking,
+                        slot,
+                        space,
+                        member,
+                        cancellation_deadline_hours=_deadline_hours(db),
+                    )
+                )
+            confirmed = True
+        else:
+            booking.refund_status = "due"
+    db.flush()
+
+    member = _member_of(db, booking)
+    person = member.person if member else None
+    return LateSeat(
+        confirmed=confirmed,
+        name=booking_description(space, slot),
+        member_name=f"{person.first_name} {person.last_name}" if person else None,
+    )
