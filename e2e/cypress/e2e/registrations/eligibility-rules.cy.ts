@@ -23,8 +23,17 @@ const PASSWORD = "TestMember1!";
  * Navigate to an activity's registration page by extracting href
  * from the activity card and visiting /register directly.
  */
+/**
+ * The list by name, not the first page as it falls: it shows 20, newest first,
+ * and the seeded Summer Soccer Camp is the 20th. Any activity another worker
+ * publishes meanwhile pushed it to page 2, and the test passed only on retry.
+ */
+function openActivitiesFiltered(activityName: string) {
+  cy.visit(`/en/activities?q=${encodeURIComponent(activityName)}`);
+}
+
 function visitRegisterPage(activityName: string) {
-  cy.visit("/en/activities");
+  openActivitiesFiltered(activityName);
   cy.contains("h3", activityName)
     .closest("a")
     .invoke("attr", "href")
@@ -43,7 +52,7 @@ function visitRegisterPage(activityName: string) {
  * Navigate to an activity detail page from the list.
  */
 function visitActivityDetail(activityName: string) {
-  cy.visit("/en/activities");
+  openActivitiesFiltered(activityName);
   cy.contains("h3", activityName).closest("a").click();
   cy.url().should("match", /\/activities\/\d+/);
 }
