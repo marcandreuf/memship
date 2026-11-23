@@ -159,16 +159,19 @@ worker publishes for the length of its spec, as the #591 pay-to-confirm specs do
 pushed it to page 2. Publishing one extra activity reproduced it every time; the spec
 now opens the list filtered by name.
 
-**Current size, measured 2026-11-23: 57 spec files, 337 tests**, after #603 added
-`bookings/pay-to-confirm.cy.ts`. One full `test:parallel:prod` run that day: 6:52,
-8:35 and 8:52 on the pool workers and 3:09 on the pinned one. The pool is up to
-nearly nine minutes from seven on 2026-11-20, more than four tests explain, so treat
-the spread between runs as wide; the pinned worker is still far inside the pool,
-nowhere near becoming the critical path, which is the number that decides whether
-the pinning is still free.
+**Current size, measured 2026-11-23: 58 spec files, 348 tests**, after #603 added
+`bookings/pay-to-confirm.cy.ts` and `bookings/pay-to-confirm-flows.cy.ts`. Two full
+`test:parallel:prod` runs that day. The first, at 57 files and 337 tests: 6:52, 8:35
+and 8:52 on the pool workers and 3:09 on the pinned one; it left one screenshot, the
+fourth flake above, which was fixed rather than re-run. The second, on the final
+code: 6:50, 8:52 and 11:18 on the pool and 3:19 pinned, **348/348 with no
+screenshots**.
 
-That run left one screenshot, and the explanation is the fourth flake above; it was
-fixed, not re-run, and the full suite has not been run again since the fix.
+The pool is no longer balanced: its slowest worker went from about seven minutes on
+2026-11-20 to over eleven, while the fastest stayed near seven, so the suite's wall
+clock is now set by how the specs fall to the threads rather than by their total.
+The pinned worker is still far inside the pool, nowhere near becoming the critical
+path, which is the number that decides whether the pinning is still free.
 
 Previous measurement, 2026-11-20: 56 spec files, 333 tests, after #591 added seven
 pay-to-confirm specs. Two runs: 6:24, 6:50 and 6:50 on the pool with 3:10 pinned,
