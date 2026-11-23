@@ -381,7 +381,7 @@ class TestBooleanFlagsAreTypeCheckedOnSave:
     running instance rather than preserve it.
     """
 
-    @pytest.mark.parametrize("key", sorted(BOOL_KEYS | {"booking_waitlist_enabled"}))
+    @pytest.mark.parametrize("key", sorted(BOOL_KEYS | {"booking_waitlist_enabled", "booking_auto_cancel_enabled"}))
     @pytest.mark.parametrize(
         "value,case",
         [("false", "the-string-false"), (0, "int-zero"), (None, "null")],
@@ -397,7 +397,7 @@ class TestBooleanFlagsAreTypeCheckedOnSave:
             f"{bool(value)}, so the flag would read as that whatever was meant"
         )
 
-    @pytest.mark.parametrize("key", sorted(BOOL_KEYS | {"booking_waitlist_enabled"}))
+    @pytest.mark.parametrize("key", sorted(BOOL_KEYS | {"booking_waitlist_enabled", "booking_auto_cancel_enabled"}))
     @pytest.mark.parametrize("value", [True, False])
     def test_settings_put_accepts_a_real_boolean(self, client, db, key, value):
         _org(db, {})
@@ -433,6 +433,11 @@ CANONICAL = {
     "booking_window_days": 14,
     "booking_cancellation_deadline_hours": 24,
     "booking_waitlist_enabled": True,
+    "booking_auto_cancel_enabled": True,
+    "booking_auto_cancel_hours": 24,
+    "booking_payment_cutoff_minutes": 60,
+    "booking_min_hold_minutes": 15,
+    "booking_auto_promotion_min_minutes": 120,
     # Billing configuration.
     "membership_fee_due_days": 7,
     "membership_lapse_grace_days": 21,
