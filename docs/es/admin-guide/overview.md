@@ -58,9 +58,8 @@ El panel de administración se organiza en torno a estas áreas:
 - **[Informes](reports.md)**, exportaciones CSV, panel financiero y resumen anual.
 - **[Configuración](settings.md)**, marca (nombre, color, logotipo), dirección, datos
   bancarios, facturación y automatizaciones.
-
-> La reserva de espacios (**Simple Bookings**) aún no forma parte de una versión publicada y se
-> documentará cuando se libere.
+- **[Espacios y reservas](spaces.md)**, espacios, franjas, reservas de pago y lista de
+  espera.
 
 ## Configuración inicial
 

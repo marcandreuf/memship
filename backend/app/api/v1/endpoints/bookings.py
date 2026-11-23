@@ -21,6 +21,7 @@ from app.domains.bookings import service
 from app.domains.bookings.eligibility import check_space_eligibility
 from app.domains.bookings.notifications import EmailBookingNotifier
 from app.domains.bookings.schemas import (
+    SpacePaymentOptions,
     AdminBookingPage,
     AdminBookingRead,
     BookingCreate,
@@ -36,6 +37,10 @@ from app.domains.bookings.schemas import (
     WeekAvailability,
 )
 from app.domains.organizations.models import OrganizationSettings
+from app.domains.activities.models import PAYMENT_METHODS
+from app.domains.billing.payment_instructions import unusable_methods
+from app.domains.billing.seats import BOOKING_SEAT_TEMPLATES, switched_off_seat_templates
+from app.domains.bookings.rules import int_rule
 
 router = APIRouter(prefix="/spaces", tags=["bookings"])
 member_router = APIRouter(tags=["bookings"])
@@ -76,6 +81,7 @@ def _booking_error(exc: service.BookingError, status_code: int) -> HTTPException
         detail["reason"] = exc.reason
     if exc.dates:
         detail["dates"] = [d.isoformat() for d in exc.dates]
+    detail.update(exc.fields)
     return HTTPException(status_code=status_code, detail=detail)
 
 
@@ -98,10 +104,34 @@ def create_space(
     current_user: User = Depends(require_permission("bookings.write")),
 ):
     _require_bookings_enabled(db)
-    space = service.create_space(db, data)
+    try:
+        space = service.create_space(db, data)
+    except service.BookingError as exc:
+        raise _booking_error(exc, status.HTTP_422_UNPROCESSABLE_ENTITY)
     db.commit()
     db.refresh(space)
     return space
+
+
+@router.get("/payment-options", response_model=SpacePaymentOptions)
+def get_space_payment_options(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("bookings.write")),
+):
+    """What the space form may offer. Here rather than read from /settings,
+    which needs `settings.read` a bookings role need not hold. Declared before
+    ``/{space_id}`` so the path isn't captured."""
+    _require_bookings_enabled(db)
+    org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
+    features = (org.features if org else None) or {}
+    return SpacePaymentOptions(
+        usable_methods=[
+            m for m in PAYMENT_METHODS if m not in unusable_methods(db, list(PAYMENT_METHODS))
+        ],
+        auto_cancel_enabled=features.get("booking_auto_cancel_enabled") is True,
+        auto_cancel_hours=int_rule(features, "booking_auto_cancel_hours"),
+        switched_off_templates=switched_off_seat_templates(db, BOOKING_SEAT_TEMPLATES),
+    )
 
 
 @router.get("/stats", response_model=SpaceStats)
@@ -170,6 +200,8 @@ def delete_space(
     space = _load_space_or_404(db, space_id)
     try:
         service.delete_space(db, space, force=force, notifier=_notifier)
+    except service.HasPaidBookings as exc:
+        raise _booking_error(exc, status.HTTP_422_UNPROCESSABLE_ENTITY)
     except service.HasActiveBookings as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -268,6 +300,8 @@ def delete_slot(
         raise HTTPException(status_code=404, detail="Slot not found")
     try:
         service.delete_slot(db, slot, force=force, notifier=_notifier)
+    except service.HasPaidBookings as exc:
+        raise _booking_error(exc, status.HTTP_422_UNPROCESSABLE_ENTITY)
     except service.HasActiveBookings as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -301,6 +335,7 @@ def list_space_bookings(
         name = (
             f"{person.first_name} {person.last_name}".strip() if person else ""
         )
+        receipt = service.latest_receipt(b)
         rows.append(
             AdminBookingRead(
                 id=b.id,
@@ -311,6 +346,13 @@ def list_space_bookings(
                 start_time=b.slot.start_time,
                 end_time=b.slot.end_time,
                 status=b.status,
+                payment_due_at=b.payment_due_at,
+                receipt_id=receipt.id if receipt else None,
+                receipt_status=receipt.status if receipt else None,
+                receipt_due_date=receipt.due_date if receipt else None,
+                refund_status=b.refund_status,
+                late_payment_at=b.late_payment_at,
+                cancelled_cause=b.cancelled_cause,
             )
         )
     return AdminBookingPage(meta=meta, items=rows)
@@ -383,8 +425,11 @@ def create_booking(
     except (
         service.BookingInPast,
         service.BookingWindowExceeded,
+        service.BookingHoldTooShort,
     ) as exc:
         raise _booking_error(exc, status.HTTP_422_UNPROCESSABLE_ENTITY)
+    except service.SeatReceiptFailed as exc:
+        raise _booking_error(exc, status.HTTP_503_SERVICE_UNAVAILABLE)
     db.commit()
     db.refresh(booking)
     return booking
@@ -407,6 +452,7 @@ def get_my_bookings(
 )
 def cancel_booking(
     booking_id: int,
+    keep_payment: bool = False,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_any_permission("bookings.write", "self.bookings.write")),
 ):
@@ -428,9 +474,33 @@ def cancel_booking(
             cancelled_by_user_id=current_user.id,
             is_admin=is_admin,
             notifier=_notifier,
+            keep_payment=keep_payment,
         )
     except service.CancellationTooLate as exc:
         raise _booking_error(exc, status.HTTP_422_UNPROCESSABLE_ENTITY)
     except service.NotCancellable as exc:
+        raise _booking_error(exc, status.HTTP_409_CONFLICT)
+    db.commit()
+
+
+@member_router.post(
+    "/bookings/{booking_id}/confirm-without-payment", status_code=status.HTTP_204_NO_CONTENT
+)
+def confirm_booking_without_payment(
+    booking_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("billing.write")),
+):
+    """Book a pending booking and waive its payment. The same permission as
+    marking its receipt paid, and recorded in the audit log."""
+    _require_bookings_enabled(db)
+    booking = service.get_booking(db, booking_id)
+    if booking is None:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    try:
+        service.confirm_booking_without_payment(
+            db, booking, current_user.id, notifier=EmailBookingNotifier(db)
+        )
+    except service.NotPending as exc:
         raise _booking_error(exc, status.HTTP_409_CONFLICT)
     db.commit()

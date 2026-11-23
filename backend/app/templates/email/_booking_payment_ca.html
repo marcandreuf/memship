@@ -1,0 +1,21 @@
+{% import "_components.html" as c with context %}
+{% call c.panel() %}
+{{ c.data_row("Import", amount | money(currency)) }}
+{{ c.data_row("Paga abans de", deadline) }}
+{% endcall %}
+<p style="{{ s.p }}">Si no s'ha pagat dins d'aquest termini, la reserva es cancel·larà i la plaça quedarà lliure.</p>
+{%- if pay_now_url %}
+{{ c.button(pay_now_url, "Pagar ara") }}
+{%- endif %}
+{%- if bank_details %}
+<p style="{{ s.p }}">Pots pagar mitjançant transferència bancària:</p>
+{% call c.panel() %}
+<tr><td colspan="2" class="ms-text" style="padding:3px 0; font-family:Helvetica,Arial,sans-serif; font-size:15px; line-height:22px; mso-line-height-rule:exactly; color:#1f2328;">
+{%- for line in bank_details.split("\n") %}{{ line }}<br>{% endfor -%}
+{%- if reference %}Concepte: {{ reference }}{% endif -%}
+</td></tr>
+{% endcall %}
+{%- endif %}
+{%- if cash %}
+<p style="{{ s.p_last }}">{{ "També pots pagar en efectiu al club." if pay_now_url or bank_details else "Pots pagar en efectiu al club." }}</p>
+{%- endif %}

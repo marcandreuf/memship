@@ -76,7 +76,7 @@ confirma al momento.
   correos y en *Mis recibos*.
 - **Confirmar sin pago.** Confirma una plaza pendiente y anula su recibo. Queda registrado quién
   lo hizo.
-- **Cancelar una plaza pagada.** Pasa a **Actividades › Devoluciones** salvo que marques
+- **Cancelar una plaza pagada.** Pasa a **Devoluciones** (en Actividades o Espacios) salvo que marques
   *Quedarse el pago*. La devolución se hace desde la pasarela o a mano; en memship solo se marca
   como devuelta. Cancelar desde el panel avisa al socio por correo.
 - **Pago tardío.** Si la pasarela cobra una plaza ya liberada, la plaza se recupera si queda

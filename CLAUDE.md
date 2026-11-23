@@ -74,6 +74,8 @@ pnpm install                     # Install dependencies
 ./dev.sh logs                    # Tail logs
 pnpm build                       # Production build
 pnpm lint                        # Run linter
+pnpm check:locale-parity         # es, ca, en: same files, keys and {arguments}
+pnpm test:scripts                # The check scripts' own tests
 ```
 
 ### E2E (Cypress)
@@ -112,11 +114,14 @@ not a reshuffle.
 `id = 1` row — is mutating state every other worker can see. It needs to be
 confined to the pinned worker alongside every spec that reads what it touches,
 or it will surface as an unrelated spec failing intermittently somewhere else.
-**Audited 2026-11-11, re-verified 2026-11-20, and `custom_roles` is the only one.**
+**Audited 2026-11-11, re-verified 2026-11-20 and 2026-11-23, and `custom_roles` is the
+only one.**
 `settings/seat-mails-guard.cy.ts`, added by #591, reads like a second: it clicks a
 communications toggle that is on. It is not. It enables the three seat mails in
 `before`, and the switch-off it attempts is *refused by the product*, so the flag is
-still on afterwards; the spec says so in its own header. Every other spec that
+still on afterwards; the spec says so in its own header. `bookings/pay-to-confirm.cy.ts`,
+added by #603, switches the bookings module and the three booking mails on through
+the API and never off. Every other spec that
 writes `organization_settings` is a *monotonic enabler*: `if aria-checked !== "true"`,
 click, Save, leave it on. Off-to-on cannot break a concurrent reader, because every
 spec that reads those features wants them on. `roles-feature-flag.cy.ts` is the sole
@@ -126,7 +131,7 @@ pinning. The backend helps: `features` is a sparse merge, not a replace
 and `communications.cy.ts` asserts exactly that.
 
 **Serialising more specs is therefore not the fix for most flakes here**, and the
-three found so far prove it. All were specs asserting something only true when the
+four found so far prove it. All were specs asserting something only true when the
 timing or the data cooperated, not races between workers. Two on 2026-11-11: one
 clicked Save before a two-query form reset had applied, and one took "the first
 emitted receipt" and got a credit note another spec had left in the database, which
@@ -146,16 +151,32 @@ A spec that selects the row it needs, and that waits for the write it just made 
 land, is correct under any scheduling; that is the fix direction, and #520 is the
 same defect in the payments specs.
 
-**Current size, measured 2026-11-20: 56 spec files, 333 tests**, after #591 added
-seven pay-to-confirm specs. Two full `test:parallel:prod` runs that day: 6:24, 6:50
-and 6:50 on the pool workers with 3:10 on the pinned one, then 6:25, 6:36 and 6:44
-with 2:50 pinned. So the suite is around seven minutes plus the build, and the
-pinned worker is still comfortably inside the pool, nowhere near becoming the
-critical path, which is the number that decides whether the pinning is still free.
+The fourth, on 2026-11-23, is the same lesson from the other side: the race was
+with the data, not the worker. `registrations/eligibility-rules.cy.ts` 8.2 looked
+for the seeded Summer Soccer Camp on the first page of the activities list, which
+shows 20, newest first, and the camp is exactly the 20th. Any activity another
+worker publishes for the length of its spec, as the #591 pay-to-confirm specs do,
+pushed it to page 2. Publishing one extra activity reproduced it every time; the spec
+now opens the list filtered by name.
 
-The second of those was clean, 333/333 with no screenshots at all. The first left
-one, and the explanation is the third flake above. Worth stating together: the suite
-is green on this code, and it took a fix to get there, not a re-run.
+**Current size, measured 2026-11-23: 58 spec files, 348 tests**, after #603 added
+`bookings/pay-to-confirm.cy.ts` and `bookings/pay-to-confirm-flows.cy.ts`. Two full
+`test:parallel:prod` runs that day. The first, at 57 files and 337 tests: 6:52, 8:35
+and 8:52 on the pool workers and 3:09 on the pinned one; it left one screenshot, the
+fourth flake above, which was fixed rather than re-run. The second, on the final
+code: 6:50, 8:52 and 11:18 on the pool and 3:19 pinned, **348/348 with no
+screenshots**.
+
+The pool is no longer balanced: its slowest worker went from about seven minutes on
+2026-11-20 to over eleven, while the fastest stayed near seven, so the suite's wall
+clock is now set by how the specs fall to the threads rather than by their total.
+The pinned worker is still far inside the pool, nowhere near becoming the critical
+path, which is the number that decides whether the pinning is still free.
+
+Previous measurement, 2026-11-20: 56 spec files, 333 tests, after #591 added seven
+pay-to-confirm specs. Two runs: 6:24, 6:50 and 6:50 on the pool with 3:10 pinned,
+then 6:25, 6:36 and 6:44 with 2:50 pinned. The second was clean, 333/333 with no
+screenshots; the first left one, explained by the third flake above.
 
 Historical, and kept because the reasoning still holds: measured 2026-09-16 at 219
 tests, three consecutive runs all **219/219 leaving no screenshots at all**, at
@@ -324,7 +345,7 @@ memship/
 │   │   └── layout/              # Sidebar (Shadcn collapsible), header (SidebarTrigger + theme toggle), theme-toggle
 │   ├── hooks/                   # Shared hooks (use-mobile)
 │   ├── lib/                     # API clients, providers, status variants
-│   └── locales/                 # Translation files (es, ca, en) — kept at key parity
+│   └── locales/                 # Translation files (es, ca, en) — parity enforced in CI (check:locale-parity)
 ├── e2e/                         # Cypress suite (see the E2E section above)
 └── .github/
     ├── ISSUE_TEMPLATE/          # bug_report, feature_request, accessibility
@@ -360,7 +381,9 @@ memship/
 - Tests: pytest, integration tests use TestClient with real PostgreSQL
 
 ### Frontend
-- i18n: next-intl, locales `es` (default), `ca`, `en` — never hardcode user-facing text
+- i18n: next-intl, locales `es` (default), `ca`, `en` — never hardcode user-facing text;
+  every key goes into all three with the same ICU `{arguments}` (`pnpm check:locale-parity`,
+  in CI). Only a `select` a language has no use for, like gender in English, may be left out
 - State: TanStack Query for server state, React Context for auth — no Redux/Zustand
 - Forms: React Hook Form + Zod validation
 - API: server-side fetch via `lib/api-client.ts`, client-side via `lib/client-api.ts`

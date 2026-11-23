@@ -277,9 +277,12 @@ def ensure_registration_receipt(
     (`cancel_registration`), and a cancelled one deliberately does not block a
     new one — re-confirming after a cancellation owes money again.
 
-    Receipt generation never fails the registration; the error is logged instead,
-    because the seat has already been given and rolling it back here would be
-    worse than an invoice an admin has to raise by hand.
+    For a ``legacy`` seat, receipt generation never fails the registration; the
+    error is logged instead, because the seat has already been given and rolling
+    it back here would be worse than an invoice an admin has to raise by hand. A
+    seat that needs payment is the opposite: with no receipt it cannot be paid,
+    so it would hold a place nobody can confirm. That raises, and the caller's
+    transaction rolls back (#603).
     """
     amount = registration.discounted_amount
     if amount is None or Decimal(str(amount)) <= 0:
@@ -324,6 +327,15 @@ def ensure_registration_receipt(
                 is_batchable=not pay_to_confirm,
             )
     except Exception as e:
+        if pay_to_confirm:
+            logger.exception(
+                "Failed to generate the receipt of pending registration %s",
+                registration.id,
+            )
+            raise RegistrationError(
+                "The receipt for this seat could not be raised, so it cannot be held",
+                code="seat_receipt_failed",
+            ) from e
         logger.error(
             "Failed to generate receipt for registration %s: %s", registration.id, e
         )
@@ -464,7 +476,11 @@ def _apply_status_change(
         ensure_registration_receipt(db, registration, activity)
 
     if occupies_seat(old_status) and not occupies_seat(new_status):
-        _promote_from_waitlist(db, activity, registration.modality_id)
+        # A seat moved to the waiting list is not the one to promote into the
+        # seat it just gave up.
+        _promote_from_waitlist(
+            db, activity, registration.modality_id, exclude_id=registration.id
+        )
 
     return old_status
 
@@ -838,7 +854,10 @@ def _determine_registration_status(
 
 
 def _promote_from_waitlist(
-    db: Session, activity: Activity, modality_id: int | None = None
+    db: Session,
+    activity: Activity,
+    modality_id: int | None = None,
+    exclude_id: int | None = None,
 ) -> Registration | None:
     """Give the freed seat to the oldest waitlisted registration.
 
@@ -872,6 +891,8 @@ def _promote_from_waitlist(
         )
         .order_by(Registration.created_at.asc(), Registration.id.asc())
     )
+    if exclude_id is not None:
+        query = query.filter(Registration.id != exclude_id)
 
     next_in_line = query.first()
     if not next_in_line:

@@ -8,8 +8,12 @@ from app.core.email import (
     EmailOutcome,
     EmailResult,
     send_booking_cancelled_email,
+    send_booking_cancelled_unpaid_email,
     send_booking_confirmation_email,
+    send_booking_deadline_reminder_email,
+    send_booking_pending_payment_email,
     send_booking_promoted_email,
+    send_booking_seat_available_email,
     send_booking_waitlisted_email,
     send_email,
     send_receipt_delivery_email,
@@ -316,8 +320,13 @@ def send_booking_email_task(
     locale: str = "es",
     position: int | None = None,
     cancellation_deadline_hours: int | None = None,
+    payment: dict | None = None,
+    refund_due: bool = False,
 ) -> bool:
-    """Send a booking confirmation / waitlisted / promoted email."""
+    """Send a booking email of the given ``kind``.
+
+    ``payment`` is the amount, deadline and ways to pay of a booking held until
+    paid, resolved by the service so the task never re-reads the row."""
     try:
         if kind == "confirmation":
             return send_booking_confirmation_email(
@@ -332,9 +341,26 @@ def send_booking_email_task(
             return send_booking_promoted_email(
                 to, member_name, space_name, date_str, time_str, locale,
             )
+        if kind == "seat_available":
+            return send_booking_seat_available_email(
+                to, member_name, space_name, date_str, time_str, locale, **payment,
+            )
+        if kind == "pending_payment":
+            return send_booking_pending_payment_email(
+                to, member_name, space_name, date_str, time_str, locale, **payment,
+            )
+        if kind == "deadline_reminder":
+            return send_booking_deadline_reminder_email(
+                to, member_name, space_name, date_str, time_str, locale, **payment,
+            )
+        if kind == "cancelled_unpaid":
+            return send_booking_cancelled_unpaid_email(
+                to, member_name, space_name, date_str, time_str, locale,
+            )
         if kind == "cancelled":
             return send_booking_cancelled_email(
                 to, member_name, space_name, date_str, time_str, locale,
+                refund_due=refund_due,
             )
         logger.error(f"Unknown booking email kind: {kind}")
         return False

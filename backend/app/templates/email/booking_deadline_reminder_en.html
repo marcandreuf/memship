@@ -1,0 +1,15 @@
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}Your booking of {{ space_name }} will be cancelled unless paid in time.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Your booking expires soon</h1>
+<p style="{{ s.p }}">Hi {{ member_name }},</p>
+<p style="{{ s.p }}">We have not received the payment for your booking of <strong>{{ space_name }}</strong> yet.</p>
+{% call c.panel() %}
+{{ c.data_row("Date", booking_date) }}
+{{ c.data_row("Time", booking_time) }}
+{% endcall %}
+{% include "_booking_payment_en.html" %}
+{% endblock %}

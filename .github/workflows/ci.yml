@@ -488,3 +488,14 @@ jobs:
       - name: Proxy route coverage
         working-directory: frontend
         run: pnpm check:proxy-routes
+
+      # next-intl resolves keys at runtime, so a key or an {argument} missing
+      # from one locale passes the build and every test, and shows its raw path
+      # (or throws) only to members reading that language.
+      - name: Locale parity
+        working-directory: frontend
+        run: pnpm check:locale-parity
+
+      - name: Check scripts' own tests
+        working-directory: frontend
+        run: pnpm test:scripts

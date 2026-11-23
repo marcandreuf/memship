@@ -37,6 +37,7 @@ from app.api.v1.endpoints import (
     registrations,
     reminders,
     reports,
+    seats,
     settings,
     webhooks,
 )
@@ -70,6 +71,7 @@ api_router.include_router(donations.router, dependencies=_approved_only)
 api_router.include_router(persons.router, dependencies=_approved_only)
 api_router.include_router(registrations.router, dependencies=_approved_only)
 api_router.include_router(reminders.router, dependencies=_approved_only)
+api_router.include_router(seats.router, dependencies=_approved_only)
 api_router.include_router(reports.router, dependencies=_approved_only)
 api_router.include_router(settings.router)
 api_router.include_router(roles.permissions_router)

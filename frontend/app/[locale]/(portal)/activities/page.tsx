@@ -90,7 +90,7 @@ export default function ActivitiesPage() {
         </div>
         <div className="flex gap-2">
           {canSeeRefunds && (
-            <Link href="/activities/refunds">
+            <Link href="/refunds">
               <Button size="sm" variant="outline">{t("activities.refunds.title")}</Button>
             </Link>
           )}

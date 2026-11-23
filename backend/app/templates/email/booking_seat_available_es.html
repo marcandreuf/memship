@@ -1,0 +1,18 @@
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}Hay una plaza libre en {{ space_name }} para quien la reserve primero.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Se ha liberado una plaza</h1>
+<p style="{{ s.p }}">Hola {{ member_name }},</p>
+<p style="{{ s.p }}">Se ha liberado una plaza en <strong>{{ space_name }}</strong>, que tenías en lista de espera. Queda poco para que empiece, así que no se asigna automáticamente: si todavía la quieres, resérvala y págala antes de la hora límite. Se la queda quien la reserve primero.</p>
+{% call c.panel() %}
+{{ c.data_row("Fecha", booking_date) }}
+{{ c.data_row("Horario", booking_time) }}
+{{ c.data_row("Importe", amount | money(currency)) }}
+{{ c.data_row("Reserva y paga antes de", deadline) }}
+{% endcall %}
+{{ c.button(book_url, "Reservar") }}
+<p style="{{ s.p_last }}">Si no la reservas, sigues en la lista de espera.</p>
+{% endblock %}

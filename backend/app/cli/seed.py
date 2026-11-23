@@ -273,6 +273,9 @@ def create_org_settings(db, details: dict, address: dict | None = None) -> None:
         # nothing until a billing notification address is set.
         # The three pay-to-confirm mails are the member's only word that a seat
         # is held until paid, about to expire, or gone for non-payment (#591).
+        # Their booking counterparts likewise (#603), and the call to the waiting
+        # list when a seat frees too late to hand out, without which it stays
+        # empty.
         communications_config={
             "templates": {
                 "registration_approved": {"enabled": True},
@@ -281,6 +284,10 @@ def create_org_settings(db, details: dict, address: dict | None = None) -> None:
                 "registration_cancelled_unpaid": {"enabled": True},
                 "late_payment_alert": {"enabled": True},
                 "late_payment_refund": {"enabled": True},
+                "booking_pending_payment": {"enabled": True},
+                "booking_deadline_reminder": {"enabled": True},
+                "booking_cancelled_unpaid": {"enabled": True},
+                "booking_seat_available": {"enabled": True},
                 "webhook_digest": {"enabled": True},
             },
         },

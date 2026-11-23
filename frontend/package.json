@@ -29,7 +29,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "check:proxy-routes": "node scripts/check-proxy-routes.mjs"
+    "check:proxy-routes": "node scripts/check-proxy-routes.mjs",
+    "check:locale-parity": "node scripts/check-locale-parity.mjs",
+    "test:scripts": "node --test \"scripts/*.test.mjs\""
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",

@@ -46,7 +46,7 @@ describe("Pay to confirm — admin", () => {
   it("opens the refund list from the activities page", () => {
     cy.visit("/en/activities");
     cy.contains("a", "Refunds").click();
-    cy.url().should("include", "/activities/refunds");
+    cy.url().should("match", /\/en\/refunds$/);
     cy.contains("h1", "Refunds").should("be.visible");
   });
 });

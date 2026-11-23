@@ -42,6 +42,8 @@ class BookingStatus(StrEnum):
     """State of a member's reservation of a slot-instance."""
 
     BOOKED = "booked"
+    # A paid booking held until its receipt is paid (#603). Holds its seat.
+    PENDING = "pending"
     WAITLISTED = "waitlisted"
     CANCELLED = "cancelled"
 

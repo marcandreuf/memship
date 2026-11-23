@@ -11,5 +11,8 @@
 {{ c.data_row("Data", booking_date) }}
 {{ c.data_row("Horari", booking_time) }}
 {% endcall %}
+{%- if refund_due %}
+<p style="{{ s.p }}">Ja havies pagat aquesta reserva, així que el club et retornarà l'import.</p>
+{%- endif %}
 <p style="{{ s.p_last }}">Lamentem les molèsties. Pots consultar la disponibilitat actual i fer una nova reserva des del teu portal de soci.</p>
 {% endblock %}

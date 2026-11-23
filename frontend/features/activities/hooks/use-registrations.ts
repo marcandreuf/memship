@@ -7,10 +7,6 @@ import {
   cancelRegistration,
   changeRegistrationStatus,
   confirmWithoutPayment,
-  listRefunds,
-  markRefundReturned,
-  listUnseenLatePayments,
-  acknowledgeLatePayment,
   listActivityRegistrations,
   listMyRegistrations,
   listRegistrationAttachments,
@@ -90,37 +86,6 @@ export function useConfirmWithoutPayment() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: number) => confirmWithoutPayment(id),
-    onSuccess: () => invalidateSeat(qc),
-  });
-}
-
-export function useRefunds(params: { page?: number; refund_status?: "due" | "returned" }) {
-  return useQuery({
-    queryKey: ["refunds", params],
-    queryFn: () => listRefunds({ ...params, per_page: 20 }),
-  });
-}
-
-export function useMarkRefundReturned() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id: number) => markRefundReturned(id),
-    onSuccess: () => invalidateSeat(qc),
-  });
-}
-
-export function useUnseenLatePayments(enabled = true) {
-  return useQuery({
-    queryKey: ["late-payments"],
-    queryFn: listUnseenLatePayments,
-    enabled,
-  });
-}
-
-export function useAcknowledgeLatePayment() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id: number) => acknowledgeLatePayment(id),
     onSuccess: () => invalidateSeat(qc),
   });
 }

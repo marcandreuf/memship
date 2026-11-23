@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useForm } from "react-hook-form";
 import { useZodResolver } from "@/hooks/use-zod-resolver";
@@ -21,10 +22,15 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ClientApiError } from "@/lib/client-api";
-import { mapApiErrorsToForm } from "@/lib/errors";
+import { getErrorMessage, mapApiErrorsToForm } from "@/lib/errors";
 import { useMembershipTypes } from "@/features/members/hooks/use-members";
 import { useCreateSpace, useUpdateSpace } from "../hooks/use-bookings";
-import { updateSpace, type Space } from "../services/bookings-api";
+import { updateSpace, type Space, type SpacePaymentFlow } from "../services/bookings-api";
+import {
+  paymentSettingsFrom,
+  paymentSettingsPayload,
+} from "@/features/activities/components/activity-payment-fields";
+import { SpacePaymentFields } from "./space-payment-fields";
 
 const toTimeInput = (s: string | null | undefined) => (s ? s.slice(0, 5) : "");
 
@@ -81,6 +87,9 @@ export function SpaceForm({
   const [confirmDialog, confirmAction] = useConfirmDialog();
   const { data: membershipTypes } = useMembershipTypes();
   const activeTypes = (membershipTypes ?? []).filter((mt) => mt.is_active);
+  const savedFlow: SpacePaymentFlow = space?.payment_flow ?? "pay_to_confirm";
+  const [flow, setFlow] = useState<SpacePaymentFlow>(savedFlow);
+  const [payment, setPayment] = useState(() => paymentSettingsFrom(space ?? undefined));
 
   const form = useForm<SpaceFormValues>({
     resolver: useZodResolver(spaceSchema),
@@ -106,6 +115,12 @@ export function SpaceForm({
       close_time: data.close_time,
       allowed_membership_types: data.allowed_membership_types,
       is_active: data.is_active,
+      ...(flow === "pay_to_confirm" ? paymentSettingsPayload(payment) : {}),
+      // Sent only on the switch itself: the backend takes pay_to_confirm and
+      // nothing else, since a space never goes back to legacy.
+      ...(savedFlow === "legacy" && flow === "pay_to_confirm"
+        ? { payment_flow: "pay_to_confirm" as const }
+        : {}),
     };
     try {
       if (space) {
@@ -153,7 +168,11 @@ export function SpaceForm({
         });
         return;
       }
-      mapApiErrorsToForm(error, form);
+      // Creating goes through the mutation, whose global handler already shows
+      // the error; editing is the raw call above, which nothing else reports.
+      if (!mapApiErrorsToForm(error, form) && space) {
+        toast.error(getErrorMessage(error, t));
+      }
     }
   }
 
@@ -216,6 +235,13 @@ export function SpaceForm({
               <FormMessage />
             </FormItem>
           )}
+        />
+        <SpacePaymentFields
+          flow={flow}
+          savedFlow={savedFlow}
+          onSwitchFlow={() => setFlow("pay_to_confirm")}
+          value={payment}
+          onChange={setPayment}
         />
         <div className="grid gap-3 sm:grid-cols-2">
           <FormField

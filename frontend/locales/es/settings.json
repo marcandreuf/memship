@@ -429,6 +429,26 @@
           "description": "Avisa al socio de que el club ha cancelado su reserva.",
           "warning": "El socio se presentará a una reserva que ya no existe."
         },
+        "booking_pending_payment": {
+          "name": "Reserva pendiente de pago",
+          "description": "Avisa al socio de que su reserva queda guardada hasta que pague, al reservar o al conseguir plaza desde la lista de espera, con el importe, la hora límite y cómo pagar.",
+          "warning": "Es el único aviso que le indica que debe pagar. Sin él, el socio no sabrá que su reserva depende del pago."
+        },
+        "booking_deadline_reminder": {
+          "name": "Aviso de plazo de una reserva",
+          "description": "Avisa al socio, poco antes de la hora límite, de que su reserva se cancelará si no la paga.",
+          "warning": "Sin este aviso, el socio perderá la reserva sin saber que estaba a punto de caducar."
+        },
+        "booking_cancelled_unpaid": {
+          "name": "Reserva cancelada por falta de pago",
+          "description": "Avisa al socio de que su reserva se ha cancelado porque no se pagó a tiempo.",
+          "warning": "Sin este aviso, el socio se presentará a una reserva que ya no tiene."
+        },
+        "booking_seat_available": {
+          "name": "Plaza liberada a última hora",
+          "description": "Avisa a quienes esperan en la lista de que se ha liberado una plaza demasiado cerca del inicio para asignarla sola: se la queda quien la reserve y pague primero.",
+          "warning": "Sin este aviso, una plaza liberada a última hora se queda vacía: nadie de la lista de espera sabrá que puede reservarla."
+        },
         "receipt_delivery": {
           "name": "Envío de recibo",
           "description": "Envía el PDF del recibo al socio al emitirlo.",
@@ -480,6 +500,20 @@
       "autoCancelDesc": "Si el socio no paga dentro del plazo, su inscripción se cancela y la plaza queda libre. Cada actividad puede cambiarlo; al activarlo, las inscripciones ya pendientes reciben el plazo desde ahora y se avisa a sus socios.",
       "hours": "Plazo para pagar (horas)",
       "hoursDesc": "Desde que se reserva la plaza. Entre 1 y 8760."
+    },
+    "spacePayments": {
+      "title": "Reservas de pago",
+      "intro": "Cómo se pagan las reservas de los espacios con flujo de pago para confirmar. Son valores distintos de los de las actividades: una franja y un evento no se pagan con el mismo reloj.",
+      "booking_payment_cutoff_minutes": "Margen antes de la franja (minutos)",
+      "booking_payment_cutoff_minutesDesc": "Una reserva pendiente debe pagarse como tarde este tiempo antes de que empiece la franja. 0 si cobras en efectivo en la puerta y lo marcas pagado antes de empezar.",
+      "booking_min_hold_minutes": "Tiempo mínimo para pagar (minutos)",
+      "booking_min_hold_minutesDesc": "Si una reserva tendría menos tiempo que este para pagarse, se rechaza en lugar de crearse.",
+      "booking_auto_promotion_min_minutes": "Tiempo mínimo para dar la plaza sola (minutos)",
+      "booking_auto_promotion_min_minutesDesc": "Si se libera una plaza con al menos este tiempo para pagar, pasa sola al primero de la lista de espera. Con menos, se avisa a toda la lista y se la queda quien reserve primero.",
+      "autoCancel": "Liberar antes las reservas no pagadas",
+      "autoCancelDesc": "Además del margen antes de la franja, una reserva pendiente se cancela si no se paga en el plazo de abajo. Cada espacio puede cambiarlo; al activarlo, las reservas ya pendientes pasan a tener el plazo desde ahora (si es antes que el que tenían) y se avisa a sus socios.",
+      "booking_auto_cancel_hours": "Plazo para pagar (horas)",
+      "booking_auto_cancel_hoursDesc": "Desde que se reserva la plaza. Entre 1 y 8760."
     }
   }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -16,6 +17,7 @@ import {
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { TabContentSkeleton } from "@/components/ui/skeletons";
 import { useFormatters } from "@/hooks/use-formatters";
+import { useLocaleDate } from "@/hooks/use-locale-date";
 import {
   useAvailability,
   useAvailableSpaces,
@@ -48,16 +50,25 @@ const hhmm = (t: string) => t.slice(0, 5);
 export function WeekCalendar() {
   const t = useTranslations();
   const { data: spaces = [], isLoading: loadingSpaces } = useAvailableSpaces();
-  const [spaceId, setSpaceId] = useState<number | null>(null);
-  const [weekStartDate, setWeekStartDate] = useState<Date>(() =>
-    mondayOf(new Date())
-  );
+  // A link from the mail offering a freed seat names the space and the date.
+  const params = useSearchParams();
+  const [spaceId, setSpaceId] = useState<number | null>(() => {
+    const requested = Number(params.get("space"));
+    return Number.isInteger(requested) && requested > 0 ? requested : null;
+  });
+  const [weekStartDate, setWeekStartDate] = useState<Date>(() => {
+    const requested = params.get("date");
+    const day = requested ? new Date(`${requested}T00:00:00`) : new Date();
+    return mondayOf(Number.isNaN(day.getTime()) ? new Date() : day);
+  });
   const [confirmDialog, confirmAction] = useConfirmDialog();
   const createBooking = useCreateBooking();
   const { formatCurrency } = useFormatters();
+  const { shortDateTime } = useLocaleDate();
 
   useEffect(() => {
-    if (spaceId === null && spaces.length) setSpaceId(spaces[0].id);
+    if (!spaces.length) return;
+    if (spaceId === null || !spaces.some((s) => s.id === spaceId)) setSpaceId(spaces[0].id);
   }, [spaces, spaceId]);
 
   const weekStart = toISODate(weekStartDate);
@@ -94,12 +105,18 @@ export function WeekCalendar() {
     // cancellation nor the club removing the slot returns a paid amount — so
     // the policy is stated here rather than left to be discovered.
     const price = formatCurrency(cell.price);
+    // In a pay-to-confirm space the booking is held, not confirmed, and the
+    // member is told until when before committing (#603).
+    const held = cell.pay_by !== null;
     const description =
       cell.price > 0
         ? [
             waitlist
-              ? t("bookings.book.priceOnPromotion", { price })
+              ? t(held ? "bookings.book.heldOnPromotion" : "bookings.book.priceOnPromotion", { price })
               : t("bookings.book.price", { price }),
+            ...(held && !waitlist
+              ? [t("bookings.book.heldUntil", { date: shortDateTime(cell.pay_by!) })]
+              : []),
             t("bookings.book.refundPolicy"),
           ].join(" ")
         : undefined;
@@ -118,7 +135,9 @@ export function WeekCalendar() {
           toast.success(
             result.status === "waitlisted"
               ? t("bookings.book.waitlistedToast")
-              : t("bookings.book.bookedToast")
+              : result.status === "pending"
+                ? t("bookings.book.pendingToast")
+                : t("bookings.book.bookedToast")
           );
         } catch {
           /* global handler shows the error toast */
@@ -254,7 +273,8 @@ function SlotCell({
   const muted =
     !bookable ||
     cell.cell_state === "past" ||
-    cell.cell_state === "out_of_window";
+    cell.cell_state === "out_of_window" ||
+    cell.cell_state === "too_late";
 
   return (
     <div
@@ -277,7 +297,14 @@ function SlotCell({
           <Badge className="bg-emerald-600 hover:bg-emerald-600">
             {t("bookings.status.booked")}
           </Badge>
-        ) : cell.my_status === "waitlisted" ? (
+        ) : cell.my_status === "pending" ? (
+          <Badge variant="warning">{t("bookings.status.pending")}</Badge>
+        ) : cell.cell_state === "too_late" && bookable && cell.my_status === "none" ? (
+          /* Too close to the start to be held until paid (#603). */
+          <span className="text-muted-foreground">{t("bookings.book.tooLate")}</span>
+        ) : cell.my_status === "waitlisted" && cell.cell_state !== "open" ? (
+          /* A waitlister whose slot has a seat free again books it like anyone
+             else, with their own row (#603), so only a full slot shows this. */
           /* Light amber status pill — deliberately paler than the amber
              waitlist button so state and action stay distinguishable. */
           <Badge className="bg-amber-100 text-amber-900 hover:bg-amber-100 dark:bg-amber-900/40 dark:text-amber-200">

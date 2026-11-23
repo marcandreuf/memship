@@ -356,6 +356,10 @@ class TestOrganizationDetails:
             "registration_cancelled_unpaid": {"enabled": True},
             "late_payment_alert": {"enabled": True},
             "late_payment_refund": {"enabled": True},
+            "booking_pending_payment": {"enabled": True},
+            "booking_deadline_reminder": {"enabled": True},
+            "booking_cancelled_unpaid": {"enabled": True},
+            "booking_seat_available": {"enabled": True},
             "webhook_digest": {"enabled": True},
         }
 
