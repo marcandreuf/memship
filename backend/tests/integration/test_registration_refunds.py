@@ -156,10 +156,10 @@ class TestTheRefundList:
         admin = _create_admin(db, "refunds")
 
         items = client.get(
-            "/api/v1/registrations/refunds", cookies=_auth_cookie(admin)
+            "/api/v1/seats/refunds", cookies=_auth_cookie(admin)
         ).json()["items"]
 
-        [item] = [i for i in items if i["registration_id"] == registration.id]
+        [item] = [i for i in items if (i["kind"], i["seat_id"]) == ("registration", registration.id)]
         assert item["receipt_number"] == receipt.receipt_number
         assert Decimal(str(item["amount"])) == receipt.total_amount
         assert item["payment_method"] == "stripe_checkout"
@@ -173,7 +173,7 @@ class TestTheRefundList:
         admin = _create_admin(db, "returned")
 
         resp = client.post(
-            f"/api/v1/registrations/{registration.id}/refund-returned",
+            f"/api/v1/seats/registration/{registration.id}/refund-returned",
             cookies=_auth_cookie(admin),
         )
 
@@ -183,14 +183,14 @@ class TestTheRefundList:
         assert registration.refund_returned_by == admin.id
         assert registration.refund_returned_at is not None
         due = client.get(
-            "/api/v1/registrations/refunds", cookies=_auth_cookie(admin)
+            "/api/v1/seats/refunds", cookies=_auth_cookie(admin)
         ).json()["items"]
         returned = client.get(
-            "/api/v1/registrations/refunds?refund_status=returned",
+            "/api/v1/seats/refunds?refund_status=returned",
             cookies=_auth_cookie(admin),
         ).json()["items"]
-        assert registration.id not in [i["registration_id"] for i in due]
-        assert registration.id in [i["registration_id"] for i in returned]
+        assert registration.id not in [i["seat_id"] for i in due]
+        assert registration.id in [i["seat_id"] for i in returned]
 
 
 class TestMarkRefundReturned:

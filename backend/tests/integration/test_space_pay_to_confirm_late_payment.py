@@ -15,6 +15,7 @@ from tests.integration.test_pay_to_confirm_payment import (
     _post_stripe_paid,
     _stripe_provider,
 )
+from tests.integration.test_receipt_payment import _auth_cookie, _create_admin
 from tests.integration.test_space_pay_to_confirm_payment import _pending, _reloaded
 
 ALERT = "app.tasks.email_tasks.send_late_payment_alert_email_task.delay"
@@ -100,3 +101,48 @@ class TestThroughTheGateway:
 
         assert resp.status_code == 200, resp.text
         assert _reloaded(db, booking).status == "booked"
+
+
+class TestTheClubsLists:
+    """Bookings and registrations share one refund list and one banner."""
+
+    def test_a_booking_owed_back_is_listed_with_its_space(self, client, db):
+        slot, booking, receipt = _released(db, taken=True)
+        record_late_payment(db, receipt, payment_method="stripe_checkout")
+        cookies = _auth_cookie(_create_admin(db, "seat-lists"))
+
+        refunds = client.get("/api/v1/seats/refunds", cookies=cookies).json()["items"]
+        banner = client.get("/api/v1/seats/late-payments", cookies=cookies).json()["items"]
+
+        [refund] = [i for i in refunds if (i["kind"], i["seat_id"]) == ("booking", booking.id)]
+        assert refund["owner_id"] == slot.space_id
+        assert "Court 1" in refund["owner_name"]
+        assert refund["receipt_number"] == receipt.receipt_number
+        assert ("booking", booking.id) in [(i["kind"], i["seat_id"]) for i in banner]
+
+    def test_the_club_marks_it_returned_and_seen(self, client, db):
+        _, booking, receipt = _released(db, taken=True)
+        record_late_payment(db, receipt, payment_method="stripe_checkout")
+        cookies = _auth_cookie(_create_admin(db, "seat-actions"))
+
+        returned = client.post(
+            f"/api/v1/seats/booking/{booking.id}/refund-returned", cookies=cookies
+        )
+        seen = client.post(
+            f"/api/v1/seats/booking/{booking.id}/late-payment-seen", cookies=cookies
+        )
+
+        assert returned.status_code == 200, returned.text
+        assert seen.status_code == 204, seen.text
+        db.expire_all()
+        assert booking.refund_status == "returned"
+        assert booking.late_payment_seen_at is not None
+
+    def test_an_unknown_kind_is_refused(self, client, db):
+        _org(db)
+        resp = client.post(
+            "/api/v1/seats/membership/1/late-payment-seen",
+            cookies=_auth_cookie(_create_admin(db, "seat-kind")),
+        )
+
+        assert resp.status_code == 422

@@ -29,7 +29,7 @@ import { memberReceiptStatusLabel } from "@/features/receipts/lib/member-status"
 import { useSpaceStats } from "@/features/bookings/hooks/use-bookings";
 import { useAnnualSummary } from "@/features/reports/hooks/use-annual-summary";
 import { ReminderList } from "@/features/reminders/components/reminder-list";
-import { LatePaymentsBanner } from "@/features/activities/components/late-payments-banner";
+import { LatePaymentsBanner } from "@/features/seats/components/late-payments-banner";
 import { useFormatters } from "@/hooks/use-formatters";
 import type { RegistrationData } from "@/features/activities/services/registrations-api";
 import { REGISTRATION_STATUS_VARIANTS } from "@/lib/status-variants";

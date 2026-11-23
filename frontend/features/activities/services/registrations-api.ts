@@ -122,60 +122,6 @@ export async function confirmWithoutPayment(registrationId: number): Promise<Reg
   });
 }
 
-export interface RefundData {
-  registration_id: number;
-  activity_id: number;
-  activity_name: string;
-  member_name: string | null;
-  member_number: string | null;
-  cancelled_at: string | null;
-  refund_status: RefundStatus;
-  receipt_id: number;
-  receipt_number: string;
-  amount: number;
-  payment_method: string | null;
-  payment_date: string | null;
-  /** What finds the payment in the gateway's dashboard. */
-  gateway_reference: string | null;
-  refund_returned_at: string | null;
-  refund_credit_note_id: number | null;
-}
-
-export async function listRefunds(params: {
-  page?: number;
-  per_page?: number;
-  refund_status?: "due" | "returned";
-}): Promise<{ items: RefundData[]; meta: RegistrationPageMeta }> {
-  const sp = new URLSearchParams();
-  if (params.page) sp.set("page", String(params.page));
-  if (params.per_page) sp.set("per_page", String(params.per_page));
-  if (params.refund_status) sp.set("refund_status", params.refund_status);
-  const qs = sp.toString();
-  return apiClient(`/registrations/refunds${qs ? `?${qs}` : ""}`);
-}
-
-export async function markRefundReturned(registrationId: number): Promise<RefundData> {
-  return apiClient(`/registrations/${registrationId}/refund-returned`, { method: "POST" });
-}
-
-export interface LatePaymentData {
-  registration_id: number;
-  activity_id: number;
-  activity_name: string;
-  member_name: string | null;
-  status: string;
-  refund_status: RefundStatus;
-  late_payment_at: string;
-}
-
-export async function listUnseenLatePayments(): Promise<{ items: LatePaymentData[] }> {
-  return apiClient("/registrations/late-payments");
-}
-
-export async function acknowledgeLatePayment(registrationId: number): Promise<void> {
-  await apiClient(`/registrations/${registrationId}/late-payment-seen`, { method: "POST" });
-}
-
 export interface ListRegistrationsParams {
   activityId: number;
   page?: number;

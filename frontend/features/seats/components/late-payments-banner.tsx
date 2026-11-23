@@ -6,7 +6,8 @@ import { Link } from "@/lib/i18n/routing";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
-import { useAcknowledgeLatePayment, useUnseenLatePayments } from "../hooks/use-registrations";
+import { useAcknowledgeLatePayment, useUnseenLatePayments } from "../hooks/use-seats";
+import { seatOwnerHref } from "../services/seats-api";
 
 /**
  * Payments the gateway collected for seats already released. Urgent: only the
@@ -44,9 +45,9 @@ export function LatePaymentsBanner() {
       </div>
       <ul className="space-y-1">
         {items.map((item) => (
-          <li key={item.registration_id} className="flex flex-wrap items-center gap-2 text-sm">
-            <Link href={`/activities/${item.activity_id}`} className="font-medium hover:underline">
-              {item.member_name ?? "—"} · {item.activity_name}
+          <li key={`${item.kind}-${item.seat_id}`} className="flex flex-wrap items-center gap-2 text-sm">
+            <Link href={seatOwnerHref(item)} className="font-medium hover:underline">
+              {item.member_name ?? "—"} · {item.owner_name}
             </Link>
             <Badge variant={item.refund_status === "due" ? "destructive" : "secondary"}>
               {item.refund_status === "due"
@@ -58,7 +59,7 @@ export function LatePaymentsBanner() {
                 size="sm"
                 variant="ghost"
                 className="h-7"
-                onClick={() => acknowledge.mutate(item.registration_id)}
+                onClick={() => acknowledge.mutate({ kind: item.kind, seatId: item.seat_id })}
               >
                 {t("dashboard.latePayments.seen")}
               </Button>
@@ -66,7 +67,7 @@ export function LatePaymentsBanner() {
           </li>
         ))}
       </ul>
-      <Link href="/activities/refunds" className="text-sm underline">
+      <Link href="/refunds" className="text-sm underline">
         {t("dashboard.latePayments.viewRefunds")}
       </Link>
     </div>

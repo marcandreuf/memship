@@ -27,8 +27,8 @@ import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useLocaleDate } from "@/hooks/use-locale-date";
 import { useFormatters } from "@/hooks/use-formatters";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
-import { useMarkRefundReturned, useRefunds } from "@/features/activities/hooks/use-registrations";
-import type { RefundData } from "@/features/activities/services/registrations-api";
+import { useMarkRefundReturned, useRefunds } from "@/features/seats/hooks/use-seats";
+import { seatOwnerHref, type RefundData } from "@/features/seats/services/seats-api";
 
 type RefundFilter = "due" | "returned";
 
@@ -52,7 +52,7 @@ export default function RefundsPage() {
       confirmLabel: t("activities.refunds.markReturned"),
       onConfirm: async () => {
         try {
-          await markReturned.mutateAsync(refund.registration_id);
+          await markReturned.mutateAsync({ kind: refund.kind, seatId: refund.seat_id });
           toast.success(t("toast.success.updated"));
         } catch { /* global handler shows error toast */ }
       },
@@ -63,6 +63,8 @@ export default function RefundsPage() {
     r.payment_method
       ? t(`receipts.method${r.payment_method.split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join("")}`)
       : "—";
+  const kind = (r: RefundData) =>
+    t(r.kind === "booking" ? "activities.refunds.kindBooking" : "activities.refunds.kindRegistration");
   const when = (r: RefundData) => {
     const at = filter === "due" ? r.cancelled_at : r.refund_returned_at;
     return at ? shortDate(at) : "—";
@@ -93,7 +95,7 @@ export default function RefundsPage() {
       </Select>
 
       {isLoading ? (
-        <TableSkeleton rows={4} columns={6} />
+        <TableSkeleton rows={4} columns={7} />
       ) : isError ? (
         /* Not the empty state: a failed request read as "no refunds" and hid
            a missing proxy route for the whole of #591's validation. */
@@ -109,6 +111,7 @@ export default function RefundsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("activities.refunds.member")}</TableHead>
+                  <TableHead>{t("activities.refunds.kind")}</TableHead>
                   <TableHead>{t("activities.refunds.activity")}</TableHead>
                   <TableHead>{t("activities.refunds.amount")}</TableHead>
                   <TableHead>{t("activities.refunds.method")}</TableHead>
@@ -122,12 +125,13 @@ export default function RefundsPage() {
               <TableBody>
                 {data.items.map((r) => (
                   <TableRow
-                    key={r.registration_id}
+                    key={`${r.kind}-${r.seat_id}`}
                     className="cursor-pointer"
-                    onClick={() => router.push(`/activities/${r.activity_id}`)}
+                    onClick={() => router.push(seatOwnerHref(r))}
                   >
                     <TableCell className="font-medium">{r.member_name ?? "—"}</TableCell>
-                    <TableCell>{r.activity_name}</TableCell>
+                    <TableCell>{kind(r)}</TableCell>
+                    <TableCell>{r.owner_name}</TableCell>
                     <TableCell>{formatCurrency(r.amount)}</TableCell>
                     <TableCell>{method(r)}</TableCell>
                     <TableCell className="font-mono text-xs">{r.gateway_reference ?? r.receipt_number}</TableCell>
@@ -147,10 +151,12 @@ export default function RefundsPage() {
 
           <div className="space-y-3 md:hidden">
             {data.items.map((r) => (
-              <div key={r.registration_id} className="rounded-lg border p-4 space-y-1">
-                <Link href={`/activities/${r.activity_id}`} className="block">
+              <div key={`${r.kind}-${r.seat_id}`} className="rounded-lg border p-4 space-y-1">
+                <Link href={seatOwnerHref(r)} className="block">
                   <p className="font-medium">{r.member_name ?? "—"}</p>
-                  <p className="text-sm text-muted-foreground">{r.activity_name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {kind(r)} · {r.owner_name}
+                  </p>
                   <p className="text-sm">
                     {formatCurrency(r.amount)} · {method(r)} · {when(r)}
                   </p>
