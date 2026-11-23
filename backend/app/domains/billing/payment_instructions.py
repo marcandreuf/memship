@@ -64,13 +64,44 @@ def online_methods_available(db: Session) -> set[str]:
 def receipt_allowed_methods(receipt: Receipt) -> list[str] | None:
     """The methods a receipt may be paid by, or None when anything goes.
 
-    Only a pay-to-confirm seat is restricted, to what its activity accepts.
+    Only a pay-to-confirm seat is restricted, to what its owner accepts.
     """
+    owner = _pay_to_confirm_owner(receipt)
+    return None if owner is None else list(owner.payment_methods or [])
+
+
+def _pay_to_confirm_owner(receipt: Receipt):
+    """What a pay-to-confirm seat paid by this receipt belongs to, or None."""
     registration = receipt.registration
     activity = registration.activity if registration else None
-    if activity is None or activity.payment_flow != PAYMENT_FLOW_PAY_TO_CONFIRM:
-        return None
-    return list(activity.payment_methods or [])
+    if activity is not None and activity.payment_flow == PAYMENT_FLOW_PAY_TO_CONFIRM:
+        return activity
+    return None
+
+
+def unusable_methods(db: Session, methods: list[str]) -> list[str]:
+    """The methods the club cannot take today: each online method needs a live
+    provider offering it — SEPA direct debit is not one (#591) — and a transfer
+    needs an IBAN to send it to."""
+    org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
+    online = online_methods_available(db)
+    unusable = []
+    for method in methods:
+        if method in ONLINE_METHODS and method not in online:
+            unusable.append(method)
+        elif method == "transfer" and not (org and org.bank_iban):
+            unusable.append(method)
+    return unusable
+
+
+def seat_payment_instructions(db: Session, seat_owner, locale: str) -> PaymentInstructions:
+    """How the member may pay for a seat, from the methods its owner accepts.
+
+    ``seat_owner`` is what the seat belongs to and names its
+    ``payment_methods``: an activity, or a space (#603).
+    """
+    org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
+    return how_to_pay(db, org, locale, seat_owner.payment_methods or [])
 
 
 def bank_details_of(org: OrganizationSettings | None) -> str | None:

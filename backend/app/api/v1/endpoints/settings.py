@@ -13,10 +13,9 @@ from app.db.session import get_db
 from app.domains.audit.models import AuditLog
 from app.domains.auth.models import User
 from app.domains.billing.seats import (
-    SEAT_PAYMENT_TEMPLATES,
     SeatError,
-    auto_cancel_in_use,
     refuse_auto_cancel_without_notices,
+    required_seat_templates,
 )
 from app.domains.auth.sso_config import (
     PROVIDER_FIELDS,
@@ -632,11 +631,9 @@ def update_communications_config(
 
     # The reverse of the guard on switching auto-cancel on: while a seat can be
     # released for non-payment, the mails that warn its holder stay on (#591).
-    needed = sorted(
-        key for key, enabled in data.templates.items()
-        if key in SEAT_PAYMENT_TEMPLATES and not enabled
-    )
-    if needed and auto_cancel_in_use(db):
+    switching_off = {key for key, enabled in data.templates.items() if not enabled}
+    needed = sorted(switching_off & required_seat_templates(db)) if switching_off else []
+    if needed:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail={"code": "templates_needed_by_auto_cancel", "templates": needed},

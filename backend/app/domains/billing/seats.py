@@ -9,7 +9,7 @@ build on this package.
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
 
@@ -35,8 +35,9 @@ class SeatError(Exception):
         self.detail = {"code": code, **fields, "message": message} if code else message
 
 
-#: The mails that tell a member their seat is held until paid, about to be
-#: released, and released. Operational, and off unless the club switched them on.
+#: The mails that tell a member their activity seat is held until paid, about to
+#: be released, and released. Operational, and off unless the club switched them
+#: on. Each domain has its own, worded for what is held (#603).
 SEAT_PAYMENT_TEMPLATES = (
     "registration_pending_payment",
     "payment_deadline_reminder",
@@ -44,23 +45,47 @@ SEAT_PAYMENT_TEMPLATES = (
 )
 
 
-def switched_off_seat_templates(db: Session) -> list[str]:
-    """Which of the seat-payment mails the club has switched off."""
+def switched_off_seat_templates(
+    db: Session, templates: tuple[str, ...] = SEAT_PAYMENT_TEMPLATES
+) -> list[str]:
+    """Which of a domain's seat-payment mails the club has switched off."""
     from app.domains.mailing.policy import is_enabled
 
-    return [key for key in SEAT_PAYMENT_TEMPLATES if not is_enabled(db, key)]
+    return [key for key in templates if not is_enabled(db, key)]
 
 
-def refuse_auto_cancel_without_notices(db: Session) -> None:
+def refuse_auto_cancel_without_notices(
+    db: Session, templates: tuple[str, ...] = SEAT_PAYMENT_TEMPLATES
+) -> None:
     """Auto-cancel releases a seat its holder may not know is at risk. It may
     only be switched on while every mail that warns them is on."""
-    off = switched_off_seat_templates(db)
+    off = switched_off_seat_templates(db, templates)
     if off:
         raise SeatError(
             "Auto-cancel needs these emails switched on first: " + ", ".join(off),
             code="auto_cancel_needs_emails",
             templates=off,
         )
+
+
+def required_seat_templates(db: Session) -> set[str]:
+    """The seat-payment mails the club may not switch off right now: those of
+    every domain that can release a seat for non-payment."""
+    required: set[str] = set()
+    if auto_cancel_in_use(db):
+        required.update(SEAT_PAYMENT_TEMPLATES)
+    return required
+
+
+def receipt_due_date(db: Session, due_at: datetime | None) -> date:
+    """The seat's deadline, as a date in the club's timezone; without one, the
+    club's usual due days."""
+    from app.core.clock import org_timezone, org_today
+    from app.domains.billing.recurring_billing_service import membership_fee_due_days
+
+    if due_at is not None:
+        return due_at.astimezone(org_timezone(db)).date()
+    return org_today(db) + timedelta(days=membership_fee_due_days(db))
 
 
 def auto_cancel_in_use(db: Session) -> bool:
@@ -231,3 +256,14 @@ def expire_unpaid_seats(db: Session, now: datetime | None = None) -> int:
     for registration in expired:
         expire_unpaid_registration(db, registration)
     return len(expired)
+
+
+def remind_unpaid_seats(db: Session) -> int:
+    """Warn, once, each holder of a pending seat whose deadline is near.
+
+    Each domain decides when its seats are near enough. Returns how many were
+    warned. Does not commit.
+    """
+    from app.domains.activities.registration_service import remind_pending_deadlines
+
+    return remind_pending_deadlines(db)
