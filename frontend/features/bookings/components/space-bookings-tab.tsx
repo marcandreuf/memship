@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/table";
 import { TabContentSkeleton } from "@/components/ui/skeletons";
 import { Link } from "@/lib/i18n/routing";
+import { useFormatters } from "@/hooks/use-formatters";
 import { useLocaleDate } from "@/hooks/use-locale-date";
 import { BOOKING_STATUS_VARIANTS, RECEIPT_STATUS_VARIANTS } from "@/lib/status-variants";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
@@ -35,6 +36,8 @@ import {
 import type { AdminBooking, BookingStatus } from "../services/bookings-api";
 
 const STATUS_FILTERS: BookingStatus[] = ["booked", "pending", "waitlisted", "cancelled"];
+
+const timeRange = (b: AdminBooking) => `${b.start_time.slice(0, 5)}–${b.end_time.slice(0, 5)}`;
 
 export function SpaceBookingsTab({ spaceId }: { spaceId: number }) {
   const t = useTranslations();
@@ -75,28 +78,40 @@ export function SpaceBookingsTab({ spaceId }: { spaceId: number }) {
         <TabContentSkeleton />
       ) : !items.length ? (
         <p className="text-sm text-muted-foreground">
-          {t("bookings.adminBookings.noBookings")}
+          {status === "all"
+            ? t("bookings.adminBookings.noBookings")
+            : t("bookings.adminBookings.noBookingsFiltered")}
         </p>
       ) : (
-        <div className="table-compact overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t("bookings.adminBookings.member")}</TableHead>
-                <TableHead>{t("bookings.adminBookings.date")}</TableHead>
-                <TableHead>{t("bookings.adminBookings.time")}</TableHead>
-                <TableHead>{t("bookings.adminBookings.status")}</TableHead>
-                <TableHead>{t("bookings.adminBookings.payment")}</TableHead>
-                <TableHead>{t("common.actions")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.map((booking) => (
-                <BookingRow key={booking.id} spaceId={spaceId} booking={booking} />
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <>
+          <div className="hidden md:block table-compact overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("bookings.adminBookings.member")}</TableHead>
+                  <TableHead>{t("bookings.adminBookings.date")}</TableHead>
+                  <TableHead>{t("bookings.adminBookings.time")}</TableHead>
+                  <TableHead>{t("bookings.adminBookings.status")}</TableHead>
+                  <TableHead>{t("bookings.adminBookings.payment")}</TableHead>
+                  <TableHead>{t("common.actions")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {items.map((booking) => (
+                  <BookingRow key={booking.id} spaceId={spaceId} booking={booking} />
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* On a phone the table's payment column and actions sat off screen
+              behind a horizontal scroll; each booking is a card instead. */}
+          <div className="space-y-3 md:hidden">
+            {items.map((booking) => (
+              <BookingCard key={booking.id} spaceId={spaceId} booking={booking} />
+            ))}
+          </div>
+        </>
       )}
 
       {totalPages > 1 && (
@@ -126,13 +141,12 @@ export function SpaceBookingsTab({ spaceId }: { spaceId: number }) {
   );
 }
 
-function BookingRow({
-  spaceId,
-  booking,
-}: {
-  spaceId: number;
-  booking: AdminBooking;
-}) {
+/**
+ * What the club can do with one booking — confirm it without payment, cancel
+ * it, and decide about the money when it was paid — shared by the table row
+ * and the phone card so both offer exactly the same.
+ */
+function useBookingActions(spaceId: number, booking: AdminBooking) {
   const t = useTranslations();
   const { has } = usePermissions();
   const cancelMutation = useCancelBooking(spaceId);
@@ -140,8 +154,6 @@ function BookingRow({
   const [confirmDialog, confirmAction] = useConfirmDialog();
   const [cancellingPaid, setCancellingPaid] = useState(false);
   const paid = booking.receipt_status === "paid";
-
-  const time = `${booking.start_time.slice(0, 5)}–${booking.end_time.slice(0, 5)}`;
 
   async function cancel(keepPayment = false) {
     try {
@@ -183,69 +195,126 @@ function BookingRow({
     });
   }
 
+  const buttons = (
+    <div className="flex flex-wrap items-center gap-2">
+      {booking.status === "pending" && has("billing.write") && (
+        <Button size="sm" variant="outline" className="h-8 text-xs" onClick={handleWaive}>
+          {t("activities.registration.confirmWithoutPayment")}
+        </Button>
+      )}
+      {booking.status !== "cancelled" && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 text-xs"
+          disabled={cancelMutation.isPending}
+          onClick={handleCancel}
+        >
+          {t("bookings.adminBookings.cancel")}
+        </Button>
+      )}
+    </div>
+  );
+
+  const dialogs = (
+    <>
+      {confirmDialog}
+      <CancelPaidSeatDialog
+        open={cancellingPaid}
+        onOpenChange={setCancellingPaid}
+        title={t("bookings.adminBookings.paidTitle")}
+        description={t("activities.registration.keepPaymentDescription")}
+        confirmLabel={t("bookings.adminBookings.cancel")}
+        onConfirm={(keepPayment) => {
+          setCancellingPaid(false);
+          cancel(keepPayment);
+        }}
+      />
+    </>
+  );
+
+  return { buttons, dialogs, canOpenReceipt: has("billing.read") };
+}
+
+function BookingRow({ spaceId, booking }: { spaceId: number; booking: AdminBooking }) {
+  const { formatDate } = useFormatters();
+  const { buttons, dialogs, canOpenReceipt } = useBookingActions(spaceId, booking);
+
   return (
     <TableRow>
       <TableCell className="font-medium">{booking.member_name}</TableCell>
-      <TableCell>{booking.slot_date}</TableCell>
-      <TableCell>{time}</TableCell>
+      <TableCell>{formatDate(booking.slot_date)}</TableCell>
+      <TableCell>{timeRange(booking)}</TableCell>
       <TableCell>
-        <div className="flex flex-wrap items-center gap-1">
-          <Badge variant={BOOKING_STATUS_VARIANTS[booking.status] || "outline"}>
-            {t(`bookings.status.${booking.status}`)}
-          </Badge>
-          {booking.cancelled_cause === "payment_expired" && (
-            <span className="text-xs text-muted-foreground">
-              {t("bookings.adminBookings.expired")}
-            </span>
-          )}
-          {booking.late_payment_at && (
-            <Badge variant="destructive">{t("activities.registration.latePayment")}</Badge>
-          )}
-          {booking.refund_status === "due" && (
-            <Badge variant="outline">{t("activities.registration.refundDue")}</Badge>
-          )}
-          {booking.refund_status === "returned" && (
-            <Badge variant="secondary">{t("activities.registration.refundReturned")}</Badge>
-          )}
-        </div>
+        <StatusBadges booking={booking} />
       </TableCell>
       <TableCell>
-        <PaymentCell booking={booking} canOpenReceipt={has("billing.read")} />
+        <PaymentCell booking={booking} canOpenReceipt={canOpenReceipt} />
       </TableCell>
       <TableCell>
-        {confirmDialog}
-        <div className="flex flex-wrap items-center gap-2">
-          {booking.status === "pending" && has("billing.write") && (
-            <Button size="sm" variant="outline" className="h-8 text-xs" onClick={handleWaive}>
-              {t("activities.registration.confirmWithoutPayment")}
-            </Button>
-          )}
-          {booking.status !== "cancelled" && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 text-xs"
-              disabled={cancelMutation.isPending}
-              onClick={handleCancel}
-            >
-              {t("bookings.adminBookings.cancel")}
-            </Button>
-          )}
-        </div>
-        <CancelPaidSeatDialog
-          open={cancellingPaid}
-          onOpenChange={setCancellingPaid}
-          title={t("bookings.adminBookings.paidTitle")}
-          description={t("activities.registration.keepPaymentDescription")}
-          confirmLabel={t("bookings.adminBookings.cancel")}
-          onConfirm={(keepPayment) => {
-            setCancellingPaid(false);
-            cancel(keepPayment);
-          }}
-        />
+        {dialogs}
+        {buttons}
       </TableCell>
     </TableRow>
   );
+}
+
+function BookingCard({ spaceId, booking }: { spaceId: number; booking: AdminBooking }) {
+  const { formatDate } = useFormatters();
+  const { buttons, dialogs, canOpenReceipt } = useBookingActions(spaceId, booking);
+
+  return (
+    <div className="space-y-2 rounded-lg border p-3 text-sm">
+      {dialogs}
+      <div>
+        <p className="font-medium">{booking.member_name}</p>
+        <p className="text-muted-foreground">
+          {formatDate(booking.slot_date)} · {timeRange(booking)}
+        </p>
+      </div>
+      <StatusBadges booking={booking} />
+      <PaymentCell booking={booking} canOpenReceipt={canOpenReceipt} />
+      {buttons}
+    </div>
+  );
+}
+
+function StatusBadges({ booking }: { booking: AdminBooking }) {
+  const t = useTranslations();
+  const badges: ReactNode[] = [
+    <Badge key="status" variant={BOOKING_STATUS_VARIANTS[booking.status] || "outline"}>
+      {t(`bookings.status.${booking.status}`)}
+    </Badge>,
+  ];
+  if (booking.cancelled_cause === "payment_expired") {
+    badges.push(
+      <span key="expired" className="text-xs text-muted-foreground">
+        {t("bookings.adminBookings.expired")}
+      </span>
+    );
+  }
+  if (booking.late_payment_at) {
+    badges.push(
+      <Badge key="late" variant="destructive">
+        {t("activities.registration.latePayment")}
+      </Badge>
+    );
+  }
+  if (booking.refund_status === "due") {
+    badges.push(
+      <Badge key="refund" variant="outline">
+        {t("activities.registration.refundDue")}
+      </Badge>
+    );
+  }
+  if (booking.refund_status === "returned") {
+    badges.push(
+      <Badge key="returned" variant="secondary">
+        {t("activities.registration.refundReturned")}
+      </Badge>
+    );
+  }
+  return <div className="flex flex-wrap items-center gap-1">{badges}</div>;
 }
 
 /**
@@ -265,9 +334,16 @@ function PaymentCell({
   if (!receiptStatus || booking.receipt_id == null) {
     return <span className="text-sm text-muted-foreground">—</span>;
   }
-  const label = t(`receipts.status${receiptStatus.charAt(0).toUpperCase() + receiptStatus.slice(1)}`);
+  // A booked booking whose receipt was voided was confirmed without payment:
+  // "Cancelled" read as if the booking itself had been.
+  const waived = booking.status === "booked" && receiptStatus === "cancelled";
+  const label = waived
+    ? t("bookings.adminBookings.waived")
+    : t(`receipts.status${receiptStatus.charAt(0).toUpperCase() + receiptStatus.slice(1)}`);
   const badge = (
-    <Badge variant={RECEIPT_STATUS_VARIANTS[receiptStatus] || "outline"}>{label}</Badge>
+    <Badge variant={waived ? "secondary" : RECEIPT_STATUS_VARIANTS[receiptStatus] || "outline"}>
+      {label}
+    </Badge>
   );
   return (
     <div className="space-y-0.5">

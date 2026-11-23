@@ -131,7 +131,15 @@ export default function RefundsPage() {
                   >
                     <TableCell className="font-medium">{r.member_name ?? "—"}</TableCell>
                     <TableCell>{kind(r)}</TableCell>
-                    <TableCell>{r.owner_name}</TableCell>
+                    <TableCell>
+                      <Link
+                        href={seatOwnerHref(r)}
+                        className="hover:underline"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {r.owner_name}
+                      </Link>
+                    </TableCell>
                     <TableCell>{formatCurrency(r.amount)}</TableCell>
                     <TableCell>{method(r)}</TableCell>
                     <TableCell className="font-mono text-xs">{r.gateway_reference ?? r.receipt_number}</TableCell>

@@ -112,13 +112,15 @@
       "status": "Estado",
       "noBookings": "Aún no hay reservas.",
       "cancel": "Cancelar",
-      "confirmCancel": "¿Cancelar esta reserva? Se promocionará a un socio en lista de espera.",
-      "confirmCancelDescription": "El socio deja de tener la plaza.",
+      "confirmCancel": "¿Cancelar esta reserva?",
+      "confirmCancelDescription": "El socio deja de tener la plaza. Si su recibo estaba sin pagar, se anula. La plaza queda libre, y si hay lista de espera se le ofrece.",
       "paidTitle": "Esta reserva está pagada",
       "allStatuses": "Todos los estados",
       "payment": "Pago",
       "expired": "Cancelada por no pagar a tiempo",
-      "confirmWithoutPaymentDescription": "La reserva se confirma sin cobrar y su recibo se anula. Queda registrado en el historial."
+      "confirmWithoutPaymentDescription": "La reserva se confirma sin cobrar y su recibo se anula. Queda registrado en el historial.",
+      "waived": "Sin cobro",
+      "noBookingsFiltered": "No hay reservas con este estado."
     },
     "status": {
       "booked": "Reservada",

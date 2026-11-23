@@ -112,13 +112,15 @@
       "status": "Estat",
       "noBookings": "Encara no hi ha reserves.",
       "cancel": "Cancel·la",
-      "confirmCancel": "Vols cancel·lar aquesta reserva? Es promocionarà un soci de la llista d'espera.",
-      "confirmCancelDescription": "El soci deixa de tenir la plaça.",
+      "confirmCancel": "Vols cancel·lar aquesta reserva?",
+      "confirmCancelDescription": "El soci deixa de tenir la plaça. Si el seu rebut estava sense pagar, s'anul·la. La plaça queda lliure, i si hi ha llista d'espera se li ofereix.",
       "paidTitle": "Aquesta reserva està pagada",
       "allStatuses": "Tots els estats",
       "payment": "Pagament",
       "expired": "Cancel·lada per no pagar a temps",
-      "confirmWithoutPaymentDescription": "La reserva es confirma sense cobrar i el seu rebut s'anul·la. Queda registrat a l'historial."
+      "confirmWithoutPaymentDescription": "La reserva es confirma sense cobrar i el seu rebut s'anul·la. Queda registrat a l'historial.",
+      "waived": "Sense cobrament",
+      "noBookingsFiltered": "No hi ha reserves amb aquest estat."
     },
     "status": {
       "booked": "Reservada",

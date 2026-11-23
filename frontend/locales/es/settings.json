@@ -511,7 +511,7 @@
       "booking_auto_promotion_min_minutes": "Tiempo mínimo para dar la plaza sola (minutos)",
       "booking_auto_promotion_min_minutesDesc": "Si se libera una plaza con al menos este tiempo para pagar, pasa sola al primero de la lista de espera. Con menos, se avisa a toda la lista y se la queda quien reserve primero.",
       "autoCancel": "Liberar antes las reservas no pagadas",
-      "autoCancelDesc": "Además del margen antes de la franja, una reserva pendiente se cancela si no se paga en el plazo de abajo. Cada espacio puede cambiarlo; al activarlo, las reservas ya pendientes reciben el plazo desde ahora y se avisa a sus socios.",
+      "autoCancelDesc": "Además del margen antes de la franja, una reserva pendiente se cancela si no se paga en el plazo de abajo. Cada espacio puede cambiarlo; al activarlo, las reservas ya pendientes pasan a tener el plazo desde ahora (si es antes que el que tenían) y se avisa a sus socios.",
       "booking_auto_cancel_hours": "Plazo para pagar (horas)",
       "booking_auto_cancel_hoursDesc": "Desde que se reserva la plaza. Entre 1 y 8760."
     }

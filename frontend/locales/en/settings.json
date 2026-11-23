@@ -511,7 +511,7 @@
       "booking_auto_promotion_min_minutes": "Shortest time to hand a place out by itself (minutes)",
       "booking_auto_promotion_min_minutesDesc": "A place that frees with at least this long to pay goes to the first on the waiting list by itself. With less, the whole list is told and whoever books first takes it.",
       "autoCancel": "Release unpaid bookings earlier",
-      "autoCancelDesc": "Besides the margin before the slot, a pending booking is cancelled if it is not paid within the period below. Each space can change it; once on, bookings already pending get the deadline from now and their members are told.",
+      "autoCancelDesc": "Besides the margin before the slot, a pending booking is cancelled if it is not paid within the period below. Each space can change it; once on, bookings already pending get the deadline from now (if it is sooner than theirs) and their members are told.",
       "booking_auto_cancel_hours": "Time to pay (hours)",
       "booking_auto_cancel_hoursDesc": "From when the place is booked. Between 1 and 8760."
     }

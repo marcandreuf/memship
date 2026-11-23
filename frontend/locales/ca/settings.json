@@ -511,7 +511,7 @@
       "booking_auto_promotion_min_minutes": "Temps mínim per donar la plaça sola (minuts)",
       "booking_auto_promotion_min_minutesDesc": "Si s'allibera una plaça amb almenys aquest temps per pagar, passa sola al primer de la llista d'espera. Amb menys, s'avisa tota la llista i se la queda qui reservi primer.",
       "autoCancel": "Alliberar abans les reserves no pagades",
-      "autoCancelDesc": "A més del marge abans de la franja, una reserva pendent es cancel·la si no es paga dins el termini de sota. Cada espai ho pot canviar; en activar-ho, les reserves ja pendents reben el termini des d'ara i s'avisa els seus socis.",
+      "autoCancelDesc": "A més del marge abans de la franja, una reserva pendent es cancel·la si no es paga dins el termini de sota. Cada espai ho pot canviar; en activar-ho, les reserves ja pendents passen a tenir el termini des d'ara (si és abans del que tenien) i s'avisa els seus socis.",
       "booking_auto_cancel_hours": "Termini per pagar (hores)",
       "booking_auto_cancel_hoursDesc": "Des que es reserva la plaça. Entre 1 i 8760."
     }

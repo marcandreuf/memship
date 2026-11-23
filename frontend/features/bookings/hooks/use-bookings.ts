@@ -200,7 +200,9 @@ export function useCreateBooking() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (spaceSlotId: number) => createBooking(spaceSlotId),
-    onSuccess: () => {
+    // Settled, not only on success: a refusal (a slot now full, or too close
+    // to its start to be held until paid) means the week on screen is stale.
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: ["availability"] });
       qc.invalidateQueries({ queryKey: ["my-bookings"] });
     },

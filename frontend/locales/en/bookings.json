@@ -112,13 +112,15 @@
       "status": "Status",
       "noBookings": "No bookings yet.",
       "cancel": "Cancel",
-      "confirmCancel": "Cancel this booking? A waitlisted member will be promoted.",
-      "confirmCancelDescription": "The member loses their place.",
+      "confirmCancel": "Cancel this booking?",
+      "confirmCancelDescription": "The member loses their place. If their receipt was unpaid, it is voided. The place is freed, and offered to the waiting list if there is one.",
       "paidTitle": "This booking is paid",
       "allStatuses": "All statuses",
       "payment": "Payment",
       "expired": "Cancelled for not paying in time",
-      "confirmWithoutPaymentDescription": "The booking is confirmed without charging and its receipt is voided. It is recorded in the history."
+      "confirmWithoutPaymentDescription": "The booking is confirmed without charging and its receipt is voided. It is recorded in the history.",
+      "waived": "Not charged",
+      "noBookingsFiltered": "No bookings with this status."
     },
     "status": {
       "booked": "Booked",
