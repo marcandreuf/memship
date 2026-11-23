@@ -50,6 +50,10 @@ class BookingNotifier(Protocol):
 
     def send_admin_cancellation(self, note: BookingNotification) -> None: ...
 
+    def send_deadline_reminder(self, note: BookingNotification) -> None: ...
+
+    def send_cancelled_unpaid(self, note: BookingNotification) -> None: ...
+
 
 class EmailBookingNotifier:
     """Dispatches booking emails asynchronously via Celery. Never raises.
@@ -81,6 +85,12 @@ class EmailBookingNotifier:
         # One template covers all admin-initiated cases: single cancel, slot
         # removal, space removal.
         self._dispatch("cancelled", note)
+
+    def send_deadline_reminder(self, note: BookingNotification) -> None:
+        self._dispatch("deadline_reminder", note)
+
+    def send_cancelled_unpaid(self, note: BookingNotification) -> None:
+        self._dispatch("cancelled_unpaid", note)
 
     def _dispatch(self, kind: str, note: BookingNotification) -> None:
         if not note.to:
@@ -124,3 +134,7 @@ class NullBookingNotifier:
     def send_seat_available(self, note: BookingNotification) -> None: ...
 
     def send_admin_cancellation(self, note: BookingNotification) -> None: ...
+
+    def send_deadline_reminder(self, note: BookingNotification) -> None: ...
+
+    def send_cancelled_unpaid(self, note: BookingNotification) -> None: ...

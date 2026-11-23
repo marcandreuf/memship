@@ -27,6 +27,7 @@ from app.domains.bookings.billing import (
     void_booking_receipts,
 )
 from app.domains.bookings.payment import (
+    auto_cancel_hours,
     auto_promotion_min,
     booking_payment_details,
     cutoff_minutes,
@@ -265,10 +266,14 @@ def update_space(
         payload["allowed_membership_types"] = (
             payload["allowed_membership_types"] or None
         )
+    auto_cancel_was_on = auto_cancel_hours(db, space) is not None
     for key, value in payload.items():
         setattr(space, key, value)
     if space.close_time <= space.open_time:
         raise InvalidTimeRange("close_time must be after open_time")
+    if not auto_cancel_was_on and auto_cancel_hours(db, space) is not None:
+        # Its pending bookings had only the cut-off; they now have less time.
+        shorten_pending_deadlines(db, [space], notifier=notifier)
 
     if payload.keys() & {"open_time", "close_time"}:
         stranded = _slots_outside_hours(db, space)
@@ -1333,3 +1338,185 @@ def space_stats(db: Session) -> dict:
         "capacity": int(capacity),
         "occupancy_pct": round(held / capacity * 100, 1) if capacity else 0,
     }
+
+
+# --- Payment deadlines (#603) ----------------------------------------------
+
+#: How long before its deadline a pending booking's holder is warned, at most.
+#: A shorter window is warned halfway through it instead. The activity rule.
+DEADLINE_REMINDER_LEAD = timedelta(hours=24)
+
+
+def expired_pending_bookings(db: Session, now: datetime) -> list[Booking]:
+    """Pending bookings whose payment deadline has passed.
+
+    Locked, skipping rows another transaction holds: a payment booking one at
+    this moment wins, and the next sweep sees it booked.
+    """
+    return (
+        db.query(Booking)
+        .filter(
+            Booking.status == BookingStatus.PENDING,
+            Booking.payment_due_at.isnot(None),
+            Booking.payment_due_at < now,
+        )
+        .order_by(Booking.payment_due_at, Booking.id)
+        .with_for_update(skip_locked=True, of=Booking)
+        .all()
+    )
+
+
+def expire_unpaid_booking(
+    db: Session, booking: Booking, *, notifier: BookingNotifier | None = None
+) -> None:
+    """Release a booking left unpaid past its deadline, tell its holder, and
+    offer the seat on, which may release it in turn later: the cascade."""
+    notifier = notifier or NullBookingNotifier()
+    slot = (
+        db.query(SpaceSlot)
+        .filter(SpaceSlot.id == booking.space_slot_id)
+        .with_for_update()
+        .first()
+    )
+    booking.cancelled_cause = "payment_expired"
+    release_booking(db, booking)
+    member = _member_of(db, booking)
+    if member is not None:
+        notifier.send_cancelled_unpaid(
+            _notification(db, booking, slot, slot.space, member)
+        )
+    if _occupied(db, slot.id) < slot.capacity:
+        _on_seat_freed(db, slot, notifier)
+
+
+def remind_booking_deadlines(
+    db: Session, now: datetime, *, notifier: BookingNotifier | None = None
+) -> int:
+    """Warn, once, each holder of a pending booking whose deadline is near.
+
+    ``DEADLINE_REMINDER_LEAD`` before it, or halfway through a shorter window.
+    The window runs from when the hold began, at booking or promotion, not
+    from "now plus the auto-cancel hours": the cut-off before the slot can make
+    it shorter than those. Returns how many were warned. Does not commit.
+    """
+    notifier = notifier or NullBookingNotifier()
+    pending = (
+        db.query(Booking)
+        .filter(
+            Booking.status == BookingStatus.PENDING,
+            Booking.payment_due_at.isnot(None),
+            Booking.payment_due_at > now,
+            Booking.payment_reminder_sent_at.is_(None),
+        )
+        .all()
+    )
+    warned = 0
+    for booking in pending:
+        window = booking.payment_due_at - (booking.pending_since or booking.created_at)
+        lead = min(DEADLINE_REMINDER_LEAD, window / 2)
+        if now < booking.payment_due_at - lead:
+            continue
+        receipt = _live_receipt(db, booking)
+        member = _member_of(db, booking)
+        if receipt is None or member is None:
+            continue
+        booking.payment_reminder_sent_at = now
+        slot = booking.slot
+        notifier.send_deadline_reminder(
+            _notification(
+                db,
+                booking,
+                slot,
+                slot.space,
+                member,
+                payment=booking_payment_details(
+                    db, booking, slot.space, receipt, _locale(db)
+                ),
+            )
+        )
+        warned += 1
+    db.flush()
+    return warned
+
+
+def _live_receipt(db: Session, booking: Booking):
+    from app.domains.billing.models import Receipt
+
+    return (
+        db.query(Receipt)
+        .filter(
+            Receipt.booking_id == booking.id,
+            Receipt.is_active.is_(True),
+            Receipt.document_type == "invoice",
+            Receipt.status.in_(("emitted", "overdue")),
+        )
+        .first()
+    )
+
+
+def shorten_pending_deadlines(
+    db: Session,
+    spaces: list[Space],
+    *,
+    notifier: BookingNotifier | None = None,
+    now: datetime | None = None,
+) -> int:
+    """Bring forward the deadlines of pending bookings when auto-cancel comes on.
+
+    A booking held while auto-cancel was off has only the cut-off before its
+    slot. Each gets ``min(its deadline, now + hours)``, its receipt falls due by
+    then, and its holder is sent the pending mail again saying the deadline has
+    changed: a booking must not be released before its holder has been told it
+    can be. One whose new hold would be under the club's shortest keeps its
+    deadline. Returns how many were shortened. Does not commit.
+    """
+    from app.domains.billing.seats import receipt_due_date
+
+    notifier = notifier or NullBookingNotifier()
+    now = now or datetime.now(timezone.utc)
+    floor = min_hold(db)
+    db.flush()
+    shortened = 0
+    for space in spaces:
+        hours = auto_cancel_hours(db, space)
+        if hours is None:
+            continue
+        due_at = now + timedelta(hours=hours)
+        if due_at - now < floor:
+            continue
+        bookings = (
+            db.query(Booking)
+            .join(SpaceSlot, Booking.space_slot_id == SpaceSlot.id)
+            .filter(
+                SpaceSlot.space_id == space.id,
+                Booking.status == BookingStatus.PENDING,
+                Booking.payment_due_at > due_at,
+            )
+            .all()
+        )
+        for booking in bookings:
+            booking.payment_due_at = due_at
+            booking.payment_reminder_sent_at = None
+            receipt = _live_receipt(db, booking)
+            if receipt is not None:
+                receipt.due_date = receipt_due_date(db, due_at)
+            member = _member_of(db, booking)
+            if member is not None and receipt is not None:
+                notifier.send_pending_payment(
+                    _notification(
+                        db,
+                        booking,
+                        booking.slot,
+                        space,
+                        member,
+                        payment={
+                            **booking_payment_details(
+                                db, booking, space, receipt, _locale(db)
+                            ),
+                            "deadline_changed": True,
+                        },
+                    )
+                )
+            shortened += 1
+    db.flush()
+    return shortened

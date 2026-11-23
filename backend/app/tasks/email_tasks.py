@@ -8,7 +8,9 @@ from app.core.email import (
     EmailOutcome,
     EmailResult,
     send_booking_cancelled_email,
+    send_booking_cancelled_unpaid_email,
     send_booking_confirmation_email,
+    send_booking_deadline_reminder_email,
     send_booking_pending_payment_email,
     send_booking_promoted_email,
     send_booking_seat_available_email,
@@ -347,6 +349,14 @@ def send_booking_email_task(
         if kind == "pending_payment":
             return send_booking_pending_payment_email(
                 to, member_name, space_name, date_str, time_str, locale, **payment,
+            )
+        if kind == "deadline_reminder":
+            return send_booking_deadline_reminder_email(
+                to, member_name, space_name, date_str, time_str, locale, **payment,
+            )
+        if kind == "cancelled_unpaid":
+            return send_booking_cancelled_unpaid_email(
+                to, member_name, space_name, date_str, time_str, locale,
             )
         if kind == "cancelled":
             return send_booking_cancelled_email(

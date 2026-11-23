@@ -434,6 +434,16 @@
           "description": "Avisa el soci que la seva reserva queda guardada fins que pagui, amb l'import, l'hora límit i com pagar.",
           "warning": "És l'únic avís que li indica que ha de pagar. Sense ell, el soci no sabrà que la seva reserva depèn del pagament."
         },
+        "booking_deadline_reminder": {
+          "name": "Avís de termini d'una reserva",
+          "description": "Avisa el soci, poc abans de l'hora límit, que la seva reserva es cancel·larà si no la paga.",
+          "warning": "Sense aquest avís, el soci perdrà la reserva sense saber que estava a punt de caducar."
+        },
+        "booking_cancelled_unpaid": {
+          "name": "Reserva cancel·lada per manca de pagament",
+          "description": "Avisa el soci que la seva reserva s'ha cancel·lat perquè no es va pagar a temps.",
+          "warning": "Sense aquest avís, el soci es presentarà a una reserva que ja no té."
+        },
         "booking_seat_available": {
           "name": "Plaça alliberada a última hora",
           "description": "Avisa els qui esperen a la llista que s'ha alliberat una plaça massa a prop de l'inici per assignar-la sola: se la queda qui la reservi i pagui primer.",

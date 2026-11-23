@@ -1,0 +1,15 @@
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}Tu reserva de {{ space_name }} se ha cancelado por falta de pago.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Reserva cancelada por falta de pago</h1>
+<p style="{{ s.p }}">Hola {{ member_name }},</p>
+<p style="{{ s.p }}">Tu reserva de <strong>{{ space_name }}</strong> no se ha pagado a tiempo, así que se ha cancelado y la plaza ha quedado libre.</p>
+{% call c.panel() %}
+{{ c.data_row("Fecha", booking_date) }}
+{{ c.data_row("Horario", booking_time) }}
+{% endcall %}
+<p style="{{ s.p_last }}">Si todavía la quieres, puedes volver a reservarla desde tu portal de socio, si queda sitio.</p>
+{% endblock %}

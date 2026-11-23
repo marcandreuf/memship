@@ -261,8 +261,8 @@ def void_unpaid_receipts(db: Session, link_column, seat_id: int) -> None:
 def expire_unpaid_seats(db: Session, now: datetime | None = None) -> int:
     """Cancel every pending seat whose payment deadline has passed.
 
-    Hourly, because a deadline can be measured in hours, and also at the start of
-    the daily dunning pass, so an expiring seat's receipt is voided rather than
+    Every five minutes, because a booking's deadline can fall an hour before its
+    slot (#603), and also at the start of the daily dunning pass, so an expiring seat's receipt is voided rather than
     ever reaching ``mark_overdue``. Each domain says which of its seats are past
     their deadline and how to cancel one, which voids its receipt and gives the
     seat to the next in line.
@@ -274,11 +274,21 @@ def expire_unpaid_seats(db: Session, now: datetime | None = None) -> int:
         expired_pending_registrations,
     )
 
+    from app.domains.bookings.notifications import EmailBookingNotifier
+    from app.domains.bookings.service import (
+        expire_unpaid_booking,
+        expired_pending_bookings,
+    )
+
     now = now or datetime.now(timezone.utc)
     expired = expired_pending_registrations(db, now)
     for registration in expired:
         expire_unpaid_registration(db, registration)
-    return len(expired)
+    bookings = expired_pending_bookings(db, now)
+    notifier = EmailBookingNotifier(db)
+    for booking in bookings:
+        expire_unpaid_booking(db, booking, notifier=notifier)
+    return len(expired) + len(bookings)
 
 
 def remind_unpaid_seats(db: Session) -> int:
@@ -288,5 +298,9 @@ def remind_unpaid_seats(db: Session) -> int:
     warned. Does not commit.
     """
     from app.domains.activities.registration_service import remind_pending_deadlines
+    from app.domains.bookings.notifications import EmailBookingNotifier
+    from app.domains.bookings.service import remind_booking_deadlines
 
-    return remind_pending_deadlines(db)
+    return remind_pending_deadlines(db) + remind_booking_deadlines(
+        db, datetime.now(timezone.utc), notifier=EmailBookingNotifier(db)
+    )

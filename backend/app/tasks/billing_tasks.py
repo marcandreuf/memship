@@ -128,7 +128,7 @@ def scheduled_payment_reminders() -> dict:
 
 @celery.task
 def scheduled_seat_deadlines() -> dict:
-    """Hourly Beat entry point: release unpaid seats past their deadline, then
+    """Five-minute Beat entry point: release unpaid seats past their deadline, then
     warn the holders of those about to reach theirs.
 
     Independent of ``payment_reminders_enabled``: a club that turned auto-cancel

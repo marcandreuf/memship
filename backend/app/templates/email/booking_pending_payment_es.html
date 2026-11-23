@@ -4,9 +4,9 @@
 {% block preheader %}Tu reserva de {{ space_name }} queda guardada hasta que pagues.{% endblock %}
 
 {% block content %}
-<h1 style="{{ s.h1 }}">Reserva pendiente de pago</h1>
+<h1 style="{{ s.h1 }}">{% if deadline_changed %}Ahora tienes menos tiempo para pagar{% else %}Reserva pendiente de pago{% endif %}</h1>
 <p style="{{ s.p }}">Hola {{ member_name }},</p>
-<p style="{{ s.p }}">Te hemos guardado una plaza en <strong>{{ space_name }}</strong>. La reserva se confirmará cuando se registre el pago.</p>
+<p style="{{ s.p }}">{% if deadline_changed %}Tu reserva de <strong>{{ space_name }}</strong> sigue guardada, pero el club ha activado la cancelación automática y el plazo para pagarla se ha adelantado: si no pagas antes de la nueva hora límite, la reserva se cancelará.{% else %}Te hemos guardado una plaza en <strong>{{ space_name }}</strong>. La reserva se confirmará cuando se registre el pago.{% endif %}</p>
 {% call c.panel() %}
 {{ c.data_row("Fecha", booking_date) }}
 {{ c.data_row("Horario", booking_time) }}

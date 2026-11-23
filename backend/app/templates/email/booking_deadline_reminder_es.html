@@ -1,0 +1,15 @@
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}Tu reserva de {{ space_name }} se cancelará si no la pagas a tiempo.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">Tu reserva caduca pronto</h1>
+<p style="{{ s.p }}">Hola {{ member_name }},</p>
+<p style="{{ s.p }}">Todavía no hemos recibido el pago de tu reserva de <strong>{{ space_name }}</strong>.</p>
+{% call c.panel() %}
+{{ c.data_row("Fecha", booking_date) }}
+{{ c.data_row("Horario", booking_time) }}
+{% endcall %}
+{% include "_booking_payment_es.html" %}
+{% endblock %}
