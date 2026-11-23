@@ -896,7 +896,8 @@ def generate_membership_fees(
     """Bulk generate membership fee receipts for active members.
 
     Creates one receipt per active member based on their membership type's base_price.
-    Skips members who already have a receipt for the same billing period.
+    Members who already have a receipt for the same billing period are excluded by
+    the query rather than fetched and skipped.
 
     When ``billing_frequency`` is given (e.g. ``"monthly"``), only members whose
     membership type uses that frequency are billed — used by recurring billing to
@@ -935,29 +936,35 @@ def generate_membership_fees(
     )
     if billing_frequency is not None:
         query = query.filter(MembershipType.billing_frequency == billing_frequency)
-    members = query.all()
+
+    # Members already billed for this period never come back, rather than
+    # coming back and being skipped one query at a time. The run used to ask
+    # the database once per member whether a receipt existed, which is a round
+    # trip per member held behind the organisation-row lock (memship#459 §2).
+    #
+    # Exactly equivalent here: `uq_members_one_active_per_party` makes
+    # `party_id` unique among active members, so no two rows in this result can
+    # correlate to the same receipt, which is what the per-member check and its
+    # flush were protecting against.
+    already_billed = (
+        db.query(Receipt.id)
+        .filter(
+            Receipt.party_id == Member.party_id,
+            Receipt.origin == "membership",
+            Receipt.billing_period_start == data.billing_period_start,
+            Receipt.billing_period_end == data.billing_period_end,
+            Receipt.is_active.is_(True),
+            Receipt.status != "cancelled",
+        )
+        .exists()
+    )
+    members = query.filter(~already_billed).all()
 
     # Find or create membership concepts per membership type
     concept_cache: dict[int, Concept] = {}
     receipts: list[Receipt] = []
 
     for member, mtype, person in members:
-        # Skip if receipt already exists for this period
-        existing = (
-            db.query(Receipt)
-            .filter(
-                Receipt.party_id == member.party_id,
-                Receipt.origin == "membership",
-                Receipt.billing_period_start == data.billing_period_start,
-                Receipt.billing_period_end == data.billing_period_end,
-                Receipt.is_active.is_(True),
-                Receipt.status != "cancelled",
-            )
-            .first()
-        )
-        if existing:
-            continue
-
         # Get or create concept for this membership type
         if mtype.id not in concept_cache:
             concept_cache[mtype.id] = membership_concept(db, mtype, default_vat)

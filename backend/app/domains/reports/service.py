@@ -5,6 +5,8 @@ dashboard's central finance graph (current year: revenue + outstanding by
 month). Keeping the aggregation here means both surfaces read the same numbers.
 """
 
+from datetime import date
+
 from sqlalchemy import extract, func
 from sqlalchemy.orm import Session
 
@@ -31,6 +33,21 @@ UNPAID_STATUSES = ("new", "pending", "emitted", "overdue")
 SETTLED_MEMBER_STATUSES = ("cancelled", "expired")
 
 
+def _year_bounds(year: int) -> tuple[date, date]:
+    """Half-open [1 Jan, 1 Jan next year) bounds for a calendar year.
+
+    Every filter below ranges over these instead of testing
+    ``extract('year', col) == year``. Wrapping the column in a function means
+    the planner cannot use an index on it, so the dashboard and the annual
+    summary scanned whole tables on every load (memship#459 §5).
+
+    Equivalent for the two ``timestamptz`` columns as well: Postgres reads
+    ``extract('year', …)`` and a bare ``date`` bound in the same session time
+    zone, so the same rows fall inside the range.
+    """
+    return date(year, 1, 1), date(year + 1, 1, 1)
+
+
 def _buckets_float(rows) -> list[float]:
     buckets = [0.0] * 12
     for month, value in rows:
@@ -49,6 +66,8 @@ def _buckets_int(rows) -> list[int]:
 
 def annual_summary(db: Session, year: int) -> AnnualSummary:
     """Build the financial + membership summary for a single calendar year."""
+    start, end = _year_bounds(year)
+
     # Revenue collected per month — paid receipts, bucketed by payment date.
     revenue_rows = (
         db.query(
@@ -58,7 +77,8 @@ def annual_summary(db: Session, year: int) -> AnnualSummary:
         .filter(
             Receipt.is_active.is_(True),
             Receipt.status == "paid",
-            extract("year", Receipt.payment_date) == year,
+            Receipt.payment_date >= start,
+            Receipt.payment_date < end,
         )
         .group_by(extract("month", Receipt.payment_date))
         .all()
@@ -80,7 +100,8 @@ def annual_summary(db: Session, year: int) -> AnnualSummary:
             Receipt.is_active.is_(True),
             Receipt.status.in_(OUTSTANDING_STATUSES),
             Receipt.origin.notin_(NON_DEBT_ORIGINS),
-            extract("year", Receipt.emission_date) == year,
+            Receipt.emission_date >= start,
+            Receipt.emission_date < end,
         )
         .group_by(extract("month", Receipt.emission_date))
         .all()
@@ -89,7 +110,7 @@ def annual_summary(db: Session, year: int) -> AnnualSummary:
     # New members per month — bucketed by join date.
     new_member_rows = (
         db.query(extract("month", Member.joined_at), func.count(Member.id))
-        .filter(extract("year", Member.joined_at) == year)
+        .filter(Member.joined_at >= start, Member.joined_at < end)
         .group_by(extract("month", Member.joined_at))
         .all()
     )
@@ -101,7 +122,8 @@ def annual_summary(db: Session, year: int) -> AnnualSummary:
         db.query(func.count(Member.id))
         .filter(
             Member.status.in_(("cancelled", "expired")),
-            extract("year", Member.status_changed_at) == year,
+            Member.status_changed_at >= start,
+            Member.status_changed_at < end,
         )
         .scalar()
     ) or 0
@@ -117,7 +139,8 @@ def annual_summary(db: Session, year: int) -> AnnualSummary:
         .join(Registration, Registration.activity_id == Activity.id)
         .filter(
             Registration.status == "confirmed",
-            extract("year", Activity.starts_at) == year,
+            Activity.starts_at >= start,
+            Activity.starts_at < end,
         )
         .group_by(Activity.id, Activity.name)
         .order_by(func.count(Registration.id).desc(), Activity.name)
