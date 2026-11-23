@@ -2,6 +2,7 @@
 
 from unittest.mock import patch
 
+from app.core.clock import org_timezone
 from app.domains.activities.registration_service import (
     admin_change_status,
     register_member,
@@ -92,7 +93,7 @@ class TestSwitchingAutoCancelOnLater:
             db.commit()
 
         assert registration.payment_due_at is not None
-        assert receipt.due_date <= registration.payment_due_at.date()
+        assert receipt.due_date <= registration.payment_due_at.astimezone(org_timezone(db)).date()
         delay.assert_called_once()
         assert delay.call_args.kwargs["deadline"]
         # Not the first mail again: it says a deadline now applies.
