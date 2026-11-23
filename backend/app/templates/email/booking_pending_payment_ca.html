@@ -4,9 +4,9 @@
 {% block preheader %}La teva reserva de {{ space_name }} queda guardada fins que paguis.{% endblock %}
 
 {% block content %}
-<h1 style="{{ s.h1 }}">{% if deadline_changed %}Ara tens menys temps per pagar{% else %}Reserva pendent de pagament{% endif %}</h1>
+<h1 style="{{ s.h1 }}">{% if deadline_changed %}Ara tens menys temps per pagar{% elif promoted %}Hi ha una plaça per a tu{% else %}Reserva pendent de pagament{% endif %}</h1>
 <p style="{{ s.p }}">Hola {{ member_name }},</p>
-<p style="{{ s.p }}">{% if deadline_changed %}La teva reserva de <strong>{{ space_name }}</strong> continua guardada, però el club ha activat la cancel·lació automàtica i el termini per pagar-la s'ha avançat: si no pagues abans de la nova hora límit, la reserva es cancel·larà.{% else %}T'hem guardat una plaça a <strong>{{ space_name }}</strong>. La reserva es confirmarà quan es registri el pagament.{% endif %}</p>
+<p style="{{ s.p }}">{% if deadline_changed %}La teva reserva de <strong>{{ space_name }}</strong> continua guardada, però el club ha activat la cancel·lació automàtica i el termini per pagar-la s'ha avançat: si no pagues abans de la nova hora límit, la reserva es cancel·larà.{% elif promoted %}S'ha alliberat una plaça a <strong>{{ space_name }}</strong>, on eres a la llista d'espera, i te l'hem guardada. La reserva es confirmarà quan es registri el pagament.{% else %}T'hem guardat una plaça a <strong>{{ space_name }}</strong>. La reserva es confirmarà quan es registri el pagament.{% endif %}</p>
 {% call c.panel() %}
 {{ c.data_row("Data", booking_date) }}
 {{ c.data_row("Horari", booking_time) }}

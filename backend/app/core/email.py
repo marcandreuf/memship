@@ -1462,11 +1462,9 @@ def send_booking_promoted_email(
     booking_date: str,
     booking_time: str,
     locale: str = "es",
-    payment: dict | None = None,
 ) -> bool:
-    """Tell a member a spot opened and is theirs. ``payment`` (amount, deadline
-    and ways to pay) means it is held until paid rather than booked, and the
-    mail and its subject say so (#603)."""
+    """Tell a member a spot opened and they are now booked. A promotion to a
+    seat held until paid is told by ``booking_pending_payment`` instead (#603)."""
     return _send_templated(
         "booking_promoted",
         to,
@@ -1476,14 +1474,8 @@ def send_booking_promoted_email(
             "space_name": space_name,
             "booking_date": booking_date,
             "booking_time": booking_time,
-            **(payment or {}),
         },
         subject_args={"space": space_name},
-        subject=(
-            _get_subject("booking_pending_payment", locale, space=space_name)
-            if payment
-            else None
-        ),
     )
 
 
@@ -1562,11 +1554,14 @@ def send_booking_pending_payment_email(
     cash: bool = False,
     reference: str | None = None,
     deadline_changed: bool = False,
+    promoted: bool = False,
 ) -> bool:
     """Tell a member their booking is held until they pay it, and by when (#603).
 
     ``deadline_changed`` is the resend when auto-cancel brought the deadline
-    forward: the member already had this mail, and is told what changed."""
+    forward: the member already had this mail, and is told what changed.
+    ``promoted`` is a waitlister handed a freed seat: this mail, not
+    ``booking_promoted``, because it is the one a paid space cannot run without."""
     return _send_templated(
         "booking_pending_payment",
         to,
@@ -1584,6 +1579,7 @@ def send_booking_pending_payment_email(
             "cash": cash,
             "reference": reference,
             "deadline_changed": deadline_changed,
+            "promoted": promoted,
         },
         subject_args={"space": space_name},
     )

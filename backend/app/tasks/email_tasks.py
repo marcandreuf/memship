@@ -340,7 +340,6 @@ def send_booking_email_task(
         if kind == "promoted":
             return send_booking_promoted_email(
                 to, member_name, space_name, date_str, time_str, locale,
-                payment=payment,
             )
         if kind == "seat_available":
             return send_booking_seat_available_email(

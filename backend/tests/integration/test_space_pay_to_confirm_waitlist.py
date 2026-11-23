@@ -8,10 +8,14 @@ first to book takes it; under the shortest hold the seat is given up.
 
 from datetime import timedelta
 from decimal import Decimal
+from unittest.mock import patch
 
 import pytest
 
+from app.domains.billing.seats import BOOKING_SEAT_TEMPLATES
 from app.domains.bookings import service
+from app.domains.bookings.notifications import EmailBookingNotifier
+from app.tasks.email_tasks import send_booking_email_task
 from tests.integration.test_bookings_service import _member, _membership_type, _org
 from tests.integration.test_space_pay_to_confirm_booking import (
     Recorder,
@@ -61,7 +65,8 @@ class TestAtLeastThePromotionThreshold:
         [receipt] = _receipts(db, first)
         assert receipt.is_batchable is False
         [(kind, note)] = calls
-        assert kind == "send_promoted"
+        assert kind == "send_pending_payment"
+        assert note.payment["promoted"] is True
         assert note.payment["amount"] == "12.10"
 
 
@@ -165,3 +170,37 @@ class TestASeatWithNothingToPayUpfront:
         [(kind, note)] = calls
         assert kind == "send_promoted"
         assert note.payment is None
+
+
+class TestThePromotedMemberIsAlwaysTold:
+    """The mail that tells a promotee they must pay is one a paid space cannot
+    run without: seeded on, and refused to be switched off while a paid space
+    exists. booking_promoted is neither, and was what this used to send, so
+    with the default configuration a promotee was told nothing and released
+    at the deadline. Held end to end: the notifier, the task, the template."""
+
+    def test_through_a_template_a_paid_space_keeps_on(self, db):
+        _org(db)
+        slot, holder, [first] = _full_slot(db)
+        _leave(db, slot, at_least=timedelta(minutes=120, seconds=5))
+        queued = []
+
+        with patch(
+            "app.tasks.email_tasks.send_booking_email_task.delay",
+            side_effect=lambda **kw: queued.append(kw),
+        ):
+            service.cancel_booking(
+                db,
+                holder,
+                cancelled_by_user_id=None,
+                is_admin=True,
+                notifier=EmailBookingNotifier(),
+            )
+        [promotion] = [kw for kw in queued if kw["to"] == first.member.person.email]
+
+        with patch("app.core.email._send_templated", return_value=True) as send:
+            send_booking_email_task.run(**promotion)
+
+        template = send.call_args.args[0]
+        assert template in BOOKING_SEAT_TEMPLATES
+        assert send.call_args.args[3]["promoted"] is True

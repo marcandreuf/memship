@@ -1285,7 +1285,8 @@ def _promote_next(
     """Give the freed seat to the earliest eligible waitlister.
 
     With a ``payment_due_at`` the seat is held until paid, so the promotee is
-    ``pending`` and told how and by when to pay; without one they are booked.
+    ``pending`` and sent the pending-payment mail, saying how and by when to
+    pay; without one they are booked and sent ``booking_promoted``.
     Either way promotion bills like any other path that gives a seat — the one
     that is easiest to forget.
     """
@@ -1294,7 +1295,6 @@ def _promote_next(
         return None
     candidate, member = eligible[0]
     candidate.waitlisted_at = None
-    payment = None
     if payment_due_at is not None:
         candidate.status = BookingStatus.PENDING
         candidate.payment_due_at = payment_due_at
@@ -1302,14 +1302,27 @@ def _promote_next(
         candidate.payment_reminder_sent_at = None
         db.flush()
         receipt = _bill_pending(db, candidate, slot, space)
-        payment = booking_payment_details(db, candidate, space, receipt, _locale(db))
+        # The pending-payment mail, not booking_promoted: it is the one a club
+        # cannot run a paid space without (seeded on, and guarded), so a member
+        # holding a seat they must pay for is always told so.
+        notifier.send_pending_payment(
+            _notification(
+                db,
+                candidate,
+                slot,
+                space,
+                member,
+                payment={
+                    **booking_payment_details(db, candidate, space, receipt, _locale(db)),
+                    "promoted": True,
+                },
+            )
+        )
     else:
         candidate.status = BookingStatus.BOOKED
         db.flush()
         ensure_booking_receipt(db, candidate, slot, space)
-    notifier.send_promoted(
-        _notification(db, candidate, slot, space, member, payment=payment)
-    )
+        notifier.send_promoted(_notification(db, candidate, slot, space, member))
     return candidate
 
 

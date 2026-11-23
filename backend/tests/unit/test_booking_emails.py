@@ -61,9 +61,15 @@ def test_cash_alone_is_not_offered_as_an_alternative():
     assert "También" not in html
 
 
-@pytest.mark.parametrize("locale", ["es", "ca", "en"])
-def test_a_promotion_held_until_paid_says_how_to_pay(locale):
-    html = render_template("booking_promoted", locale, {**CONTEXT, **PAYMENT})
+@pytest.mark.parametrize(
+    "locale,heading",
+    [("es", "Hay una plaza para ti"), ("ca", "Hi ha una plaça per a tu"), ("en", "There is a place for you")],
+)
+def test_a_promotion_held_until_paid_says_so_and_how_to_pay(locale, heading):
+    html = render_template(
+        "booking_pending_payment", locale, {**CONTEXT, **PAYMENT, "promoted": True}
+    )
+    assert heading in html
     assert "24/07/2026 09:00" in html
     assert "my-receipts" in html
 

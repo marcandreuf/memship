@@ -4,16 +4,6 @@
 {% block preheader %}Se ha liberado una plaza en {{ space_name }}.{% endblock %}
 
 {% block content %}
-{%- if amount %}
-<h1 style="{{ s.h1 }}">Hay una plaza para ti</h1>
-<p style="{{ s.p }}">Hola {{ member_name }},</p>
-<p style="{{ s.p }}">Se ha liberado una plaza en <strong>{{ space_name }}</strong> y te la hemos guardado. La reserva se confirmará cuando se registre el pago.</p>
-{% call c.panel() %}
-{{ c.data_row("Fecha", booking_date) }}
-{{ c.data_row("Horario", booking_time) }}
-{% endcall %}
-{% include "_booking_payment_es.html" %}
-{%- else %}
 <h1 style="{{ s.h1 }}">¡Plaza confirmada!</h1>
 <p style="{{ s.p }}">Hola {{ member_name }},</p>
 <p style="{{ s.p }}">Se ha liberado una plaza y tu reserva de <strong>{{ space_name }}</strong> está ahora confirmada.</p>
@@ -22,5 +12,4 @@
 {{ c.data_row("Horario", booking_time) }}
 {% endcall %}
 <p style="{{ s.p_last }}">¡Nos vemos pronto!</p>
-{%- endif %}
 {% endblock %}

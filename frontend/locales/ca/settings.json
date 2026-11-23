@@ -431,7 +431,7 @@
         },
         "booking_pending_payment": {
           "name": "Reserva pendent de pagament",
-          "description": "Avisa el soci que la seva reserva queda guardada fins que pagui, amb l'import, l'hora límit i com pagar.",
+          "description": "Avisa el soci que la seva reserva queda guardada fins que pagui, en reservar o en aconseguir plaça des de la llista d'espera, amb l'import, l'hora límit i com pagar.",
           "warning": "És l'únic avís que li indica que ha de pagar. Sense ell, el soci no sabrà que la seva reserva depèn del pagament."
         },
         "booking_deadline_reminder": {
