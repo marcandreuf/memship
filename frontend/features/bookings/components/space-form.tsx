@@ -21,7 +21,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ClientApiError } from "@/lib/client-api";
-import { mapApiErrorsToForm } from "@/lib/errors";
+import { getErrorMessage, mapApiErrorsToForm } from "@/lib/errors";
 import { useMembershipTypes } from "@/features/members/hooks/use-members";
 import { useCreateSpace, useUpdateSpace } from "../hooks/use-bookings";
 import { updateSpace, type Space } from "../services/bookings-api";
@@ -153,7 +153,9 @@ export function SpaceForm({
         });
         return;
       }
-      mapApiErrorsToForm(error, form);
+      if (!mapApiErrorsToForm(error, form)) {
+        toast.error(getErrorMessage(error, t));
+      }
     }
   }
 

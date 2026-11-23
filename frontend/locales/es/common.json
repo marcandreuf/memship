@@ -170,6 +170,7 @@
     "collection_date_in_past": "La fecha de cobro ({due_date}) ya ha pasado. El banco rechaza un fichero cuya fecha de cobro es anterior a hoy ({today}). Elige una fecha futura.",
     "duplicate_booking": "Ya tienes esta franja reservada",
     "forbidden": "No tienes permiso para hacer esto",
+    "has_paid_bookings": "{count, plural, one {Hay una reserva} other {Hay # reservas}} con pagos: pagadas para una franja que aún no ha llegado, o canceladas con una devolución pendiente. Borrar las eliminaría junto con su registro. Cancélalas antes, o desactiva en lugar de borrar.",
     "invalid_iban": "El número de cuenta no es válido: sus dígitos de control no concuerdan con el resto. Compruébalo en el extracto bancario.",
     "invalid_time_range": "La hora de fin debe ser posterior a la de inicio",
     "mailing_test_no_recipient": "Indica una dirección a la que enviar el correo de prueba",

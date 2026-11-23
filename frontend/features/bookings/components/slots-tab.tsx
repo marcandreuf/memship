@@ -47,7 +47,7 @@ import { Badge } from "@/components/ui/badge";
 import { TabContentSkeleton } from "@/components/ui/skeletons";
 import { useFormatters } from "@/hooks/use-formatters";
 import { ClientApiError } from "@/lib/client-api";
-import { mapApiErrorsToForm } from "@/lib/errors";
+import { getErrorMessage, mapApiErrorsToForm } from "@/lib/errors";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
 import {
@@ -263,6 +263,8 @@ function SlotRow({
             }
           },
         });
+      } else {
+        toast.error(getErrorMessage(error, t));
       }
     }
   }

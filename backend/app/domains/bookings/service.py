@@ -173,6 +173,19 @@ class HasActiveBookings(BookingError):
         self.affected_members = affected_members
 
 
+class HasPaidBookings(BookingError):
+    """Deleting would erase bookings that carry money: paid ones whose slot is
+    still to come, and cancelled ones the club still owes back. Deleting
+    cascades the bookings away, and their ``refund_status`` with them. The club
+    cancels them first, which records what is owed, or deactivates instead
+    (#603).
+    """
+
+    def __init__(self, count: int):
+        super().__init__(f"{count} booking(s) carry a payment")
+        self.fields = {"count": count}
+
+
 class SlotsOutsideHours(BookingError):
     """Narrowing a space's hours would leave slots outside them."""
 
@@ -336,6 +349,46 @@ def _affected_active_bookings(db: Session, slot_ids: list[int]) -> list[Booking]
     )
 
 
+def _refuse_deleting_paid_bookings(db: Session, slot_ids: list[int]) -> None:
+    """Refuse to delete slots whose bookings carry money: one still to come that
+    was paid for, or a cancelled one whose refund is due. Checked before the
+    active-bookings confirmation, so the club is not asked to confirm a delete
+    that would be refused anyway."""
+    if not slot_ids:
+        return
+    from app.domains.billing.models import Receipt
+
+    db.flush()
+
+    today = datetime.now(org_timezone(db)).date()
+    paid = (
+        db.query(Receipt.id)
+        .filter(
+            Receipt.booking_id == Booking.id,
+            Receipt.is_active.is_(True),
+            Receipt.document_type == "invoice",
+            Receipt.status == "paid",
+        )
+        .exists()
+    )
+    count = (
+        db.query(func.count(Booking.id))
+        .join(SpaceSlot, Booking.space_slot_id == SpaceSlot.id)
+        .filter(
+            Booking.space_slot_id.in_(slot_ids),
+            (Booking.refund_status == "due")
+            | (
+                Booking.status.in_(OCCUPYING_STATUSES)
+                & (SpaceSlot.slot_date >= today)
+                & paid
+            ),
+        )
+        .scalar()
+    )
+    if count:
+        raise HasPaidBookings(count)
+
+
 def delete_space(
     db: Session,
     space: Space,
@@ -347,9 +400,11 @@ def delete_space(
     refuses when members hold active future bookings; with force, every
     affected member is notified and their unpaid receipts voided before the rows
     are gone, as cancelling each booking would. Deactivation via update is the
-    non-destructive default path."""
+    non-destructive default path. Never with bookings that carry money
+    (``HasPaidBookings``), forced or not."""
     notifier = notifier or NullBookingNotifier()
     slot_ids = [s.id for s in space.slots]
+    _refuse_deleting_paid_bookings(db, slot_ids)
     affected = _affected_active_bookings(db, slot_ids)
     if affected and not force:
         raise HasActiveBookings(len({b.party_id for b in affected}))
@@ -584,8 +639,10 @@ def delete_slot(
     """Destructively delete a slot (bookings cascade). Without force, refuses
     when members hold active bookings on it (today or future); with force,
     every affected member is notified and their unpaid receipts voided before
-    the rows are gone, as cancelling each booking would."""
+    the rows are gone, as cancelling each booking would. Never with bookings
+    that carry money (``HasPaidBookings``), forced or not."""
     notifier = notifier or NullBookingNotifier()
+    _refuse_deleting_paid_bookings(db, [slot.id])
     affected = _affected_active_bookings(db, [slot.id])
     if affected and not force:
         raise HasActiveBookings(len({b.party_id for b in affected}))

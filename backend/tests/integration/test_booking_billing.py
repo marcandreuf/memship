@@ -14,6 +14,8 @@ charge back to a seat the member no longer has (#294).
 from datetime import date, time, timedelta
 from decimal import Decimal
 
+import pytest
+
 from sqlalchemy import text
 
 from app.domains.billing.models import Concept, Receipt
@@ -313,7 +315,9 @@ def test_forced_slot_delete_voids_the_unpaid_receipt(db):
     assert "Court 1" in receipt.description
 
 
-def test_forced_slot_delete_leaves_a_paid_receipt_standing(db):
+def test_slot_delete_leaves_a_paid_receipt_standing(db):
+    """A paid booking blocks the delete until the club settles it (#603); once
+    it is cancelled, the receipt outlives the slot."""
     _org(db)
     space = _space(db, price=PRICE)
     slot = _slot(db, space)
@@ -322,6 +326,11 @@ def test_forced_slot_delete_leaves_a_paid_receipt_standing(db):
     mark_receipt_paid(db, receipt, payment_method="cash")
     receipt_id = receipt.id
 
+    with pytest.raises(service.HasPaidBookings):
+        service.delete_slot(db, slot, force=True)
+    service.cancel_booking(
+        db, booking, cancelled_by_user_id=None, is_admin=True, keep_payment=True
+    )
     service.delete_slot(db, slot, force=True)
     db.flush()
     db.expire_all()
@@ -347,7 +356,9 @@ def test_forced_space_delete_voids_the_unpaid_receipt(db):
     assert receipt.status == "cancelled"
 
 
-def test_forced_space_delete_leaves_a_paid_receipt_standing(db):
+def test_space_delete_leaves_a_paid_receipt_standing(db):
+    """As for a slot: refused while the booking carries money, and the receipt
+    outlives the space once it is settled (#603)."""
     _org(db)
     space = _space(db, price=PRICE)
     slot = _slot(db, space)
@@ -356,6 +367,11 @@ def test_forced_space_delete_leaves_a_paid_receipt_standing(db):
     mark_receipt_paid(db, receipt, payment_method="cash")
     receipt_id = receipt.id
 
+    with pytest.raises(service.HasPaidBookings):
+        service.delete_space(db, space, force=True)
+    service.cancel_booking(
+        db, booking, cancelled_by_user_id=None, is_admin=True, keep_payment=True
+    )
     service.delete_space(db, space, force=True)
     db.flush()
     db.expire_all()

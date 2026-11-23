@@ -171,6 +171,8 @@ def delete_space(
     space = _load_space_or_404(db, space_id)
     try:
         service.delete_space(db, space, force=force, notifier=_notifier)
+    except service.HasPaidBookings as exc:
+        raise _booking_error(exc, status.HTTP_422_UNPROCESSABLE_ENTITY)
     except service.HasActiveBookings as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -269,6 +271,8 @@ def delete_slot(
         raise HTTPException(status_code=404, detail="Slot not found")
     try:
         service.delete_slot(db, slot, force=force, notifier=_notifier)
+    except service.HasPaidBookings as exc:
+        raise _booking_error(exc, status.HTTP_422_UNPROCESSABLE_ENTITY)
     except service.HasActiveBookings as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,

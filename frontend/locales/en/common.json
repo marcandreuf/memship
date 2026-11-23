@@ -170,6 +170,7 @@
     "collection_date_in_past": "The collection date ({due_date}) has passed. A bank rejects a file whose collection date is earlier than today ({today}). Choose a future date.",
     "duplicate_booking": "You already hold this slot",
     "forbidden": "You don't have permission to do this",
+    "has_paid_bookings": "{count, plural, one {There is a booking} other {There are # bookings}} carrying a payment: paid for a slot still to come, or cancelled with a refund due. Deleting would erase them along with that record. Cancel them first, or deactivate instead of deleting.",
     "invalid_iban": "That account number is not valid: its check digits do not agree with the rest. Check it against the bank statement.",
     "invalid_time_range": "The end time must be after the start time",
     "mailing_test_no_recipient": "Enter an address to send the test email to",

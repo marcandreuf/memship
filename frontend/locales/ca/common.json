@@ -170,6 +170,7 @@
     "collection_date_in_past": "La data de cobrament ({due_date}) ja ha passat. El banc rebutja un fitxer amb una data de cobrament anterior a avui ({today}). Tria una data futura.",
     "duplicate_booking": "Ja tens aquesta franja reservada",
     "forbidden": "No tens permís per fer això",
+    "has_paid_bookings": "{count, plural, one {Hi ha una reserva} other {Hi ha # reserves}} amb pagaments: pagades per a una franja que encara no ha arribat, o cancel·lades amb una devolució pendent. Esborrar-les les eliminaria juntament amb el seu registre. Cancel·la-les abans, o desactiva en lloc d'esborrar.",
     "invalid_iban": "El número de compte no és vàlid: els seus dígits de control no concorden amb la resta. Comprova'l a l'extracte bancari.",
     "invalid_time_range": "L'hora de fi ha de ser posterior a la d'inici",
     "mailing_test_no_recipient": "Indica una adreça on enviar el correu de prova",
