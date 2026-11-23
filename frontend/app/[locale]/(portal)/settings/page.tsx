@@ -43,6 +43,7 @@ import {
 } from "@/features/settings/hooks/use-settings";
 import { MembershipTypesSettings } from "@/features/settings/components/membership-types-settings";
 import { ActivityPaymentsSettings } from "@/features/settings/components/activity-payments-settings";
+import { SpacePaymentsSettings } from "@/features/settings/components/space-payments-settings";
 import { PaymentsSettings } from "@/features/settings/components/payments-settings";
 import { LogoUpload } from "@/features/settings/components/logo-upload";
 import { GenderOptionsSettings } from "@/features/settings/components/gender-options-settings";
@@ -491,6 +492,7 @@ export default function SettingsPage() {
             <TabsContent value="payments-general" className="space-y-6">
               <PaymentsSettings />
               <ActivityPaymentsSettings />
+              <SpacePaymentsSettings />
             </TabsContent>
             <TabsContent value="payment-providers">
               <PaymentProvidersSettings />

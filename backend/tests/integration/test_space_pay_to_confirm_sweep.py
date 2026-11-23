@@ -168,3 +168,18 @@ class TestSwitchingAutoCancelOn:
         db.expire_all()
         assert following.payment_due_at < before[0]
         assert keeps.payment_due_at == before[1]
+
+
+class TestSwitchingAutoCancelOnThroughTheSpace:
+    def test_the_space_update_brings_deadlines_forward(self, db):
+        _org(db)
+        slot, booking, _ = _pending(db)
+        before = booking.payment_due_at
+
+        service.update_space(
+            db,
+            slot.space,
+            service.SpaceUpdate(auto_cancel_enabled=True, auto_cancel_hours=6),
+        )
+
+        assert booking.payment_due_at < before

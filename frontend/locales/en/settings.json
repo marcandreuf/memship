@@ -500,6 +500,20 @@
       "autoCancelDesc": "If the member does not pay in time, the registration is cancelled and the seat is released. Each activity can change this; switching it on gives seats already pending the deadline from now, and their members are told.",
       "hours": "Time to pay (hours)",
       "hoursDesc": "From when the seat is held. Between 1 and 8760."
+    },
+    "spacePayments": {
+      "title": "Paid bookings",
+      "intro": "How bookings are paid in spaces on the pay-to-confirm flow. These are separate from the activity values: a slot and an event are not paid on the same clock.",
+      "booking_payment_cutoff_minutes": "Margin before the slot (minutes)",
+      "booking_payment_cutoff_minutesDesc": "A pending booking must be paid at the latest this long before its slot starts. 0 if you take cash at the door and mark it paid before the start.",
+      "booking_min_hold_minutes": "Shortest time to pay (minutes)",
+      "booking_min_hold_minutesDesc": "A booking that would have less time than this to be paid is refused instead of created.",
+      "booking_auto_promotion_min_minutes": "Shortest time to hand a place out by itself (minutes)",
+      "booking_auto_promotion_min_minutesDesc": "A place that frees with at least this long to pay goes to the first on the waiting list by itself. With less, the whole list is told and whoever books first takes it.",
+      "autoCancel": "Release unpaid bookings earlier",
+      "autoCancelDesc": "Besides the margin before the slot, a pending booking is cancelled if it is not paid within the period below. Each space can change it; once on, bookings already pending get the deadline from now and their members are told.",
+      "booking_auto_cancel_hours": "Time to pay (hours)",
+      "booking_auto_cancel_hoursDesc": "From when the place is booked. Between 1 and 8760."
     }
   }
 }

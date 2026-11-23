@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   cancelBooking,
+  confirmBookingWithoutPayment,
   createBooking,
   createSlot,
   createSpace,
@@ -11,6 +12,7 @@ import {
   getAvailability,
   getMyBookings,
   getSpace,
+  getSpacePaymentOptions,
   getSpaceStats,
   listAvailableSpaces,
   listSlots,
@@ -139,15 +141,36 @@ export function useSpaceBookings(
   });
 }
 
+function invalidateBookings(qc: ReturnType<typeof useQueryClient>, spaceId?: number) {
+  qc.invalidateQueries({ queryKey: ["space-bookings", spaceId] });
+  qc.invalidateQueries({ queryKey: ["my-bookings"] });
+  qc.invalidateQueries({ queryKey: ["availability"] });
+  qc.invalidateQueries({ queryKey: ["receipts"] });
+  qc.invalidateQueries({ queryKey: ["refunds"] });
+}
+
 export function useCancelBooking(spaceId?: number) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: cancelBooking,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["space-bookings", spaceId] });
-      qc.invalidateQueries({ queryKey: ["my-bookings"] });
-      qc.invalidateQueries({ queryKey: ["availability"] });
-    },
+    mutationFn: ({ id, keepPayment }: { id: number; keepPayment?: boolean }) =>
+      cancelBooking(id, keepPayment),
+    onSuccess: () => invalidateBookings(qc, spaceId),
+  });
+}
+
+export function useConfirmBookingWithoutPayment(spaceId?: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: confirmBookingWithoutPayment,
+    onSuccess: () => invalidateBookings(qc, spaceId),
+  });
+}
+
+export function useSpacePaymentOptions(enabled = true) {
+  return useQuery({
+    queryKey: ["space-payment-options"],
+    queryFn: getSpacePaymentOptions,
+    enabled,
   });
 }
 
@@ -184,9 +207,10 @@ export function useCreateBooking() {
   });
 }
 
-export function useMyBookings(scope: "upcoming" | "past") {
+export function useMyBookings(scope: "upcoming" | "past", enabled = true) {
   return useQuery({
     queryKey: ["my-bookings", scope],
     queryFn: () => getMyBookings(scope),
+    enabled,
   });
 }

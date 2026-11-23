@@ -20,7 +20,11 @@
       "noMembershipType": "Este espacio está reservado a determinados tipos de socio y tu ficha no tiene ninguno asignado. Escribe al club para que te asigne uno.",
       "price": "Esta reserva cuesta {price} antes de impuestos; el recibo mostrará el importe final.",
       "priceOnPromotion": "Si queda una plaza libre, la reserva se confirma automáticamente y se cobran {price} antes de impuestos; el recibo mostrará el importe final.",
-      "refundPolicy": "Si cancelas antes de pagar, el cargo se anula con la reserva. Una vez pagado, el importe no se devuelve automáticamente: ni al cancelar, ni si el club elimina la franja. Cualquier devolución se acuerda directamente con el club."
+      "refundPolicy": "Si cancelas antes de pagar, el recibo se anula con la reserva. Si cancelas una reserva ya pagada, el club tiene que devolverte el importe; la devolución la hace el club directamente.",
+      "heldOnPromotion": "Si queda una plaza libre a tiempo, te la guardaremos hasta que la pagues ({price} antes de impuestos); el recibo mostrará el importe final.",
+      "heldUntil": "La reserva queda guardada hasta que la pagues: tienes hasta el {date} para pagarla; si no, se liberará.",
+      "pendingToast": "Reserva guardada: paga el recibo para confirmarla",
+      "tooLate": "Ya no da tiempo"
     },
     "my": {
       "cancelClosed": "Fuera de plazo para cancelar",
@@ -31,7 +35,10 @@
       "cancel": "Cancelar",
       "keep": "Mantener",
       "confirmCancel": "¿Cancelar esta reserva?",
-      "confirmCancelDescription": "La plaza queda libre para otro socio. Si cambias de idea, tendrás que reservarla de nuevo."
+      "confirmCancelDescription": "La plaza queda libre para otro socio. Si cambias de idea, tendrás que reservarla de nuevo.",
+      "payBy": "Paga antes del {date} o la reserva se liberará.",
+      "pendingNotice": "Tu reserva está guardada hasta que la pagues.",
+      "pendingTitle": "Reservas pendientes de pago"
     },
     "spaces": {
       "title": "Espacios",
@@ -106,12 +113,17 @@
       "noBookings": "Aún no hay reservas.",
       "cancel": "Cancelar",
       "confirmCancel": "¿Cancelar esta reserva? Se promocionará a un socio en lista de espera.",
-      "confirmCancelDescription": "El socio deja de tener la plaza."
+      "confirmCancelDescription": "El socio deja de tener la plaza.",
+      "allStatuses": "Todos los estados",
+      "payment": "Pago",
+      "expired": "Cancelada por no pagar a tiempo",
+      "confirmWithoutPaymentDescription": "La reserva se confirma sin cobrar y su recibo se anula. Queda registrado en el historial."
     },
     "status": {
       "booked": "Reservada",
       "waitlisted": "En lista de espera",
-      "cancelled": "Cancelada"
+      "cancelled": "Cancelada",
+      "pending": "Pendiente de pago"
     },
     "weekdays": {
       "0": "Lun",
@@ -133,6 +145,26 @@
       "invalidNumber": "Introduce un número entero entre {min} y {max}.",
       "waitlist": "Activar lista de espera",
       "waitlistDesc": "Cuando una franja está completa, permite a los socios apuntarse a una lista de espera y ser promocionados automáticamente."
+    },
+    "legacy": {
+      "tooltip": "Este espacio usa el flujo anterior: las reservas se confirman al momento y el recibo se cobra después. Puedes pasarlo al flujo nuevo desde su ficha, y entonces las reservas nuevas quedarán pendientes hasta que se paguen."
+    },
+    "payment": {
+      "legacyNotice": "Este espacio confirma las reservas al momento y el recibo se cobra después. Si lo cambias al flujo nuevo, las reservas de pago quedarán pendientes hasta que se paguen. Las reservas ya hechas no cambian.",
+      "switch": "Cambiar a pago para confirmar",
+      "switchTitle": "¿Cambiar al flujo de pago para confirmar?",
+      "switchDescription": "A partir de ahora, una reserva de pago quedará pendiente hasta que se pague y se cancelará si no se paga a tiempo. Las reservas ya hechas no cambian. Este cambio no se puede deshacer.",
+      "switchConfirm": "Cambiar",
+      "switchPending": "Al guardar, el espacio pasará al flujo de pago para confirmar. Elige las formas de pago que acepta.",
+      "methodsHint": "Cómo puede pagar el socio una reserva de pago. Un espacio con precio no se puede guardar sin al menos una.",
+      "emailsOff": "Un espacio de pago cancela las reservas que no se pagan a tiempo, así que antes deben estar activados estos correos: {templates}.",
+      "deadlineHint": "Toda reserva pendiente debe pagarse antes de que empiece la franja, con el margen que el club fija en Configuración › Pagos. La cancelación automática puede adelantar ese plazo.",
+      "autoCancel": "Liberar antes las reservas no pagadas",
+      "autoCancelOn": "Sí, en este espacio",
+      "autoCancelOff": "No, solo al llegar el margen antes de la franja",
+      "autoCancelOnHours": "Sí, en este espacio · {hours} h",
+      "autoCancelInheritRead": "Como el club",
+      "autoCancelStartsNow": "Al activarla, las reservas ya pendientes pasan a tener el plazo desde ahora (si es antes que el que tenían) y se avisa a sus socios."
     }
   }
 }

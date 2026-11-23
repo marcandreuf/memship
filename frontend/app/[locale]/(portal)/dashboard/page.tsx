@@ -26,11 +26,12 @@ import { useMyRegistrations, useRegistrationStats } from "@/features/activities/
 import { useActivity } from "@/features/activities/hooks/use-activities";
 import { useReceiptStats, useMyReceipts } from "@/features/receipts/hooks/use-receipts";
 import { memberReceiptStatusLabel } from "@/features/receipts/lib/member-status";
-import { useSpaceStats } from "@/features/bookings/hooks/use-bookings";
+import { useMyBookings, useSpaceStats } from "@/features/bookings/hooks/use-bookings";
 import { useAnnualSummary } from "@/features/reports/hooks/use-annual-summary";
 import { ReminderList } from "@/features/reminders/components/reminder-list";
 import { LatePaymentsBanner } from "@/features/seats/components/late-payments-banner";
 import { useFormatters } from "@/hooks/use-formatters";
+import { useLocaleDate } from "@/hooks/use-locale-date";
 import type { RegistrationData } from "@/features/activities/services/registrations-api";
 import { REGISTRATION_STATUS_VARIANTS } from "@/lib/status-variants";
 
@@ -68,6 +69,7 @@ const REGISTRATION_COLORS: Record<string, string> = {
 
 const BOOKING_COLORS: Record<string, string> = {
   booked: "hsl(142, 71%, 45%)",
+  pending: "hsl(38, 92%, 50%)",
   waitlisted: "hsl(48, 96%, 53%)",
   cancelled: "hsl(0, 0%, 64%)",
 };
@@ -405,6 +407,7 @@ export default function DashboardPage() {
   const { isStaff: isAdmin, has } = usePermissions();
   const { data: settings } = useSettings();
   const { formatCurrency, formatDate } = useFormatters();
+  const { shortDateTime } = useLocaleDate();
 
   // Each card asks only for what its permission covers. Without this a
   // treasurer (billing only) would fire nine guaranteed 403s on page load.
@@ -443,6 +446,10 @@ export default function DashboardPage() {
     !isAdmin ? { per_page: 5, upcoming: true } : {},
     !isAdmin && isMember
   );
+  // Bookings held until paid (#603): what the member must do first.
+  const canBook = Boolean(settings?.features?.bookings) && has("self.bookings.read");
+  const { data: myBookings } = useMyBookings("upcoming", !isAdmin && isMember && canBook);
+  const pendingBookings = (myBookings ?? []).filter((b) => b.status === "pending");
   const myReceiptsParams = useMemo(() => {
     const p = new URLSearchParams();
     p.set("per_page", "5");
@@ -485,6 +492,7 @@ export default function DashboardPage() {
 
   const bookingCounters = useMemo<CounterItem[]>(() => [
     { label: t("bookings.status.booked"), value: spaceStats?.booked ?? 0, color: BOOKING_COLORS.booked },
+    { label: t("bookings.status.pending"), value: spaceStats?.pending ?? 0, color: BOOKING_COLORS.pending },
     { label: t("bookings.status.waitlisted"), value: spaceStats?.waitlisted ?? 0, color: BOOKING_COLORS.waitlisted },
     { label: t("bookings.status.cancelled"), value: spaceStats?.cancelled ?? 0, color: BOOKING_COLORS.cancelled },
   ], [spaceStats, t]);
@@ -595,6 +603,39 @@ export default function DashboardPage() {
               </>
             )}
           </p>
+
+          {pendingBookings.length > 0 && (
+            <Card className="py-3 gap-1">
+              <CardHeader className="px-4">
+                <CardTitle className="text-base">{t("bookings.my.pendingTitle")}</CardTitle>
+              </CardHeader>
+              <CardContent className="px-4">
+                <div className="divide-y">
+                  {pendingBookings.map((b) => (
+                    <div key={b.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
+                      <div className="min-w-0">
+                        <p className="font-medium">{b.space_name}</p>
+                        <p className="text-muted-foreground">
+                          {formatDate(b.slot_date)} · {b.start_time.slice(0, 5)}–{b.end_time.slice(0, 5)}
+                        </p>
+                        {b.payment_due_at && (
+                          <p className="text-xs text-amber-700 dark:text-amber-300">
+                            {t("bookings.my.payBy", { date: shortDateTime(b.payment_due_at) })}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="warning">{t("bookings.status.pending")}</Badge>
+                        <Link href="/my-receipts" className="text-sm text-primary hover:underline">
+                          {t("receipts.payNow")}
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Upcoming activities */}
           <Card className="py-3 gap-1">

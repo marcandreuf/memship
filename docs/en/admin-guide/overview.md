@@ -1,5 +1,5 @@
 <!-- source: es/admin-guide/overview.md -->
-<!-- source-hash: 5086916e23fd -->
+<!-- source-hash: 3daf423f35ba -->
 
 # Introduction to the administrator guide
 
@@ -60,9 +60,7 @@ The administration panel is organised around these areas:
 - **[Reports](reports.md)**, CSV exports, financial dashboard and annual summary.
 - **[Settings](settings.md)**, branding (name, colour, logo), address, bank details, invoicing
   and automations.
-
-> Space booking (**Simple Bookings**) is not yet part of a published release and will be
-> documented when it is released.
+- **[Spaces and bookings](spaces.md)**, spaces, slots, paid bookings and the waiting list.
 
 ## Initial setup
 

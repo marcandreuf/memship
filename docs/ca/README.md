@@ -51,6 +51,7 @@ Per al personal que gestiona l'entitat des del tauler d'administració.
 - [Socis](admin-guide/members.md), cicle de vida, tipus de quota, grups
 - [Entitats](admin-guide/entities.md), donants, patrocinadors i col·laboradors que no són socis
 - [Activitats](admin-guide/activities.md), inscripcions, modalitats, descomptes
+- [Espais i reserves](admin-guide/spaces.md), espais, franges, reserves de pagament, llista d'espera
 - [Pagaments i rebuts](admin-guide/payments.md), rebuts, quotes, IVA, pagament en línia
 - [Domiciliació SEPA](admin-guide/sepa.md), mandats i remeses
 - [Donacions](admin-guide/donations.md), un enllaç de donació al web de l'entitat
@@ -101,7 +102,5 @@ Per treballar en Memship.
 - Preguntes freqüents, _pendent_
 - Glossari, _pendent_
 
-> **Reserva d'espais** (Simple Bookings) va a les imatges publicades, `/api/v1/bookings` és a
-> l'API i l'ordre de posada en marxa sembra espais, franges i llista d'espera, però **encara no
-> té pàgina ni a la guia de l'administrador ni a la del soci**. És un buit de documentació, no una
-> funció que falti.
+> La **reserva d'espais** té [pàgina a la guia de l'administrador](admin-guide/spaces.md), però
+> **encara no a la del soci**. És un buit de documentació, no una funció que falti.

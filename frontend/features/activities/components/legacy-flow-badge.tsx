@@ -5,8 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { PaymentFlow } from "../services/activities-api";
 
-/** Marks an activity that predates pay-to-confirm. Nothing on the default flow. */
-export function LegacyFlowBadge({ flow }: { flow: PaymentFlow }) {
+/**
+ * Marks an activity, or a space (#603), that predates pay-to-confirm. Nothing on
+ * the default flow. `tooltip` replaces the activity wording.
+ */
+export function LegacyFlowBadge({ flow, tooltip }: { flow: PaymentFlow; tooltip?: string }) {
   const t = useTranslations("activities.legacy");
   if (flow !== "legacy") return null;
   return (
@@ -16,7 +19,7 @@ export function LegacyFlowBadge({ flow }: { flow: PaymentFlow }) {
           {t("badge")}
         </Badge>
       </TooltipTrigger>
-      <TooltipContent className="max-w-xs">{t("tooltip")}</TooltipContent>
+      <TooltipContent className="max-w-xs">{tooltip ?? t("tooltip")}</TooltipContent>
     </Tooltip>
   );
 }

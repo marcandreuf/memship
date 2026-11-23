@@ -1,4 +1,10 @@
 import { apiClient } from "@/lib/client-api";
+import type { PaymentMethod } from "@/features/activities/services/activities-api";
+
+// `legacy` books at once and bills afterwards; `pay_to_confirm` holds a paid
+// booking until its receipt is paid (#603). A space may move from legacy to
+// pay_to_confirm, never back.
+export type SpacePaymentFlow = "legacy" | "pay_to_confirm";
 
 export interface Space {
   id: number;
@@ -12,6 +18,11 @@ export interface Space {
   // Membership type ids allowed to book. null or empty = open to every member.
   allowed_membership_types: number[] | null;
   is_active: boolean;
+  payment_flow: SpacePaymentFlow;
+  payment_methods: PaymentMethod[];
+  // Override of the club's booking auto-cancel default; null inherits it.
+  auto_cancel_enabled: boolean | null;
+  auto_cancel_hours: number | null;
   created_at: string | null;
   updated_at: string | null;
 }
@@ -25,6 +36,17 @@ export interface SpaceInput {
   close_time: string;
   allowed_membership_types: number[];
   is_active?: boolean;
+  payment_flow?: "pay_to_confirm";
+  payment_methods?: PaymentMethod[];
+  auto_cancel_enabled?: boolean | null;
+  auto_cancel_hours?: number | null;
+}
+
+export interface SpacePaymentOptions {
+  usable_methods: PaymentMethod[];
+  auto_cancel_enabled: boolean;
+  auto_cancel_hours: number;
+  switched_off_templates: string[];
 }
 
 export interface SpaceSlot {
@@ -61,7 +83,7 @@ export interface SpaceSlotInput {
 
 export type SlotApplyTo = "one" | "upcoming";
 
-export type BookingStatus = "booked" | "waitlisted" | "cancelled";
+export type BookingStatus = "booked" | "pending" | "waitlisted" | "cancelled";
 
 export interface AdminBooking {
   id: number;
@@ -72,6 +94,14 @@ export interface AdminBooking {
   start_time: string;
   end_time: string;
   status: BookingStatus;
+  // While pending: when it must be paid by. Its latest receipt, if any.
+  payment_due_at: string | null;
+  receipt_id: number | null;
+  receipt_status: string | null;
+  receipt_due_date: string | null;
+  refund_status: "none" | "due" | "returned";
+  late_payment_at: string | null;
+  cancelled_cause: string | null;
 }
 
 export interface PageMeta {
@@ -91,6 +121,7 @@ export interface AdminBookingPage {
 export interface SpaceStats {
   window_days: number;
   booked: number;
+  pending: number;
   waitlisted: number;
   cancelled: number;
   total: number;
@@ -202,14 +233,27 @@ export async function listSpaceBookings(
   );
 }
 
-export async function cancelBooking(id: number): Promise<void> {
-  return apiClient<void>(`/bookings/${id}`, { method: "DELETE" });
+// `keepPayment` is the club's choice, cancelling a paid booking, not to return
+// the money; ignored for a member cancelling their own.
+export async function cancelBooking(id: number, keepPayment = false): Promise<void> {
+  return apiClient<void>(`/bookings/${id}${keepPayment ? "?keep_payment=true" : ""}`, {
+    method: "DELETE",
+  });
+}
+
+export async function confirmBookingWithoutPayment(id: number): Promise<void> {
+  return apiClient<void>(`/bookings/${id}/confirm-without-payment`, { method: "POST" });
+}
+
+export async function getSpacePaymentOptions(): Promise<SpacePaymentOptions> {
+  return apiClient<SpacePaymentOptions>("/spaces/payment-options");
 }
 
 // --- Member: availability + booking ---
 
-export type CellState = "open" | "full" | "past" | "out_of_window";
-export type MyStatus = "none" | "booked" | "waitlisted";
+// `too_late`: too close to the start to be held until paid, so not bookable.
+export type CellState = "open" | "full" | "past" | "out_of_window" | "too_late";
+export type MyStatus = "none" | "booked" | "pending" | "waitlisted";
 
 export interface AvailabilityCell {
   space_slot_id: number;
@@ -220,6 +264,8 @@ export interface AvailabilityCell {
   capacity: number;
   // The slot's own price, or the space's, or 0 — before tax.
   price: number;
+  // In a pay-to-confirm space: when a booking made now must be paid by.
+  pay_by: string | null;
   booked_count: number;
   waitlist_count: number;
   my_status: MyStatus;
@@ -255,6 +301,9 @@ export interface MyBooking {
   waitlist_position: number | null;
   /** False once the self-cancellation deadline has passed. */
   can_cancel: boolean;
+  // A booking held until paid: by when, and the receipt to pay.
+  payment_due_at: string | null;
+  receipt_id: number | null;
 }
 
 export interface BookingResult {

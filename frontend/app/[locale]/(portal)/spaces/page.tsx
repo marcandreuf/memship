@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/lib/i18n/routing";
+import { LegacyFlowBadge } from "@/features/activities/components/legacy-flow-badge";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -142,11 +143,14 @@ export default function SpacesPage() {
                       {space.open_time.slice(0, 5)}–{space.close_time.slice(0, 5)}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={space.is_active ? "default" : "secondary"}>
-                        {space.is_active
-                          ? t("bookings.spaces.active")
-                          : t("bookings.spaces.inactive")}
-                      </Badge>
+                      <div className="flex flex-wrap items-center gap-1">
+                        <Badge variant={space.is_active ? "default" : "secondary"}>
+                          {space.is_active
+                            ? t("bookings.spaces.active")
+                            : t("bookings.spaces.inactive")}
+                        </Badge>
+                        <LegacyFlowBadge flow={space.payment_flow} tooltip={t("bookings.legacy.tooltip")} />
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -170,11 +174,14 @@ export default function SpacesPage() {
                       {space.space_type ? ` · ${space.space_type}` : ""}
                     </p>
                   </div>
-                  <Badge variant={space.is_active ? "default" : "secondary"}>
-                    {space.is_active
-                      ? t("bookings.spaces.active")
-                      : t("bookings.spaces.inactive")}
-                  </Badge>
+                  <div className="flex flex-wrap items-center justify-end gap-1">
+                    <Badge variant={space.is_active ? "default" : "secondary"}>
+                      {space.is_active
+                        ? t("bookings.spaces.active")
+                        : t("bookings.spaces.inactive")}
+                    </Badge>
+                    <LegacyFlowBadge flow={space.payment_flow} tooltip={t("bookings.legacy.tooltip")} />
+                  </div>
                 </div>
               </Link>
             ))}

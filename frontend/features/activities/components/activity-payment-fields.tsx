@@ -21,7 +21,7 @@ import {
   type PaymentMethod,
 } from "../services/activities-api";
 
-type AutoCancel = "inherit" | "on" | "off";
+export type AutoCancel = "inherit" | "on" | "off";
 
 export interface PaymentSettings {
   payment_methods: PaymentMethod[];
@@ -29,12 +29,15 @@ export interface PaymentSettings {
   auto_cancel_hours: string;
 }
 
-export function paymentSettingsFrom(activity?: ActivityData): PaymentSettings {
-  const override = activity?.auto_cancel_enabled;
+/** An activity's payment settings, or a space's: they carry the same fields (#603). */
+export function paymentSettingsFrom(
+  owner?: Pick<ActivityData, "payment_methods" | "auto_cancel_enabled" | "auto_cancel_hours">
+): PaymentSettings {
+  const override = owner?.auto_cancel_enabled;
   return {
-    payment_methods: activity?.payment_methods ?? [],
+    payment_methods: owner?.payment_methods ?? [],
     auto_cancel: override == null ? "inherit" : override ? "on" : "off",
-    auto_cancel_hours: activity?.auto_cancel_hours?.toString() ?? "",
+    auto_cancel_hours: owner?.auto_cancel_hours?.toString() ?? "",
   };
 }
 
@@ -184,7 +187,7 @@ export function ActivityPaymentFields({ flow, value, onChange }: ActivityPayment
   );
 }
 
-function PaymentWarning({ children }: { children: React.ReactNode }) {
+export function PaymentWarning({ children }: { children: React.ReactNode }) {
   return (
     <p className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 p-2 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
       <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />

@@ -184,6 +184,9 @@ class MyBookingRead(BaseModel):
     booked_count: int
     waitlist_position: int | None = None
     can_cancel: bool
+    # A booking held until paid: when it must be paid by, and its receipt.
+    payment_due_at: datetime | None = None
+    receipt_id: int | None = None
 
 
 class AdminBookingRead(BaseModel):
@@ -195,6 +198,15 @@ class AdminBookingRead(BaseModel):
     start_time: time
     end_time: time
     status: str
+    # The payment side (#603): its deadline while pending, its receipt, and
+    # whether the club owes money back or a payment came too late.
+    payment_due_at: datetime | None = None
+    receipt_id: int | None = None
+    receipt_status: str | None = None
+    receipt_due_date: date | None = None
+    refund_status: str = "none"
+    late_payment_at: datetime | None = None
+    cancelled_cause: str | None = None
 
 
 class AdminBookingPage(BaseModel):
@@ -241,6 +253,16 @@ class WeekAvailability(BaseModel):
 
 
 # --- Dashboard stats ------------------------------------------------------
+
+
+class SpacePaymentOptions(BaseModel):
+    """What the space form may offer: the methods the club can take today, the
+    club's booking auto-cancel default, and which booking mails are off."""
+
+    usable_methods: list[str]
+    auto_cancel_enabled: bool
+    auto_cancel_hours: int
+    switched_off_templates: list[str]
 
 
 class SpaceStats(BaseModel):

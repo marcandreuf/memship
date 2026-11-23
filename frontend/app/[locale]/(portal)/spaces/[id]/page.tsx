@@ -17,6 +17,7 @@ import { getErrorMessage } from "@/lib/errors";
 import { useDeleteSpace, useSlots, useSpace } from "@/features/bookings/hooks/use-bookings";
 import { deleteSpace as deleteSpaceApi } from "@/features/bookings/services/bookings-api";
 import { SpaceForm } from "@/features/bookings/components/space-form";
+import { LegacyFlowBadge } from "@/features/activities/components/legacy-flow-badge";
 import { SpaceDetailSection } from "@/features/bookings/components/space-detail-section";
 import { SlotsTab } from "@/features/bookings/components/slots-tab";
 import { SpaceBookingsTab } from "@/features/bookings/components/space-bookings-tab";
@@ -96,6 +97,9 @@ export default function SpaceDetailPage() {
             : t("bookings.spaces.inactive"),
           variant: space.is_active ? "default" : "secondary",
         }}
+        badgeExtra={
+          <LegacyFlowBadge flow={space.payment_flow} tooltip={t("bookings.legacy.tooltip")} />
+        }
         actions={
           canWrite ? (
             <>

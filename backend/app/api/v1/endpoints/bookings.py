@@ -21,6 +21,7 @@ from app.domains.bookings import service
 from app.domains.bookings.eligibility import check_space_eligibility
 from app.domains.bookings.notifications import EmailBookingNotifier
 from app.domains.bookings.schemas import (
+    SpacePaymentOptions,
     AdminBookingPage,
     AdminBookingRead,
     BookingCreate,
@@ -36,6 +37,10 @@ from app.domains.bookings.schemas import (
     WeekAvailability,
 )
 from app.domains.organizations.models import OrganizationSettings
+from app.domains.activities.models import PAYMENT_METHODS
+from app.domains.billing.payment_instructions import unusable_methods
+from app.domains.billing.seats import BOOKING_SEAT_TEMPLATES, switched_off_seat_templates
+from app.domains.bookings.rules import int_rule
 
 router = APIRouter(prefix="/spaces", tags=["bookings"])
 member_router = APIRouter(tags=["bookings"])
@@ -106,6 +111,27 @@ def create_space(
     db.commit()
     db.refresh(space)
     return space
+
+
+@router.get("/payment-options", response_model=SpacePaymentOptions)
+def get_space_payment_options(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("bookings.write")),
+):
+    """What the space form may offer. Here rather than read from /settings,
+    which needs `settings.read` a bookings role need not hold. Declared before
+    ``/{space_id}`` so the path isn't captured."""
+    _require_bookings_enabled(db)
+    org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
+    features = (org.features if org else None) or {}
+    return SpacePaymentOptions(
+        usable_methods=[
+            m for m in PAYMENT_METHODS if m not in unusable_methods(db, list(PAYMENT_METHODS))
+        ],
+        auto_cancel_enabled=features.get("booking_auto_cancel_enabled") is True,
+        auto_cancel_hours=int_rule(features, "booking_auto_cancel_hours"),
+        switched_off_templates=switched_off_seat_templates(db, BOOKING_SEAT_TEMPLATES),
+    )
 
 
 @router.get("/stats", response_model=SpaceStats)
@@ -309,6 +335,7 @@ def list_space_bookings(
         name = (
             f"{person.first_name} {person.last_name}".strip() if person else ""
         )
+        receipt = service.latest_receipt(b)
         rows.append(
             AdminBookingRead(
                 id=b.id,
@@ -319,6 +346,13 @@ def list_space_bookings(
                 start_time=b.slot.start_time,
                 end_time=b.slot.end_time,
                 status=b.status,
+                payment_due_at=b.payment_due_at,
+                receipt_id=receipt.id if receipt else None,
+                receipt_status=receipt.status if receipt else None,
+                receipt_due_date=receipt.due_date if receipt else None,
+                refund_status=b.refund_status,
+                late_payment_at=b.late_payment_at,
+                cancelled_cause=b.cancelled_cause,
             )
         )
     return AdminBookingPage(meta=meta, items=rows)

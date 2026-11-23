@@ -1,5 +1,5 @@
 <!-- source: es/admin-guide/overview.md -->
-<!-- source-hash: 5086916e23fd -->
+<!-- source-hash: 3daf423f35ba -->
 
 # Introducció a la guia de l'administrador
 
@@ -60,9 +60,8 @@ El tauler d'administració s'organitza al voltant d'aquestes àrees:
 - **[Informes](reports.md)**, exportacions CSV, tauler financer i resum anual.
 - **[Configuració](settings.md)**, marca (nom, color, logotip), adreça, dades bancàries,
   facturació i automatitzacions.
-
-> La reserva d'espais (**Simple Bookings**) encara no forma part d'una versió publicada i es
-> documentarà quan s'alliberi.
+- **[Espais i reserves](spaces.md)**, espais, franges, reserves de pagament i llista
+  d'espera.
 
 ## Configuració inicial
 

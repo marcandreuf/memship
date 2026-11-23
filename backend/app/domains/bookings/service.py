@@ -18,7 +18,7 @@ from decimal import Decimal
 from uuid import uuid4
 
 from sqlalchemy import func
-from sqlalchemy.orm import Query, Session, joinedload
+from sqlalchemy.orm import Query, Session, joinedload, selectinload
 
 from app.core.clock import org_timezone
 from app.domains.activities.models import PAYMENT_FLOW_PAY_TO_CONFIRM
@@ -1392,6 +1392,8 @@ def my_bookings(db: Session, party_id: int, *, scope: str) -> list[dict]:
                     if b.status == BookingStatus.PENDING and b.payment_due_at
                     else now_local < _self_cancel_deadline(slot, tz, deadline_hours)
                 ),
+                "payment_due_at": b.payment_due_at,
+                "receipt_id": receipt.id if (receipt := latest_receipt(b)) else None,
             }
         )
     return out
@@ -1406,6 +1408,7 @@ def build_space_bookings_query(
         .options(
             joinedload(Booking.slot),
             joinedload(Booking.member).joinedload(Member.person),
+            selectinload(Booking.receipts),
         )
         .filter(SpaceSlot.space_id == space_id)
     )
@@ -1414,6 +1417,14 @@ def build_space_bookings_query(
     if status:
         query = query.filter(Booking.status == status)
     return query.order_by(SpaceSlot.slot_date.desc(), Booking.id.desc())
+
+
+def latest_receipt(booking: Booking):
+    """The booking's most recent invoice, whatever its state, or None."""
+    invoices = [
+        r for r in booking.receipts if r.is_active and r.document_type == "invoice"
+    ]
+    return max(invoices, key=lambda r: r.id) if invoices else None
 
 
 def get_booking(db: Session, booking_id: int) -> Booking | None:

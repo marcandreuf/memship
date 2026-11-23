@@ -500,6 +500,20 @@
       "autoCancelDesc": "Si el soci no paga dins del termini, la inscripció es cancel·la i la plaça queda lliure. Cada activitat ho pot canviar; en activar-ho, les inscripcions ja pendents reben el termini des d'ara i s'avisa els seus socis.",
       "hours": "Termini per pagar (hores)",
       "hoursDesc": "Des que es reserva la plaça. Entre 1 i 8760."
+    },
+    "spacePayments": {
+      "title": "Reserves de pagament",
+      "intro": "Com es paguen les reserves dels espais amb flux de pagament per confirmar. Són valors diferents dels de les activitats: una franja i un esdeveniment no es paguen amb el mateix rellotge.",
+      "booking_payment_cutoff_minutes": "Marge abans de la franja (minuts)",
+      "booking_payment_cutoff_minutesDesc": "Una reserva pendent s'ha de pagar com a molt tard aquest temps abans que comenci la franja. 0 si cobres en efectiu a la porta i ho marques pagat abans de començar.",
+      "booking_min_hold_minutes": "Temps mínim per pagar (minuts)",
+      "booking_min_hold_minutesDesc": "Si una reserva tindria menys temps que aquest per pagar-se, es rebutja en lloc de crear-se.",
+      "booking_auto_promotion_min_minutes": "Temps mínim per donar la plaça sola (minuts)",
+      "booking_auto_promotion_min_minutesDesc": "Si s'allibera una plaça amb almenys aquest temps per pagar, passa sola al primer de la llista d'espera. Amb menys, s'avisa tota la llista i se la queda qui reservi primer.",
+      "autoCancel": "Alliberar abans les reserves no pagades",
+      "autoCancelDesc": "A més del marge abans de la franja, una reserva pendent es cancel·la si no es paga dins el termini de sota. Cada espai ho pot canviar; en activar-ho, les reserves ja pendents reben el termini des d'ara i s'avisa els seus socis.",
+      "booking_auto_cancel_hours": "Termini per pagar (hores)",
+      "booking_auto_cancel_hoursDesc": "Des que es reserva la plaça. Entre 1 i 8760."
     }
   }
 }

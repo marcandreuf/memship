@@ -20,7 +20,11 @@
       "noMembershipType": "Aquest espai està reservat a determinats tipus de soci i la teva fitxa no en té cap d'assignat. Escriu al club perquè te n'assigni un.",
       "price": "Aquesta reserva costa {price} abans d'impostos; el rebut mostrarà l'import final.",
       "priceOnPromotion": "Si queda una plaça lliure, la reserva es confirma automàticament i es cobren {price} abans d'impostos; el rebut mostrarà l'import final.",
-      "refundPolicy": "Si cancel·les abans de pagar, el càrrec s'anul·la amb la reserva. Un cop pagat, l'import no es retorna automàticament: ni si cancel·les, ni si el club elimina la franja. Qualsevol devolució s'acorda directament amb el club."
+      "refundPolicy": "Si cancel·les abans de pagar, el rebut s'anul·la amb la reserva. Si cancel·les una reserva ja pagada, el club t'ha de retornar l'import; la devolució la fa el club directament.",
+      "heldOnPromotion": "Si queda una plaça lliure a temps, te la guardarem fins que la paguis ({price} abans d'impostos); el rebut mostrarà l'import final.",
+      "heldUntil": "La reserva queda guardada fins que la paguis: tens fins al {date} per pagar-la; si no, s'alliberarà.",
+      "pendingToast": "Reserva guardada: paga el rebut per confirmar-la",
+      "tooLate": "Ja no hi ha temps"
     },
     "my": {
       "cancelClosed": "Fora de termini per cancel·lar",
@@ -31,7 +35,10 @@
       "cancel": "Cancel·la",
       "keep": "Mantén",
       "confirmCancel": "Vols cancel·lar aquesta reserva?",
-      "confirmCancelDescription": "La plaça queda lliure per a un altre soci. Si canvies d'idea, l'hauràs de reservar de nou."
+      "confirmCancelDescription": "La plaça queda lliure per a un altre soci. Si canvies d'idea, l'hauràs de reservar de nou.",
+      "payBy": "Paga abans del {date} o la reserva s'alliberarà.",
+      "pendingNotice": "La teva reserva està guardada fins que la paguis.",
+      "pendingTitle": "Reserves pendents de pagament"
     },
     "spaces": {
       "title": "Espais",
@@ -106,12 +113,17 @@
       "noBookings": "Encara no hi ha reserves.",
       "cancel": "Cancel·la",
       "confirmCancel": "Vols cancel·lar aquesta reserva? Es promocionarà un soci de la llista d'espera.",
-      "confirmCancelDescription": "El soci deixa de tenir la plaça."
+      "confirmCancelDescription": "El soci deixa de tenir la plaça.",
+      "allStatuses": "Tots els estats",
+      "payment": "Pagament",
+      "expired": "Cancel·lada per no pagar a temps",
+      "confirmWithoutPaymentDescription": "La reserva es confirma sense cobrar i el seu rebut s'anul·la. Queda registrat a l'historial."
     },
     "status": {
       "booked": "Reservada",
       "waitlisted": "En llista d'espera",
-      "cancelled": "Cancel·lada"
+      "cancelled": "Cancel·lada",
+      "pending": "Pendent de pagament"
     },
     "weekdays": {
       "0": "Dl",
@@ -133,6 +145,26 @@
       "invalidNumber": "Introdueix un nombre enter entre {min} i {max}.",
       "waitlist": "Activa la llista d'espera",
       "waitlistDesc": "Quan una franja és plena, permet als socis apuntar-se a una llista d'espera i ser promocionats automàticament."
+    },
+    "legacy": {
+      "tooltip": "Aquest espai fa servir el flux anterior: les reserves es confirmen a l'instant i el rebut es cobra després. El pots passar al flux nou des de la seva fitxa, i aleshores les reserves noves quedaran pendents fins que es paguin."
+    },
+    "payment": {
+      "legacyNotice": "Aquest espai confirma les reserves a l'instant i el rebut es cobra després. Si el canvies al flux nou, les reserves de pagament quedaran pendents fins que es paguin. Les reserves ja fetes no canvien.",
+      "switch": "Canviar a pagament per confirmar",
+      "switchTitle": "Canviar al flux de pagament per confirmar?",
+      "switchDescription": "A partir d'ara, una reserva de pagament quedarà pendent fins que es pagui i es cancel·larà si no es paga a temps. Les reserves ja fetes no canvien. Aquest canvi no es pot desfer.",
+      "switchConfirm": "Canviar",
+      "switchPending": "En desar, l'espai passarà al flux de pagament per confirmar. Tria les formes de pagament que accepta.",
+      "methodsHint": "Com pot pagar el soci una reserva de pagament. Un espai amb preu no es pot desar sense almenys una.",
+      "emailsOff": "Un espai de pagament cancel·la les reserves que no es paguen a temps, així que abans han d'estar activats aquests correus: {templates}.",
+      "deadlineHint": "Tota reserva pendent s'ha de pagar abans que comenci la franja, amb el marge que el club fixa a Configuració › Pagaments. La cancel·lació automàtica pot avançar aquest termini.",
+      "autoCancel": "Alliberar abans les reserves no pagades",
+      "autoCancelOn": "Sí, en aquest espai",
+      "autoCancelOff": "No, només en arribar el marge abans de la franja",
+      "autoCancelOnHours": "Sí, en aquest espai · {hours} h",
+      "autoCancelInheritRead": "Com el club",
+      "autoCancelStartsNow": "En activar-la, les reserves ja pendents passen a tenir el termini des d'ara (si és abans del que tenien) i s'avisa els seus socis."
     }
   }
 }

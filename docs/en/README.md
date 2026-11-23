@@ -66,6 +66,7 @@ Running Memship on your own server.
 - [Members](admin-guide/members.md), life cycle, membership types, groups
 - [Entities](admin-guide/entities.md), donors, sponsors and partners that are not members
 - [Activities](admin-guide/activities.md), registrations, modalities, discounts
+- [Spaces and bookings](admin-guide/spaces.md), spaces, slots, paid bookings, waiting list
 - [Payments and receipts](admin-guide/payments.md), receipts, fees, VAT, online payment
 - [SEPA Direct Debit](admin-guide/sepa.md), mandates and remittances
 - [Donations](admin-guide/donations.md), a donation link on the organisation's own website
@@ -98,6 +99,5 @@ Working on Memship itself.
 - FAQ, _planned_
 - Glossary, _planned_
 
-> **Simple Bookings** (space reservations) ships in the released images, `/api/v1/bookings` is
-> in the API and the setup command seeds spaces, slots and a waitlist, but it has **no admin or
-> member guide page yet**. That is a documentation gap, not a missing feature.
+> **Space booking** has an [admin guide page](admin-guide/spaces.md) but **no member guide page
+> yet**. That is a documentation gap, not a missing feature.

@@ -1,5 +1,5 @@
 <!-- source: es/admin-guide/activities.md -->
-<!-- source-hash: c7247c2fcf3e -->
+<!-- source-hash: 9dd50187a6ad -->
 
 # Activitats
 
@@ -74,7 +74,7 @@ preu 0, confirma al moment.
   correus i a *Els meus rebuts*.
 - **Confirmar sense pagament.** Confirma una plaça pendent i anul·la el seu rebut. Queda
   registrat qui ho ha fet.
-- **Cancel·lar una plaça pagada.** Passa a **Activitats › Devolucions** llevat que marquis
+- **Cancel·lar una plaça pagada.** Passa a **Devolucions** (des d'Activitats o Espais) llevat que marquis
   *Quedar-se el pagament*. La devolució es fa des de la passarel·la o a mà; a memship només es
   marca com a retornada. Cancel·lar des del tauler avisa el soci per correu.
 - **Pagament tardà.** Si la passarel·la cobra una plaça ja alliberada, la plaça es recupera si

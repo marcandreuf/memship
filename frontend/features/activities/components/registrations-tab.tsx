@@ -305,14 +305,17 @@ function PaymentCell({
   );
 }
 
-function CancelPaidSeatDialog({
+/** Cancelling a seat that was paid for: does the club return the money? */
+export function CancelPaidSeatDialog({
   open,
   onOpenChange,
   onConfirm,
+  confirmLabel,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: (keepPayment: boolean) => void;
+  confirmLabel?: string;
 }) {
   const t = useTranslations();
   const [keepPayment, setKeepPayment] = useState(false);
@@ -332,7 +335,7 @@ function CancelPaidSeatDialog({
             {t("common.back")}
           </Button>
           <Button variant="destructive" onClick={() => onConfirm(keepPayment)}>
-            {t("activities.registration.cancelRegistration")}
+            {confirmLabel ?? t("activities.registration.cancelRegistration")}
           </Button>
         </DialogFooter>
       </DialogContent>
