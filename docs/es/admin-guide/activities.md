@@ -36,8 +36,9 @@ Las **modalidades** son variantes de una misma actividad, cada una con su propia
 
 Puedes definir varios **precios**, a nivel de actividad o de modalidad, con **validez temporal**
 (*válido desde / hasta*) para configurar, por ejemplo, tarifas de inscripción anticipada. Un
-precio puede marcarse como **por defecto** u **opcional**, y un importe de 0 se muestra como
-**Gratis**.
+precio puede marcarse como **por defecto**, lo que lo preselecciona en el formulario de
+inscripción del socio; solo un precio por actividad puede ser el predeterminado. Un importe de 0
+se muestra como **Gratis**.
 
 ## Descuentos
 

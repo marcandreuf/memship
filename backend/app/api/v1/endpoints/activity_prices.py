@@ -19,6 +19,30 @@ from app.domains.auth.models import User
 router = APIRouter(prefix="/activities/{activity_id}/prices", tags=["activity-prices"])
 
 
+def _take_the_default(db: Session, activity_id: int, keep_id: int | None = None) -> None:
+    """Move the default to the price being written, clearing any other holder.
+
+    ``uq_activity_prices_is_default`` refuses a second default per activity, so
+    without this the admin's second "make this the default" reaches them as a
+    500 with nothing to act on. Same shape as membership types, which clear the
+    previous default the same way, except that there the flag is instance-wide
+    and here it is per activity.
+
+    Clearing the last default outright is allowed, unlike membership types
+    where sign-ups would be left with no tier: an activity with no default
+    preselects nothing on the registration page, which is what every activity
+    did before the flag meant anything (memship#601).
+    """
+    others = db.query(ActivityPrice).filter(
+        ActivityPrice.activity_id == activity_id,
+        ActivityPrice.is_default == True,  # noqa: E712 -- SQL boolean, not Python
+    )
+    if keep_id is not None:
+        others = others.filter(ActivityPrice.id != keep_id)
+    others.update({"is_default": False}, synchronize_session=False)
+    db.flush()
+
+
 @router.get("/", response_model=list[ActivityPriceResponse])
 def list_prices(
     activity_id: int,
@@ -61,6 +85,9 @@ def create_price(
                 detail="Modality does not belong to this activity",
             )
 
+    if data.is_default:
+        _take_the_default(db, activity_id)
+
     price = ActivityPrice(activity_id=activity_id, **data.model_dump())
     db.add(price)
     db.commit()
@@ -82,6 +109,8 @@ def update_price(
         raise HTTPException(status_code=404, detail="Price not found for this activity")
 
     update_data = data.model_dump(exclude_unset=True)
+    if update_data.get("is_default") and not price.is_default:
+        _take_the_default(db, activity_id, keep_id=price.id)
     for key, value in update_data.items():
         setattr(price, key, value)
     db.commit()

@@ -1,5 +1,5 @@
 <!-- source: es/admin-guide/activities.md -->
-<!-- source-hash: 9dd50187a6ad -->
+<!-- source-hash: b2fb84570044 -->
 
 # Activitats
 
@@ -36,7 +36,9 @@ Les **modalitats** són variants d'una mateixa activitat, cadascuna amb la seva 
 
 Pots definir diversos **preus**, a nivell d'activitat o de modalitat, amb **validesa temporal**
 (*vàlid des de / fins a*) per configurar, per exemple, tarifes d'inscripció anticipada. Un preu es
-pot marcar com a **per defecte** o **opcional**, i un import de 0 es mostra com a **Gratuït**.
+pot marcar com a **per defecte**, cosa que el preselecciona al formulari d'inscripció del
+soci; només un preu per activitat pot ser el predeterminat. Un import de 0 es mostra com a
+**Gratuït**.
 
 ## Descomptes
 

@@ -14,6 +14,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import relationship
@@ -148,6 +149,16 @@ class ActivityPrice(Base):
         CheckConstraint("amount >= 0", name="activity_price_amount_non_negative"),
         Index("idx_activity_prices_activity_id", "activity_id"),
         Index("idx_activity_prices_modality_id", "modality_id"),
+        # At most one default per activity. The flag means "preselect this one
+        # on the registration page", which says nothing if two prices claim it
+        # (memship#601). Scoped to activity_id, unlike membership_types where
+        # the single default is instance-wide.
+        Index(
+            "uq_activity_prices_is_default",
+            "activity_id",
+            unique=True,
+            postgresql_where=text("is_default"),
+        ),
     )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -161,7 +172,6 @@ class ActivityPrice(Base):
     description = Column(Text)
     amount = Column(Numeric(10, 2), nullable=False)
     display_order = Column(Integer, default=1)
-    is_optional = Column(Boolean, default=False)
     is_default = Column(Boolean, default=False)
     is_visible = Column(Boolean, default=True)
     # Which membership types may hold this price. NULL or empty means every

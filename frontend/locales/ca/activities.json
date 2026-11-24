@@ -103,7 +103,7 @@
       "validFrom": "Vàlid des de",
       "validUntil": "Vàlid fins a",
       "isDefault": "Per defecte",
-      "isOptional": "Opcional",
+      "isDefaultHint": "Es preselecciona a la pàgina d'inscripció. Només un preu per activitat pot ser el predeterminat.",
       "activityLevel": "Nivell d'activitat",
       "create": "Afegir preu",
       "edit": "Editar preu",

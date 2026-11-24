@@ -166,3 +166,118 @@ class TestPriceCRUD:
             f"/api/v1/activities/{activity.id}/prices/{price.id}"
         )
         assert response.status_code == 204
+
+
+class TestTheDefaultIsOnePerActivity:
+    """``is_default`` means "preselect this price on the registration page".
+
+    Until #601 it meant nothing: the form wrote it, the prices tab displayed it,
+    and no code read it, which is why nothing ever stopped two prices on one
+    activity from claiming it. A flag two rows can hold says nothing about which
+    one to preselect, so ``uq_activity_prices_is_default`` now refuses the
+    second and the endpoints move the flag rather than colliding with it.
+    """
+
+    def test_marking_a_second_price_default_moves_the_flag(self, client, db):
+        user = _create_user(db, "admin", suffix="-d1")
+        activity = _create_activity(db, user.id, slug="price-default-move")
+        client.cookies.update(_auth_cookie(user))
+
+        first = client.post(
+            f"/api/v1/activities/{activity.id}/prices/",
+            json={"name": "Early", "amount": 10, "is_default": True},
+        ).json()
+        second = client.post(
+            f"/api/v1/activities/{activity.id}/prices/",
+            json={"name": "Standard", "amount": 20, "is_default": True},
+        )
+
+        assert second.status_code == 201
+        assert second.json()["is_default"] is True
+
+        rows = client.get(f"/api/v1/activities/{activity.id}/prices/").json()
+        defaults = [p["id"] for p in rows if p["is_default"]]
+        assert defaults == [second.json()["id"]], rows
+        assert first["id"] not in defaults
+
+    def test_updating_a_price_to_default_moves_the_flag(self, client, db):
+        user = _create_user(db, "admin", suffix="-d2")
+        activity = _create_activity(db, user.id, slug="price-default-update")
+        client.cookies.update(_auth_cookie(user))
+
+        holder = client.post(
+            f"/api/v1/activities/{activity.id}/prices/",
+            json={"name": "Early", "amount": 10, "is_default": True},
+        ).json()
+        other = client.post(
+            f"/api/v1/activities/{activity.id}/prices/",
+            json={"name": "Standard", "amount": 20},
+        ).json()
+
+        moved = client.put(
+            f"/api/v1/activities/{activity.id}/prices/{other['id']}",
+            json={"is_default": True},
+        )
+
+        assert moved.status_code == 200
+        rows = client.get(f"/api/v1/activities/{activity.id}/prices/").json()
+        assert [p["id"] for p in rows if p["is_default"]] == [other["id"]]
+        assert next(p for p in rows if p["id"] == holder["id"])["is_default"] is False
+
+    def test_two_activities_each_keep_their_own_default(self, client, db):
+        """The constraint is per activity, unlike membership types where the
+        single default is instance-wide. One club runs many activities and each
+        needs its own preselected price."""
+        user = _create_user(db, "admin", suffix="-d3")
+        one = _create_activity(db, user.id, slug="price-default-act-one")
+        two = _create_activity(db, user.id, slug="price-default-act-two")
+        client.cookies.update(_auth_cookie(user))
+
+        for activity in (one, two):
+            created = client.post(
+                f"/api/v1/activities/{activity.id}/prices/",
+                json={"name": "Standard", "amount": 15, "is_default": True},
+            )
+            assert created.status_code == 201, created.text
+
+        for activity in (one, two):
+            rows = client.get(f"/api/v1/activities/{activity.id}/prices/").json()
+            assert sum(1 for p in rows if p["is_default"]) == 1
+
+    def test_the_last_default_can_be_cleared(self, client, db):
+        """Allowed, unlike membership types where clearing the default would
+        leave sign-ups with no tier. An activity with no default preselects
+        nothing, which is what every activity did before this flag worked."""
+        user = _create_user(db, "admin", suffix="-d4")
+        activity = _create_activity(db, user.id, slug="price-default-clear")
+        client.cookies.update(_auth_cookie(user))
+
+        price = client.post(
+            f"/api/v1/activities/{activity.id}/prices/",
+            json={"name": "Standard", "amount": 15, "is_default": True},
+        ).json()
+
+        cleared = client.put(
+            f"/api/v1/activities/{activity.id}/prices/{price['id']}",
+            json={"is_default": False},
+        )
+
+        assert cleared.status_code == 200
+        assert cleared.json()["is_default"] is False
+
+    def test_the_optional_flag_is_gone(self, client, db):
+        """Removed rather than given a meaning: a registration holds a single
+        ``price_id``, so an optional extra alongside a main price is not
+        representable, and the reporter was right that "default, amount 0" and
+        "optional" were indistinguishable while neither did anything."""
+        user = _create_user(db, "admin", suffix="-d5")
+        activity = _create_activity(db, user.id, slug="price-no-optional")
+        client.cookies.update(_auth_cookie(user))
+
+        created = client.post(
+            f"/api/v1/activities/{activity.id}/prices/",
+            json={"name": "Standard", "amount": 15},
+        )
+
+        assert created.status_code == 201
+        assert "is_optional" not in created.json()

@@ -103,7 +103,7 @@
       "validFrom": "Válido desde",
       "validUntil": "Válido hasta",
       "isDefault": "Por defecto",
-      "isOptional": "Opcional",
+      "isDefaultHint": "Se preselecciona en la página de inscripción. Solo un precio por actividad puede ser el predeterminado.",
       "activityLevel": "Nivel de actividad",
       "create": "Añadir precio",
       "edit": "Editar precio",

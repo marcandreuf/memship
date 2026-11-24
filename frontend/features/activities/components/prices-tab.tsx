@@ -53,7 +53,6 @@ const priceSchema = z.object({
   amount: z.coerce.number<number>().min(0),
   modality_id: optionalNumber({ min: 1 }),
   display_order: z.coerce.number<number>().int().min(0),
-  is_optional: z.boolean(),
   is_default: z.boolean(),
   membership_type_ids: z.array(z.number()),
   valid_from: z.string().optional().or(z.literal("")),
@@ -155,7 +154,6 @@ export function PricesTab({ activityId, prices, modalities, activity, isAdmin }:
               <TableHead>{t("activities.prices.validFrom")}</TableHead>
               <TableHead>{t("activities.prices.validUntil")}</TableHead>
               <TableHead>{t("activities.prices.isDefault")}</TableHead>
-              <TableHead>{t("activities.prices.isOptional")}</TableHead>
               <TableHead>{t("common.actions")}</TableHead>
             </TableRow>
           </TableHeader>
@@ -202,7 +200,6 @@ function PriceForm({
       amount: price?.amount ?? 0,
       modality_id: price?.modality_id ?? "",
       display_order: price?.display_order ?? 1,
-      is_optional: price?.is_optional ?? false,
       is_default: price?.is_default ?? false,
       membership_type_ids: price?.membership_type_ids ?? [],
       valid_from: price?.valid_from ? toLocalDatetime(price.valid_from) : "",
@@ -215,7 +212,6 @@ function PriceForm({
       name: data.name,
       amount: data.amount,
       display_order: data.display_order,
-      is_optional: data.is_optional,
       is_default: data.is_default,
       // Sent even when empty. Empty means "every membership type", so clearing
       // the selection has to reach the row — omitting it on an update would
@@ -283,15 +279,13 @@ function PriceForm({
           )} />
         </div>
         <FormField control={form.control} name="is_default" render={({ field }) => (
-          <FormItem className="flex items-center gap-2">
-            <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-            <FormLabel className="!mt-0">{t("activities.prices.isDefault")}</FormLabel><FormMessage />
-          </FormItem>
-        )} />
-        <FormField control={form.control} name="is_optional" render={({ field }) => (
-          <FormItem className="flex items-center gap-2">
-            <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-            <FormLabel className="!mt-0">{t("activities.prices.isOptional")}</FormLabel><FormMessage />
+          <FormItem>
+            <div className="flex items-center gap-2">
+              <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+              <FormLabel className="!mt-0">{t("activities.prices.isDefault")}</FormLabel>
+            </div>
+            <FormDescription>{t("activities.prices.isDefaultHint")}</FormDescription>
+            <FormMessage />
           </FormItem>
         )} />
         <FormField control={form.control} name="membership_type_ids" render={({ field }) => (
@@ -360,7 +354,6 @@ function PriceRow({
       <TableCell>{price.valid_from ? formatDate(price.valid_from) : "—"}</TableCell>
       <TableCell>{price.valid_until ? formatDate(price.valid_until) : "—"}</TableCell>
       <TableCell>{price.is_default ? t("common.yes") : t("common.no")}</TableCell>
-      <TableCell>{price.is_optional ? t("common.yes") : t("common.no")}</TableCell>
       <TableCell>
         <div className="flex gap-2">
           {confirmDialog}
