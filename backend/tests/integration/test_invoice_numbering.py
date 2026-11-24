@@ -151,3 +151,73 @@ class TestGlobalMode:
 
         assert _issue(db, member, year=2026) == "FAC-2026-0041"
         assert _issue(db, member, year=2027) == "FAC-2027-0042"
+
+
+class TestItLocksTheOrgRowOnlyWhenItIsTheCounter:
+    """The lock has to follow the write, not the read.
+
+    Numbering used to take ``SELECT ... FOR UPDATE`` on ``organization_settings``
+    in both modes, while in the default annual mode it only reads
+    ``invoice_prefix`` from that row and the number comes from
+    ``InvoiceSequence`` under its own lock. A billing run calls this once per
+    member inside one transaction, and a row lock is held until commit, so the
+    whole application serialised on the run: 4,265 members measured 20.9 s with
+    a concurrent member sign-up waiting 18.9 s of it (memship#459 §1).
+
+    Asserted on the emitted SQL rather than on a timing, because the defect was
+    never a slow query. The statement is correct in isolation and only wrong in
+    what it holds, so a test that watches for the wait would need a second
+    connection and would still pass on a fast machine.
+    """
+
+    @staticmethod
+    def _org_locks(db, fn):
+        """Statements that lock the settings row while ``fn`` runs."""
+        seen = []
+
+        def record(conn, cursor, statement, params, context, executemany):
+            collapsed = " ".join(statement.split()).upper()
+            if "ORGANIZATION_SETTINGS" in collapsed and "FOR UPDATE" in collapsed:
+                seen.append(collapsed)
+
+        from sqlalchemy import event
+
+        bind = db.get_bind()
+        event.listen(bind, "before_cursor_execute", record)
+        try:
+            fn()
+        finally:
+            event.remove(bind, "before_cursor_execute", record)
+        return seen
+
+    def test_annual_mode_does_not_lock_it(self, db, org, member):
+        org.invoice_annual_reset = True
+        db.flush()
+
+        locks = self._org_locks(db, lambda: _issue(db, member, year=2026))
+
+        assert locks == [], f"settings row locked to read a prefix: {locks}"
+
+    def test_global_mode_still_locks_it(self, db, org, member):
+        """The counter lives on the row here, so two concurrent callers would
+        otherwise read the same number and issue it twice."""
+        org.invoice_annual_reset = False
+        org.invoice_next_number = 7
+        db.flush()
+
+        locks = self._org_locks(db, lambda: _issue(db, member, year=2026))
+
+        assert len(locks) == 1, f"expected exactly one locking read, got {locks}"
+
+    def test_a_caller_supplied_row_is_not_trusted_for_the_counter(self, db, org, member):
+        """Passing the row in saves a read per receipt in a bulk run, and must
+        not become a way to reissue a number: the non-annual branch re-reads
+        under the lock, so the number still advances."""
+        org.invoice_annual_reset = False
+        org.invoice_next_number = 50
+        db.flush()
+
+        first = generate_receipt_number(db, date(2026, 6, 15), org)
+        second = generate_receipt_number(db, date(2026, 6, 15), org)
+
+        assert (first, second) == ("FAC-2026-0050", "FAC-2026-0051")
