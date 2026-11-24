@@ -44,6 +44,21 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql://memship:memship@localhost:5433/memship_db"
     DATABASE_TEST_URL: str = "postgresql://memship:memship@localhost:5434/memship_test_db"
 
+    # Connection pool, sized rather than left on SQLAlchemy's defaults of 5 + 10.
+    # Endpoints are sync, so Starlette runs them on its thread pool (40 threads),
+    # and each one holding a session wants a connection. At 15 the pool was the
+    # narrower limit: any slow query, a lock wait included, parked connections
+    # until nothing could be served at all, which turns one slow path into an
+    # API-wide stall (memship#459 §8). 20 + 20 matches the thread pool, so the
+    # threads run out before the connections do.
+    #
+    # The Celery worker imports the same engine and needs only a few of these;
+    # it is bounded by its own --concurrency, not by this.
+    DB_POOL_SIZE: int = 20
+    DB_MAX_OVERFLOW: int = 20
+    # Fail a request that cannot get a connection instead of hanging on it.
+    DB_POOL_TIMEOUT: int = 30
+
     # Security
     # Signs the session JWT, the member-card QR HMAC and the OAuth state cookie,
     # and derives the key that encrypts stored payment-provider credentials.

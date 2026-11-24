@@ -176,41 +176,86 @@ def apply_amounts(receipt: Receipt) -> None:
 # --- Receipt Number Generation ---
 
 
-def generate_receipt_number(db: Session, emission_date: date) -> str:
-    """Generate the next receipt number.
+def org_settings_or_500(db: Session) -> OrganizationSettings:
+    """The single settings row, or a stated 500.
 
-    Format: {prefix}-{year}-{sequence:04d}
-    If annual reset is enabled, sequence resets per year.
-    Thread-safe via SELECT ... FOR UPDATE on org settings.
+    Not locked. Callers that need to *write* the row take the lock themselves,
+    which is the whole point of memship#459 §1: reading this row under
+    ``FOR UPDATE`` serialised every path that touches it behind the longest one.
     """
-    org = (
-        db.query(OrganizationSettings)
-        .filter(OrganizationSettings.id == 1)
-        .with_for_update()
-        .first()
-    )
+    org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
     if not org:
+        # Stated rather than dereferenced. Without this a run died on an
+        # AttributeError halfway through: a 500 from the endpoint and a task
+        # traceback from the scheduled run, neither naming the actual problem.
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Organization settings not found",
         )
+    return org
 
-    prefix = org.invoice_prefix or "FAC"
+
+
+def generate_receipt_number(
+    db: Session, emission_date: date, org: OrganizationSettings | None = None
+) -> str:
+    """Generate the next receipt number.
+
+    Format: {prefix}-{year}-{sequence:04d}
+    If annual reset is enabled, sequence resets per year.
+
+    **The organisation row is locked only when it is the counter**, which is the
+    non-annual mode alone. With ``invoice_annual_reset`` on, which is the
+    default, this function only reads ``invoice_prefix`` from that row and the
+    number itself comes from the per-year ``InvoiceSequence`` row under its own
+    lock. Taking ``FOR UPDATE`` to read a prefix serialised the whole
+    application on one row: a billing run calls this once per member inside one
+    transaction, so the lock was held for the entire run, and 4,265 members
+    measured 20.9 s with a concurrent member sign-up waiting 18.9 s of it
+    (memship#459 §1). Creating a member, saving settings, and a receipt raised
+    by a payment webhook all queue behind that, and a request blocked on the row
+    holds its connection, so enough of them exhaust the pool and stall the API
+    rather than merely delaying billing.
+
+    ``org`` lets a caller that already holds the row pass it in, so a bulk run
+    reads it once instead of once per receipt. It is used read-only, and only in
+    annual mode; the non-annual branch always re-reads under the lock because
+    there it is writing a counter and a stale copy would reissue a number.
+    """
+    if org is None:
+        org = org_settings_or_500(db)
+
     year = emission_date.year
     annual_reset = org.invoice_annual_reset if org.invoice_annual_reset is not None else True
 
     if annual_reset:
+        prefix = org.invoice_prefix or "FAC"
         # A counter per year, not COUNT(receipts). The count was filtered on
         # is_active, so deactivating one receipt shifted the number of every
         # receipt issued after it — an invoice series has to be sequential and
         # unbroken, and that made it neither. See InvoiceSequence.
         #
-        # Its own row lock, taken after the org lock and always in that order.
+        # Its own row lock, and now the only one on this path.
         sequence = next_yearly_number(db, InvoiceSequence, year)
     else:
-        # Global sequential — use org counter
-        sequence = org.invoice_next_number or 1
-        org.invoice_next_number = sequence + 1
+        # Here the org row *is* the counter, so it is read under its own lock
+        # whatever the caller passed in.
+        #
+        # Deliberately a query and not refresh(with_for_update=True): refresh
+        # overwrites the instance from the database, so a second call inside one
+        # transaction would discard the increment the first one has not flushed
+        # yet and reissue the same number. The query takes the same lock and
+        # leaves pending attributes alone, because SQLAlchemy does not
+        # repopulate a modified attribute on an identity-mapped instance.
+        locked = (
+            db.query(OrganizationSettings)
+            .filter(OrganizationSettings.id == 1)
+            .with_for_update()
+            .first()
+        )
+        prefix = locked.invoice_prefix or "FAC"
+        sequence = locked.invoice_next_number or 1
+        locked.invoice_next_number = sequence + 1
 
     receipt_number = f"{prefix}-{year}-{sequence:04d}"
 
@@ -910,17 +955,7 @@ def generate_membership_fees(
     hand. The manual bulk endpoint leaves them ``pending`` so an admin can still
     edit an amount before issuing them.
     """
-    org = db.query(OrganizationSettings).filter(OrganizationSettings.id == 1).first()
-    if not org:
-        # Stated rather than dereferenced. Without this the run died on an
-        # AttributeError halfway through — a 500 from the endpoint, and a task
-        # traceback from the scheduled run, neither of which names the actual
-        # problem. Matches generate_receipt_number, which is called from this
-        # same path and already guards this way.
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Organization settings not found",
-        )
+    org = org_settings_or_500(db)
     default_vat = org_default_vat_rate(org)
 
     # Get all active members with their membership type
@@ -974,7 +1009,7 @@ def generate_membership_fees(
         vat_rate = Decimal(str(concept.vat_rate))
         vat_amount, total_amount = calculate_vat(base_amount, vat_rate)
 
-        receipt_number = generate_receipt_number(db, data.emission_date)
+        receipt_number = generate_receipt_number(db, data.emission_date, org)
 
         receipt = Receipt(
             receipt_number=receipt_number,
