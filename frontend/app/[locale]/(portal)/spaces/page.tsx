@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/lib/i18n/routing";
+import { LegacyFlowBadge } from "@/features/activities/components/legacy-flow-badge";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -42,6 +43,7 @@ export default function SpacesPage() {
   const linkBack = useReturnToHere(t("bookings.spaces.title"));
   const { has } = usePermissions();
   const canWrite = has("bookings.write");
+  const canSeeRefunds = has("billing.read");
   const router = useRouter();
   const { data: spaces, isLoading } = useSpaces();
   const [open, setOpen] = useState(false);
@@ -63,19 +65,26 @@ export default function SpacesPage() {
           <h1 className="text-2xl font-bold">{t("bookings.spaces.title")}</h1>
           <PageInfo text={t("bookings.spaces.info")} />
         </div>
-        {canWrite && (
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm">{t("bookings.spaces.create")}</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>{t("bookings.spaces.create")}</DialogTitle>
-              </DialogHeader>
-              <SpaceForm space={null} onSuccess={() => setOpen(false)} />
-            </DialogContent>
-          </Dialog>
-        )}
+        <div className="flex gap-2">
+          {canSeeRefunds && (
+            <Link href="/refunds">
+              <Button size="sm" variant="outline">{t("activities.refunds.title")}</Button>
+            </Link>
+          )}
+          {canWrite && (
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm">{t("bookings.spaces.create")}</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>{t("bookings.spaces.create")}</DialogTitle>
+                </DialogHeader>
+                <SpaceForm space={null} onSuccess={() => setOpen(false)} />
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row">
@@ -134,11 +143,14 @@ export default function SpacesPage() {
                       {space.open_time.slice(0, 5)}–{space.close_time.slice(0, 5)}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={space.is_active ? "default" : "secondary"}>
-                        {space.is_active
-                          ? t("bookings.spaces.active")
-                          : t("bookings.spaces.inactive")}
-                      </Badge>
+                      <div className="flex flex-wrap items-center gap-1">
+                        <Badge variant={space.is_active ? "default" : "secondary"}>
+                          {space.is_active
+                            ? t("bookings.spaces.active")
+                            : t("bookings.spaces.inactive")}
+                        </Badge>
+                        <LegacyFlowBadge flow={space.payment_flow} tooltip={t("bookings.legacy.tooltip")} />
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -162,11 +174,14 @@ export default function SpacesPage() {
                       {space.space_type ? ` · ${space.space_type}` : ""}
                     </p>
                   </div>
-                  <Badge variant={space.is_active ? "default" : "secondary"}>
-                    {space.is_active
-                      ? t("bookings.spaces.active")
-                      : t("bookings.spaces.inactive")}
-                  </Badge>
+                  <div className="flex flex-wrap items-center justify-end gap-1">
+                    <Badge variant={space.is_active ? "default" : "secondary"}>
+                      {space.is_active
+                        ? t("bookings.spaces.active")
+                        : t("bookings.spaces.inactive")}
+                    </Badge>
+                    <LegacyFlowBadge flow={space.payment_flow} tooltip={t("bookings.legacy.tooltip")} />
+                  </div>
                 </div>
               </Link>
             ))}

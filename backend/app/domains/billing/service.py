@@ -1076,6 +1076,8 @@ def generate_booking_receipt(
     description: str,
     amount: Decimal,
     created_by_id: int | None = None,
+    due_date: date | None = None,
+    is_batchable: bool = True,
 ) -> Receipt | None:
     """Create a receipt for a space booking.
 
@@ -1130,7 +1132,8 @@ def generate_booking_receipt(
         total_amount=total_amount,
         status="emitted",
         emission_date=today,
-        is_batchable=True,
+        due_date=due_date,
+        is_batchable=is_batchable,
         created_by=created_by_id,
     )
     db.add(receipt)

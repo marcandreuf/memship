@@ -1,0 +1,15 @@
+{% extends "_base.html" %}
+{% import "_components.html" as c with context %}
+
+{% block preheader %}Your booking of {{ space_name }} is held until you pay.{% endblock %}
+
+{% block content %}
+<h1 style="{{ s.h1 }}">{% if deadline_changed %}You now have less time to pay{% elif promoted %}There is a place for you{% else %}Booking awaiting payment{% endif %}</h1>
+<p style="{{ s.p }}">Hi {{ member_name }},</p>
+<p style="{{ s.p }}">{% if deadline_changed %}Your booking of <strong>{{ space_name }}</strong> is still held, but the club has switched on automatic cancellation and the time to pay it has been brought forward: unless you pay before the new time limit, the booking will be cancelled.{% elif promoted %}A place has freed up at <strong>{{ space_name }}</strong>, where you were on the waiting list, and we are holding it for you. The booking is confirmed once the payment is recorded.{% else %}We are holding a place for you at <strong>{{ space_name }}</strong>. The booking is confirmed once the payment is recorded.{% endif %}</p>
+{% call c.panel() %}
+{{ c.data_row("Date", booking_date) }}
+{{ c.data_row("Time", booking_time) }}
+{% endcall %}
+{% include "_booking_payment_en.html" %}
+{% endblock %}

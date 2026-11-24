@@ -208,6 +208,26 @@ _SUBJECTS = {
         "ca": "Reserva cancel·lada: {space}",
         "en": "Booking cancelled: {space}",
     },
+    "booking_pending_payment": {
+        "es": "Reserva pendiente de pago: {space}",
+        "ca": "Reserva pendent de pagament: {space}",
+        "en": "Booking awaiting payment: {space}",
+    },
+    "booking_deadline_reminder": {
+        "es": "Tu reserva caduca pronto si no pagas: {space}",
+        "ca": "La teva reserva caduca aviat si no pagues: {space}",
+        "en": "Your booking expires soon unless paid: {space}",
+    },
+    "booking_cancelled_unpaid": {
+        "es": "Reserva cancelada por falta de pago: {space}",
+        "ca": "Reserva cancel·lada per manca de pagament: {space}",
+        "en": "Booking cancelled for non-payment: {space}",
+    },
+    "booking_seat_available": {
+        "es": "Se ha liberado una plaza: {space}",
+        "ca": "S'ha alliberat una plaça: {space}",
+        "en": "A place has freed up: {space}",
+    },
     "password_reset": {
         "es": "Restablecer contraseña",
         "ca": "Restablir contrasenya",
@@ -1148,7 +1168,14 @@ def send_registration_pending_payment_email(
     reference: str | None = None,
     locale: str = "es",
     deadline_added: bool = False,
+    promoted: bool = False,
 ) -> bool:
+    """Tell a member their seat is held until they pay, and how.
+
+    ``deadline_added`` is the resend when auto-cancel starts on a seat already
+    held. ``promoted`` is a waitlister handed a freed seat: this mail, not
+    ``waitlist_promoted``, because it is the one a pay-to-confirm activity
+    cannot run without (#619)."""
     return _send_templated(
         "registration_pending_payment",
         to,
@@ -1165,6 +1192,7 @@ def send_registration_pending_payment_email(
             "due_date": due_date,
             "reference": reference,
             "deadline_added": deadline_added,
+            "promoted": promoted,
         },
         subject_args={"activity": activity_name},
     )
@@ -1277,15 +1305,10 @@ def send_waitlist_promotion_email(
     activity_date: str | None = None,
     location: str | None = None,
     locale: str = "es",
-    payment: dict | None = None,
 ) -> bool:
-    """``payment`` (amount, currency, deadline and the ways to pay) means the seat
-    is held until paid rather than confirmed, and the mail and its subject say so."""
-    subject = (
-        _get_subject("registration_pending_payment", locale, activity=activity_name)
-        if payment
-        else None
-    )
+    """Tell a member a seat opened and their registration is confirmed. A
+    promotion to a seat held until paid is told by ``registration_pending_payment``
+    instead (#619)."""
     return _send_templated(
         "waitlist_promoted",
         to,
@@ -1295,10 +1318,8 @@ def send_waitlist_promotion_email(
             "activity_name": activity_name,
             "activity_date": activity_date,
             "location": location,
-            **(payment or {}),
         },
         subject_args={"activity": activity_name},
-        subject=subject,
     )
 
 
@@ -1443,7 +1464,8 @@ def send_booking_promoted_email(
     booking_time: str,
     locale: str = "es",
 ) -> bool:
-    """Tell a member a spot opened and they are now booked."""
+    """Tell a member a spot opened and they are now booked. A promotion to a
+    seat held until paid is told by ``booking_pending_payment`` instead (#603)."""
     return _send_templated(
         "booking_promoted",
         to,
@@ -1458,6 +1480,39 @@ def send_booking_promoted_email(
     )
 
 
+def send_booking_seat_available_email(
+    to: str,
+    member_name: str,
+    space_name: str,
+    booking_date: str,
+    booking_time: str,
+    locale: str = "es",
+    *,
+    amount: str,
+    currency: str,
+    deadline: str,
+    book_url: str,
+) -> bool:
+    """Tell a waitlister a seat has freed too close to the slot to be handed
+    out automatically: whoever books and pays it first takes it (#603)."""
+    return _send_templated(
+        "booking_seat_available",
+        to,
+        locale,
+        {
+            "member_name": member_name,
+            "space_name": space_name,
+            "booking_date": booking_date,
+            "booking_time": booking_time,
+            "amount": amount,
+            "currency": currency,
+            "deadline": deadline,
+            "book_url": book_url,
+        },
+        subject_args={"space": space_name},
+    )
+
+
 def send_booking_cancelled_email(
     to: str,
     member_name: str,
@@ -1465,11 +1520,121 @@ def send_booking_cancelled_email(
     booking_date: str,
     booking_time: str,
     locale: str = "es",
+    refund_due: bool = False,
 ) -> bool:
     """Tell a member the club cancelled their booking (admin cancel, or the
-    slot/space was removed)."""
+    slot/space was removed), and that a payment is coming back if it is."""
     return _send_templated(
         "booking_cancelled",
+        to,
+        locale,
+        {
+            "member_name": member_name,
+            "space_name": space_name,
+            "booking_date": booking_date,
+            "booking_time": booking_time,
+            "refund_due": refund_due,
+        },
+        subject_args={"space": space_name},
+    )
+
+
+def send_booking_pending_payment_email(
+    to: str,
+    member_name: str,
+    space_name: str,
+    booking_date: str,
+    booking_time: str,
+    locale: str = "es",
+    *,
+    amount: str,
+    currency: str,
+    deadline: str,
+    pay_now_url: str | None = None,
+    bank_details: str | None = None,
+    cash: bool = False,
+    reference: str | None = None,
+    deadline_changed: bool = False,
+    promoted: bool = False,
+) -> bool:
+    """Tell a member their booking is held until they pay it, and by when (#603).
+
+    ``deadline_changed`` is the resend when auto-cancel brought the deadline
+    forward: the member already had this mail, and is told what changed.
+    ``promoted`` is a waitlister handed a freed seat: this mail, not
+    ``booking_promoted``, because it is the one a paid space cannot run without."""
+    return _send_templated(
+        "booking_pending_payment",
+        to,
+        locale,
+        {
+            "member_name": member_name,
+            "space_name": space_name,
+            "booking_date": booking_date,
+            "booking_time": booking_time,
+            "amount": amount,
+            "currency": currency,
+            "deadline": deadline,
+            "pay_now_url": pay_now_url,
+            "bank_details": bank_details,
+            "cash": cash,
+            "reference": reference,
+            "deadline_changed": deadline_changed,
+            "promoted": promoted,
+        },
+        subject_args={"space": space_name},
+    )
+
+
+def send_booking_deadline_reminder_email(
+    to: str,
+    member_name: str,
+    space_name: str,
+    booking_date: str,
+    booking_time: str,
+    locale: str = "es",
+    *,
+    amount: str,
+    currency: str,
+    deadline: str,
+    pay_now_url: str | None = None,
+    bank_details: str | None = None,
+    cash: bool = False,
+    reference: str | None = None,
+) -> bool:
+    """Warn a member their pending booking is released soon unless paid (#603)."""
+    return _send_templated(
+        "booking_deadline_reminder",
+        to,
+        locale,
+        {
+            "member_name": member_name,
+            "space_name": space_name,
+            "booking_date": booking_date,
+            "booking_time": booking_time,
+            "amount": amount,
+            "currency": currency,
+            "deadline": deadline,
+            "pay_now_url": pay_now_url,
+            "bank_details": bank_details,
+            "cash": cash,
+            "reference": reference,
+        },
+        subject_args={"space": space_name},
+    )
+
+
+def send_booking_cancelled_unpaid_email(
+    to: str,
+    member_name: str,
+    space_name: str,
+    booking_date: str,
+    booking_time: str,
+    locale: str = "es",
+) -> bool:
+    """Tell a member their booking was released for not being paid in time (#603)."""
+    return _send_templated(
+        "booking_cancelled_unpaid",
         to,
         locale,
         {

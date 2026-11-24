@@ -34,6 +34,7 @@ from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base
+from app.domains.activities.models import PAYMENT_FLOW_PAY_TO_CONFIRM
 
 
 class Space(Base):
@@ -42,6 +43,14 @@ class Space(Base):
         CheckConstraint("close_time > open_time", name="space_hours_valid"),
         CheckConstraint(
             "price IS NULL OR price >= 0", name="space_price_non_negative"
+        ),
+        CheckConstraint(
+            "payment_flow IN ('legacy', 'pay_to_confirm')",
+            name="valid_space_payment_flow",
+        ),
+        CheckConstraint(
+            "payment_methods <@ ARRAY['card', 'bizum', 'transfer', 'cash']::varchar[]",
+            name="valid_space_payment_methods",
         ),
         Index("ix_spaces_active", "is_active"),
     )
@@ -58,6 +67,21 @@ class Space(Base):
     # Membership type ids allowed to book. Empty or NULL = open to every member,
     # the same reading as Activity.allowed_membership_types.
     allowed_membership_types = Column(ARRAY(Integer))
+    # ``legacy`` books at once and bills afterwards; ``pay_to_confirm`` holds a paid
+    # booking as pending until its receipt is paid. May be switched from legacy to
+    # pay_to_confirm, never back, and only new bookings follow the switch (#603).
+    payment_flow = Column(
+        String(20),
+        nullable=False,
+        default=PAYMENT_FLOW_PAY_TO_CONFIRM,
+        server_default=PAYMENT_FLOW_PAY_TO_CONFIRM,
+    )
+    payment_methods = Column(
+        ARRAY(String), nullable=False, default=list, server_default="{}"
+    )
+    # Override of the club's booking auto-cancel default; NULL inherits it.
+    auto_cancel_enabled = Column(Boolean)
+    auto_cancel_hours = Column(Integer)
     is_active = Column(Boolean, nullable=False, default=True, server_default="true")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(
@@ -107,19 +131,32 @@ class Booking(Base):
     __tablename__ = "bookings"
     __table_args__ = (
         CheckConstraint(
-            "status IN ('booked', 'waitlisted', 'cancelled')",
+            "status IN ('booked', 'waitlisted', 'cancelled', 'pending')",
             name="booking_status_valid",
         ),
         Index("ix_bookings_slot", "space_slot_id"),
         Index("ix_bookings_party", "party_id"),
         # One active row per party per slot — blocks double-booking and being
-        # both booked and waitlisted for the same slot.
+        # both booked (or pending) and waitlisted for the same slot.
         Index(
             "uq_bookings_party_slot_active",
             "space_slot_id",
             "party_id",
             unique=True,
-            postgresql_where=text("status IN ('booked', 'waitlisted')"),
+            postgresql_where=text("status IN ('booked', 'waitlisted', 'pending')"),
+        ),
+        CheckConstraint(
+            "refund_status IN ('none', 'due', 'returned')",
+            name="valid_booking_refund_status",
+        ),
+        CheckConstraint(
+            "cancelled_cause IN ('payment_expired')",
+            name="valid_booking_cancelled_cause",
+        ),
+        Index(
+            "idx_bookings_pending_due",
+            "payment_due_at",
+            postgresql_where=text("status = 'pending'"),
         ),
     )
 
@@ -139,6 +176,35 @@ class Booking(Base):
     waitlisted_at = Column(DateTime(timezone=True))
     cancelled_at = Column(DateTime(timezone=True))
     cancelled_by_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+    # A pending booking's deadline, always set (#603): the slot's start less the
+    # club's cut-off, or earlier when auto-cancel is on. ``pending_since`` is when
+    # the hold began, at booking or promotion, which the reminder is timed from.
+    payment_due_at = Column(DateTime(timezone=True))
+    pending_since = Column(DateTime(timezone=True))
+    payment_reminder_sent_at = Column(DateTime(timezone=True))
+    # Why the system, not a person, cancelled the booking. NULL otherwise.
+    cancelled_cause = Column(String(30))
+    # The registration's columns for a payment that arrived after the booking was
+    # released, and for money the club owes back on a booking it no longer holds.
+    late_payment_at = Column(DateTime(timezone=True))
+    late_payment_seen_at = Column(DateTime(timezone=True))
+    refund_status = Column(
+        String(20), nullable=False, default="none", server_default="none"
+    )
+    refund_returned_at = Column(DateTime(timezone=True))
+    refund_returned_by = Column(
+        Integer,
+        ForeignKey("users.id", ondelete="SET NULL", name="fk_bookings_refund_returned_by"),
+    )
+    refund_credit_note_id = Column(
+        Integer,
+        ForeignKey(
+            "receipts.id",
+            ondelete="SET NULL",
+            use_alter=True,
+            name="fk_bookings_refund_credit_note_id",
+        ),
+    )
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     slot = relationship("SpaceSlot", back_populates="bookings")

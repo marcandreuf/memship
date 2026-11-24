@@ -11,5 +11,8 @@
 {{ c.data_row("Fecha", booking_date) }}
 {{ c.data_row("Horario", booking_time) }}
 {% endcall %}
+{%- if refund_due %}
+<p style="{{ s.p }}">Ya habías pagado esta reserva, así que el club te devolverá el importe.</p>
+{%- endif %}
 <p style="{{ s.p_last }}">Sentimos las molestias. Puedes consultar la disponibilidad actual y hacer una nueva reserva desde tu portal de socio.</p>
 {% endblock %}

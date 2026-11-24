@@ -6,9 +6,5 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const body = await request.text();
-  return proxyToApi(request, `/registrations/${id}/late-payment-seen`, {
-    method: "POST",
-    ...(body ? { body, headers: { "Content-Type": "application/json" } } : {}),
-  });
+  return proxyToApi(request, `/bookings/${id}/confirm-without-payment`, { method: "POST" });
 }

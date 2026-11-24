@@ -337,7 +337,7 @@ class Receipt(Base):
     registration = relationship(
         "Registration", foreign_keys=[registration_id], backref="receipts"
     )
-    booking = relationship("Booking", backref="receipts")
+    booking = relationship("Booking", foreign_keys=[booking_id], backref="receipts")
     purchased_membership_type = relationship("MembershipType")
     remittance = relationship("Remittance", back_populates="receipts")
     creator = relationship("User", foreign_keys=[created_by])

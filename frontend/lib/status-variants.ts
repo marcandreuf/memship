@@ -16,6 +16,14 @@ export const REGISTRATION_STATUS_VARIANTS: Record<string, StatusVariant> = {
   cancelled: "destructive",
 };
 
+export const BOOKING_STATUS_VARIANTS: Record<string, StatusVariant> = {
+  booked: "default",
+  // Held until paid (#603); amber, as a pending registration.
+  pending: "warning",
+  waitlisted: "secondary",
+  cancelled: "outline",
+};
+
 export const ACTIVITY_STATUS_VARIANTS: Record<string, StatusVariant> = {
   draft: "outline",
   published: "default",

@@ -1,5 +1,5 @@
 <!-- source: es/admin-guide/activities.md -->
-<!-- source-hash: c7247c2fcf3e -->
+<!-- source-hash: 9dd50187a6ad -->
 
 # Activities
 
@@ -75,7 +75,7 @@ confirms at once.
   member is only offered the ones the activity accepts, in emails and in *My receipts*.
 - **Confirm without payment.** Confirms a pending seat and cancels its receipt. Who did it is
   recorded.
-- **Cancelling a paid seat.** It goes to **Activities › Refunds** unless you tick *Keep the
+- **Cancelling a paid seat.** It goes to **Refunds** (from Activities or Spaces) unless you tick *Keep the
   payment*. The refund is made from the gateway or by hand; memship only records it as returned.
   Cancelling from the panel tells the member by email.
 - **Late payment.** If the gateway collects a seat already released, the seat comes back if

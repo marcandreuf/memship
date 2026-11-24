@@ -128,21 +128,20 @@ def scheduled_payment_reminders() -> dict:
 
 @celery.task
 def scheduled_seat_deadlines() -> dict:
-    """Hourly Beat entry point: release unpaid seats past their deadline, then
+    """Five-minute Beat entry point: release unpaid seats past their deadline, then
     warn the holders of those about to reach theirs.
 
     Independent of ``payment_reminders_enabled``: a club that turned auto-cancel
     on has asked for exactly this, whatever it does about dunning.
     """
     from app.db.session import SessionLocal
-    from app.domains.activities.registration_service import remind_pending_deadlines
-    from app.domains.billing.seats import expire_unpaid_seats
+    from app.domains.billing.seats import expire_unpaid_seats, remind_unpaid_seats
 
     db = SessionLocal()
     try:
         summary = {
             "seats_expired": expire_unpaid_seats(db),
-            "seats_reminded": remind_pending_deadlines(db),
+            "seats_reminded": remind_unpaid_seats(db),
         }
         db.commit()
         logger.info(f"Scheduled seat deadlines complete: {summary}")

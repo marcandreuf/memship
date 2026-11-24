@@ -22,6 +22,8 @@ known bypass into a brand-new guard.
 
 from datetime import datetime, timedelta, timezone
 
+import pytest
+
 from app.core.security.jwt import create_access_token
 from app.core.security.password import hash_password
 from app.domains.activities.models import Activity, ActivityPrice
@@ -29,6 +31,7 @@ from app.domains.activities.pricing import member_can_hold_price
 from app.domains.auth.models import User
 from app.domains.members.models import Member, MembershipType
 from app.domains.persons.models import Person
+from tests.integration.test_registration_billing import org  # noqa: F401 — fixture
 
 SUFFIX = "@examplee6e3b1.com"
 
@@ -317,6 +320,9 @@ class TestTheMemberIsOfferedOnlyTheirOwnPrices:
         assert hidden.id not in [p["id"] for p in prices]
 
 
+# A paid registration is held until paid, which needs a receipt, which needs
+# the club it is issued by.
+@pytest.mark.usefixtures("org")
 class TestRegistrationRefusesAPriceTheMemberMayNotHold:
     """The choke point that makes the column real rather than cosmetic.
 

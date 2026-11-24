@@ -5,7 +5,7 @@ socias**. Este es el árbol en castellano; el inglés está en [`../en/README.md
 
 ## Qué versión describe esta documentación
 
-Estas páginas describen memship 3.4.0, la versión publicada actual, más lo que se haya
+Estas páginas describen memship 3.5.0, la versión publicada actual, más lo que se haya
 fusionado desde que se etiquetó. Se publican desde la rama principal, así que un cambio aparece
 aquí cuando se fusiona y no cuando sale la versión siguiente.
 
@@ -47,6 +47,7 @@ Para el personal que gestiona la organización desde el panel de administración
 - [Introducción](admin-guide/overview.md), roles, navegación y panel
 - [Socios](admin-guide/members.md), ciclo de vida, tipos de membresía, grupos
 - [Actividades](admin-guide/activities.md), inscripciones, modalidades, descuentos
+- [Espacios y reservas](admin-guide/spaces.md), espacios, franjas, reservas de pago, lista de espera
 - [Pagos y recibos](admin-guide/payments.md), recibos, cuotas, IVA, pago en línea
 - [Domiciliación SEPA](admin-guide/sepa.md), mandatos y remesas
 - [Comunicaciones](admin-guide/communications.md), anuncios a los socios
@@ -95,7 +96,5 @@ Para trabajar en Memship.
 - Preguntas frecuentes, _pendiente_
 - Glosario, _pendiente_
 
-> **Reserva de espacios** (Simple Bookings) va en las imágenes publicadas, `/api/v1/bookings`
-> está en la API y el comando de puesta en marcha siembra espacios, franjas y lista de espera,
-> pero **todavía no tiene página en la guía del administrador ni en la del socio**. Es un hueco de
-> documentación, no una función que falte.
+> La **reserva de espacios** tiene [página en la guía del administrador](admin-guide/spaces.md),
+> pero **todavía no en la del socio**. Es un hueco de documentación, no una función que falte.

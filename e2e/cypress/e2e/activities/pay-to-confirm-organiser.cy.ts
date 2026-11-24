@@ -93,7 +93,7 @@ describe("Pay to confirm — organiser actions", () => {
       });
 
       cy.loginAsAdmin();
-      cy.visit("/en/activities/refunds");
+      cy.visit("/en/refunds");
       cy.contains("tr", name).within(() => {
         cy.contains("button", "Mark returned").click();
       });

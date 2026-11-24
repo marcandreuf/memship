@@ -20,7 +20,11 @@
       "noMembershipType": "This space is reserved for certain membership types and your record has none assigned. Ask the club to assign you one.",
       "price": "This booking costs {price} before tax; the receipt will show the final amount.",
       "priceOnPromotion": "If a place frees up you are booked automatically and charged {price} before tax; the receipt will show the final amount.",
-      "refundPolicy": "If you cancel before paying, the charge is cancelled with it. Once paid, the money is not returned automatically — not if you cancel, and not if the club removes the slot. Arrange any refund with the club."
+      "refundPolicy": "If you cancel before paying, the receipt is voided with the booking. If you cancel a booking already paid, the club has to return the amount; the club makes the refund directly.",
+      "heldOnPromotion": "If a place frees up in time, we will hold it for you until you pay ({price} before tax); the receipt will show the final amount.",
+      "heldUntil": "The booking is held until you pay: you have until {date} to pay it, or it will be released.",
+      "pendingToast": "Booking held: pay the receipt to confirm it",
+      "tooLate": "Too late to book"
     },
     "my": {
       "cancelClosed": "Too late to cancel",
@@ -31,7 +35,10 @@
       "cancel": "Cancel",
       "keep": "Keep",
       "confirmCancel": "Cancel this booking?",
-      "confirmCancelDescription": "Your place is freed for another member. If you change your mind you will have to book it again."
+      "confirmCancelDescription": "Your place is freed for another member. If you change your mind you will have to book it again.",
+      "payBy": "Pay before {date} or the booking will be released.",
+      "pendingNotice": "Your booking is held until you pay it.",
+      "pendingTitle": "Bookings awaiting payment"
     },
     "spaces": {
       "title": "Spaces",
@@ -105,13 +112,21 @@
       "status": "Status",
       "noBookings": "No bookings yet.",
       "cancel": "Cancel",
-      "confirmCancel": "Cancel this booking? A waitlisted member will be promoted.",
-      "confirmCancelDescription": "The member loses their place."
+      "confirmCancel": "Cancel this booking?",
+      "confirmCancelDescription": "The member loses their place. If their receipt was unpaid, it is voided. The place is freed, and offered to the waiting list if there is one.",
+      "paidTitle": "This booking is paid",
+      "allStatuses": "All statuses",
+      "payment": "Payment",
+      "expired": "Cancelled for not paying in time",
+      "confirmWithoutPaymentDescription": "The booking is confirmed without charging and its receipt is voided. It is recorded in the history.",
+      "waived": "Not charged",
+      "noBookingsFiltered": "No bookings with this status."
     },
     "status": {
       "booked": "Booked",
       "waitlisted": "Waitlisted",
-      "cancelled": "Cancelled"
+      "cancelled": "Cancelled",
+      "pending": "Awaiting payment"
     },
     "weekdays": {
       "0": "Mon",
@@ -133,6 +148,26 @@
       "invalidNumber": "Enter a whole number between {min} and {max}.",
       "waitlist": "Enable waitlist",
       "waitlistDesc": "When a slot is full, let members join a waitlist and be promoted automatically."
+    },
+    "legacy": {
+      "tooltip": "This space uses the earlier flow: bookings are confirmed at once and the receipt is collected afterwards. You can move it to the new flow from its page, and new bookings will then be held until paid."
+    },
+    "payment": {
+      "legacyNotice": "This space confirms bookings at once and the receipt is collected afterwards. If you move it to the new flow, paid bookings will be held until paid. Bookings already made do not change.",
+      "switch": "Switch to pay to confirm",
+      "switchTitle": "Switch to the pay-to-confirm flow?",
+      "switchDescription": "From now on, a paid booking is held until paid and cancelled if it is not paid in time. Bookings already made do not change. This cannot be undone.",
+      "switchConfirm": "Switch",
+      "switchPending": "On saving, the space moves to the pay-to-confirm flow. Choose the payment methods it accepts.",
+      "methodsHint": "How a member may pay for a paid booking. A space with a price cannot be saved without at least one.",
+      "emailsOff": "A paid space cancels bookings not paid in time, so these emails must be on first: {templates}.",
+      "deadlineHint": "Every pending booking must be paid before its slot starts, with the margin the club sets in Settings › Payments. Automatic cancellation can bring that deadline forward.",
+      "autoCancel": "Release unpaid bookings earlier",
+      "autoCancelOn": "Yes, for this space",
+      "autoCancelOff": "No, only when the margin before the slot is reached",
+      "autoCancelOnHours": "Yes, for this space · {hours} h",
+      "autoCancelInheritRead": "As the club",
+      "autoCancelStartsNow": "Once on, bookings already pending get the deadline from now (if it is sooner than theirs) and their members are told."
     }
   }
 }

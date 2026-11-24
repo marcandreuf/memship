@@ -5,7 +5,7 @@ from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func
-from sqlalchemy.orm import Session, joinedload, selectinload
+from sqlalchemy.orm import Session, joinedload
 
 from app.core.authorization import require_any_permission, require_permission, user_has
 from app.core.csv_export import stream_csv
@@ -18,9 +18,6 @@ from app.domains.activities.registration_schemas import (
     AdminStatusChangeRequest,
     CancelRegistrationRequest,
     EligibilityResponse,
-    LatePaymentResponse,
-    RefundResponse,
-    RefundReturnedRequest,
     RegisterRequest,
     RegistrationActivityInfo,
     RegistrationDetailResponse,
@@ -39,7 +36,6 @@ from app.domains.activities.registration_service import (
 )
 from app.domains.activities.service import get_visible_activity_or_404
 from app.domains.auth.models import User
-from app.domains.billing.seats import SeatError, mark_refund_returned
 from app.domains.billing.service import activity_vat_rate, calculate_vat
 from app.domains.members.models import Member
 
@@ -133,155 +129,6 @@ def registration_stats(
         "pending": counts.get("pending", 0),
         "total": sum(counts.values()),
     }
-
-
-# --- Refunds ---
-
-
-def _refund_response(registration: Registration) -> RefundResponse:
-    receipt = next(
-        r for r in sorted(registration.receipts, key=lambda r: -r.id)
-        if r.is_active and r.status == "paid"
-    )
-    person = registration.member.person if registration.member else None
-    return RefundResponse(
-        registration_id=registration.id,
-        activity_id=registration.activity_id,
-        activity_name=registration.activity.name,
-        member_name=f"{person.first_name} {person.last_name}" if person else None,
-        member_number=registration.member.member_number if registration.member else None,
-        cancelled_at=registration.cancelled_at,
-        refund_status=registration.refund_status,
-        receipt_id=receipt.id,
-        receipt_number=receipt.receipt_number,
-        amount=float(receipt.total_amount),
-        payment_method=receipt.payment_method,
-        payment_date=receipt.payment_date,
-        gateway_reference=(
-            receipt.stripe_payment_intent_id
-            or receipt.redsys_auth_code
-            or receipt.transaction_id
-        ),
-        refund_returned_at=registration.refund_returned_at,
-        refund_credit_note_id=registration.refund_credit_note_id,
-    )
-
-
-@router.get("/registrations/refunds")
-def list_refunds(
-    page: int = Query(1, ge=1),
-    per_page: int = Query(20, ge=1, le=100),
-    refund_status: str = Query("due", pattern="^(due|returned)$"),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("billing.read")),
-):
-    """Cancelled seats whose payment is owed back, or was returned.
-
-    Carries what finds the money in the gateway: the method, the date and the
-    reference the provider gave the payment.
-    """
-    query = (
-        db.query(Registration)
-        .options(
-            joinedload(Registration.member).joinedload(Member.person),
-            joinedload(Registration.activity),
-            selectinload(Registration.receipts),
-        )
-        .filter(Registration.refund_status == refund_status)
-        .order_by(Registration.cancelled_at.desc(), Registration.id.desc())
-    )
-    items, meta = paginate(query, page, per_page)
-    return {"meta": meta.model_dump(), "items": [_refund_response(r) for r in items]}
-
-
-@router.post(
-    "/registrations/{registration_id}/refund-returned",
-    response_model=RefundResponse,
-)
-def mark_registration_refund_returned(
-    registration_id: int,
-    data: RefundReturnedRequest | None = None,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("billing.write")),
-):
-    """Record that the money owed back on a cancelled seat has been returned."""
-    registration = (
-        db.query(Registration).filter(Registration.id == registration_id).first()
-    )
-    if not registration:
-        raise HTTPException(status_code=404, detail="Registration not found")
-    try:
-        mark_refund_returned(
-            db, registration, current_user.id, data.credit_note_id if data else None
-        )
-    except SeatError as e:
-        raise HTTPException(status_code=400, detail=e.detail)
-    db.commit()
-    db.refresh(registration)
-    return _refund_response(registration)
-
-
-@router.get("/registrations/late-payments")
-def list_unseen_late_payments(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("billing.read")),
-):
-    """Payments that arrived after their seat was released, not yet looked at.
-
-    What the dashboard banner shows until an organiser acknowledges each one.
-    """
-    rows = (
-        db.query(Registration)
-        .options(
-            joinedload(Registration.member).joinedload(Member.person),
-            joinedload(Registration.activity),
-        )
-        .filter(
-            Registration.late_payment_at.isnot(None),
-            Registration.late_payment_seen_at.is_(None),
-        )
-        .order_by(Registration.late_payment_at.desc())
-        .all()
-    )
-    items = []
-    for r in rows:
-        person = r.member.person if r.member else None
-        items.append(
-            LatePaymentResponse(
-                registration_id=r.id,
-                activity_id=r.activity_id,
-                activity_name=r.activity.name,
-                member_name=f"{person.first_name} {person.last_name}" if person else None,
-                status=r.status,
-                refund_status=r.refund_status,
-                late_payment_at=r.late_payment_at,
-            )
-        )
-    return {"items": items}
-
-
-@router.post(
-    "/registrations/{registration_id}/late-payment-seen",
-    status_code=status.HTTP_204_NO_CONTENT,
-)
-def acknowledge_late_payment(
-    registration_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("billing.write")),
-):
-    """Take a late payment off the banner once an organiser has looked at it."""
-    registration = (
-        db.query(Registration)
-        .filter(
-            Registration.id == registration_id,
-            Registration.late_payment_at.isnot(None),
-        )
-        .first()
-    )
-    if not registration:
-        raise HTTPException(status_code=404, detail="No late payment on this registration")
-    registration.late_payment_seen_at = datetime.now(timezone.utc)
-    db.commit()
 
 
 # --- Activity-scoped endpoints ---

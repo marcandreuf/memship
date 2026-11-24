@@ -131,18 +131,18 @@ class TestWithNoSeatFree:
         admin = _create_admin(db, "late-seen")
         cookies = _auth_cookie(admin)
 
-        refunds = client.get("/api/v1/registrations/refunds", cookies=cookies).json()
-        banner = client.get("/api/v1/registrations/late-payments", cookies=cookies).json()
-        assert registration.id in [i["registration_id"] for i in refunds["items"]]
-        assert registration.id in [i["registration_id"] for i in banner["items"]]
+        refunds = client.get("/api/v1/seats/refunds", cookies=cookies).json()
+        banner = client.get("/api/v1/seats/late-payments", cookies=cookies).json()
+        assert registration.id in [i["seat_id"] for i in refunds["items"]]
+        assert registration.id in [i["seat_id"] for i in banner["items"]]
 
         resp = client.post(
-            f"/api/v1/registrations/{registration.id}/late-payment-seen", cookies=cookies
+            f"/api/v1/seats/registration/{registration.id}/late-payment-seen", cookies=cookies
         )
 
         assert resp.status_code == 204
-        banner = client.get("/api/v1/registrations/late-payments", cookies=cookies).json()
-        assert registration.id not in [i["registration_id"] for i in banner["items"]]
+        banner = client.get("/api/v1/seats/late-payments", cookies=cookies).json()
+        assert registration.id not in [i["seat_id"] for i in banner["items"]]
 
 
 class TestTheExceptionStaysNarrow:

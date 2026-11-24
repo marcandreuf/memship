@@ -277,9 +277,12 @@ def ensure_registration_receipt(
     (`cancel_registration`), and a cancelled one deliberately does not block a
     new one — re-confirming after a cancellation owes money again.
 
-    Receipt generation never fails the registration; the error is logged instead,
-    because the seat has already been given and rolling it back here would be
-    worse than an invoice an admin has to raise by hand.
+    For a ``legacy`` seat, receipt generation never fails the registration; the
+    error is logged instead, because the seat has already been given and rolling
+    it back here would be worse than an invoice an admin has to raise by hand. A
+    seat that needs payment is the opposite: with no receipt it cannot be paid,
+    so it would hold a place nobody can confirm. That raises, and the caller's
+    transaction rolls back (#603).
     """
     amount = registration.discounted_amount
     if amount is None or Decimal(str(amount)) <= 0:
@@ -324,6 +327,15 @@ def ensure_registration_receipt(
                 is_batchable=not pay_to_confirm,
             )
     except Exception as e:
+        if pay_to_confirm:
+            logger.exception(
+                "Failed to generate the receipt of pending registration %s",
+                registration.id,
+            )
+            raise RegistrationError(
+                "The receipt for this seat could not be raised, so it cannot be held",
+                code="seat_receipt_failed",
+            ) from e
         logger.error(
             "Failed to generate receipt for registration %s: %s", registration.id, e
         )
@@ -464,7 +476,11 @@ def _apply_status_change(
         ensure_registration_receipt(db, registration, activity)
 
     if occupies_seat(old_status) and not occupies_seat(new_status):
-        _promote_from_waitlist(db, activity, registration.modality_id)
+        # A seat moved to the waiting list is not the one to promote into the
+        # seat it just gave up.
+        _promote_from_waitlist(
+            db, activity, registration.modality_id, exclude_id=registration.id
+        )
 
     return old_status
 
@@ -838,12 +854,16 @@ def _determine_registration_status(
 
 
 def _promote_from_waitlist(
-    db: Session, activity: Activity, modality_id: int | None = None
+    db: Session,
+    activity: Activity,
+    modality_id: int | None = None,
+    exclude_id: int | None = None,
 ) -> Registration | None:
     """Give the freed seat to the oldest waitlisted registration.
 
     It is ``pending`` when the seat needs payment, with its deadline and its
-    receipt, and ``confirmed`` otherwise. Goes through the one status-change
+    receipt, and sent the pending-payment mail; ``confirmed`` otherwise, and
+    sent ``waitlist_promoted``. Goes through the one status-change
     path, so if that pending seat later expires unpaid, cancelling it promotes
     the next in line in turn.
 
@@ -872,6 +892,8 @@ def _promote_from_waitlist(
         )
         .order_by(Registration.created_at.asc(), Registration.id.asc())
     )
+    if exclude_id is not None:
+        query = query.filter(Registration.id != exclude_id)
 
     next_in_line = query.first()
     if not next_in_line:
@@ -888,7 +910,15 @@ def _promote_from_waitlist(
     _apply_status_change(db, next_in_line, new_status)
     receipt = ensure_registration_receipt(db, next_in_line, activity)
 
-    _dispatch_promotion_email(db, next_in_line, activity, receipt)
+    if new_status == "pending":
+        # The pending-payment mail, not waitlist_promoted: it is the one a club
+        # cannot run a pay-to-confirm activity without (seeded on, and guarded),
+        # so a member holding a seat they must pay for is always told so (#619).
+        _dispatch_pending_payment_email(
+            db, next_in_line, activity, next_in_line.member, receipt, promoted=True
+        )
+    else:
+        _dispatch_promotion_email(db, next_in_line, activity)
 
     return next_in_line
 
@@ -977,11 +1007,13 @@ def _dispatch_pending_payment_email(
     member: "Member",
     receipt,
     deadline_added: bool = False,
+    promoted: bool = False,
 ) -> None:
     """Queue the "your seat is held until you pay" email for after commit.
 
     ``deadline_added`` is the resend when auto-cancel starts on a seat that was
     already held: the member already had this mail, and is told what changed.
+    ``promoted`` is a waitlister handed a freed seat.
     """
     try:
         from app.tasks.email_tasks import send_pending_payment_email_task
@@ -996,6 +1028,7 @@ def _dispatch_pending_payment_email(
             activity_name=activity.name,
             locale=locale,
             deadline_added=deadline_added,
+            promoted=promoted,
             **_seat_payment(db, registration, activity, receipt, locale),
         )
         run_after_commit(db, lambda: send_pending_payment_email_task.delay(**payload))
@@ -1114,30 +1147,21 @@ def _dispatch_cancellation_email(
 
 
 def _dispatch_promotion_email(
-    db: Session, registration: Registration, activity: Activity, receipt=None
+    db: Session, registration: Registration, activity: Activity
 ) -> None:
-    """Queue the waitlist promotion email for after commit.
-
-    A promotee who has to pay is told the seat is held until then, and how.
-    """
+    """Queue the "you're in" email for a promotion confirmed at once."""
     try:
         from app.tasks.email_tasks import send_promotion_email_task
         email = _get_member_email(registration)
         if not email:
             return
-        locale = org_locale(db)
         payload = dict(
             to=email,
             member_name=_get_member_name(registration),
             activity_name=activity.name,
             activity_date=activity.starts_at.strftime("%d/%m/%Y") if activity.starts_at else None,
             location=activity.location,
-            locale=locale,
-            payment=(
-                _seat_payment(db, registration, activity, receipt, locale)
-                if registration.status == "pending" and receipt is not None
-                else None
-            ),
+            locale=org_locale(db),
         )
         run_after_commit(db, lambda: send_promotion_email_task.delay(**payload))
     except Exception as e:

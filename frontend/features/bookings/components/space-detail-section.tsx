@@ -38,6 +38,31 @@ export function SpaceDetailSection({ space }: SpaceDetailSectionProps) {
         : t("bookings.spaces.free"),
       inline: true,
     },
+    ...(space.payment_flow === "pay_to_confirm"
+      ? [
+          {
+            label: t("activities.payment.methods"),
+            value: space.payment_methods.length
+              ? space.payment_methods
+                  .map((m) => t(`activities.payment.method.${m}`))
+                  .join(", ")
+              : "—",
+            inline: true,
+          },
+          {
+            label: t("bookings.payment.autoCancel"),
+            value:
+              space.auto_cancel_enabled == null
+                ? t("bookings.payment.autoCancelInheritRead")
+                : space.auto_cancel_enabled
+                  ? space.auto_cancel_hours
+                    ? t("bookings.payment.autoCancelOnHours", { hours: space.auto_cancel_hours })
+                    : t("bookings.payment.autoCancelOn")
+                  : t("bookings.payment.autoCancelOff"),
+            inline: true,
+          },
+        ]
+      : []),
     {
       label: t("bookings.spaces.status"),
       value: space.is_active

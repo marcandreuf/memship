@@ -19,15 +19,35 @@ from app.domains.shared.feature_rules import validate_bool_keys, validate_int_ru
 INT_RULES: IntRules = {
     "booking_window_days": (14, 1, 365),
     "booking_cancellation_deadline_hours": (24, 0, 8760),
+    # Pay-to-confirm bookings (#603). Separate from the activity values on
+    # purpose: a court slot and an event are not paid on the same clock.
+    # How long an unpaid booking may be held when auto-cancel is on.
+    "booking_auto_cancel_hours": (24, 1, 8760),
+    # How long before the slot starts a pending booking must be paid. 0 suits a
+    # club that takes cash at the door and marks it paid before the start.
+    "booking_payment_cutoff_minutes": (60, 0, 10080),
+    # The shortest hold the club offers: a booking that would get less is
+    # refused rather than created already doomed.
+    "booking_min_hold_minutes": (15, 1, 1440),
+    # The shortest hold for which a waitlister is promoted automatically. Below
+    # it, every waitlister is told the seat is free and the first to book wins.
+    "booking_auto_promotion_min_minutes": (120, 1, 10080),
 }
 
 
 #: Read as a boolean, through `bool(features.get(key, True))` in
 #: `bookings/service.py`, so it cannot raise. The check refuses the string
 #: `"false"`, which is truthy and would switch the waitlist on for an admin who
-#: meant to switch it off. Note the default here is True, unlike the billing
+#: meant to switch it off. Note the waitlist defaults to True, unlike the billing
 #: flags, so an absent key means enabled.
-BOOL_KEYS = frozenset({"booking_waitlist_enabled"})
+BOOL_KEYS = frozenset(
+    {
+        "booking_waitlist_enabled",
+        # The club default for releasing an unpaid booking before its cut-off.
+        # Read as `is True`, so unlike the waitlist an absent key means off.
+        "booking_auto_cancel_enabled",
+    }
+)
 
 
 #: The configuration keys this domain owns, for the canonical set in
