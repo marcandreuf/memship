@@ -65,7 +65,6 @@ class ActivityPriceCreate(BaseModel):
     # the foreign key, answering 500 where 422 is the honest reply (#542).
     modality_id: int | None = Field(default=None, ge=1)
     display_order: int = Field(default=1, ge=0)
-    is_optional: bool = False
     is_default: bool = False
     is_visible: bool = True
     # Empty or omitted means every membership type (#427).
@@ -90,7 +89,6 @@ class ActivityPriceUpdate(BaseModel):
     # the foreign key, answering 500 where 422 is the honest reply (#542).
     modality_id: int | None = Field(default=None, ge=1)
     display_order: int | None = Field(default=None, ge=0)
-    is_optional: bool | None = None
     is_default: bool | None = None
     is_visible: bool | None = None
     membership_type_ids: list[int] | None = None
@@ -104,7 +102,7 @@ class ActivityPriceUpdate(BaseModel):
             raise ValueError("valid_until must be after valid_from")
         return self
 
-    _not_null = field_validator("name", "is_optional", "is_default", "is_visible")(refuse_null)
+    _not_null = field_validator("name", "is_default", "is_visible")(refuse_null)
 
 
 class ActivityPriceResponse(BaseModel):
@@ -128,7 +126,6 @@ class ActivityPriceResponse(BaseModel):
     vat_amount: float = 0
     total_amount: float = 0
     display_order: int
-    is_optional: bool
     is_default: bool
     is_visible: bool
     membership_type_ids: list[int] | None = None

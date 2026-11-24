@@ -1,5 +1,5 @@
 <!-- source: es/admin-guide/activities.md -->
-<!-- source-hash: 9dd50187a6ad -->
+<!-- source-hash: b2fb84570044 -->
 
 # Activities
 
@@ -38,7 +38,8 @@ and *Completed*). Only **published** activities are visible to members. Use the 
 
 You can define several **prices**, at activity or modality level, with **time validity**
 (*valid from / until*) to set up, for example, early registration rates. A price can be marked as
-**Default** or **Optional**, and an amount of 0 is shown as **Free**.
+**Default**, which preselects it on the member's registration form; only one price per
+activity can be the default. An amount of 0 is shown as **Free**.
 
 ## Discounts
 

@@ -103,7 +103,7 @@
       "validFrom": "Valid From",
       "validUntil": "Valid Until",
       "isDefault": "Default",
-      "isOptional": "Optional",
+      "isDefaultHint": "Preselected on the registration page. Only one price per activity can be the default.",
       "activityLevel": "Activity level",
       "create": "Add Price",
       "edit": "Edit Price",

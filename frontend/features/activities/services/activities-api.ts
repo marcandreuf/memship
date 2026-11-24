@@ -25,7 +25,6 @@ export interface ActivityPriceData {
   vat_amount: number;
   total_amount: number;
   display_order: number;
-  is_optional: boolean;
   is_default: boolean;
   is_visible: boolean;
   membership_type_ids: number[] | null;

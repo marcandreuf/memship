@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/lib/i18n/routing";
 import { Button } from "@/components/ui/button";
@@ -50,6 +50,20 @@ export default function RegisterPage({
   const [discountResult, setDiscountResult] = useState<ValidateDiscountResult | null>(null);
   const [discountChecking, setDiscountChecking] = useState(false);
   const [acceptedConsents, setAcceptedConsents] = useState<Record<number, boolean>>({});
+
+  // Preselect the price marked default. That is what the flag means, and until
+  // #601 it meant nothing: it was stored and displayed and read by nobody, so
+  // this page preselected nothing however an activity was configured. At most
+  // one price per activity can carry it (uq_activity_prices_is_default), so
+  // there is nothing to disambiguate. Initial value only: a member who picks
+  // another price keeps their choice.
+  useEffect(() => {
+    if (selectedPriceId !== null) return;
+    const preselect = activity?.prices.find(
+      (p) => p.is_visible && p.is_active && p.is_default,
+    );
+    if (preselect) setSelectedPriceId(preselect.id);
+  }, [activity, selectedPriceId]);
 
   if (actLoading || eligLoading) {
     return <FormSkeleton fields={3} />;
