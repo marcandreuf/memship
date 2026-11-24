@@ -1,7 +1,7 @@
 """Index the hot paths, and drop the indexes that only cost writes
 
 Revision ID: e1f7a4c3b982
-Revises: c4f8a1d27e90
+Revises: 9e4b7c2d1a63
 Create Date: 2026-11-24
 
 Step 2 of #459. Step 1 (`54ad095`) rewrote the queries; without the indexes here
@@ -102,7 +102,7 @@ nothing.
 from alembic import op
 
 revision = "e1f7a4c3b982"
-down_revision = "c4f8a1d27e90"
+down_revision = "9e4b7c2d1a63"
 branch_labels = None
 depends_on = None
 
