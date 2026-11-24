@@ -43,7 +43,7 @@ class Concept(Base):
         ),
     )
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
     name = Column(String(255), nullable=False)
     code = Column(String(50), unique=True)
     description = Column(Text)
@@ -133,6 +133,52 @@ class Receipt(Base):
         Index("ix_receipts_origin", "origin"),
         Index("ix_receipts_booking_id", "booking_id"),
         Index("ix_receipts_rectifies_receipt_id", "rectifies_receipt_id"),
+        Index("ix_receipts_remittance_id", "remittance_id"),
+        Index("ix_receipts_registration_id", "registration_id"),
+        Index("ix_receipts_concept_id", "concept_id"),
+        # The billing-run anti-join probes this once per member
+        # (billing/service.py, memship#459 §2). Equality columns only:
+        # is_active and status != 'cancelled' are left to the recheck, which
+        # sees at most one row.
+        Index(
+            "ix_receipts_billing_period",
+            "party_id",
+            "origin",
+            "billing_period_start",
+            "billing_period_end",
+        ),
+        # The revenue chart. Equality on status leads, the payment_date range
+        # follows. Useless without the range predicate in reports/service.py:
+        # the extract('year', ...) form it replaced seq-scanned even with this
+        # index present.
+        Index("ix_receipts_status_payment_date", "status", "payment_date"),
+        # mark_overdue (reminder_service.py) on every dunning run. The
+        # predicate mirrors its filters, so the planner can prove it.
+        Index(
+            "ix_receipts_open_due",
+            "due_date",
+            postgresql_where=text(
+                "status IN ('pending', 'emitted') AND is_active"
+                " AND payment_date IS NULL"
+            ),
+        ),
+        # The receipts search: ILIKE '%word%' rules out a btree, and these are
+        # worth 59.7 ms to 2.4 ms on 50,000 receipts. The equivalent indexes on
+        # persons and members are deliberately absent -- that search ORs across
+        # three tables, so no single-table index can be reached below the join
+        # (memship#459 §4, ADR 0007).
+        Index(
+            "ix_receipts_receipt_number_trgm",
+            "receipt_number",
+            postgresql_using="gin",
+            postgresql_ops={"receipt_number": "gin_trgm_ops"},
+        ),
+        Index(
+            "ix_receipts_description_trgm",
+            "description",
+            postgresql_using="gin",
+            postgresql_ops={"description": "gin_trgm_ops"},
+        ),
         # Named explicitly: an unnamed `unique=True` on the column is
         # auto-named `receipts_redsys_ds_order_key` by PostgreSQL, while the
         # migration that created it named it `uq_...`. Same constraint, two
@@ -141,7 +187,7 @@ class Receipt(Base):
         UniqueConstraint("redsys_ds_order", name="uq_receipts_redsys_ds_order"),
     )
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
     receipt_number = Column(String(50), nullable=False, unique=True)
 
     # An issued invoice is never amended — under Spanish rules it is rectified
@@ -336,7 +382,7 @@ class SepaMandate(Base):
         ),
     )
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
     # A mandate is a debtor's authorisation, and any legal entity can sign
     # one (ADR 0003, Phase 4). The debtor_* columns were already a snapshot.
     party_id = Column(
@@ -402,7 +448,7 @@ class Remittance(Base):
         Index("ix_remittances_emission_date", "emission_date"),
     )
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
     remittance_number = Column(String(50), unique=True, nullable=False)
     remittance_type = Column(String(20), nullable=False, default="sepa")
     status = Column(String(20), nullable=False, default="draft")
@@ -463,11 +509,10 @@ class RemittanceReceipt(Base):
             name="valid_release_reason",
         ),
         CheckConstraint("amount_sent >= 0", name="remittance_receipt_amount_non_negative"),
-        Index("ix_remittance_receipts_remittance_id", "remittance_id"),
         Index("ix_remittance_receipts_receipt_id", "receipt_id"),
     )
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
     remittance_id = Column(
         Integer, ForeignKey("remittances.id", ondelete="CASCADE"), nullable=False
     )
@@ -497,7 +542,7 @@ class PaymentProvider(Base):
         ),
     )
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
     provider_type = Column(String(50), nullable=False)
     display_name = Column(String(255), nullable=False)
     status = Column(String(20), nullable=False, default="disabled")
@@ -524,7 +569,7 @@ class WebhookEvent(Base):
         Index("ix_webhook_events_provider_status", "provider_type", "status"),
     )
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
     provider_type = Column(String(50), nullable=False)
     external_event_id = Column(String(255), unique=True, nullable=False)
     event_type = Column(String(100), nullable=False)
@@ -569,7 +614,7 @@ class BillingRun(Base):
         Index("ix_billing_runs_triggered_started", "triggered_by", "started_at"),
     )
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
     frequency = Column(String(20), nullable=False)
     period_start = Column(Date, nullable=False)
     period_end = Column(Date, nullable=False)
@@ -612,7 +657,7 @@ class ReceiptReminder(Base):
         Index("ix_receipt_reminders_receipt", "receipt_id", "sent_at"),
     )
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
     receipt_id = Column(Integer, ForeignKey("receipts.id"), nullable=False)
     reminder_number = Column(Integer, nullable=False)
     channel = Column(String(20), nullable=False, default="email")

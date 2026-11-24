@@ -27,12 +27,15 @@ Usage:
 import argparse
 import getpass
 import os
+import random
 import secrets
 import sys
+from datetime import date, timedelta
+from decimal import Decimal
 from pathlib import Path
 
 from argon2 import PasswordHasher
-from sqlalchemy import text
+from sqlalchemy import insert, text
 
 from app.cli.reset import preview_club_data, reset_club_data
 from app.core.config import settings as app_settings
@@ -41,7 +44,9 @@ from app.core.schema_types import normalize_email
 from app.db.session import SessionLocal
 from app.domains.audit.models import AuditLog
 from app.domains.organizations.models import OrganizationSettings
-from app.domains.persons.models import Address, Contact, ContactChannel, ContactType, Person
+from app.domains.persons.models import (
+    Address, Contact, ContactChannel, ContactType, Party, Person,
+)
 from app.domains.auth.models import Role, RolePermission, User
 from app.domains.auth.roles import assign_roles
 from app.domains.activities.models import (
@@ -54,6 +59,8 @@ from app.domains.billing.models import (
     InvoiceSequence,
     PaymentProvider,
     Receipt,
+    Remittance,
+    RemittanceReceipt,
     SepaMandate,
 )
 
@@ -2008,6 +2015,280 @@ def guard_test_mode() -> None:
     sys.exit(1)
 
 
+# ---------------------------------------------------------------------------
+# Volume dataset
+#
+# `--demo` builds a club you can read on screen: a few dozen members, a few
+# dozen receipts. That is the right size to work on features against and the
+# wrong size to measure them. Postgres sequential-scans a 69-row table whatever
+# indexes exist, because a seq scan of 69 rows is the cheapest plan available,
+# so EXPLAIN (ANALYZE, BUFFERS) before and after an index change returns the
+# same number twice (#459).
+#
+# `--volume N` writes the same shapes at a size where the planner has a real
+# choice. It is not a bigger demo club: there are no logins, no activities and
+# no consents, only the tables whose plans are being measured.
+#
+# Every row it writes is marked, and `--clear-volume` removes exactly those:
+# parties carry an @volume.invalid email (RFC 2606 reserves the TLD, so no
+# address built from it can ever be deliverable), members and receipts carry a
+# VOL- number. The organisation's own counters are never touched — this does
+# not call generate_receipt_number or allocate_member_number, so a later seed
+# continues its series where it left off.
+# ---------------------------------------------------------------------------
+
+VOLUME_DOMAIN = "volume.invalid"
+VOLUME_PREFIX = "VOL-"
+
+# Rows per executemany: large enough that round trips stop mattering, small
+# enough that a batch's parameter list stays sane.
+_VOLUME_CHUNK = 2000
+
+_VOLUME_FIRST_NAMES = [
+    "Laia", "Marc", "Nuria", "Pau", "Anna", "Jordi", "Carla", "Oriol",
+    "Marta", "Sergi", "Elena", "Pere", "Rosa", "Albert", "Clara", "Ivan",
+]
+_VOLUME_LAST_NAMES = [
+    "Garcia", "Serra", "Puig", "Vila", "Roca", "Soler", "Bosch", "Ferrer",
+    "Mas", "Riera", "Costa", "Pons", "Sala", "Camps", "Prats", "Rovira",
+]
+
+# Weighted, because selectivity on `status` is exactly what decides whether a
+# partial index earns its write cost.
+_VOLUME_RECEIPT_STATUSES = (
+    ["paid"] * 70 + ["emitted"] * 15 + ["pending"] * 8
+    + ["overdue"] * 5 + ["cancelled"] * 2
+)
+_VOLUME_RECEIPT_ORIGINS = (
+    ["membership"] * 70 + ["activity"] * 20 + ["manual"] * 5 + ["donation"] * 5
+)
+_VOLUME_MEMBER_STATUSES = (
+    ["active"] * 85 + ["pending"] * 5 + ["suspended"] * 3
+    + ["cancelled"] * 4 + ["expired"] * 3
+)
+
+
+def guard_volume_mode() -> None:
+    """Refuse anywhere a large synthetic dataset could matter.
+
+    Same gate as `--test`, for the same reason: these rows exist to be measured
+    against and then deleted, and nothing else.
+    """
+    if os.environ.get("CI") or os.environ.get("APP_ENV") == "development":
+        return
+    print(
+        "\nERROR: --volume writes a large synthetic dataset and is only for local\n"
+        "measurement. It refuses to run unless APP_ENV=development or CI is set.\n",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+
+
+def _reserve_ids(db, table: str, column: str, count: int) -> list[int]:
+    """Take `count` ids off a table's sequence in one round trip.
+
+    Reserving up front lets the child rows be built in memory with their
+    parents' ids already known, so the load is a handful of statements rather
+    than one per row with a RETURNING.
+    """
+    if count == 0:
+        return []
+    rows = db.execute(
+        text(
+            "SELECT nextval(pg_get_serial_sequence(:t, :c)) "
+            "FROM generate_series(1, :n)"
+        ),
+        {"t": table, "c": column, "n": count},
+    ).scalars()
+    return [int(r) for r in rows]
+
+
+def _volume_chunks(rows: list[dict]):
+    for i in range(0, len(rows), _VOLUME_CHUNK):
+        yield rows[i : i + _VOLUME_CHUNK]
+
+
+def _volume_insert(db, model, rows: list[dict], label: str) -> None:
+    if not rows:
+        return
+    for batch in _volume_chunks(rows):
+        db.execute(insert(model.__table__), batch)
+    db.commit()
+    print(f"  {label}: {len(rows):,}")
+
+
+def clear_volume_data(db) -> None:
+    """Remove only what `--volume` wrote.
+
+    Receipts go first and by their own marker: `receipts.party_id` carries no
+    ON DELETE on purpose (money outlives everything), so deleting the parties
+    first fails on the foreign key rather than cascading. Parties then take
+    their persons and members with them, both of which do cascade.
+    """
+    counts = {}
+    counts["remittance_receipts"] = db.execute(
+        text(
+            "DELETE FROM remittance_receipts WHERE remittance_id IN "
+            "(SELECT id FROM remittances WHERE remittance_number LIKE :p)"
+        ),
+        {"p": f"{VOLUME_PREFIX}%"},
+    ).rowcount
+    counts["receipts"] = db.execute(
+        text("DELETE FROM receipts WHERE receipt_number LIKE :p"),
+        {"p": f"{VOLUME_PREFIX}%"},
+    ).rowcount
+    counts["remittances"] = db.execute(
+        text("DELETE FROM remittances WHERE remittance_number LIKE :p"),
+        {"p": f"{VOLUME_PREFIX}%"},
+    ).rowcount
+    counts["parties (+ persons, members by cascade)"] = db.execute(
+        text("DELETE FROM party WHERE email LIKE :p"),
+        {"p": f"%@{VOLUME_DOMAIN}"},
+    ).rowcount
+    db.commit()
+    print("\nCleared the volume dataset:")
+    for label, n in counts.items():
+        print(f"  {label}: {n:,}")
+
+
+def seed_volume_data(db, members: int, per_member: int, years: int, seed: int) -> None:
+    """Write `members` members and `members * per_member` receipts."""
+    rng = random.Random(seed)
+    type_ids = [
+        mt.id
+        for mt in db.query(MembershipType)
+        .filter(MembershipType.is_active.is_(True))
+        .all()
+    ]
+    if not type_ids:
+        print(
+            "\nERROR: no active membership types. Seed the club first, e.g.\n"
+            "  ./scripts/dev.sh seed demo\n",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    today = date.today()
+    span = max(1, years * 365)
+    print(f"\nLoading {members:,} members and {members * per_member:,} receipts...")
+
+    party_ids = _reserve_ids(db, "party", "id", members)
+    party_rows, person_rows, member_rows = [], [], []
+    for i, pid in enumerate(party_ids):
+        first = rng.choice(_VOLUME_FIRST_NAMES)
+        last = f"{rng.choice(_VOLUME_LAST_NAMES)} {rng.choice(_VOLUME_LAST_NAMES)}"
+        party_rows.append({
+            "id": pid,
+            "kind": "person",
+            "display_name": f"{first} {last}",
+            "email": f"vol{i:07d}@{VOLUME_DOMAIN}",
+        })
+        person_rows.append({
+            "party_id": pid, "kind": "person",
+            "first_name": first, "last_name": last,
+        })
+        member_rows.append({
+            "party_id": pid,
+            "membership_type_id": rng.choice(type_ids),
+            "member_number": f"{VOLUME_PREFIX}{i:07d}",
+            "status": rng.choice(_VOLUME_MEMBER_STATUSES),
+            "joined_at": today - timedelta(days=rng.randrange(span)),
+            "is_active": True,
+        })
+
+    _volume_insert(db, Party, party_rows, "parties")
+    _volume_insert(db, Person, person_rows, "persons")
+    _volume_insert(db, Member, member_rows, "members")
+
+    total = members * per_member
+    receipt_ids = _reserve_ids(db, "receipts", "id", total)
+    receipt_rows = []
+    n = 0
+    for pid in party_ids:
+        for _ in range(per_member):
+            emission = today - timedelta(days=rng.randrange(span))
+            status = rng.choice(_VOLUME_RECEIPT_STATUSES)
+            base = Decimal(rng.randrange(1000, 20000)) / 100
+            vat = (base * Decimal("0.21")).quantize(Decimal("0.01"))
+            receipt_rows.append({
+                "id": receipt_ids[n],
+                "receipt_number": f"{VOLUME_PREFIX}{n:08d}",
+                "document_type": "invoice",
+                "party_id": pid,
+                "origin": rng.choice(_VOLUME_RECEIPT_ORIGINS),
+                "description": f"Volume dataset receipt {n}",
+                "base_amount": base,
+                "vat_rate": Decimal("21.00"),
+                "vat_amount": vat,
+                "total_amount": base + vat,
+                "status": status,
+                "emission_date": emission,
+                "due_date": emission + timedelta(days=30),
+                # Only a settled receipt carries a payment date, which is what
+                # makes the revenue query's filter selective.
+                "payment_date": (
+                    emission + timedelta(days=rng.randrange(1, 40))
+                    if status == "paid" else None
+                ),
+                "is_batchable": True,
+                "is_active": True,
+            })
+            n += 1
+    _volume_insert(db, Receipt, receipt_rows, "receipts")
+
+    # Remittances, so `receipts.remittance_id` has something to scan: #459 §3
+    # calls that the sharpest missing index, and the remittance detail is one
+    # of the measurements the issue prescribes.
+    batchable = [r for r in receipt_rows if r["status"] in ("emitted", "paid")]
+    groups = [batchable[i : i + 500] for i in range(0, len(batchable), 500)]
+    remittance_ids = _reserve_ids(db, "remittances", "id", len(groups))
+
+    remittance_rows, link_rows, assignments = [], [], []
+    for rid, group in zip(remittance_ids, groups):
+        emission = today - timedelta(days=rng.randrange(span))
+        remittance_rows.append({
+            "id": rid,
+            "remittance_number": f"{VOLUME_PREFIX}R{rid:06d}",
+            "remittance_type": "sepa",
+            "status": "closed",
+            "emission_date": emission,
+            "due_date": emission + timedelta(days=5),
+            "total_amount": sum(r["total_amount"] for r in group),
+            "receipt_count": len(group),
+            "creditor_name": "Volume Dataset",
+            "creditor_iban": "ES9121000418450200051332",
+            "creditor_id": "ES12000B12345678",
+            "is_active": True,
+        })
+        for r in group:
+            link_rows.append({
+                "remittance_id": rid,
+                "receipt_id": r["id"],
+                "amount_sent": r["total_amount"],
+            })
+            assignments.append({"rid": rid, "receipt_id": r["id"]})
+
+    _volume_insert(db, Remittance, remittance_rows, "remittances")
+    _volume_insert(db, RemittanceReceipt, link_rows, "remittance_receipts")
+    for batch in _volume_chunks(assignments):
+        db.execute(
+            text("UPDATE receipts SET remittance_id = :rid WHERE id = :receipt_id"),
+            batch,
+        )
+    db.commit()
+    print(f"  receipts linked to a remittance: {len(assignments):,}")
+
+    # Without this the planner works off the statistics these tables had when
+    # they were small, and every plan is measured against a row count Postgres
+    # does not believe.
+    print("  Running ANALYZE...")
+    db.execute(text(
+        "ANALYZE party, persons, members, receipts, remittances, remittance_receipts"
+    ))
+    db.commit()
+    print("\nRemove it again with:  python -m app.cli.seed --clear-volume")
+
+
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Memship setup — super admin, club data reset, and club setup.",
@@ -2037,6 +2318,37 @@ def _parse_args() -> argparse.Namespace:
         action="store_true",
         help="Generate the demo club: organization, a year of members, billing, "
         "SEPA and reminders, plus generated logins for a club admin and two members.",
+    )
+    parser.add_argument(
+        "--volume",
+        type=int,
+        metavar="N",
+        help="Load N synthetic members and their receipts on top of an "
+        "already-seeded club, so query plans can be measured against a realistic "
+        "row count. Local measurement only; see --clear-volume.",
+    )
+    parser.add_argument(
+        "--volume-receipts-per-member",
+        type=int,
+        default=10,
+        help="Receipts per member for --volume (default: 10).",
+    )
+    parser.add_argument(
+        "--volume-years",
+        type=int,
+        default=5,
+        help="Spread --volume dates over this many years back (default: 5).",
+    )
+    parser.add_argument(
+        "--volume-seed",
+        type=int,
+        default=459,
+        help="RNG seed for --volume, so a run is reproducible (default: 459).",
+    )
+    parser.add_argument(
+        "--clear-volume",
+        action="store_true",
+        help="Delete the --volume dataset and exit. Touches nothing else.",
     )
     # Fixed-credential mode for the e2e suite. Hidden: it is not something an
     # operator should ever reach for, and `guard_test_mode` refuses it anyway.
@@ -2273,6 +2585,27 @@ TEST_FOOTER = (
 
 def main() -> None:
     args = _parse_args()
+
+    # Both volume modes are standalone: they act on an already-seeded club and
+    # must not re-run the setup around them, so they return before it starts.
+    if args.clear_volume or args.volume:
+        guard_volume_mode()
+        db = SessionLocal()
+        try:
+            if args.clear_volume:
+                clear_volume_data(db)
+            else:
+                seed_volume_data(
+                    db,
+                    members=args.volume,
+                    per_member=args.volume_receipts_per_member,
+                    years=args.volume_years,
+                    seed=args.volume_seed,
+                )
+        finally:
+            db.close()
+        return
+
     if args.test:
         guard_test_mode()
         # `--test` seeds its own fixed dataset, so these would be accepted and

@@ -59,8 +59,19 @@ class Notification(Base):
         CheckConstraint(
             "source_type IN ('announcement')", name="valid_notification_source_type"
         ),
-        # Drives the unread badge count and the list (filter by user_id + read_at).
-        Index("ix_notifications_user_unread", "user_id", "read_at"),
+        # The unread badge and the list, hit on every page load. Partial
+        # rather than (user_id, read_at): every query on this path filters
+        # read_at IS NULL (unread_count, mark_read), so the index only needs
+        # the unread rows (memship#459 §3).
+        Index(
+            "ix_notifications_unread",
+            "user_id",
+            postgresql_where="read_at IS NULL",
+        ),
+        # The admin "Seen" badge looks a notification up by what produced it,
+        # once per announcement viewed. This is also what serves the
+        # read_at IS NOT NULL count, which the partial index above cannot.
+        Index("ix_notifications_source", "source_type", "source_id"),
     )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -94,7 +105,18 @@ class AnnouncementRecipient(Base):
 
     __tablename__ = "announcement_recipients"
     __table_args__ = (
-        Index("ix_announcement_recipients_announcement", "announcement_id"),
+        # The fan-out writes one row per member and reads them back by
+        # announcement. (announcement_id, member_id) is a natural unique key;
+        # it is indexed non-unique here because promoting it to a constraint
+        # needs its own revision and a check that the data permits it.
+        Index(
+            "ix_announcement_recipients_ann_member",
+            "announcement_id",
+            "member_id",
+        ),
+        # CASCADE from members: deleting a member otherwise scans a table that
+        # grows as members x announcements.
+        Index("ix_announcement_recipients_member_id", "member_id"),
     )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
