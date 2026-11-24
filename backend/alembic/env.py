@@ -46,7 +46,19 @@ from app.domains.bookings.models import (  # noqa: F401
 config = context.config
 
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    # `disable_existing_loggers=False` deliberately, against fileConfig's
+    # default. The default switches off every logger not named in alembic.ini,
+    # which is every `app.*` logger, for the rest of the process. That is wrong
+    # whenever alembic shares a process with the application, and it was the
+    # cause of memship#506: `command.upgrade()` in one test silenced
+    # `app.core.security.rate_limit`, so the two tests asserting that the Redis
+    # fallback and recovery are logged found no records and failed. They passed
+    # alone, failed after any alembic-invoking test, and passed in CI because
+    # unit tests run as their own job there.
+    #
+    # Alembic still gets the logging it configures for itself; it just no
+    # longer turns the application's loggers off on the way in.
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
 target_metadata = Base.metadata
 
