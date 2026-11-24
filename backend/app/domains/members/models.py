@@ -26,7 +26,6 @@ class Group(Base):
     __tablename__ = "groups"
     __table_args__ = (
         CheckConstraint("slug ~ '^[a-z0-9-]+$'", name="group_slug_format"),
-        Index("idx_groups_slug", "slug"),
         Index("idx_groups_display_order", "display_order"),
     )
 
@@ -60,7 +59,6 @@ class MembershipType(Base):
             "NOT is_default OR coalesce(base_price, 0) = 0",
             name="default_membership_type_is_free",
         ),
-        Index("idx_membership_types_slug", "slug"),
         Index("idx_membership_types_is_active", "is_active"),
         Index("idx_membership_types_display_order", "display_order"),
         Index(
@@ -129,10 +127,12 @@ class Member(Base):
             postgresql_where="is_active",
         ),
         Index("idx_members_membership_type_id", "membership_type_id"),
-        Index("idx_members_member_number", "member_number", postgresql_where="member_number IS NOT NULL"),
         Index("idx_members_status", "status"),
         Index("idx_members_is_active", "is_active"),
         Index("idx_members_joined_at", "joined_at"),
+        # SET NULL when the guardian's person row is deleted
+        # (memship#459 §3; the issue names the pre-party column).
+        Index("ix_members_guardian_party_id", "guardian_party_id"),
     )
 
     id = Column(Integer, primary_key=True, autoincrement=True)

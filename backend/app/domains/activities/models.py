@@ -42,7 +42,6 @@ class Activity(Base):
             "payment_methods <@ ARRAY['card', 'bizum', 'transfer', 'cash']::varchar[]",
             name="valid_activity_payment_methods",
         ),
-        Index("idx_activities_slug", "slug"),
         Index("idx_activities_status", "status"),
         Index("idx_activities_starts_at", "starts_at"),
         Index("idx_activities_is_active", "is_active"),

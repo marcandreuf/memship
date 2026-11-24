@@ -27,7 +27,7 @@ class Reminder(Base):
         Index("ix_reminders_open_due", "is_done", "due_date"),
     )
 
-    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     content = Column(Text, nullable=False)
     # NULL → plain note; a date → a dated reminder.
     due_date = Column(Date, nullable=True)

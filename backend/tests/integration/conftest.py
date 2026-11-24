@@ -323,8 +323,19 @@ def create_test_tables():
     and locally `dev.sh test` removes db-test before each run, because a
     container that outlived the run kept the first run's schema and
     create_all never adds a column to an existing table (#274).
+
+    ``pg_trgm`` comes first because ``receipts`` declares two GIN trigram
+    indexes (memship#459 §4). ``create_all`` emits them like any other index,
+    and without the extension the operator class does not resolve, which fails
+    the whole DDL batch and so every fixture in the suite. Production gets the
+    extension from the migration that added those indexes; this is the same
+    ordering requirement for the path that never runs alembic.
     """
+    from sqlalchemy import text
     from sqlalchemy.exc import IntegrityError
+
+    with test_engine.begin() as conn:
+        conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
 
     try:
         Base.metadata.create_all(bind=test_engine)

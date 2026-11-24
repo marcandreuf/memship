@@ -131,7 +131,6 @@ class User(Base):
 
 class Role(Base):
     __tablename__ = "roles"
-    __table_args__ = (Index("idx_roles_slug", "slug"),)
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     slug = Column(String(50), unique=True, nullable=False)
@@ -157,7 +156,6 @@ class Role(Base):
 
 class RolePermission(Base):
     __tablename__ = "role_permissions"
-    __table_args__ = (Index("idx_role_permissions_role", "role_id"),)
 
     role_id = Column(
         Integer, ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True
@@ -169,7 +167,6 @@ class RolePermission(Base):
 
 class UserRoleAssignment(Base):
     __tablename__ = "user_roles"
-    __table_args__ = (Index("idx_user_roles_user", "user_id"),)
 
     user_id = Column(
         Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
