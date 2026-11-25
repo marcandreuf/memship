@@ -5,10 +5,14 @@ import { cancelActivity, createPaidActivity, registerAs } from "../../support/pa
 // (#591). Each case builds its own activity: a full one is filled by
 // `cardMember`, so the member under test only reads the page.
 
-// The payment notice belongs to a price, so it appears once one is chosen.
-function choosePrice() {
-  cy.contains("button", "Select a price").click();
-  cy.contains('[role="option"]', "Entry").focus().trigger("keydown", { key: "Enter" });
+// The payment notice belongs to a price, so it appears once one is chosen —
+// and since #601 nobody has to choose. `createPaidActivity` marks its "Entry"
+// price default, and the register page preselects the default price on load,
+// so this opened a select that was already answered and clicked a placeholder
+// that no longer renders. Asserted rather than dropped: the notices below only
+// appear because a price is selected, and that is the dependency.
+function priceIsPreselected() {
+  cy.contains('[data-slot="select-trigger"]', "Entry").should("be.visible");
 }
 
 describe("Pay to confirm — register page", () => {
@@ -25,7 +29,7 @@ describe("Pay to confirm — register page", () => {
       cy.loginAsMember();
       cy.visit(`/en/activities/${id}/register`);
       cy.contains("You are eligible to register").should("be.visible");
-      choosePrice();
+      priceIsPreselected();
       cy.contains("Your seat will be held until you pay the receipt.").should("be.visible");
       cy.contains("button", /^Register$/).should("be.enabled");
     });
@@ -39,7 +43,7 @@ describe("Pay to confirm — register page", () => {
       cy.visit(`/en/activities/${id}/register`);
       cy.contains("This activity is full and has no waiting list.").should("be.visible");
       cy.contains("You are eligible to register").should("not.exist");
-      choosePrice();
+      priceIsPreselected();
       cy.contains("Your seat will be held").should("not.exist");
       cy.contains("button", /^Register$/).should("be.disabled");
     });
@@ -55,7 +59,7 @@ describe("Pay to confirm — register page", () => {
       cy.loginAsMember();
       cy.visit(`/en/activities/${id}/register`);
       cy.contains("You can join the waiting list").should("be.visible");
-      choosePrice();
+      priceIsPreselected();
       cy.contains("you will join the waiting list").should("be.visible");
       cy.contains("You are eligible to register").should("not.exist");
       cy.contains("button", /^Register$/).should("be.enabled");
