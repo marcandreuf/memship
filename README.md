@@ -2,7 +2,7 @@
 
 # Memship
 
-> **Memship is ready to deploy in production.** It runs in production on the maintainer's own instance, installs and upgrades through scripts that check before they act, and its payment paths (SEPA direct debit, and cards through Stripe and Redsys) have each been driven through a real payment by hand. Development is active and [issues and feature requests](https://github.com/marcandreuf/memship/issues) are welcome; the first entities to deploy it get support directly from the maintainer.
+> **Memship is ready to deploy in production.** It runs in production on the maintainer's own instance, installs and upgrades through scripts that check before they act, and its payment paths (SEPA direct debit, and cards through Stripe and Redsys) have each been driven through a real payment by hand. Development is active and [issues and feature requests](https://github.com/marcandreuf/memship/issues/new/choose) are welcome; the first entities to deploy it get support directly from the maintainer.
 
 **Membership management for everyone.**
 
@@ -287,7 +287,7 @@ volumes and a fixed database password.
 
 Code contributions are welcome. The foundation (infrastructure, CI/CD and the core architecture) is in place, and [CONTRIBUTING](CONTRIBUTING.md) covers the branching model, the commit and pull-request conventions, versioning and how a release is cut. The short version: take a short-lived `feature/*` branch off `main`, and open a pull request back into it. To get set up, start with [Local development environment](docs/en/development/local-environment.md).
 
-Not writing code? [Open an issue](https://github.com/marcandreuf/memship/issues), bug reports, feature requests, questions and an account of how you would use Memship are all welcome, and there are templates for the first two.
+Not writing code? [Open an issue](https://github.com/marcandreuf/memship/issues/new/choose), bug reports, feature requests and an account of how you would use Memship are all welcome, and the picker has a template for each of the first two. Questions and conversations about where the project is going belong in [Discussions](https://github.com/marcandreuf/memship/discussions) instead.
 
 Security vulnerabilities go through a private channel rather than a public issue, see [SECURITY](SECURITY.md). Everyone taking part is covered by the [Code of Conduct](CODE_OF_CONDUCT.md).
 

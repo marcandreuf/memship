@@ -1,7 +1,7 @@
 # Troubleshooting
 
 Symptoms an operator actually hits, and what causes them. If something here is wrong or missing,
-[open an issue](https://github.com/marcandreuf/memship/issues), this page is built from real
+[open an issue](https://github.com/marcandreuf/memship/issues/new/choose), this page is built from real
 installs, not from theory.
 
 > **En español:** [Resolución de problemas](../../es/self-hosting/troubleshooting.md).

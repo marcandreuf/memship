@@ -2,7 +2,7 @@
 
 🌐 [English](README.md) | [Español](README.es.md) | **Català**
 
-> **Memship ja es pot desplegar en producció.** Funciona en producció a la instància del mateix mantenidor, s'instal·la i s'actualitza amb scripts que comproven abans d'actuar, i les seves vies de cobrament (domiciliació SEPA, i targeta amb Stripe i Redsys) s'han portat a mà fins a un pagament real. El desenvolupament és actiu i s'agraeixen [incidències i sol·licituds de funcionalitats](https://github.com/marcandreuf/memship/issues); les primeres entitats que el despleguin tenen suport directe del mantenidor.
+> **Memship ja es pot desplegar en producció.** Funciona en producció a la instància del mateix mantenidor, s'instal·la i s'actualitza amb scripts que comproven abans d'actuar, i les seves vies de cobrament (domiciliació SEPA, i targeta amb Stripe i Redsys) s'han portat a mà fins a un pagament real. El desenvolupament és actiu i s'agraeixen [incidències i sol·licituds de funcionalitats](https://github.com/marcandreuf/memship/issues/new/choose); les primeres entitats que el despleguin tenen suport directe del mantenidor.
 
 **Gestió de socis per a tothom.**
 
@@ -283,7 +283,7 @@ llencívols i una contrasenya de base de dades fixa.
 
 Les contribucions de codi són benvingudes. La base del projecte (infraestructura, CI/CD i l'arquitectura central) ja està consolidada, i [CONTRIBUTING](CONTRIBUTING.md) explica el model de branques, les convencions de commits i pull requests, el versionatge i com es publica una release _(en anglès)_. En resum: creeu una branca `feature/*` de vida curta a partir de `main` i obriu un pull request cap a `main`. Per preparar l'entorn, comenceu per [Local development environment](docs/en/development/local-environment.md) _(en anglès)_.
 
-No escriviu codi? [Obriu una issue](https://github.com/marcandreuf/memship/issues), els informes d'errors, les propostes de funcionalitats, les preguntes i explicar com faríeu servir Memship són igual de benvinguts, i per als dos primers hi ha plantilles.
+No escriviu codi? [Obriu una issue](https://github.com/marcandreuf/memship/issues/new/choose), els informes d'errors, les propostes de funcionalitats i explicar com faríeu servir Memship són igual de benvinguts, i el selector té una plantilla per a cadascun dels dos primers. Les preguntes i les converses sobre cap on va el projecte van a [Discussions](https://github.com/marcandreuf/memship/discussions).
 
 Les vulnerabilitats de seguretat es comuniquen per un canal privat, no en una issue pública, vegeu [SECURITY](SECURITY.md). Qui participa en el projecte queda cobert pel [Codi de conducta](CODE_OF_CONDUCT.md).
 

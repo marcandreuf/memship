@@ -2,7 +2,7 @@
 
 🌐 [English](README.md) | **Español** | [Català](README.ca.md)
 
-> **Memship ya se puede desplegar en producción.** Funciona en producción en la instancia del propio mantenedor, se instala y se actualiza con scripts que comprueban antes de actuar, y sus vías de cobro (domiciliación SEPA, y tarjeta con Stripe y Redsys) se han llevado a mano hasta un pago real. El desarrollo está activo y se agradecen [incidencias y solicitudes de funcionalidades](https://github.com/marcandreuf/memship/issues); las primeras entidades que lo desplieguen tienen soporte directo del mantenedor.
+> **Memship ya se puede desplegar en producción.** Funciona en producción en la instancia del propio mantenedor, se instala y se actualiza con scripts que comprueban antes de actuar, y sus vías de cobro (domiciliación SEPA, y tarjeta con Stripe y Redsys) se han llevado a mano hasta un pago real. El desarrollo está activo y se agradecen [incidencias y solicitudes de funcionalidades](https://github.com/marcandreuf/memship/issues/new/choose); las primeras entidades que lo desplieguen tienen soporte directo del mantenedor.
 
 **Gestión de socios para todo tipo de entidades.**
 
@@ -283,7 +283,7 @@ volúmenes desechables y una contraseña de base de datos fija.
 
 Las contribuciones de código son bienvenidas. La base del proyecto (infraestructura, CI/CD y la arquitectura central) ya está asentada, y [CONTRIBUTING](CONTRIBUTING.md) explica el modelo de ramas, las convenciones de commits y pull requests, el versionado y cómo se publica una release _(en inglés)_. En resumen: crea una rama `feature/*` de vida corta a partir de `main` y abre un pull request de vuelta a `main`. Para preparar el entorno, empieza por [Local development environment](docs/en/development/local-environment.md) _(en inglés)_.
 
-¿No escribes código? [Abre un issue](https://github.com/marcandreuf/memship/issues), los informes de errores, las propuestas de funcionalidades, las preguntas y contar cómo usarías Memship son igual de bienvenidos, y para los dos primeros hay plantillas.
+¿No escribes código? [Abre un issue](https://github.com/marcandreuf/memship/issues/new/choose), los informes de errores, las propuestas de funcionalidades y contar cómo usarías Memship son igual de bienvenidos, y el selector tiene una plantilla para cada uno de los dos primeros. Las preguntas y las conversaciones sobre hacia dónde va el proyecto van en [Discussions](https://github.com/marcandreuf/memship/discussions).
 
 Las vulnerabilidades de seguridad se comunican por un canal privado, no en un issue público, consulta [SECURITY](SECURITY.md). Quien participa en el proyecto queda cubierto por el [Código de conducta](CODE_OF_CONDUCT.md).
 
