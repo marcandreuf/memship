@@ -1,10 +1,10 @@
 <!-- source: en/self-hosting/troubleshooting.md -->
-<!-- source-hash: 1549f5fe26b3 -->
+<!-- source-hash: 746142b3f4a0 -->
 
 # Resolución de problemas
 
 Síntomas con los que de verdad se encuentra quien administra el servidor, y qué los causa. Si algo
-de aquí está mal o falta, [abre una incidencia](https://github.com/marcandreuf/memship/issues):
+de aquí está mal o falta, [abre una incidencia](https://github.com/marcandreuf/memship/issues/new/choose):
 esta página sale de instalaciones reales, no de la teoría.
 
 > **En inglés:** [Troubleshooting](../../en/self-hosting/troubleshooting.md).

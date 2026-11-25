@@ -1,10 +1,10 @@
 <!-- source: en/self-hosting/troubleshooting.md -->
-<!-- source-hash: 1549f5fe26b3 -->
+<!-- source-hash: 746142b3f4a0 -->
 
 # Resolució de problemes
 
 Símptomes amb què es troba de debò un operador, i què els provoca. Si alguna cosa d'aquí és
-incorrecta o hi falta, [obre una incidència](https://github.com/marcandreuf/memship/issues),
+incorrecta o hi falta, [obre una incidència](https://github.com/marcandreuf/memship/issues/new/choose),
 aquesta pàgina està feta a partir d'instal·lacions reals, no de la teoria.
 
 > **En anglès:** [Troubleshooting](../../en/self-hosting/troubleshooting.md).

@@ -53,6 +53,7 @@ jobs:
       docs: ${{ steps.filter.outputs.docs }}
       locales: ${{ steps.filter.outputs.locales }}
       attribution: ${{ steps.filter.outputs.attribution }}
+      markdown: ${{ steps.filter.outputs.markdown }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -97,6 +98,12 @@ jobs:
               - 'frontend/lib/utils.ts'
               - 'THIRD_PARTY.md'
               - 'scripts/check-attribution.sh'
+            # Every markdown file, deliberately wider than `docs` above: six of
+            # the nine links #618 found were in the root READMEs, which the
+            # `docs` filter does not match.
+            markdown:
+              - '**/*.md'
+              - 'scripts/check-issue-links.sh'
 
   caddy-headers:
     name: Caddy Header Parity
@@ -109,6 +116,18 @@ jobs:
 
       - name: Compare the two Caddy header blocks
         run: ./scripts/check-caddy-headers.sh
+
+  issue-links:
+    name: Issue Link Targets
+    needs: changes
+    if: ${{ needs.changes.outputs.markdown == 'true' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Every invitation to file points at the template picker
+        run: ./scripts/check-issue-links.sh
 
   docs-translations:
     name: Translation Drift
