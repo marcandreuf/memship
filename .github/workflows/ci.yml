@@ -86,6 +86,12 @@ jobs:
             docs:
               - 'docs/**'
               - 'scripts/check-docs-translations.sh'
+              # The drift check covers the root READMEs too (#612), so a
+              # README-only change has to reach it. Without these three the
+              # gate would exist and never run on the files it was added for.
+              - 'README.md'
+              - 'README.es.md'
+              - 'README.ca.md'
             # The UI translations, a different thing from the `docs` filter
             # above, and checked by nothing at all until now (#509).
             locales:

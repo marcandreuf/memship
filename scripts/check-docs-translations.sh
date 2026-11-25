@@ -2,6 +2,8 @@
 #
 # Does each translated page still match the page it was translated from?
 #
+# Covers docs/ and the three root READMEs.
+#
 # Nothing used to ask. A source page could be edited and its translations left
 # behind, and the result is worse than a missing translation: three pages that
 # disagree while all three look equally current, with the stale one hardest to
@@ -71,10 +73,18 @@ while IFS= read -r page; do
     [ -n "$source_rel" ] || continue
 
     checked=$((checked + 1))
-    source_path="docs/$source_rel"
+    # A page inside docs/ declares its source relative to docs/, which is what
+    # all 66 of them already do. A page at the repo root declares a path from
+    # the root, so README.es.md says `source: README.md`. Two rules rather than
+    # one so the existing declarations did not all have to be rewritten to
+    # adopt the READMEs (#612).
+    case "$page" in
+        docs/*) source_path="docs/$source_rel" ;;
+        *)      source_path="$source_rel" ;;
+    esac
 
     if [ ! -f "$source_path" ]; then
-        echo "check-docs-translations: $page declares source '$source_rel', which is not a file in docs/." >&2
+        echo "check-docs-translations: $page declares source '$source_rel', which is not a file." >&2
         broken=$((broken + 1))
         continue
     fi
@@ -113,7 +123,14 @@ while IFS= read -r page; do
 # included, and skips the top-level language index, which belongs to no locale.
 # The locale READMEs are not translations of each other — each links out to
 # different locales by design — so they simply declare no source and are skipped.
-done < <(find docs -mindepth 2 -name '*.md' -print | sort)
+done < <({ find docs -mindepth 2 -name '*.md' -print
+           # The three root READMEs are the product's front page in three
+           # languages and were covered by nothing, so they rotted silently:
+           # the release table went eight releases out of date in both
+           # translations before anybody noticed (#612). README.md declares no
+           # source and is skipped as the source it is.
+           find . -maxdepth 1 -name 'README*.md' -print | sed 's|^\./||'
+         } | sort)
 
 if [ "$FIX" -eq 1 ]; then
     echo "check-docs-translations: $checked declared translation(s), $fixed restamped."
