@@ -188,6 +188,7 @@
       "confirmCancel": "Cancel this registration?",
       "confirmCancelDescription": "You will no longer be registered and your place will be freed. Any unpaid receipt for it is cancelled.",
       "registered": "Registered",
+      "viewRegistration": "View my registration",
       "myActivities": "My Activities",
       "noRegistrations": "No registrations yet",
       "eligible": "You are eligible to register",
