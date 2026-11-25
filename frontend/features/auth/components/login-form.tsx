@@ -26,6 +26,7 @@ import { Link } from "@/lib/i18n/routing";
 import { emailSchema } from "@/lib/validation";
 import { useAuth } from "../hooks/use-auth";
 import { useSearchParams } from "next/navigation";
+import { NEXT_PARAM } from "@/lib/return-to";
 import { ClientApiError } from "../services/auth-api";
 import { SsoButtons } from "./sso-buttons";
 
@@ -58,7 +59,7 @@ export function LoginForm() {
 
   async function onSubmit(data: LoginFormValues) {
     try {
-      await login(data);
+      await login(data, searchParams.get(NEXT_PARAM));
     } catch {
       // Error is captured in loginError
     }

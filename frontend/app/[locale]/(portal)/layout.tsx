@@ -14,6 +14,7 @@ import { useRouter, usePathname } from "@/lib/i18n/routing";
 import { useEffect } from "react";
 
 import { requiredFeature, requiredPermissions } from "@/lib/route-permissions";
+import { locationAsReturnTo, withNext } from "@/lib/return-to";
 
 export default function PortalLayout({
   children,
@@ -26,11 +27,16 @@ export default function PortalLayout({
   const router = useRouter();
   const pathname = usePathname();
 
+  // Carry where they were going, so a link shared into a chat or a social post
+  // survives the sign-in instead of dropping the member on the dashboard
+  // wondering what happened (memship#598).
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      router.push("/login");
+      router.push(
+        withNext("/login", locationAsReturnTo(pathname, window.location.search)),
+      );
     }
-  }, [isLoading, isAuthenticated, router]);
+  }, [isLoading, isAuthenticated, router, pathname]);
 
   // Per-route, per-permission — the ordinal "admin routes" list this replaced
   // could only ask "are you staff", which sent a treasurer to /receipts and a

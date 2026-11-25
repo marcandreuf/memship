@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@/lib/i18n/routing";
+import { parseNext } from "@/lib/return-to";
 import {
   ClientApiError,
   getMe,
@@ -36,11 +37,15 @@ export function useAuth() {
     refetchOnWindowFocus: true,
   });
 
+  // The destination comes from the caller rather than being read off the URL
+  // here: `useAuth` is mounted on 19 screens and only the login form knows why
+  // it is signing someone in. Reading `?next=` here would also pull
+  // `useSearchParams` into every one of them (memship#598).
   const loginMutation = useMutation({
-    mutationFn: (data: LoginData) => login(data),
-    onSuccess: () => {
+    mutationFn: ({ data }: { data: LoginData; next?: string | null }) => login(data),
+    onSuccess: (_result, { next }) => {
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
-      router.push("/dashboard");
+      router.push(parseNext(next) ?? "/dashboard");
     },
   });
 
@@ -70,7 +75,8 @@ export function useAuth() {
     isLoading,
     isAuthenticated: !!user && !sessionExpired,
     error,
-    login: loginMutation.mutateAsync,
+    login: (data: LoginData, next?: string | null) =>
+      loginMutation.mutateAsync({ data, next }),
     loginError: loginMutation.error,
     isLoggingIn: loginMutation.isPending,
     register: registerMutation.mutateAsync,
