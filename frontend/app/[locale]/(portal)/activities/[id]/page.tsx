@@ -75,7 +75,6 @@ export default function ActivityDetailPage({
     ? myRegs?.items?.find((r) => r.activity_id === activityId)
     : undefined;
   const isActiveRegistration = myRegistration && myRegistration.status !== "cancelled";
-  const isCancelledRegistration = myRegistration && myRegistration.status === "cancelled";
 
   const [isEditing, setIsEditing] = useState(false);
   const [confirmDialog, confirmAction] = useConfirmDialog();
@@ -87,6 +86,28 @@ export default function ActivityDetailPage({
   if (!activity) {
     return <div className="py-8 text-center text-muted-foreground">{t("common.notFound")}</div>;
   }
+
+  // Registering is the member's primary action on this page, so it belongs in
+  // the header beside the title rather than behind a tab the reporter had to
+  // scroll down and hunt for (#590). The tab keeps the registration *card*,
+  // which is detail. An already-registered member gets a way in to that card
+  // instead of a second way to register.
+  const memberActions =
+    !isAdmin && activity.status === "published" ? (
+      isActiveRegistration ? (
+        <Link href={`/activities/${activityId}?tab=register`}>
+          <Button variant="outline">
+            {t("activities.registration.viewRegistration")}
+          </Button>
+        </Link>
+      ) : activity.is_registration_open ? (
+        <Link href={`/activities/${activityId}/register`}>
+          <Button>{t("activities.registration.register")}</Button>
+        </Link>
+      ) : (
+        <Button disabled>{t("activities.registration.register")}</Button>
+      )
+    ) : undefined;
 
   return (
     <div className="space-y-4">
@@ -200,7 +221,9 @@ export default function ActivityDetailPage({
                 </Button>
               )}
             </>
-          ) : undefined
+          ) : (
+            memberActions
+          )
         }
       />
 
@@ -317,38 +340,20 @@ export default function ActivityDetailPage({
                 },
               ]
             : []),
-          ...(!isAdmin && activity.status === "published"
+          // Only when there is something to show: the Register control moved
+          // to the header, so without a registration this tab would be empty.
+          ...(!isAdmin && activity.status === "published" && myRegistration
             ? [
                 {
                   id: "register",
                   label: isActiveRegistration
                     ? t("activities.registration.registered")
-                    : t("activities.registration.register"),
-                  content: isActiveRegistration ? (
+                    : t("activities.registration.status.cancelled"),
+                  content: (
                     <MemberRegistrationCard
-                      registration={myRegistration!}
+                      registration={myRegistration}
                       activity={activity}
                     />
-                  ) : (
-                    <div className="space-y-4">
-                      {isCancelledRegistration && (
-                        <MemberRegistrationCard
-                          registration={myRegistration!}
-                          activity={activity}
-                        />
-                      )}
-                      <div className="py-4">
-                        {activity.is_registration_open ? (
-                          <Link href={`/activities/${activityId}/register`}>
-                            <Button>{t("activities.registration.register")}</Button>
-                          </Link>
-                        ) : (
-                          <Button disabled>
-                            {t("activities.registration.register")}
-                          </Button>
-                        )}
-                      </div>
-                    </div>
                   ),
                 },
               ]
