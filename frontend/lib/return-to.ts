@@ -46,6 +46,55 @@ export function isInternalPath(value: string): boolean {
 }
 
 /**
+ * Where a sign-in should land, carried on the login URL (memship#598).
+ *
+ * A separate key from `RETURN_PATH` above on purpose. That one answers "which
+ * record was this opened from", for the breadcrumb; this one answers "where
+ * was the visitor going when they were asked to sign in". Sharing a key would
+ * make one mechanism answer two questions, and the two have different
+ * lifetimes: the breadcrumb is rewritten on every hop, this survives until the
+ * sign-in completes.
+ */
+export const NEXT_PARAM = "next";
+
+/**
+ * Routes it makes no sense to return to once signed in. A crafted
+ * `?next=/login` would otherwise drop an authenticated visitor back on the
+ * login form, which reads as the sign-in having failed.
+ */
+const AUTH_ROUTES = [
+  "/login",
+  "/register",
+  "/forgot-password",
+  "/reset-password",
+  "/verify-email",
+];
+
+/**
+ * The validated post-login destination, or null when there is none to trust.
+ *
+ * Rejects rather than sanitises, and the caller falls back to the dashboard
+ * silently: someone handed a crafted link should not be shown an error about
+ * the link. `isInternalPath` is what does the real work here — it is the
+ * open-redirect guard this file already owns, already covering
+ * protocol-relative paths, backslash normalisation, control characters and
+ * fragments.
+ */
+export function parseNext(value: string | null | undefined): string | null {
+  if (!value || !isInternalPath(value)) return null;
+  const path = value.split("?")[0];
+  if (AUTH_ROUTES.some((r) => path === r || path.startsWith(`${r}/`))) return null;
+  return value;
+}
+
+/** `target` carrying `path` as where to land after signing in. */
+export function withNext(target: string, path: string): string {
+  if (!parseNext(path)) return target;
+  const query = new URLSearchParams({ [NEXT_PARAM]: path }).toString();
+  return `${target}${target.includes("?") ? "&" : "?"}${query}`;
+}
+
+/**
  * The query string that records a return to `path`, labelled `label`.
  * Empty when either half is unusable, so a caller can append it blindly.
  */
