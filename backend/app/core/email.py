@@ -1175,13 +1175,16 @@ def send_registration_pending_payment_email(
     locale: str = "es",
     deadline_added: bool = False,
     promoted: bool = False,
+    cancellation_deadline_minutes: int | None = None,
+    late_cancellation_keeps_payment: bool = False,
 ) -> bool:
     """Tell a member their seat is held until they pay, and how.
 
     ``deadline_added`` is the resend when auto-cancel starts on a seat already
     held. ``promoted`` is a waitlister handed a freed seat: this mail, not
     ``waitlist_promoted``, because it is the one a pay-to-confirm activity
-    cannot run without (#619)."""
+    cannot run without (#619). ``late_cancellation_keeps_payment`` adds the
+    sentence that a cancellation past the deadline is not refunded (#640)."""
     return _send_templated(
         "registration_pending_payment",
         to,
@@ -1199,6 +1202,8 @@ def send_registration_pending_payment_email(
             "reference": reference,
             "deadline_added": deadline_added,
             "promoted": promoted,
+            "cancellation_deadline_minutes": cancellation_deadline_minutes,
+            "late_cancellation_keeps_payment": late_cancellation_keeps_payment,
         },
         subject_args={"activity": activity_name},
     )

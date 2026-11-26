@@ -1,5 +1,5 @@
 <!-- source: es/admin-guide/activities.md -->
-<!-- source-hash: 8bce1a07c79a -->
+<!-- source-hash: 3f3758439846 -->
 
 # Activities
 
@@ -101,6 +101,7 @@ deadline.
 - **The member is told up front.** The deadline and the rule after it show in the activity's
   details and on the registration page next to the price, and the confirmation email of a paid seat
   on an activity that keeps late payments says the payment will not be returned after the deadline.
+  So does the pending-payment email of a seat held until it is paid.
 - **When you cancel**, you choose at that moment whether the payment is returned, whatever the
   policy.
 - A seat that was never paid (pending, free or exempt) has nothing to return.

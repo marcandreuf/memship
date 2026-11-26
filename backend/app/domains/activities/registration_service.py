@@ -961,6 +961,24 @@ def _get_member_name(registration: Registration) -> str:
         return ""
 
 
+def _late_cancellation_terms(activity: Activity) -> dict:
+    """The mail fields that tell a member a late cancellation keeps their payment.
+
+    Empty unless the activity lets members cancel, has a deadline, and keeps the
+    payment past it. The caller decides whether the seat is a paid one (#638, #640).
+    """
+    if (
+        activity.allow_self_cancellation
+        and activity.late_cancellation_mode == "allow_no_refund"
+        and activity.self_cancellation_deadline_minutes
+    ):
+        return dict(
+            cancellation_deadline_minutes=activity.self_cancellation_deadline_minutes,
+            late_cancellation_keeps_payment=True,
+        )
+    return {}
+
+
 def _dispatch_registration_email(
     db: Session, registration: Registration, activity: Activity, member: "Member"
 ) -> None:
@@ -984,14 +1002,10 @@ def _dispatch_registration_email(
         # late: everything else needs no sentence (#638).
         if (
             registration.status == "confirmed"
-            and activity.allow_self_cancellation
-            and activity.late_cancellation_mode == "allow_no_refund"
-            and activity.self_cancellation_deadline_minutes
             and registration.discounted_amount is not None
             and Decimal(str(registration.discounted_amount)) > 0
         ):
-            payload["cancellation_deadline_minutes"] = activity.self_cancellation_deadline_minutes
-            payload["late_cancellation_keeps_payment"] = True
+            payload.update(_late_cancellation_terms(activity))
         run_after_commit(db, lambda: send_registration_email_task.delay(**payload))
     except Exception as e:
         logger.error(f"Failed to dispatch registration email: {e}")
@@ -1055,6 +1069,7 @@ def _dispatch_pending_payment_email(
             deadline_added=deadline_added,
             promoted=promoted,
             **_seat_payment(db, registration, activity, receipt, locale),
+            **_late_cancellation_terms(activity),
         )
         run_after_commit(db, lambda: send_pending_payment_email_task.delay(**payload))
     except Exception as e:
