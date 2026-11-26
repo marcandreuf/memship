@@ -51,6 +51,18 @@ def update_person(
     # it cannot go through the loop below (#636). Same routing as the member
     # update endpoint.
     if "email" in data:
+        # And the same restriction. ``MemberSelfUpdate`` excludes ``email``
+        # deliberately, because it is the address the account signs in with, so
+        # the member update endpoint answers 403 for a self-service caller.
+        # This endpoint allowed it, which made it a way around that rule; while
+        # the write landed only on the party row the login was protected by
+        # accident, and routing it through ``change_person_email`` would
+        # otherwise have handed a member their own login address (#636).
+        if not user_has(current_user, "members.write"):
+            raise HTTPException(
+                status_code=403,
+                detail="Not editable on your own record: email",
+            )
         try:
             change_person_email(db, person, data["email"])
         except EmailTaken as e:

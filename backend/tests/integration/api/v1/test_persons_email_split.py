@@ -10,13 +10,20 @@ address while sign-in still expected the old one. The fix was
 ``allowed_fields``, and does ``setattr(person, "email", value)``
 (``persons.py:50``). ``Person.email`` is an association proxy onto
 ``Party.email``, so that write lands on the party and ``users.email`` is never
-touched. The endpoint is reachable with ``self.profile.write``, so a member can
-split their own account.
+touched.
 
-The tests assert the behaviour the fix should have: the two addresses move
-together, and an address another account signs in with is refused. The members
-endpoint is tested beside it as the control, so the asymmetry is what fails
-rather than a guess about either one.
+There is a second half, and the two interact. ``MemberSelfUpdate`` excludes
+``email`` deliberately, because it is the address the account signs in with, so
+``PUT /members/{id}`` answers 403 to a self-service caller editing their own
+record. This endpoint accepted it, which made it a way around that rule. While
+the write landed only on the party row the login was protected by accident;
+keeping the two rows together without also adopting the restriction would have
+handed a member their own login address, which is worse than the split it fixes.
+
+So the tests cover both: the field is staff-only, and when staff do write it the
+two addresses move together and a taken address is refused. The members endpoint
+is tested beside it as the control, so what fails is the disagreement between the
+two endpoints rather than a guess about either one.
 """
 
 from app.core.security.jwt import create_access_token
@@ -78,10 +85,14 @@ def _account(db, membership_type, email, role="member"):
 
 
 class TestPersonsEndpointKeepsTheAddressesTogether:
-    def test_a_member_editing_their_own_person_row_moves_the_login_too(
+    def test_a_member_may_not_change_the_address_on_their_own_record(
         self, client, db, org, membership_type
     ):
-        """The defect, from the seat that can reach it without staff rights."""
+        """``MemberSelfUpdate`` excludes ``email`` on purpose: it is the address
+        the account signs in with, and ``PUT /members/{id}`` answers 403 for a
+        self-service caller. This endpoint has to answer the same, or it is a way
+        around that rule.
+        """
         user, _member = _account(db, membership_type, "split-self@example.com")
         client.cookies.update(_cookie(user))
 
@@ -89,14 +100,28 @@ class TestPersonsEndpointKeepsTheAddressesTogether:
             f"/api/v1/persons/{user.party_id}",
             json={"email": "split-self-new@example.com"},
         )
-        assert response.status_code == 200
+        assert response.status_code == 403
         db.refresh(user)
 
-        # The mail address moved. That part works.
-        assert user.person.email == "split-self-new@example.com"
-        # The login must have moved with it, or the account is split: mail goes
-        # to the new address and sign-in still expects the old one.
-        assert user.email == "split-self-new@example.com"
+        # Neither row moved. While the write landed only on the party row the
+        # login was protected by accident; both have to be checked now.
+        assert user.person.email == "split-self@example.com"
+        assert user.email == "split-self@example.com"
+
+    def test_a_member_may_still_edit_the_rest_of_their_own_record(
+        self, client, db, org, membership_type
+    ):
+        """The refusal above is about ``email`` only, not the endpoint."""
+        user, _member = _account(db, membership_type, "split-self-ok@example.com")
+        client.cookies.update(_cookie(user))
+
+        response = client.put(
+            f"/api/v1/persons/{user.party_id}",
+            json={"first_name": "Renamed"},
+        )
+        assert response.status_code == 200
+        db.refresh(user)
+        assert user.person.first_name == "Renamed"
 
     def test_staff_editing_a_person_row_moves_the_login_too(
         self, client, db, org, membership_type
@@ -119,13 +144,18 @@ class TestPersonsEndpointKeepsTheAddressesTogether:
     def test_an_address_another_account_signs_in_with_is_refused(
         self, client, db, org, membership_type
     ):
-        """``change_member_email`` raises ``EmailTaken`` here; this path checks nothing."""
-        user, _ = _account(db, membership_type, "split-a@example.com")
+        """``change_person_email`` raises ``EmailTaken``; this path checked nothing.
+
+        Driven from the staff seat, since that is the only one that may write the
+        field at all.
+        """
+        admin, _ = _account(db, membership_type, "split-a-admin@example.com", role="admin")
+        target, _ = _account(db, membership_type, "split-a@example.com")
         other, _ = _account(db, membership_type, "split-b@example.com")
-        client.cookies.update(_cookie(user))
+        client.cookies.update(_cookie(admin))
 
         response = client.put(
-            f"/api/v1/persons/{user.party_id}",
+            f"/api/v1/persons/{target.party_id}",
             json={"email": other.email},
         )
         assert response.status_code == 409
