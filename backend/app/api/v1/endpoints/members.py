@@ -32,8 +32,8 @@ from app.domains.members.schemas import (
 )
 from app.core.csv_export import stream_csv
 from app.domains.member_card.schemas import AssignNumbersResponse
+from app.domains.persons.service import EmailTaken
 from app.domains.members.service import (
-    EmailTaken,
     approve_registration,
     assign_missing_member_numbers,
     build_members_query,

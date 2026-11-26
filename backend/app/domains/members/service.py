@@ -6,13 +6,10 @@ from sqlalchemy import func
 from sqlalchemy.orm import Query, Session, joinedload
 
 from app.core.search import match_words
-from app.domains.auth.models import User
 from app.domains.members.models import Member, MembershipType
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Party, Person
-# Re-exported: ``EmailTaken`` moved down to ``persons.service`` with the function
-# that raises it, and the member endpoint still imports it from here.
-from app.domains.persons.service import EmailTaken, change_person_email
+from app.domains.persons.service import change_person_email
 
 VALID_STATUS_TRANSITIONS = {
     "pending": ["active", "cancelled"],
