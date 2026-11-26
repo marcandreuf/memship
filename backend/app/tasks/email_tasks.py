@@ -120,11 +120,14 @@ def send_registration_email_task(
     activity_date: str | None = None,
     location: str | None = None,
     locale: str = "es",
+    cancellation_deadline_minutes: int | None = None,
+    late_cancellation_keeps_payment: bool = False,
 ) -> bool:
     """Send registration confirmation/waitlist email."""
     try:
         return send_registration_confirmation_email(
             to, member_name, activity_name, status, activity_date, location, locale,
+            cancellation_deadline_minutes, late_cancellation_keeps_payment,
         )
     except Exception as exc:
         logger.error(f"Registration email task failed: to={to}, error={exc}")

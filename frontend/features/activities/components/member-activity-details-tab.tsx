@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { DetailSection } from "@/components/entity/detail-section";
+import { describeActivityTerms } from "./cancellation-policy-fields";
 import type { ActivityData } from "../services/activities-api";
 import { useLocaleDate } from "@/hooks/use-locale-date";
 
@@ -26,6 +27,11 @@ export function MemberActivityDetailsTab({ activity }: MemberActivityDetailsTabP
     ...(activity.min_age !== null ? [{ label: t("activities.minAge"), value: activity.min_age, inline: true }] : []),
     ...(activity.max_age !== null ? [{ label: t("activities.maxAge"), value: activity.max_age, inline: true }] : []),
     { label: t("activities.allowSelfCancellation"), value: activity.allow_self_cancellation ? t("common.yes") : t("common.no"), inline: true },
+    {
+      label: t("activities.cancellationRule.deadline"),
+      value: describeActivityTerms(t, activity),
+      inline: true,
+    },
   ];
 
   return <DetailSection fields={fields} columns={3} />;

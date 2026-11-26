@@ -13,5 +13,9 @@
 {% if location %}{{ c.data_row("Location", location) }}{% endif %}
 {% endcall %}
 {%- endif %}
+{%- if late_cancellation_keeps_payment and cancellation_deadline_minutes %}
+{%- set deadline %}{% if cancellation_deadline_minutes % 60 == 0 %}{{ cancellation_deadline_minutes // 60 }} hours{% else %}{{ cancellation_deadline_minutes }} minutes{% endif %}{% endset %}
+<p style="{{ s.note }}">You can cancel for a refund up to {{ deadline }} before the start. After that you can still cancel, but the payment will not be returned.</p>
+{%- endif %}
 <p style="{{ s.p_last }}">See you there!</p>
 {% endblock %}

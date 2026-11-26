@@ -76,4 +76,16 @@ describe("Cancellation policy — a member cancels a paid seat", () => {
       cy.contains("a", name).within(() => cy.contains("button", "Cancel").should("not.exist"));
     });
   });
+
+  it("is told on the registration page, next to the price, before registering", () => {
+    const name = `E2E Policy Terms ${Date.now()}`;
+    createPaidActivity(name, { allowSelfCancellation: true, cancellationPolicy: LATE_KEEP }).then((id) => {
+      activityId = id;
+      cy.loginAsMember();
+      cy.visit(`/en/activities/${id}/register`);
+      cy.get('[data-testid="cancellation-terms"]')
+        .should("contain", "Refund deadline")
+        .and("contain", "later cancellations allowed without refund");
+    });
+  });
 });

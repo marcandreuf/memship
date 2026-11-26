@@ -54,6 +54,8 @@
       "allowNoRefund": "Permitirla; el club se queda el pago",
       "beforeDeadline": "Antes del plazo el socio cancela, la plaza queda libre y un pago ya hecho se marca como devolución pendiente.",
       "clubDefault": "Por defecto del club",
+      "notAllowed": "No permitida: el socio no puede cancelar",
+      "noDeadline": "Sin límite: toda cancelación se devuelve",
       "readBlock": "cancelaciones tardías rechazadas",
       "readAllowNoRefund": "cancelaciones tardías permitidas sin devolución",
       "amountMinutes": "{count, plural, one {# minuto} other {# minutos}} antes del inicio",

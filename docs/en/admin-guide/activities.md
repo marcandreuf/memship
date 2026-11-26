@@ -1,5 +1,5 @@
 <!-- source: es/admin-guide/activities.md -->
-<!-- source-hash: 343bcaefbbe0 -->
+<!-- source-hash: 8bce1a07c79a -->
 
 # Activities
 
@@ -98,6 +98,9 @@ deadline.
 - **After the deadline** you choose, per activity, between **Refuse the cancellation** (the default)
   and **Allow it; the club keeps the payment**. In the second case the seat is released, the
   receipt stays paid and nothing is owed back. The member is warned before confirming.
+- **The member is told up front.** The deadline and the rule after it show in the activity's
+  details and on the registration page next to the price, and the confirmation email of a paid seat
+  on an activity that keeps late payments says the payment will not be returned after the deadline.
 - **When you cancel**, you choose at that moment whether the payment is returned, whatever the
   policy.
 - A seat that was never paid (pending, free or exempt) has nothing to return.

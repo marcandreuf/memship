@@ -54,6 +54,8 @@
       "allowNoRefund": "Allow it; the club keeps the payment",
       "beforeDeadline": "Before the deadline the member cancels, the seat is released and a payment already made is marked refund due.",
       "clubDefault": "Club default",
+      "notAllowed": "Not allowed: members cannot cancel",
+      "noDeadline": "No deadline: every cancellation is refundable",
       "readBlock": "later cancellations refused",
       "readAllowNoRefund": "later cancellations allowed without refund",
       "amountMinutes": "{count, plural, one {# minute} other {# minutes}} before the start",

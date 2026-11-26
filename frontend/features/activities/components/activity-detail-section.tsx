@@ -5,6 +5,7 @@ import { DetailSection } from "@/components/entity/detail-section";
 import { useMembershipTypes } from "@/features/members/hooks/use-members";
 import { usePermissions } from "@/features/auth/hooks/use-permissions";
 import { usePaymentOptions } from "../hooks/use-activities";
+import { describeActivityTerms } from "./cancellation-policy-fields";
 import type { ActivityData } from "../services/activities-api";
 import { useLocaleDate } from "@/hooks/use-locale-date";
 
@@ -75,6 +76,11 @@ export function ActivityDetailSection({ activity }: ActivityDetailSectionProps) 
       inline: true,
     },
     { label: t("activities.allowSelfCancellation"), value: activity.allow_self_cancellation ? t("common.yes") : t("common.no"), inline: true },
+    {
+      label: t("activities.cancellationRule.deadline"),
+      value: describeActivityTerms(t, activity),
+      inline: true,
+    },
     { label: t("activities.waitingList"), value: activity.features?.waiting_list === true ? t("common.yes") : t("common.no"), inline: true },
     ...(!newFlow
       ? []

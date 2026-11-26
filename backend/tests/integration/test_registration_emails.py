@@ -273,3 +273,50 @@ class TestRegistrationEmailsCarryTheOrgLocale:
             db.commit()
 
         assert delay.call_args.kwargs["locale"] == "es"
+
+
+class TestConfirmationStatesLateCancellationTerms:
+    """A paid seat that keeps late payments is told so up front (#638)."""
+
+    def _confirmed_kwargs(self, db, membership_type, tag, **policy):
+        activity, price = _activity(db)
+        activity.allow_self_cancellation = True
+        for key, value in policy.items():
+            setattr(activity, key, value)
+        member = _member(db, membership_type, tag)
+        with patch(
+            "app.tasks.email_tasks.send_registration_email_task.delay"
+        ) as delay:
+            register_member(db, activity, member, price.id)
+            db.commit()
+        return delay.call_args.kwargs
+
+    def test_paid_seat_that_keeps_late_payments(self, db, org, membership_type):
+        kwargs = self._confirmed_kwargs(
+            db,
+            membership_type,
+            "keeps",
+            self_cancellation_deadline_minutes=1440,
+            late_cancellation_mode="allow_no_refund",
+        )
+        assert kwargs["late_cancellation_keeps_payment"] is True
+        assert kwargs["cancellation_deadline_minutes"] == 1440
+
+    def test_blocking_activity_adds_nothing(self, db, org, membership_type):
+        kwargs = self._confirmed_kwargs(
+            db,
+            membership_type,
+            "blocks",
+            self_cancellation_deadline_minutes=1440,
+            late_cancellation_mode="block",
+        )
+        assert "late_cancellation_keeps_payment" not in kwargs
+
+    def test_no_deadline_adds_nothing(self, db, org, membership_type):
+        kwargs = self._confirmed_kwargs(
+            db,
+            membership_type,
+            "nodeadline",
+            late_cancellation_mode="allow_no_refund",
+        )
+        assert "late_cancellation_keeps_payment" not in kwargs

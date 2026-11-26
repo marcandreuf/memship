@@ -98,6 +98,10 @@ pagó. El plazo se fija en minutos, horas o días antes del inicio; si se deja v
 - **Pasado el plazo** eliges, por actividad, entre **Rechazar la cancelación** (por defecto) y
   **Permitirla; el club se queda el pago**. En el segundo caso la plaza queda libre, el recibo sigue
   pagado y no se debe nada. Se avisa al socio antes de confirmar.
+- **El socio lo sabe de antemano.** El plazo y la regla posterior aparecen en los detalles de la
+  actividad y en la página de inscripción junto al precio, y el correo de confirmación de una plaza
+  de pago en una actividad que se queda los pagos tardíos avisa de que el pago no se devolverá
+  pasado el plazo.
 - **Cuando cancelas tú**, eliges en ese momento si el pago se devuelve, sea cual sea la política.
 - Una plaza que nunca se pagó (pendiente, gratuita o exenta) no tiene nada que devolver.
 

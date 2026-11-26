@@ -1116,7 +1116,11 @@ def send_registration_confirmation_email(
     activity_date: str | None = None,
     location: str | None = None,
     locale: str = "es",
+    cancellation_deadline_minutes: int | None = None,
+    late_cancellation_keeps_payment: bool = False,
 ) -> bool:
+    """``late_cancellation_keeps_payment``: past the deadline the member may still
+    cancel, but the club keeps what they paid (#638)."""
     template = "registration_confirmed" if status == "confirmed" else "registration_waitlisted"
     return _send_templated(
         template,
@@ -1127,6 +1131,8 @@ def send_registration_confirmation_email(
             "activity_name": activity_name,
             "activity_date": activity_date,
             "location": location,
+            "cancellation_deadline_minutes": cancellation_deadline_minutes,
+            "late_cancellation_keeps_payment": late_cancellation_keeps_payment,
         },
         subject_args={"activity": activity_name},
     )
