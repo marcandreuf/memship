@@ -151,3 +151,26 @@ export function describeDeadline(
     return t("activities.cancellationRule.amountHours", { count: minutes / 60 });
   return t("activities.cancellationRule.amountMinutes", { count: minutes });
 }
+
+/** What an activity tells a member about cancelling: the deadline and what follows it (#638). */
+export function describeActivityTerms(
+  t: (key: string, values?: Record<string, number>) => string,
+  activity: {
+    allow_self_cancellation: boolean;
+    self_cancellation_deadline_minutes: number | null;
+    late_cancellation_mode: string;
+  }
+): string {
+  if (!activity.allow_self_cancellation) return t("activities.cancellationRule.notAllowed");
+  if (activity.self_cancellation_deadline_minutes == null)
+    return t("activities.cancellationRule.noDeadline");
+  return (
+    describeDeadline(t, activity.self_cancellation_deadline_minutes) +
+    " · " +
+    t(
+      activity.late_cancellation_mode === "allow_no_refund"
+        ? "activities.cancellationRule.readAllowNoRefund"
+        : "activities.cancellationRule.readBlock"
+    )
+  );
+}

@@ -24,6 +24,7 @@ import type { ValidateDiscountResult, ActivityConsentData } from "@/features/act
 import { useEligibility, useRegister } from "@/features/activities/hooks/use-registrations";
 import { Checkbox } from "@/components/ui/checkbox";
 import { FormSkeleton } from "@/components/ui/skeletons";
+import { describeActivityTerms } from "@/features/activities/components/cancellation-policy-fields";
 import { useFormatters } from "@/hooks/use-formatters";
 
 export default function RegisterPage({
@@ -266,6 +267,11 @@ export default function RegisterPage({
                     : activity.auto_cancel_enabled && activity.auto_cancel_hours
                       ? t("activities.registration.heldUntilPaidWithin", { hours: activity.auto_cancel_hours })
                       : t("activities.registration.heldUntilPaid")}
+                </p>
+              )}
+              {selectedPrice && selectedPrice.amount > 0 && (
+                <p className="text-sm mt-2 text-muted-foreground" data-testid="cancellation-terms">
+                  {t("activities.cancellationRule.deadline")}: {describeActivityTerms(t, activity)}
                 </p>
               )}
             </div>

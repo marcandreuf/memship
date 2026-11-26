@@ -980,6 +980,18 @@ def _dispatch_registration_email(
             location=activity.location,
             locale=org_locale(db),
         )
+        # Told only on a confirmed paid seat that keeps its payment when cancelled
+        # late: everything else needs no sentence (#638).
+        if (
+            registration.status == "confirmed"
+            and activity.allow_self_cancellation
+            and activity.late_cancellation_mode == "allow_no_refund"
+            and activity.self_cancellation_deadline_minutes
+            and registration.discounted_amount is not None
+            and Decimal(str(registration.discounted_amount)) > 0
+        ):
+            payload["cancellation_deadline_minutes"] = activity.self_cancellation_deadline_minutes
+            payload["late_cancellation_keeps_payment"] = True
         run_after_commit(db, lambda: send_registration_email_task.delay(**payload))
     except Exception as e:
         logger.error(f"Failed to dispatch registration email: {e}")

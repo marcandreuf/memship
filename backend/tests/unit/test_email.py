@@ -854,3 +854,35 @@ class TestAmountsInTheRecipientsLocale:
         )
 
         assert "36,30 €" in html
+
+
+@pytest.mark.parametrize(
+    "locale, refundable, kept",
+    [
+        ("en", "cancel for a refund up to 24 hours", "payment will not be returned"),
+        ("es", "cancelar con devolución hasta 24 horas", "pago no se devolverá"),
+        ("ca", "cancel·lar amb devolució fins a 24 hores", "pagament no es retornarà"),
+    ],
+)
+def test_a_paid_seat_that_keeps_late_payments_says_so(locale, refundable, kept):
+    context = {
+        "member_name": "Alex",
+        "activity_name": "Yoga",
+        "cancellation_deadline_minutes": 1440,
+        "late_cancellation_keeps_payment": True,
+    }
+    html = render_template("registration_confirmed", locale, context)
+    assert refundable in html
+    assert kept in html
+
+
+@pytest.mark.parametrize("locale", ["es", "ca", "en"])
+def test_a_confirmation_without_the_flag_says_nothing_about_cancelling(locale):
+    context = {
+        "member_name": "Alex",
+        "activity_name": "Yoga",
+        "cancellation_deadline_minutes": 1440,
+    }
+    html = render_template("registration_confirmed", locale, context)
+    assert "24 h" not in html
+    assert "refund" not in html and "devolución" not in html and "devolució" not in html
