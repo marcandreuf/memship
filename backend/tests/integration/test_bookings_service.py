@@ -639,12 +639,12 @@ def test_invalid_stored_window_falls_back_to_default(db, stored):
 
 @pytest.mark.parametrize("stored", ["abc", -1, 1_000_000, 1.5])
 def test_invalid_stored_deadline_falls_back_to_default(db, stored):
-    _org(db, booking_cancellation_deadline_hours=stored)
+    _org(db, booking_cancellation_deadline_minutes=stored)
     space = _space(db)
     slot = _slot(db, space, _future(3), capacity=1)
     booking = service.create_booking(db, _member(db, 1), slot.id)
 
-    assert service._deadline_hours(db) == 24
+    assert service._club_deadline_minutes(db) == 1440
     service.cancel_booking(
         db, booking, cancelled_by_user_id=_user(db, 7).id, is_admin=False
     )
@@ -655,7 +655,7 @@ def test_invalid_stored_deadline_falls_back_to_default(db, stored):
 
 
 def test_cancel_promotes_earliest_waitlisted(db):
-    _org(db, booking_cancellation_deadline_hours=0)
+    _org(db, booking_cancellation_deadline_minutes=0)
     space = _space(db)
     slot = _slot(db, space, _future(3), capacity=1)
     m1, m2 = _member(db, 1), _member(db, 2)
@@ -677,7 +677,7 @@ def test_cancel_promotes_earliest_waitlisted(db):
 
 
 def test_owner_cancel_past_deadline_rejected(db):
-    _org(db, booking_cancellation_deadline_hours=8760)
+    _org(db, booking_cancellation_deadline_minutes=525600)
     space = _space(db)
     slot = _slot(db, space, _future(3), capacity=1)
     m1 = _member(db, 1)
@@ -688,7 +688,7 @@ def test_owner_cancel_past_deadline_rejected(db):
 
 
 def test_admin_cancel_ignores_deadline(db):
-    _org(db, booking_cancellation_deadline_hours=8760)
+    _org(db, booking_cancellation_deadline_minutes=525600)
     space = _space(db)
     slot = _slot(db, space, _future(3), capacity=1)
     m1 = _member(db, 1)
@@ -718,7 +718,7 @@ def test_admin_cancel_notifies_member(db):
 
 
 def test_member_self_cancel_sends_no_cancellation_email(db):
-    _org(db, booking_cancellation_deadline_hours=0)
+    _org(db, booking_cancellation_deadline_minutes=0)
     space = _space(db)
     slot = _slot(db, space, _future(3), capacity=1)
     m1 = _member(db, 1)
@@ -910,7 +910,7 @@ def test_my_bookings_reports_occupancy(db):
 def test_my_bookings_says_whether_the_member_can_still_cancel(db):
     """The list offered Cancelar on a booking already inside the deadline, and
     the click could only fail with `cancellation_too_late` (#296)."""
-    _org(db, booking_cancellation_deadline_hours=48)
+    _org(db, booking_cancellation_deadline_minutes=2880)
     space = _space(db)
     soon = _slot(db, space, _future(1), capacity=1)
     later = _slot(db, space, _future(5), capacity=1)
@@ -1008,7 +1008,7 @@ def test_promotion_skips_a_member_who_lost_their_tier(db):
     them would hand them a seat in a space they may no longer use, so the seat
     goes to the next eligible member and they keep their waitlist row.
     """
-    _org(db, booking_cancellation_deadline_hours=0)
+    _org(db, booking_cancellation_deadline_minutes=0)
     allowed = _membership_type(db, "premium")
     space = _space(db, allowed_membership_types=[allowed.id])
     slot = _slot(db, space, _future(3), capacity=1)
@@ -1038,7 +1038,7 @@ def test_promotion_skips_a_member_who_lost_their_tier(db):
 
 
 def test_promotion_leaves_the_seat_open_when_nobody_waiting_is_eligible(db):
-    _org(db, booking_cancellation_deadline_hours=0)
+    _org(db, booking_cancellation_deadline_minutes=0)
     allowed = _membership_type(db, "premium")
     space = _space(db, allowed_membership_types=[allowed.id])
     slot = _slot(db, space, _future(3), capacity=1)
@@ -1063,7 +1063,7 @@ def test_promotion_leaves_the_seat_open_when_nobody_waiting_is_eligible(db):
 
 
 def test_unrestricted_space_still_promotes_the_earliest_waitlisted(db):
-    _org(db, booking_cancellation_deadline_hours=0)
+    _org(db, booking_cancellation_deadline_minutes=0)
     space = _space(db)
     slot = _slot(db, space, _future(3), capacity=1)
     m1, m2 = _member(db, 1), _member(db, 2)

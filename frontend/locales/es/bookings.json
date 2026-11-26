@@ -36,6 +36,7 @@
       "keep": "Mantener",
       "confirmCancel": "¿Cancelar esta reserva?",
       "confirmCancelDescription": "La plaza queda libre para otro socio. Si cambias de idea, tendrás que reservarla de nuevo.",
+      "confirmCancelLateDescription": "El plazo de devolución ha pasado. La plaza queda libre, pero el pago realizado no se devolverá.",
       "payBy": "Paga antes del {date} o la reserva se liberará.",
       "pendingNotice": "Tu reserva está guardada hasta que la pagues.",
       "pendingTitle": "Reservas pendientes de pago"
@@ -144,7 +145,7 @@
       "enabledDesc": "Permite a los socios reservar tiempo en espacios compartidos.",
       "rules": "Reglas de reserva",
       "windowDays": "Ventana de reserva (días de antelación)",
-      "deadlineHours": "Plazo de autocancelación (horas antes del inicio)",
+      "deadlineMinutes": "Plazo de devolución por defecto (minutos antes del inicio)",
       "invalidNumber": "Introduce un número entero entre {min} y {max}.",
       "waitlist": "Activar lista de espera",
       "waitlistDesc": "Cuando una franja está completa, permite a los socios apuntarse a una lista de espera y ser promocionados automáticamente."

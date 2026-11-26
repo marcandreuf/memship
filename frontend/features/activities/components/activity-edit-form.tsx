@@ -28,6 +28,11 @@ import {
   paymentSettingsFrom,
   paymentSettingsPayload,
 } from "./activity-payment-fields";
+import {
+  CancellationPolicyFields,
+  cancellationPolicyFrom,
+  deadlineMinutes,
+} from "./cancellation-policy-fields";
 
 const editActivitySchema = z.object({
   name: z.string().trim().min(1).max(255),
@@ -47,7 +52,6 @@ const editActivitySchema = z.object({
   tax_rate: optionalNumber({ min: 0, max: 100, integer: false }),
   allowed_membership_types: z.array(z.number()),
   allow_self_cancellation: z.boolean(),
-  self_cancellation_deadline_hours: optionalNumber({ min: 0 }),
   waiting_list: z.boolean(),
 }).refine((data) => new Date(data.ends_at) > new Date(data.starts_at), {
   message: "validation.endBeforeStart",
@@ -115,13 +119,13 @@ export function ActivityEditForm({
       tax_rate: activity.tax_rate ?? "",
       allowed_membership_types: activity.allowed_membership_types ?? [],
       allow_self_cancellation: activity.allow_self_cancellation,
-      self_cancellation_deadline_hours: activity.self_cancellation_deadline_hours ?? "",
       waiting_list: activity.features?.waiting_list === true,
     },
   });
 
   const allowSelfCancellation = form.watch("allow_self_cancellation");
   const [payment, setPayment] = useState(() => paymentSettingsFrom(activity));
+  const [cancellation, setCancellation] = useState(() => cancellationPolicyFrom(activity));
 
   async function handleSubmit(data: EditActivityFormValues) {
     const payload: Record<string, unknown> = {
@@ -143,7 +147,8 @@ export function ActivityEditForm({
       location_url: data.location_url || null,
       min_age: data.min_age ?? null,
       max_age: data.max_age ?? null,
-      self_cancellation_deadline_hours: data.allow_self_cancellation ? data.self_cancellation_deadline_hours ?? null : null,
+      self_cancellation_deadline_minutes: data.allow_self_cancellation ? deadlineMinutes(cancellation) : null,
+      late_cancellation_mode: cancellation.mode,
       // `features` is replaced whole on update: keep the activity's other keys.
       features: { ...(activity.features ?? {}), waiting_list: data.waiting_list },
     };
@@ -247,9 +252,7 @@ export function ActivityEditForm({
           </FormItem>
         )} />
         {allowSelfCancellation && (
-          <FormField control={form.control} name="self_cancellation_deadline_hours" render={({ field }) => (
-            <FormItem><FormLabel>{t("activities.selfCancellationHours")}</FormLabel><FormControl><Input type="number" min={0} {...field} /></FormControl></FormItem>
-          )} />
+          <CancellationPolicyFields value={cancellation} onChange={setCancellation} emptyMeans="none" />
         )}
         <ActivityPaymentFields flow={activity.payment_flow} value={payment} onChange={setPayment} />
         <FormErrorSummary errors={form.formState.errors} />

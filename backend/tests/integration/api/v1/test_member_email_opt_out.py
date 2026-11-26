@@ -33,7 +33,7 @@ BOOKING_CONTEXT = {
     "space_name": "Court 1",
     "booking_date": "24/07/2026",
     "booking_time": "10:00",
-    "cancellation_deadline_hours": 24,
+    "cancellation_deadline_minutes": 1440,
 }
 
 

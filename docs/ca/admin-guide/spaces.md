@@ -1,5 +1,5 @@
 <!-- source: en/admin-guide/spaces.md -->
-<!-- source-hash: 7cb2ab6650a6 -->
+<!-- source-hash: 724f69b7d567 -->
 
 # Espais i reserves
 
@@ -92,6 +92,23 @@ cancel·lada per manca de pagament* a **Configuració › Socis › Comunicacion
 mentre existeixi un espai de pagament aquests correus no es poden desactivar. Una instal·lació
 nova els porta activats, juntament amb *Plaça alliberada a última hora*, que porta l'avís a la
 llista d'espera.
+
+## Política de cancel·lació
+
+Cada espai té la seva pròpia política de cancel·lació, diferent de la de les activitats. El termini
+de devolució es fixa en minuts, hores o dies abans de l'inici d'una franja; si es deixa buit,
+l'espai segueix el valor per defecte del club (**Ajustos › Reserves**, 24 hores tret que es canviï).
+
+- **Abans del termini** el soci que cancel·la allibera la plaça, i un pagament ja fet es marca com
+  a *devolució pendent*.
+- **Passat el termini** tries **Rebutjar la cancel·lació** (per defecte) o **Permetre-la; el club es
+  queda el pagament**. En el segon cas la plaça queda lliure, el rebut continua pagat i no es deu
+  res. *Les meves reserves* avisa el soci abans de confirmar.
+- **Quan cancel·les tu** una reserva, tries si el pagament es retorna. Quan elimines una franja o un
+  espai, les reserves amb diners es cancel·len abans i sempre s'han de retornar, perquè la causa és
+  del club.
+- Una reserva que mai no es va pagar no té res a retornar. Una reserva pendent sempre pot ser
+  alliberada pel seu soci fins al seu termini de pagament.
 
 ## Devolucions i pagaments tardans
 

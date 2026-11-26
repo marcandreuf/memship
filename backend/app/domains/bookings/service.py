@@ -222,14 +222,37 @@ def _window_days(db: Session) -> int:
     return int_rule(_features(db), "booking_window_days")
 
 
-def _deadline_hours(db: Session) -> int:
-    return int_rule(_features(db), "booking_cancellation_deadline_hours")
+def _club_deadline_minutes(db: Session) -> int:
+    return int_rule(_features(db), "booking_cancellation_deadline_minutes")
 
 
-def _self_cancel_deadline(slot: SpaceSlot, tz, deadline_hours: int) -> datetime:
-    """The last moment a member may cancel their own booking on ``slot``."""
+def _deadline_minutes(db: Session, space: Space) -> int:
+    """The space's refund deadline: its own, else the club's default (#604)."""
+    if space.cancellation_deadline_minutes is not None:
+        return space.cancellation_deadline_minutes
+    return _club_deadline_minutes(db)
+
+
+def _cancellation_terms(db: Session, space: Space, slot: SpaceSlot) -> dict:
+    """What the confirmation mail tells a member about cancelling (#604).
+
+    A booking that costs money, on a space that lets members cancel late and
+    keeps the payment, must say so: "you can cancel up to X" would otherwise
+    read as if later were impossible rather than costly.
+    """
+    return {
+        "cancellation_deadline_minutes": _deadline_minutes(db, space),
+        "late_cancellation_keeps_payment": (
+            space.late_cancellation_mode == "allow_no_refund"
+            and booking_price(space, slot) > 0
+        ),
+    }
+
+
+def _self_cancel_deadline(slot: SpaceSlot, tz, deadline_minutes: int) -> datetime:
+    """The last moment a member's cancellation of a booking on ``slot`` is refundable."""
     slot_start = datetime.combine(slot.slot_date, slot.start_time, tzinfo=tz)
-    return slot_start - timedelta(hours=deadline_hours)
+    return slot_start - timedelta(minutes=deadline_minutes)
 
 
 def _waitlist_enabled(db: Session) -> bool:
@@ -328,6 +351,8 @@ def create_space(db: Session, data: SpaceCreate) -> Space:
         payment_methods=list(data.payment_methods),
         auto_cancel_enabled=data.auto_cancel_enabled,
         auto_cancel_hours=data.auto_cancel_hours,
+        cancellation_deadline_minutes=data.cancellation_deadline_minutes,
+        late_cancellation_mode=data.late_cancellation_mode,
     )
     db.add(space)
     _refuse_unpayable_space(db, space)
@@ -1009,7 +1034,7 @@ def create_booking(
                 slot,
                 space,
                 member,
-                cancellation_deadline_hours=_deadline_hours(db),
+                **_cancellation_terms(db, space, slot),
             )
         )
     else:
@@ -1030,8 +1055,15 @@ def _bill_pending(db: Session, booking: Booking, slot: SpaceSlot, space: Space):
         ) from exc
 
 
-def _self_cancel_refusal(db: Session, booking: Booking, slot: SpaceSlot) -> str | None:
-    """Why the member may not cancel this booking themselves, or None.
+def _self_cancel_policy(
+    db: Session, booking: Booking, slot: SpaceSlot
+) -> tuple[str | None, bool]:
+    """What the space's policy says to a member cancelling their own booking.
+
+    Returns ``(refusal, keep_payment)``. ``refusal`` is why the member may not
+    cancel, or None. ``keep_payment`` is True when the cancellation is allowed
+    past the refund deadline: the seat is released and the club keeps what was
+    paid (#604).
 
     A pending booking may be released until its payment deadline, whatever the
     club's cancellation notice: nothing has been paid, and a seat given back
@@ -1041,11 +1073,14 @@ def _self_cancel_refusal(db: Session, booking: Booking, slot: SpaceSlot) -> str 
     now_local = datetime.now(tz)
     if booking.status == BookingStatus.PENDING:
         if booking.payment_due_at is not None and now_local >= booking.payment_due_at:
-            return "Past the payment deadline"
-        return None
-    if now_local >= _self_cancel_deadline(slot, tz, _deadline_hours(db)):
-        return "Past the cancellation deadline"
-    return None
+            return "Past the payment deadline", False
+        return None, False
+    space = get_space(db, slot.space_id)
+    if now_local >= _self_cancel_deadline(slot, tz, _deadline_minutes(db, space)):
+        if space.late_cancellation_mode == "allow_no_refund":
+            return None, True
+        return "Past the cancellation deadline", False
+    return None, False
 
 
 def _member_of(db: Session, booking: Booking) -> Member | None:
@@ -1098,7 +1133,8 @@ def cancel_booking(
     """Cancel a booking; promote the earliest waitlisted member if a seat frees.
 
     ``keep_payment`` is the club's choice, on cancelling a paid booking, not to
-    return the money.
+    return the money. A member's own cancellation never takes it from the caller:
+    the space's policy decides (#604).
     """
     notifier = notifier or NullBookingNotifier()
 
@@ -1113,8 +1149,10 @@ def cancel_booking(
         .first()
     )
 
-    if not is_admin:
-        refusal = _self_cancel_refusal(db, booking, slot)
+    if is_admin:
+        keep = keep_payment
+    else:
+        refusal, keep = _self_cancel_policy(db, booking, slot)
         if refusal:
             raise CancellationTooLate(refusal)
 
@@ -1122,7 +1160,7 @@ def cancel_booking(
         db,
         booking,
         cancelled_by_user_id=cancelled_by_user_id,
-        keep_payment=keep_payment and is_admin,
+        keep_payment=keep,
     )
 
     if is_admin:
@@ -1211,7 +1249,7 @@ def _book_pending(db: Session, booking: Booking, notifier: BookingNotifier) -> N
                 slot,
                 slot.space,
                 member,
-                cancellation_deadline_hours=_deadline_hours(db),
+                **_cancellation_terms(db, slot.space, slot),
             )
         )
 
@@ -1348,8 +1386,6 @@ def my_bookings(db: Session, party_id: int, *, scope: str) -> list[dict]:
     tz = org_timezone(db)
     now_local = datetime.now(tz)
     today = now_local.date()
-    deadline_hours = _deadline_hours(db)
-
     query = (
         db.query(Booking)
         .join(SpaceSlot, Booking.space_slot_id == SpaceSlot.id)
@@ -1373,6 +1409,9 @@ def my_bookings(db: Session, party_id: int, *, scope: str) -> list[dict]:
         slot = b.slot
         space = slot.space
         position = None
+        in_time = now_local < _self_cancel_deadline(
+            slot, tz, _deadline_minutes(db, space)
+        )
         if b.status == BookingStatus.WAITLISTED:
             ahead = (
                 db.query(func.count(Booking.id))
@@ -1403,7 +1442,13 @@ def my_bookings(db: Session, party_id: int, *, scope: str) -> list[dict]:
                 "can_cancel": (
                     now_local < b.payment_due_at
                     if b.status == BookingStatus.PENDING and b.payment_due_at
-                    else now_local < _self_cancel_deadline(slot, tz, deadline_hours)
+                    else in_time or space.late_cancellation_mode == "allow_no_refund"
+                ),
+                # False when cancelling now gives up what was paid.
+                "cancel_refundable": (
+                    b.status == BookingStatus.PENDING
+                    or in_time
+                    or not has_paid_receipt(db, b)
                 ),
                 "payment_due_at": b.payment_due_at,
                 "receipt_id": receipt.id if (receipt := latest_receipt(b)) else None,
@@ -1730,7 +1775,7 @@ def settle_late_booking_payment(db: Session, receipt):
                         slot,
                         space,
                         member,
-                        cancellation_deadline_hours=_deadline_hours(db),
+                        **_cancellation_terms(db, space, slot),
                     )
                 )
             confirmed = True

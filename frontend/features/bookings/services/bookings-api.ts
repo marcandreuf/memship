@@ -23,6 +23,9 @@ export interface Space {
   // Override of the club's booking auto-cancel default; null inherits it.
   auto_cancel_enabled: boolean | null;
   auto_cancel_hours: number | null;
+  // Refund deadline before a slot starts; null inherits the club's default (#604).
+  cancellation_deadline_minutes: number | null;
+  late_cancellation_mode: "block" | "allow_no_refund";
   created_at: string | null;
   updated_at: string | null;
 }
@@ -40,6 +43,8 @@ export interface SpaceInput {
   payment_methods?: PaymentMethod[];
   auto_cancel_enabled?: boolean | null;
   auto_cancel_hours?: number | null;
+  cancellation_deadline_minutes?: number | null;
+  late_cancellation_mode?: "block" | "allow_no_refund";
 }
 
 export interface SpacePaymentOptions {
@@ -301,6 +306,8 @@ export interface MyBooking {
   waitlist_position: number | null;
   /** False once the self-cancellation deadline has passed. */
   can_cancel: boolean;
+  /** False when cancelling is allowed but the club keeps what was paid. */
+  cancel_refundable: boolean;
   // A booking held until paid: by when, and the receipt to pay.
   payment_due_at: string | null;
   receipt_id: number | null;

@@ -36,6 +36,7 @@
       "keep": "Keep",
       "confirmCancel": "Cancel this booking?",
       "confirmCancelDescription": "Your place is freed for another member. If you change your mind you will have to book it again.",
+      "confirmCancelLateDescription": "The refund deadline has passed. Your place is freed, but the payment you made will not be returned.",
       "payBy": "Pay before {date} or the booking will be released.",
       "pendingNotice": "Your booking is held until you pay it.",
       "pendingTitle": "Bookings awaiting payment"
@@ -144,7 +145,7 @@
       "enabledDesc": "Let members reserve time on shared spaces.",
       "rules": "Booking rules",
       "windowDays": "Booking window (days ahead)",
-      "deadlineHours": "Self-cancellation deadline (hours before start)",
+      "deadlineMinutes": "Default refund deadline (minutes before start)",
       "invalidNumber": "Enter a whole number between {min} and {max}.",
       "waitlist": "Enable waitlist",
       "waitlistDesc": "When a slot is full, let members join a waitlist and be promoted automatically."

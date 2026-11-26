@@ -26,6 +26,7 @@ from app.domains.activities.payment import (
     receipt_due_date,
     seat_payment_instructions,
 )
+from app.domains.shared.cancellation import is_late
 from app.domains.activities.models import (
     Activity,
     ActivityConsent,
@@ -658,23 +659,35 @@ def remind_pending_deadlines(db: Session, now: datetime | None = None) -> int:
     return warned
 
 
-def check_self_cancellation_allowed(
+def self_cancellation_policy(
     activity: Activity, registration: Registration
-) -> str | None:
-    """Check if a member can self-cancel. Returns error message or None if allowed."""
+) -> tuple[str | None, bool]:
+    """What the activity's policy says to a member cancelling their own seat (#604).
+
+    Returns ``(error, keep_payment)``. ``error`` is why the cancellation is
+    refused, or None. ``keep_payment`` is True when it is allowed past the
+    refund deadline: the seat is released and the club keeps what was paid. A
+    seat that was never paid has nothing to keep, so the flag then changes nothing.
+    """
     if not activity.allow_self_cancellation:
-        return "Self-cancellation is not allowed for this activity"
+        return "Self-cancellation is not allowed for this activity", False
 
     if registration.status not in ("confirmed", "waitlist", "pending"):
-        return "Only confirmed, pending or waitlisted registrations can be cancelled"
+        return "Only confirmed, pending or waitlisted registrations can be cancelled", False
 
-    if activity.self_cancellation_deadline_hours is not None:
-        now = datetime.now(timezone.utc)
-        deadline = activity.starts_at - timedelta(hours=activity.self_cancellation_deadline_hours)
-        if now > deadline:
-            return f"Cancellation deadline has passed ({activity.self_cancellation_deadline_hours}h before start)"
+    if is_late(
+        datetime.now(timezone.utc),
+        activity.starts_at,
+        activity.self_cancellation_deadline_minutes,
+    ):
+        if activity.late_cancellation_mode == "allow_no_refund":
+            return None, True
+        return (
+            f"Cancellation deadline has passed ({activity.self_cancellation_deadline_minutes} minutes before start)",
+            False,
+        )
 
-    return None
+    return None, False
 
 
 def admin_change_status(

@@ -1,5 +1,5 @@
 <!-- source: en/self-hosting/feature-flags.md -->
-<!-- source-hash: d8d0082e4c66 -->
+<!-- source-hash: 6e8a9df859a2 -->
 
 # Feature flags
 
@@ -109,7 +109,7 @@ En aquesta columna hi viuen tres menes de coses diferents, i no es comporten igu
 | `membership_fee_due_days` | valor | **7** | dies des de l'emissió fins al venciment |
 | `membership_lapse_grace_days` | valor | **21** | dies després del venciment abans que un soci caduqui |
 | `booking_window_days` | valor | **14** | amb quanta antelació pot reservar un soci (1–365) |
-| `booking_cancellation_deadline_hours` | valor | **24** | límit per cancel·lar (0–8760) |
+| `booking_cancellation_deadline_minutes` | valor | **1440** | termini de devolució per defecte d'un espai, en minuts abans de la franja (0–525600); cada espai en pot fixar un de propi |
 | `booking_waitlist_enabled` | valor | **activat** | si una franja plena ofereix llista d'espera |
 | `donation_min_amount` | valor | **5** | donatiu mínim que s'accepta, i d'on surten els imports suggerits |
 | `donation_max_amount` | valor | **1000** | donatiu màxim que s'accepta, perquè una errada no es converteixi en un càrrec enorme |

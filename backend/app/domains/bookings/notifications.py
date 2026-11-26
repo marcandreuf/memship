@@ -30,7 +30,9 @@ class BookingNotification:
     time_str: str
     locale: str = "es"
     position: int | None = None
-    cancellation_deadline_hours: int | None = None
+    cancellation_deadline_minutes: int | None = None
+    # Past the deadline the member may still cancel, but the club keeps the payment.
+    late_cancellation_keeps_payment: bool = False
     # The amount, deadline and ways to pay of a booking held until paid.
     payment: dict | None = None
     # A paid booking cancelled without keeping the payment owes it back.
@@ -107,7 +109,8 @@ class EmailBookingNotifier:
                 time_str=note.time_str,
                 locale=note.locale,
                 position=note.position,
-                cancellation_deadline_hours=note.cancellation_deadline_hours,
+                cancellation_deadline_minutes=note.cancellation_deadline_minutes,
+                late_cancellation_keeps_payment=note.late_cancellation_keeps_payment,
                 payment=note.payment,
                 refund_due=note.refund_due,
             )

@@ -1407,10 +1407,14 @@ def send_booking_confirmation_email(
     space_name: str,
     booking_date: str,
     booking_time: str,
-    cancellation_deadline_hours: int | None = None,
+    cancellation_deadline_minutes: int | None = None,
     locale: str = "es",
+    late_cancellation_keeps_payment: bool = False,
 ) -> bool:
-    """Confirm a member's booking of a slot-instance."""
+    """Confirm a member's booking of a slot-instance.
+
+    ``late_cancellation_keeps_payment``: past the deadline the member may still
+    cancel, but the club keeps what they paid (#604)."""
     return _send_templated(
         "booking_confirmation",
         to,
@@ -1420,7 +1424,8 @@ def send_booking_confirmation_email(
             "space_name": space_name,
             "booking_date": booking_date,
             "booking_time": booking_time,
-            "cancellation_deadline_hours": cancellation_deadline_hours,
+            "cancellation_deadline_minutes": cancellation_deadline_minutes,
+            "late_cancellation_keeps_payment": late_cancellation_keeps_payment,
         },
         subject_args={"space": space_name},
     )

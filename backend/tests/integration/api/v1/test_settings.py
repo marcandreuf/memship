@@ -156,9 +156,9 @@ class TestBookingRules:
             {"booking_window_days": 1.5},
             {"booking_window_days": True},
             {"booking_window_days": None},
-            {"booking_cancellation_deadline_hours": -1},
-            {"booking_cancellation_deadline_hours": "abc"},
-            {"booking_cancellation_deadline_hours": 8761},
+            {"booking_cancellation_deadline_minutes": -1},
+            {"booking_cancellation_deadline_minutes": "abc"},
+            {"booking_cancellation_deadline_minutes": 525601},
         ],
     )
     def test_invalid_booking_rule_rejected(self, client, db, features):
@@ -177,8 +177,8 @@ class TestBookingRules:
     @pytest.mark.parametrize(
         "features",
         [
-            {"booking_window_days": 1, "booking_cancellation_deadline_hours": 0},
-            {"booking_window_days": 365, "booking_cancellation_deadline_hours": 8760},
+            {"booking_window_days": 1, "booking_cancellation_deadline_minutes": 0},
+            {"booking_window_days": 365, "booking_cancellation_deadline_minutes": 525600},
             {"bookings": False},
         ],
     )

@@ -1,5 +1,5 @@
 <!-- source: en/self-hosting/feature-flags.md -->
-<!-- source-hash: d8d0082e4c66 -->
+<!-- source-hash: 6e8a9df859a2 -->
 
 # Feature flags
 
@@ -113,7 +113,7 @@ En esta columna conviven tres tipos de cosa distintos, y no se comportan igual.
 | `membership_fee_due_days` | valor | **7** | días desde la emisión hasta el vencimiento |
 | `membership_lapse_grace_days` | valor | **21** | días tras el vencimiento antes de que caduque un socio |
 | `booking_window_days` | valor | **14** | con cuánta antelación puede reservar un socio (1–365) |
-| `booking_cancellation_deadline_hours` | valor | **24** | plazo límite de cancelación (0–8760) |
+| `booking_cancellation_deadline_minutes` | valor | **1440** | plazo de devolución por defecto de un espacio, en minutos antes de la franja (0–525600); cada espacio puede fijar el suyo |
 | `booking_waitlist_enabled` | valor | **activado** | si una franja llena ofrece lista de espera |
 | `donation_min_amount` | valor | **5** | donativo mínimo que se acepta, y del que salen los importes sugeridos |
 | `donation_max_amount` | valor | **1000** | donativo máximo que se acepta, para que una errata no se convierta en un cargo enorme |

@@ -87,6 +87,23 @@ payment*, *Booking deadline reminder* and *Booking cancelled for non-payment* em
 emails cannot be switched off. A new installation has them on, together with *Place freed at the
 last minute*, which carries the call to the waiting list.
 
+## Cancellation policy
+
+Each space has its own cancellation policy, separate from the activities'. The refund deadline is
+set in minutes, hours or days before a slot starts; left empty, the space follows the club default
+(**Settings › Bookings**, 24 hours unless changed).
+
+- **Before the deadline** a member who cancels releases the seat, and a payment already made is
+  marked *refund due*.
+- **After the deadline** you choose **Refuse the cancellation** (the default) or **Allow it; the club
+  keeps the payment**. In the second case the seat is released, the receipt stays paid and nothing
+  is owed back. *My bookings* warns the member before they confirm.
+- **When you cancel** a booking you choose whether the payment is returned. When you delete a slot or
+  a space, bookings with money are cancelled first and always owe the payment back, because the
+  cause is the club's.
+- A booking that was never paid has nothing to return. A pending booking can always be released by
+  its member until its payment deadline.
+
 ## Refunds and late payments
 
 **Refunds**, reached from Activities or Spaces, lists every cancelled registration and booking

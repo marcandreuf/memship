@@ -26,7 +26,7 @@ DISPATCH_ARGS = {
     "time_str": "10:00–11:00",
     "locale": "es",
     "position": 3,
-    "cancellation_deadline_hours": 24,
+    "cancellation_deadline_minutes": 1440,
 }
 
 

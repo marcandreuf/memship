@@ -431,7 +431,7 @@ CANONICAL = {
     ],
     # Bookings configuration.
     "booking_window_days": 14,
-    "booking_cancellation_deadline_hours": 24,
+    "booking_cancellation_deadline_minutes": 1440,
     "booking_waitlist_enabled": True,
     "booking_auto_cancel_enabled": True,
     "booking_auto_cancel_hours": 24,

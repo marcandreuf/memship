@@ -6,6 +6,7 @@ from typing import Literal
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.core.schema_types import NonBlank, refuse_null
+from app.domains.shared.cancellation import MAX_CANCELLATION_MINUTES, LateCancellationMode
 
 PaymentMethod = Literal["card", "bizum", "transfer", "cash"]
 
@@ -165,7 +166,10 @@ class ActivityCreate(BaseModel):
     what_to_bring: str | None = Field(default=None, max_length=5000)
     cancellation_policy: str | None = Field(default=None, max_length=5000)
     allow_self_cancellation: bool = False
-    self_cancellation_deadline_hours: int | None = Field(default=None, ge=0)
+    self_cancellation_deadline_minutes: int | None = Field(
+        default=None, ge=0, le=MAX_CANCELLATION_MINUTES
+    )
+    late_cancellation_mode: LateCancellationMode = "block"
     payment_methods: list[PaymentMethod] = []
     auto_cancel_enabled: bool | None = None
     auto_cancel_hours: int | None = Field(default=None, ge=1, le=AUTO_CANCEL_MAX_HOURS)
@@ -210,7 +214,10 @@ class ActivityUpdate(BaseModel):
     what_to_bring: str | None = Field(default=None, max_length=5000)
     cancellation_policy: str | None = Field(default=None, max_length=5000)
     allow_self_cancellation: bool | None = None
-    self_cancellation_deadline_hours: int | None = Field(default=None, ge=0)
+    self_cancellation_deadline_minutes: int | None = Field(
+        default=None, ge=0, le=MAX_CANCELLATION_MINUTES
+    )
+    late_cancellation_mode: LateCancellationMode | None = None
     is_featured: bool | None = None
     payment_methods: list[PaymentMethod] | None = None
     auto_cancel_enabled: bool | None = None
@@ -231,7 +238,11 @@ class ActivityUpdate(BaseModel):
         return self
 
     _not_null = field_validator(
-        "name", "allow_self_cancellation", "is_featured", "payment_methods"
+        "name",
+        "allow_self_cancellation",
+        "is_featured",
+        "payment_methods",
+        "late_cancellation_mode",
     )(refuse_null)
 
 
@@ -267,7 +278,8 @@ class ActivityResponse(BaseModel):
     what_to_bring: str | None = None
     cancellation_policy: str | None = None
     allow_self_cancellation: bool
-    self_cancellation_deadline_hours: int | None = None
+    self_cancellation_deadline_minutes: int | None = None
+    late_cancellation_mode: str = "block"
     is_active: bool
     is_featured: bool
     payment_flow: str

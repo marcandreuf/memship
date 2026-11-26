@@ -143,7 +143,7 @@ class TestActivityCreate:
 
     def test_self_cancellation_hours_negative(self):
         with pytest.raises(ValueError):
-            ActivityCreate(**_valid_activity_data(self_cancellation_deadline_hours=-1))
+            ActivityCreate(**_valid_activity_data(self_cancellation_deadline_minutes=-1))
 
 
 class TestActivityUpdate:

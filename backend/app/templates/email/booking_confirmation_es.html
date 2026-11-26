@@ -11,8 +11,13 @@
 {{ c.data_row("Fecha", booking_date) }}
 {{ c.data_row("Horario", booking_time) }}
 {% endcall %}
-{%- if cancellation_deadline_hours %}
-<p style="{{ s.note }}">Puedes cancelar hasta {{ cancellation_deadline_hours }} horas antes del inicio.</p>
+{%- if cancellation_deadline_minutes %}
+{%- set deadline %}{% if cancellation_deadline_minutes % 60 == 0 %}{{ cancellation_deadline_minutes // 60 }} horas{% else %}{{ cancellation_deadline_minutes }} minutos{% endif %}{% endset %}
+{%- if late_cancellation_keeps_payment %}
+<p style="{{ s.note }}">Puedes cancelar con devolución hasta {{ deadline }} antes del inicio. Después aún puedes cancelar, pero el pago no se devolverá.</p>
+{%- else %}
+<p style="{{ s.note }}">Puedes cancelar hasta {{ deadline }} antes del inicio.</p>
+{%- endif %}
 {%- endif %}
 <p style="{{ s.p_last }}">¡Nos vemos pronto!</p>
 {% endblock %}

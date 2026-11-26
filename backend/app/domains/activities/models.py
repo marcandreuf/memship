@@ -40,6 +40,14 @@ class Activity(Base):
             name="valid_activity_payment_flow",
         ),
         CheckConstraint(
+            "late_cancellation_mode IN ('block', 'allow_no_refund')",
+            name="valid_activity_late_cancellation_mode",
+        ),
+        CheckConstraint(
+            "self_cancellation_deadline_minutes IS NULL OR self_cancellation_deadline_minutes >= 0",
+            name="activity_cancellation_deadline_non_negative",
+        ),
+        CheckConstraint(
             "payment_methods <@ ARRAY['card', 'bizum', 'transfer', 'cash']::varchar[]",
             name="valid_activity_payment_methods",
         ),
@@ -79,7 +87,14 @@ class Activity(Base):
     what_to_bring = Column(Text)
     cancellation_policy = Column(Text)
     allow_self_cancellation = Column(Boolean, default=False)
-    self_cancellation_deadline_hours = Column(Integer)
+    # How long before the start a member may cancel and have a paid seat returned.
+    # NULL = no deadline: every self-cancellation is refundable (#604).
+    self_cancellation_deadline_minutes = Column(Integer)
+    # After that deadline: ``block`` refuses the member's cancellation,
+    # ``allow_no_refund`` releases the seat and the club keeps the payment.
+    late_cancellation_mode = Column(
+        String(20), nullable=False, default="block", server_default="block"
+    )
     is_active = Column(Boolean, default=True)
     is_featured = Column(Boolean, default=False)
     # Fixed when the activity is created and never edited: ``legacy`` is the

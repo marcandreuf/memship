@@ -12,7 +12,7 @@ import { useSettings, useUpdateSettings } from "../hooks/use-settings";
 
 // Mirrors backend `app/domains/bookings/rules.py`.
 const WINDOW_DAYS = { min: 1, max: 365 };
-const DEADLINE_HOURS = { min: 0, max: 8760 };
+const DEADLINE_MINUTES = { min: 0, max: 525600 };
 
 function parseRule(value: string, { min, max }: { min: number; max: number }) {
   if (!/^\d+$/.test(value.trim())) return null;
@@ -32,8 +32,8 @@ export function BookingsSettings() {
   const [windowDays, setWindowDays] = useState<string>(
     String(features.booking_window_days ?? 14)
   );
-  const [deadlineHours, setDeadlineHours] = useState<string>(
-    String(features.booking_cancellation_deadline_hours ?? 24)
+  const [deadlineMinutes, setDeadlineMinutes] = useState<string>(
+    String(features.booking_cancellation_deadline_minutes ?? 1440)
   );
 
   const [windowError, setWindowError] = useState(false);
@@ -113,29 +113,29 @@ export function BookingsSettings() {
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">
-                  {t("bookings.settings.deadlineHours")}
+                  {t("bookings.settings.deadlineMinutes")}
                 </Label>
                 <Input
                   className="h-8"
                   type="number"
-                  min={DEADLINE_HOURS.min}
-                  max={DEADLINE_HOURS.max}
-                  value={deadlineHours}
+                  min={DEADLINE_MINUTES.min}
+                  max={DEADLINE_MINUTES.max}
+                  value={deadlineMinutes}
                   aria-invalid={deadlineError}
-                  onChange={(e) => setDeadlineHours(e.target.value)}
+                  onChange={(e) => setDeadlineMinutes(e.target.value)}
                   onBlur={() => {
-                    const n = parseRule(deadlineHours, DEADLINE_HOURS);
+                    const n = parseRule(deadlineMinutes, DEADLINE_MINUTES);
                     setDeadlineError(n === null);
                     if (
                       n !== null &&
-                      n !== features.booking_cancellation_deadline_hours
+                      n !== features.booking_cancellation_deadline_minutes
                     )
-                      save({ booking_cancellation_deadline_hours: n });
+                      save({ booking_cancellation_deadline_minutes: n });
                   }}
                 />
                 {deadlineError && (
                   <p className="text-xs text-destructive">
-                    {t("bookings.settings.invalidNumber", DEADLINE_HOURS)}
+                    {t("bookings.settings.invalidNumber", DEADLINE_MINUTES)}
                   </p>
                 )}
               </div>
