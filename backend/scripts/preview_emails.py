@@ -82,7 +82,7 @@ CONTEXTS: dict[str, dict] = {
         "space_name": "Pista 1",
         "booking_date": "15/07/2026",
         "booking_time": "18:00 – 19:30",
-        "cancellation_deadline_hours": 12,
+        "cancellation_deadline_minutes": 720,
     },
     "booking_waitlisted": {
         "member_name": "María Puig",

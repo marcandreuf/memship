@@ -113,7 +113,7 @@ Three different kinds of thing live in this column, and they do not behave alike
 | `membership_fee_due_days` | value | **7** | days from emission to due date |
 | `membership_lapse_grace_days` | value | **21** | days past due before a member lapses |
 | `booking_window_days` | value | **14** | how far ahead a member may book (1–365) |
-| `booking_cancellation_deadline_hours` | value | **24** | cancellation cut-off (0–8760) |
+| `booking_cancellation_deadline_minutes` | value | **1440** | default refund deadline of a space, in minutes before the slot (0–525600); a space may set its own |
 | `booking_waitlist_enabled` | value | **on** | whether a full slot offers a waitlist |
 | `donation_min_amount` | value | **5** | smallest donation accepted, and what the suggested amounts are derived from |
 | `donation_max_amount` | value | **1000** | largest donation accepted, so a typo cannot become an enormous charge |

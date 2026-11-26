@@ -223,7 +223,7 @@ class TestCancelling:
         assert booking.refund_status == "none"
 
     def test_a_member_cannot_keep_their_own_payment_for_the_club(self, db):
-        _org(db, booking_cancellation_deadline_hours=0)
+        _org(db, booking_cancellation_deadline_minutes=0)
         _, booking, receipt = _pending(db)
         mark_receipt_paid(db, receipt, payment_method="cash")
 
@@ -259,7 +259,7 @@ class TestCancelling:
 class TestAMemberReleasingTheirPendingBooking:
     def test_may_do_so_past_the_cancellation_notice(self, db):
         # The notice is a week; the slot is in three days.
-        _org(db, booking_cancellation_deadline_hours=168)
+        _org(db, booking_cancellation_deadline_minutes=10080)
         _, booking, _ = _pending(db)
 
         service.cancel_booking(db, booking, cancelled_by_user_id=None, is_admin=False)
@@ -277,7 +277,7 @@ class TestAMemberReleasingTheirPendingBooking:
             )
 
     def test_my_bookings_offers_it(self, db):
-        _org(db, booking_cancellation_deadline_hours=168)
+        _org(db, booking_cancellation_deadline_minutes=10080)
         _, booking, _ = _pending(db)
 
         [row] = service.my_bookings(db, booking.party_id, scope="upcoming")

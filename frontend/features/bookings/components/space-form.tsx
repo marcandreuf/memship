@@ -30,6 +30,11 @@ import {
   paymentSettingsFrom,
   paymentSettingsPayload,
 } from "@/features/activities/components/activity-payment-fields";
+import {
+  CancellationPolicyFields,
+  cancellationPolicyFrom,
+  deadlineMinutes,
+} from "@/features/activities/components/cancellation-policy-fields";
 import { SpacePaymentFields } from "./space-payment-fields";
 
 const toTimeInput = (s: string | null | undefined) => (s ? s.slice(0, 5) : "");
@@ -90,6 +95,9 @@ export function SpaceForm({
   const savedFlow: SpacePaymentFlow = space?.payment_flow ?? "pay_to_confirm";
   const [flow, setFlow] = useState<SpacePaymentFlow>(savedFlow);
   const [payment, setPayment] = useState(() => paymentSettingsFrom(space ?? undefined));
+  const [cancellation, setCancellation] = useState(() =>
+    cancellationPolicyFrom(space ?? undefined)
+  );
 
   const form = useForm<SpaceFormValues>({
     resolver: useZodResolver(spaceSchema),
@@ -115,6 +123,8 @@ export function SpaceForm({
       close_time: data.close_time,
       allowed_membership_types: data.allowed_membership_types,
       is_active: data.is_active,
+      cancellation_deadline_minutes: deadlineMinutes(cancellation),
+      late_cancellation_mode: cancellation.mode,
       ...(flow === "pay_to_confirm" ? paymentSettingsPayload(payment) : {}),
       // Sent only on the switch itself: the backend takes pay_to_confirm and
       // nothing else, since a space never goes back to legacy.
@@ -242,6 +252,11 @@ export function SpaceForm({
           onSwitchFlow={() => setFlow("pay_to_confirm")}
           value={payment}
           onChange={setPayment}
+        />
+        <CancellationPolicyFields
+          value={cancellation}
+          onChange={setCancellation}
+          emptyMeans="clubDefault"
         />
         <div className="grid gap-3 sm:grid-cols-2">
           <FormField

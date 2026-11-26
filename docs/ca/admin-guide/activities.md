@@ -1,5 +1,5 @@
 <!-- source: es/admin-guide/activities.md -->
-<!-- source-hash: b2fb84570044 -->
+<!-- source-hash: 343bcaefbbe0 -->
 
 # Activitats
 
@@ -17,8 +17,8 @@ En crear una activitat configures:
 - **Ubicació**, amb detalls i URL opcionals.
 - **Capacitat**, mínim i màxim de participants.
 - **Elegibilitat**, interval d'edat (edat mínima/màxima).
-- **Cancel·lació**, permetre o no la cancel·lació per part del soci, i el termini (hores abans de
-  l'inici).
+- **Cancel·lació**, permetre o no la cancel·lació per part del soci, el termini de devolució i què
+  passa passat aquest termini (vegeu [Política de cancel·lació](#política-de-cancel·lació)).
 - **Imatge de portada**, visible per als socis com a miniatura.
 
 ## Estats i publicació
@@ -86,6 +86,24 @@ preu 0, confirma al moment.
 
 Les activitats creades abans d'aquesta manera de treballar porten la marca **legacy**: confirmen
 la inscripció al moment i el rebut es cobra després, com sempre. No es poden canviar.
+
+### Política de cancel·lació
+
+Quan un soci cancel·la la seva pròpia plaça, la política de l'activitat decideix què passa amb el
+que va pagar. El termini es fixa en minuts, hores o dies abans de l'inici; si es deixa buit no hi
+ha termini.
+
+- **Abans del termini** la plaça queda lliure i un pagament ja fet es marca com a *devolució
+  pendent*, de manera que apareix a **Devolucions**.
+- **Passat el termini** tries, per activitat, entre **Rebutjar la cancel·lació** (per defecte) i
+  **Permetre-la; el club es queda el pagament**. En el segon cas la plaça queda lliure, el rebut
+  continua pagat i no es deu res. S'avisa el soci abans de confirmar.
+- **Quan cancel·les tu**, tries en aquell moment si el pagament es retorna, sigui quina sigui la
+  política.
+- Una plaça que mai no es va pagar (pendent, gratuïta o exempta) no té res a retornar.
+
+Retornar els diners continua sent un acte manual a la passarel·la o al banc; memship només el
+registra.
 
 ### Cancel·lació automàtica
 

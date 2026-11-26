@@ -16,6 +16,8 @@ export interface PaidActivityOptions {
   amount?: number;
   publish?: boolean;
   allowSelfCancellation?: boolean;
+  /** The refund deadline in minutes before the start (#604), and what follows it. */
+  cancellationPolicy?: { deadlineMinutes: number; lateMode: "block" | "allow_no_refund" };
 }
 
 function isoIn(days: number) {
@@ -32,6 +34,7 @@ export function createPaidActivity(name: string, options: PaidActivityOptions = 
     amount = 20,
     publish = true,
     allowSelfCancellation = false,
+    cancellationPolicy,
   } = options;
   cy.apiLogin(TEST_ACCOUNTS.admin.email, TEST_ACCOUNTS.admin.password);
   return cy
@@ -45,6 +48,12 @@ export function createPaidActivity(name: string, options: PaidActivityOptions = 
       features: { waiting_list: waitingList },
       payment_methods: paymentMethods,
       allow_self_cancellation: allowSelfCancellation,
+      ...(cancellationPolicy
+        ? {
+            self_cancellation_deadline_minutes: cancellationPolicy.deadlineMinutes,
+            late_cancellation_mode: cancellationPolicy.lateMode,
+          }
+        : {}),
       ...(autoCancel === undefined ? {} : { auto_cancel_enabled: autoCancel, auto_cancel_hours: 48 }),
     })
     .then((r) => {

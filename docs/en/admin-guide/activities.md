@@ -1,5 +1,5 @@
 <!-- source: es/admin-guide/activities.md -->
-<!-- source-hash: b2fb84570044 -->
+<!-- source-hash: 343bcaefbbe0 -->
 
 # Activities
 
@@ -19,8 +19,8 @@ When you create an activity you configure:
 - **Location**, with optional details and URL.
 - **Capacity**, minimum and maximum number of participants.
 - **Eligibility**, age range (minimum/maximum age).
-- **Cancellation**, whether or not the member may cancel, and the deadline (hours before the
-  start).
+- **Cancellation**, whether or not the member may cancel, the refund deadline and what happens
+  after it (see [Cancellation policy](#cancellation-policy)).
 - **Cover Image**, visible to members as a thumbnail.
 
 ## Statuses and publishing
@@ -86,6 +86,23 @@ confirms at once.
 
 Activities created before this way of working carry the **legacy** mark: they confirm the
 registration at once and the receipt is collected afterwards, as before. This cannot be changed.
+
+### Cancellation policy
+
+When a member cancels their own seat, the policy of the activity decides what happens to what they
+paid. The deadline is set in minutes, hours or days before the start; left empty there is no
+deadline.
+
+- **Before the deadline** the seat is released and a payment already made is marked *refund due*,
+  so it appears in **Refunds**.
+- **After the deadline** you choose, per activity, between **Refuse the cancellation** (the default)
+  and **Allow it; the club keeps the payment**. In the second case the seat is released, the
+  receipt stays paid and nothing is owed back. The member is warned before confirming.
+- **When you cancel**, you choose at that moment whether the payment is returned, whatever the
+  policy.
+- A seat that was never paid (pending, free or exempt) has nothing to return.
+
+Returning the money stays a manual act in the gateway or bank; memship only records it.
 
 ### Automatic cancellation
 

@@ -36,6 +36,7 @@
       "keep": "Mantén",
       "confirmCancel": "Vols cancel·lar aquesta reserva?",
       "confirmCancelDescription": "La plaça queda lliure per a un altre soci. Si canvies d'idea, l'hauràs de reservar de nou.",
+      "confirmCancelLateDescription": "El termini de devolució ha passat. La plaça queda lliure, però el pagament fet no es retornarà.",
       "payBy": "Paga abans del {date} o la reserva s'alliberarà.",
       "pendingNotice": "La teva reserva està guardada fins que la paguis.",
       "pendingTitle": "Reserves pendents de pagament"
@@ -144,7 +145,7 @@
       "enabledDesc": "Permet als socis reservar temps en espais compartits.",
       "rules": "Regles de reserva",
       "windowDays": "Finestra de reserva (dies d'antelació)",
-      "deadlineHours": "Termini d'autocancel·lació (hores abans de l'inici)",
+      "deadlineMinutes": "Termini de devolució per defecte (minuts abans de l'inici)",
       "invalidNumber": "Introdueix un nombre enter entre {min} i {max}.",
       "waitlist": "Activa la llista d'espera",
       "waitlistDesc": "Quan una franja és plena, permet als socis apuntar-se a una llista d'espera i ser promocionats automàticament."

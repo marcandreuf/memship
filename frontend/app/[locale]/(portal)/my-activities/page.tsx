@@ -28,18 +28,18 @@ function RegistrationCard({ registration }: { registration: RegistrationData }) 
 
   const isActiveStatus = ["confirmed", "pending", "waitlist"].includes(registration.status);
 
-  const isCancellationAllowed = (() => {
-    if (!activity) return false;
-    if (!activity.allow_self_cancellation) return false;
-    if (activity.self_cancellation_deadline_hours != null) {
-      const deadline = new Date(
+  const isLate =
+    activity?.self_cancellation_deadline_minutes != null &&
+    new Date() >=
+      new Date(
         new Date(activity.starts_at).getTime() -
-        activity.self_cancellation_deadline_hours * 60 * 60 * 1000
+          activity.self_cancellation_deadline_minutes * 60 * 1000
       );
-      if (new Date() > deadline) return false;
-    }
-    return true;
-  })();
+  const isCancellationAllowed =
+    !!activity?.allow_self_cancellation &&
+    (!isLate || activity.late_cancellation_mode === "allow_no_refund");
+  // Allowed past the deadline: the seat is released and the club keeps the payment.
+  const losesPayment = isLate && registration.receipt_status === "paid";
 
   const canCancel = isActiveStatus && isCancellationAllowed;
 
@@ -79,7 +79,11 @@ function RegistrationCard({ registration }: { registration: RegistrationData }) 
                 e.preventDefault();
                 confirmAction({
                     title: t("activities.registration.confirmCancel"),
-                    description: t("activities.registration.confirmCancelDescription"),
+                    description: t(
+                      losesPayment
+                        ? "activities.registration.confirmCancelLateDescription"
+                        : "activities.registration.confirmCancelDescription"
+                    ),
                     cancelLabel: t("common.back"),
                     confirmLabel: t("activities.registration.cancelRegistration"),
                     onConfirm: async () => {

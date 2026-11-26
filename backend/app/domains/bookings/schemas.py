@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from app.core.pagination import PageMeta
 from app.core.schema_types import NonBlank, refuse_null
+from app.domains.shared.cancellation import MAX_CANCELLATION_MINUTES, LateCancellationMode
 from app.domains.activities.schemas import (
     AUTO_CANCEL_MAX_HOURS,
     PaymentMethod,
@@ -36,6 +37,11 @@ class SpaceCreate(BaseModel):
     # Override of the club's booking auto-cancel default; None inherits it.
     auto_cancel_enabled: bool | None = None
     auto_cancel_hours: int | None = Field(default=None, ge=1, le=AUTO_CANCEL_MAX_HOURS)
+    # Cancellation policy (#604); a None deadline inherits the club's default.
+    cancellation_deadline_minutes: int | None = Field(
+        default=None, ge=0, le=MAX_CANCELLATION_MINUTES
+    )
+    late_cancellation_mode: LateCancellationMode = "block"
 
     _unique_methods = field_validator("payment_methods")(unique_methods)
 
@@ -61,8 +67,12 @@ class SpaceUpdate(BaseModel):
     payment_methods: list[PaymentMethod] | None = None
     auto_cancel_enabled: bool | None = None
     auto_cancel_hours: int | None = Field(default=None, ge=1, le=AUTO_CANCEL_MAX_HOURS)
+    cancellation_deadline_minutes: int | None = Field(
+        default=None, ge=0, le=MAX_CANCELLATION_MINUTES
+    )
+    late_cancellation_mode: LateCancellationMode | None = None
 
-    _name_not_null = field_validator("name")(refuse_null)
+    _name_not_null = field_validator("name", "late_cancellation_mode")(refuse_null)
     _unique_methods = field_validator("payment_methods")(unique_methods)
 
 
@@ -82,6 +92,8 @@ class SpaceRead(BaseModel):
     payment_methods: list[str]
     auto_cancel_enabled: bool | None
     auto_cancel_hours: int | None
+    cancellation_deadline_minutes: int | None
+    late_cancellation_mode: str
     created_at: datetime | None
     updated_at: datetime | None
 
@@ -184,6 +196,8 @@ class MyBookingRead(BaseModel):
     booked_count: int
     waitlist_position: int | None = None
     can_cancel: bool
+    # False when cancelling now is allowed but the club keeps the payment (#604).
+    cancel_refundable: bool = True
     # A booking held until paid: when it must be paid by, and its receipt.
     payment_due_at: datetime | None = None
     receipt_id: int | None = None

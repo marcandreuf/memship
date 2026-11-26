@@ -42,6 +42,14 @@ class Space(Base):
     __table_args__ = (
         CheckConstraint("close_time > open_time", name="space_hours_valid"),
         CheckConstraint(
+            "late_cancellation_mode IN ('block', 'allow_no_refund')",
+            name="valid_space_late_cancellation_mode",
+        ),
+        CheckConstraint(
+            "cancellation_deadline_minutes IS NULL OR cancellation_deadline_minutes >= 0",
+            name="space_cancellation_deadline_non_negative",
+        ),
+        CheckConstraint(
             "price IS NULL OR price >= 0", name="space_price_non_negative"
         ),
         CheckConstraint(
@@ -82,6 +90,14 @@ class Space(Base):
     # Override of the club's booking auto-cancel default; NULL inherits it.
     auto_cancel_enabled = Column(Boolean)
     auto_cancel_hours = Column(Integer)
+    # How long before a slot starts a member may cancel and have a paid booking
+    # returned. NULL inherits the club's default (#604).
+    cancellation_deadline_minutes = Column(Integer)
+    # After that deadline: ``block`` refuses the member, ``allow_no_refund``
+    # releases the seat and the club keeps the payment.
+    late_cancellation_mode = Column(
+        String(20), nullable=False, default="block", server_default="block"
+    )
     is_active = Column(Boolean, nullable=False, default=True, server_default="true")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(

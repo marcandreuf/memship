@@ -385,7 +385,7 @@ def _next_date_for(weekday: int, min_ahead: int = 1) -> date:
 DEMO_FEATURES: dict[str, object] = {
     "bookings": True,
     "booking_window_days": 14,
-    "booking_cancellation_deadline_hours": 24,
+    "booking_cancellation_deadline_minutes": 1440,
     "booking_waitlist_enabled": True,
     "communications": True,
     "member_card": True,

@@ -17,8 +17,8 @@ Al crear una actividad configuras:
 - **Ubicación**, con detalles y URL opcionales.
 - **Capacidad**, mínimo y máximo de participantes.
 - **Elegibilidad**, rango de edad (edad mínima/máxima).
-- **Cancelación**, permitir o no la cancelación por el socio, y el plazo (horas antes del
-  inicio).
+- **Cancelación**, permitir o no la cancelación por el socio, el plazo de devolución y qué ocurre
+  pasado ese plazo (véase [Política de cancelación](#política-de-cancelación)).
 - **Imagen de portada**, visible para los socios como miniatura.
 
 ## Estados y publicación
@@ -87,6 +87,21 @@ confirma al momento.
 
 Las actividades creadas antes de esta forma de trabajar llevan la marca **legacy**: confirman la
 inscripción al momento y el recibo se cobra después, como siempre. No se pueden cambiar.
+
+### Política de cancelación
+
+Cuando un socio cancela su propia plaza, la política de la actividad decide qué ocurre con lo que
+pagó. El plazo se fija en minutos, horas o días antes del inicio; si se deja vacío no hay plazo.
+
+- **Antes del plazo** la plaza queda libre y un pago ya hecho se marca como *devolución pendiente*,
+  de modo que aparece en **Devoluciones**.
+- **Pasado el plazo** eliges, por actividad, entre **Rechazar la cancelación** (por defecto) y
+  **Permitirla; el club se queda el pago**. En el segundo caso la plaza queda libre, el recibo sigue
+  pagado y no se debe nada. Se avisa al socio antes de confirmar.
+- **Cuando cancelas tú**, eliges en ese momento si el pago se devuelve, sea cual sea la política.
+- Una plaza que nunca se pagó (pendiente, gratuita o exenta) no tiene nada que devolver.
+
+Devolver el dinero sigue siendo un acto manual en la pasarela o el banco; memship solo lo registra.
 
 ### Cancelación automática
 

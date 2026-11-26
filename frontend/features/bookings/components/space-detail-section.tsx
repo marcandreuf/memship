@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { DetailSection } from "@/components/entity/detail-section";
 import { useMembershipTypes } from "@/features/members/hooks/use-members";
 import { useFormatters } from "@/hooks/use-formatters";
+import { describeDeadline } from "@/features/activities/components/cancellation-policy-fields";
 import type { Space } from "../services/bookings-api";
 
 interface SpaceDetailSectionProps {
@@ -63,6 +64,20 @@ export function SpaceDetailSection({ space }: SpaceDetailSectionProps) {
           },
         ]
       : []),
+    {
+      label: t("activities.cancellationRule.deadline"),
+      value:
+        (space.cancellation_deadline_minutes == null
+          ? t("activities.cancellationRule.clubDefault")
+          : describeDeadline(t, space.cancellation_deadline_minutes)) +
+        " · " +
+        t(
+          space.late_cancellation_mode === "allow_no_refund"
+            ? "activities.cancellationRule.readAllowNoRefund"
+            : "activities.cancellationRule.readBlock"
+        ),
+      inline: true,
+    },
     {
       label: t("bookings.spaces.status"),
       value: space.is_active

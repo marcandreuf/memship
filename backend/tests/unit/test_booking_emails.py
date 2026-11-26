@@ -15,7 +15,7 @@ CONTEXT = {
     "space_name": "Court 1",
     "booking_date": "24/07/2026",
     "booking_time": "10:00–11:00",
-    "cancellation_deadline_hours": 24,
+    "cancellation_deadline_minutes": 1440,
     "position": 2,
 }
 
@@ -124,3 +124,44 @@ def test_a_deadline_brought_forward_says_so(locale, heading):
         {**CONTEXT, **PAYMENT, "deadline_changed": True},
     )
     assert heading in html
+
+
+@pytest.mark.parametrize(
+    "locale, refundable, kept",
+    [
+        ("en", "cancel for a refund up to 24 hours", "payment will not be returned"),
+        ("es", "cancelar con devolución hasta 24 horas", "pago no se devolverá"),
+        ("ca", "cancel·lar amb devolució fins a 24 hores", "pagament no es retornarà"),
+    ],
+)
+def test_a_paid_booking_that_may_be_cancelled_late_says_the_payment_is_kept(
+    locale, refundable, kept
+):
+    html = render_template(
+        "booking_confirmation",
+        locale,
+        {**CONTEXT, "late_cancellation_keeps_payment": True},
+    )
+    assert refundable in html
+    assert kept in html
+
+
+@pytest.mark.parametrize(
+    "locale, sentence",
+    [
+        ("en", "You can cancel up to 24 hours before the start."),
+        ("es", "Puedes cancelar hasta 24 horas antes del inicio."),
+        ("ca", "Pots cancel·lar fins a 24 hores abans de l'inici."),
+    ],
+)
+def test_otherwise_the_confirmation_keeps_its_plain_deadline_sentence(locale, sentence):
+    html = render_template("booking_confirmation", locale, CONTEXT)
+    assert sentence in html
+    assert "refund" not in html.lower() and "devolució" not in html
+
+
+def test_a_deadline_in_minutes_is_not_rounded_into_hours():
+    html = render_template(
+        "booking_confirmation", "en", {**CONTEXT, "cancellation_deadline_minutes": 30}
+    )
+    assert "up to 30 minutes before" in html

@@ -101,7 +101,7 @@ class TestDemoDataset:
 # the name (#317).
 ALL_FEATURE_FLAGS = {
     "billing_notification_email",
-    "booking_cancellation_deadline_hours",
+    "booking_cancellation_deadline_minutes",
     "booking_waitlist_enabled",
     "booking_window_days",
     "bookings",
@@ -172,7 +172,7 @@ class TestFeatureFlagSeeding:
         assert f["membership_lapse_grace_days"] == DEFAULT_GRACE_DAYS
         assert f["membership_fee_due_days"] == DEFAULT_MEMBERSHIP_FEE_DUE_DAYS
         assert (f["reminder_days_after_due"], f["reminder_repeat_days"], f["reminder_max_count"]) == (3, 7, 3)
-        assert (f["booking_window_days"], f["booking_cancellation_deadline_hours"]) == (14, 24)
+        assert (f["booking_window_days"], f["booking_cancellation_deadline_minutes"]) == (14, 1440)
 
     def test_seeding_features_leaves_flags_it_does_not_name_alone(self, db):
         """`custom_roles` and `gender_options` come from the base install, and a

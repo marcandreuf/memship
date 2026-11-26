@@ -36,6 +36,11 @@ import {
   paymentSettingsFrom,
   paymentSettingsPayload,
 } from "@/features/activities/components/activity-payment-fields";
+import {
+  CancellationPolicyFields,
+  cancellationPolicyFrom,
+  deadlineMinutes,
+} from "@/features/activities/components/cancellation-policy-fields";
 
 const activitySchema = z.object({
   name: z.string().trim().min(1).max(255),
@@ -55,7 +60,6 @@ const activitySchema = z.object({
   tax_rate: optionalNumber({ min: 0, max: 100, integer: false }),
   allowed_membership_types: z.array(z.number()),
   allow_self_cancellation: z.boolean(),
-  self_cancellation_deadline_hours: optionalNumber({ min: 0 }),
   waiting_list: z.boolean(),
 }).refine((data) => new Date(data.ends_at) > new Date(data.starts_at), {
   message: "validation.endBeforeStart",
@@ -107,13 +111,13 @@ export default function NewActivityPage() {
       tax_rate: "",
       allowed_membership_types: [],
       allow_self_cancellation: false,
-      self_cancellation_deadline_hours: "",
       waiting_list: false,
     },
   });
 
   const allowSelfCancellation = form.watch("allow_self_cancellation");
   const [payment, setPayment] = useState(() => paymentSettingsFrom());
+  const [cancellation, setCancellation] = useState(() => cancellationPolicyFrom());
 
   async function onSubmit(data: ActivityFormValues) {
     const payload: Record<string, unknown> = {
@@ -137,8 +141,9 @@ export default function NewActivityPage() {
     if (data.location_url) payload.location_url = data.location_url;
     if (data.min_age !== undefined) payload.min_age = data.min_age;
     if (data.max_age !== undefined) payload.max_age = data.max_age;
-    if (data.allow_self_cancellation && data.self_cancellation_deadline_hours !== undefined) {
-      payload.self_cancellation_deadline_hours = data.self_cancellation_deadline_hours;
+    if (data.allow_self_cancellation) {
+      payload.self_cancellation_deadline_minutes = deadlineMinutes(cancellation);
+      payload.late_cancellation_mode = cancellation.mode;
     }
 
     try {
@@ -443,16 +448,10 @@ export default function NewActivityPage() {
                 )}
               />
               {allowSelfCancellation && (
-                <FormField
-                  control={form.control}
-                  name="self_cancellation_deadline_hours"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("activities.selfCancellationHours")}</FormLabel>
-                      <FormControl><Input type="number" min={0} {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                <CancellationPolicyFields
+                  value={cancellation}
+                  onChange={setCancellation}
+                  emptyMeans="none"
                 />
               )}
             </CardContent>

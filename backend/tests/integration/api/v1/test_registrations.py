@@ -377,7 +377,7 @@ class TestCancelRegistration:
             starts_at=now + timedelta(hours=2),
             ends_at=now + timedelta(hours=5),
             allow_self_cancellation=True,
-            self_cancellation_deadline_hours=24,
+            self_cancellation_deadline_minutes=1440,
         )
         reg = Registration(
             activity_id=activity.id, party_id=member.party_id,

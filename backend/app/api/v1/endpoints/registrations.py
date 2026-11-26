@@ -30,7 +30,7 @@ from app.domains.activities.registration_service import (
     build_activity_registrations_query,
     build_member_registrations_query,
     cancel_registration,
-    check_self_cancellation_allowed,
+    self_cancellation_policy,
     confirm_without_payment,
     register_member,
 )
@@ -320,6 +320,7 @@ def cancel_own_registration(
     # deadline — is a write action, so it takes the write key. A view-only
     # registrations role must not have destructive power over them.
     is_admin = user_has(current_user, "registrations.write")
+    keep_payment = bool(is_admin and data and data.keep_payment)
 
     # Check ownership if not admin
     if not is_admin:
@@ -327,8 +328,9 @@ def cancel_own_registration(
         if registration.party_id != member.party_id:
             raise HTTPException(status_code=403, detail="Cannot cancel another member's registration")
 
-        # Check self-cancellation rules
-        error = check_self_cancellation_allowed(registration.activity, registration)
+        # The activity's cancellation policy decides whether this is allowed and
+        # whether a paid seat is still owed back (#604).
+        error, keep_payment = self_cancellation_policy(registration.activity, registration)
         if error:
             raise HTTPException(status_code=400, detail=error)
 
@@ -338,7 +340,7 @@ def cancel_own_registration(
             registration,
             cancelled_by_id=current_user.id,
             reason=data.reason if data else None,
-            keep_payment=bool(is_admin and data and data.keep_payment),
+            keep_payment=keep_payment,
         )
         db.commit()
     except RegistrationError as e:

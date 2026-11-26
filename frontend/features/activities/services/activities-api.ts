@@ -66,7 +66,8 @@ export interface ActivityData {
   what_to_bring: string | null;
   cancellation_policy: string | null;
   allow_self_cancellation: boolean;
-  self_cancellation_deadline_hours: number | null;
+  self_cancellation_deadline_minutes: number | null;
+  late_cancellation_mode: "block" | "allow_no_refund";
   is_active: boolean;
   is_featured: boolean;
   payment_flow: PaymentFlow;

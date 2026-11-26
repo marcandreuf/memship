@@ -1,5 +1,5 @@
 <!-- source: en/admin-guide/spaces.md -->
-<!-- source-hash: 7cb2ab6650a6 -->
+<!-- source-hash: 724f69b7d567 -->
 
 # Espacios y reservas
 
@@ -92,6 +92,23 @@ activados los correos *Reserva pendiente de pago*, *Aviso de plazo de una reserv
 cancelada por falta de pago* en **Configuración › Socios › Comunicaciones**. Por lo mismo,
 mientras exista un espacio de pago esos correos no se pueden desactivar. Una instalación nueva los
 trae activados, junto con *Plaza liberada a última hora*, que lleva el aviso a la lista de espera.
+
+## Política de cancelación
+
+Cada espacio tiene su propia política de cancelación, distinta de la de las actividades. El plazo
+de devolución se fija en minutos, horas o días antes del inicio de una franja; si se deja vacío, el
+espacio sigue el valor por defecto del club (**Ajustes › Reservas**, 24 horas salvo que se cambie).
+
+- **Antes del plazo** el socio que cancela libera la plaza, y un pago ya hecho se marca como
+  *devolución pendiente*.
+- **Pasado el plazo** eliges **Rechazar la cancelación** (por defecto) o **Permitirla; el club se
+  queda el pago**. En el segundo caso la plaza queda libre, el recibo sigue pagado y no se debe nada.
+  *Mis reservas* avisa al socio antes de confirmar.
+- **Cuando cancelas tú** una reserva, eliges si el pago se devuelve. Cuando eliminas una franja o un
+  espacio, las reservas con dinero se cancelan antes y siempre deben devolverse, porque la causa es
+  del club.
+- Una reserva que nunca se pagó no tiene nada que devolver. Una reserva pendiente siempre puede ser
+  liberada por su socio hasta su plazo de pago.
 
 ## Devoluciones y pagos tardíos
 

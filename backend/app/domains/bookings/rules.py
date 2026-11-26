@@ -18,7 +18,9 @@ from app.domains.shared.feature_rules import validate_bool_keys, validate_int_ru
 #: overflowing on an absurd value.
 INT_RULES: IntRules = {
     "booking_window_days": (14, 1, 365),
-    "booking_cancellation_deadline_hours": (24, 0, 8760),
+    # The club's default for how long before a slot a member's cancellation is
+    # refundable. A space may set its own (#604).
+    "booking_cancellation_deadline_minutes": (1440, 0, 525_600),
     # Pay-to-confirm bookings (#603). Separate from the activity values on
     # purpose: a court slot and an event are not paid on the same clock.
     # How long an unpaid booking may be held when auto-cancel is on.

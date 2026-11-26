@@ -432,7 +432,7 @@ class TestBooking:
         assert r2.json()["detail"]["code"] == "slot_full"
 
     def test_cancel_promotes_waitlisted_member(self, client, db):
-        _org(db, booking_cancellation_deadline_hours=0)
+        _org(db, booking_cancellation_deadline_minutes=0)
         admin = _user(db, "admin")
         _space_id, slot_id = _make_space_and_slot(client, admin, capacity=1)
         u1, _ = _member_user(db, "c1@examplee6e3b1.com")
@@ -459,7 +459,7 @@ class TestBooking:
 
     def test_cancel_past_the_deadline_is_a_coded_422(self, client, db):
         # The slot is three days out and the deadline is a hundred hours.
-        _org(db, booking_cancellation_deadline_hours=100)
+        _org(db, booking_cancellation_deadline_minutes=6000)
         admin = _user(db, "admin")
         _space_id, slot_id = _make_space_and_slot(client, admin)
         u1, _ = _member_user(db, "late@examplee6e3b1.com")
@@ -492,7 +492,7 @@ class TestBooking:
         assert row["slot_date"] == _future(3).isoformat()
 
     def test_member_cannot_cancel_others_booking(self, client, db):
-        _org(db, booking_cancellation_deadline_hours=0)
+        _org(db, booking_cancellation_deadline_minutes=0)
         admin = _user(db, "admin")
         _space_id, slot_id = _make_space_and_slot(client, admin, capacity=1)
         u1, _ = _member_user(db, "own1@examplee6e3b1.com")

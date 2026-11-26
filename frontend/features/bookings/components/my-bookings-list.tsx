@@ -86,7 +86,11 @@ export function MyBookingsList({ scope }: { scope: "upcoming" | "past" }) {
                   onClick={() =>
                     confirmAction({
                       title: t("bookings.my.confirmCancel"),
-                      description: t("bookings.my.confirmCancelDescription"),
+                      description: t(
+                        b.cancel_refundable
+                          ? "bookings.my.confirmCancelDescription"
+                          : "bookings.my.confirmCancelLateDescription"
+                      ),
                       cancelLabel: t("bookings.my.keep"),
                       confirmLabel: t("bookings.my.cancel"),
                       onConfirm: async () => {

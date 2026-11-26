@@ -319,9 +319,10 @@ def send_booking_email_task(
     time_str: str,
     locale: str = "es",
     position: int | None = None,
-    cancellation_deadline_hours: int | None = None,
+    cancellation_deadline_minutes: int | None = None,
     payment: dict | None = None,
     refund_due: bool = False,
+    late_cancellation_keeps_payment: bool = False,
 ) -> bool:
     """Send a booking email of the given ``kind``.
 
@@ -331,7 +332,7 @@ def send_booking_email_task(
         if kind == "confirmation":
             return send_booking_confirmation_email(
                 to, member_name, space_name, date_str, time_str,
-                cancellation_deadline_hours, locale,
+                cancellation_deadline_minutes, locale, late_cancellation_keeps_payment,
             )
         if kind == "waitlisted":
             return send_booking_waitlisted_email(
