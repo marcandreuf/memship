@@ -10,6 +10,9 @@ from app.domains.auth.models import User
 from app.domains.members.models import Member, MembershipType
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Party, Person
+# Re-exported: ``EmailTaken`` moved down to ``persons.service`` with the function
+# that raises it, and the member endpoint still imports it from here.
+from app.domains.persons.service import EmailTaken, change_person_email
 
 VALID_STATUS_TRANSITIONS = {
     "pending": ["active", "cancelled"],
@@ -187,34 +190,14 @@ def create_member(
     return member
 
 
-class EmailTaken(ValueError):
-    """Another account already signs in with this address."""
-
-
 def change_member_email(db: Session, member: Member, email: str | None) -> None:
-    """Write a member's address to the Person row and to their User row, if any.
+    """Write a member's address to the party row and to their User row, if any.
 
-    Login reads ``User.email`` while every mail the app sends reads
-    ``Person.email``. Writing only the Person row — what the update endpoint
-    used to do — sent mail to the corrected address while sign-in still
-    expected the old one, and nothing surfaced the split. The two rows are one
-    address, so they move together.
-
-    ``users.email`` is unique, so the address must not belong to another
-    account. The Person row is only checked against Users: a person with no
-    login (an admin-created member) may share an address with one, as before.
+    The rule and the reason it exists live in ``persons.service``, which is
+    where the second caller of it is (#636). This stays as the member-shaped
+    entry point because that is what the member update endpoint has.
     """
-    user = member.person.user
-    if user is not None:
-        if not email:
-            raise ValueError("A member with a login must keep an email address")
-        taken = (
-            db.query(User).filter(User.email == email, User.id != user.id).first()
-        )
-        if taken:
-            raise EmailTaken("Email already registered")
-        user.email = email
-    member.person.email = email
+    change_person_email(db, member.person, email)
 
 
 def change_member_status(
