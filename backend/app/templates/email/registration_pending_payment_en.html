@@ -6,5 +6,9 @@
 <h1 style="{{ s.h1 }}">{% if deadline_added %}You now have a deadline to pay for your seat{% elif promoted %}A seat is yours{% else %}Seat held, payment pending{% endif %}</h1>
 <p style="{{ s.p }}">Hi {{ member_name }},</p>
 <p style="{{ s.p }}">{% if deadline_added %}Your seat at <strong>{{ activity_name }}</strong> is still held, but the club has set a deadline to pay for it: if you do not pay before it, the registration is cancelled and the seat is released.{% elif promoted %}A spot has opened up in <strong>{{ activity_name }}</strong>, where you were on the waiting list, and we are holding it for you. Your registration is confirmed once the payment is recorded.{% else %}We are holding a seat for you at <strong>{{ activity_name }}</strong>. Your registration is confirmed once the payment is recorded.{% endif %}</p>
+{%- if late_cancellation_keeps_payment and cancellation_deadline_minutes %}
+{%- set deadline %}{% if cancellation_deadline_minutes % 60 == 0 %}{{ cancellation_deadline_minutes // 60 }} hours{% else %}{{ cancellation_deadline_minutes }} minutes{% endif %}{% endset %}
+<p style="{{ s.note }}">You can cancel for a refund up to {{ deadline }} before the start. After that you can still cancel, but the payment will not be returned.</p>
+{%- endif %}
 {% include "_seat_payment_en.html" %}
 {% endblock %}

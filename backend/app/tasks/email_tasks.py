@@ -151,6 +151,8 @@ def send_pending_payment_email_task(
     locale: str = "es",
     deadline_added: bool = False,
     promoted: bool = False,
+    cancellation_deadline_minutes: int | None = None,
+    late_cancellation_keeps_payment: bool = False,
 ) -> bool:
     """Tell the member their seat is held until they pay, and how to pay."""
     try:
@@ -169,6 +171,8 @@ def send_pending_payment_email_task(
             locale=locale,
             deadline_added=deadline_added,
             promoted=promoted,
+            cancellation_deadline_minutes=cancellation_deadline_minutes,
+            late_cancellation_keeps_payment=late_cancellation_keeps_payment,
         )
     except Exception as exc:
         logger.error(f"Pending-payment email task failed: to={to}, error={exc}")

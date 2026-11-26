@@ -1,5 +1,5 @@
 <!-- source: es/admin-guide/activities.md -->
-<!-- source-hash: 8bce1a07c79a -->
+<!-- source-hash: 3f3758439846 -->
 
 # Activitats
 
@@ -101,7 +101,8 @@ ha termini.
 - **El soci ho sap per endavant.** El termini i la regla posterior apareixen als detalls de
   l'activitat i a la pàgina d'inscripció al costat del preu, i el correu de confirmació d'una plaça
   de pagament en una activitat que es queda els pagaments tardans avisa que el pagament no es
-  retornarà passat el termini.
+  retornarà passat el termini. El mateix fa el correu de pagament pendent d'una plaça reservada
+  fins que es paga.
 - **Quan cancel·les tu**, tries en aquell moment si el pagament es retorna, sigui quina sigui la
   política.
 - Una plaça que mai no es va pagar (pendent, gratuïta o exempta) no té res a retornar.

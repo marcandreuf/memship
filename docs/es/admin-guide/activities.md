@@ -101,7 +101,8 @@ pagó. El plazo se fija en minutos, horas o días antes del inicio; si se deja v
 - **El socio lo sabe de antemano.** El plazo y la regla posterior aparecen en los detalles de la
   actividad y en la página de inscripción junto al precio, y el correo de confirmación de una plaza
   de pago en una actividad que se queda los pagos tardíos avisa de que el pago no se devolverá
-  pasado el plazo.
+  pasado el plazo. Lo mismo hace el correo de pago pendiente de una plaza reservada hasta que se
+  paga.
 - **Cuando cancelas tú**, eliges en ese momento si el pago se devuelve, sea cual sea la política.
 - Una plaza que nunca se pagó (pendiente, gratuita o exenta) no tiene nada que devolver.
 

@@ -256,6 +256,37 @@ class TestEmails:
         assert kwargs["pay_now_url"] is None
         assert kwargs["deadline"] is None
 
+    @pytest.mark.parametrize(
+        "policy, told",
+        [
+            (dict(self_cancellation_deadline_minutes=1440, late_cancellation_mode="allow_no_refund"), True),
+            (dict(self_cancellation_deadline_minutes=1440, late_cancellation_mode="block"), False),
+            (dict(late_cancellation_mode="allow_no_refund"), False),
+        ],
+    )
+    def test_the_pending_mail_carries_late_cancellation_terms_only_when_payment_is_kept(
+        self, db, org, membership_type, policy, told
+    ):
+        activity, price = _activity(db, payment_flow=PAY)
+        activity.allow_self_cancellation = True
+        for key, value in policy.items():
+            setattr(activity, key, value)
+        member = _member(db, membership_type, f"c{len(policy)}{told}")
+
+        with patch(
+            "app.tasks.email_tasks.send_pending_payment_email_task.delay"
+        ) as pending:
+            register_member(db, activity, member, price.id)
+            db.commit()
+
+        kwargs = pending.call_args.kwargs
+        if told:
+            assert kwargs["late_cancellation_keeps_payment"] is True
+            assert kwargs["cancellation_deadline_minutes"] == 1440
+        else:
+            assert "late_cancellation_keeps_payment" not in kwargs
+            assert "cancellation_deadline_minutes" not in kwargs
+
     @pytest.mark.parametrize("locale", ["es", "ca", "en"])
     def test_the_pending_mail_renders_every_way_to_pay(self, locale):
         html = render_template(
