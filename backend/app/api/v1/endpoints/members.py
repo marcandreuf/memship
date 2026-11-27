@@ -34,6 +34,7 @@ from app.core.csv_export import stream_csv
 from app.domains.member_card.schemas import AssignNumbersResponse
 from app.domains.persons.service import EmailTaken
 from app.domains.members.service import (
+    EmailNotVerified,
     approve_registration,
     assign_missing_member_numbers,
     build_members_query,
@@ -425,6 +426,11 @@ def approve_member_registration(
         member = approve_registration(
             db, member, data.membership_type_id if data else None
         )
+    # Before the generic handler below, which it subclasses. 403 rather than
+    # 400: the request was well formed and the caller was entitled to make it,
+    # the account is simply not approvable yet (#643).
+    except EmailNotVerified as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 

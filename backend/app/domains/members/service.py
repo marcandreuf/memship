@@ -187,6 +187,18 @@ def create_member(
     return member
 
 
+class EmailNotVerified(ValueError):
+    """The applicant never proved they hold the address on the account.
+
+    Its own type, like ``EmailTaken``, because the endpoint answers 403 for this
+    and 400 for every other refusal ``approve_registration`` raises. The request
+    was well formed and the caller was entitled to make it; the account is not
+    in a state that may be approved, which is the same distinction the login
+    gate draws when it answers 403 to correct credentials on an unconfirmed
+    address.
+    """
+
+
 def change_member_email(db: Session, member: Member, email: str | None) -> None:
     """Write a member's address to the party row and to their User row, if any.
 
@@ -237,6 +249,18 @@ def approve_registration(
     """
     if member.status != "pending":
         raise ValueError(f"Only pending registrations can be approved (is '{member.status}')")
+
+    # After the status check, so approving an already-active member still gets
+    # the clearer error about its status rather than one about its address.
+    #
+    # Keyed on the account, not on the member: a member an administrator created
+    # by hand has no ``users`` row and so no verification state at all, and a
+    # check written over the member would refuse every one of them (#643).
+    if member.user is not None and not member.user.email_verified:
+        raise EmailNotVerified(
+            "This member has not confirmed their email address. Ask them to use "
+            "the confirmation link before approving the registration."
+        )
 
     if membership_type_id is not None:
         membership_type = (
