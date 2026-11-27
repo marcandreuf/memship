@@ -26,6 +26,67 @@ class EmailNotVerifiedError(Exception):
     """The provider did not vouch for the email address."""
 
 
+class UnverifiedAccountHasHistory(Exception):
+    """An unverified account holds financial history, so it cannot be discarded.
+
+    Unreachable once approval requires a verified address (#643): a registration
+    nobody confirmed can no longer be approved, so it can hold neither a member
+    number nor a receipt. Kept because the alternative failure is worse than the
+    exception. ``receipts.party_id`` and ``sepa_mandates.party_id`` carry no
+    ``ondelete``, so the database would refuse the delete and the caller would
+    see an ``IntegrityError`` out of an authentication callback, which reads as
+    a broken sign-in rather than as a refusal.
+    """
+
+
+def _discard_unverified_account(db: Session, user: User) -> None:
+    """Delete the party behind an unverified account, so its address is free.
+
+    The **party**, not the ``users`` row. The abandoned registration created a
+    Person, a Party and a pending Member, and deleting only the login would
+    orphan all three, leave the address sitting on the party row, and hand the
+    replacement account a second set of each. Everything else the party owns —
+    contacts, addresses, bank accounts, the member record — cascades with it.
+
+    The audit entry is written before the delete and deliberately carries no
+    ``user_id``: there is no acting user in a provider callback, and the column
+    is ``ON DELETE SET NULL`` against the row being removed, so recording the
+    discarded account there would blank itself out. The detail goes in
+    ``old_values``, which nothing cascades into.
+    """
+    from app.domains.audit.models import AuditLog
+    from app.domains.billing.models import Receipt, SepaMandate
+    from app.domains.persons.models import Party
+
+    party_id = user.party_id
+    blocked = (
+        db.query(Receipt).filter(Receipt.party_id == party_id).count()
+        + db.query(SepaMandate).filter(SepaMandate.party_id == party_id).count()
+    )
+    if blocked:
+        raise UnverifiedAccountHasHistory(user.email)
+
+    db.add(
+        AuditLog(
+            table_name="party",
+            record_id=party_id,
+            action="delete",
+            user_id=None,
+            old_values={
+                "email": user.email,
+                "user_id": user.id,
+                "reason": "unverified account replaced by a provider-verified sign-in",
+            },
+        )
+    )
+    db.flush()
+
+    party = db.query(Party).filter(Party.id == party_id).first()
+    if party is not None:
+        db.delete(party)
+    db.flush()
+
+
 @dataclass
 class OAuthProfile:
     provider: str
@@ -77,7 +138,7 @@ def find_or_create_from_oauth(db: Session, profile: OAuthProfile) -> tuple[User,
         return identity.user, False
 
     existing = db.query(User).filter(User.email == profile.email).first()
-    if existing is not None:
+    if existing is not None and existing.email_verified:
         db.add(
             UserIdentity(
                 user_id=existing.id,
@@ -86,19 +147,18 @@ def find_or_create_from_oauth(db: Session, profile: OAuthProfile) -> tuple[User,
                 email=profile.email,
             )
         )
-        # The provider has vouched for the address, so a member who registered
-        # with a password but never clicked the link is now confirmed.
-        if not existing.email_verified:
-            existing.email_verified = True
-            existing.email_verified_at = datetime.now(timezone.utc)
-            existing.verification_token = None
-            existing.verification_token_expires_at = None
         db.flush()
         return existing, False
 
+    # Read before anything is destroyed. Discarding the unverified account and
+    # only then discovering that registration is closed would leave the person
+    # with neither their old account nor a new one (#644).
     public_registration, requires_approval = get_registration_settings(db)
     if not public_registration:
         raise RegistrationClosedError(profile.email)
+
+    if existing is not None:
+        _discard_unverified_account(db, existing)
 
     person = Person(
         first_name=profile.first_name or profile.email.split("@")[0],
