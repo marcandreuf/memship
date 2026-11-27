@@ -529,6 +529,58 @@ class BankAccount(Base):
     party = relationship("Party", overlaps="bank_accounts")
 
 
+# The same trigger migration c8e4a7b2f193 installs, attached to create_all so the
+# test schema and a migrated database behave identically — the convention
+# ``trg_party_display_name`` above already set.
+#
+# ``party.email`` is a cache of the party's primary email contact (#473). The
+# contact is the source of truth; the column stays because the mailing address is
+# read through it in six places, three of them Celery tasks, and repointing all
+# of them in the same change as the schema move would be a far larger step.
+event.listen(
+    Contact.__table__,
+    "after_create",
+    DDL(
+        """
+CREATE OR REPLACE FUNCTION party_sync_email_from_primary_contact() RETURNS trigger AS $party_email$
+DECLARE
+    target_party BIGINT;
+BEGIN
+    IF (TG_OP = 'INSERT' AND NEW.channel IS DISTINCT FROM 'email')
+        OR (TG_OP = 'DELETE' AND OLD.channel IS DISTINCT FROM 'email')
+        OR (TG_OP = 'UPDATE'
+            AND NEW.channel IS DISTINCT FROM 'email'
+            AND OLD.channel IS DISTINCT FROM 'email')
+    THEN
+        RETURN NULL;
+    END IF;
+
+    target_party := COALESCE(NEW.party_id, OLD.party_id);
+
+    UPDATE party
+    SET email = (
+            SELECT c.value
+            FROM contacts c
+            WHERE c.party_id = target_party
+              AND c.channel = 'email'
+              AND c.is_primary
+            LIMIT 1
+        ),
+        updated_at = now()
+    WHERE id = target_party;
+
+    RETURN NULL;
+END;
+$party_email$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_party_email_from_contact
+    AFTER INSERT OR UPDATE OR DELETE ON contacts
+    FOR EACH ROW EXECUTE FUNCTION party_sync_email_from_primary_contact();
+        """
+    ),
+)
+
+
 @event.listens_for(Contact, "before_insert")
 @event.listens_for(Contact, "before_update")
 def _contact_carries_its_channel(_mapper, connection, contact):

@@ -184,6 +184,9 @@ def seed_contact_types(db) -> None:
         ("phone_mobile", "Mobile Phone", "Mobile phone number", "phone", 2),
         ("phone_work", "Work Phone", "Work phone number", "phone", 3),
         ("phone_emergency", "Emergency Phone", "Emergency contact phone", "phone", 4),
+        # The address the organisation writes to. `email_work` and `email_other`
+        # both read as secondary; nothing meant "the main one" until #473.
+        ("email_main", "Main Email", "The address the organisation writes to", "email", 0),
         ("email_work", "Work Email", "Work email address", "email", 5),
         ("email_other", "Other Email", "Other email address", "email", 6),
     ]
