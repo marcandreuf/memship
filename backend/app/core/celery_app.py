@@ -10,6 +10,7 @@ celery = Celery(
     broker=settings.CELERY_BROKER_URL,
     backend=settings.CELERY_BROKER_URL,
     include=[
+        "app.tasks.auth_tasks",
         "app.tasks.billing_tasks",
         "app.tasks.communication_tasks",
         "app.tasks.email_tasks",
@@ -49,6 +50,12 @@ celery.conf.beat_schedule = {
     "scheduled-membership-lapse": {
         "task": "app.tasks.billing_tasks.scheduled_membership_lapse",
         "schedule": crontab(hour=4, minute=0),
+    },
+    # Before the digest and after the overnight billing work, so a sweep that
+    # cascades never runs while a billing pass is mid-flight on the same rows.
+    "scheduled-unverified-cleanup": {
+        "task": "app.tasks.auth_tasks.scheduled_unverified_cleanup",
+        "schedule": crontab(hour=5, minute=0),
     },
     "scheduled-webhook-digest": {
         "task": "app.tasks.billing_tasks.scheduled_webhook_digest",

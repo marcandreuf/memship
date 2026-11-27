@@ -51,6 +51,7 @@ from app.domains.auth.schemas import (
     UserResponse,
     VerifyEmailRequest,
 )
+from app.domains.persons.service import UnverifiedAccountHasHistory
 from app.domains.auth.oauth_service import (
     EmailNotVerifiedError,
     OAuthProfile,
@@ -663,6 +664,12 @@ async def oauth_callback(
         return RedirectResponse(_frontend_url("/login", error="sso_email_unverified"))
     except RegistrationClosedError:
         return RedirectResponse(_frontend_url("/login", error="registration_closed"))
+    # Should be unreachable since #643: an unconfirmed registration can no longer
+    # be approved, so it can hold neither a member number nor a receipt. Handled
+    # anyway, because the alternative here is a 500 inside a provider callback,
+    # which reads to the person signing in as the product being broken (#644).
+    except UnverifiedAccountHasHistory:
+        return RedirectResponse(_frontend_url("/login", error="sso_account_conflict"))
 
     if not user.is_active:
         return RedirectResponse(_frontend_url("/login", error="account_disabled"))
