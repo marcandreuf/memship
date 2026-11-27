@@ -1,6 +1,6 @@
 """Person endpoints."""
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.db_utils import get_person_by_party_or_404
@@ -9,6 +9,7 @@ from app.db.session import get_db
 from app.domains.auth.models import User
 from app.domains.members.schemas import PersonResponse
 from app.domains.persons.gender import require_offered_gender
+from app.domains.persons.service import EmailTaken, change_person_email
 
 router = APIRouter(prefix="/persons", tags=["persons"])
 
@@ -45,8 +46,32 @@ def update_person(
     }
     if "gender" in data:
         require_offered_gender(db, data["gender"], person.gender)
+
+    # The address also lives on the User row, and login reads it from there, so
+    # it cannot go through the loop below (#636). Same routing as the member
+    # update endpoint.
+    if "email" in data:
+        # And the same restriction. ``MemberSelfUpdate`` excludes ``email``
+        # deliberately, because it is the address the account signs in with, so
+        # the member update endpoint answers 403 for a self-service caller.
+        # This endpoint allowed it, which made it a way around that rule; while
+        # the write landed only on the party row the login was protected by
+        # accident, and routing it through ``change_person_email`` would
+        # otherwise have handed a member their own login address (#636).
+        if not user_has(current_user, "members.write"):
+            raise HTTPException(
+                status_code=403,
+                detail="Not editable on your own record: email",
+            )
+        try:
+            change_person_email(db, person, data["email"])
+        except EmailTaken as e:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+        except ValueError as e:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
     for key, value in data.items():
-        if key in allowed_fields:
+        if key in allowed_fields and key != "email":
             setattr(person, key, value)
 
     db.commit()
