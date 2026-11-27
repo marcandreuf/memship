@@ -1,7 +1,11 @@
 describe("Registration Flow", () => {
   it("member can browse published activities @smoke", () => {
     cy.loginAsMember();
-    cy.visit("/en/activities");
+    // By name, not the first page as it falls: the list shows 20, newest first,
+    // and the seeded Summer Soccer Camp is the 20th, so any activity another
+    // worker publishes meanwhile pushes it to page 2 and this passes only on
+    // retry. Same fix eligibility-rules 8.2 already carries (#461).
+    cy.visit("/en/activities?q=Summer+Soccer+Camp");
     // Member sees activity cards (not table)
     cy.contains("Summer Soccer Camp").should("be.visible");
   });

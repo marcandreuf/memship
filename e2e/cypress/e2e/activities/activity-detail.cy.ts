@@ -1,3 +1,6 @@
+import { TEST_ACCOUNTS } from "../../support/commands";
+import { API, cancelActivity, createPaidActivity, registerAs } from "../../support/pay-to-confirm";
+
 describe("Activity Detail — Admin", () => {
   beforeEach(() => {
     cy.loginAsAdmin();
@@ -64,12 +67,19 @@ describe("Activity Detail — Admin", () => {
 // #590 — the member's Register control sits in the header, not behind a tab
 // =============================================================================
 //
-// Seed pairs this relies on, verified against the dev database:
+// Seed pairs this relies on, verified against a database freshly rebuilt with
+// `seed --test --reset-club-data`, which is the only state worth verifying
+// against: a dev database that has run the suite before has accumulated other
+// specs' writes (#117), and reading a fixture off one is how the cancelled-seat
+// test below came to depend on another spec having run first.
 //   nuria@examplee6e3b1.com  — active, no registrations
-//   member@examplee6e3b1.com — confirmed on Yoga Workshop, cancelled on
-//                              Private Wine Tasting
+//   member@examplee6e3b1.com — confirmed on Yoga Workshop, Photography Course
+//                              and Swimming Lessons, and nothing else
 //   Chess Club Tournament    — published, registration open
 //   Spring Marathon 2026     — published, registration closed
+//
+// There is deliberately no seeded cancelled registration. The one test that
+// needs one builds it.
 //
 // Activity ids are seed-dependent, so each test reaches the detail page through
 // the name-filtered list rather than a hardcoded id.
@@ -137,12 +147,40 @@ describe("Activity Detail — member Register control (#590)", () => {
     cy.contains(/you are already registered/i).should("be.visible");
   });
 
-  it("lets a cancelled member register again while the card still shows", () => {
-    cy.loginAsMember();
-    openActivityAsMember("Private Wine Tasting");
+  // Builds its own activity and cancels its own seat, rather than reading a
+  // cancelled registration off the seed. There is no such seeded pair: a fresh
+  // `seed --test --reset-club-data` leaves `member@` confirmed on Yoga
+  // Workshop, Photography Course and Swimming Lessons and registered nowhere
+  // else. This test passed when it was written only because
+  // `registrations/pay-to-confirm-member.cy.ts` cancels and re-registers that
+  // member on Private Wine Tasting in its `beforeEach`, and had happened to run
+  // first against a database that was never reseeded (#117). Run alone on clean
+  // data it failed every time.
+  describe("with a cancelled seat of its own", () => {
+    const name = `E2E Cancelled Card ${Date.now()}`;
+    let activityId: number;
 
-    registerLink().should("be.visible");
-    cy.contains('[role="tab"]', /^Cancelled$/).click();
-    cy.contains('[role="tabpanel"]', /cancelled/i).should("be.visible");
+    before(() => {
+      createPaidActivity(name, { allowSelfCancellation: true }).then((id) => {
+        activityId = id;
+        registerAs(TEST_ACCOUNTS.member, id).then((reg) => {
+          cy.apiLogin(TEST_ACCOUNTS.member.email, TEST_ACCOUNTS.member.password);
+          cy.request("DELETE", `${API}/registrations/${reg.id}`);
+        });
+      });
+    });
+
+    // Leave no published activity behind: an extra row on the first page of the
+    // activities list is what broke eligibility-rules 8.2 (#461).
+    after(() => cancelActivity(activityId));
+
+    it("lets a cancelled member register again while the card still shows", () => {
+      cy.loginAsMember();
+      openActivityAsMember(name);
+
+      registerLink().should("be.visible");
+      cy.contains('[role="tab"]', /^Cancelled$/).click();
+      cy.contains('[role="tabpanel"]', /cancelled/i).should("be.visible");
+    });
   });
 });
