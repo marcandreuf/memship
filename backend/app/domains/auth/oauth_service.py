@@ -16,7 +16,10 @@ from app.domains.members.service import (
     get_default_membership_type,
 )
 from app.domains.persons.models import Person
-from app.domains.persons.service import discard_unverified_account
+from app.domains.persons.service import (
+    discard_unverified_account,
+    set_primary_email_contact,
+)
 
 
 class RegistrationClosedError(Exception):
@@ -103,10 +106,10 @@ def find_or_create_from_oauth(db: Session, profile: OAuthProfile) -> tuple[User,
     person = Person(
         first_name=profile.first_name or profile.email.split("@")[0],
         last_name=profile.last_name or "",
-        email=profile.email,
     )
     db.add(person)
     db.flush()
+    set_primary_email_contact(db, person.party_id, profile.email)
 
     # No password hash: this account signs in through the provider only.
     user = User(

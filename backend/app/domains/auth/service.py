@@ -22,6 +22,7 @@ from app.domains.members.service import (
 )
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Person
+from app.domains.persons.service import set_primary_email_contact
 
 VERIFICATION_TOKEN_TTL_HOURS = 24
 
@@ -136,10 +137,13 @@ def register_user(
     person = Person(
         first_name=first_name,
         last_name=last_name,
-        email=email,
     )
     db.add(person)
     db.flush()
+    # The sign-up address becomes the party's primary email contact, so login
+    # and the mailing address start equal and have one writer between them
+    # (#473).
+    set_primary_email_contact(db, person.party_id, email)
 
     # Create user
     user = User(

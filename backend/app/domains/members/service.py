@@ -9,7 +9,7 @@ from app.core.search import match_words
 from app.domains.members.models import Member, MembershipType
 from app.domains.organizations.models import OrganizationSettings
 from app.domains.persons.models import Party, Person
-from app.domains.persons.service import change_person_email
+from app.domains.persons.service import change_person_email, set_primary_email_contact
 
 VALID_STATUS_TRANSITIONS = {
     "pending": ["active", "cancelled"],
@@ -161,13 +161,17 @@ def create_member(
     person = Person(
         first_name=first_name,
         last_name=last_name,
-        email=email,
         date_of_birth=date_of_birth,
         gender=gender,
         national_id=national_id,
     )
     db.add(person)
     db.flush()
+    # Through the contact, not onto the column: `party.email` is a cache the
+    # trigger maintains, and a creator that writes it directly leaves the two
+    # disagreeing from birth — after which clearing the address cannot clear a
+    # column nothing points at (#473).
+    set_primary_email_contact(db, person.party_id, email)
 
     member_number = allocate_member_number(db)
     minor = is_minor_by_dob(date_of_birth)

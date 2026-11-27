@@ -14,11 +14,26 @@ party even though what prompts it is the state of an account.
 from sqlalchemy.orm import Session
 
 from app.domains.auth.models import User
-from app.domains.persons.models import Party, Person
+from app.domains.persons.models import Contact, ContactType, Party, Person
+
+
+# The contact type meaning "the address the organisation writes to" (#473).
+# ``email_work`` and ``email_other`` both read as secondary, so neither could
+# carry it.
+PRIMARY_EMAIL_TYPE_CODE = "email_main"
 
 
 class EmailTaken(ValueError):
     """Another account already signs in with this address."""
+
+
+class MissingPrimaryEmailType(RuntimeError):
+    """The ``email_main`` contact type is absent, so no address can be stored.
+
+    Seeded and installed by migration ``c8e4a7b2f193``. Raised rather than
+    silently writing nothing, because a mailing address that vanishes without
+    error is the failure this whole phase exists to avoid.
+    """
 
 
 def change_person_email(db: Session, person: Person, email: str | None) -> None:
@@ -39,6 +54,12 @@ def change_person_email(db: Session, person: Person, email: str | None) -> None:
     endpoint. ``PUT /persons/{id}`` assigned straight to the model and so had
     the same defect until #636; it is now the second caller of this function,
     which is why the function sits in ``persons`` rather than in ``members``.
+
+    Since #473 the mailing address is written to the party's **primary email
+    contact**, not to ``party.email``. The column is still what every reader
+    reads, and a trigger keeps it equal to that contact, so writing the column
+    here as well would be writing a cache by hand beside the thing that
+    maintains it. One write path is the whole point: two is how #98 became #636.
     """
     user = person.user
     if user is not None:
@@ -50,7 +71,78 @@ def change_person_email(db: Session, person: Person, email: str | None) -> None:
         if taken:
             raise EmailTaken("Email already registered")
         user.email = email
-    person.email = email
+    set_primary_email_contact(db, person.party_id, email)
+
+
+def set_primary_email_contact(db: Session, party_id: int, email: str | None) -> None:
+    """Put ``email`` on the party's primary email contact, creating it if needed.
+
+    The source of truth for the address the organisation writes to (#473).
+    ``party.email`` follows it by trigger, so nothing here touches that column.
+
+    A blank address removes the contact rather than storing an empty string: the
+    trigger reads "no primary email contact" as "no address", and an empty row
+    would make ``party.email`` the empty string instead of NULL, which every
+    ``if person.email`` reader in the mail paths would then treat as a usable
+    address.
+    """
+    contact_type = (
+        db.query(ContactType).filter(ContactType.code == PRIMARY_EMAIL_TYPE_CODE).first()
+    )
+    if contact_type is None:
+        raise MissingPrimaryEmailType(PRIMARY_EMAIL_TYPE_CODE)
+
+    existing = (
+        db.query(Contact)
+        .filter(
+            Contact.party_id == party_id,
+            Contact.channel == "email",
+            Contact.is_primary.is_(True),
+        )
+        .first()
+    )
+
+    if not email:
+        if existing is not None:
+            db.delete(existing)
+            db.flush()
+            _refresh_cached_party_email(db, party_id)
+        return
+
+    if existing is None:
+        db.add(
+            Contact(
+                party_id=party_id,
+                contact_type_id=contact_type.id,
+                value=email,
+                is_primary=True,
+            )
+        )
+    else:
+        existing.value = email
+    db.flush()
+    _refresh_cached_party_email(db, party_id)
+
+
+def _refresh_cached_party_email(db: Session, party_id: int) -> None:
+    """Let the session see what the trigger just wrote.
+
+    The trigger updates ``party.email`` behind SQLAlchemy's back, so an
+    identity-mapped ``Party`` loaded earlier in the request still holds the old
+    address and ``person.email`` reads it through the association proxy. Code
+    that writes the address and then reads it back — the member update endpoint
+    building its response is exactly that — would otherwise see the value it
+    replaced.
+
+    Expiring the attribute rather than assigning it keeps the database the only
+    writer of this column. Assigning would have Python and the trigger both
+    computing it, which is two sources of truth for a cache that exists to have
+    one. ``trg_party_display_name`` solved the same problem the other way round,
+    but there the value did not exist in the database yet.
+    """
+    party = db.get(Party, party_id)
+    if party is not None:
+        db.expire(party, ["email"])
 
 
 class UnverifiedAccountHasHistory(Exception):

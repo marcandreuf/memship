@@ -212,7 +212,7 @@ def _seed_system_roles():
 
 
 def _seed_party_kinds():
-    """Mirror the party_kinds rows the migration seeds (bea328dd48ab).
+    """Mirror the registry rows the migrations seed (bea328dd48ab, c8e4a7b2f193).
 
     Same reason as ``_seed_system_roles``: create_all builds tables, not data,
     and every Person insert creates a party whose ``kind`` references this
@@ -251,6 +251,18 @@ def _seed_party_kinds():
                 ),
                 {"code": code, "name": name},
             )
+        # The mailing address lives on this contact type since #473, so writing
+        # one at all needs the row to exist (migration c8e4a7b2f193). Only this
+        # type is mirrored, not the whole seed list: the rest are a club's
+        # choices, while this one the product itself depends on.
+        conn.execute(
+            text(
+                "INSERT INTO contact_types (code, name, description, channel, "
+                "is_active, display_order) VALUES ('email_main', 'Main Email', "
+                "'The address the organisation writes to', 'email', true, 0) "
+                "ON CONFLICT (code) DO NOTHING"
+            )
+        )
 
 
 def _install_role_assignment_hook(session):
